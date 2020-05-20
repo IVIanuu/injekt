@@ -14,13 +14,19 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.module
+package com.ivianuu.injekt.compiler
+
+import org.jetbrains.kotlin.name.Name
 
 class NameProvider {
     private val indicesByGroup = mutableMapOf<String, Int>()
     fun allocate(group: String): String {
-        val index = indicesByGroup[group] ?: 0
-        indicesByGroup[group] = index + 1
-        return "${group}$index"
+        val index = indicesByGroup[group]
+        indicesByGroup[group] = (index ?: 0) + 1
+        return "${group}${index?.toString().orEmpty()}"
+    }
+
+    fun allocate(group: Name): Name {
+        return Name.identifier(allocate(group.asString()))
     }
 }

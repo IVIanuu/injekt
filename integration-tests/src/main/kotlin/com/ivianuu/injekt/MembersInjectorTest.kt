@@ -27,19 +27,30 @@ class MembersInjectorTest {
         """
         abstract class SuperClass { 
             val foo: Foo by inject()
+            lateinit var foo2: Foo
+            @Inject
+            fun injectFoo2(foo: Foo) {
+                foo2 = foo
+            }
         }
         class MyClass : SuperClass() { 
             val bar: Bar by inject()
+            lateinit var bar2: Bar
+            @Inject
+            fun injectBar2(bar: Bar) {
+                bar2 = bar
+            }
         }
         
         interface TestComponent { 
             val injectMyClass: @MembersInjector (MyClass) -> Unit
+            val foo: Foo
             val bar: Bar
         }
         
         @Factory
         fun createComponent(): TestComponent {
-            transient { Foo() }
+            scoped { Foo() }
             scoped { Bar(get()) }
             return create()
         }
@@ -48,7 +59,10 @@ class MembersInjectorTest {
             val testComponent = createComponent()
             val myClass = MyClass()
             testComponent.injectMyClass(myClass)
+            check(myClass.foo === testComponent.foo)
+            check(myClass.foo2 === testComponent.foo)
             check(myClass.bar === testComponent.bar)
+            check(myClass.bar2 === testComponent.bar)
         }
     """
     ) {

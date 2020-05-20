@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.ClassPath
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.Path
 import com.ivianuu.injekt.compiler.PropertyPath
 import com.ivianuu.injekt.compiler.TypeParameterPath

@@ -33,3 +33,6 @@ class InjectProperty<T> : ReadOnlyProperty<Any, T> {
 
     override fun getValue(thisRef: Any, property: KProperty<*>): T = injektIntrinsic()
 }
+
+@Target(AnnotationTarget.FUNCTION)
+annotation class Inject

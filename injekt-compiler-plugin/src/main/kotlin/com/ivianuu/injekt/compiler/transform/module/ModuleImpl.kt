@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform.module
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getParameterName
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder

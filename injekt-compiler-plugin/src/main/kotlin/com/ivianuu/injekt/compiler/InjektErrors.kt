@@ -287,6 +287,42 @@ interface InjektErrors {
             "parent<T>() can only be called from inside a @CompositionFactory function"
         )
 
+
+        @JvmField
+        val RETURN_TYPE_NOT_ALLOWED_FOR_INJECT = error(
+            "@Inject functions cannot return anything"
+        )
+
+        @JvmField
+        val INJECT_FUNCTION_PARENT_MUST_BE_CLASS = error(
+            "@Inject function must be member function of a class"
+        )
+
+        @JvmField
+        val INJECT_FUNCTION_CANNOT_HAVE_TYPE_PARAMETERS = error(
+            "@Inject function cannot have type parameters"
+        )
+
+        @JvmField
+        val INJECT_FUNCTION_CANNOT_BE_ABSTRACT = error(
+            "@Inject function cannot have type parameters"
+        )
+
+        @JvmField
+        val INJECT_PROPERTY_PARENT_MUST_BE_CLASS = error(
+            "by inject() can only be used inside a class"
+        )
+
+        @JvmField
+        val INJECT_PROPERTY_CANNOT_BE_EXTENSION = error(
+            "by inject() cannot have an extension receiver"
+        )
+
+        @JvmField
+        val INJECT_PROPERTY_MUST_BE_FINAL = error(
+            "by inject() must be final"
+        )
+
         @JvmField
         val UNSUPPORTED_ANDROID_ENTRY_POINT = error(
             "@AndroidEntryPoint only supports Applications, Activities, BroadcastReceivers and Services."

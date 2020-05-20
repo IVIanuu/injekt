@@ -124,7 +124,7 @@ class ModuleDslTest {
             @Module fun module(): Boolean = true
         """
     ) {
-        assertCompileError()
+        assertCompileError("return")
     }
 
     @Test
