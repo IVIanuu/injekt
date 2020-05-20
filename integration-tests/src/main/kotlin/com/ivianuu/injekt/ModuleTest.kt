@@ -16,6 +16,9 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import org.junit.Test
 
 class ModuleTest {
@@ -125,43 +128,45 @@ class ModuleTest {
     )
 
     @Test
-    fun testMultiCompilationClassOfModule() = multiCodegen(
-        listOf(
-            source(
-                """
+    fun testMultiCompilationClassOfModule() =
+        multiCodegen(
+            listOf(
+                source(
+                    """
                 @Module 
                 inline fun <S : Any> classOfA() { 
                     val classOf = classOf<S>()
                 }
                 """
-            )
-        ),
-        listOf(
-            source(
-                """
+                )
+            ),
+            listOf(
+                source(
+                    """
                 @Module 
                 inline fun <T : Any, V : Any> classOfB() { 
                     val classOf = classOf<T>()
                     classOfA<V>() 
                 }
             """
-            )
-        ),
-        listOf(
-            source(
-                """
+                )
+            ),
+            listOf(
+                source(
+                    """
                @Module 
                 fun callingModule() { 
                     classOfB<String, Int>() 
                 } 
             """
+                )
             )
         )
-    )
 
     @Test
-    fun testClassOfModuleWithDefaultParameters() = codegen(
-        """
+    fun testClassOfModuleWithDefaultParameters() =
+        codegen(
+            """
         @Module
         inline fun <S : Any> classOfModule(
             p0: String = "",
@@ -175,7 +180,7 @@ class ModuleTest {
             classOfModule<Foo>(p1 = 1)
         }
     """
-    )
+        )
 
     @Test
     fun testBindingWithTypeParameterInInlineModule() =

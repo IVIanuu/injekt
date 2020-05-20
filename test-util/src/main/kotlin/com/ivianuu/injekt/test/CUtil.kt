@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.test
 
+import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.compiler.InjektComponentRegistrar
 import com.ivianuu.injekt.composition.CompositionComponent
 import com.tschuchort.compiletesting.KotlinCompilation
@@ -37,12 +38,13 @@ fun source(
     name = name,
     contents = buildString {
         if (injektImports) {
-            appendln("import com.ivianuu.injekt.*")
-            appendln("import com.ivianuu.injekt.composition.*")
-            appendln("import com.ivianuu.injekt.internal.*")
-            appendln("import com.ivianuu.injekt.*")
-            appendln("import kotlin.reflect.*")
-            appendln()
+            appendLine("import com.ivianuu.injekt.*")
+            appendLine("import com.ivianuu.injekt.android.*")
+            appendLine("import com.ivianuu.injekt.composition.*")
+            appendLine("import com.ivianuu.injekt.internal.*")
+            appendLine("import com.ivianuu.injekt.test.*")
+            appendLine("import kotlin.reflect.*")
+            appendLine()
         }
 
         append(source)
@@ -60,7 +62,9 @@ fun codegen(
     config: KotlinCompilation.() -> Unit = {},
     assertions: KotlinCompilation.Result.() -> Unit = { assertOk() }
 ) = codegen(
-    singleSource(source), config = config, assertions = assertions
+    singleSource(source),
+    config = config,
+    assertions = assertions
 )
 
 fun codegen(
@@ -132,7 +136,7 @@ fun KotlinCompilation.Result.invokeSingleFile(vararg args: Any?): Any? =
 fun <T> KotlinCompilation.Result.invokeSingleFile(vararg args: Any?): T {
     val generatedClass = getSingleClass().java
     return generatedClass.declaredMethods
-        .single { it.name == "invoke" && it.parameterCount == args.size }
+        .single { it.name == "invoke" && it.parameterTypes.size == args.size }
         .invoke(null, *args) as T
 }
 

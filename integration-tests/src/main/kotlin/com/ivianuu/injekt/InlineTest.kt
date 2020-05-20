@@ -16,6 +16,11 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.test.Foo
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -247,8 +252,9 @@ class InlineTest {
     )
 
     @Test
-    fun testCapturingMemberAndExtensionFunction() = codegen(
-        """
+    fun testCapturingMemberAndExtensionFunction() =
+        codegen(
+            """
         class MyClass {
             @InstanceFactory
             fun String.factory(): Pair<MyClass, String> { 
@@ -257,7 +263,7 @@ class InlineTest {
             }
         }
     """
-    )
+        )
 
     @Test
     fun testCapturingMemberAndExtensionInLocalFunction() =
@@ -278,10 +284,11 @@ class InlineTest {
         )
 
     @Test
-    fun testInlineModuleWithTypeParameters() = multiCodegen(
-        listOf(
-            source(
-                """
+    fun testInlineModuleWithTypeParameters() =
+        multiCodegen(
+            listOf(
+                source(
+                    """
                     @Qualifier
                     @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
                     annotation class TestQualifier1
@@ -312,11 +319,11 @@ class InlineTest {
         
         
     """
-            )
-        ),
-        listOf(
-            source(
-                """
+                )
+            ),
+            listOf(
+                source(
+                    """
         @InstanceFactory
         fun createComponent(): Bar {
             @TestQualifier1 transient { Context() }
@@ -324,8 +331,8 @@ class InlineTest {
             return create()
         }
     """
+                )
             )
         )
-    )
 
 }

@@ -16,6 +16,13 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.test.Command
+import com.ivianuu.injekt.test.CommandA
+import com.ivianuu.injekt.test.CommandB
+import com.ivianuu.injekt.test.CommandC
+import com.ivianuu.injekt.test.assertInternalError
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.junit.Test

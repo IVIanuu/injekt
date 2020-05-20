@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.test.assertOk
+import com.ivianuu.injekt.test.codegen
 import org.junit.Test
 
 class AssistedTest {

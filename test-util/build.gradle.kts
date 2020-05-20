@@ -15,36 +15,35 @@
  */
 
 plugins {
-    id("com.android.library")
-    kotlin("android")
+    kotlin("jvm")
     kotlin("kapt")
 }
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/android-build-lib.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8-android.gradle")
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-source-sets-android.gradle")
-
-android {
-    testOptions {
-        unitTests.isIncludeAndroidResources = true
-    }
-    defaultConfig {
-        javaCompileOptions {
-            annotationProcessorOptions {
-                includeCompileClasspath = true
-            }
-        }
-    }
-}
 
 dependencies {
+    api(Deps.processingX)
+    kapt(Deps.processingX)
+
+    api(project(":injekt-compiler-plugin"))
+    api(project(":injekt-core"))
+    api(project(":injekt-common"))
+    api(project(":injekt-composition"))
+
+    api(Deps.Kotlin.compilerEmbeddable)
+
     implementation(Deps.AndroidX.Compose.runtime)
     implementation(Deps.AndroidX.Compose.compiler)
 
-    implementation(project(":injekt-android"))
+    api(Deps.junit)
+    api(Deps.AndroidX.Test.core)
+    api(Deps.AndroidX.Test.junit)
+    api(Deps.roboelectric)
 
-    implementation(project(":test-util"))
-    kapt(project(":test-util"))
+    // todo remove compile testing deps
+    implementation("com.squareup.okio:okio:2.1.0")
+    implementation("org.jetbrains.kotlin:kotlin-annotation-processing-embeddable:1.3.70")
+    implementation("io.github.classgraph:classgraph:4.8.64")
 }

@@ -16,9 +16,9 @@
 
 package com.ivianuu.injekt.frontend
 
-import com.ivianuu.injekt.assertCompileError
-import com.ivianuu.injekt.assertOk
-import com.ivianuu.injekt.codegen
+import com.ivianuu.injekt.test.assertCompileError
+import com.ivianuu.injekt.test.assertOk
+import com.ivianuu.injekt.test.codegen
 import org.junit.Test
 
 class FactoryDslTest {
@@ -292,14 +292,15 @@ class FactoryDslTest {
     }
 
     @Test
-    fun testCompositionFactoryCannotBeSuspend() = codegen(
-        """
+    fun testCompositionFactoryCannotBeSuspend() =
+        codegen(
+            """
         @CompositionFactory 
         suspend fun factory(): TestComponent = create()
         """
-    ) {
-        assertCompileError("suspend")
-    }
+        ) {
+            assertCompileError("suspend")
+        }
 
     @Test
     fun testFactoryCanBeInline() = codegen(
@@ -338,37 +339,40 @@ class FactoryDslTest {
     )
 
     @Test
-    fun testChildFactoryCannotHaveTypeParameters() = codegen(
-        """
+    fun testChildFactoryCannotHaveTypeParameters() =
+        codegen(
+            """
         @ChildFactory
         inline fun <T> factory(): TestComponent = create()
     """
-    ) {
-        assertCompileError("type parameter")
-    }
+        ) {
+            assertCompileError("type parameter")
+        }
 
     @Test
-    fun testCompositionFactoryCannotHaveTypeParameters() = codegen(
-        """
+    fun testCompositionFactoryCannotHaveTypeParameters() =
+        codegen(
+            """
         @CompositionFactory
         inline fun <T> factory(): TestComponent = create()
     """
-    ) {
-        assertCompileError("type parameter")
-    }
+        ) {
+            assertCompileError("type parameter")
+        }
 
     @Test
-    fun testNonInlineFactoryWithModuleParameter() = codegen(
-        """ 
+    fun testNonInlineFactoryWithModuleParameter() =
+        codegen(
+            """ 
         @Factory
         fun factory(block: @Module () -> Unit): TestComponent {
             block()
             return create()
         }
     """
-    ) {
-        assertCompileError("inline")
-    }
+        ) {
+            assertCompileError("inline")
+        }
 
     @Test
     fun testCallingInlineFactoryWithTypeParametersNotAllowed() =

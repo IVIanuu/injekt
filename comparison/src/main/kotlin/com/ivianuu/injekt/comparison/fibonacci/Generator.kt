@@ -23,14 +23,14 @@ fun main() {
         buildString {
             (1..FIB_COUNT).forEach { index ->
                 if (index == 1 || index == 2) {
-                    appendln(
+                    appendLine(
                         """
                         @Transient
                         class Fib$index @Inject constructor()
                         """.trimIndent()
                     )
                 } else {
-                    appendln(
+                    appendLine(
                         """
                         @Factory
                         class Fib$index @Inject constructor(

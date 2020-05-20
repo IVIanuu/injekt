@@ -14,23 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.frontend
+package com.ivianuu.injekt.android
 
-import com.ivianuu.injekt.test.assertCompileError
-import com.ivianuu.injekt.test.codegen
-import org.junit.Test
-
-class ScopeTest {
-
-    @Test
-    fun testScopeNeedsRuntimeRetention() = codegen(
-        """
-        @Retention(AnnotationRetention.SOURCE)
-        @Scope
-        annotation class MyScope
-    """
-    ) {
-        assertCompileError("runtime")
-    }
-
-}
+@Target(AnnotationTarget.CLASS)
+annotation class AndroidEntryPoint

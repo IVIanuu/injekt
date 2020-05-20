@@ -14,23 +14,36 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.frontend
+package com.ivianuu.injekt
 
-import com.ivianuu.injekt.test.assertCompileError
+import android.os.Build
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 
-class ScopeTest {
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [Build.VERSION_CODES.P])
+class AndroidEntryPointTest {
 
     @Test
-    fun testScopeNeedsRuntimeRetention() = codegen(
+    fun testAppEntryPoint() = codegen(
         """
-        @Retention(AnnotationRetention.SOURCE)
-        @Scope
-        annotation class MyScope
+        @AndroidEntryPoint
+        class App : android.app.Application() { 
+            val foo: Foo by inject()
+        }
+        
+        fun invoke() {
+            val app = App()
+            app.onCreate()
+            println("foo " + app.foo)
+        }
     """
     ) {
-        assertCompileError("runtime")
+        invokeSingleFile()
     }
 
 }

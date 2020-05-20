@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 

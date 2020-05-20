@@ -16,6 +16,10 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import org.junit.Test
 
 class BindingAdapterTest {
@@ -60,10 +64,11 @@ class BindingAdapterTest {
     }
 
     @Test
-    fun testMultiCompilationBindingAdapter() = multiCodegen(
-        listOf(
-            source(
-                """
+    fun testMultiCompilationBindingAdapter() =
+        multiCodegen(
+            listOf(
+                source(
+                    """
                 @CompositionFactory 
                 fun factory(): TestCompositionComponent { 
                     return create() 
@@ -83,9 +88,9 @@ class BindingAdapterTest {
                     }
                 } 
         """
-            ),
-            source(
-                """
+                ),
+                source(
+                    """
                 @BindAppService 
                 class MyAppServiceA : AppService
                 
@@ -99,9 +104,9 @@ class BindingAdapterTest {
                     println("app services " + appServices) 
                 }
             """
+                )
             )
         )
-    )
 
     @Test
     fun testMultiCompileViewModel() = multiCodegen(

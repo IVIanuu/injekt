@@ -23,12 +23,12 @@ fun mainstreamKotlinDslGenerator(
     bindKeyword: String,
     getKeyword: String
 ): String = buildString {
-    appendln(header)
+    appendLine(header)
     (1..FIB_COUNT).forEach { index ->
         if (index == 1 || index == 2) {
-            appendln("$bindKeyword { Fib$index() }")
+            appendLine("$bindKeyword { Fib$index() }")
         } else {
-            appendln("$bindKeyword { Fib$index($getKeyword(), $getKeyword()) }")
+            appendLine("$bindKeyword { Fib$index($getKeyword(), $getKeyword()) }")
         }
     }
     append("}")

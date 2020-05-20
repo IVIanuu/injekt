@@ -17,14 +17,21 @@
 package com.ivianuu.injekt
 
 import androidx.compose.plugins.kotlin.ComposeComponentRegistrar
+import com.ivianuu.injekt.test.Foo
+import com.ivianuu.injekt.test.assertOk
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class ObjectGraphFunctionsTest {
 
     @Test
-    fun testInlineGetWithGenericComponentAndGenericInstance() = codegen(
-        """
+    fun testInlineGetWithGenericComponentAndGenericInstance() =
+        codegen(
+            """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
             transient { Foo() }
@@ -41,9 +48,9 @@ class ObjectGraphFunctionsTest {
             return getInstance<TestCompositionComponent, Foo>(component)
         }
     """
-    ) {
-        assertTrue(invokeSingleFile() is Foo)
-    }
+        ) {
+            assertTrue(invokeSingleFile() is Foo)
+        }
 
     @Test
     fun testInlineGetWithGenericInstance() = codegen(
@@ -92,8 +99,9 @@ class ObjectGraphFunctionsTest {
     }
 
     @Test
-    fun testNestedInlineGetWithGenericComponentAndGenericInstance() = codegen(
-        """
+    fun testNestedInlineGetWithGenericComponentAndGenericInstance() =
+        codegen(
+            """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
             transient { Foo() }
@@ -114,13 +122,14 @@ class ObjectGraphFunctionsTest {
             return nestedGetInstance<TestCompositionComponent, Foo>(component)
         }
     """
-    ) {
-        assertTrue(invokeSingleFile() is Foo)
-    }
+        ) {
+            assertTrue(invokeSingleFile() is Foo)
+        }
 
     @Test
-    fun testNestedInlineGetWithGenericInstance() = codegen(
-        """
+    fun testNestedInlineGetWithGenericInstance() =
+        codegen(
+            """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
             transient { Foo() }
@@ -141,13 +150,14 @@ class ObjectGraphFunctionsTest {
             return nestedGetInstance<Foo>(component)
         }
     """
-    ) {
-        assertTrue(invokeSingleFile() is Foo)
-    }
+        ) {
+            assertTrue(invokeSingleFile() is Foo)
+        }
 
     @Test
-    fun testNestedInlineGetWithGenericComponent() = codegen(
-        """
+    fun testNestedInlineGetWithGenericComponent() =
+        codegen(
+            """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
             transient { Foo() }
@@ -168,13 +178,14 @@ class ObjectGraphFunctionsTest {
             return getInstance(component)
         }
     """
-    ) {
-        assertTrue(invokeSingleFile() is Foo)
-    }
+        ) {
+            assertTrue(invokeSingleFile() is Foo)
+        }
 
     @Test
-    fun testInlineInjectWithGenericComponentAndGenericInstance() = codegen(
-        """
+    fun testInlineInjectWithGenericComponentAndGenericInstance() =
+        codegen(
+            """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
             transient { Foo() }
@@ -197,9 +208,9 @@ class ObjectGraphFunctionsTest {
             return myClass.foo
         }
     """
-    ) {
-        assertTrue(invokeSingleFile() is Foo)
-    }
+        ) {
+            assertTrue(invokeSingleFile() is Foo)
+        }
 
     @Test
     fun testInlineInjectWithGenericInstance() = codegen(
@@ -260,8 +271,9 @@ class ObjectGraphFunctionsTest {
     }
 
     @Test
-    fun testNestedInlineInjectWithGenericComponentAndGenericInstance() = codegen(
-        """
+    fun testNestedInlineInjectWithGenericComponentAndGenericInstance() =
+        codegen(
+            """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
             transient { Foo() }
@@ -288,13 +300,14 @@ class ObjectGraphFunctionsTest {
             return myClass.foo
         }
     """
-    ) {
-        assertTrue(invokeSingleFile() is Foo)
-    }
+        ) {
+            assertTrue(invokeSingleFile() is Foo)
+        }
 
     @Test
-    fun testNestedInlineInjectWithGenericInstance() = codegen(
-        """
+    fun testNestedInlineInjectWithGenericInstance() =
+        codegen(
+            """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
             transient { Foo() }
@@ -321,13 +334,14 @@ class ObjectGraphFunctionsTest {
             return myClass.foo
         }
     """
-    ) {
-        assertTrue(invokeSingleFile() is Foo)
-    }
+        ) {
+            assertTrue(invokeSingleFile() is Foo)
+        }
 
     @Test
-    fun testNestedInlineInjectWithGenericComponent() = codegen(
-        """
+    fun testNestedInlineInjectWithGenericComponent() =
+        codegen(
+            """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
             transient { Foo() }
@@ -354,9 +368,9 @@ class ObjectGraphFunctionsTest {
             return myClass.foo
         }
     """
-    ) {
-        assertTrue(invokeSingleFile() is Foo)
-    }
+        ) {
+            assertTrue(invokeSingleFile() is Foo)
+        }
 
     @Test
     fun testMultiCompileObjectGraphGet() = multiCodegen(
@@ -394,30 +408,31 @@ class ObjectGraphFunctionsTest {
     )
 
     @Test
-    fun testMultiCompileObjectGraphInject() = multiCodegen(
-        listOf(
-            source(
-                """
+    fun testMultiCompileObjectGraphInject() =
+        multiCodegen(
+            listOf(
+                source(
+                    """
                 @CompositionFactory 
                 fun factory(): TestCompositionComponent { 
                     transient { Foo() }
                     return create() 
                 }
                 """
-            )
-        ),
-        listOf(
-            source(
-                """
+                )
+            ),
+            listOf(
+                source(
+                    """
                 fun <C : Any, T> injectInstance(component: C, instance: T) {
                     component.inject(instance)
                 }
             """
-            )
-        ),
-        listOf(
-            source(
-                """
+                )
+            ),
+            listOf(
+                source(
+                    """
                 class MyClass { 
                     val foo: Foo by inject()
                 }
@@ -430,9 +445,9 @@ class ObjectGraphFunctionsTest {
                     return myClass.foo
                 }
             """
+                )
             )
         )
-    )
 
     @Test
     fun testGetWithLambda() = codegen(
@@ -543,25 +558,27 @@ class ObjectGraphFunctionsTest {
         """
 
     @Test
-    fun testGetInComposableWithCompilingAfterCompose() = codegen(
-        composeSource,
-        config = {
-            val other = compilerPlugins.toList()
-            compilerPlugins = listOf(ComposeComponentRegistrar()) + other
+    fun testGetInComposableWithCompilingAfterCompose() =
+        codegen(
+            composeSource,
+            config = {
+                val other = compilerPlugins.toList()
+                compilerPlugins = listOf(ComposeComponentRegistrar()) + other
+            }
+        ) {
+            assertOk()
         }
-    ) {
-        assertOk()
-    }
 
     @Test
-    fun testGetInComposableWithCompilingBeforeCompose() = codegen(
-        composeSource,
-        config = {
-            val other = compilerPlugins.toList()
-            compilerPlugins = other + listOf(ComposeComponentRegistrar())
+    fun testGetInComposableWithCompilingBeforeCompose() =
+        codegen(
+            composeSource,
+            config = {
+                val other = compilerPlugins.toList()
+                compilerPlugins = other + listOf(ComposeComponentRegistrar())
+            }
+        ) {
+            assertOk()
         }
-    ) {
-        assertOk()
-    }
 
 }

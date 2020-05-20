@@ -7,5 +7,6 @@ include(
     ":injekt-core",
     ":injekt-gradle-plugin",
     ":integration-tests",
-    ":sample"
+    ":sample",
+    ":test-util"
 )

@@ -16,6 +16,10 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.test.Foo
+import com.ivianuu.injekt.test.assertOk
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertSame
 import org.junit.Test

@@ -25,6 +25,10 @@ object InjektFqNames {
     val CompositionPackage = InjektPackage.child("composition")
     val CompositionsPackage = CompositionPackage.child("internal")
 
+    val AndroidPackage = InjektPackage.child("android")
+
+    val AndroidEntryPoint = AndroidPackage.child("AndroidEntryPoint")
+
     val InjektAst = InternalPackage.child("InjektAst")
     val AstAlias = InjektAst.child("Alias")
     val AstAssisted = InjektPackage.child("Assisted")

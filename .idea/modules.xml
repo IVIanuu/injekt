@@ -22,6 +22,7 @@
       <module fileurl="file://$PROJECT_DIR$/integration-tests/integration-tests.iml" filepath="$PROJECT_DIR$/integration-tests/integration-tests.iml" group="injekt/integration-tests" />
       <module fileurl="file://$PROJECT_DIR$/sample/sample.iml" filepath="$PROJECT_DIR$/sample/sample.iml" group="injekt/sample" />
       <module fileurl="file://$PROJECT_DIR$/studio-projects.injekt.iml" filepath="$PROJECT_DIR$/studio-projects.injekt.iml" group="injekt" />
+      <module fileurl="file://$PROJECT_DIR$/test-util/test-util.iml" filepath="$PROJECT_DIR$/test-util/test-util.iml" group="injekt/test-util" />
     </modules>
   </component>
 </project>

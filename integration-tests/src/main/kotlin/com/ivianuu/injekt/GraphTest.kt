@@ -16,6 +16,10 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.test.Foo
+import com.ivianuu.injekt.test.assertInternalError
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertNotSame
@@ -182,28 +186,30 @@ class GraphTest {
     }
 
     @Test
-    fun testReturnsInstanceForNullableBinidng() = codegen(
-        """
+    fun testReturnsInstanceForNullableBinidng() =
+        codegen(
+            """
         @InstanceFactory
         fun invoke(): Foo? {
             transient<Foo?>()
             return create()
         }
     """
-    ) {
-        assertNotNull(invokeSingleFile())
-    }
+        ) {
+            assertNotNull(invokeSingleFile())
+        }
 
     @Test
-    fun testReturnsNullOnMissingNullableBinding() = codegen(
-        """
+    fun testReturnsNullOnMissingNullableBinding() =
+        codegen(
+            """
         @InstanceFactory
         fun invoke(): Foo? {
             return create()
         }
         """
-    ) {
-        assertNull(invokeSingleFile())
-    }
+        ) {
+            assertNull(invokeSingleFile())
+        }
 
 }

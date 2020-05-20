@@ -413,6 +413,12 @@ fun KClassValue.getIrClass(
         .let { pluginContext.referenceClass(it)!!.owner }
 }
 
+val IrPluginContext.androidEnabled: Boolean
+    get() =
+        moduleDescriptor.findClassAcrossModuleDependencies(
+            ClassId.topLevel(InjektFqNames.AndroidEntryPoint)
+        ) != null
+
 val IrPluginContext.compositionsEnabled: Boolean
     get() =
         moduleDescriptor.findClassAcrossModuleDependencies(

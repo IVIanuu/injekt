@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.androidEnabled
 import com.ivianuu.injekt.compiler.compositionsEnabled
+import com.ivianuu.injekt.compiler.transform.android.AndroidEntryPointTransformer
 import com.ivianuu.injekt.compiler.transform.annotatedclass.ClassFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.annotatedclass.MembersInjectorTransformer
 import com.ivianuu.injekt.compiler.transform.composition.BindingAdapterTransformer
@@ -64,6 +66,10 @@ class InjektIrGenerationExtension(
 
         // write qualifiers of expression to the irTrace
         QualifiedMetadataTransformer(pluginContext).lower(moduleFragment)
+
+        if (pluginContext.androidEnabled) {
+            AndroidEntryPointTransformer(pluginContext).lower(moduleFragment)
+        }
 
         if (pluginContext.compositionsEnabled) {
             InlineObjectGraphCallTransformer(pluginContext).lower(moduleFragment)
@@ -127,8 +133,6 @@ class InjektIrGenerationExtension(
 
         // patch file metadata
         FileMetadataPatcher(pluginContext).lower(moduleFragment)
-
-        //error("lol")
     }
 
 }

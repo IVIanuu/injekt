@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
 import org.junit.Test
 
 class MembersInjectorTest {
@@ -54,18 +56,20 @@ class MembersInjectorTest {
     }
 
     @Test
-    fun testCanInjectMembersInjectorForAnyType() = codegen(
-        """
+    fun testCanInjectMembersInjectorForAnyType() =
+        codegen(
+            """
         @InstanceFactory
         fun createComponent(): @MembersInjector (Any) -> Unit {
             return create()
         }
     """
-    )
+        )
 
     @Test
-    fun testInjectsMembersOnConstructorInjection() = codegen(
-        """
+    fun testInjectsMembersOnConstructorInjection() =
+        codegen(
+            """
         @Transient
         class ConstructorAndMembersDep(
             private val foo: Foo
@@ -85,8 +89,8 @@ class MembersInjectorTest {
             dep.bar
         }
     """
-    ) {
-        invokeSingleFile()
-    }
+        ) {
+            invokeSingleFile()
+        }
 
 }

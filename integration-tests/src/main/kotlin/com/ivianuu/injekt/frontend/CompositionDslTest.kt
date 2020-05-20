@@ -16,71 +16,76 @@
 
 package com.ivianuu.injekt.frontend
 
-import com.ivianuu.injekt.assertCompileError
-import com.ivianuu.injekt.codegen
+import com.ivianuu.injekt.test.assertCompileError
+import com.ivianuu.injekt.test.codegen
 import org.junit.Test
 
 class CompositionDslTest {
 
     @Test
-    fun testCompositionModuleCannotHaveValueParameters() = codegen(
-        """
+    fun testCompositionModuleCannotHaveValueParameters() =
+        codegen(
+            """
         @Module
         fun module(instance: String) {
             installIn<TestComponent>()
         }
     """
-    ) {
-        assertCompileError("value parameter")
-    }
+        ) {
+            assertCompileError("value parameter")
+        }
 
     @Test
-    fun testCompositionModuleCannotHaveTypeParameters() = codegen(
-        """
+    fun testCompositionModuleCannotHaveTypeParameters() =
+        codegen(
+            """
         @Module
         fun <T> module() {
             installIn<TestComponent>()
         }
     """
-    ) {
-        assertCompileError("type parameter")
-    }
+        ) {
+            assertCompileError("type parameter")
+        }
 
     @Test
-    fun testInstallInCanOnlyBeCalledInModules() = codegen(
-        """
+    fun testInstallInCanOnlyBeCalledInModules() =
+        codegen(
+            """
         @Factory
         fun module() {
             installIn<TestComponent>()
         }
     """
-    ) {
-        assertCompileError("module")
-    }
+        ) {
+            assertCompileError("module")
+        }
 
     @Test
-    fun testParentCanOnlyBeCalledInCompositionFactory() = codegen(
-        """
+    fun testParentCanOnlyBeCalledInCompositionFactory() =
+        codegen(
+            """
         @Module
         fun module() {
             parent<TestComponent>()
         }
     """
-    ) {
-        assertCompileError("compositionfactory")
-    }
+        ) {
+            assertCompileError("compositionfactory")
+        }
 
     @Test
-    fun testCompositionFactoryWithoutCompositionComponent() = codegen(
-        """ 
+    fun testCompositionFactoryWithoutCompositionComponent() =
+        codegen(
+            """ 
         @CompositionFactory
         fun factory(): TestComponent {
             return create()
         }
     """
-    ) {
-        assertCompileError("@CompositionComponent")
-    }
+        ) {
+            assertCompileError("@CompositionComponent")
+        }
 
     @Test
     fun testParentWithCompositionComponent() = codegen(
@@ -109,39 +114,42 @@ class CompositionDslTest {
     }
 
     @Test
-    fun testInstallInWithoutCompositionFactory() = codegen(
-        """ 
+    fun testInstallInWithoutCompositionFactory() =
+        codegen(
+            """ 
         @Module
         fun module() {
             installIn<TestComponent>()
         }
     """
-    ) {
-        assertCompileError("@CompositionComponent")
-    }
+        ) {
+            assertCompileError("@CompositionComponent")
+        }
 
     @Test
-    fun testObjectGraphGetWithoutCompositionComponent() = codegen(
-        """
+    fun testObjectGraphGetWithoutCompositionComponent() =
+        codegen(
+            """
         val component = Any()
         fun inject() {
             component.get<String>()
         }
     """
-    ) {
-        assertCompileError("@CompositionComponent")
-    }
+        ) {
+            assertCompileError("@CompositionComponent")
+        }
 
     @Test
-    fun testObjectGraphInjectWithoutCompositionComponent() = codegen(
-        """
+    fun testObjectGraphInjectWithoutCompositionComponent() =
+        codegen(
+            """
         val component = Any()
         fun inject() {
             component.inject("")
         }
     """
-    ) {
-        assertCompileError("@CompositionComponent")
-    }
+        ) {
+            assertCompileError("@CompositionComponent")
+        }
 
 }

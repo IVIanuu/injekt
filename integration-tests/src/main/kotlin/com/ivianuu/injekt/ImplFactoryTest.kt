@@ -16,6 +16,11 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.test.Bar
+import com.ivianuu.injekt.test.Foo
+import com.ivianuu.injekt.test.assertOk
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertSame
@@ -279,8 +284,9 @@ class ImplFactoryTest {
         }
 
     @Test
-    fun testComponentSuperTypeWithTypeParameters() = codegen(
-        """
+    fun testComponentSuperTypeWithTypeParameters() =
+        codegen(
+            """
         interface BaseComponent<T> {
             val inject: @MembersInjector (T) -> Unit
         }
@@ -297,7 +303,7 @@ class ImplFactoryTest {
             return create()
         }
     """
-    )
+        )
 
     @Test
     fun testComponentWithGenericSuperType() = codegen(
@@ -447,8 +453,9 @@ class ImplFactoryTest {
     )
 
     @Test
-    fun testLocalChildFactoryInLocalParentFactory() = codegen(
-        """
+    fun testLocalChildFactoryInLocalParentFactory() =
+        codegen(
+            """
         interface ChildComponent { 
             val bar: Bar 
         }
@@ -474,7 +481,7 @@ class ImplFactoryTest {
             return parent().childFactory()
         }
     """
-    )
+        )
 
     @Test
     fun testFactoryWithDefaultParameters() = codegen(

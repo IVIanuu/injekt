@@ -272,6 +272,11 @@ interface InjektErrors {
             "parent<T>() can only be called from inside a @CompositionFactory function"
         )
 
+        @JvmField
+        val UNSUPPORTED_ANDROID_ENTRY_POINT = error(
+            "@AndroidEntryPoint only supports Applications, Activities, BroadcastReceivers and Services."
+        )
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,

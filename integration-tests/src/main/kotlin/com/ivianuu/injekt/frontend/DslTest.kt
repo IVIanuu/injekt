@@ -16,8 +16,8 @@
 
 package com.ivianuu.injekt.frontend
 
-import com.ivianuu.injekt.assertCompileError
-import com.ivianuu.injekt.codegen
+import com.ivianuu.injekt.test.assertCompileError
+import com.ivianuu.injekt.test.codegen
 import org.junit.Test
 
 class DslTest {

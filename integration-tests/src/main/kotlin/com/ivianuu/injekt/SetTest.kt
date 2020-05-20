@@ -16,6 +16,13 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.test.Command
+import com.ivianuu.injekt.test.CommandA
+import com.ivianuu.injekt.test.CommandB
+import com.ivianuu.injekt.test.CommandC
+import com.ivianuu.injekt.test.assertInternalError
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -39,7 +46,8 @@ class SetTest {
         }
          """
     ) {
-        val set = invokeSingleFile<Set<Command>>().toList()
+        val set =
+            invokeSingleFile<Set<Command>>().toList()
         assertEquals(3, set.size)
         assertTrue(set[0] is CommandA)
         assertTrue(set[1] is CommandB)
@@ -63,7 +71,8 @@ class SetTest {
         }
          """
     ) {
-        val set = invokeSingleFile<@Provider () -> Set<Command>>()().toList()
+        val set =
+            invokeSingleFile<@Provider () -> Set<Command>>()().toList()
         assertEquals(3, set.size)
         assertTrue(set[0] is CommandA)
         assertTrue(set[1] is CommandB)
@@ -180,7 +189,8 @@ class SetTest {
         }
          """
     ) {
-        val set = invokeSingleFile<Set<Command>>().toList()
+        val set =
+            invokeSingleFile<Set<Command>>().toList()
         assertEquals(0, set.size)
     }
 
@@ -209,7 +219,8 @@ class SetTest {
         }
          """
     ) {
-        val set = invokeSingleFile<Set<Command>>().toList()
+        val set =
+            invokeSingleFile<Set<Command>>().toList()
         assertEquals(1, set.size)
     }
 
@@ -265,7 +276,8 @@ class SetTest {
         fun invoke() = createParent().childFactory().set
     """
     ) {
-        val set = invokeSingleFile<Set<Command>>().toList()
+        val set =
+            invokeSingleFile<Set<Command>>().toList()
         assertEquals(2, set.size)
         assertTrue(set[0] is CommandA)
         assertTrue(set[1] is CommandB)

@@ -17,19 +17,16 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
-import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.composition.generateCompositions
-import com.ivianuu.injekt.composition.inject
+import com.ivianuu.injekt.android.AndroidEntryPoint
 import com.ivianuu.injekt.inject
 
+@AndroidEntryPoint
 class App : Application() {
 
     private val appServiceRunner: AppServiceRunner by inject()
     private val repo: Repo by inject()
 
     override fun onCreate() {
-        generateCompositions()
-        applicationComponent.inject(this)
         super.onCreate()
         repo.refresh()
         println("injected app $repo")
