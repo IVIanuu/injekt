@@ -57,6 +57,8 @@ object Deps {
             const val core = "androidx.test:core-ktx:1.2.0"
             const val junit = "androidx.test.ext:junit:1.0.0"
         }
+
+        const val work = "androidx.work:work-runtime-ktx:2.1.0"
     }
 
     const val bintrayGradlePlugin =
