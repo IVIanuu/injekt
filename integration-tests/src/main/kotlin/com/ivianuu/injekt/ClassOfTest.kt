@@ -17,6 +17,7 @@
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
 import org.junit.Test
@@ -90,5 +91,24 @@ class ClassOfTest {
         }
     """
         )
+
+    @Test
+    fun testClassOfInProviderDefinition() = codegen(
+        """
+        
+        @Module
+        fun <T : Any> module() {
+            transient { classOf<T>() }
+        }
+        
+        @InstanceFactory
+        fun invoke(): KClass<Foo> {
+            module<Foo>()
+            return create()
+        }
+    """
+    ) {
+        println(invokeSingleFile())
+    }
 
 }

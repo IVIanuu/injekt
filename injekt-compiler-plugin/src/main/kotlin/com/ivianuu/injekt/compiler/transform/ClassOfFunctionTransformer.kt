@@ -19,12 +19,9 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.isTypeParameter
-import com.ivianuu.injekt.compiler.transform.module.isModule
 import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.backend.common.pop
-import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
@@ -92,6 +89,9 @@ class ClassOfFunctionTransformer(pluginContext: IrPluginContext) :
         }
     }
 
+    override fun visitFunction(declaration: IrFunction): IrStatement =
+        transformFunctionIfNeeded(super.visitFunction(declaration) as IrFunction)
+
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
         if (function.visibility == Visibilities.LOCAL &&
             function.origin == IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
@@ -118,7 +118,6 @@ class ClassOfFunctionTransformer(pluginContext: IrPluginContext) :
         function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = transformFunctionIfNeeded(expression.symbol.owner)
-
                 if (callee.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.classOf") {
                     originalClassOfCalls += expression
                     if (expression.getTypeArgument(0)!!.isTypeParameter()) {
@@ -153,26 +152,12 @@ class ClassOfFunctionTransformer(pluginContext: IrPluginContext) :
 
         transformedFunction.body?.transformChildrenVoid(object :
             IrElementTransformerVoid() {
-            private val moduleStack = mutableListOf(transformedFunction)
-            override fun visitFunction(declaration: IrFunction): IrStatement {
-                if (declaration.isModule(pluginContext.bindingContext))
-                    moduleStack.push(declaration)
-                return super.visitFunction(declaration)
-                    .also {
-                        if (declaration.isModule(pluginContext.bindingContext))
-                            moduleStack.pop()
-                    }
-            }
-
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = transformFunctionIfNeeded(expression.symbol.owner)
-                try {
-                    if (callee.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.classOf") {
-                        classOfCalls += expression
-                    } else if (callee.hasAnnotation(InjektFqNames.AstTyped)) {
-                        typedModuleCalls += expression
-                    }
-                } catch (e: Exception) {
+                if (callee.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.classOf") {
+                    classOfCalls += expression
+                } else if (callee.hasAnnotation(InjektFqNames.AstTyped)) {
+                    typedModuleCalls += expression
                 }
                 return super.visitCall(expression)
             }
