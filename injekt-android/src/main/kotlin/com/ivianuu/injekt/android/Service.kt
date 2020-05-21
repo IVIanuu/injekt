@@ -39,8 +39,8 @@ annotation class ForService
 @CompositionComponent
 interface ServiceComponent
 
-fun Service.serviceComponent(): Lazy<ServiceComponent> = lazy {
-    application.applicationComponent
+fun Service.newServiceComponent(): ServiceComponent {
+    return application.applicationComponent
         .get<@ChildFactory (Service) -> ServiceComponent>()(this)
 }
 

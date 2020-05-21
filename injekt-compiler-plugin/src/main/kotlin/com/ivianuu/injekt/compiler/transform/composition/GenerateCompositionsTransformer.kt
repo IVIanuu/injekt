@@ -122,7 +122,8 @@ class GenerateCompositionsTransformer(
             .mapKeys { pluginContext.referenceClass(it.key)!! }
             .mapValues {
                 it.value.map {
-                    pluginContext.referenceFunctions(it).first()
+                    pluginContext.referenceFunctions(it).firstOrNull()
+                        ?: error("could not find for $it")
                 }
             }
             .forEach { (compositionType, elements) ->

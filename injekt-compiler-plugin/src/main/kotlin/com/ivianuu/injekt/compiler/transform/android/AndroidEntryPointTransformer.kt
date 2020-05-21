@@ -24,12 +24,15 @@ import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
+import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irSetField
+import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
@@ -45,6 +48,7 @@ import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isSubclassOf
 import org.jetbrains.kotlin.ir.util.overrides
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
@@ -71,6 +75,9 @@ class AndroidEntryPointTransformer(pluginContext: IrPluginContext) :
                 transformActivity(declaration)
             declaration.isSubclassOf(androidSymbols.fragment.owner) ->
                 transformFragment(declaration)
+            declaration.isSubclassOf(androidSymbols.service.owner) ->
+                transformService(declaration)
+            else -> error("Unsupported android entry point ${declaration.render()}") // todo remove
         }
 
         return super.visitClass(declaration)
@@ -230,10 +237,12 @@ class AndroidEntryPointTransformer(pluginContext: IrPluginContext) :
         }
 
         thisOnCreate.transformChildrenVoid(object : IrElementTransformerVoid() {
+            private var initialized = false
             override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.superQualifierSymbol != superClass.symbol ||
+                if (initialized || expression.superQualifierSymbol != superClass.symbol ||
                     expression.symbol != superFunction.symbol
                 ) return super.visitCall(expression)
+                initialized = true
                 return DeclarationIrBuilder(pluginContext, thisOnCreate.symbol).run {
                     irBlock {
                         if (generateComponents) {
@@ -273,6 +282,59 @@ class AndroidEntryPointTransformer(pluginContext: IrPluginContext) :
                 }
             }
         })
+    }
+
+    private fun transformService(service: IrClass) {
+        val createServiceComponent = pluginContext.referenceFunctions(
+            FqName("com.ivianuu.injekt.android.newServiceComponent")
+        ).single { it.owner.extensionReceiverParameter != null }
+
+        val componentField = service.addField(
+            "\$component",
+            createServiceComponent.owner.returnType
+        )
+
+        transformAndroidClass(
+            clazz = service,
+            functionPredicate = {
+                it.name.asString() == "onCreate" &&
+                        it.valueParameters.isEmpty()
+            },
+            createFunction = { superClass, superOnCreate ->
+                service.addFunction {
+                    name = Name.identifier("onCreate")
+                    returnType = irBuiltIns.unitType
+                }.apply {
+                    overrides(superOnCreate)
+                    dispatchReceiverParameter = service.thisReceiver!!.copyTo(this)
+                    body = DeclarationIrBuilder(pluginContext, symbol).run {
+                        irBlockBody {
+                            +irCall(superOnCreate, null, superClass.symbol).apply {
+                                dispatchReceiver = irGet(dispatchReceiverParameter!!)
+                            }
+                        }
+                    }
+                }
+            },
+            componentAccessor = { _, thisExpr ->
+                irBlock {
+                    val tmpComponent = irTemporary(
+                        irCall(createServiceComponent).apply {
+                            extensionReceiver = thisExpr()
+                        }
+                    )
+
+                    +irSetField(
+                        thisExpr(),
+                        componentField,
+                        irGet(tmpComponent)
+                    )
+
+                    +irGet(tmpComponent)
+                }
+            },
+            generateComponents = false
+        )
     }
 
 }

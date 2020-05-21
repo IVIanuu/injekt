@@ -19,7 +19,6 @@ package com.ivianuu.injekt
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.invokeSingleFile
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -32,14 +31,8 @@ class AndroidEntryPointTest {
     fun testAppEntryPoint() = codegen(
         """
         @AndroidEntryPoint
-        class App : android.app.Application() { 
+        class MyApp : android.app.Application() { 
             val foo: Foo by inject()
-        }
-        
-        fun invoke() {
-            val app = App()
-            app.onCreate()
-            println("foo " + app.foo)
         }
         
         @Module
@@ -48,8 +41,55 @@ class AndroidEntryPointTest {
             transient<Foo>()
         }
     """
-    ) {
-        invokeSingleFile()
-    }
+    )
+
+    @Test
+    fun testActivityEntryPoint() = codegen(
+        """
+        @AndroidEntryPoint
+        class MyActivity : androidx.activity.ComponentActivity() { 
+            val foo: Foo by inject()
+        }
+        
+        @Module
+        fun fooModule() {
+            installIn<ActivityComponent>()
+            transient<Foo>()
+        }
+    """
+    )
+
+    @Test
+    fun testFragmentEntryPoint() = codegen(
+        """
+        @AndroidEntryPoint
+        class MyFragment : androidx.fragment.app.Fragment() { 
+            val foo: Foo by inject()
+        }
+        
+        @Module
+        fun fooModule() {
+            installIn<FragmentComponent>()
+            transient<Foo>()
+        }
+    """
+    )
+
+    @Test
+    fun testServiceEntryPoint() = codegen(
+        """
+        @AndroidEntryPoint
+        class MyService : android.app.Service() { 
+            val foo: Foo by inject()
+            override fun onBind(intent: android.content.Intent?): android.os.IBinder? = null
+        }
+        
+        @Module
+        fun fooModule() {
+            installIn<ServiceComponent>()
+            transient<Foo>()
+        }
+    """
+    )
 
 }
