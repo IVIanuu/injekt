@@ -56,16 +56,16 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val astMapStringKey = astMap.childClass(InjektFqNames.AstMapStringKey.shortName())
     val astModule = injektAst.childClass(InjektFqNames.AstModule.shortName())
     val astName = injektAst.childClass(InjektFqNames.AstName.shortName())
-    val astObjectGraphFunction =
-        injektAst.childClass(InjektFqNames.AstObjectGraphFunction.shortName())
+    val astObjectGraph =
+        injektAst.childClass(InjektFqNames.AstObjectGraph.shortName())
     val astPath = injektAst.childClass(InjektFqNames.AstPath.shortName())
     val astClassPath = astPath.childClass(InjektFqNames.AstClassPath.shortName())
     val astPropertyPath = astPath.childClass(InjektFqNames.AstPropertyPath.shortName())
     val astTypeParameterPath = astPath.childClass(InjektFqNames.AstTypeParameterPath.shortName())
     val astValueParameterPath = astPath.childClass(InjektFqNames.AstValueParameterPath.shortName())
     val astParents = injektAst.childClass(InjektFqNames.AstParents.shortName())
-    val astProviderDslFunction =
-        injektAst.childClass(InjektFqNames.AstProviderDslFunction.shortName())
+    val astProviderDsl =
+        injektAst.childClass(InjektFqNames.AstProviderDsl.shortName())
     val astScope = injektAst.childClass(InjektFqNames.AstScope.shortName())
     val astScoped = injektAst.childClass(InjektFqNames.AstScoped.shortName())
     val astSet = injektAst.childClass(InjektFqNames.AstSet.shortName())

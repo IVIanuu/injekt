@@ -43,6 +43,7 @@ import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -52,6 +53,7 @@ class ClassOfFunctionTransformer(pluginContext: IrPluginContext) :
 
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
     private val decoys = mutableMapOf<IrFunction, IrFunction>()
+    private val transformingFunctions = mutableSetOf<IrFunction>()
 
     override fun visitFile(declaration: IrFile): IrFile {
         val originalFunctions = declaration.declarations.filterIsInstance<IrFunction>()
@@ -79,7 +81,7 @@ class ClassOfFunctionTransformer(pluginContext: IrPluginContext) :
                                 if (transformed.valueParameters.any {
                                         it.name.asString().startsWith("class\$")
                                     }) {
-                                    decoy.annotations += noArgSingleConstructorCall(symbols.astProviderDslFunction)
+                                    decoy.annotations += noArgSingleConstructorCall(symbols.astTyped)
                                 }
                                 decoy.body = builder.irExprBody(irInjektIntrinsicUnit())
                             }
@@ -110,6 +112,11 @@ class ClassOfFunctionTransformer(pluginContext: IrPluginContext) :
                     }
             } else function
         }
+        transformedFunctions[function]?.let { return it }
+        if (function in transformedFunctions.values) return function
+        decoys[function]?.let { return it }
+        if (function in transformingFunctions) return function
+        transformingFunctions += function
 
         val originalClassOfCalls = mutableListOf<IrCall>()
         val originalTypedModuleCalls = mutableListOf<IrCall>()
@@ -135,6 +142,7 @@ class ClassOfFunctionTransformer(pluginContext: IrPluginContext) :
 
         if (!hasUnresolvedClassOfCalls) {
             transformedFunctions[function] = function
+            transformingFunctions -= function
             rewriteTypedFunctionCalls(
                 function,
                 originalClassOfCalls,
@@ -146,6 +154,7 @@ class ClassOfFunctionTransformer(pluginContext: IrPluginContext) :
 
         val transformedFunction = function.deepCopyWithPreservingQualifiers()
         transformedFunctions[function] = transformedFunction
+        transformingFunctions -= function
 
         val classOfCalls = mutableListOf<IrCall>()
         val typedModuleCalls = mutableListOf<IrCall>()
@@ -202,6 +211,12 @@ class ClassOfFunctionTransformer(pluginContext: IrPluginContext) :
         typedModuleCalls: List<IrCall>,
         valueParametersByUnresolvedType: Map<IrTypeParameterSymbol, IrValueParameter>
     ) {
+        println(
+            "rewrite typed calls for ${function.render()} " +
+                    "class of calls ${classOfCalls.map { it.render() }} " +
+                    "typed module calls ${typedModuleCalls.map { it.render() }} " +
+                    "va by un $valueParametersByUnresolvedType"
+        )
         function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
                 return when (expression) {

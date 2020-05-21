@@ -124,7 +124,7 @@ class ModuleProviderFactory(
                             expression.symbol.owner.name.asString() == "get" -> {
                         dependencyCalls += expression
                     }
-                    expression.symbol.owner.hasAnnotation(InjektFqNames.AstProviderDslFunction) -> {
+                    expression.symbol.owner.hasAnnotation(InjektFqNames.AstProviderDsl) -> {
                         providerDslFunctionCalls += expression
                     }
                     expression.dispatchReceiver?.type == definitionFunction.valueParameters.single().type -> {

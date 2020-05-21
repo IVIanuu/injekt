@@ -83,7 +83,7 @@ class ProviderDslFunctionTransformer(pluginContext: IrPluginContext) :
                                 if (transformed.valueParameters.any {
                                         it.name.asString().startsWith("dsl_provider\$")
                                     }) {
-                                    decoy.annotations += noArgSingleConstructorCall(symbols.astProviderDslFunction)
+                                    decoy.annotations += noArgSingleConstructorCall(symbols.astProviderDsl)
                                 }
                                 decoy.body = builder.irExprBody(irInjektIntrinsicUnit())
                             }
@@ -123,7 +123,7 @@ class ProviderDslFunctionTransformer(pluginContext: IrPluginContext) :
         if (function.origin == IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
             function.origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
         ) {
-            return if (function.hasAnnotation(InjektFqNames.AstProviderDslFunction)) {
+            return if (function.hasAnnotation(InjektFqNames.AstProviderDsl)) {
                 pluginContext.referenceFunctions(function.descriptor.fqNameSafe)
                     .map { it.owner }
                     .single { other ->
@@ -159,7 +159,7 @@ class ProviderDslFunctionTransformer(pluginContext: IrPluginContext) :
                             callee.dispatchReceiverParameter?.type?.classOrNull == symbols.providerDsl -> {
                         originalGetCalls += expression
                     }
-                    callee.symbol.owner.hasAnnotation(InjektFqNames.AstProviderDslFunction) -> {
+                    callee.symbol.owner.hasAnnotation(InjektFqNames.AstProviderDsl) -> {
                         originalProviderDslFunctionCalls += expression
                     }
                 }
@@ -201,7 +201,7 @@ class ProviderDslFunctionTransformer(pluginContext: IrPluginContext) :
                             callee.dispatchReceiverParameter?.type?.classOrNull == symbols.providerDsl -> {
                         getCalls += expression
                     }
-                    callee.symbol.owner.hasAnnotation(InjektFqNames.AstProviderDslFunction) -> {
+                    callee.symbol.owner.hasAnnotation(InjektFqNames.AstProviderDsl) -> {
                         providerDslFunctionCalls += expression
                     }
                 }
@@ -211,7 +211,7 @@ class ProviderDslFunctionTransformer(pluginContext: IrPluginContext) :
 
         transformedFunction.annotations +=
             InjektDeclarationIrBuilder(pluginContext, transformedFunction.symbol)
-                .noArgSingleConstructorCall(symbols.astProviderDslFunction)
+                .noArgSingleConstructorCall(symbols.astProviderDsl)
 
         val providerValueParameters = mutableMapOf<Key, IrValueParameter>()
         fun addProviderValueParameterIfNeeded(providerKey: Key) {
@@ -341,7 +341,7 @@ class ProviderDslFunctionTransformer(pluginContext: IrPluginContext) :
         function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = transformFunctionIfNeeded(expression.symbol.owner)
-                if (!callee.hasAnnotation(InjektFqNames.AstProviderDslFunction)) return super.visitCall(
+                if (!callee.hasAnnotation(InjektFqNames.AstProviderDsl)) return super.visitCall(
                     expression
                 )
 

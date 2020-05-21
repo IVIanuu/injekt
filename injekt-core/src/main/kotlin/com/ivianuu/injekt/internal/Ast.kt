@@ -39,7 +39,7 @@ object InjektAst {
 
     annotation class Inline
 
-    annotation class ObjectGraphFunction
+    annotation class ObjectGraph
 
     annotation class Module
 
@@ -47,7 +47,7 @@ object InjektAst {
 
     annotation class Parents(val values: Array<KClass<*>>)
 
-    annotation class ProviderDslFunction
+    annotation class ProviderDsl
 
     annotation class Scope
 

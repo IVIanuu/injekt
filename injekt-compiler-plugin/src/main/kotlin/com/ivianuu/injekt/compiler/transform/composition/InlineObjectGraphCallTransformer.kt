@@ -96,7 +96,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                                                     it.name.asString().startsWith("og_injector\$")
                                         }
                                 ) {
-                                    decoy.annotations += noArgSingleConstructorCall(symbols.astObjectGraphFunction)
+                                    decoy.annotations += noArgSingleConstructorCall(symbols.astObjectGraph)
                                 }
 
                                 decoy.body = builder.irExprBody(irInjektIntrinsicUnit())
@@ -117,7 +117,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         if (function.origin == IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
             function.origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
         ) {
-            return if (function.hasAnnotation(InjektFqNames.AstObjectGraphFunction)) {
+            return if (function.hasAnnotation(InjektFqNames.AstObjectGraph)) {
                 pluginContext.referenceFunctions(function.descriptor.fqNameSafe)
                     .map { it.owner }
                     .single { other ->
@@ -160,7 +160,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                             hasUnresolvedCalls = true
                         }
                     }
-                    callee.symbol.owner.hasAnnotation(InjektFqNames.AstObjectGraphFunction) -> {
+                    callee.symbol.owner.hasAnnotation(InjektFqNames.AstObjectGraph) -> {
                         originalObjectGraphFunctionCalls += expression
                         if (expression.typeArguments.any { it.isTypeParameter() }) {
                             hasUnresolvedCalls = true
@@ -211,7 +211,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                             unresolvedInjectCalls += expression
                         }
                     }
-                    callee.symbol.owner.hasAnnotation(InjektFqNames.AstObjectGraphFunction) -> {
+                    callee.symbol.owner.hasAnnotation(InjektFqNames.AstObjectGraph) -> {
                         objectGraphFunctionCalls += expression
                     }
                 }
@@ -225,7 +225,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         ) {
             transformedFunction.annotations +=
                 InjektDeclarationIrBuilder(pluginContext, transformedFunction.symbol)
-                    .noArgSingleConstructorCall(symbols.astObjectGraphFunction)
+                    .noArgSingleConstructorCall(symbols.astObjectGraph)
 
             val valueParametersByUnresolvedGetCalls =
                 mutableMapOf<Key, IrValueParameter>()

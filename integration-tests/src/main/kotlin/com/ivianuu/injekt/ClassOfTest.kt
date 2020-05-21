@@ -17,7 +17,6 @@
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
 import org.junit.Test
@@ -107,8 +106,6 @@ class ClassOfTest {
             return create()
         }
     """
-    ) {
-        println(invokeSingleFile())
-    }
+    )
 
 }
