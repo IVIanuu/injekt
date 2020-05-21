@@ -100,9 +100,7 @@ class InjektIrGenerationExtension(
         }
 
         // generate a members injector for each annotated class
-        MembersInjectorTransformer(
-            pluginContext
-        )
+        MembersInjectorTransformer(pluginContext)
             .also { declarationStore.membersInjectorTransformer = it }
             .lower(moduleFragment)
 
@@ -121,6 +119,8 @@ class InjektIrGenerationExtension(
         // transform inline @Module calls to pass data around
         InlineModuleLambdaTransformer(pluginContext)
             .lower(moduleFragment)
+
+        ProviderDslFunctionTransformer(pluginContext).lower(moduleFragment)
 
         // transform @Module functions
         moduleFunctionTransformer.lower(moduleFragment)

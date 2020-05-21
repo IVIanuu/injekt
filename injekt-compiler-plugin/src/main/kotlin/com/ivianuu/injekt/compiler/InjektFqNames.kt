@@ -49,6 +49,7 @@ object InjektFqNames {
     val AstObjectGraphFunction = InjektAst.child("ObjectGraphFunction")
     val AstPath = InjektAst.child("Path")
     val AstParents = InjektAst.child("Parents")
+    val AstProviderDslFunction = InjektAst.child("ProviderDslFunction")
     val AstClassPath = AstPath.child("Class")
     val AstPropertyPath = AstPath.child("Property")
     val AstTypeParameterPath = AstPath.child("TypeParameter")

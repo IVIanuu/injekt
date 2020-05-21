@@ -21,6 +21,8 @@ import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.deepCopyWithPreservingQualifiers
+import com.ivianuu.injekt.compiler.transform.factory.Key
+import com.ivianuu.injekt.compiler.transform.factory.asKey
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.withAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -90,8 +92,8 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                             InjektDeclarationIrBuilder(pluginContext, decoy.symbol).run {
                                 if (transformed.valueParameters
                                         .any {
-                                            it.name.asString().startsWith("provider\$") ||
-                                                    it.name.asString().startsWith("injector\$")
+                                            it.name.asString().startsWith("og_provider\$") ||
+                                                    it.name.asString().startsWith("og_injector\$")
                                         }
                                 ) {
                                     decoy.annotations += noArgSingleConstructorCall(symbols.astObjectGraphFunction)
@@ -121,8 +123,8 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                     .single { other ->
                         other.name == function.name &&
                                 other.valueParameters.any {
-                                    "provider\$" in it.name.asString() ||
-                                            "injector\$" in it.name.asString()
+                                    it.name.asString().startsWith("og_provider\$") ||
+                                            it.name.asString().startsWith("og_injector\$")
                                 }
                     }
             } else function
@@ -226,14 +228,14 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                     .noArgSingleConstructorCall(symbols.astObjectGraphFunction)
 
             val valueParametersByUnresolvedGetCalls =
-                mutableMapOf<IrType, IrValueParameter>()
+                mutableMapOf<Key, IrValueParameter>()
 
-            fun addProviderValueParameterIfNeeded(providerType: IrType) {
-                if (providerType !in valueParametersByUnresolvedGetCalls) {
-                    valueParametersByUnresolvedGetCalls[providerType] =
+            fun addProviderValueParameterIfNeeded(providerKey: Key) {
+                if (providerKey !in valueParametersByUnresolvedGetCalls) {
+                    valueParametersByUnresolvedGetCalls[providerKey] =
                         transformedFunction.addValueParameter(
-                            "provider\$${valueParametersByUnresolvedGetCalls.size}",
-                            providerType
+                            "og_provider\$${valueParametersByUnresolvedGetCalls.size}",
+                            providerKey.type
                         )
                 }
             }
@@ -245,6 +247,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                             it.extensionReceiver!!.type,
                             it.getTypeArgument(0)!!
                         )
+                        .asKey()
                 }
                 .forEach { addProviderValueParameterIfNeeded(it) }
 
@@ -252,7 +255,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                 val callee = transformFunctionIfNeeded(objectGraphFunctionCall.symbol.owner)
                 callee
                     .valueParameters
-                    .filter { it.name.asString().startsWith("provider\$") }
+                    .filter { it.name.asString().startsWith("og_provider\$") }
                     .map {
                         it to it.type.substitute(
                             callee.typeParameters,
@@ -260,19 +263,19 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                         )
                     }
                     .filter { it.second.typeArguments.any { it.isTypeParameter() } }
-                    .map { it.second }
+                    .map { it.second.asKey() }
                     .forEach { addProviderValueParameterIfNeeded(it) }
             }
 
             val valueParametersByUnresolvedInjectCalls =
-                mutableMapOf<IrType, IrValueParameter>()
+                mutableMapOf<Key, IrValueParameter>()
 
-            fun addInjectorValueParameterIfNeeded(injectorType: IrType) {
-                if (injectorType !in valueParametersByUnresolvedInjectCalls) {
-                    valueParametersByUnresolvedInjectCalls[injectorType] =
+            fun addInjectorValueParameterIfNeeded(injectorKey: Key) {
+                if (injectorKey !in valueParametersByUnresolvedInjectCalls) {
+                    valueParametersByUnresolvedInjectCalls[injectorKey] =
                         transformedFunction.addValueParameter(
-                            "injector\$${valueParametersByUnresolvedInjectCalls.size}",
-                            injectorType
+                            "og_injector\$${valueParametersByUnresolvedInjectCalls.size}",
+                            injectorKey.type
                         )
                 }
             }
@@ -285,6 +288,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                             it.getTypeArgument(0)!!,
                             irBuiltIns.unitType
                         )
+                        .asKey()
                 }
                 .forEach { addInjectorValueParameterIfNeeded(it) }
 
@@ -292,7 +296,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                 val callee = transformFunctionIfNeeded(objectGraphFunctionCall.symbol.owner)
                 callee
                     .valueParameters
-                    .filter { it.name.asString().startsWith("injector\$") }
+                    .filter { it.name.asString().startsWith("og_injector\$") }
                     .map {
                         it to it.type.substitute(
                             callee.typeParameters,
@@ -300,7 +304,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                         )
                     }
                     .filter { it.second.typeArguments.any { it.isTypeParameter() } }
-                    .map { it.second }
+                    .map { it.second.asKey() }
                     .forEach { addInjectorValueParameterIfNeeded(it) }
             }
 
@@ -329,9 +333,9 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
     private fun rewriteObjectGraphCalls(
         function: IrFunction,
         unresolvedGetCalls: List<IrCall>,
-        valueParametersByUnresolvedProviderType: Map<IrType, IrValueParameter>,
+        valueParametersByUnresolvedProviderType: Map<Key, IrValueParameter>,
         unresolvedInjectCalls: List<IrCall>,
-        valueParametersByUnresolvedInjectorType: Map<IrType, IrValueParameter>,
+        valueParametersByUnresolvedInjectorType: Map<Key, IrValueParameter>,
         objectGraphFunctionCalls: List<IrCall>
     ) {
         function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
@@ -345,6 +349,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                                         expression.extensionReceiver!!.type,
                                         expression.getTypeArgument(0)!!
                                     )
+                                    .asKey()
                             )
                         DeclarationIrBuilder(pluginContext, expression.symbol).run {
                             irCall(
@@ -365,6 +370,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                                         expression.getTypeArgument(0)!!,
                                         irBuiltIns.unitType
                                     )
+                                    .asKey()
                             )
                         DeclarationIrBuilder(pluginContext, expression.symbol).run {
                             irCall(
@@ -395,8 +401,8 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
     private fun rewriteObjectGraphFunctionCall(
         originalCall: IrCall,
         transformedFunction: IrFunction,
-        valueParametersByUnresolvedProviderType: Map<IrType, IrValueParameter>,
-        valueParametersByUnresolvedInjectorType: Map<IrType, IrValueParameter>
+        valueParametersByUnresolvedProviderType: Map<Key, IrValueParameter>,
+        valueParametersByUnresolvedInjectorType: Map<Key, IrValueParameter>
     ): IrExpression =
         DeclarationIrBuilder(pluginContext, transformedFunction.symbol).irCall(transformedFunction)
             .apply {
@@ -416,7 +422,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
 
                     if (valueArgument == null) {
                         valueArgument = when {
-                        valueParameter.name.asString().startsWith("provider\$") -> {
+                            valueParameter.name.asString().startsWith("og_provider\$") -> {
                             val substitutedType = valueParameter.type
                                 .substituteByName(
                                     transformedFunction.typeParameters
@@ -453,13 +459,13 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                                     DeclarationIrBuilder(pluginContext, symbol)
                                         .irGet(
                                             valueParametersByUnresolvedProviderType.getValue(
-                                                substitutedType
+                                                substitutedType.asKey()
                                             )
                                         )
                                 }
                             }
                         }
-                        valueParameter.name.asString().startsWith("injector\$") -> {
+                            valueParameter.name.asString().startsWith("og_injector\$") -> {
                             val substitutedType = valueParameter.type
                                 .substituteByName(
                                     transformedFunction.typeParameters
@@ -500,7 +506,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                                     DeclarationIrBuilder(pluginContext, symbol)
                                         .irGet(
                                             valueParametersByUnresolvedInjectorType.getValue(
-                                                substitutedType
+                                                substitutedType.asKey()
                                             )
                                         )
                                 }

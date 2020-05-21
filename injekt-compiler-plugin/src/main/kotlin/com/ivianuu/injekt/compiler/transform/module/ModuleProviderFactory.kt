@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.remapTypeParameters
@@ -44,6 +45,7 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrReturn
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -55,7 +57,8 @@ import org.jetbrains.kotlin.name.Name
 class ModuleProviderFactory(
     private val declarationStore: InjektDeclarationStore,
     private val module: ModuleImpl,
-    private val pluginContext: IrPluginContext
+    private val pluginContext: IrPluginContext,
+    private val symbols: InjektSymbols
 ) {
 
     fun providerForClass(
@@ -84,7 +87,7 @@ class ModuleProviderFactory(
                     irGetObject(clazz.symbol)
                 } else {
                     irCall(constructor!!).apply {
-                        (0 until constructor.valueParameters.size)
+                        constructor.valueParameters.indices
                             .map { createFunction.valueParameters[it] }
                             .forEach {
                                 putValueArgument(
@@ -111,16 +114,20 @@ class ModuleProviderFactory(
 
         val assistedParameterCalls = mutableListOf<IrCall>()
         val dependencyCalls = mutableListOf<IrCall>()
+        val providerDslFunctionCalls = mutableListOf<IrCall>()
         val capturedModuleValueParameters = mutableListOf<IrValueDeclaration>()
 
-        definitionFunction.body?.transformChildrenVoid(object :
-            IrElementTransformerVoid() {
+        definitionFunction.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
-                when ((expression.dispatchReceiver as? IrGetValue)?.type) {
-                    definitionFunction.extensionReceiverParameter!!.type -> {
+                when {
+                    expression.dispatchReceiver?.type?.classOrNull == symbols.providerDsl &&
+                            expression.symbol.owner.name.asString() == "get" -> {
                         dependencyCalls += expression
                     }
-                    definitionFunction.valueParameters.single().type -> {
+                    expression.symbol.owner.hasAnnotation(InjektFqNames.AstProviderDslFunction) -> {
+                        providerDslFunctionCalls += expression
+                    }
+                    expression.dispatchReceiver?.type == definitionFunction.valueParameters.single().type -> {
                         assistedParameterCalls += expression
                     }
                 }
@@ -152,18 +159,39 @@ class ModuleProviderFactory(
             )
         }
 
-        val parametersByCall = mutableMapOf<IrCall, InjektDeclarationIrBuilder.FactoryParameter>()
-        (assistedParameterCalls + dependencyCalls).forEachIndexed { i, call ->
+        val parametersByCall =
+            mutableMapOf<IrCall, List<InjektDeclarationIrBuilder.FactoryParameter>>()
+        (assistedParameterCalls + dependencyCalls).forEach { call ->
             val depQualifiers =
                 pluginContext.irTrace[InjektWritableSlices.QUALIFIERS, call] ?: emptyList()
             parameters += InjektDeclarationIrBuilder.FactoryParameter(
-                name = "p$i",
+                name = "p${parameters.size}",
                 type = call.type
                     .withAnnotations(depQualifiers)
                     .remapTypeParameters(definitionFunction, module.clazz),
                 assisted = call in assistedParameterCalls,
                 requirement = false
-            ).also { parametersByCall[call] = it }
+            ).also {
+                parametersByCall[call] = listOf(it)
+            }
+        }
+
+        providerDslFunctionCalls.forEach { call ->
+            parameters += call.symbol.owner
+                .valueParameters
+                .filter { it.name.asString().startsWith("dsl_provider\$") }
+                .map {
+                    InjektDeclarationIrBuilder.FactoryParameter(
+                        name = "p${parameters.size}",
+                        type = call.type
+                            .remapTypeParameters(definitionFunction, module.clazz),
+                        assisted = call in assistedParameterCalls,
+                        requirement = false
+                    )
+                }
+                .also {
+                    parametersByCall[call] = it
+                }
         }
 
         return InjektDeclarationIrBuilder(pluginContext, module.clazz.symbol).factory(
@@ -199,8 +227,27 @@ class ModuleProviderFactory(
                         return when (expression) {
                             in assistedParameterCalls, in dependencyCalls -> {
                                 irGet(createFunction.valueParameters.single {
-                                    it.name.asString() == parametersByCall.getValue(expression).name
+                                    it.name.asString() == parametersByCall.getValue(expression)
+                                        .singleOrNull()?.name
                                 })
+                            }
+                            in providerDslFunctionCalls -> {
+                                expression.apply {
+                                    expression.symbol.owner.valueParameters
+                                        .filter {
+                                            it.name.asString().startsWith("dsl_provider\$")
+                                        }
+                                        .forEachIndexed { dslProvidersIndex, valueParameter ->
+                                            putValueArgument(
+                                                valueParameter.index,
+                                                irGet(createFunction.valueParameters.single {
+                                                    it.name.asString() ==
+                                                            parametersByCall.getValue(expression)[dslProvidersIndex]?.name
+                                                })
+
+                                            )
+                                        }
+                                }
                             }
                             else -> expression
                         }

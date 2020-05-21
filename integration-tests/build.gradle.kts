@@ -43,7 +43,7 @@ dependencies {
     implementation(Deps.AndroidX.Compose.runtimeDesktop)
     implementation(Deps.AndroidX.Compose.compiler)
 
-    implementation(project(":injekt-android"))
+    implementation(project(":injekt-composition"))
 
     implementation(project(":test-util"))
     kapt(project(":test-util"))
