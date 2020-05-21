@@ -43,7 +43,6 @@ import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -211,12 +210,6 @@ class ClassOfFunctionTransformer(pluginContext: IrPluginContext) :
         typedModuleCalls: List<IrCall>,
         valueParametersByUnresolvedType: Map<IrTypeParameterSymbol, IrValueParameter>
     ) {
-        println(
-            "rewrite typed calls for ${function.render()} " +
-                    "class of calls ${classOfCalls.map { it.render() }} " +
-                    "typed module calls ${typedModuleCalls.map { it.render() }} " +
-                    "va by un $valueParametersByUnresolvedType"
-        )
         function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
                 return when (expression) {

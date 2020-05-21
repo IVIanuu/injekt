@@ -68,17 +68,13 @@ interface Node
 
 interface RequirementNode : Node {
     val key: Key
-    val prefix: String
     val initializerAccessor: InitializerAccessor
 }
 
 class InstanceNode(
     override val key: Key,
     override val initializerAccessor: InitializerAccessor
-) : RequirementNode {
-    override val prefix: String
-        get() = "instance"
-}
+) : RequirementNode
 
 class ModuleNode(
     val module: IrClass,
@@ -86,8 +82,6 @@ class ModuleNode(
     override val initializerAccessor: InitializerAccessor,
     val typeParametersMap: Map<IrTypeParameterSymbol, IrType>
 ) : RequirementNode {
-    override val prefix: String
-        get() = "module"
     val descriptor = module.declarations.single {
         it is IrClass && it.nameForIrSerialization.asString() == "Descriptor"
     } as IrClass
@@ -108,19 +102,13 @@ class FactoryImplementationNode(
     val implFactory: ImplFactory,
     override val key: Key,
     override val initializerAccessor: InitializerAccessor
-) : RequirementNode {
-    override val prefix: String
-        get() = "component"
-}
+) : RequirementNode
 
 class DependencyNode(
     val dependency: IrClass,
     override val key: Key,
     override val initializerAccessor: InitializerAccessor
-) : RequirementNode {
-    override val prefix: String
-        get() = "dependency"
-}
+) : RequirementNode
 
 data class BindingRequest(
     val key: Key,

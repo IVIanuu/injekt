@@ -130,7 +130,8 @@ class ChildFactoryBindingResolver(
                 parent = parentFactory,
                 typeParameterMap = emptyMap(),
                 irDeclarationParent = parentFactory.clazz,
-                name = members.nameForGroup("child"),//InjektNameConventions.getChildFactoryImplName(fqName),
+                name = members.membersNameProvider
+                    .allocate(Name.identifier("child")), // todo
                 superType = superType,
                 moduleClass = moduleClass,
                 pluginContext = parentFactory.pluginContext,
@@ -144,7 +145,9 @@ class ChildFactoryBindingResolver(
             parentFactory.pluginContext,
             parentFactory.clazz.symbol
         ).childFactory(
-            members.nameForGroup("childFactory"),
+            members.membersNameProvider.allocate(
+                Name.identifier("childFactory")
+            ), // todo
             childFactoryImpl,
             key.type,
             function

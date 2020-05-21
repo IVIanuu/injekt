@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform.module
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
@@ -159,13 +160,15 @@ class ModuleProviderFactory(
             )
         }
 
+        val parameterNameProvider = NameProvider()
+
         val parametersByCall =
             mutableMapOf<IrCall, List<InjektDeclarationIrBuilder.FactoryParameter>>()
         (assistedParameterCalls + dependencyCalls).forEach { call ->
             val depQualifiers =
                 pluginContext.irTrace[InjektWritableSlices.QUALIFIERS, call] ?: emptyList()
             parameters += InjektDeclarationIrBuilder.FactoryParameter(
-                name = "p${parameters.size}",
+                name = parameterNameProvider.allocateForType(call.type).asString(),
                 type = call.type
                     .withAnnotations(depQualifiers)
                     .remapTypeParameters(definitionFunction, module.clazz),

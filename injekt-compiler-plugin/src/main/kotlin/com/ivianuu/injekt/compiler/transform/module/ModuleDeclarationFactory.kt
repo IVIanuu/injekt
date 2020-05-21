@@ -56,6 +56,7 @@ import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.toKotlinType
@@ -144,7 +145,7 @@ class ModuleDeclarationFactory(
         val property = InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
             .fieldBakedProperty(
                 moduleClass,
-                Name.identifier(nameProvider.allocate("dependency")),
+                nameProvider.allocateForType(dependencyType),
                 dependencyType
             )
 
@@ -256,14 +257,19 @@ class ModuleDeclarationFactory(
         val declarations = mutableListOf<ModuleDeclaration>()
 
         if (call.isModuleLambdaInvoke()) {
-            val includeName = nameProvider.allocate("include")
+            val includeName = nameProvider.allocate("moduleLambda")
             val arguments = call.getArgumentsWithIrIncludingNulls().drop(1)
             val moduleValueParameterProperties = arguments
-                .mapIndexed { index, (valueParameter, _) ->
+                .map { (valueParameter, _) ->
                     InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
                         .fieldBakedProperty(
                             moduleClass,
-                            Name.identifier("${includeName}\$p$index"),
+                            Name.identifier(
+                                nameProvider.allocate(
+                                    "$includeName\$${valueParameter.type.classifierOrFail
+                                        .descriptor.name}"
+                                )
+                            ),
                             valueParameter.type
                                 .remapTypeParameters(module.function, module.clazz)
                         )
@@ -331,7 +337,7 @@ class ModuleDeclarationFactory(
         val property = InjektDeclarationIrBuilder(pluginContext, includedClass.symbol)
             .fieldBakedProperty(
                 moduleClass,
-                Name.identifier(nameProvider.allocate("module")),
+                Name.identifier(nameProvider.allocate(function.name.asString())),
                 includedType
             )
 
@@ -589,7 +595,7 @@ class ModuleDeclarationFactory(
                 statement = null
             } else {
                 val provider = providerFactory.providerForClass(
-                    name = Name.identifier(nameProvider.allocate("Factory")),
+                    name = providerName(bindingType),
                     clazz = bindingType.getClass()!!,
                     visibility = module.clazz.visibility
                 )
@@ -604,7 +610,12 @@ class ModuleDeclarationFactory(
                 val property = InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
                     .fieldBakedProperty(
                         moduleClass,
-                        Name.identifier(nameProvider.allocate("instance")),
+                        Name.identifier(
+                            nameProvider.allocate(
+                                bindingType.classifierOrFail.descriptor.name
+                                    .asString().decapitalize()
+                            )
+                        ),
                         bindingType.remapTypeParameters(module.function, module.clazz)
                     )
 
@@ -621,7 +632,7 @@ class ModuleDeclarationFactory(
                 when (singleArgument) {
                     is IrFunctionExpression -> {
                         val provider = providerFactory.providerForDefinition(
-                            name = Name.identifier(nameProvider.allocate("Factory")),
+                            name = providerName(bindingType),
                             definition = singleArgument,
                             visibility = module.clazz.visibility,
                             moduleFieldsByParameter = module.fieldsByParameters
@@ -655,5 +666,8 @@ class ModuleDeclarationFactory(
             statement = statement
         )
     }
+
+    private fun providerName(type: IrType) =
+        Name.identifier(nameProvider.allocate("${type.classifierOrFail.descriptor.name}_Factory"))
 
 }

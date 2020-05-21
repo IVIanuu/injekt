@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform.factory
 
+import com.ivianuu.injekt.compiler.NameProvider
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -42,18 +43,18 @@ import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
+import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.name.Name
 
 interface FactoryMembers {
 
-    fun nameForGroup(prefix: String): Name
+    val membersNameProvider: NameProvider
 
     fun addClass(clazz: IrClass)
 
     fun cachedValue(
         key: Key,
-        prefix: String,
         initializer: IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression
     ): FactoryExpression
 
@@ -69,6 +70,8 @@ class ClassFactoryMembers(
     private val implFactory: ImplFactory
 ) : FactoryMembers {
 
+    override val membersNameProvider = NameProvider()
+
     data class FieldWithInitializer(
         val field: IrField,
         val initializer: IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression
@@ -78,17 +81,9 @@ class ClassFactoryMembers(
         mutableMapOf<Key, FieldWithInitializer>()
 
     private val getFunctions = mutableListOf<IrFunction>()
-
-    private val groupNames = mutableMapOf<String, Int>()
+    private val getFunctionsNameProvider = NameProvider()
 
     private val functionsByKey = mutableMapOf<Key, IrFunction>()
-
-    override fun nameForGroup(prefix: String): Name {
-        val index = groupNames.getOrPut(prefix) { 0 }
-        val name = Name.identifier("${prefix}$index")
-        groupNames[prefix] = index + 1
-        return name
-    }
 
     override fun addClass(clazz: IrClass) {
         this.clazz.addChild(clazz)
@@ -96,13 +91,12 @@ class ClassFactoryMembers(
 
     override fun cachedValue(
         key: Key,
-        prefix: String,
         initializer: IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression
     ): FactoryExpression {
         val fieldWithInitializer = fields.getOrPut(key) {
             FieldWithInitializer(
                 clazz.addField(
-                    nameForGroup(prefix),
+                    membersNameProvider.allocateForType(key.type),
                     key.type
                 ), initializer
             )
@@ -143,8 +137,11 @@ class ClassFactoryMembers(
                 }
         } else {
             clazz.addFunction {
-                val currentGetFunctionIndex = getFunctions.size
-                this.name = Name.identifier("get$currentGetFunctionIndex")
+                this.name = Name.identifier(
+                    getFunctionsNameProvider.allocate(
+                        "get${key.type.classifierOrFail.descriptor.name.asString()}"
+                    )
+                )
                 returnType = key.type
                 visibility = Visibilities.PRIVATE
             }.apply {
@@ -204,15 +201,9 @@ class FunctionFactoryMembers(
     lateinit var blockBuilder: IrBlockBuilder
 
     val getFunctions = mutableListOf<IrFunction>()
+    private val getFunctionsNameProvider = NameProvider()
 
-    private val groupNames = mutableMapOf<String, Int>()
-
-    override fun nameForGroup(prefix: String): Name {
-        val index = groupNames.getOrPut(prefix) { 0 }
-        val name = Name.identifier("${prefix}$index")
-        groupNames[prefix] = index + 1
-        return name
-    }
+    override val membersNameProvider = NameProvider()
 
     override fun addClass(clazz: IrClass) {
         clazz.parent = declarationContainer
@@ -221,11 +212,11 @@ class FunctionFactoryMembers(
 
     override fun cachedValue(
         key: Key,
-        prefix: String,
         initializer: IrBuilderWithScope.(FactoryExpressionContext) -> IrExpression
     ): FactoryExpression {
         val tmp = blockBuilder.irTemporaryVar(
-            initializer(blockBuilder, EmptyFactoryExpressionContext)
+            value = initializer(blockBuilder, EmptyFactoryExpressionContext),
+            nameHint = membersNameProvider.allocateForType(key.type).asString()
         )
         return { irGet(tmp) }
     }
@@ -235,8 +226,11 @@ class FunctionFactoryMembers(
         body: IrBuilderWithScope.(IrFunction) -> IrExpression
     ): IrFunction {
         return buildFun {
-            val currentGetFunctionIndex = getFunctions.size
-            this.name = Name.identifier("get$currentGetFunctionIndex")
+            this.name = Name.identifier(
+                getFunctionsNameProvider.allocate(
+                    "get${key.type.classifierOrFail.descriptor.name.asString()}"
+                )
+            )
             returnType = key.type
             visibility = Visibilities.LOCAL
         }.apply {

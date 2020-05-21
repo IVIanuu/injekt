@@ -61,10 +61,7 @@ class FactoryExpressions(
 
     fun getRequirementExpression(node: RequirementNode): FactoryExpression {
         requirementExpressions[node]?.let { return it }
-        val expression = members.cachedValue(
-            node.key,
-            node.prefix
-        ) {
+        val expression = members.cachedValue(node.key) {
             node.initializerAccessor(
                 this,
                 if (factory is ImplFactory) {
@@ -849,7 +846,6 @@ class FactoryExpressions(
                 .typeWith(key.type)
                 .withNoArgQualifiers(pluginContext, listOf(InjektFqNames.Provider))
                 .asKey(),
-            "provider",
             providerInitializer
         )
     }
