@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.composition
 
-import androidx.compose.plugins.kotlin.ComposeComponentRegistrar
 import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
@@ -534,51 +532,4 @@ class ObjectGraphFunctionsTest {
         }
     """
     )
-
-    private val composeSource = """
-            val ComponentAmbient = androidx.compose.staticAmbientOf<TestCompositionComponent>()
-            
-            @Module
-            fun module() {
-                installIn<TestCompositionComponent>()
-                transient<Foo>()
-            }
-            
-            @androidx.compose.Composable
-            fun <T> inject(): T { 
-                val component = ComponentAmbient.current
-                return androidx.compose.remember(component) { component.get() }
-            }
-            
-            @androidx.compose.Composable
-            fun caller() {
-                generateCompositions()
-                val foo = inject<Foo>()
-            }
-        """
-
-    @Test
-    fun testGetInComposableWithCompilingAfterCompose() =
-        codegen(
-            composeSource,
-            config = {
-                val other = compilerPlugins.toList()
-                compilerPlugins = listOf(ComposeComponentRegistrar()) + other
-            }
-        ) {
-            assertOk()
-        }
-
-    @Test
-    fun testGetInComposableWithCompilingBeforeCompose() =
-        codegen(
-            composeSource,
-            config = {
-                val other = compilerPlugins.toList()
-                compilerPlugins = other + listOf(ComposeComponentRegistrar())
-            }
-        ) {
-            assertOk()
-        }
-
 }

@@ -18,7 +18,6 @@ package com.ivianuu.injekt.test
 
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.compiler.InjektComponentRegistrar
-import com.ivianuu.injekt.composition.CompositionComponent
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
 import io.github.classgraph.ClassGraph
@@ -30,6 +29,20 @@ import kotlin.reflect.KClass
 
 var fileIndex = 0
 
+private val isAndroid = try {
+    Class.forName("com.ivianuu.injekt.android.AndroidEntryPoint")
+    true
+} catch (e: Exception) {
+    false
+}
+
+private val isComposition = try {
+    Class.forName("com.ivianuu.injekt.composition.CompositionComponent")
+    true
+} catch (e: Exception) {
+    false
+}
+
 fun source(
     @Language("kotlin") source: String,
     name: String = "File${fileIndex++}.kt",
@@ -39,8 +52,8 @@ fun source(
     contents = buildString {
         if (injektImports) {
             appendLine("import com.ivianuu.injekt.*")
-            //appendLine("import com.ivianuu.injekt.android.*")
-            appendLine("import com.ivianuu.injekt.composition.*")
+            if (isAndroid) appendLine("import com.ivianuu.injekt.android.*")
+            if (isComposition) appendLine("import com.ivianuu.injekt.composition.*")
             appendLine("import com.ivianuu.injekt.internal.*")
             appendLine("import com.ivianuu.injekt.test.*")
             appendLine("import kotlin.reflect.*")
@@ -164,9 +177,6 @@ class Bar(foo: Foo)
 class Baz(foo: Foo, bar: Bar)
 
 interface TestComponent
-
-@CompositionComponent
-interface TestCompositionComponent
 
 @Scope
 annotation class TestScope

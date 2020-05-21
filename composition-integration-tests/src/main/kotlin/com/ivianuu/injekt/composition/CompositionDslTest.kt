@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.frontend
+package com.ivianuu.injekt.composition
 
 import com.ivianuu.injekt.test.assertCompileError
 import com.ivianuu.injekt.test.codegen

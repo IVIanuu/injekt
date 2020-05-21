@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.composition
 
+import com.ivianuu.injekt.test.assertCompileError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
@@ -192,5 +193,150 @@ class BindingAdapterTest {
             )
         )
     )
+
+    @Test
+    fun testBindingAdapterWithInvalidComponent() =
+        codegen(
+            """
+        @BindingAdapter(TestComponent::class)
+        annotation class MyBindingAdapter
+        
+        @BindingAdapterFunction(MyBindingAdapter::class)
+        @Module
+        fun <T> func() {
+        }
+    """
+        ) {
+            assertCompileError("@CompositionComponent")
+        }
+
+    /*@Test
+    fun testCorrectBindingAdapter() = codegen(
+        """
+        @BindingAdapter(TestComponent::class)
+        annotation class MyBindingAdapter {
+            companion object {
+                @Module
+                inline fun <T> bind() {
+                }
+            }
+        }
+    """
+    )
+
+    @Test
+    fun testBindingAdapterWithoutCompanion() = codegen(
+        """
+        @BindingAdapter(TestComponent::class)
+        annotation class MyBindingAdapter
+    """
+    ) {
+        assertCompileError("companion")
+    }
+
+    @Test
+    fun testBindingAdapterWithoutModule() = codegen(
+        """
+        @BindingAdapter(TestComponent::class)
+        annotation class MyBindingAdapter {
+            companion object
+        }
+    """
+    ) {
+        assertCompileError("module")
+    }
+
+    @Test
+    fun testBindingAdapterWithoutTypeParameters() = codegen(
+        """
+        @BindingAdapter(TestComponent::class)
+        annotation class MyBindingAdapter {
+            companion object {
+                @Module
+                fun bind() {
+                }
+            }
+        }
+    """
+    ) {
+        assertCompileError("type parameter")
+    }
+
+    @Test
+    fun testBindingAdapterWithMultipleTypeParameters() = codegen(
+        """
+        @BindingAdapter(TestComponent::class)
+        annotation class MyBindingAdapter {
+            companion object {
+                @Module
+                fun <A, B> bind() {
+                }
+            }
+        }
+    """
+    ) {
+        assertCompileError("type parameter")
+    }
+
+    @Test
+    fun testBindingAdapterWithTransient() = codegen(
+        """
+        @BindingAdapter(TestComponent::class)
+        annotation class MyBindingAdapter {
+            companion object {
+                @Module
+                fun <T> bind() {
+                }
+            }
+        }
+        
+        @MyBindingAdapter
+        @Transient
+        class MyClass
+    """
+    ) {
+        assertCompileError("transient")
+    }
+
+    @Test
+    fun testBindingAdapterWithScoped() = codegen(
+        """
+        @BindingAdapter(TestComponent::class)
+        annotation class MyBindingAdapter {
+            companion object {
+                @Module
+                fun <T> bind() {
+                }
+            }
+        }
+        
+        @TestScope
+        @MyBindingAdapter
+        class MyClass
+    """
+    ) {
+        assertCompileError("scope")
+    }
+
+    @Test
+    fun testBindingAdapterNotInBounds() = codegen(
+        """
+        @BindingAdapter(TestComponent::class)
+        annotation class MyBindingAdapter {
+            companion object {
+                @Module
+                fun <T : UpperBound> bind() {
+                }
+            }
+        }
+        
+        interface UpperBound
+        
+        @MyBindingAdapter
+        class MyClass
+    """
+    ) {
+        assertCompileError("bound")
+    }*/
 
 }

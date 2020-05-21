@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.android
 
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4

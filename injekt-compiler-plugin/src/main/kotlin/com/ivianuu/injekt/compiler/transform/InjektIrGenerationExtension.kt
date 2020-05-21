@@ -122,6 +122,8 @@ class InjektIrGenerationExtension(
 
         ProviderDslFunctionTransformer(pluginContext).lower(moduleFragment)
 
+        ClassOfFunctionTransformer(pluginContext).lower(moduleFragment)
+
         // transform @Module functions
         moduleFunctionTransformer.lower(moduleFragment)
 

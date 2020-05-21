@@ -33,7 +33,6 @@ class InjektStorageContainerContributor(
         container.useInstance(AndroidEntryPointChecker())
         container.useInstance(AnnotatedBindingChecker())
         container.useInstance(BindingAdapterChecker())
-        container.useInstance(ClassOfChecker(typeAnnotationChecker))
         container.useInstance(DslCallChecker(typeAnnotationChecker))
         container.useInstance(FactoryChecker(typeAnnotationChecker))
         container.useInstance(MembersInjectorChecker())

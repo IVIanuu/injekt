@@ -44,16 +44,6 @@ class FactoryDslTest {
         }
 
     @Test
-    fun testCreateInACompositionFactory() =
-        codegen(
-            """
-        @CompositionFactory fun factory() = create<TestCompositionComponent>()
-    """
-        ) {
-            assertOk()
-        }
-
-    @Test
     fun testCreateCannotBeCalledOutsideOfAFactory() =
         codegen(
             """
@@ -224,34 +214,10 @@ class FactoryDslTest {
     }
 
     @Test
-    fun testCannotInvokeCompositionFactories() = codegen(
-        """
-            @CompositionFactory
-            fun factory(): TestComponent = create()
-            
-            fun invoke() = factory()
-    """
-    ) {
-        assertCompileError("cannot invoke")
-    }
-
-    @Test
     fun testCanReferenceChildFactories() = codegen(
         """
             @ChildFactory
             fun factory(): TestComponent = create()
-            
-            fun invoke() = ::factory
-    """
-    ) {
-        assertOk()
-    }
-
-    @Test
-    fun testCanReferenceCompositonFactories() = codegen(
-        """
-            @CompositionFactory
-            fun factory(): TestCompositionComponent = create()
             
             fun invoke() = ::factory
     """
@@ -292,17 +258,6 @@ class FactoryDslTest {
     }
 
     @Test
-    fun testCompositionFactoryCannotBeSuspend() =
-        codegen(
-            """
-        @CompositionFactory 
-        suspend fun factory(): TestComponent = create()
-        """
-        ) {
-            assertCompileError("suspend")
-        }
-
-    @Test
     fun testFactoryCanBeInline() = codegen(
         """
         @Factory
@@ -314,16 +269,6 @@ class FactoryDslTest {
     fun testChildFactoryCannotBeInline() = codegen(
         """
         @ChildFactory
-        inline fun factory(): TestComponent = create()
-    """
-    ) {
-        assertCompileError("inline")
-    }
-
-    @Test
-    fun testCompositionFactoryCannotBeInline() = codegen(
-        """
-        @CompositionFactory
         inline fun factory(): TestComponent = create()
     """
     ) {
@@ -343,17 +288,6 @@ class FactoryDslTest {
         codegen(
             """
         @ChildFactory
-        inline fun <T> factory(): TestComponent = create()
-    """
-        ) {
-            assertCompileError("type parameter")
-        }
-
-    @Test
-    fun testCompositionFactoryCannotHaveTypeParameters() =
-        codegen(
-            """
-        @CompositionFactory
         inline fun <T> factory(): TestComponent = create()
     """
         ) {

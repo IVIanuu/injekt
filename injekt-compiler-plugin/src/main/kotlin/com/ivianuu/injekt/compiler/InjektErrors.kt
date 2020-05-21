@@ -173,21 +173,6 @@ interface InjektErrors {
         )
 
         @JvmField
-        val CLASS_OF_OUTSIDE_OF_MODULE = error(
-            "classOf() can only be called from inside @Factory, @ChildFactory, @CompositionFactory or @Module functions"
-        )
-
-        @JvmField
-        val CLASS_OF_WITH_CONCRETE_TYPE = error(
-            "classOf() should be only called with generic types use class literals instead"
-        )
-
-        @JvmField
-        val CLASS_OF_CALLING_MODULE_MUST_BE_INLINE = error(
-            "classOf() calling functions be marked with inline"
-        )
-
-        @JvmField
         val MODULE_CANNOT_USE_REIFIED = error(
             "@Module functions cannot use reified"
         )
