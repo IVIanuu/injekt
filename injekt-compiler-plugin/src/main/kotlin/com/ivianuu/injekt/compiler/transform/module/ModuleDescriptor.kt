@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
+import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -78,7 +79,7 @@ class ModuleDescriptor(
 
     private fun addScopeFunction(declaration: ScopeDeclaration) {
         clazz.addFunction(
-            name = nameProvider.allocate("scope"),
+            name = nameProvider.allocateForType(declaration.scopeType).asString(),
             returnType = declaration.scopeType.remapTypeParameters(module.function, clazz),
             modality = Modality.ABSTRACT
         ).apply {
@@ -90,7 +91,7 @@ class ModuleDescriptor(
 
     private fun addDependencyFunction(declaration: DependencyDeclaration) {
         clazz.addFunction(
-            name = nameProvider.allocate("dependency"),
+            name = nameProvider.allocateForType(declaration.dependencyType).asString(),
             returnType = declaration.dependencyType
                 .remapTypeParameters(module.clazz, clazz),
             modality = Modality.ABSTRACT
@@ -105,7 +106,7 @@ class ModuleDescriptor(
 
     private fun addChildFactoryFunction(declaration: ChildFactoryDeclaration) {
         clazz.addFunction(
-            name = nameProvider.allocate("childFactory"),
+            name = nameProvider.allocate(declaration.factoryRef.symbol.owner.name.asString()),
             returnType = declaration.factoryRef.symbol.owner.returnType
                 .remapTypeParameters(module.clazz, clazz),
             modality = Modality.ABSTRACT
@@ -137,7 +138,10 @@ class ModuleDescriptor(
 
     private fun addAliasFunction(declaration: AliasDeclaration) {
         clazz.addFunction(
-            name = nameProvider.allocate("alias"),
+            name = nameProvider.allocate(
+                declaration.originalType.classifierOrFail.descriptor.name.asString() +
+                        "as${declaration.aliasType.classifierOrFail.descriptor.name.asString()}"
+            ),
             returnType = declaration.aliasType.remapTypeParameters(module.function, clazz),
             modality = Modality.ABSTRACT
         ).apply {
@@ -153,7 +157,7 @@ class ModuleDescriptor(
 
     private fun addBindingFunction(declaration: BindingDeclaration) {
         clazz.addFunction(
-            name = nameProvider.allocate("binding"),
+            name = nameProvider.allocateForType(declaration.bindingType).asString(),
             returnType = declaration.bindingType
                 .remapTypeParameters(module.function, clazz),
             modality = Modality.ABSTRACT
