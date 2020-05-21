@@ -42,15 +42,13 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.makeNullable
-import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isSubclassOf
 import org.jetbrains.kotlin.ir.util.overrides
 import org.jetbrains.kotlin.ir.util.render
-import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -71,6 +69,8 @@ class AndroidEntryPointTransformer(pluginContext: IrPluginContext) :
         when {
             declaration.isSubclassOf(androidSymbols.application.owner) ->
                 transformApplication(declaration)
+            declaration.isSubclassOf(androidSymbols.broadcastReceiver.owner) ->
+                transformReceiver(declaration)
             declaration.isSubclassOf(androidSymbols.componentActivity.owner) ->
                 transformActivity(declaration)
             declaration.isSubclassOf(androidSymbols.fragment.owner) ->
@@ -115,7 +115,8 @@ class AndroidEntryPointTransformer(pluginContext: IrPluginContext) :
                     extensionReceiver = thisExpr()
                 }
             },
-            generateComponents = true
+            generateComponents = true,
+            initAsFirstStatement = false
         )
     }
 
@@ -159,7 +160,8 @@ class AndroidEntryPointTransformer(pluginContext: IrPluginContext) :
                     extensionReceiver = thisExpr()
                 }
             },
-            generateComponents = false
+            generateComponents = false,
+            initAsFirstStatement = false
         )
     }
 
@@ -203,85 +205,74 @@ class AndroidEntryPointTransformer(pluginContext: IrPluginContext) :
                     extensionReceiver = thisExpr()
                 }
             },
-            generateComponents = false
+            generateComponents = false,
+            initAsFirstStatement = false
         )
     }
 
-    private fun transformAndroidClass(
-        clazz: IrClass,
-        functionPredicate: (IrSimpleFunction) -> Boolean,
-        createFunction: (IrClass, IrSimpleFunction) -> IrSimpleFunction,
-        componentAccessor: IrBuilderWithScope.(IrSimpleFunction, () -> IrExpression) -> IrExpression,
-        generateComponents: Boolean
-    ) {
-        val superClass: IrClass = clazz.superTypes
-            .single { it.classOrNull != null }
-            .classOrNull!!
-            .owner
+    private fun transformReceiver(receiver: IrClass) {
+        val createReceiverComponent = pluginContext.referenceFunctions(
+            FqName("com.ivianuu.injekt.android.newReceiverComponent")
+        ).single { it.owner.extensionReceiverParameter != null }
 
-        val superFunction = superClass
-            .functions
-            .single(functionPredicate)
+        val componentField = receiver.addField(
+            "\$component",
+            createReceiverComponent.owner.returnType
+        )
 
-        var thisOnCreate: IrSimpleFunction? = clazz
-            .functions
-            .singleOrNull(functionPredicate)
-
-        if (thisOnCreate?.origin == IrDeclarationOrigin.FAKE_OVERRIDE) {
-            clazz.declarations -= thisOnCreate
-            thisOnCreate = null
-        }
-
-        if (thisOnCreate == null) {
-            thisOnCreate = createFunction(superClass, superFunction)
-        }
-
-        thisOnCreate.transformChildrenVoid(object : IrElementTransformerVoid() {
-            private var initialized = false
-            override fun visitCall(expression: IrCall): IrExpression {
-                if (initialized || expression.superQualifierSymbol != superClass.symbol ||
-                    expression.symbol != superFunction.symbol
-                ) return super.visitCall(expression)
-                initialized = true
-                return DeclarationIrBuilder(pluginContext, thisOnCreate.symbol).run {
-                    irBlock {
-                        if (generateComponents) {
-                            +IrCallImpl(
-                                expression.endOffset + 1,
-                                expression.endOffset + 2,
-                                irBuiltIns.unitType,
-                                pluginContext.referenceFunctions(
-                                    FqName("com.ivianuu.injekt.composition.generateCompositions")
-                                ).single()
-                            )
-                        }
-                        +IrCallImpl(
-                            expression.endOffset + 3,
-                            expression.endOffset + 4,
-                            irBuiltIns.unitType,
-                            pluginContext.referenceFunctions(
-                                FqName("com.ivianuu.injekt.composition.inject")
-                            ).single()
-                        ).apply {
-                            putTypeArgument(
-                                0,
-                                clazz.defaultType
-                            )
-
-                            extensionReceiver = componentAccessor(this@run, thisOnCreate) {
-                                expression.dispatchReceiver!!.deepCopyWithSymbols()
+        transformAndroidClass(
+            clazz = receiver,
+            functionPredicate = {
+                it.name.asString() == "onReceive" &&
+                        it.valueParameters.size == 2
+            },
+            createFunction = { superClass, superOnReceive ->
+                receiver.addFunction {
+                    name = Name.identifier("onReceive")
+                    returnType = irBuiltIns.unitType
+                }.apply {
+                    overrides(superOnReceive)
+                    dispatchReceiverParameter = receiver.thisReceiver!!.copyTo(this)
+                    val contextValueParameter = addValueParameter(
+                        "context",
+                        androidSymbols.context.defaultType
+                    )
+                    val intentValueParameter = addValueParameter(
+                        "intent",
+                        androidSymbols.intent.defaultType
+                    )
+                    body = DeclarationIrBuilder(pluginContext, symbol).run {
+                        irBlockBody {
+                            +irCall(superOnReceive, null, superClass.symbol).apply {
+                                dispatchReceiver = irGet(dispatchReceiverParameter!!)
+                                putValueArgument(0, irGet(contextValueParameter))
+                                putValueArgument(1, irGet(intentValueParameter))
                             }
-
-                            putValueArgument(
-                                0,
-                                expression.dispatchReceiver!!.deepCopyWithSymbols()
-                            )
                         }
-                        +expression
                     }
                 }
-            }
-        })
+            },
+            componentAccessor = { onReceive, thisExpr ->
+                irBlock {
+                    val tmpComponent = irTemporary(
+                        irCall(createReceiverComponent).apply {
+                            extensionReceiver = thisExpr()
+                            putValueArgument(0, irGet(onReceive.valueParameters.first()))
+                        }
+                    )
+
+                    +irSetField(
+                        thisExpr(),
+                        componentField,
+                        irGet(tmpComponent)
+                    )
+
+                    +irGet(tmpComponent)
+                }
+            },
+            generateComponents = false,
+            initAsFirstStatement = true
+        )
     }
 
     private fun transformService(service: IrClass) {
@@ -333,8 +324,93 @@ class AndroidEntryPointTransformer(pluginContext: IrPluginContext) :
                     +irGet(tmpComponent)
                 }
             },
-            generateComponents = false
+            generateComponents = false,
+            initAsFirstStatement = false
         )
+    }
+
+    private fun transformAndroidClass(
+        clazz: IrClass,
+        functionPredicate: (IrSimpleFunction) -> Boolean,
+        createFunction: (IrClass, IrSimpleFunction) -> IrSimpleFunction,
+        componentAccessor: IrBuilderWithScope.(IrSimpleFunction, () -> IrExpression) -> IrExpression,
+        generateComponents: Boolean,
+        initAsFirstStatement: Boolean
+    ) {
+        val superClass: IrClass = clazz.superTypes
+            .single { it.classOrNull != null }
+            .classOrNull!!
+            .owner
+
+        val superFunction = superClass
+            .functions
+            .single(functionPredicate)
+
+        var thisFunction: IrSimpleFunction? = clazz
+            .functions
+            .singleOrNull(functionPredicate)
+
+        if (thisFunction?.origin == IrDeclarationOrigin.FAKE_OVERRIDE) {
+            clazz.declarations -= thisFunction
+            thisFunction = null
+        }
+
+        if (thisFunction == null) {
+            thisFunction = createFunction(superClass, superFunction)
+        }
+
+        val oldBody = thisFunction.body
+
+        thisFunction.body = DeclarationIrBuilder(pluginContext, thisFunction.symbol).run {
+            irBlockBody {
+                var initialized = false
+                fun initialize(endOffset: Int) {
+                    initialized = true
+                    if (generateComponents) {
+                        +IrCallImpl(
+                            endOffset + 1,
+                            endOffset + 2,
+                            irBuiltIns.unitType,
+                            pluginContext.referenceFunctions(
+                                FqName("com.ivianuu.injekt.composition.generateCompositions")
+                            ).single()
+                        )
+                    }
+                    +IrCallImpl(
+                        endOffset + 3,
+                        endOffset + 4,
+                        irBuiltIns.unitType,
+                        pluginContext.referenceFunctions(
+                            FqName("com.ivianuu.injekt.composition.inject")
+                        ).single()
+                    ).apply {
+                        putTypeArgument(
+                            0,
+                            clazz.defaultType
+                        )
+
+                        extensionReceiver = componentAccessor(this@run, thisFunction) {
+                            irGet(thisFunction.dispatchReceiverParameter!!)
+                        }
+
+                        putValueArgument(0, irGet(thisFunction.dispatchReceiverParameter!!))
+                    }
+                }
+
+                oldBody?.statements?.forEach { stmt ->
+                    if (initAsFirstStatement && !initialized) {
+                        initialize(stmt.startOffset - 1)
+                    }
+                    if (!initialized && stmt is IrCall &&
+                        stmt.superQualifierSymbol == superClass.symbol &&
+                        stmt.symbol == superFunction.symbol
+                    ) {
+                        initialize(stmt.endOffset + 1)
+                    }
+                    +stmt
+                }
+            }
+        }
     }
 
 }

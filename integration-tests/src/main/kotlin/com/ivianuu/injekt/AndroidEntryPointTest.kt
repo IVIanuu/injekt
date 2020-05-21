@@ -76,6 +76,25 @@ class AndroidEntryPointTest {
     )
 
     @Test
+    fun testReceiverEntryPoint() = codegen(
+        """
+        @AndroidEntryPoint
+        class MyReceiver : android.content.BroadcastReceiver() { 
+            val foo: Foo by inject()
+            override fun onReceive(context: android.content.Context, intent: android.content.Intent) {
+                
+            }
+        }
+        
+        @Module
+        fun fooModule() {
+            installIn<ReceiverComponent>()
+            transient<Foo>()
+        }
+    """
+    )
+
+    @Test
     fun testServiceEntryPoint() = codegen(
         """
         @AndroidEntryPoint
