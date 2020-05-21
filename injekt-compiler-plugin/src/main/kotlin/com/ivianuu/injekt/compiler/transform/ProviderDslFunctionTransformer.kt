@@ -37,10 +37,13 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -100,8 +103,14 @@ class ProviderDslFunctionTransformer(pluginContext: IrPluginContext) :
 
     override fun visitFunction(declaration: IrFunction): IrStatement {
         callStack.lastOrNull()?.let { call ->
-            if (call.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.transient" ||
-                call.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.scoped"
+            val valueParameter = call.getArgumentsWithIr()
+                .singleOrNull {
+                    it.second is IrFunctionExpression &&
+                            (it.second as IrFunctionExpression).function == declaration
+                }
+                ?.first
+            if (valueParameter != null && valueParameter.type.isFunction() &&
+                valueParameter.type.typeArguments.first().classOrNull == symbols.providerDsl
             ) {
                 rewriteProviderDefinitionCalls(declaration)
                 return declaration
