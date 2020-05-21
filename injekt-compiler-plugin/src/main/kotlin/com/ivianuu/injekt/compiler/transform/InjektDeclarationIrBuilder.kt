@@ -546,7 +546,6 @@ class InjektDeclarationIrBuilder(
         return owner.addFunction {
             name = Name.identifier("create")
             visibility = Visibilities.PUBLIC
-            isInline = true
         }.apply {
             metadata = MetadataSource.Function(descriptor)
             dispatchReceiverParameter = owner.thisReceiver?.copyTo(this, type = owner.defaultType)
