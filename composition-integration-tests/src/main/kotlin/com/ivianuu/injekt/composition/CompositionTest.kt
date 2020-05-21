@@ -148,7 +148,7 @@ class CompositionTest {
     }
 
     @Test
-    fun testParentMultiChildComposition() = multiCodegen(
+    fun testParentChildMultiComposition() = multiCodegen(
         listOf(
             source(
                 """
