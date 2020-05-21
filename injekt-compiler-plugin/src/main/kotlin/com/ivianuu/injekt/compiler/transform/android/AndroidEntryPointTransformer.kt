@@ -364,12 +364,12 @@ class AndroidEntryPointTransformer(pluginContext: IrPluginContext) :
         thisFunction.body = DeclarationIrBuilder(pluginContext, thisFunction.symbol).run {
             irBlockBody {
                 var initialized = false
-                fun initialize(endOffset: Int) {
+                fun initialize(startOffset: Int) {
                     initialized = true
                     if (generateComponents) {
                         +IrCallImpl(
-                            endOffset + 1,
-                            endOffset + 2,
+                            startOffset + 1,
+                            startOffset + 2,
                             irBuiltIns.unitType,
                             pluginContext.referenceFunctions(
                                 FqName("com.ivianuu.injekt.composition.generateCompositions")
@@ -377,8 +377,8 @@ class AndroidEntryPointTransformer(pluginContext: IrPluginContext) :
                         )
                     }
                     +IrCallImpl(
-                        endOffset + 3,
-                        endOffset + 4,
+                        startOffset + 3,
+                        startOffset + 4,
                         irBuiltIns.unitType,
                         pluginContext.referenceFunctions(
                             FqName("com.ivianuu.injekt.composition.inject")
@@ -399,13 +399,13 @@ class AndroidEntryPointTransformer(pluginContext: IrPluginContext) :
 
                 oldBody?.statements?.forEach { stmt ->
                     if (initAsFirstStatement && !initialized) {
-                        initialize(stmt.startOffset - 1)
+                        initialize(clazz.startOffset)
                     }
                     if (!initialized && stmt is IrCall &&
                         stmt.superQualifierSymbol == superClass.symbol &&
                         stmt.symbol == superFunction.symbol
                     ) {
-                        initialize(stmt.endOffset + 1)
+                        initialize(clazz.startOffset)
                     }
                     +stmt
                 }

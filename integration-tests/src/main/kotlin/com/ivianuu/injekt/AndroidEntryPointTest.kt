@@ -111,4 +111,25 @@ class AndroidEntryPointTest {
     """
     )
 
+    @Test
+    fun testMultipleEntryPoints() = codegen(
+        """
+        @AndroidEntryPoint
+        class MyApp : android.app.Application() {
+            private val foo: Foo by inject()
+        }
+        
+        @AndroidEntryPoint
+        class MyActivity : androidx.activity.ComponentActivity() {
+            private val foo: Foo by inject()
+        } 
+        
+        @Module
+        fun fooModule() {
+            installIn<ApplicationComponent>()
+            transient<Foo>()
+        }
+    """
+    )
+
 }
