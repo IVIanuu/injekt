@@ -51,13 +51,13 @@ object InjektNameConventions {
     }
 
     fun getModuleClassNameForModuleFunction(moduleFunction: IrFunction): Name =
-        getUniqueNameForFunctionWithSuffix(moduleFunction, "ModuleImpl")
+        getUniqueNameForFunctionWithSuffix(moduleFunction, "Impl")
 
     fun getClassImplNameForFactoryFunction(factoryFunction: IrFunction): Name =
-        getUniqueNameForFunctionWithSuffix(factoryFunction, "FactoryImpl")
+        getUniqueNameForFunctionWithSuffix(factoryFunction, "Impl")
 
     fun getFunctionImplNameForFactoryCall(file: IrFile, call: IrCall): Name =
-        getNameAtSourcePositionWithSuffix(file, call, "FactoryFunctionImpl")
+        getNameAtSourcePositionWithSuffix(file, call, "Impl")
 
     fun getBindingAdapterModuleName(
         packageFqName: FqName,
@@ -76,27 +76,25 @@ object InjektNameConventions {
     ): Name {
         return getNameAtSourcePositionWithSuffix(
             file, call,
-            factoryFunction.descriptor.fqNameSafe
-                .pathSegments()
-                .map { it.asString() }
-                .let { it + "Type" }
-                .joinToString("_")
+            factoryFunction.descriptor.name.asString() + "_Type"
         )
     }
 
     fun getCompositionFactoryImplNameForCall(
         file: IrFile,
         call: IrCall,
-        factoryFunction: IrFunctionSymbol
-    ): Name =
-        getNameAtSourcePositionWithSuffix(
-            file, call,
-            factoryFunction.descriptor.fqNameSafe
-                .pathSegments()
-                .map { it.asString() }
-                .let { it + "Factory" }
-                .joinToString("_")
-        )
+        factoryFunction: IrFunctionSymbol,
+        childFactory: Boolean
+    ): Name {
+        return if (childFactory) {
+            Name.identifier(factoryFunction.descriptor.name.asString() + "_Factory")
+        } else {
+            getNameAtSourcePositionWithSuffix(
+                file, call,
+                factoryFunction.descriptor.name.asString() + "_Factory"
+            )
+        }
+    }
 
     fun getObjectGraphGetNameForCall(file: IrFile, call: IrCall): Name =
         getNameAtSourcePositionWithSuffix(file, call, "Get")
@@ -112,7 +110,8 @@ object InjektNameConventions {
     ): Name {
         return getUniqueNameForFunctionWithSuffix(
             factoryFunction,
-            "FactoryModule"
+            "FactoryModule",
+            hashValueParameters = false
         )
     }
 
@@ -147,12 +146,17 @@ object InjektNameConventions {
 
     private fun getUniqueNameForFunctionWithSuffix(
         function: IrFunction,
-        suffix: String
+        suffix: String,
+        hashValueParameters: Boolean = true
     ): Name {
         return getJoinedName(
             function.getPackageFragment()!!.fqName,
             function.descriptor.fqNameSafe
-                .child(Name.identifier(valueParametersHash(function).toString()))
+                .let {
+                    if (hashValueParameters) {
+                        it.child(Name.identifier(valueParametersHash(function).toString()))
+                    } else it
+                }
                 .child(Name.identifier(suffix))
         ).let { nameWithoutIllegalChars(it.asString()) }
     }

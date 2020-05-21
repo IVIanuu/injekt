@@ -39,7 +39,6 @@ inline fun <T : ViewModel> activityViewModel() {
 @Module
 inline fun <T : ViewModel, S : ViewModelStoreOwner> baseViewModel() {
     transient<@UnscopedViewModel T>()
-    val clazz = classOf<T>()
     transient {
         val viewModelStoreOwner = get<S>()
         val viewModelProvider = get<@Provider () -> @UnscopedViewModel T>()
@@ -49,7 +48,7 @@ inline fun <T : ViewModel, S : ViewModelStoreOwner> baseViewModel() {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T =
                     viewModelProvider() as T
             }
-        ).get(clazz.java)
+        ).get(classOf<T>().java)
     }
 }
 

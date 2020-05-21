@@ -53,6 +53,7 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.superTypes
@@ -119,19 +120,24 @@ class ChildFactoryBindingResolver(
                 parentFactory.pluginContext
             )
 
-        val fqName = function.getAnnotation(InjektFqNames.AstName)!!
-            .getValueArgument(0)
-            .let { it as IrConst<String> }
-            .value
+        val fqName = FqName(
+            function.getAnnotation(InjektFqNames.AstName)!!
+                .getValueArgument(0)
+                .let { it as IrConst<String> }
+                .value
+        )
 
         val childFactoryImpl =
             ImplFactory(
-                origin = FqName(fqName),
+                origin = fqName,
                 parent = parentFactory,
                 typeParameterMap = emptyMap(),
                 irDeclarationParent = parentFactory.clazz,
-                name = members.membersNameProvider
-                    .allocate(Name.identifier("child")), // todo
+                name = members.membersNameProvider.allocate(
+                    Name.identifier(
+                        "${superType.classifierOrFail.descriptor.name}_Impl"
+                    )
+                ),
                 superType = superType,
                 moduleClass = moduleClass,
                 pluginContext = parentFactory.pluginContext,
@@ -146,8 +152,10 @@ class ChildFactoryBindingResolver(
             parentFactory.clazz.symbol
         ).childFactory(
             members.membersNameProvider.allocate(
-                Name.identifier("childFactory")
-            ), // todo
+                Name.identifier(
+                    "${superType.classifierOrFail.descriptor.name}_Factory"
+                )
+            ),
             childFactoryImpl,
             key.type,
             function
@@ -288,7 +296,12 @@ class DependencyBindingResolver(
                 )
             ) {
                 factory(
-                    name = Name.identifier("${moduleNode.module.name}\$Factory${providersByDependency.size}"),
+                    name = members.membersNameProvider.allocate(
+                        Name.identifier(
+                            "${dependencyNode.dependency.name}_${dependencyFunction.returnType
+                                .classifierOrFail.descriptor.name}"
+                        )
+                    ),
                     visibility = Visibilities.PRIVATE,
                     typeParametersContainer = null,
                     parameters = listOf(

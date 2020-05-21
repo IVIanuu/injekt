@@ -147,11 +147,10 @@ fun systemServiceModule() {
 
 @Module
 inline fun <T : Any> systemService() {
-    val clazz = classOf<T>()
     transient<T> {
         ContextCompat.getSystemService(
             @ForApplication get(),
-            clazz.java
+            classOf<T>().java
         )!!
     }
 }

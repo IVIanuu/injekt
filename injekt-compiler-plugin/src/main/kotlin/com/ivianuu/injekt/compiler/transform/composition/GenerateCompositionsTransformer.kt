@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform.composition
 import com.ivianuu.injekt.compiler.CompositionSymbols
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getIrClass
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
@@ -145,6 +146,8 @@ class GenerateCompositionsTransformer(
         val factoryImpls = mutableMapOf<IrClassSymbol, IrFunctionSymbol>()
 
         generateCompositionsCalls.forEach { (call, file) ->
+            val nameProvider = NameProvider()
+
             val processedFactories = mutableSetOf<CompositionFactory>()
 
             while (true) {
@@ -185,10 +188,12 @@ class GenerateCompositionsTransformer(
                         .distinct()
 
                     val factoryType = compositionFactoryType(
-                        InjektNameConventions.getCompositionFactoryTypeNameForCall(
-                            file,
-                            call,
-                            factory.factoryFunction
+                        nameProvider.allocate(
+                            InjektNameConventions.getCompositionFactoryTypeNameForCall(
+                                file,
+                                call,
+                                factory.factoryFunction
+                            )
                         ),
                         factory.compositionType.defaultType,
                         entryPoints
@@ -196,10 +201,13 @@ class GenerateCompositionsTransformer(
                     file.addChild(factoryType)
 
                     val factoryFunctionImpl = compositionFactoryImpl(
-                        InjektNameConventions.getCompositionFactoryImplNameForCall(
-                            file,
-                            call,
-                            factory.factoryFunction
+                        nameProvider.allocate(
+                            InjektNameConventions.getCompositionFactoryImplNameForCall(
+                                file,
+                                call,
+                                factory.factoryFunction,
+                                factory.parents.isNotEmpty()
+                            )
                         ),
                         factory.parents.isNotEmpty(),
                         factoryType.symbol,

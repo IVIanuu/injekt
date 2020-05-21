@@ -39,6 +39,7 @@ import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.util.dump
 
 class InjektIrGenerationExtension(
     private val project: Project
@@ -113,7 +114,7 @@ class InjektIrGenerationExtension(
         InlineFactoryTransformer(pluginContext, declarationStore)
             .lower(moduleFragment)
 
-        // move the module block of a @Factory function to a seperate @Module function
+        // move the module block of a @Factory function to a separate @Module function
         factoryModuleTransformer.lower(moduleFragment)
 
         // transform inline @Module calls to pass data around
@@ -135,6 +136,8 @@ class InjektIrGenerationExtension(
 
         // patch file metadata
         FileMetadataPatcher(pluginContext).lower(moduleFragment)
+
+        println(moduleFragment.dump())
     }
 
 }
