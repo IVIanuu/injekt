@@ -32,7 +32,7 @@ class InjektStorageContainerContributor(
     ) {
         container.useInstance(AndroidEntryPointChecker())
         container.useInstance(AnnotatedBindingChecker())
-        container.useInstance(BindingAdapterChecker())
+        container.useInstance(BindingEffectChecker())
         container.useInstance(DslCallChecker(typeAnnotationChecker))
         container.useInstance(FactoryChecker(typeAnnotationChecker))
         container.useInstance(MembersInjectorChecker())

@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -81,7 +82,7 @@ class ModuleChecker(
                             .on(valueParameter.findPsi() ?: declaration)
                     )
                 }
-                if (valueParameter.type.annotations.hasAnnotation(InjektFqNames.Module)) {
+                if (valueParameter.type.hasAnnotation(InjektFqNames.Module)) {
                     context.trace.report(
                         InjektErrors.MODULE_PARAMETER_WITHOUT_INLINE
                             .on(valueParameter.findPsi() ?: declaration)

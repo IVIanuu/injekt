@@ -26,6 +26,7 @@ import com.ivianuu.injekt.compiler.PropertyPath
 import com.ivianuu.injekt.compiler.TypeParameterPath
 import com.ivianuu.injekt.compiler.ValueParameterPath
 import com.ivianuu.injekt.compiler.getArgumentsWithIrIncludingNulls
+import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.remapTypeParameters
@@ -372,8 +373,8 @@ class ModuleDeclarationFactory(
 
         includedDescriptor
             .functions
-            .filter { it.descriptor.annotations.hasAnnotation(InjektFqNames.AstModule) }
-            .filter { it.descriptor.annotations.hasAnnotation(InjektFqNames.AstInline) }
+            .filter { it.descriptor.hasAnnotation(InjektFqNames.AstModule) }
+            .filter { it.descriptor.hasAnnotation(InjektFqNames.AstInline) }
             .forEach { innerIncludeFunction ->
                 val (moduleExpression, lambdaCall) =
                     innerIncludeFunction.getAnnotation(InjektFqNames.AstValueParameterPath)!!
@@ -491,8 +492,8 @@ class ModuleDeclarationFactory(
 
         declarations += includedDescriptor
             .functions
-            .filter { it.descriptor.annotations.hasAnnotation(InjektFqNames.AstBinding) }
-            .filter { it.descriptor.annotations.hasAnnotation(InjektFqNames.AstInline) }
+            .filter { it.descriptor.hasAnnotation(InjektFqNames.AstBinding) }
+            .filter { it.descriptor.hasAnnotation(InjektFqNames.AstInline) }
             .map { bindingFunction ->
                 val singleArgumentExpression: IrExpression?
                 val bindingType: IrType

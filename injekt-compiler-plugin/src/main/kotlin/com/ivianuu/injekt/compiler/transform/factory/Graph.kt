@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.StringKey
 import com.ivianuu.injekt.compiler.findPropertyGetter
 import com.ivianuu.injekt.compiler.getIrClass
+import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.type
@@ -223,7 +224,7 @@ class Graph(
                 val entryKey = function.valueParameters[1].let { entry ->
                     val entryDescriptor = entry.descriptor
                     when {
-                        entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapClassKey) -> {
+                        entryDescriptor.hasAnnotation(InjektFqNames.AstMapClassKey) -> {
                             ClassKey(
                                 (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapClassKey)
                                 !!.allValueArguments.values.single())
@@ -232,7 +233,7 @@ class Graph(
                                     .defaultType
                             )
                         }
-                        entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapTypeParameterClassKey) -> {
+                        entryDescriptor.hasAnnotation(InjektFqNames.AstMapTypeParameterClassKey) -> {
                             ClassKey(
                                 (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapTypeParameterClassKey)
                                 !!.allValueArguments.values.single())
@@ -246,7 +247,7 @@ class Graph(
                                     }
                             )
                         }
-                        entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapIntKey) -> {
+                        entryDescriptor.hasAnnotation(InjektFqNames.AstMapIntKey) -> {
                             IntKey(
                                 (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapIntKey)
                                 !!.allValueArguments.values.single())
@@ -254,7 +255,7 @@ class Graph(
                                     .value
                             )
                         }
-                        entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapLongKey) -> {
+                        entryDescriptor.hasAnnotation(InjektFqNames.AstMapLongKey) -> {
                             LongKey(
                                 (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapLongKey)
                                 !!.allValueArguments.values.single())
@@ -262,7 +263,7 @@ class Graph(
                                     .value
                             )
                         }
-                        entryDescriptor.annotations.hasAnnotation(InjektFqNames.AstMapStringKey) -> {
+                        entryDescriptor.hasAnnotation(InjektFqNames.AstMapStringKey) -> {
                             StringKey(
                                 (entry.descriptor.annotations.findAnnotation(InjektFqNames.AstMapStringKey)
                                 !!.allValueArguments.values.single())

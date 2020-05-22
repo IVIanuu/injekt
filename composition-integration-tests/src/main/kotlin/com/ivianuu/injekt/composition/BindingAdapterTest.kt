@@ -26,6 +26,49 @@ import org.junit.Test
 class BindingAdapterTest {
 
     @Test
+    fun testSimpleBindingEffect() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent { 
+            return create() 
+        }
+        
+        @BindingEffect(TestCompositionComponent::class)
+        annotation class Effect1
+        
+        @BindingEffectFunction(Effect1::class)
+        @Module
+        inline fun <T> effect1() {
+            transient { get<T>().toString() }
+        }
+        
+        @BindingEffect(TestCompositionComponent::class)
+        annotation class Effect2
+        
+        @BindingEffectFunction(Effect2::class)
+        @Module
+        inline fun <T : Any> effect2() {
+            alias<T, Any>()
+        }
+        
+        @Effect1
+        @Effect2
+        @Transient
+        class Dep
+        
+        fun invoke() {
+            generateCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            component.get<Dep>()
+            component.get<String>()
+            component.get<Any>()
+        }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
     fun testSimpleBindingAdapter() = codegen(
         """
         @CompositionFactory 

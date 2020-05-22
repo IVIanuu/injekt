@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -56,10 +57,10 @@ class FactoryChecker(
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (descriptor is FunctionDescriptor && (descriptor.annotations.hasAnnotation(InjektFqNames.Factory) ||
-                    descriptor.annotations.hasAnnotation(InjektFqNames.ChildFactory) ||
-                    descriptor.annotations.hasAnnotation(InjektFqNames.CompositionFactory) ||
-                    descriptor.annotations.hasAnnotation(InjektFqNames.InstanceFactory))
+        if (descriptor is FunctionDescriptor && (descriptor.hasAnnotation(InjektFqNames.Factory) ||
+                    descriptor.hasAnnotation(InjektFqNames.ChildFactory) ||
+                    descriptor.hasAnnotation(InjektFqNames.CompositionFactory) ||
+                    descriptor.hasAnnotation(InjektFqNames.InstanceFactory))
         ) {
             checkFactoriesLastStatementIsCreate(
                 declaration as KtFunction,
@@ -96,7 +97,7 @@ class FactoryChecker(
                     )
                 }
                 descriptor.valueParameters.forEach { valueParameter ->
-                    if (valueParameter.type.annotations.hasAnnotation(InjektFqNames.Module)) {
+                    if (valueParameter.type.hasAnnotation(InjektFqNames.Module)) {
                         context.trace.report(
                             InjektErrors.MODULE_PARAMETER_WITHOUT_INLINE
                                 .on(valueParameter.findPsi() ?: declaration)
@@ -105,8 +106,8 @@ class FactoryChecker(
                 }
             }
 
-            if (descriptor.annotations.hasAnnotation(InjektFqNames.ChildFactory) ||
-                descriptor.annotations.hasAnnotation(InjektFqNames.CompositionFactory)
+            if (descriptor.hasAnnotation(InjektFqNames.ChildFactory) ||
+                descriptor.hasAnnotation(InjektFqNames.CompositionFactory)
             ) {
                 if (descriptor.isInline) {
                     context.trace.report(
@@ -122,7 +123,7 @@ class FactoryChecker(
                 }
             }
 
-            if (descriptor.annotations.hasAnnotation(InjektFqNames.CompositionFactory) &&
+            if (descriptor.hasAnnotation(InjektFqNames.CompositionFactory) &&
                 descriptor.returnType?.constructor?.declarationDescriptor?.annotations
                     ?.hasAnnotation(InjektFqNames.CompositionComponent) != true
             ) {
@@ -200,8 +201,8 @@ class FactoryChecker(
         }
 
         if (resultingDescriptor is FunctionDescriptor &&
-            (resultingDescriptor.annotations.hasAnnotation(InjektFqNames.Factory) ||
-                    resultingDescriptor.annotations.hasAnnotation(InjektFqNames.InstanceFactory)) &&
+            (resultingDescriptor.hasAnnotation(InjektFqNames.Factory) ||
+                    resultingDescriptor.hasAnnotation(InjektFqNames.InstanceFactory)) &&
             resultingDescriptor.isInline
         ) {
             if (resolvedCall.typeArguments.any { it.value.isTypeParameter() }) {
@@ -213,7 +214,7 @@ class FactoryChecker(
         }
 
         if (resultingDescriptor is FunctionDescriptor &&
-            resultingDescriptor.annotations.hasAnnotation(InjektFqNames.Factory) &&
+            resultingDescriptor.hasAnnotation(InjektFqNames.Factory) &&
             resultingDescriptor.isInline
         ) {
             resolvedCall.getReturnType().constructor.declarationDescriptor?.let {
@@ -221,8 +222,8 @@ class FactoryChecker(
             }
         }
 
-        if ((resultingDescriptor.annotations.hasAnnotation(InjektFqNames.ChildFactory) ||
-                    resultingDescriptor.annotations.hasAnnotation(InjektFqNames.CompositionFactory)) &&
+        if ((resultingDescriptor.hasAnnotation(InjektFqNames.ChildFactory) ||
+                    resultingDescriptor.hasAnnotation(InjektFqNames.CompositionFactory)) &&
             !resolvedCall.call.isCallableReference()
         ) {
             context.trace.report(
@@ -273,10 +274,10 @@ class FactoryChecker(
         context: CallCheckerContext
     ) {
         val enclosingModuleFunction = findEnclosingFunctionContext(context) {
-            it.annotations.hasAnnotation(InjektFqNames.Factory) ||
-                    it.annotations.hasAnnotation(InjektFqNames.ChildFactory) ||
-                    it.annotations.hasAnnotation(InjektFqNames.CompositionFactory) ||
-                    it.annotations.hasAnnotation(InjektFqNames.InstanceFactory)
+            it.hasAnnotation(InjektFqNames.Factory) ||
+                    it.hasAnnotation(InjektFqNames.ChildFactory) ||
+                    it.hasAnnotation(InjektFqNames.CompositionFactory) ||
+                    it.hasAnnotation(InjektFqNames.InstanceFactory)
         }
 
         when {

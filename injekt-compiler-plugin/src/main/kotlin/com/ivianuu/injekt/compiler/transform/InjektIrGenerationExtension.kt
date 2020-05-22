@@ -21,7 +21,7 @@ import com.ivianuu.injekt.compiler.compositionsEnabled
 import com.ivianuu.injekt.compiler.transform.android.AndroidEntryPointTransformer
 import com.ivianuu.injekt.compiler.transform.annotatedclass.ClassFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.annotatedclass.MembersInjectorTransformer
-import com.ivianuu.injekt.compiler.transform.composition.BindingAdapterTransformer
+import com.ivianuu.injekt.compiler.transform.composition.BindingEffectTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionAggregateGenerator
 import com.ivianuu.injekt.compiler.transform.composition.CompositionEntryPointsTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionFactoryParentTransformer
@@ -76,7 +76,7 @@ class InjektIrGenerationExtension(
 
             ObjectGraphCallTransformer(pluginContext).lower(moduleFragment)
 
-            BindingAdapterTransformer(pluginContext).lower(moduleFragment)
+            BindingEffectTransformer(pluginContext).lower(moduleFragment)
 
             // generate a @Module entryPointModule() { entryPoint<T>() } module at each call site of entryPointOf<T>()
             EntryPointOfTransformer(pluginContext).lower(moduleFragment)

@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -39,7 +40,7 @@ class ScopeChecker : CallChecker, DeclarationChecker {
         context: DeclarationCheckerContext
     ) {
         if (descriptor !is ClassDescriptor) return
-        if (!descriptor.annotations.hasAnnotation(InjektFqNames.Scope)) return
+        if (!descriptor.hasAnnotation(InjektFqNames.Scope)) return
         val retention = descriptor.getAnnotationRetention() ?: KotlinRetention.RUNTIME
         if (retention != KotlinRetention.RUNTIME) {
             context.trace.report(InjektErrors.MUST_HAVE_RUNTIME_RETENTION.on(declaration))
@@ -53,7 +54,7 @@ class ScopeChecker : CallChecker, DeclarationChecker {
     ) {
         if (resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.scope" &&
             !resolvedCall.typeArguments.toList().single().second.constructor.declarationDescriptor!!
-                .annotations.hasAnnotation(InjektFqNames.Scope)
+                .hasAnnotation(InjektFqNames.Scope)
         ) {
             context.trace.report(InjektErrors.NOT_A_SCOPE.on(reportOn))
         }

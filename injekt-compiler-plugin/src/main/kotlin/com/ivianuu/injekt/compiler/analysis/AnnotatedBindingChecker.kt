@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -37,12 +38,12 @@ class AnnotatedBindingChecker : DeclarationChecker {
     ) {
         if (descriptor !is ClassDescriptor) return
 
-        val classHasAnnotation = descriptor.annotations.hasAnnotation(InjektFqNames.Transient) ||
+        val classHasAnnotation = descriptor.hasAnnotation(InjektFqNames.Transient) ||
                 descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope, descriptor.module)
 
         val annotatedConstructors = descriptor.constructors
             .filter {
-                it.annotations.hasAnnotation(InjektFqNames.Transient) ||
+                it.hasAnnotation(InjektFqNames.Transient) ||
                         it.hasAnnotatedAnnotations(InjektFqNames.Scope, descriptor.module)
             }
 
@@ -86,11 +87,11 @@ class AnnotatedBindingChecker : DeclarationChecker {
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (!descriptor.annotations.hasAnnotation(InjektFqNames.Transient) &&
+        if (!descriptor.hasAnnotation(InjektFqNames.Transient) &&
             !descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope, descriptor.module)
         ) return
 
-        if (descriptor.annotations.hasAnnotation(InjektFqNames.Transient) &&
+        if (descriptor.hasAnnotation(InjektFqNames.Transient) &&
             descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope, descriptor.module)
         ) {
             context.trace.report(

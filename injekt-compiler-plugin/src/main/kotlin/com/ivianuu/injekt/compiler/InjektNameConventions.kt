@@ -59,13 +59,13 @@ object InjektNameConventions {
     fun getFunctionImplNameForFactoryCall(file: IrFile, call: IrCall): Name =
         getNameAtSourcePositionWithSuffix(file, call, "Impl")
 
-    fun getBindingAdapterModuleName(
+    fun getBindingEffectModuleName(
         packageFqName: FqName,
         classFqName: FqName
     ): Name {
         return getJoinedName(
             packageFqName,
-            classFqName.child("BindingAdapter")
+            classFqName.child("BindingEffect")
         )
     }
 

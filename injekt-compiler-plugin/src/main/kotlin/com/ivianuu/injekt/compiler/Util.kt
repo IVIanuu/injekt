@@ -104,6 +104,10 @@ import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 
+fun Annotated.hasAnnotation(fqName: FqName): Boolean {
+    return annotations.hasAnnotation(fqName)
+}
+
 fun Annotated.hasAnnotatedAnnotations(
     annotation: FqName,
     module: ModuleDescriptor
@@ -132,7 +136,7 @@ fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescrip
     val thisFqName = this.fqName ?: return false
     val descriptor =
         module.findClassAcrossModuleDependencies(ClassId.topLevel(thisFqName)) ?: return false
-    return descriptor.annotations.hasAnnotation(annotation)
+    return descriptor.hasAnnotation(annotation)
 }
 
 fun IrType.withAnnotations(annotations: List<IrConstructorCall>): IrType {

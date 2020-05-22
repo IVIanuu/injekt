@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
@@ -28,7 +29,7 @@ class AndroidEntryPointChecker : DeclarationChecker {
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (!descriptor.annotations.hasAnnotation(InjektFqNames.AndroidEntryPoint)) return
+        if (!descriptor.hasAnnotation(InjektFqNames.AndroidEntryPoint)) return
 
 
     }

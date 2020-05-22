@@ -193,22 +193,22 @@ interface InjektErrors {
         )
 
         @JvmField
-        val BINDING_ADAPTER_COMPANION_WITHOUT_MODULE = error(
+        val BINDING_EFFECT_COMPANION_WITHOUT_MODULE = error(
             "@BindingAdapter companion needs a single @Module function."
         )
 
         @JvmField
-        val BINDING_ADAPTER_MODULE_CANNOT_HAVE_VALUE_PARAMETERS = error(
+        val BINDING_EFFECT_MODULE_CANNOT_HAVE_VALUE_PARAMETERS = error(
             "@BindingAdapter module cannot have value parameters."
         )
 
         @JvmField
-        val BINDING_ADAPTER_MODULE_NEEDS_1_TYPE_PARAMETER = error(
+        val BINDING_EFFECT_MODULE_NEEDS_1_TYPE_PARAMETER = error(
             "@BindingAdapter module must have 1 type parameter."
         )
 
         @JvmField
-        val NOT_IN_BINDING_ADAPTER_BOUNDS = error(
+        val NOT_IN_BINDING_EFFECT_BOUNDS = error(
             "Annotated class is not in @BindingAdapter bounds."
         )
 
@@ -220,6 +220,11 @@ interface InjektErrors {
         @JvmField
         val BINDING_ADAPTER_WITH_TRANSIENT_OR_SCOPED = error(
             "@BindingAdapter cannot be combined with @Transient or @Scope annotations."
+        )
+
+        @JvmField
+        val EITHER_BINDING_ADAPTER_OR_BINDING_EFFECT = error(
+            "A function can only be annotated with one of @BindingAdapter or @BindingFunction"
         )
 
         @JvmField

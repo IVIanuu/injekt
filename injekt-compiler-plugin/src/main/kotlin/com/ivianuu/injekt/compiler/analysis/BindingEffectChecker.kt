@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -31,7 +32,7 @@ import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 
-class BindingAdapterChecker : DeclarationChecker {
+class BindingEffectChecker : DeclarationChecker {
 
     override fun check(
         declaration: KtDeclaration,
@@ -40,7 +41,18 @@ class BindingAdapterChecker : DeclarationChecker {
     ) {
         if (descriptor !is ClassDescriptor) return
 
-        if (descriptor.annotations.hasAnnotation(InjektFqNames.BindingAdapter)) {
+        if (descriptor.hasAnnotation(InjektFqNames.BindingAdapter) ||
+            descriptor.hasAnnotation(InjektFqNames.BindingEffect)
+        ) {
+            if (descriptor.hasAnnotation(InjektFqNames.BindingAdapter) &&
+                descriptor.hasAnnotation(InjektFqNames.BindingEffect)
+            ) {
+                context.trace.report(
+                    InjektErrors.EITHER_BINDING_ADAPTER_OR_BINDING_EFFECT
+                        .on(declaration)
+                )
+            }
+
             /*val companion = descriptor.companionObjectDescriptor
             if (companion == null) {
                 context.trace.report(
@@ -55,27 +67,40 @@ class BindingAdapterChecker : DeclarationChecker {
                 .getContributedDescriptors()
                 .filterIsInstance<FunctionDescriptor>()
                 .filter {
-                    it.annotations.hasAnnotation(InjektFqNames.BindingAdapterFunction)
+                    it.hasAnnotation(
+                        if (descriptor.hasAnnotation(InjektFqNames.BindingAdapter)) {
+                            InjektFqNames.BindingAdapterFunction
+                        } else {
+                            InjektFqNames.BindingEffectFunction
+                        }
+                    )
                 }
                 .singleOrNull {
                     val annotation =
-                        it.annotations.findAnnotation(InjektFqNames.BindingAdapterFunction)!!
+                        it.annotations.findAnnotation(
+                            if (descriptor.hasAnnotation(InjektFqNames.BindingAdapter)) {
+                                InjektFqNames.BindingAdapterFunction
+                            } else {
+                                InjektFqNames.BindingEffectFunction
+                            }
+                        )!!
                     val value = annotation.allValueArguments.values.single() as KClassValue
                     val type = value.getArgumentType(descriptor.module)
                     type == descriptor.defaultType
-                } ?: error("Corrupt binding adapter")
+                }?.takeIf { it.hasAnnotation(InjektFqNames.Module) }
+                ?: error("Corrupt binding effect")
 
             /*
             val moduleFunction = companion.unsubstitutedMemberScope
                 .getContributedDescriptors()
                 .filterIsInstance<FunctionDescriptor>()
                 .singleOrNull {
-                    it.annotations.hasAnnotation(InjektFqNames.Module)
+                    it.hasAnnotation(InjektFqNames.Module)
                 }*/
 
             if (moduleFunction == null) {
                 context.trace.report(
-                    InjektErrors.BINDING_ADAPTER_COMPANION_WITHOUT_MODULE
+                    InjektErrors.BINDING_EFFECT_COMPANION_WITHOUT_MODULE
                         .on(declaration)
                 )
                 return
@@ -83,7 +108,7 @@ class BindingAdapterChecker : DeclarationChecker {
 
             if (moduleFunction.typeParameters.size != 1) {
                 context.trace.report(
-                    InjektErrors.BINDING_ADAPTER_MODULE_NEEDS_1_TYPE_PARAMETER
+                    InjektErrors.BINDING_EFFECT_MODULE_NEEDS_1_TYPE_PARAMETER
                         .on(declaration)
                 )
                 return
@@ -91,14 +116,15 @@ class BindingAdapterChecker : DeclarationChecker {
 
             if (moduleFunction.valueParameters.isNotEmpty()) {
                 context.trace.report(
-                    InjektErrors.BINDING_ADAPTER_MODULE_CANNOT_HAVE_VALUE_PARAMETERS
+                    InjektErrors.BINDING_EFFECT_MODULE_CANNOT_HAVE_VALUE_PARAMETERS
                         .on(declaration)
                 )
                 return
             }
 
-            val installInComponent = descriptor.annotations
-                .findAnnotation(InjektFqNames.BindingAdapter)!!
+            val installInComponent = (descriptor.annotations
+                .findAnnotation(InjektFqNames.BindingAdapter)
+                ?: descriptor.annotations.findAnnotation(InjektFqNames.BindingEffect)!!)
                 .allValueArguments
                 .values
                 .single()
@@ -116,7 +142,9 @@ class BindingAdapterChecker : DeclarationChecker {
             }
         }
 
-        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingAdapter, descriptor.module)) {
+        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingAdapter, descriptor.module) ||
+            descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingEffect, descriptor.module)
+        ) {
             if (descriptor.getAnnotatedAnnotations(
                     InjektFqNames.BindingAdapter,
                     descriptor.module
@@ -124,7 +152,11 @@ class BindingAdapterChecker : DeclarationChecker {
             ) {
                 context.trace.report(InjektErrors.MULTIPLE_BINDING_ADAPTER.on(declaration))
             }
-            if (descriptor.annotations.hasAnnotation(InjektFqNames.Transient) ||
+            if (descriptor.hasAnnotatedAnnotations(
+                    InjektFqNames.BindingAdapter,
+                    descriptor.module
+                ) &&
+                descriptor.hasAnnotation(InjektFqNames.Transient) ||
                 descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope, descriptor.module)
             ) {
                 context.trace.report(
@@ -133,27 +165,33 @@ class BindingAdapterChecker : DeclarationChecker {
                 )
             }
 
-            val upperBound =
+            val effectAnnotations = listOfNotNull(
                 descriptor.getAnnotatedAnnotations(InjektFqNames.BindingAdapter, descriptor.module)
                     .singleOrNull()
-                    ?.type
-                    ?.constructor
-                    ?.declarationDescriptor
-                    ?.let { it as ClassDescriptor }
-                    ?.companionObjectDescriptor
+            ) + descriptor.getAnnotatedAnnotations(InjektFqNames.BindingEffect, descriptor.module)
+
+            val upperBounds = effectAnnotations
+                .mapNotNull {
+                    it.type
+                        .constructor
+                        .declarationDescriptor
+                        .let { it as ClassDescriptor }
+                        .companionObjectDescriptor
                     ?.unsubstitutedMemberScope
                     ?.getContributedDescriptors()
                     ?.filterIsInstance<FunctionDescriptor>()
-                    ?.singleOrNull { it.annotations.hasAnnotation(InjektFqNames.Module) }
+                        ?.singleOrNull { it.hasAnnotation(InjektFqNames.Module) }
                     ?.typeParameters
                     ?.singleOrNull()
                     ?.upperBounds
                     ?.singleOrNull()
+                }
 
-            if (upperBound != null) {
+
+            upperBounds.forEach { upperBound ->
                 if (!descriptor.defaultType.isSubtypeOf(upperBound)) {
                     context.trace.report(
-                        InjektErrors.NOT_IN_BINDING_ADAPTER_BOUNDS
+                        InjektErrors.NOT_IN_BINDING_EFFECT_BOUNDS
                             .on(declaration)
                     )
                 }

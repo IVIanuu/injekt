@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -86,7 +87,7 @@ class MembersInjectorChecker : DeclarationChecker {
         descriptor: FunctionDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (!descriptor.annotations.hasAnnotation(InjektFqNames.Inject)) return
+        if (!descriptor.hasAnnotation(InjektFqNames.Inject)) return
 
         if (descriptor.returnType != descriptor.builtIns.unitType) {
             context.trace.report(

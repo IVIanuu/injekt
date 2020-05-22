@@ -18,10 +18,12 @@ package com.ivianuu.injekt.compiler.transform.composition
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
+import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
 import com.ivianuu.injekt.compiler.getIrClass
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -44,10 +46,11 @@ import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class BindingAdapterTransformer(pluginContext: IrPluginContext) :
+class BindingEffectTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
@@ -55,7 +58,9 @@ class BindingAdapterTransformer(pluginContext: IrPluginContext) :
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitClass(declaration: IrClass): IrStatement {
-                if (declaration.hasAnnotatedAnnotations(InjektFqNames.BindingAdapter)) {
+                if (declaration.hasAnnotatedAnnotations(InjektFqNames.BindingAdapter) ||
+                    declaration.hasAnnotatedAnnotations(InjektFqNames.BindingEffect)
+                ) {
                     classes += declaration
                 }
                 return super.visitClass(declaration)
@@ -63,18 +68,36 @@ class BindingAdapterTransformer(pluginContext: IrPluginContext) :
         })
 
         classes.forEach { clazz ->
-            val module = bindingAdapterModule(clazz)
-            clazz.file.addChild(module)
+            val nameProvider = NameProvider()
+            val bindingEffects = clazz
+                .getAnnotatedAnnotations(InjektFqNames.BindingEffect) + clazz
+                .getAnnotatedAnnotations(InjektFqNames.BindingAdapter)
+
+            bindingEffects.forEach { effect ->
+                val effectModule = bindingEffectModule(
+                    clazz,
+                    nameProvider.allocateForGroup(
+                        InjektNameConventions.getBindingEffectModuleName(
+                            clazz.getPackageFragment()!!.fqName,
+                            clazz.descriptor.fqNameSafe
+                        )
+                    ),
+                    effect.type.classOrNull!!.descriptor.fqNameSafe
+                )
+
+                clazz.file.addChild(effectModule)
+            }
         }
 
         return super.visitModuleFragment(declaration)
     }
 
-    private fun bindingAdapterModule(clazz: IrClass) = buildFun {
-        name = InjektNameConventions.getBindingAdapterModuleName(
-            clazz.getPackageFragment()!!.fqName,
-            clazz.descriptor.fqNameSafe
-        )
+    private fun bindingEffectModule(
+        clazz: IrClass,
+        name: Name,
+        effectFqName: FqName
+    ) = buildFun {
+        this.name = name
         visibility = clazz.visibility
         returnType = irBuiltIns.unitType
     }.apply {
@@ -85,18 +108,17 @@ class BindingAdapterTransformer(pluginContext: IrPluginContext) :
 
         body = DeclarationIrBuilder(pluginContext, symbol).run {
             irBlockBody {
-                val bindingAdapterClass =
-                    clazz.getAnnotatedAnnotations(InjektFqNames.BindingAdapter)
-                        .single()
-                        .type
-                        .classOrNull!!
-                        .owner
+                val bindingEffectClass = pluginContext.referenceClass(effectFqName)!!
+                    .owner
 
                 val installIn =
-                    bindingAdapterClass.getClassFromSingleValueAnnotation(
+                    bindingEffectClass.getClassFromSingleValueAnnotationOrNull(
                         InjektFqNames.BindingAdapter,
                         pluginContext
-                    )
+                    ) ?: bindingEffectClass.getClassFromSingleValueAnnotationOrNull(
+                        InjektFqNames.BindingEffect,
+                        pluginContext
+                    )!!
 
                 +irCall(
                     pluginContext.referenceFunctions(
@@ -106,27 +128,29 @@ class BindingAdapterTransformer(pluginContext: IrPluginContext) :
                     putTypeArgument(0, installIn.defaultType)
                 }
 
-                val adapterModule =
-                    bindingAdapterClass.descriptor.findPackage()
+                val effectModule =
+                    bindingEffectClass.descriptor.findPackage()
                         .getMemberScope()
                         .getContributedDescriptors()
                         .filterIsInstance<FunctionDescriptor>()
                         .filter {
-                            it.annotations.hasAnnotation(InjektFqNames.BindingAdapterFunction)
+                            it.hasAnnotation(InjektFqNames.BindingAdapterFunction) ||
+                                    it.hasAnnotation(InjektFqNames.BindingEffectFunction)
                         }
                         .firstOrNull {
                             val annotation =
-                                it.annotations.findAnnotation(InjektFqNames.BindingAdapterFunction)!!
+                                it.annotations.findAnnotation(InjektFqNames.BindingAdapterFunction)
+                                    ?: it.annotations.findAnnotation(InjektFqNames.BindingEffectFunction)!!
                             val value = annotation.allValueArguments.values.single() as KClassValue
-                            value.getIrClass(pluginContext) == bindingAdapterClass
+                            value.getIrClass(pluginContext) == bindingEffectClass
                         }
                         ?.let { functionDescriptor ->
                             pluginContext.referenceFunctions(functionDescriptor.fqNameSafe)
                                 .single { it.descriptor == functionDescriptor }
                         }
-                        ?: error("Corrupt binding adapter ${bindingAdapterClass.dump()}")
+                        ?: error("Corrupt binding effect ${bindingEffectClass.dump()}")
 
-                +irCall(adapterModule).apply {
+                +irCall(effectModule).apply {
                     putTypeArgument(0, clazz.defaultType)
                 }
 
