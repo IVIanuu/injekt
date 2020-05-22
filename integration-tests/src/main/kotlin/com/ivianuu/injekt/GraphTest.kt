@@ -212,4 +212,20 @@ class GraphTest {
             assertNull(invokeSingleFile())
         }
 
+    @Test
+    fun testAliasWithTypeParameters() = codegen(
+        """
+        @Module
+        inline fun <A : B, B> fakeAlias() {
+            alias<A, B>()
+        }
+        
+        @InstanceFactory
+        fun createFooAsAny(): Any {
+            transient<Foo>()
+            fakeAlias<Foo, Any>()
+            return create()
+        }
+    """
+    )
 }

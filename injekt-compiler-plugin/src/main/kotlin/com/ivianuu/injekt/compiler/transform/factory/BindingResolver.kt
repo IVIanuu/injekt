@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.findPropertyGetter
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
 import com.ivianuu.injekt.compiler.getQualifierFqNames
+import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
@@ -394,12 +395,12 @@ class ModuleBindingResolver(
                 else -> {
                     provider!!
                     if (bindingFunction.valueParameters.any {
-                            it.descriptor.annotations.hasAnnotation(
+                            it.descriptor.hasAnnotation(
                                 InjektFqNames.AstAssisted
                             )
                         }) {
                         val assistedValueParameters = bindingFunction.valueParameters
-                            .filter { it.descriptor.annotations.hasAnnotation(InjektFqNames.AstAssisted) }
+                            .filter { it.descriptor.hasAnnotation(InjektFqNames.AstAssisted) }
 
                         val assistedFactoryType =
                             factory.pluginContext.irBuiltIns.function(assistedValueParameters.size)
@@ -420,7 +421,7 @@ class ModuleBindingResolver(
                                 )
 
                         val dependencies = bindingFunction.valueParameters
-                            .filterNot { it.descriptor.annotations.hasAnnotation(InjektFqNames.AstAssisted) }
+                            .filterNot { it.descriptor.hasAnnotation(InjektFqNames.AstAssisted) }
                             .map {
                                 it.type
                                     .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap)
@@ -482,8 +483,11 @@ class ModuleBindingResolver(
         .filter { it.hasAnnotation(InjektFqNames.AstAlias) }
         .map { delegateFunction ->
             DelegateBindingNode(
-                key = delegateFunction.returnType.asKey(),
+                key = delegateFunction.returnType
+                    .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap)
+                    .asKey(),
                 originalKey = delegateFunction.valueParameters.single().type
+                    .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap)
                     .asKey(),
                 owner = factory,
                 requestOrigin = moduleRequestOrigin,
