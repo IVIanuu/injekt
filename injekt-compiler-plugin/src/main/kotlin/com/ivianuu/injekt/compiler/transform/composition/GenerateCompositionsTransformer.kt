@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.getIrClass
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
@@ -188,7 +189,7 @@ class GenerateCompositionsTransformer(
                         .distinct()
 
                     val factoryType = compositionFactoryType(
-                        nameProvider.allocate(
+                        nameProvider.allocateForGroup(
                             InjektNameConventions.getCompositionFactoryTypeNameForCall(
                                 file,
                                 call,
@@ -201,7 +202,7 @@ class GenerateCompositionsTransformer(
                     file.addChild(factoryType)
 
                     val factoryFunctionImpl = compositionFactoryImpl(
-                        nameProvider.allocate(
+                        nameProvider.allocateForGroup(
                             InjektNameConventions.getCompositionFactoryImplNameForCall(
                                 file,
                                 call,
@@ -334,7 +335,7 @@ class GenerateCompositionsTransformer(
                     +irCall(
                         pluginContext.referenceFunctions(
                             InjektFqNames.InjektPackage
-                                .child(Name.identifier("childFactory"))
+                                .child("childFactory")
                         ).single()
                     ).apply {
                         putValueArgument(
@@ -357,7 +358,7 @@ class GenerateCompositionsTransformer(
                     +irCall(
                         pluginContext.referenceFunctions(
                             InjektFqNames.InjektPackage
-                                .child(Name.identifier("alias"))
+                                .child("alias")
                         ).single()
                     ).apply {
                         val functionType = irBuiltIns.function(
@@ -393,7 +394,7 @@ class GenerateCompositionsTransformer(
                     irCall(
                         pluginContext.referenceFunctions(
                             InjektFqNames.InjektPackage
-                                .child(Name.identifier("create"))
+                                .child("create")
                         ).single()
                     ).apply {
                         putTypeArgument(0, factoryType.defaultType)

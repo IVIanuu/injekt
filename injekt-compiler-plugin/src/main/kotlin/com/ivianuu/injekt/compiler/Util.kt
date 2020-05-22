@@ -79,6 +79,7 @@ import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.constants.AnnotationValue
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
@@ -460,3 +461,7 @@ fun IrValueParameter.getParameterName(): String {
         else -> name.asString()
     }
 }
+
+fun String.asNameId(): Name = Name.identifier(this)
+
+fun FqName.child(name: String) = child(name.asNameId())

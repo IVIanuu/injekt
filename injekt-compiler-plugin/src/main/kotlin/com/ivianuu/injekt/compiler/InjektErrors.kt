@@ -89,7 +89,7 @@ interface InjektErrors {
 
         @JvmField
         val LAST_STATEMENT_MUST_BE_CREATE = error(
-            "A factories last statement must be either a create() call"
+            "A factories last statement must be a create() call"
         )
 
         @JvmField

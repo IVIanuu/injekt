@@ -133,7 +133,7 @@ class ChildFactoryBindingResolver(
                 parent = parentFactory,
                 typeParameterMap = emptyMap(),
                 irDeclarationParent = parentFactory.clazz,
-                name = members.membersNameProvider.allocate(
+                name = members.membersNameProvider.allocateForGroup(
                     Name.identifier(
                         "${superType.classifierOrFail.descriptor.name}_Impl"
                     )
@@ -151,7 +151,7 @@ class ChildFactoryBindingResolver(
             parentFactory.pluginContext,
             parentFactory.clazz.symbol
         ).childFactory(
-            members.membersNameProvider.allocate(
+            members.membersNameProvider.allocateForGroup(
                 Name.identifier(
                     "${superType.classifierOrFail.descriptor.name}_Factory"
                 )
@@ -296,7 +296,7 @@ class DependencyBindingResolver(
                 )
             ) {
                 factory(
-                    name = members.membersNameProvider.allocate(
+                    name = members.membersNameProvider.allocateForGroup(
                         Name.identifier(
                             "${dependencyNode.dependency.name}_${dependencyFunction.returnType
                                 .classifierOrFail.descriptor.name}"

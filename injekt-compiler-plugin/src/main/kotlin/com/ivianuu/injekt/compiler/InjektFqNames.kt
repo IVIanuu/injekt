@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 
 object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
@@ -114,8 +113,6 @@ object InjektFqNames {
     val TypeAnnotation = InternalPackage.child("TypeAnnotation")
 
     val Uninitialized = InternalPackage.child("Uninitialized")
-
-    private fun FqName.child(name: String) = child(Name.identifier(name))
 
     val ModuleDslNames = listOf(
         InjektPackage.child("map"),

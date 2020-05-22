@@ -18,6 +18,8 @@ package com.ivianuu.injekt
 
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import org.junit.Test
 
 class MembersInjectorTest {
@@ -107,4 +109,34 @@ class MembersInjectorTest {
             invokeSingleFile()
         }
 
+    @Test
+    fun testMultiCompilationMembersInjector() = multiCodegen(
+        listOf(
+            source(
+                """
+                class MyClass { 
+                    val foo: Foo by inject() 
+                    lateinit var foo2: Foo
+                    
+                    @Inject 
+                    fun injectFoo(foo: Foo) { 
+                        foo2 = foo
+                    }
+                }
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                @InstanceFactory
+                fun myClassFactory(): MyClass {
+                    transient<Foo>()
+                    transient<MyClass>()
+                    return create()
+                }
+            """
+            )
+        )
+    )
 }

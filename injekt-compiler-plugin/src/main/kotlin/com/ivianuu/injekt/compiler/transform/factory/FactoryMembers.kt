@@ -138,7 +138,7 @@ class ClassFactoryMembers(
         } else {
             clazz.addFunction {
                 this.name = Name.identifier(
-                    getFunctionsNameProvider.allocate(
+                    getFunctionsNameProvider.allocateForGroup(
                         "get${key.type.classifierOrFail.descriptor.name.asString()}"
                     )
                 )
@@ -227,7 +227,7 @@ class FunctionFactoryMembers(
     ): IrFunction {
         return buildFun {
             this.name = Name.identifier(
-                getFunctionsNameProvider.allocate(
+                getFunctionsNameProvider.allocateForGroup(
                     "get${key.type.classifierOrFail.descriptor.name.asString()}"
                 )
             )

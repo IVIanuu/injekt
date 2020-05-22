@@ -18,7 +18,9 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.typeArguments
@@ -64,6 +66,7 @@ import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
@@ -170,7 +173,7 @@ class InjektDeclarationIrBuilder(
     fun irInjektIntrinsicUnit(): IrExpression {
         return builder.irCall(
             pluginContext.referenceFunctions(
-                InjektFqNames.InternalPackage.child(Name.identifier("injektIntrinsic"))
+                InjektFqNames.InternalPackage.child("injektIntrinsic")
             ).single()
         )
     }
@@ -325,18 +328,32 @@ class InjektDeclarationIrBuilder(
     ): IrClass {
         val (assistedParameters, nonAssistedParameters) = parameters
             .partition { it.assisted }
+
+        val parametersNameProvider = NameProvider()
+        parameters.forEach { parametersNameProvider.allocate(it.name) }
+
         val membersInjectorParameters =
-            membersInjector?.constructors?.singleOrNull()?.valueParameters
-                ?.map {
-                    FactoryParameter(
-                        name = it.name.asString(),
-                        type = it.type.typeArguments.single(),
-                        assisted = false,
-                        requirement = false
-                    )
-                } ?: emptyList()
+            membersInjector?.companionObject()?.let { it as IrClass }
+                ?.functions
+                ?.filter { it.name.asString().startsWith("inject\$") }
+                ?.associateWith { injectFunction ->
+                    injectFunction.valueParameters
+                        .drop(1)
+                        .map { valueParameter ->
+                            FactoryParameter(
+                                name = parametersNameProvider.allocateForType(valueParameter.type)
+                                    .asString(),
+                                type = valueParameter.type,
+                                assisted = false,
+                                requirement = false
+                            )
+                        }
+                } ?: emptyMap()
+
         return buildClass {
-            kind = if (nonAssistedParameters.isNotEmpty()) ClassKind.CLASS else ClassKind.OBJECT
+            kind = if (nonAssistedParameters.isNotEmpty() ||
+                membersInjectorParameters.isNotEmpty()
+            ) ClassKind.CLASS else ClassKind.OBJECT
             this.name = name
             this.visibility = Visibilities.PUBLIC // todo visibility
         }.apply clazz@{
@@ -359,7 +376,8 @@ class InjektDeclarationIrBuilder(
 
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
-            val fieldsByNonAssistedParameter = (nonAssistedParameters + membersInjectorParameters)
+            val fieldsByNonAssistedParameter = (nonAssistedParameters + membersInjectorParameters
+                .values.flatten())
                 .associateWith { parameter ->
                     addField(
                         parameter.name,
@@ -402,7 +420,9 @@ class InjektDeclarationIrBuilder(
                 }
             }
 
-            val companion = if (nonAssistedParameters.isNotEmpty()) {
+            val companion = if (nonAssistedParameters.isNotEmpty() ||
+                membersInjectorParameters.isNotEmpty()
+            ) {
                 providerCompanion(
                     typeParametersContainer,
                     parameters,
@@ -413,7 +433,9 @@ class InjektDeclarationIrBuilder(
                 ).also { addChild(it) }
             } else null
 
-            val createFunction = if (nonAssistedParameters.isEmpty()) {
+            val createFunction = if (nonAssistedParameters.isEmpty() &&
+                membersInjectorParameters.isEmpty()
+            ) {
                 factoryCreateFunction(
                     typeParametersContainer,
                     parameters,
@@ -453,7 +475,7 @@ class InjektDeclarationIrBuilder(
                                 dispatchReceiverParameter!!
                             )
 
-                        (parameters + membersInjectorParameters).forEachIndexed { index, parameter ->
+                        (parameters + membersInjectorParameters.values.flatten()).forEachIndexed { index, parameter ->
                             putValueArgument(
                                 index,
                                 if (parameter in assistedParameters) {
@@ -500,7 +522,7 @@ class InjektDeclarationIrBuilder(
         typeParametersContainer: IrTypeParametersContainer?,
         parameters: List<FactoryParameter>,
         membersInjector: IrClass?,
-        membersInjectorParameters: List<FactoryParameter>,
+        membersInjectorParameters: Map<IrSimpleFunction, List<FactoryParameter>>,
         returnType: IrType,
         createExpr: IrBuilderWithScope.(IrFunction) -> IrExpression
     ) = buildClass {
@@ -538,7 +560,7 @@ class InjektDeclarationIrBuilder(
         typeParametersContainer: IrTypeParametersContainer?,
         parameters: List<FactoryParameter>,
         membersInjector: IrClass?,
-        membersInjectorParameters: List<FactoryParameter>,
+        membersInjectorParameters: Map<IrSimpleFunction, List<FactoryParameter>>,
         returnType: IrType,
         owner: IrClass,
         createExpr: IrBuilderWithScope.(IrFunction) -> IrExpression
@@ -562,11 +584,13 @@ class InjektDeclarationIrBuilder(
                 }
 
             val membersInjectorValueParametersByParameter = membersInjectorParameters
-                .associateWith {
-                    addValueParameter(
-                        it.name,
-                        it.type
-                    )
+                .mapValues {
+                    it.value.map {
+                        it to addValueParameter(
+                            it.name,
+                            it.type
+                        )
+                    }
                 }
 
             body = DeclarationIrBuilder(pluginContext, symbol).run {
@@ -576,25 +600,17 @@ class InjektDeclarationIrBuilder(
                     builder.irBlockBody {
                         val instance = irTemporary(createExpr(this, this@apply))
 
-                        membersInjectorParameters.forEach { parameter ->
-                            val injectFunction = membersInjector
-                                .companionObject().let { it as IrClass }
-                                .functions
-                                .single {
-                                    it.name.asString().startsWith("inject\$${parameter.name}")
-                                }
-
+                        membersInjectorValueParametersByParameter.forEach { (injectFunction, parameters) ->
                             +irCall(injectFunction).apply {
                                 dispatchReceiver =
                                     irGetObject((membersInjector.companionObject() as IrClass).symbol)
                                 putValueArgument(0, irGet(instance))
-                                putValueArgument(
-                                    1,
-                                    builder.irGet(
-                                        membersInjectorValueParametersByParameter
-                                            .getValue(parameter)
+                                parameters.forEachIndexed { index, (_, valueParameter) ->
+                                    putValueArgument(
+                                        index + 1,
+                                        irGet(valueParameter)
                                     )
-                                )
+                                }
                             }
                         }
 

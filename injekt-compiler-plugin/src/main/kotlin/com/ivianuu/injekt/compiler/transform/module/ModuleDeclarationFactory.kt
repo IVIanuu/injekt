@@ -257,7 +257,7 @@ class ModuleDeclarationFactory(
         val declarations = mutableListOf<ModuleDeclaration>()
 
         if (call.isModuleLambdaInvoke()) {
-            val includeName = nameProvider.allocate("moduleLambda")
+            val includeName = nameProvider.allocateForGroup("moduleLambda")
             val arguments = call.getArgumentsWithIrIncludingNulls().drop(1)
             val moduleValueParameterProperties = arguments
                 .map { (valueParameter, _) ->
@@ -265,7 +265,7 @@ class ModuleDeclarationFactory(
                         .fieldBakedProperty(
                             moduleClass,
                             Name.identifier(
-                                nameProvider.allocate(
+                                nameProvider.allocateForGroup(
                                     "$includeName\$${valueParameter.type.classifierOrFail
                                         .descriptor.name}"
                                 )
@@ -337,7 +337,7 @@ class ModuleDeclarationFactory(
         val property = InjektDeclarationIrBuilder(pluginContext, includedClass.symbol)
             .fieldBakedProperty(
                 moduleClass,
-                Name.identifier(nameProvider.allocate(function.name.asString())),
+                Name.identifier(nameProvider.allocateForGroup(function.name.asString())),
                 includedType
             )
 
@@ -611,7 +611,7 @@ class ModuleDeclarationFactory(
                     .fieldBakedProperty(
                         moduleClass,
                         Name.identifier(
-                            nameProvider.allocate(
+                            nameProvider.allocateForGroup(
                                 bindingType.classifierOrFail.descriptor.name
                                     .asString().decapitalize()
                             )
@@ -668,6 +668,6 @@ class ModuleDeclarationFactory(
     }
 
     private fun providerName(type: IrType) =
-        Name.identifier(nameProvider.allocate("${type.classifierOrFail.descriptor.name}_Factory"))
+        Name.identifier(nameProvider.allocateForGroup("${type.classifierOrFail.descriptor.name}_Factory"))
 
 }

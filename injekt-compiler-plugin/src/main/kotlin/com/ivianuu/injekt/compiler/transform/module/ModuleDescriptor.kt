@@ -106,7 +106,7 @@ class ModuleDescriptor(
 
     private fun addChildFactoryFunction(declaration: ChildFactoryDeclaration) {
         clazz.addFunction(
-            name = nameProvider.allocate(declaration.factoryRef.symbol.owner.name.asString()),
+            name = nameProvider.allocateForGroup(declaration.factoryRef.symbol.owner.name.asString()),
             returnType = declaration.factoryRef.symbol.owner.returnType
                 .remapTypeParameters(module.clazz, clazz),
             modality = Modality.ABSTRACT
@@ -138,7 +138,7 @@ class ModuleDescriptor(
 
     private fun addAliasFunction(declaration: AliasDeclaration) {
         clazz.addFunction(
-            name = nameProvider.allocate(
+            name = nameProvider.allocateForGroup(
                 declaration.originalType.classifierOrFail.descriptor.name.asString() +
                         "as${declaration.aliasType.classifierOrFail.descriptor.name.asString()}"
             ),
@@ -191,7 +191,7 @@ class ModuleDescriptor(
 
     private fun addIncludedModuleFunction(declaration: IncludedModuleDeclaration) {
         clazz.addFunction(
-            name = nameProvider.allocate("module"),
+            name = nameProvider.allocateForGroup("module"),
             returnType = declaration.includedType.remapTypeParameters(module.clazz, clazz),
             modality = Modality.ABSTRACT
         ).apply {
@@ -223,7 +223,7 @@ class ModuleDescriptor(
 
     private fun addMapFunction(declaration: MapDeclaration) {
         clazz.addFunction(
-            name = nameProvider.allocate("map"),
+            name = nameProvider.allocateForGroup("map"),
             returnType = declaration.mapType.remapTypeParameters(module.function, clazz),
             modality = Modality.ABSTRACT
         ).apply {
@@ -235,7 +235,7 @@ class ModuleDescriptor(
 
     private fun addMapEntryFunction(declaration: MapEntryDeclaration) {
         clazz.addFunction(
-            name = nameProvider.allocate("mapEntry"),
+            name = nameProvider.allocateForGroup("mapEntry"),
             returnType = pluginContext.irBuiltIns.unitType,
             modality = Modality.ABSTRACT
         ).apply {
@@ -258,7 +258,7 @@ class ModuleDescriptor(
 
     private fun addSetFunction(declaration: SetDeclaration) {
         clazz.addFunction(
-            name = nameProvider.allocate("set"),
+            name = nameProvider.allocateForGroup("set"),
             returnType = declaration.setType.remapTypeParameters(module.function, clazz),
             modality = Modality.ABSTRACT
         ).apply {
@@ -270,7 +270,7 @@ class ModuleDescriptor(
 
     private fun addSetElementFunction(declaration: SetElementDeclaration) {
         clazz.addFunction(
-            name = nameProvider.allocate("setElement"),
+            name = nameProvider.allocateForGroup("setElement"),
             returnType = pluginContext.irBuiltIns.unitType,
             modality = Modality.ABSTRACT
         ).apply {

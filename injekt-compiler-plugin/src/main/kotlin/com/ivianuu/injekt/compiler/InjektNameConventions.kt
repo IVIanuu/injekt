@@ -36,7 +36,7 @@ object InjektNameConventions {
     ): Name {
         return getJoinedName(
             packageFqName,
-            classFqName.child(Name.identifier("BindingFactory"))
+            classFqName.child("BindingFactory")
         )
     }
 
@@ -46,7 +46,7 @@ object InjektNameConventions {
     ): Name {
         return getJoinedName(
             packageFqName,
-            classFqName.child(Name.identifier("MembersInjector"))
+            classFqName.child("MembersInjector")
         )
     }
 
@@ -65,7 +65,7 @@ object InjektNameConventions {
     ): Name {
         return getJoinedName(
             packageFqName,
-            classFqName.child(Name.identifier("BindingAdapter"))
+            classFqName.child("BindingAdapter")
         )
     }
 
@@ -87,7 +87,7 @@ object InjektNameConventions {
         childFactory: Boolean
     ): Name {
         return if (childFactory) {
-            Name.identifier(factoryFunction.descriptor.name.asString() + "_Factory")
+            (factoryFunction.descriptor.name.asString() + "_Factory").asNameId()
         } else {
             getNameAtSourcePositionWithSuffix(
                 file, call,
@@ -110,39 +110,36 @@ object InjektNameConventions {
     ): Name {
         return getUniqueNameForFunctionWithSuffix(
             factoryFunction,
-            "FactoryModule",
-            hashValueParameters = false
+            "FactoryModule"
         )
     }
 
     fun classParameterNameForTypeParameter(typeParameter: IrTypeParameter): Name =
-        Name.identifier("class\$${typeParameter.descriptor.name}")
+        "class\$${typeParameter.descriptor.name}".asNameId()
 
     fun typeParameterNameForClassParameterName(name: Name): Name =
-        Name.identifier(name.asString().removePrefix("class\$"))
+        name.asString().removePrefix("class\$").asNameId()
 
     fun getCompositionElementNameForFunction(
         compositionFqName: FqName,
         moduleFunction: IrFunction
     ): Name {
-        return Name.identifier(
-            compositionFqName.asString()
-                .replace(".", "__") + "___" + moduleFunction.descriptor.fqNameSafe.asString()
-                .replace(".", "__")
-        )
+        return (compositionFqName.asString()
+            .replace(".", "__") + "___" + moduleFunction.descriptor.fqNameSafe.asString()
+            .replace(".", "__"))
+            .asNameId()
     }
 
-    fun nameWithoutIllegalChars(name: String): Name = Name.identifier(
-        name
-            .replace(".", "")
-            .replace("<", "")
-            .replace(">", "")
-            .replace(" ", "")
-            .replace("[", "")
-            .replace("]", "")
-            .replace("@", "")
-            .replace(",", "")
-    )
+    fun nameWithoutIllegalChars(name: String): Name = name
+        .replace(".", "")
+        .replace("<", "")
+        .replace(">", "")
+        .replace(" ", "")
+        .replace("[", "")
+        .replace("]", "")
+        .replace("@", "")
+        .replace(",", "")
+        .asNameId()
 
     private fun getUniqueNameForFunctionWithSuffix(
         function: IrFunction,
@@ -152,21 +149,16 @@ object InjektNameConventions {
         return getJoinedName(
             function.getPackageFragment()!!.fqName,
             function.descriptor.fqNameSafe
-                .let {
-                    if (hashValueParameters) {
-                        it.child(Name.identifier(valueParametersHash(function).toString()))
-                    } else it
-                }
-                .child(Name.identifier(suffix))
+                .child(valueParametersHash(function).toString())
+                .child(suffix)
         ).let { nameWithoutIllegalChars(it.asString()) }
     }
 
     fun getChildFactoryImplName(fqName: String): Name {
-        return Name.identifier(
-            fqName
-                .split(".")
-                .last() + "_FactoryImpl"
-        )
+        return (fqName
+            .split(".")
+            .last() + "_FactoryImpl")
+            .asNameId()
     }
 
     private fun getNameAtSourcePositionWithSuffix(
@@ -177,9 +169,9 @@ object InjektNameConventions {
         return getJoinedName(
             file.fqName,
             file.fqName
-                .child(Name.identifier(file.name.replace(".kt", "")))
-                .child(Name.identifier(call.startOffset.toString()))
-                .child(Name.identifier(suffix))
+                .child(file.name.replace(".kt", ""))
+                .child(call.startOffset.toString())
+                .child(suffix)
         )
     }
 
@@ -196,7 +188,7 @@ object InjektNameConventions {
         val joinedSegments = fqName.asString()
             .removePrefix(packageFqName.asString() + ".")
             .split(".")
-        return Name.identifier(joinedSegments.joinToString("_"))
+        return joinedSegments.joinToString("_").asNameId()
     }
 
 }

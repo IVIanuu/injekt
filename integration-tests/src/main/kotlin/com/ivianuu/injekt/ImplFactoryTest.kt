@@ -21,6 +21,8 @@ import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertSame
@@ -415,7 +417,7 @@ class ImplFactoryTest {
     )
 
     @Test
-    fun testFactoryWithTypeParameters() = codegen(
+    fun testInlineFactory() = codegen(
         """
         interface TestComponent<T> {
             val dep: T
@@ -434,6 +436,76 @@ class ImplFactoryTest {
         }
     """
     )
+
+    @Test
+    fun testMultiCompilationInlineFactory() = multiCodegen(
+        listOf(
+            source(
+                """
+                    interface TestComponent<T> { 
+                        val dep: T 
+                    }
+                    
+                    @Factory 
+                    inline fun <T> createComponent(): TestComponent<T> { 
+                        transient<Foo>()
+                        transient<Bar>()
+                        return create()
+                    }
+                    """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun invoke() { 
+                        createComponent<Foo>()
+                        createComponent<Bar>()
+                    }
+                """
+            )
+        )
+    )
+
+    @Test
+    fun testMultiCompilationInlineFactoryWithSameName() = multiCodegen(
+        listOf(
+            source(
+                """
+                    interface TestComponent<T> { 
+                        val dep: T 
+                    }
+                    
+                    @Factory 
+                    inline fun <T> createComponent(): TestComponent<T> { 
+                        transient<Foo>()
+                        transient<Bar>()
+                        return create()
+                    }
+                    
+                    @Factory 
+                    inline fun <T> createComponent(block: @Module () -> Unit): TestComponent<T> {
+                        block()
+                        return create()
+                    }
+                    """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun invoke() { 
+                        createComponent<Foo>()
+                        createComponent<Bar> {
+                            transient<Foo>()
+                            transient<Bar>()
+                        }
+                    }
+                """
+            )
+        )
+    )
+
 
     @Test
     fun testImplFactoryLambda() = codegen(

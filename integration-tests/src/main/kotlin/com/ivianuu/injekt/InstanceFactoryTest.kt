@@ -18,6 +18,8 @@ package com.ivianuu.injekt
 
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
@@ -103,7 +105,7 @@ class InstanceFactoryTest {
     )
 
     @Test
-    fun testFactoryWithTypeParameters() = codegen(
+    fun testInlineFactory() = codegen(
         """
         @InstanceFactory
         inline fun <T> createInstance(): T {
@@ -117,6 +119,67 @@ class InstanceFactoryTest {
             createInstance<Bar>()
         }
     """
+    )
+
+    @Test
+    fun testMultiCompilationInlineFactory() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @InstanceFactory 
+                    inline fun <T> createInstance(): T { 
+                        transient<Foo>()
+                        transient<Bar>()
+                        return create()
+                    }
+                    """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun invoke() { 
+                        createInstance<Foo>()
+                        createInstance<Bar>()
+                    }
+                """
+            )
+        )
+    )
+
+    @Test
+    fun testMultiCompilationInlineFactoryWithSameName() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @InstanceFactory
+                    inline fun <T> createInstance(): T { 
+                        transient<Foo>()
+                        transient<Bar>()
+                        return create()
+                    }
+                    
+                    @InstanceFactory 
+                    inline fun <T> createInstance(block: @Module () -> Unit): T {
+                        block()
+                        return create()
+                    }
+                    """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun invoke() { 
+                        createInstance<Foo>()
+                        createInstance<Bar> {
+                            transient<Foo>()
+                            transient<Bar>()
+                        }
+                    }
+                """
+            )
+        )
     )
 
     @Test

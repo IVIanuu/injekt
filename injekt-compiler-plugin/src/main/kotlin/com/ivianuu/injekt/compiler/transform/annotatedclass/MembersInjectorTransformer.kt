@@ -165,7 +165,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
 
             val fieldsByInjectProperty = injectProperties.associateWith { property ->
                 addField {
-                    name = nameProvider.allocate(property.name)
+                    name = nameProvider.allocateForGroup(property.name)
                     type = irBuiltIns.function(0)
                         .typeWith(property.getter!!.returnType)
                         .withNoArgQualifiers(pluginContext, listOf(InjektFqNames.Provider))
@@ -176,7 +176,11 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                 function.valueParameters
                     .map { valueParameter ->
                         addField {
-                            name = nameProvider.allocate(valueParameter.name)
+                            name = Name.identifier(
+                                nameProvider.allocateForGroup(
+                                    "${function.name}\$${valueParameter.name}"
+                                )
+                            )
                             type = irBuiltIns.function(0)
                                 .typeWith(valueParameter.type)
                                 .withNoArgQualifiers(pluginContext, listOf(InjektFqNames.Provider))
@@ -241,7 +245,8 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
 
             val companionInjectFunctionsByProperty = injectProperties.associateWith { property ->
                 companion.addFunction {
-                    name = Name.identifier(nameProvider.allocate("inject\$${property.name}"))
+                    name =
+                        Name.identifier(nameProvider.allocateForGroup("inject\$${property.name}"))
                     returnType = irBuiltIns.unitType
                 }.apply {
                     dispatchReceiverParameter = thisReceiver!!.copyTo(this)
@@ -267,7 +272,8 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
 
             val componentInjectFunctionsByFunctions = injectFunctions.associateWith { function ->
                 companion.addFunction {
-                    name = Name.identifier(nameProvider.allocate("inject\$${function.name}"))
+                    name =
+                        Name.identifier(nameProvider.allocateForGroup("inject\$${function.name}"))
                     returnType = irBuiltIns.unitType
                 }.apply {
                     dispatchReceiverParameter = thisReceiver!!.copyTo(this)

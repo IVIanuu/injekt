@@ -39,7 +39,6 @@ import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.util.dump
 
 class InjektIrGenerationExtension(
     private val project: Project
@@ -136,8 +135,6 @@ class InjektIrGenerationExtension(
 
         // patch file metadata
         FileMetadataPatcher(pluginContext).lower(moduleFragment)
-
-        println(moduleFragment.dump())
     }
 
 }

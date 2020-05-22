@@ -21,25 +21,36 @@ import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.name.Name
 
 class NameProvider {
-    private val indicesByGroup = mutableMapOf<String, Int>()
-    fun allocate(group: String): String {
-        val index = indicesByGroup[group]
-        indicesByGroup[group] = (index ?: 0) + 1
+
+    private val indicesByName = mutableMapOf<String, Int>()
+
+    fun allocate(name: String) {
+        check(name !in indicesByName) {
+            "Name already exists $name"
+        }
+    }
+
+    fun allocate(name: Name) {
+        allocate(name.asString())
+    }
+
+    fun allocateForGroup(group: Name): Name {
+        return allocateForGroup(group.asString()).asNameId()
+    }
+
+    fun allocateForGroup(group: String): String {
+        val index = indicesByName[group]
+        indicesByName[group] = (index ?: 0) + 1
         return InjektNameConventions.nameWithoutIllegalChars(
             "${group}${index?.toString().orEmpty()}"
         ).asString()
     }
 
-    fun allocate(group: Name): Name {
-        return Name.identifier(allocate(group.asString()))
+    fun allocateForType(type: IrType): Name {
+        return allocateForGroup(
+            type.classifierOrFail.descriptor.name.asString()
+                .decapitalize()
+        ).asNameId()
     }
 
-    fun allocateForType(type: IrType): Name {
-        return Name.identifier(
-            allocate(
-                type.classifierOrFail.descriptor.name.asString()
-                    .decapitalize()
-            )
-        )
-    }
 }
