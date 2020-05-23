@@ -41,8 +41,8 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunction
-import org.jetbrains.kotlin.ir.util.nameForIrSerialization
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 
@@ -80,10 +80,11 @@ class ModuleNode(
     val module: IrClass,
     override val key: Key,
     override val initializerAccessor: InitializerAccessor,
-    val typeParametersMap: Map<IrTypeParameterSymbol, IrType>
+    val typeParametersMap: Map<IrTypeParameterSymbol, IrType>,
+    val isStateless: Boolean
 ) : RequirementNode {
     val descriptor = module.declarations.single {
-        it is IrClass && it.nameForIrSerialization.asString() == "Descriptor"
+        it.hasAnnotation(InjektFqNames.AstModule)
     } as IrClass
     val descriptorTypeParametersMap = descriptor.typeParameters.associateWith {
         typeParametersMap.values.toList()[it.index]

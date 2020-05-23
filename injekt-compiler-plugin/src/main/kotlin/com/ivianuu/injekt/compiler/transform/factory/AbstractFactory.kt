@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.name.FqName
 
 abstract class AbstractFactory(
@@ -71,7 +72,8 @@ abstract class AbstractFactory(
                     .asKey(),
                 module = moduleClass,
                 initializerAccessor = moduleAccessor,
-                typeParametersMap = emptyMap()
+                typeParametersMap = emptyMap(),
+                isStateless = moduleClass.fields.toList().isEmpty()
             ),
             declarationStore = declarationStore,
             symbols = symbols,

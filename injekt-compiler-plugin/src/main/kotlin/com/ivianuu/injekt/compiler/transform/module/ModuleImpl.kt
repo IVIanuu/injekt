@@ -190,6 +190,9 @@ class ModuleImpl(
             }
 
             moduleDescriptor.addDeclarations(declarations)
+            if (declarations.all { it.statement == null } && fieldsByParameters.isEmpty()) {
+                moduleDescriptor.setStatic()
+            }
             addChild(moduleDescriptor.clazz)
 
             transformChildrenVoid(object : IrElementTransformerVoid() {

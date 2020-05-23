@@ -58,9 +58,12 @@ class ModuleDescriptor(
             .noArgSingleConstructorCall(symbols.astModule)
     }
 
-    fun addDeclarations(
-        moduleDeclarations: List<ModuleDeclaration>
-    ) {
+    fun setStatic() {
+        clazz.annotations += InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
+            .noArgSingleConstructorCall(symbols.astStatic)
+    }
+
+    fun addDeclarations(moduleDeclarations: List<ModuleDeclaration>) {
         moduleDeclarations.forEach { declaration ->
             when (declaration) {
                 is ScopeDeclaration -> addScopeFunction(declaration)
@@ -202,10 +205,12 @@ class ModuleDescriptor(
                 annotations += InjektDeclarationIrBuilder(module.pluginContext, module.clazz.symbol)
                     .noArgSingleConstructorCall(symbols.astInline)
             }
-            annotations += declaration.path.asAnnotation(
-                DeclarationIrBuilder(pluginContext, symbol),
-                symbols
-            )
+            if (declaration.path != null) {
+                annotations += declaration.path.asAnnotation(
+                    DeclarationIrBuilder(pluginContext, symbol),
+                    symbols
+                )
+            }
 
             declaration.capturedValueArguments.forEachIndexed { index, parameter ->
                 addValueParameter(

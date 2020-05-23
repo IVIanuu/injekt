@@ -51,6 +51,8 @@ object InjektAst {
 
     annotation class Scoped
 
+    annotation class Static
+
     annotation class Typed
 
     annotation class Map {

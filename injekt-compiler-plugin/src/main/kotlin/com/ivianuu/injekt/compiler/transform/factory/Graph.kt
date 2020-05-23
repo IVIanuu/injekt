@@ -28,11 +28,10 @@ import com.ivianuu.injekt.compiler.getIrClass
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
-import com.ivianuu.injekt.compiler.type
+import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.expressions.IrConst
-import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
@@ -42,7 +41,7 @@ import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.nameForIrSerialization
+import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.constants.IntValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
@@ -172,7 +171,7 @@ class Graph(
         val module = moduleNode.module
 
         val descriptor = module.declarations.single {
-            it is IrClass && it.nameForIrSerialization.asString() == "Descriptor"
+            it.hasAnnotation(InjektFqNames.AstModule)
         } as IrClass
 
         val functions = descriptor.functions.toList()
@@ -314,28 +313,42 @@ class Graph(
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstModule) }
             .filterNot { it.hasAnnotation(InjektFqNames.AstInline) }
-            .map {
-                it to it.returnType.classOrNull?.owner as IrClass
-            }
-            .forEach { (function, includedModule) ->
-                val moduleName = function.getAnnotation(InjektFqNames.AstPropertyPath)!!
-                    .getValueArgument(0)!!
-                    .let { it as IrConst<String> }
-                    .value
+            .forEach { function ->
+                val includedModule = function.returnType.classOrNull!!.owner
 
-                val property = moduleNode.module.findPropertyGetter(moduleName)
+                val key = function.returnType
+                    .substitute(moduleNode.descriptorTypeParametersMap)
+                    .asKey()
+
+                val moduleName = function.getAnnotation(InjektFqNames.AstPropertyPath)
+                    ?.getValueArgument(0)
+                    ?.let { it as IrConst<String> }
+                    ?.value
+
+                val property = moduleName?.let {
+                    moduleNode.module.findPropertyGetter(moduleName)
+                }
 
                 val typeParametersMap = includedModule.typeParameters
-                    .map { it.symbol to (property.returnType as IrSimpleType).arguments[it.index].type }
+                    .map {
+                        it.symbol to function.returnType.typeArguments[it.index]
+                            .substitute(moduleNode.descriptorTypeParametersMap)
+                    }
                     .toMap()
                     .mapValues { it.value.substituteAndKeepQualifiers(moduleNode.typeParametersMap) }
 
                 addModule(
                     ModuleNode(
-                        includedModule,
-                        property.returnType.asKey(),
-                        moduleNode.initializerAccessor.child(property),
-                        typeParametersMap
+                        module = includedModule,
+                        key = key,
+                        initializerAccessor = property?.let {
+                            moduleNode.initializerAccessor.child(
+                                it
+                            )
+                        }
+                            ?: { error("Module is stateless ${includedModule.dump()}") },
+                        typeParametersMap = typeParametersMap,
+                        isStateless = property == null
                     )
                 )
             }

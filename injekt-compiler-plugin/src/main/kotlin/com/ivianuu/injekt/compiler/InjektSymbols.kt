@@ -18,12 +18,9 @@ package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
-import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
-import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
 import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -68,6 +65,7 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val astScoped = injektAst.childClass(InjektFqNames.AstScoped.shortName())
     val astSet = injektAst.childClass(InjektFqNames.AstSet.shortName())
     val astSetElement = astSet.childClass(InjektFqNames.AstSetElement.shortName())
+    val astStatic = injektAst.childClass(InjektFqNames.AstStatic.shortName())
     val astTyped = injektAst.childClass(InjektFqNames.AstTyped.shortName())
 
     val assisted = pluginContext.referenceClass(InjektFqNames.Assisted)!!
@@ -107,16 +105,6 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val transient = pluginContext.referenceClass(InjektFqNames.Transient)!!
 
     val uninitialized = pluginContext.referenceClass(InjektFqNames.Uninitialized)!!
-
-    fun getTypeAlias(fqName: FqName): IrTypeAliasSymbol =
-        pluginContext.symbolTable.referenceTypeAlias(
-            pluginContext.moduleDescriptor.findTypeAliasAcrossModuleDependencies(
-                ClassId.topLevel(
-                    fqName
-                )
-            )
-                ?: error("No class found for $fqName")
-        )
 
     fun getPackage(fqName: FqName): PackageViewDescriptor =
         pluginContext.moduleDescriptor.getPackage(fqName)

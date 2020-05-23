@@ -67,7 +67,6 @@ import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunction
-import org.jetbrains.kotlin.ir.util.nameForIrSerialization
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -329,12 +328,10 @@ class ModuleDeclarationFactory(
             .remapTypeParameters(module.function, module.clazz)
         val includedDescriptor = includedClass
             .declarations
-            .single {
-                it is IrClass && it.nameForIrSerialization.asString() == "Descriptor"
-            }
-            .let { it as IrClass }
+            .single { it.hasAnnotation(InjektFqNames.AstModule) } as IrClass
 
-        val property = InjektDeclarationIrBuilder(pluginContext, includedClass.symbol)
+        val property = if (includedDescriptor.hasAnnotation(InjektFqNames.AstStatic)) null
+        else InjektDeclarationIrBuilder(pluginContext, includedClass.symbol)
             .fieldBakedProperty(
                 moduleClass,
                 Name.identifier(nameProvider.allocateForGroup(function.name.asString())),
@@ -344,31 +341,32 @@ class ModuleDeclarationFactory(
         declarations += IncludedModuleDeclaration(
             includedType,
             false,
-            PropertyPath(property),
-            emptyList()
-        ) { moduleExpression ->
-            val constructor = includedClass.constructors.single()
-            irSetField(
-                moduleExpression(),
-                property.backingField!!,
-                irCall(constructor).apply {
-                    typeArguments.forEachIndexed { index, typeArgument ->
-                        putTypeArgument(index, typeArgument)
-                    }
+            if (property != null) PropertyPath(property) else null,
+            emptyList(),
+            statement = if (property == null) null else ({ moduleExpression ->
+                val constructor = includedClass.constructors.single()
+                irSetField(
+                    moduleExpression(),
+                    property.backingField!!,
+                    irCall(constructor).apply {
+                        typeArguments.forEachIndexed { index, typeArgument ->
+                            putTypeArgument(index, typeArgument)
+                        }
 
-                    valueArguments
-                        .filter { (valueParameter, _) ->
-                            !valueParameter.type.isFunction() ||
-                                    (!valueParameter.type.hasAnnotation(InjektFqNames.ProviderDsl) &&
-                                            !valueParameter.type.hasAnnotation(InjektFqNames.Module))
-                        }
-                        .map { it.second }
-                        .forEachIndexed { index, valueArgument ->
-                            putValueArgument(index, valueArgument())
-                        }
-                }
-            )
-        }
+                        valueArguments
+                            .filter { (valueParameter, _) ->
+                                !valueParameter.type.isFunction() ||
+                                        (!valueParameter.type.hasAnnotation(InjektFqNames.ProviderDsl) &&
+                                                !valueParameter.type.hasAnnotation(InjektFqNames.Module))
+                            }
+                            .map { it.second }
+                            .forEachIndexed { index, valueArgument ->
+                                putValueArgument(index, valueArgument())
+                            }
+                    }
+                )
+            })
+        )
 
         includedDescriptor
             .functions
@@ -402,7 +400,7 @@ class ModuleDeclarationFactory(
                                 valueParameter to {
                                     DeclarationIrBuilder(
                                         pluginContext,
-                                        property.symbol
+                                        property!!.symbol
                                     ).run {
                                         irCall(innerProperty.getter!!).apply {
                                             dispatchReceiver = irCall(property.getter!!).apply {
@@ -475,7 +473,7 @@ class ModuleDeclarationFactory(
                                             pluginContext,
                                             innerProperty.symbol
                                         ).irCall(innerProperty.getter!!).apply {
-                                            dispatchReceiver = irCall(property.getter!!).apply {
+                                            dispatchReceiver = irCall(property!!.getter!!).apply {
                                                 dispatchReceiver =
                                                     irGet(module.clazz.thisReceiver!!)
                                             }

@@ -58,7 +58,7 @@ class BindingDeclaration(
 class IncludedModuleDeclaration(
     val includedType: IrType,
     val inline: Boolean,
-    val path: Path,
+    val path: Path?,
     val capturedValueArguments: List<Parameter>,
     statement: (IrBuilderWithScope.(() -> IrExpression) -> IrStatement)?
 ) : ModuleDeclaration(statement) {
