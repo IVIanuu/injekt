@@ -223,6 +223,11 @@ interface InjektErrors {
         )
 
         @JvmField
+        val BINDING_EFFECT_WITHOUT_TRANSIENT_OR_SCOPED = error(
+            "@BindingEffect must be combined with @Transient, @Scope or @BindingAdapter annotations."
+        )
+
+        @JvmField
         val EITHER_BINDING_ADAPTER_OR_BINDING_EFFECT = error(
             "A function can only be annotated with one of @BindingAdapter or @BindingFunction"
         )

@@ -165,6 +165,23 @@ class BindingEffectChecker : DeclarationChecker {
                 )
             }
 
+            if (descriptor.hasAnnotatedAnnotations(
+                    InjektFqNames.BindingEffect,
+                    descriptor.module
+                ) &&
+                !descriptor.hasAnnotatedAnnotations(
+                    InjektFqNames.BindingAdapter,
+                    descriptor.module
+                ) &&
+                !descriptor.hasAnnotation(InjektFqNames.Transient) &&
+                !descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope, descriptor.module)
+            ) {
+                context.trace.report(
+                    InjektErrors.BINDING_EFFECT_WITHOUT_TRANSIENT_OR_SCOPED
+                        .on(declaration)
+                )
+            }
+
             val effectAnnotations = listOfNotNull(
                 descriptor.getAnnotatedAnnotations(InjektFqNames.BindingAdapter, descriptor.module)
                     .singleOrNull()

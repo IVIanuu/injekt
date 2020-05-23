@@ -23,7 +23,7 @@ import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
 import org.junit.Test
 
-class BindingAdapterTest {
+class BindingEffectTest {
 
     @Test
     fun testSimpleBindingEffect() = codegen(
@@ -319,7 +319,9 @@ class BindingAdapterTest {
     """
     ) {
         assertCompileError("type parameter")
-    }
+    }*(
+
+// todo test binding effect without "trigger"
 
     @Test
     fun testBindingAdapterWithTransient() = codegen(
