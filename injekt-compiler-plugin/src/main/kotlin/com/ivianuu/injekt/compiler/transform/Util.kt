@@ -61,7 +61,9 @@ fun IrFunction.deepCopyWithPreservingQualifiers(): IrFunction {
         object : DeepCopyIrTreeWithSymbols(symbolRemapper, typeRemapper) {
             override fun visitSimpleFunction(declaration: IrSimpleFunction): IrSimpleFunction {
                 return super.visitSimpleFunction(declaration).also {
-                    if (it.descriptor in mappedDescriptors) {
+                    if (it.descriptor in mappedDescriptors &&
+                        declaration.metadata != null
+                    ) {
                         (it as IrFunctionImpl).metadata = MetadataSource.Function(it.descriptor)
                     }
                 }

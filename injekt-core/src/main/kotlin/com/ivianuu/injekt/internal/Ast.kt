@@ -47,8 +47,6 @@ object InjektAst {
 
     annotation class Parents(val values: Array<KClass<*>>)
 
-    annotation class ProviderDsl
-
     annotation class Scope
 
     annotation class Scoped

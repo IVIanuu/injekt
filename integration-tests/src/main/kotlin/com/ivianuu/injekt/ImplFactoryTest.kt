@@ -35,17 +35,18 @@ class ImplFactoryTest {
     fun testTransient() = codegen(
         """
         interface TestComponent {
-            val foo: Foo
+            val bar: Bar
         }
         
         @Factory
         fun createComponent(): TestComponent {
             transient { Foo() }
+            transient { Bar(get()) }
             return create()
         }
         
         val component = createComponent()
-        fun invoke() = component.foo
+        fun invoke() = component.bar
     """
     ) {
         assertNotSame(

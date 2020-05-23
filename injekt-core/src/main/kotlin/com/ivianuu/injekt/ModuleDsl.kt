@@ -29,7 +29,8 @@ fun <S : T, T> alias(): Unit = injektIntrinsic()
 
 fun <T> transient(): Unit = injektIntrinsic()
 
-inline fun <T> transient(definition: ProviderDefinition<T>): Unit = injektIntrinsic()
+inline fun <T> transient(definition: @ProviderDsl (AssistedParameters) -> T): Unit =
+    injektIntrinsic()
 
 annotation class Transient
 
@@ -37,4 +38,4 @@ fun <T> instance(instance: T): Unit = injektIntrinsic()
 
 fun <T> scoped(): Unit = injektIntrinsic()
 
-inline fun <T> scoped(definition: ProviderDefinition<T>): Unit = injektIntrinsic()
+inline fun <T> scoped(definition: @ProviderDsl (AssistedParameters) -> T): Unit = injektIntrinsic()

@@ -48,7 +48,6 @@ object InjektFqNames {
     val AstObjectGraph = InjektAst.child("ObjectGraph")
     val AstPath = InjektAst.child("Path")
     val AstParents = InjektAst.child("Parents")
-    val AstProviderDsl = InjektAst.child("ProviderDsl")
     val AstClassPath = AstPath.child("Class")
     val AstPropertyPath = AstPath.child("Property")
     val AstTypeParameterPath = AstPath.child("TypeParameter")
@@ -95,7 +94,6 @@ object InjektFqNames {
     val NoOpMembersInjector = InternalPackage.child("NoOpMembersInjector")
 
     val Provider = InjektPackage.child("Provider")
-    val ProviderDefinition = InjektPackage.child("ProviderDefinition")
     val ProviderDsl = InjektPackage.child("ProviderDsl")
     val ProviderOfLazy = InternalPackage.child("ProviderOfLazy")
 

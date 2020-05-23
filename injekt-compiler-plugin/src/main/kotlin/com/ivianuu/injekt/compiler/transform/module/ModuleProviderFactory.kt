@@ -41,12 +41,12 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrValueDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrReturn
-import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -114,23 +114,12 @@ class ModuleProviderFactory(
             .remapTypeParameters(definitionFunction, module.clazz)
 
         val assistedParameterCalls = mutableListOf<IrCall>()
-        val dependencyCalls = mutableListOf<IrCall>()
-        val providerDslFunctionCalls = mutableListOf<IrCall>()
         val capturedModuleValueParameters = mutableListOf<IrValueDeclaration>()
 
         definitionFunction.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
-                when {
-                    expression.dispatchReceiver?.type?.classOrNull == symbols.providerDsl &&
-                            expression.symbol.owner.name.asString() == "get" -> {
-                        dependencyCalls += expression
-                    }
-                    expression.symbol.owner.hasAnnotation(InjektFqNames.AstProviderDsl) -> {
-                        providerDslFunctionCalls += expression
-                    }
-                    expression.dispatchReceiver?.type == definitionFunction.valueParameters.single().type -> {
-                        assistedParameterCalls += expression
-                    }
+                if (expression.dispatchReceiver?.type == definitionFunction.valueParameters.first().type) {
+                    assistedParameterCalls += expression
                 }
                 return super.visitCall(expression)
             }
@@ -146,7 +135,10 @@ class ModuleProviderFactory(
             }
         })
 
-        val parameters = mutableListOf<InjektDeclarationIrBuilder.FactoryParameter>()
+        val parameterNameProvider = NameProvider()
+
+        val parameters =
+            mutableListOf<InjektDeclarationIrBuilder.FactoryParameter>()
 
         if (capturedModuleValueParameters.isNotEmpty()) {
             parameters += InjektDeclarationIrBuilder.FactoryParameter(
@@ -160,41 +152,39 @@ class ModuleProviderFactory(
             )
         }
 
-        val parameterNameProvider = NameProvider()
+        val parametersByFunctionParameters =
+            mutableMapOf<IrValueParameter, InjektDeclarationIrBuilder.FactoryParameter>()
+
+        definitionFunction.valueParameters
+            .drop(1) // assisted
+            .forEach { valueParameter ->
+                parameters += InjektDeclarationIrBuilder.FactoryParameter(
+                    name = parameterNameProvider.allocateForType(valueParameter.type)
+                        .asString(), // todo use param name
+                    type = valueParameter.type
+                        .remapTypeParameters(definitionFunction, module.clazz),
+                    assisted = false, // todo maybe transform assisted in another step and check here if it has @Assisted
+                    requirement = false
+                ).also {
+                    parametersByFunctionParameters[valueParameter] = it
+                }
+            }
 
         val parametersByCall =
-            mutableMapOf<IrCall, List<InjektDeclarationIrBuilder.FactoryParameter>>()
-        (assistedParameterCalls + dependencyCalls).forEach { call ->
-            val depQualifiers =
+            mutableMapOf<IrCall, InjektDeclarationIrBuilder.FactoryParameter>()
+        assistedParameterCalls.forEach { call ->
+            val exprQualifiers =
                 pluginContext.irTrace[InjektWritableSlices.QUALIFIERS, call] ?: emptyList()
             parameters += InjektDeclarationIrBuilder.FactoryParameter(
                 name = parameterNameProvider.allocateForType(call.type).asString(),
                 type = call.type
-                    .withAnnotations(depQualifiers)
+                    .withAnnotations(exprQualifiers)
                     .remapTypeParameters(definitionFunction, module.clazz),
                 assisted = call in assistedParameterCalls,
                 requirement = false
             ).also {
-                parametersByCall[call] = listOf(it)
+                parametersByCall[call] = it
             }
-        }
-
-        providerDslFunctionCalls.forEach { call ->
-            parameters += call.symbol.owner
-                .valueParameters
-                .filter { it.name.asString().startsWith("dsl_provider\$") }
-                .map {
-                    InjektDeclarationIrBuilder.FactoryParameter(
-                        name = "p${parameters.size}",
-                        type = call.type
-                            .remapTypeParameters(definitionFunction, module.clazz),
-                        assisted = call in assistedParameterCalls,
-                        requirement = false
-                    )
-                }
-                .also {
-                    parametersByCall[call] = it
-                }
         }
 
         return InjektDeclarationIrBuilder(pluginContext, module.clazz.symbol).factory(
@@ -228,44 +218,35 @@ class ModuleProviderFactory(
                     override fun visitCall(expression: IrCall): IrExpression {
                         super.visitCall(expression)
                         return when (expression) {
-                            in assistedParameterCalls, in dependencyCalls -> {
+                            in assistedParameterCalls -> {
                                 irGet(createFunction.valueParameters.single {
-                                    it.name.asString() == parametersByCall.getValue(expression)
-                                        .singleOrNull()?.name
+                                    it.name.asString() == parametersByCall.getValue(expression).name
                                 })
-                            }
-                            in providerDslFunctionCalls -> {
-                                expression.apply {
-                                    expression.symbol.owner.valueParameters
-                                        .filter {
-                                            it.name.asString().startsWith("dsl_provider\$")
-                                        }
-                                        .forEachIndexed { dslProvidersIndex, valueParameter ->
-                                            putValueArgument(
-                                                valueParameter.index,
-                                                irGet(createFunction.valueParameters.single {
-                                                    it.name.asString() ==
-                                                            parametersByCall.getValue(expression)[dslProvidersIndex]?.name
-                                                })
-
-                                            )
-                                        }
-                                }
                             }
                             else -> expression
                         }
                     }
 
                     override fun visitGetValue(expression: IrGetValue): IrExpression {
-                        return if (moduleFieldsByParameter.keys.none { it.symbol == expression.symbol }) {
-                            super.visitGetValue(expression)
-                        } else {
-                            val field = moduleFieldsByParameter[expression.symbol.owner]!!
+                        val capturedField = moduleFieldsByParameter[expression.symbol.owner]
+                        if (capturedField != null) {
                             return irGetField(
                                 irGet(createFunction.valueParameters.first()),
-                                field
+                                capturedField
                             )
                         }
+
+                        val valueParameter = definitionFunction.valueParameters
+                            .singleOrNull { it.symbol == expression.symbol }
+
+                        if (valueParameter != null) {
+                            createFunction.valueParameters.singleOrNull {
+                                it.name.asString() ==
+                                        parametersByFunctionParameters[valueParameter]?.name
+                            }?.let { return irGet(it) }
+                        }
+
+                        return super.visitGetValue(expression)
                     }
 
                 })

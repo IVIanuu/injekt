@@ -64,8 +64,6 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val astTypeParameterPath = astPath.childClass(InjektFqNames.AstTypeParameterPath.shortName())
     val astValueParameterPath = astPath.childClass(InjektFqNames.AstValueParameterPath.shortName())
     val astParents = injektAst.childClass(InjektFqNames.AstParents.shortName())
-    val astProviderDsl =
-        injektAst.childClass(InjektFqNames.AstProviderDsl.shortName())
     val astScope = injektAst.childClass(InjektFqNames.AstScope.shortName())
     val astScoped = injektAst.childClass(InjektFqNames.AstScoped.shortName())
     val astSet = injektAst.childClass(InjektFqNames.AstSet.shortName())
@@ -96,7 +94,6 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val noOpMembersInjector = pluginContext.referenceClass(InjektFqNames.NoOpMembersInjector)!!
 
     val provider = pluginContext.referenceClass(InjektFqNames.Provider)!!
-    val providerDefinition = getTypeAlias(InjektFqNames.ProviderDefinition)
     val providerDsl = pluginContext.referenceClass(InjektFqNames.ProviderDsl)!!
     val providerOfLazy = pluginContext.referenceClass(InjektFqNames.ProviderOfLazy)!!
 

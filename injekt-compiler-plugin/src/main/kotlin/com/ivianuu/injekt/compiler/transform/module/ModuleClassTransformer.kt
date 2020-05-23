@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt.compiler.transform.module
 
+import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.hasTypeAnnotation
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
@@ -46,7 +48,11 @@ class ModuleClassTransformer(
 
         moduleFragment.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                if (declaration.isModule(pluginContext.bindingContext)) {
+                if (declaration.hasTypeAnnotation(
+                        InjektFqNames.Module,
+                        pluginContext.bindingContext
+                    )
+                ) {
                     moduleFunctions += declaration
                 }
 

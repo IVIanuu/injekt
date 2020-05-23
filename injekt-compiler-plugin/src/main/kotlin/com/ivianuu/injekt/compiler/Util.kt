@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.analysis.TypeAnnotationChecker
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -80,7 +81,9 @@ import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.resolve.constants.AnnotationValue
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
@@ -469,3 +472,20 @@ fun IrValueParameter.getParameterName(): String {
 fun String.asNameId(): Name = Name.identifier(this)
 
 fun FqName.child(name: String) = child(name.asNameId())
+
+fun IrFunction.hasTypeAnnotation(
+    fqName: FqName,
+    bindingContext: BindingContext
+): Boolean {
+    if (hasAnnotation(fqName)) return true
+    val typeAnnotationChecker = TypeAnnotationChecker()
+    val bindingTrace = DelegatingBindingTrace(bindingContext, "Injekt IR")
+    return try {
+        typeAnnotationChecker.hasTypeAnnotation(
+            bindingTrace, descriptor,
+            fqName
+        )
+    } catch (e: Exception) {
+        false
+    }
+}

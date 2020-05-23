@@ -58,7 +58,6 @@ import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrFail
-import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeWith
@@ -360,7 +359,7 @@ class ModuleDeclarationFactory(
                     valueArguments
                         .filter { (valueParameter, _) ->
                             !valueParameter.type.isFunction() ||
-                                    (valueParameter.type.typeArguments.firstOrNull()?.classifierOrNull != symbols.providerDsl &&
+                                    (!valueParameter.type.hasAnnotation(InjektFqNames.ProviderDsl) &&
                                             !valueParameter.type.hasAnnotation(InjektFqNames.Module))
                         }
                         .map { it.second }

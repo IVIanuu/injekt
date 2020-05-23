@@ -43,6 +43,11 @@ interface InjektErrors {
         )
 
         @JvmField
+        val FORBIDDEN_PROVIDER_DSL_INVOCATION = error(
+            "Only @ProviderDsl functions can invoke other @ProviderDsl functions"
+        )
+
+        @JvmField
         val CONDITIONAL_NOT_ALLOWED_IN_MODULE_AND_FACTORIES = error(
             "Conditional logic is not allowed inside @Factory, @ChildFactory, @CompositionFactory and @Module functions"
         )
@@ -183,7 +188,7 @@ interface InjektErrors {
         )
 
         @JvmField
-        val DEFINITION_PARAMETER_WITHOUT_INLINE = error(
+        val PROVIDER_DSL_PARAMETER_WITHOUT_INLINE = error(
             "@Module functions with definition parameters must be marked with inline"
         )
 

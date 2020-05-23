@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getArgumentsWithIrIncludingNulls
+import com.ivianuu.injekt.compiler.hasTypeAnnotation
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -47,7 +48,11 @@ class InlineModuleLambdaTransformer(pluginContext: IrPluginContext) :
 
     override fun visitCall(expression: IrCall): IrExpression {
         val callee = expression.symbol.owner
-        if (!callee.isModule(pluginContext.bindingContext)) return super.visitCall(expression)
+        if (!callee.hasTypeAnnotation(
+                InjektFqNames.Module,
+                pluginContext.bindingContext
+            )
+        ) return super.visitCall(expression)
 
         val moduleLambdasByParameter = expression.getArgumentsWithIrIncludingNulls()
             .filter { it.first.type.isFunction() && it.first.type.hasAnnotation(InjektFqNames.Module) }

@@ -25,6 +25,7 @@ import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.classOf
 import com.ivianuu.injekt.composition.BindingAdapter
 import com.ivianuu.injekt.composition.BindingAdapterFunction
+import com.ivianuu.injekt.get
 import com.ivianuu.injekt.transient
 
 @BindingAdapter(ActivityComponent::class)

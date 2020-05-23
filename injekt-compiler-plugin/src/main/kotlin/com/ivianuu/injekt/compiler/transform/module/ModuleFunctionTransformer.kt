@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.hasTypeAnnotation
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.deepCopyWithPreservingQualifiers
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
@@ -33,7 +34,6 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
-import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -69,7 +69,11 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
                     }
             } else function
         }
-        if (!function.isModule(pluginContext.bindingContext)) return function
+        if (!function.hasTypeAnnotation(
+                InjektFqNames.Module,
+                pluginContext.bindingContext
+            )
+        ) return function
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
 
@@ -77,11 +81,19 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
         function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
             private val moduleStack = mutableListOf(function)
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                if (declaration.isModule(pluginContext.bindingContext))
+                if (declaration.hasTypeAnnotation(
+                        InjektFqNames.Module,
+                        pluginContext.bindingContext
+                    )
+                )
                     moduleStack.push(declaration)
                 return super.visitFunction(declaration)
                     .also {
-                        if (declaration.isModule(pluginContext.bindingContext))
+                        if (declaration.hasTypeAnnotation(
+                                InjektFqNames.Module,
+                                pluginContext.bindingContext
+                            )
+                        )
                             moduleStack.pop()
                     }
             }
@@ -89,8 +101,7 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
             override fun visitGetValue(expression: IrGetValue): IrExpression {
                 if (function.isLocal &&
                     moduleStack.last() == function &&
-                    expression.symbol.owner !in function.valueParameters &&
-                    expression.type.classOrNull != symbols.providerDsl
+                    expression.symbol.owner !in function.valueParameters
                 ) {
                     originalCaptures += expression
                 }
@@ -112,11 +123,19 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
             IrElementTransformerVoid() {
             private val moduleStack = mutableListOf(transformedFunction)
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                if (declaration.isModule(pluginContext.bindingContext))
+                if (declaration.hasTypeAnnotation(
+                        InjektFqNames.Module,
+                        pluginContext.bindingContext
+                    )
+                )
                     moduleStack.push(declaration)
                 return super.visitFunction(declaration)
                     .also {
-                        if (declaration.isModule(pluginContext.bindingContext))
+                        if (declaration.hasTypeAnnotation(
+                                InjektFqNames.Module,
+                                pluginContext.bindingContext
+                            )
+                        )
                             moduleStack.pop()
                     }
             }
@@ -124,8 +143,7 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
             override fun visitGetValue(expression: IrGetValue): IrExpression {
                 if (transformedFunction.isLocal &&
                     moduleStack.last() == transformedFunction &&
-                    expression.symbol.owner !in transformedFunction.valueParameters &&
-                    expression.type.classOrNull != symbols.providerDsl
+                    expression.symbol.owner !in transformedFunction.valueParameters
                 ) {
                     captures += expression
                 }

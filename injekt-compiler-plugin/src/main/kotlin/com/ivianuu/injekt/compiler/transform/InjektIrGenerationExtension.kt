@@ -27,14 +27,15 @@ import com.ivianuu.injekt.compiler.transform.composition.CompositionEntryPointsT
 import com.ivianuu.injekt.compiler.transform.composition.CompositionFactoryParentTransformer
 import com.ivianuu.injekt.compiler.transform.composition.EntryPointOfTransformer
 import com.ivianuu.injekt.compiler.transform.composition.GenerateCompositionsTransformer
-import com.ivianuu.injekt.compiler.transform.composition.InlineObjectGraphCallTransformer
 import com.ivianuu.injekt.compiler.transform.composition.ObjectGraphCallTransformer
+import com.ivianuu.injekt.compiler.transform.composition.ObjectGraphFunctionTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.InlineFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.module.InlineModuleLambdaTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleClassTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
+import com.ivianuu.injekt.compiler.transform.provider.ProviderDslFunctionTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
@@ -72,7 +73,7 @@ class InjektIrGenerationExtension(
         }
 
         if (pluginContext.compositionsEnabled) {
-            InlineObjectGraphCallTransformer(pluginContext).lower(moduleFragment)
+            ObjectGraphFunctionTransformer(pluginContext).lower(moduleFragment)
 
             ObjectGraphCallTransformer(pluginContext).lower(moduleFragment)
 
@@ -120,7 +121,9 @@ class InjektIrGenerationExtension(
         InlineModuleLambdaTransformer(pluginContext)
             .lower(moduleFragment)
 
-        ProviderDslFunctionTransformer(pluginContext).lower(moduleFragment)
+        ProviderDslFunctionTransformer(
+            pluginContext
+        ).lower(moduleFragment)
 
         ClassOfFunctionTransformer(pluginContext).lower(moduleFragment)
 

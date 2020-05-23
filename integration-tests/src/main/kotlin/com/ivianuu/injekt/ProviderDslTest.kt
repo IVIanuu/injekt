@@ -22,11 +22,13 @@ import org.junit.Test
 class ProviderDslTest {
 
     @Test
-    fun testProviderDsl() = codegen(
+    fun testProviderDslFunction() = codegen(
         """
-        fun ProviderDsl.getFoo(): Foo = getGeneric()
+        @ProviderDsl
+        fun getFoo(): Foo = getGeneric()
         
-        fun <T> ProviderDsl.getGeneric(): T = get()
+        @ProviderDsl
+        fun <T> getGeneric(): T = get()
         
         @InstanceFactory
         fun invoke(): Bar {
@@ -36,5 +38,39 @@ class ProviderDslTest {
         }
     """
     )
+
+    @Test
+    fun testProviderDslFunctionWithLambda() = codegen(
+        """
+        @ProviderDsl
+        fun <T> something(block: @ProviderDsl () -> T): T { 
+            return block()
+        }
+        
+        @InstanceFactory
+        fun invoke(): Bar {
+            transient<Foo>()
+            transient { something { Bar(get()) } }
+            return create()
+        }
+    """
+    )
+
+    /*@Test // todo
+    fun testProviderDslFunctionWithLambdaProperty() = codegen("""
+        val lambdaProperty: @ProviderDsl () -> Bar = { Bar(get()) }
+        
+        @ProviderDsl
+        fun <T> something(block: @ProviderDsl () -> T): T { 
+            return block()
+        }
+        
+        @InstanceFactory
+        fun invoke(): Bar {
+            transient<Foo>()
+            transient { something(lambdaProperty) }
+            return create()
+        }
+    """)*/
 
 }

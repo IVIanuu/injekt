@@ -31,6 +31,7 @@ import com.ivianuu.injekt.composition.CompositionFactory
 import com.ivianuu.injekt.composition.get
 import com.ivianuu.injekt.composition.parent
 import com.ivianuu.injekt.create
+import com.ivianuu.injekt.get
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.scope
 import com.ivianuu.injekt.transient

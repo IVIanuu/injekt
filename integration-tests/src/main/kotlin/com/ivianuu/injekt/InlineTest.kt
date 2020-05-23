@@ -220,13 +220,13 @@ class InlineTest {
     fun testSimpleInlineModule() = codegen(
         """
         @Module 
-        inline fun <T : Any, S> inlinedModule(definition: ProviderDefinition<S>) {
+        inline fun <T : Any, S> inlinedModule(definition: @ProviderDsl (AssistedParameters) -> S) {
             transient<T>()
             inlinedModule2(definition)
         }
         
         @Module 
-        inline fun <P> inlinedModule2(definition: ProviderDefinition<P>) {
+        inline fun <P> inlinedModule2(definition: @ProviderDsl (AssistedParameters) -> P) {
             transient(definition)
         }
         

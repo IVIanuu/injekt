@@ -142,7 +142,7 @@ class ClassOfFunctionTransformer(pluginContext: IrPluginContext) :
         if (!hasUnresolvedClassOfCalls) {
             transformedFunctions[function] = function
             transformingFunctions -= function
-            rewriteTypedFunctionCalls(
+            transformTypedFunctionCalls(
                 function,
                 originalClassOfCalls,
                 originalTypedModuleCalls,
@@ -194,7 +194,7 @@ class ClassOfFunctionTransformer(pluginContext: IrPluginContext) :
                     )
             }
 
-        rewriteTypedFunctionCalls(
+        transformTypedFunctionCalls(
             transformedFunction,
             classOfCalls,
             typedModuleCalls,
@@ -204,7 +204,7 @@ class ClassOfFunctionTransformer(pluginContext: IrPluginContext) :
         return transformedFunction
     }
 
-    private fun rewriteTypedFunctionCalls(
+    private fun transformTypedFunctionCalls(
         function: IrFunction,
         classOfCalls: List<IrCall>,
         typedModuleCalls: List<IrCall>,

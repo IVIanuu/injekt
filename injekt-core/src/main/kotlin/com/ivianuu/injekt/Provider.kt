@@ -16,13 +16,17 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.TypeAnnotation
+import com.ivianuu.injekt.internal.injektIntrinsic
+
 @Qualifier
-@Target(AnnotationTarget.TYPE, AnnotationTarget.EXPRESSION)
+@Target(AnnotationTarget.TYPE, AnnotationTarget.FUNCTION, AnnotationTarget.EXPRESSION)
 annotation class Provider
 
-@InjektDslMarker
-interface ProviderDsl {
-    fun <T> get(): T
-}
+@TypeAnnotation
+@Target(AnnotationTarget.TYPE, AnnotationTarget.FUNCTION, AnnotationTarget.EXPRESSION)
+@Qualifier
+annotation class ProviderDsl
 
-typealias ProviderDefinition<T> = ProviderDsl.(AssistedParameters) -> T
+@ProviderDsl
+fun <T> get(): T = injektIntrinsic()

@@ -265,7 +265,7 @@ class ModuleDslTest {
     fun testInlineModuleWithDefinition() = codegen(
         """ 
         @Module
-        inline fun <T> module(definition: ProviderDefinition<T>) {
+        inline fun <T> module(definition: @ProviderDsl (AssistedParameters) -> T) {
         }
     """
     )
@@ -274,7 +274,7 @@ class ModuleDslTest {
     fun testNonInlineModuleWithDefinition() = codegen(
         """ 
         @Module
-        fun <T> module(definition: ProviderDefinition<T>) {
+        fun <T> module(definition: @ProviderDsl (AssistedParameters) -> T) {
         }
     """
     ) {

@@ -24,7 +24,6 @@ import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getParameterName
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
-import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.allParameters
@@ -51,7 +50,6 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrSetVariable
-import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -107,7 +105,7 @@ class ModuleImpl(
                 function.allParameters
                     .filter {
                         !it.type.isFunction() ||
-                                (it.type.typeArguments.firstOrNull()?.classOrNull != symbols.providerDsl &&
+                                (!it.type.hasAnnotation(InjektFqNames.ProviderDsl) &&
                                         !it.type.hasAnnotation(InjektFqNames.Module))
                     }
                     .forEach { valueParameter ->

@@ -60,7 +60,7 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
+class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
@@ -174,7 +174,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         if (!hasUnresolvedCalls) {
             transformedFunctions[function] = function
             transformingFunctions -= function
-            rewriteObjectGraphCalls(
+            transformObjectGraphCalls(
                 function,
                 emptyList(),
                 emptyMap(),
@@ -308,7 +308,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                     .forEach { addInjectorValueParameterIfNeeded(it) }
             }
 
-            rewriteObjectGraphCalls(
+            transformObjectGraphCalls(
                 transformedFunction,
                 unresolvedGetCalls,
                 valueParametersByUnresolvedGetCalls,
@@ -317,7 +317,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                 objectGraphFunctionCalls
             )
         } else {
-            rewriteObjectGraphCalls(
+            transformObjectGraphCalls(
                 transformedFunction,
                 emptyList(),
                 emptyMap(),
@@ -330,7 +330,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         return transformedFunction
     }
 
-    private fun rewriteObjectGraphCalls(
+    private fun transformObjectGraphCalls(
         function: IrFunction,
         unresolvedGetCalls: List<IrCall>,
         valueParametersByUnresolvedProviderType: Map<Key, IrValueParameter>,
@@ -385,7 +385,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                     }
                     in objectGraphFunctionCalls -> {
                         val transformedFunction = transformFunctionIfNeeded(expression.symbol.owner)
-                        rewriteObjectGraphFunctionCall(
+                        transformObjectGraphFunctionCall(
                             expression,
                             transformedFunction,
                             valueParametersByUnresolvedProviderType,
@@ -398,7 +398,7 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         })
     }
 
-    private fun rewriteObjectGraphFunctionCall(
+    private fun transformObjectGraphFunctionCall(
         originalCall: IrCall,
         transformedFunction: IrFunction,
         valueParametersByUnresolvedProviderType: Map<Key, IrValueParameter>,
@@ -407,11 +407,11 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         DeclarationIrBuilder(pluginContext, transformedFunction.symbol).irCall(transformedFunction)
             .apply {
                 dispatchReceiver = originalCall.dispatchReceiver
-            extensionReceiver = originalCall.extensionReceiver
+                extensionReceiver = originalCall.extensionReceiver
 
-            originalCall.typeArguments.forEachIndexed { index, it ->
-                putTypeArgument(index, it)
-            }
+                originalCall.typeArguments.forEachIndexed { index, it ->
+                    putTypeArgument(index, it)
+                }
 
                 transformedFunction.valueParameters.forEach { valueParameter ->
                     var valueArgument = try {
@@ -423,102 +423,102 @@ class InlineObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                     if (valueArgument == null) {
                         valueArgument = when {
                             valueParameter.name.asString().startsWith("og_provider\$") -> {
-                            val substitutedType = valueParameter.type
-                                .substituteByName(
-                                    transformedFunction.typeParameters
-                                        .map { it.symbol }
-                                        .zip(typeArguments)
-                                        .toMap()
-                                )
+                                val substitutedType = valueParameter.type
+                                    .substituteByName(
+                                        transformedFunction.typeParameters
+                                            .map { it.symbol }
+                                            .zip(typeArguments)
+                                            .toMap()
+                                    )
 
-                            val componentType = substitutedType.typeArguments[0]
-                            val instanceType = substitutedType.typeArguments[1]
+                                val componentType = substitutedType.typeArguments[0]
+                                val instanceType = substitutedType.typeArguments[1]
 
-                            when {
-                                !componentType.isTypeParameter() && !instanceType.isTypeParameter() -> {
-                                    InjektDeclarationIrBuilder(pluginContext, symbol).run {
-                                        irLambda(substitutedType) { lambda ->
-                                            +irReturn(
-                                                IrCallImpl(
-                                                    originalCall.startOffset,
-                                                    originalCall.endOffset,
-                                                    instanceType,
-                                                    pluginContext.referenceFunctions(
-                                                        FqName("com.ivianuu.injekt.composition.get")
-                                                    ).single()
-                                                ).apply {
-                                                    extensionReceiver =
-                                                        irGet(lambda.valueParameters.first())
-                                                    putTypeArgument(0, instanceType)
-                                                }
-                                            )
+                                when {
+                                    !componentType.isTypeParameter() && !instanceType.isTypeParameter() -> {
+                                        InjektDeclarationIrBuilder(pluginContext, symbol).run {
+                                            irLambda(substitutedType) { lambda ->
+                                                +irReturn(
+                                                    IrCallImpl(
+                                                        originalCall.startOffset,
+                                                        originalCall.endOffset,
+                                                        instanceType,
+                                                        pluginContext.referenceFunctions(
+                                                            FqName("com.ivianuu.injekt.composition.get")
+                                                        ).single()
+                                                    ).apply {
+                                                        extensionReceiver =
+                                                            irGet(lambda.valueParameters.first())
+                                                        putTypeArgument(0, instanceType)
+                                                    }
+                                                )
+                                            }
                                         }
                                     }
-                                }
-                                else -> {
-                                    DeclarationIrBuilder(pluginContext, symbol)
-                                        .irGet(
-                                            valueParametersByUnresolvedProviderType.getValue(
-                                                substitutedType.asKey()
+                                    else -> {
+                                        DeclarationIrBuilder(pluginContext, symbol)
+                                            .irGet(
+                                                valueParametersByUnresolvedProviderType.getValue(
+                                                    substitutedType.asKey()
+                                                )
                                             )
-                                        )
+                                    }
                                 }
                             }
-                        }
                             valueParameter.name.asString().startsWith("og_injector\$") -> {
-                            val substitutedType = valueParameter.type
-                                .substituteByName(
-                                    transformedFunction.typeParameters
-                                        .map { it.symbol }
-                                        .zip(typeArguments)
-                                        .toMap()
-                                )
+                                val substitutedType = valueParameter.type
+                                    .substituteByName(
+                                        transformedFunction.typeParameters
+                                            .map { it.symbol }
+                                            .zip(typeArguments)
+                                            .toMap()
+                                    )
 
-                            val componentType = substitutedType.typeArguments[0]
-                            val instanceType = substitutedType.typeArguments[1]
+                                val componentType = substitutedType.typeArguments[0]
+                                val instanceType = substitutedType.typeArguments[1]
 
-                            when {
-                                !componentType.isTypeParameter() && !instanceType.isTypeParameter() -> {
-                                    InjektDeclarationIrBuilder(pluginContext, symbol).run {
-                                        irLambda(substitutedType) { lambda ->
-                                            +irReturn(
-                                                IrCallImpl(
-                                                    originalCall.startOffset,
-                                                    originalCall.endOffset,
-                                                    irBuiltIns.unitType,
-                                                    pluginContext.referenceFunctions(
-                                                        FqName("com.ivianuu.injekt.composition.inject")
-                                                    ).single()
-                                                ).apply {
-                                                    extensionReceiver =
-                                                        irGet(lambda.valueParameters[0])
-                                                    putTypeArgument(0, instanceType)
-                                                    putValueArgument(
-                                                        0,
-                                                        irGet(lambda.valueParameters[1])
-                                                    )
-                                                }
-                                            )
+                                when {
+                                    !componentType.isTypeParameter() && !instanceType.isTypeParameter() -> {
+                                        InjektDeclarationIrBuilder(pluginContext, symbol).run {
+                                            irLambda(substitutedType) { lambda ->
+                                                +irReturn(
+                                                    IrCallImpl(
+                                                        originalCall.startOffset,
+                                                        originalCall.endOffset,
+                                                        irBuiltIns.unitType,
+                                                        pluginContext.referenceFunctions(
+                                                            FqName("com.ivianuu.injekt.composition.inject")
+                                                        ).single()
+                                                    ).apply {
+                                                        extensionReceiver =
+                                                            irGet(lambda.valueParameters[0])
+                                                        putTypeArgument(0, instanceType)
+                                                        putValueArgument(
+                                                            0,
+                                                            irGet(lambda.valueParameters[1])
+                                                        )
+                                                    }
+                                                )
+                                            }
                                         }
                                     }
-                                }
-                                else -> {
-                                    DeclarationIrBuilder(pluginContext, symbol)
-                                        .irGet(
-                                            valueParametersByUnresolvedInjectorType.getValue(
-                                                substitutedType.asKey()
+                                    else -> {
+                                        DeclarationIrBuilder(pluginContext, symbol)
+                                            .irGet(
+                                                valueParametersByUnresolvedInjectorType.getValue(
+                                                    substitutedType.asKey()
+                                                )
                                             )
-                                        )
+                                    }
                                 }
                             }
-                        }
                             else -> null
                         }
                     }
 
                     putValueArgument(valueParameter.index, valueArgument)
                 }
-        }
+            }
 
     // todo remove once compose fixed it's stuff
     private fun IrType.substituteByName(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {
