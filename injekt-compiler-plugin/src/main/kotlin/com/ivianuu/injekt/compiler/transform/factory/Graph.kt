@@ -29,6 +29,7 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.expressions.IrConst
@@ -332,6 +333,7 @@ class Graph(
                 val typeParametersMap = includedModule.typeParameters
                     .map {
                         it.symbol to function.returnType.typeArguments[it.index]
+                            .typeOrFail
                             .substitute(moduleNode.descriptorTypeParametersMap)
                     }
                     .toMap()

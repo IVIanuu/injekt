@@ -307,10 +307,11 @@ private fun IrType.copy(
     )
 }
 
-val IrType.typeArguments: List<IrType>
-    get() = (this as? IrSimpleType)?.arguments?.map { it.type } ?: emptyList()
+val IrType.typeArguments: List<IrTypeArgument>
+    get() = (this as? IrSimpleType)?.arguments?.map { it } ?: emptyList()
 
-val IrTypeArgument.type get() = typeOrNull ?: error("Type is null for ${render()}")
+val IrTypeArgument.typeOrFail: IrType
+    get() = typeOrNull ?: error("Type is null for ${render()}")
 
 fun IrType.typeWith(vararg arguments: IrType): IrType = classifierOrFail.typeWith(*arguments)
 

@@ -29,6 +29,7 @@ import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.withNoArgQualifiers
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -58,6 +59,7 @@ import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.superTypes
+import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -358,6 +360,7 @@ class ModuleBindingResolver(
         .filter { it.hasAnnotation(InjektFqNames.AstBinding) }
         .filterNot { it.hasAnnotation(InjektFqNames.AstInline) }
         .map { bindingFunction ->
+            println("binding function ${bindingFunction.render()}")
             val bindingKey = bindingFunction.returnType
                 .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap)
                 .asKey()
@@ -509,7 +512,8 @@ class MembersInjectorBindingResolver(
     override fun invoke(requestedKey: Key): List<BindingNode> {
         if (InjektFqNames.MembersInjector !in requestedKey.type.getQualifierFqNames()) return emptyList()
         if (requestedKey.type.classOrNull != factoryImpl.pluginContext.irBuiltIns.function(1)) return emptyList()
-        val target = requestedKey.type.typeArguments.first().getClass()!!
+        val target =
+            requestedKey.type.typeArguments.first().typeOrNull?.getClass() ?: return emptyList()
         val membersInjector = declarationStore.getMembersInjectorForClassOrNull(target)
             ?: symbols.noOpMembersInjector.owner
         return listOf(
@@ -533,7 +537,8 @@ class AnnotatedClassBindingResolver(
             requestedKey.type.classOrNull != pluginContext.irBuiltIns.function(0) &&
             InjektFqNames.Provider in requestedKey.type.getQualifierFqNames()
         ) {
-            val clazz = requestedKey.type.typeArguments.last().getClass()!!
+            val clazz =
+                requestedKey.type.typeArguments.last().typeOrNull?.getClass() ?: return emptyList()
             val scopeAnnotation = clazz.descriptor.getAnnotatedAnnotations(
                     InjektFqNames.Scope,
                     clazz.descriptor.module
@@ -551,7 +556,7 @@ class AnnotatedClassBindingResolver(
             val typeParametersMap = provider
                 .typeParameters
                 .map { it.symbol }
-                .associateWith { requestedKey.type.typeArguments[it.owner.index] }
+                .associateWith { requestedKey.type.typeArguments[it.owner.index].typeOrFail }
 
             val dependencies = providerConstructor
                 ?.valueParameters
@@ -599,13 +604,14 @@ class AnnotatedClassBindingResolver(
             val typeParametersMap = provider
                 .typeParameters
                 .map { it.symbol }
-                .associateWith { requestedKey.type.typeArguments[it.owner.index] }
+                .associateWith { requestedKey.type.typeArguments[it.owner.index].typeOrFail }
 
             val dependencies = providerConstructor
                 ?.valueParameters
                 ?.map { providerValueParameter ->
                     BindingRequest(
                         providerValueParameter.type.typeArguments.single()
+                            .typeOrFail
                             .substituteAndKeepQualifiers(typeParametersMap)
                             .asKey(),
                         clazz.constructors.single().valueParameters
@@ -715,9 +721,9 @@ class MapBindingResolver(
     ) = MapBindingNode(
         pluginContext.symbolTable.referenceClass(pluginContext.builtIns.map)
             .typeWith(
-                mapKey.type.typeArguments[0],
+                mapKey.type.typeArguments[0].typeOrFail,
                 pluginContext.irBuiltIns.function(0)
-                    .typeWith(mapKey.type.typeArguments[1])
+                    .typeWith(mapKey.type.typeArguments[1].typeOrFail)
                     .withNoArgQualifiers(pluginContext, listOf(qualifier))
             )
             .asKey(),
@@ -806,7 +812,7 @@ class SetBindingResolver(
         pluginContext.symbolTable.referenceClass(pluginContext.builtIns.set)
             .typeWith(
                 pluginContext.irBuiltIns.function(0).typeWith(
-                    setKey.type.typeArguments.single()
+                    setKey.type.typeArguments.single().typeOrFail
                 ).withNoArgQualifiers(pluginContext, listOf(qualifier))
             ).asKey(),
         factoryImplementation,

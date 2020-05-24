@@ -33,6 +33,7 @@ import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.withAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -520,6 +521,7 @@ class ModuleDeclarationFactory(
                                     valueArguments[index].second
                                 }()
                         bindingType = singleArgumentExpression!!.type.typeArguments.last()
+                            .typeOrFail
                     }
                     else -> {
                         error("Unexpected inline binding ${bindingFunction.dump()}")
@@ -563,6 +565,7 @@ class ModuleDeclarationFactory(
                 .filter { it.name.asString() != "module" }
                 .map {
                     it.name.asString() to it.type.typeArguments.single()
+                        .typeOrFail
                         .remapTypeParameters(
                             constructor,
                             module.function,

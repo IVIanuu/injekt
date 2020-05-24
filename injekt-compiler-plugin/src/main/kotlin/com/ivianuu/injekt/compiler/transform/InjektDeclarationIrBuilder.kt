@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.withNoArgQualifiers
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -212,10 +213,10 @@ class InjektDeclarationIrBuilder(
             expression is IrClassReference -> irClassKey(expression.classType)
             expression is IrGetValue && expression.symbol.descriptor.name.asString()
                 .startsWith("class\$") -> {
-                irClassKey(expression.type.typeArguments.single())
+                irClassKey(expression.type.typeArguments.single().typeOrFail)
             }
             expression is IrCall && expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.classOf" -> {
-                irClassKey(expression.type.typeArguments.single())
+                irClassKey(expression.type.typeArguments.single().typeOrFail)
             }
             expression is IrConst<*> -> {
                 when (expression.kind) {

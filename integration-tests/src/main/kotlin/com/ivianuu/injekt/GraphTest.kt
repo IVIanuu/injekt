@@ -228,4 +228,15 @@ class GraphTest {
         }
     """
     )
+
+    @Test
+    fun testTypeWithStarProjectedArg() = codegen(
+        """
+        @InstanceFactory
+        fun createList(): List<*> {
+            instance<List<*>>(listOf<Any?>())
+            return create()
+        }
+    """
+    )
 }

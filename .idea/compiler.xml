@@ -2,14 +2,27 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <bytecodeTargetLevel>
+      <module name="com.ivianuu.injekt.injekt.injekt-compiler-plugin" target="1.8" />
+      <module name="com.ivianuu.injekt.injekt.injekt-gradle-plugin" target="1.8" />
+      <module name="injekt.android-integration-tests" target="1.7" />
       <module name="injekt.buildSrc" target="1.8" />
       <module name="injekt.comparison" target="1.7" />
+      <module name="injekt.composition-integration-tests" target="1.8" />
       <module name="injekt.injekt" target="1.8" />
       <module name="injekt.injekt-android" target="1.7" />
+      <module name="injekt.injekt-android-compose" target="1.7" />
+      <module name="injekt.injekt-android-work" target="1.7" />
       <module name="injekt.injekt-common" target="1.8" />
       <module name="injekt.injekt-compiler-plugin" target="1.8" />
+      <module name="injekt.injekt-composition" target="1.8" />
+      <module name="injekt.injekt-core" target="1.8" />
       <module name="injekt.injekt-gradle-plugin" target="1.8" />
+      <module name="injekt.integration-tests" target="1.8" />
       <module name="injekt.sample" target="1.7" />
+      <module name="injekt.test-util" target="1.8" />
+      <module name="studio-projects.injekt.buildSrc" target="1.8" />
+      <module name="studio-projects.injekt.comparison" target="1.7" />
+      <module name="studio-projects.injekt.sample" target="1.7" />
     </bytecodeTargetLevel>
   </component>
 </project>

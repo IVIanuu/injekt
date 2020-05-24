@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform.factory
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.withNoArgQualifiers
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -302,7 +303,7 @@ class FactoryExpressions(
     private fun instanceExpressionForProvider(binding: ProviderBindingNode): FactoryExpression {
         return getBindingExpression(
             BindingRequest(
-                binding.key.type.typeArguments.single().asKey(),
+                binding.key.type.typeArguments.single().typeOrFail.asKey(),
                 binding.origin,
                 RequestType.Provider
             )
@@ -537,7 +538,7 @@ class FactoryExpressions(
     private fun providerExpressionForLazy(binding: LazyBindingNode): FactoryExpression {
         val dependencyExpression = getBindingExpression(
             BindingRequest(
-                binding.key.type.typeArguments.single().asKey(),
+                binding.key.type.typeArguments.single().typeOrFail.asKey(),
                 binding.origin,
                 RequestType.Provider
             )

@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.factory.Key
 import com.ivianuu.injekt.compiler.transform.factory.asKey
 import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.withAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -50,6 +51,7 @@ import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
+import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.functions
@@ -266,7 +268,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                             objectGraphFunctionCall.typeArguments
                         )
                     }
-                    .filter { it.second.typeArguments.any { it.isTypeParameter() } }
+                    .filter { it.second.typeArguments.any { it.typeOrNull?.isTypeParameter() == true } }
                     .map { it.second.asKey() }
                     .forEach { addProviderValueParameterIfNeeded(it) }
             }
@@ -307,7 +309,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                             objectGraphFunctionCall.typeArguments
                         )
                     }
-                    .filter { it.second.typeArguments.any { it.isTypeParameter() } }
+                    .filter { it.second.typeArguments.any { it.typeOrNull?.isTypeParameter() == true } }
                     .map { it.second.asKey() }
                     .forEach { addInjectorValueParameterIfNeeded(it) }
             }
@@ -435,8 +437,8 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                                             .toMap()
                                     )
 
-                                val componentType = substitutedType.typeArguments[0]
-                                val instanceType = substitutedType.typeArguments[1]
+                                val componentType = substitutedType.typeArguments[0].typeOrFail
+                                val instanceType = substitutedType.typeArguments[1].typeOrFail
 
                                 when {
                                     !componentType.isTypeParameter() && !instanceType.isTypeParameter() -> {
@@ -478,8 +480,8 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                                             .toMap()
                                     )
 
-                                val componentType = substitutedType.typeArguments[0]
-                                val instanceType = substitutedType.typeArguments[1]
+                                val componentType = substitutedType.typeArguments[0].typeOrFail
+                                val instanceType = substitutedType.typeArguments[1].typeOrFail
 
                                 when {
                                     !componentType.isTypeParameter() && !instanceType.isTypeParameter() -> {

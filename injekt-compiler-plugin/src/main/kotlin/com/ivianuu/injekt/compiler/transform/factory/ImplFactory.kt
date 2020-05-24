@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -220,14 +221,14 @@ class ImplFactory(
                 .map { it to it.classOrNull?.owner }
                 .forEach { (superType, clazz) ->
                     clazz?.collectDependencyRequests(
-                        superType.typeArguments
+                        superType.typeArguments.map { it.typeOrFail }
                     )
                 }
         }
 
         val superType = clazz.superTypes.single()
         val superTypeClass = superType.getClass()!!
-        superTypeClass.collectDependencyRequests(superType.typeArguments)
+        superTypeClass.collectDependencyRequests(superType.typeArguments.map { it.typeOrFail })
     }
 
     private fun IrBuilderWithScope.writeConstructor() = constructor.apply {

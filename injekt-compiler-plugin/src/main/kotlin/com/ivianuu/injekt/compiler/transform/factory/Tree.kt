@@ -22,8 +22,8 @@ import com.ivianuu.injekt.compiler.getQualifierFqNames
 import com.ivianuu.injekt.compiler.getQualifiers
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.toAnnotationDescriptor
-import com.ivianuu.injekt.compiler.type
 import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -37,6 +37,7 @@ import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.getClass
+import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
@@ -213,7 +214,7 @@ class LazyBindingNode(
     key,
     listOf(
         BindingRequest(
-            key = key.type.typeArguments.single().asKey(),
+            key = key.type.typeArguments.single().typeOrFail.asKey(),
             origin
         )
     ),
@@ -230,8 +231,8 @@ class MapBindingNode(
     origin: FqName?,
     val entries: Map<MapKey, BindingRequest>
 ) : BindingNode(key, entries.values.toList(), null, false, null, owner, origin) {
-    val keyKey = key.type.typeArguments[0].asKey()
-    val valueKey = key.type.typeArguments[1].asKey()
+    val keyKey = key.type.typeArguments[0].typeOrFail.asKey()
+    val valueKey = key.type.typeArguments[1].typeOrFail.asKey()
 }
 
 class MembersInjectorBindingNode(
@@ -244,7 +245,7 @@ class MembersInjectorBindingNode(
     membersInjector.constructors.singleOrNull()
         ?.valueParameters
         ?.map { it.type.typeArguments.single() }
-        ?.map { BindingRequest(it.asKey(), null) }
+        ?.map { BindingRequest(it.typeOrFail.asKey(), null) }
         ?: emptyList(),
     null,
     false,
@@ -272,7 +273,7 @@ class ProviderBindingNode(
     origin: FqName?
 ) : BindingNode(
     key,
-    listOf(BindingRequest(key.type.typeArguments.single().asKey(), origin)),
+    listOf(BindingRequest(key.type.typeArguments.single().typeOrFail.asKey(), origin)),
     null,
     false,
     null,
@@ -298,7 +299,7 @@ class SetBindingNode(
     origin: FqName?,
     val elements: Set<BindingRequest>
 ) : BindingNode(key, elements.toList(), null, false, null, owner, origin) {
-    val elementKey = key.type.typeArguments.single().asKey()
+    val elementKey = key.type.typeArguments.single().typeOrFail.asKey()
 }
 
 fun IrType.asKey(): Key {
@@ -336,7 +337,7 @@ class Key(val type: IrType) {
     private fun IrType.hashCodeForKey(): Int {
         var result = classifierOrNull?.hashCode() ?: 0
         result = 31 * result + qualifiersHash()
-        result = 32 * result + typeArguments.map { it.hashCodeForKey() }.hashCode()
+        result = 32 * result + typeArguments.map { it.typeOrNull?.hashCodeForKey() }.hashCode()
         return result
     }
 
@@ -351,9 +352,12 @@ class Key(val type: IrType) {
 
         arguments
             .forEachIndexed { index, argument ->
-                if (!argument.type.equalsForKey(other.arguments[index].type)) {
-                    return false
-                }
+                val type = argument.typeOrNull
+                val otherArgument = other.arguments[index]
+                val otherType = otherArgument.typeOrNull
+                if ((type != null && otherType != null && !type.equalsForKey(otherType)) ||
+                    (type != null) != (otherType != null)
+                ) return false
             }
 
         return true
