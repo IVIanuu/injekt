@@ -92,7 +92,7 @@ class ModuleChecker(
         descriptor.typeParameters.forEach { typeParameter ->
             if (typeParameter.isReified) {
                 context.trace.report(
-                    InjektErrors.MODULE_CANNOT_USE_REIFIED
+                    InjektErrors.CANNOT_USE_REIFIED
                         .on(typeParameter.findPsi() ?: declaration)
                 )
             }

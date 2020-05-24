@@ -160,6 +160,17 @@ class FactoryDslTest {
         }
 
     @Test
+    fun testModuleWithReifiedTypeParameters() = codegen(
+        """
+            interface Impl
+        @InstanceFactory
+        fun <reified T> factory(): Impl = create()
+        """
+    ) {
+        assertCompileError("reified")
+    }
+
+    @Test
     fun testMutablePropertiesNotAllowedInFactoryImpls() =
         codegen(
             """

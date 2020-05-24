@@ -57,79 +57,88 @@ class FactoryChecker(
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (descriptor is FunctionDescriptor && (descriptor.hasAnnotation(InjektFqNames.Factory) ||
-                    descriptor.hasAnnotation(InjektFqNames.ChildFactory) ||
-                    descriptor.hasAnnotation(InjektFqNames.CompositionFactory) ||
+        if (descriptor !is FunctionDescriptor || (descriptor.hasAnnotation(InjektFqNames.Factory) &&
+                    descriptor.hasAnnotation(InjektFqNames.ChildFactory) &&
+                    descriptor.hasAnnotation(InjektFqNames.CompositionFactory) &&
                     descriptor.hasAnnotation(InjektFqNames.InstanceFactory))
-        ) {
-            checkFactoriesLastStatementIsCreate(
-                declaration as KtFunction,
-                descriptor,
-                context
-            )
+        ) return
 
-            val annotationsSize = descriptor.annotations
-                .filter {
-                    it.fqName == InjektFqNames.ChildFactory ||
-                            it.fqName == InjektFqNames.Factory ||
-                            it.fqName == InjektFqNames.CompositionFactory ||
-                            it.fqName == InjektFqNames.InstanceFactory ||
-                            it.fqName == InjektFqNames.Module
-                }
-                .size
+        checkFactoriesLastStatementIsCreate(
+            declaration as KtFunction,
+            descriptor,
+            context
+        )
 
-            if (annotationsSize > 1) {
-                context.trace.report(InjektErrors.EITHER_MODULE_OR_FACTORY.on(declaration))
+        val annotationsSize = descriptor.annotations
+            .filter {
+                it.fqName == InjektFqNames.ChildFactory ||
+                        it.fqName == InjektFqNames.Factory ||
+                        it.fqName == InjektFqNames.CompositionFactory ||
+                        it.fqName == InjektFqNames.InstanceFactory ||
+                        it.fqName == InjektFqNames.Module
             }
+            .size
 
-            if (descriptor.isSuspend) {
+        if (annotationsSize > 1) {
+            context.trace.report(InjektErrors.EITHER_MODULE_OR_FACTORY.on(declaration))
+        }
+
+        if (descriptor.isSuspend) {
+            context.trace.report(
+                InjektErrors.CANNOT_BE_SUSPEND
+                    .on(declaration)
+            )
+        }
+
+        if (!descriptor.isInline) {
+            if (descriptor.typeParameters.isNotEmpty()) {
                 context.trace.report(
-                    InjektErrors.CANNOT_BE_SUSPEND
+                    InjektErrors.FACTORY_WITH_TYPE_PARAMETERS_MUST_BE_INLINE
                         .on(declaration)
                 )
             }
-
-            if (!descriptor.isInline) {
-                if (descriptor.typeParameters.isNotEmpty()) {
+            descriptor.valueParameters.forEach { valueParameter ->
+                if (valueParameter.type.hasAnnotation(InjektFqNames.Module)) {
                     context.trace.report(
-                        InjektErrors.FACTORY_WITH_TYPE_PARAMETERS_MUST_BE_INLINE
-                            .on(declaration)
-                    )
-                }
-                descriptor.valueParameters.forEach { valueParameter ->
-                    if (valueParameter.type.hasAnnotation(InjektFqNames.Module)) {
-                        context.trace.report(
-                            InjektErrors.MODULE_PARAMETER_WITHOUT_INLINE
-                                .on(valueParameter.findPsi() ?: declaration)
-                        )
-                    }
-                }
-            }
-
-            if (descriptor.hasAnnotation(InjektFqNames.ChildFactory) ||
-                descriptor.hasAnnotation(InjektFqNames.CompositionFactory)
-            ) {
-                if (descriptor.isInline) {
-                    context.trace.report(
-                        InjektErrors.CHILD_AND_COMPOSITION_FACTORY_CANNOT_BE_INLINE
-                            .on(descriptor.findPsi() ?: declaration)
-                    )
-                }
-                if (descriptor.typeParameters.isNotEmpty()) {
-                    context.trace.report(
-                        InjektErrors.CHILD_AND_COMPOSITION_FACTORY_CANNOT_HAVE_TYPE_PARAMETERS
-                            .on(descriptor.findPsi() ?: declaration)
+                        InjektErrors.MODULE_PARAMETER_WITHOUT_INLINE
+                            .on(valueParameter.findPsi() ?: declaration)
                     )
                 }
             }
+        }
 
-            if (descriptor.hasAnnotation(InjektFqNames.CompositionFactory) &&
-                descriptor.returnType?.constructor?.declarationDescriptor?.annotations
-                    ?.hasAnnotation(InjektFqNames.CompositionComponent) != true
-            ) {
+        if (descriptor.hasAnnotation(InjektFqNames.ChildFactory) ||
+            descriptor.hasAnnotation(InjektFqNames.CompositionFactory)
+        ) {
+            if (descriptor.isInline) {
                 context.trace.report(
-                    InjektErrors.NOT_A_COMPOSITION_COMPONENT
-                        .on(declaration)
+                    InjektErrors.CHILD_AND_COMPOSITION_FACTORY_CANNOT_BE_INLINE
+                        .on(descriptor.findPsi() ?: declaration)
+                )
+            }
+            if (descriptor.typeParameters.isNotEmpty()) {
+                context.trace.report(
+                    InjektErrors.CHILD_AND_COMPOSITION_FACTORY_CANNOT_HAVE_TYPE_PARAMETERS
+                        .on(descriptor.findPsi() ?: declaration)
+                )
+            }
+        }
+
+        if (descriptor.hasAnnotation(InjektFqNames.CompositionFactory) &&
+            descriptor.returnType?.constructor?.declarationDescriptor?.annotations
+                ?.hasAnnotation(InjektFqNames.CompositionComponent) != true
+        ) {
+            context.trace.report(
+                InjektErrors.NOT_A_COMPOSITION_COMPONENT
+                    .on(declaration)
+            )
+        }
+
+        descriptor.typeParameters.forEach { typeParameter ->
+            if (typeParameter.isReified) {
+                context.trace.report(
+                    InjektErrors.CANNOT_USE_REIFIED
+                        .on(typeParameter.findPsi() ?: declaration)
                 )
             }
         }

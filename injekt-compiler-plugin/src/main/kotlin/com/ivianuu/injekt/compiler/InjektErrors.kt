@@ -43,11 +43,6 @@ interface InjektErrors {
         )
 
         @JvmField
-        val FORBIDDEN_PROVIDER_DSL_INVOCATION = error(
-            "Only @ProviderDsl functions can invoke other @ProviderDsl functions"
-        )
-
-        @JvmField
         val CONDITIONAL_NOT_ALLOWED_IN_MODULE_AND_FACTORIES = error(
             "Conditional logic is not allowed inside @Factory, @ChildFactory, @CompositionFactory and @Module functions"
         )
@@ -60,6 +55,11 @@ interface InjektErrors {
         @JvmField
         val CREATE_WITHOUT_FACTORY = error(
             "create can only be called from within a @Factory, @ChildFactory, @CompositionFactory or @InstanceFactory function"
+        )
+
+        @JvmField
+        val GET_WITHOUT_PROVIDER = error(
+            "get can only be called from within a @Provider function"
         )
 
         @JvmField
@@ -178,8 +178,8 @@ interface InjektErrors {
         )
 
         @JvmField
-        val MODULE_CANNOT_USE_REIFIED = error(
-            "@Module functions cannot use reified"
+        val CANNOT_USE_REIFIED = error(
+            "@Factory, @ChildFactory, @CompositionFactory or @Module functions cannot use reified"
         )
 
         @JvmField
@@ -194,27 +194,27 @@ interface InjektErrors {
 
         @JvmField
         val BINDING_ADAPTER_WITHOUT_COMPANION = error(
-            "@BindingAdapter annotated class needs a companion object."
+            "@BindingAdapter annotated class needs a companion object"
         )
 
         @JvmField
         val BINDING_EFFECT_COMPANION_WITHOUT_MODULE = error(
-            "@BindingAdapter companion needs a single @Module function."
+            "@BindingAdapter companion needs a single @Module function"
         )
 
         @JvmField
         val BINDING_EFFECT_MODULE_CANNOT_HAVE_VALUE_PARAMETERS = error(
-            "@BindingAdapter module cannot have value parameters."
+            "@BindingAdapter module cannot have value parameters"
         )
 
         @JvmField
         val BINDING_EFFECT_MODULE_NEEDS_1_TYPE_PARAMETER = error(
-            "@BindingAdapter module must have 1 type parameter."
+            "@BindingAdapter module must have 1 type parameter"
         )
 
         @JvmField
         val NOT_IN_BINDING_EFFECT_BOUNDS = error(
-            "Annotated class is not in @BindingAdapter bounds."
+            "Annotated class is not in @BindingAdapter bounds"
         )
 
         @JvmField
@@ -224,12 +224,12 @@ interface InjektErrors {
 
         @JvmField
         val BINDING_ADAPTER_WITH_TRANSIENT_OR_SCOPED = error(
-            "@BindingAdapter cannot be combined with @Transient or @Scope annotations."
+            "@BindingAdapter cannot be combined with @Transient or @Scope annotations"
         )
 
         @JvmField
         val BINDING_EFFECT_WITHOUT_TRANSIENT_OR_SCOPED = error(
-            "@BindingEffect must be combined with @Transient, @Scope or @BindingAdapter annotations."
+            "@BindingEffect must be combined with @Transient, @Scope or @BindingAdapter annotations"
         )
 
         @JvmField
@@ -239,7 +239,7 @@ interface InjektErrors {
 
         @JvmField
         val TRANSIENT_WITH_SCOPED = error(
-            "@Transient cannot be combined with @Scope annotated annotations."
+            "@Transient cannot be combined with @Scope annotated annotations"
         )
 
         @JvmField
@@ -264,12 +264,12 @@ interface InjektErrors {
 
         @JvmField
         val COMPOSITION_MODULE_CANNOT_HAVE_VALUE_PARAMETERS = error(
-            "Composition @Module functions cannot have value parameters."
+            "Composition @Module functions cannot have value parameters"
         )
 
         @JvmField
         val COMPOSITION_MODULE_CANNOT_HAVE_TYPE_PARAMETERS = error(
-            "Composition @Module functions cannot have type parameters."
+            "Composition @Module functions cannot have type parameters"
         )
 
         @JvmField
@@ -325,7 +325,7 @@ interface InjektErrors {
 
         @JvmField
         val UNSUPPORTED_ANDROID_ENTRY_POINT = error(
-            "@AndroidEntryPoint only supports Applications, Activities, Fragments, BroadcastReceivers and Services."
+            "@AndroidEntryPoint only supports Applications, Activities, Fragments, BroadcastReceivers and Services"
         )
 
         init {
