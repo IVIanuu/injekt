@@ -156,8 +156,8 @@ class BindingEffectChecker : DeclarationChecker {
                     InjektFqNames.BindingAdapter,
                     descriptor.module
                 ) &&
-                descriptor.hasAnnotation(InjektFqNames.Transient) ||
-                descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope, descriptor.module)
+                (descriptor.hasAnnotation(InjektFqNames.Transient) ||
+                        descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope, descriptor.module))
             ) {
                 context.trace.report(
                     InjektErrors.BINDING_ADAPTER_WITH_TRANSIENT_OR_SCOPED

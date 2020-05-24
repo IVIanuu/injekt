@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.composition
 
 import com.ivianuu.injekt.test.assertCompileError
+import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
@@ -253,7 +254,7 @@ class BindingEffectTest {
             assertCompileError("@CompositionComponent")
         }
 
-    /*@Test
+    @Test
     fun testCorrectBindingAdapter() = codegen(
         """
         @BindingAdapter(TestComponent::class)
@@ -319,9 +320,7 @@ class BindingEffectTest {
     """
     ) {
         assertCompileError("type parameter")
-    }*(
-
-// todo test binding effect without "trigger"
+    }
 
     @Test
     fun testBindingAdapterWithTransient() = codegen(
@@ -341,6 +340,26 @@ class BindingEffectTest {
     """
     ) {
         assertCompileError("transient")
+    }
+
+    @Test
+    fun testBindingEffectWithTransient() = codegen(
+        """
+        @BindingEffect(TestComponent::class)
+        annotation class MyBindingEffect {
+            companion object {
+                @Module
+                fun <T> bind() {
+                }
+            }
+        }
+        
+        @MyBindingEffect
+        @Transient
+        class MyClass
+    """
+    ) {
+        assertOk()
     }
 
     @Test
@@ -364,7 +383,28 @@ class BindingEffectTest {
     }
 
     @Test
-    fun testBindingAdapterNotInBounds() = codegen(
+    fun testBindingEffectWithScoped() = codegen(
+        """
+        @BindingEffect(TestComponent::class)
+        annotation class MyBindingEffect {
+            companion object {
+                @Module
+                fun <T> bind() {
+                }
+            }
+        }
+        
+        @TestScope
+        @MyBindingEffect
+        class MyClass
+    """
+    ) {
+        assertOk()
+    }
+
+
+    @Test
+    fun testBindingEffectNotInBounds() = codegen(
         """
         @BindingAdapter(TestComponent::class)
         annotation class MyBindingAdapter {
@@ -382,6 +422,6 @@ class BindingEffectTest {
     """
     ) {
         assertCompileError("bound")
-    }*/
+    }
 
 }
