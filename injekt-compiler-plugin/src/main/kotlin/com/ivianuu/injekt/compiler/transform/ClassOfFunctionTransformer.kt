@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.deepCopyWithPreservingQualifiers
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -73,7 +74,7 @@ class ClassOfFunctionTransformer(pluginContext: IrPluginContext) :
             val transformed = transformedFunctions[original]
             if (transformed != null && transformed != original) {
                 declarations.add(
-                    original.deepCopyWithPreservingQualifiers()
+                    original.deepCopyWithPreservingQualifiers(wrapDescriptor = false)
                         .also { decoy ->
                             decoys[original] = decoy
                             InjektDeclarationIrBuilder(pluginContext, decoy.symbol).run {
@@ -151,7 +152,9 @@ class ClassOfFunctionTransformer(pluginContext: IrPluginContext) :
             return function
         }
 
-        val transformedFunction = function.deepCopyWithPreservingQualifiers()
+        val transformedFunction = function.deepCopyWithPreservingQualifiers(
+            wrapDescriptor = true
+        )
         transformedFunctions[function] = transformedFunction
         transformingFunctions -= function
 

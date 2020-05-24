@@ -18,12 +18,12 @@ package com.ivianuu.injekt.compiler.transform.provider
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.deepCopyWithPreservingQualifiers
 import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.hasTypeAnnotation
 import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
-import com.ivianuu.injekt.compiler.transform.deepCopyWithPreservingQualifiers
 import com.ivianuu.injekt.compiler.transform.factory.Key
 import com.ivianuu.injekt.compiler.transform.factory.asKey
 import com.ivianuu.injekt.compiler.typeArguments
@@ -81,7 +81,9 @@ class ProviderDslFunctionTransformer(pluginContext: IrPluginContext) :
             val transformed = transformedFunctions[original]
             if (transformed != null && transformed != original) {
                 declarations.add(
-                    original.deepCopyWithPreservingQualifiers()
+                    original.deepCopyWithPreservingQualifiers(
+                        wrapDescriptor = false
+                    )
                         .also { decoy ->
                             decoys[original] = decoy
                             InjektDeclarationIrBuilder(
@@ -133,7 +135,9 @@ class ProviderDslFunctionTransformer(pluginContext: IrPluginContext) :
         if (function in transformingFunctions) return function
         transformingFunctions += function
 
-        val transformedFunction = function.deepCopyWithPreservingQualifiers()
+        val transformedFunction = function.deepCopyWithPreservingQualifiers(
+            wrapDescriptor = true
+        )
 
         val providerDslCalls = mutableListOf<IrCall>()
 

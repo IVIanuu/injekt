@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.analysis.TypeAnnotationChecker
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
@@ -28,15 +29,20 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.ir.IrElement
+import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
+import org.jetbrains.kotlin.ir.declarations.MetadataSource
+import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
+import org.jetbrains.kotlin.ir.descriptors.WrappedSimpleFunctionDescriptor
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstKind
@@ -55,17 +61,24 @@ import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrStarProjection
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.IrTypeAbbreviation
 import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
+import org.jetbrains.kotlin.ir.types.impl.IrTypeAbbreviationImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.DeepCopyIrTreeWithSymbols
+import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
+import org.jetbrains.kotlin.ir.util.DescriptorsRemapper
+import org.jetbrains.kotlin.ir.util.SymbolRemapper
+import org.jetbrains.kotlin.ir.util.TypeRemapper
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -76,8 +89,11 @@ import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isAnnotationClass
 import org.jetbrains.kotlin.ir.util.parentAsClass
+import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.util.render
+import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -488,4 +504,102 @@ fun IrFunction.hasTypeAnnotation(
     } catch (e: Exception) {
         false
     }
+}
+
+fun IrFunction.deepCopyWithPreservingQualifiers(
+    wrapDescriptor: Boolean
+): IrFunction {
+    val mappedDescriptors = mutableSetOf<WrappedSimpleFunctionDescriptor>()
+    val symbolRemapper = DeepCopySymbolRemapper(
+        object : DescriptorsRemapper {
+            override fun remapDeclaredSimpleFunction(descriptor: FunctionDescriptor): FunctionDescriptor {
+                return if (wrapDescriptor && descriptor == this@deepCopyWithPreservingQualifiers.descriptor) {
+                    WrappedSimpleFunctionDescriptor(sourceElement = descriptor.source)
+                        .also { mappedDescriptors += it }
+                } else descriptor
+            }
+        }
+    )
+    acceptVoid(symbolRemapper)
+    val typeRemapper = DeepCopyTypeRemapper(symbolRemapper)
+    return (transform(
+        object : DeepCopyIrTreeWithSymbols(symbolRemapper, typeRemapper) {
+            override fun visitSimpleFunction(declaration: IrSimpleFunction): IrSimpleFunction {
+                return super.visitSimpleFunction(declaration).also {
+                    if (wrapDescriptor) {
+                        if (it.descriptor in mappedDescriptors &&
+                            declaration.metadata != null
+                        ) {
+                            (it as IrFunctionImpl).metadata = MetadataSource.Function(it.descriptor)
+                        }
+                    } else {
+                        (it as IrFunctionImpl).metadata = declaration.metadata
+                    }
+                }
+            }
+        }.also { typeRemapper.deepCopy = it }, null
+    )
+        .patchDeclarationParents(parent) as IrSimpleFunction)
+        .also {
+            it.accept(object : IrElementTransformerVoid() {
+                override fun visitFunction(declaration: IrFunction): IrStatement {
+                    val descriptor = declaration.descriptor
+                    if (descriptor is WrappedSimpleFunctionDescriptor &&
+                        !descriptor.isBound()
+                    ) {
+                        descriptor.bind(declaration as IrSimpleFunction)
+                    }
+                    return super.visitFunction(declaration)
+                }
+            }, null)
+        }
+}
+
+private class DeepCopyTypeRemapper(
+    private val symbolRemapper: SymbolRemapper
+) : TypeRemapper {
+
+    lateinit var deepCopy: DeepCopyIrTreeWithSymbols
+
+    override fun enterScope(irTypeParametersContainer: IrTypeParametersContainer) {
+        // TODO
+    }
+
+    override fun leaveScope() {
+        // TODO
+    }
+
+    override fun remapType(type: IrType): IrType =
+        if (type !is IrSimpleType)
+            type
+        else {
+            val classifier = symbolRemapper.getReferencedClassifier(type.classifier)
+            val arguments = type.arguments.map { remapTypeArgument(it) }
+            val annotations =
+                type.annotations.map { it.transform(deepCopy, null) as IrConstructorCall }
+            val kotlinType =
+                makeKotlinType(classifier, arguments, type.hasQuestionMark, annotations)
+            IrSimpleTypeImpl(
+                kotlinType,
+                classifier,
+                type.hasQuestionMark,
+                arguments,
+                annotations,
+                type.abbreviation?.remapTypeAbbreviation()
+            )
+        }
+
+    private fun remapTypeArgument(typeArgument: IrTypeArgument): IrTypeArgument =
+        if (typeArgument is IrTypeProjection)
+            makeTypeProjection(this.remapType(typeArgument.type), typeArgument.variance)
+        else
+            typeArgument
+
+    private fun IrTypeAbbreviation.remapTypeAbbreviation() =
+        IrTypeAbbreviationImpl(
+            symbolRemapper.getReferencedTypeAlias(typeAlias),
+            hasQuestionMark,
+            arguments.map { remapTypeArgument(it) },
+            annotations
+        )
 }

@@ -19,11 +19,16 @@ package com.ivianuu.injekt.android
 import androidx.compose.plugins.kotlin.ComposeComponentRegistrar
 import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import org.junit.Test
 
 class ComposeTest {
 
-    private val composeSource = """
+    @Test
+    fun testGetInComposableWithCompilingAfterCompose() =
+        codegen(
+            """
             val ComponentAmbient = androidx.compose.staticAmbientOf<TestCompositionComponent>()
             
             @Module
@@ -43,12 +48,7 @@ class ComposeTest {
                 generateCompositions()
                 val foo = inject<Foo>()
             }
-        """
-
-    @Test
-    fun testGetInComposableWithCompilingAfterCompose() =
-        codegen(
-            composeSource,
+        """,
             config = {
                 val other = compilerPlugins.toList()
                 compilerPlugins = listOf(ComposeComponentRegistrar()) + other
@@ -60,7 +60,27 @@ class ComposeTest {
     @Test
     fun testGetInComposableWithCompilingBeforeCompose() =
         codegen(
-            composeSource,
+            """
+            val ComponentAmbient = androidx.compose.staticAmbientOf<TestCompositionComponent>()
+            
+            @Module
+            fun module() {
+                installIn<TestCompositionComponent>()
+                transient<Foo>()
+            }
+            
+            @androidx.compose.Composable
+            fun <T> inject(): T { 
+                val component = ComponentAmbient.current
+                return androidx.compose.remember(component) { component.get() }
+            }
+            
+            @androidx.compose.Composable
+            fun caller() {
+                generateCompositions()
+                val foo = inject<Foo>()
+            }
+        """,
             config = {
                 val other = compilerPlugins.toList()
                 compilerPlugins = other + listOf(ComposeComponentRegistrar())
@@ -69,5 +89,86 @@ class ComposeTest {
             assertOk()
         }
 
+    @Test
+    fun testGetInComposableWithCompilingAfterComposeMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                val ComponentAmbient = androidx.compose.staticAmbientOf<TestCompositionComponent>()
+                
+                @Module 
+                fun module() {
+                    installIn<TestCompositionComponent>()
+                    transient<Foo>()
+                }
+                
+                @androidx.compose.Composable 
+                fun <T> inject(): T { 
+                    val component = ComponentAmbient.current
+                    return androidx.compose.remember(component) { component.get() }
+                }
+        """
+            )
+        ),
+        listOf(
+            source(
+                """
+                @androidx.compose.Composable 
+                fun caller() {
+                    generateCompositions()
+                    val foo = inject<Foo>()
+                } 
+            """
+            )
+        )
+        ,
+        config = {
+            val other = compilerPlugins.toList()
+            compilerPlugins = listOf(ComposeComponentRegistrar()) + other
+        }
+    ) { results ->
+        results.forEach { it.assertOk() }
+    }
+
+    @Test
+    fun testGetInComposableWithCompilingBeforeComposeMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                val ComponentAmbient = androidx.compose.staticAmbientOf<TestCompositionComponent>()
+                
+                @Module 
+                fun module() {
+                    installIn<TestCompositionComponent>()
+                    transient<Foo>()
+                }
+                
+                @androidx.compose.Composable 
+                fun <T> inject(): T { 
+                    val component = ComponentAmbient.current
+                    return androidx.compose.remember(component) { component.get() }
+                }
+        """
+            )
+        ),
+        listOf(
+            source(
+                """
+                @androidx.compose.Composable 
+                fun caller() {
+                    generateCompositions()
+                    val foo = inject<Foo>()
+                } 
+            """
+            )
+        )
+        ,
+        config = {
+            val other = compilerPlugins.toList()
+            compilerPlugins = other + listOf(ComposeComponentRegistrar())
+        }
+    ) { results ->
+        results.forEach { it.assertOk() }
+    }
 
 }

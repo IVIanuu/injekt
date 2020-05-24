@@ -17,9 +17,9 @@
 package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.deepCopyWithPreservingQualifiers
 import com.ivianuu.injekt.compiler.hasTypeAnnotation
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
-import com.ivianuu.injekt.compiler.transform.deepCopyWithPreservingQualifiers
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -114,7 +114,9 @@ class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
             return function
         }
 
-        val transformedFunction = function.deepCopyWithPreservingQualifiers()
+        val transformedFunction = function.deepCopyWithPreservingQualifiers(
+            wrapDescriptor = true
+        )
         transformedFunctions[function] = transformedFunction
 
         val captures = mutableListOf<IrGetValue>()

@@ -17,10 +17,10 @@
 package com.ivianuu.injekt.compiler.transform.composition
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.deepCopyWithPreservingQualifiers
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
-import com.ivianuu.injekt.compiler.transform.deepCopyWithPreservingQualifiers
 import com.ivianuu.injekt.compiler.transform.factory.Key
 import com.ivianuu.injekt.compiler.transform.factory.asKey
 import com.ivianuu.injekt.compiler.typeArguments
@@ -86,7 +86,9 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
             val transformed = transformedFunctions[original]
             if (transformed != null && transformed != original) {
                 declarations.add(
-                    original.deepCopyWithPreservingQualifiers()
+                    original.deepCopyWithPreservingQualifiers(
+                        wrapDescriptor = false
+                    )
                         .also { decoy ->
                             decoys[original] = decoy
                             InjektDeclarationIrBuilder(pluginContext, decoy.symbol).run {
@@ -185,7 +187,9 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
             return function
         }
 
-        val transformedFunction = function.deepCopyWithPreservingQualifiers()
+        val transformedFunction = function.deepCopyWithPreservingQualifiers(
+            wrapDescriptor = true
+        )
         transformedFunctions[function] = transformedFunction
         transformingFunctions -= function
 

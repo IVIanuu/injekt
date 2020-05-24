@@ -62,14 +62,14 @@ class Graph(
 
     private val explicitBindingResolvers = mutableListOf<BindingResolver>()
     private val implicitBindingResolvers = mutableListOf<BindingResolver>()
-    val mapBindingResolver: MapBindingResolver =
+    private val mapBindingResolver: MapBindingResolver =
         MapBindingResolver(
             context,
             symbols,
             factory,
             parent?.mapBindingResolver
         )
-    val setBindingResolver: SetBindingResolver =
+    private val setBindingResolver: SetBindingResolver =
         SetBindingResolver(
             context,
             symbols,

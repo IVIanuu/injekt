@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
+import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
@@ -43,10 +44,12 @@ class InjektComponentRegistrar : ComponentRegistrar {
             project,
             InjektStorageContainerContributor(typeAnnotationChecker)
         )
-        IrGenerationExtension.registerExtension(
-            project,
-            InjektIrGenerationExtension(project)
-        )
+        Extensions.getArea(project)
+            .getExtensionPoint(IrGenerationExtension.extensionPointName)
+            .registerExtension(
+                InjektIrGenerationExtension(project),
+                LoadingOrder.FIRST
+            )
         registerDiagnosticSuppressorExtension(
             project,
             QualifierAnnotationRetentionSuppressor()
