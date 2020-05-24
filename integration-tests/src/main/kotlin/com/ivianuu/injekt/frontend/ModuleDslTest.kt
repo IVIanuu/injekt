@@ -262,6 +262,17 @@ class ModuleDslTest {
         }
 
     @Test
+    fun testModuleWithReifiedTypeParameters() = codegen(
+        """ 
+        @Module
+        fun <reified T> module() {
+        }
+        """
+    ) {
+        assertCompileError("reified")
+    }
+
+    @Test
     fun testInlineModuleWithDefinition() = codegen(
         """ 
         @Module

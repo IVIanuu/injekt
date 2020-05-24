@@ -58,6 +58,7 @@ class ModuleChecker(
                 InjektFqNames.Module
             )
         ) return
+
         if (descriptor.returnType != null && descriptor.returnType != descriptor.builtIns.unitType) {
             context.trace.report(
                 InjektErrors.RETURN_TYPE_NOT_ALLOWED_FOR_MODULE.on(declaration)
@@ -85,6 +86,15 @@ class ModuleChecker(
                             .on(valueParameter.findPsi() ?: declaration)
                     )
                 }
+            }
+        }
+
+        descriptor.typeParameters.forEach { typeParameter ->
+            if (typeParameter.isReified) {
+                context.trace.report(
+                    InjektErrors.MODULE_CANNOT_USE_REIFIED
+                        .on(typeParameter.findPsi() ?: declaration)
+                )
             }
         }
     }
