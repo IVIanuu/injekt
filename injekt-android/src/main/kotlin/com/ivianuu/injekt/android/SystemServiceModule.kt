@@ -33,6 +33,7 @@ import android.app.usage.UsageStatsManager
 import android.appwidget.AppWidgetManager
 import android.bluetooth.BluetoothManager
 import android.content.ClipboardManager
+import android.content.Context
 import android.content.RestrictionsManager
 import android.content.pm.LauncherApps
 import android.content.pm.ShortcutManager
@@ -149,7 +150,7 @@ fun systemServiceModule() {
 inline fun <reified T : Any> systemService() {
     transient<T> {
         ContextCompat.getSystemService(
-            @ForApplication get(),
+            get<@ForApplication Context>(),
             T::class.java
         )!!
     }

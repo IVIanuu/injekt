@@ -43,6 +43,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -177,7 +178,11 @@ abstract class AbstractFunctionTransformer(
             expression.origin,
             expression.superQualifierSymbol
         ).apply {
-            copyTypeAndValueArgumentsFrom(expression)
+            try {
+                copyTypeAndValueArgumentsFrom(expression)
+            } catch (e: Throwable) {
+                error("could not transform ${expression.dump()} to new function ${transformed.dump()}")
+            }
         }
     }
 

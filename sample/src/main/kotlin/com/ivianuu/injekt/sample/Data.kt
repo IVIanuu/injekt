@@ -29,8 +29,7 @@ import java.io.File
 @Module
 fun dataModule() {
     installIn<ApplicationComponent>()
-    @DatabaseFile
-    transient { get<Application>().cacheDir!! }
+    transient<@DatabaseFile File> { get<Application>().cacheDir!! }
 }
 
 @Target(AnnotationTarget.TYPE)

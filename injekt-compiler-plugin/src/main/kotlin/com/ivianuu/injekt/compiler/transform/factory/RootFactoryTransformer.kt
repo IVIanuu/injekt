@@ -46,7 +46,8 @@ class RootFactoryTransformer(
         declaration.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitFunctionNew(declaration: IrFunction): IrStatement {
                 if ((declaration.hasAnnotation(InjektFqNames.Factory) ||
-                            declaration.hasAnnotation(InjektFqNames.InstanceFactory)) && !declaration.isInline
+                            declaration.hasAnnotation(InjektFqNames.InstanceFactory)) &&
+                    declaration.typeParameters.isEmpty()
                 ) {
                     factoryFunctions += declaration
                 }
@@ -92,9 +93,7 @@ class RootFactoryTransformer(
                                 declarationStore = declarationStore
                             )
 
-                            +irReturn(
-                                instanceFactory.getInstanceExpression()
-                            )
+                            +irReturn(instanceFactory.getInstanceExpression())
                         }
                         else -> error("Unexpected factory ${function.dump()}")
                     }

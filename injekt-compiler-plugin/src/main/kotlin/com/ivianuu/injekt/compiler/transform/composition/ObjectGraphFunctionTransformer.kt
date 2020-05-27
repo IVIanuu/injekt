@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform.composition
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.deepCopyWithPreservingQualifiers
+import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.transform.AbstractFunctionTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
@@ -65,6 +66,9 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
         if (function.visibility == Visibilities.LOCAL &&
             function.origin == IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
         ) return false
+
+        if (function.isExternalDeclaration() && !function.hasAnnotation(InjektFqNames.AstObjectGraph))
+            return false
 
         return true
     }

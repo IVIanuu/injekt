@@ -34,6 +34,7 @@ import kotlin.reflect.KClass
 @BindingAdapter(ApplicationComponent::class)
 annotation class BindWorker {
     companion object {
+        @Module
         inline fun <reified T : ListenableWorker> bind() {
             worker<T>()
         }

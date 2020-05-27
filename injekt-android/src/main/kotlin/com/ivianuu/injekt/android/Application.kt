@@ -45,12 +45,8 @@ val Application.applicationComponent: ApplicationComponent
 fun createApplicationComponent(instance: Application): ApplicationComponent {
     scope<ApplicationScoped>()
     instance(instance)
-
     alias<Application, @ForApplication Context>()
-
-    @ForApplication
-    transient<CoroutineScope> { get<@ForApplication LifecycleOwner>().lifecycleScope }
-    @ForApplication
-    transient { ProcessLifecycleOwner.get() }
+    transient<@ForApplication CoroutineScope> { get<@ForApplication LifecycleOwner>().lifecycleScope }
+    transient<@ForApplication LifecycleOwner> { ProcessLifecycleOwner.get() }
     return create()
 }
