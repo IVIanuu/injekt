@@ -690,28 +690,35 @@ class FactoryExpressions(
             .map { getBindingExpression(it) }
 
         return cachedProviderExpression(binding.key) providerFieldExpression@{
-            val newProvider = InjektDeclarationIrBuilder(pluginContext, factory.moduleClass.symbol)
-                .irLambda(
-                    pluginContext.irBuiltIns.function(0)
-                        .typeWith(binding.key.type)
-                ) {
-                    val provisionFunctionExpression = binding.provisionFunctionExpression(this)
-                    +irReturn(
-                        irCall(provisionFunctionExpression.type
-                            .classOrNull!!
-                            .functions
-                            .single { it.owner.name.asString() == "invoke" }
-                        ).apply {
-                            dispatchReceiver = provisionFunctionExpression
-                            dependencyExpressions.forEachIndexed { index, dependency ->
-                                putValueArgument(
-                                    index,
-                                    dependency()
-                                )
+            val provisionFunctionExpression = binding.provisionFunctionExpression(this)
+
+            val newProvider = if (provisionFunctionExpression.type.isFunction() &&
+                provisionFunctionExpression.type.typeArguments.size == 1
+            ) {
+                provisionFunctionExpression
+            } else {
+                InjektDeclarationIrBuilder(pluginContext, factory.moduleClass.symbol)
+                    .irLambda(
+                        pluginContext.irBuiltIns.function(0)
+                            .typeWith(binding.key.type)
+                    ) {
+                        +irReturn(
+                            irCall(provisionFunctionExpression.type
+                                .classOrNull!!
+                                .functions
+                                .single { it.owner.name.asString() == "invoke" }
+                            ).apply {
+                                dispatchReceiver = provisionFunctionExpression
+                                dependencyExpressions.forEachIndexed { index, dependency ->
+                                    putValueArgument(
+                                        index,
+                                        dependency()
+                                    )
+                                }
                             }
-                        }
-                    )
-                }
+                        )
+                    }
+            }
 
             if (binding.scoped) {
                 doubleCheck(newProvider)
