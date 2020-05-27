@@ -56,7 +56,30 @@ class ImplFactoryTest {
     }
 
     @Test
-    fun testTransientWithAnnotatedClass() = codegen(
+    fun testScoped() = codegen(
+        """
+        interface TestComponent {
+            val foo: Foo
+        }
+        
+        @Factory
+        fun createComponent(): TestComponent {
+            scoped { Foo() }
+            return create()
+        }
+        
+        val component = createComponent()
+        fun invoke() = component.foo
+    """
+    ) {
+        assertSame(
+            invokeSingleFile(),
+            invokeSingleFile()
+        )
+    }
+
+    @Test
+    fun testAnnotatedClass() = codegen(
         """
         @Transient class AnnotatedBar(foo: Foo)
         interface TestComponent {
@@ -80,7 +103,7 @@ class ImplFactoryTest {
     }
 
     @Test
-    fun testTransientWithoutDefinition() = codegen(
+    fun testBindingWithoutDefinition() = codegen(
         """
         interface TestComponent {
             val bar: Bar
@@ -97,33 +120,51 @@ class ImplFactoryTest {
         fun invoke() = component.bar
     """
     ) {
-        assertNotSame(
-            invokeSingleFile(),
-            invokeSingleFile()
-        )
+        assertTrue(invokeSingleFile() is Bar)
     }
 
     @Test
-    fun testScoped() = codegen(
+    fun testBindingFromPassedProvider() = codegen(
         """
         interface TestComponent {
-            val foo: Foo
+            val bar: Bar
+        }
+        
+        @Factory
+        fun createComponent(provider: (Foo) -> Bar): TestComponent {
+            transient<Foo>()
+            transient(provider)
+            return create()
+        }
+        
+        val component = createComponent { Bar(it) }
+        fun invoke() = component.bar
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
+    }
+
+    @Test
+    fun testBindingFromProviderReference() = codegen(
+        """
+        interface TestComponent {
+            val bar: Bar
         }
         
         @Factory
         fun createComponent(): TestComponent {
-            scoped { Foo() }
+            transient<Foo>()
+            transient(::createBar)
             return create()
         }
         
+        fun createBar(foo: Foo): Bar = Bar(foo)
+        
         val component = createComponent()
-        fun invoke() = component.foo
+        fun invoke() = component.bar
     """
     ) {
-        assertSame(
-            invokeSingleFile(),
-            invokeSingleFile()
-        )
+        assertTrue(invokeSingleFile() is Bar)
     }
 
     @Test
