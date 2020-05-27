@@ -253,7 +253,7 @@ class ModuleDslTest {
         """
         class MyClass {
             @Factory 
-            fun module(): TestComponent {
+            open fun module(): TestComponent {
                 return create()
             }
         }

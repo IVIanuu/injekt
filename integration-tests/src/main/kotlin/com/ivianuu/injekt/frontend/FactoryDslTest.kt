@@ -240,7 +240,7 @@ class FactoryDslTest {
         """
         class MyClass {
             @Factory 
-            fun factory(): TestComponent {
+            open fun factory(): TestComponent {
                 return create()
             }
         }
