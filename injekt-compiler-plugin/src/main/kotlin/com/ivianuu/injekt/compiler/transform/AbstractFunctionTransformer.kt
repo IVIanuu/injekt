@@ -19,24 +19,35 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
+import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
+import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.load.java.JvmAbi
+import org.jetbrains.kotlin.resolve.DescriptorUtils
 
 abstract class AbstractFunctionTransformer(
     pluginContext: IrPluginContext,
@@ -53,24 +64,57 @@ abstract class AbstractFunctionTransformer(
     }
 
     override fun visitFile(declaration: IrFile): IrFile {
-        val originalFunctions = declaration.declarations.filterIsInstance<IrFunction>()
+        val originalFunctions = mutableListOf<IrFunction>()
+        val originalProperties = mutableListOf<Pair<IrProperty, IrSimpleFunction>>()
+        loop@ for (child in declaration.declarations) {
+            when (child) {
+                is IrFunction -> originalFunctions.add(child)
+                is IrProperty -> {
+                    val getter = child.getter ?: continue@loop
+                    originalProperties.add(child to getter)
+                }
+            }
+        }
         val result = super.visitFile(declaration)
-        result.patchWithDecoys(originalFunctions)
+        result.patchWithDecoys(originalFunctions, originalProperties)
         return result
     }
 
     override fun visitClass(declaration: IrClass): IrStatement {
-        val originalFunctions = declaration.declarations.filterIsInstance<IrFunction>()
+        val originalFunctions = mutableListOf<IrFunction>()
+        val originalProperties = mutableListOf<Pair<IrProperty, IrSimpleFunction>>()
+        loop@ for (child in declaration.declarations) {
+            when (child) {
+                is IrFunction -> originalFunctions.add(child)
+                is IrProperty -> {
+                    val getter = child.getter ?: continue@loop
+                    originalProperties.add(child to getter)
+                }
+            }
+        }
         val result = super.visitClass(declaration) as IrClass
-        result.patchWithDecoys(originalFunctions)
+        result.patchWithDecoys(originalFunctions, originalProperties)
         return result
     }
 
-    private fun IrDeclarationContainer.patchWithDecoys(originalFunctions: List<IrFunction>) {
-        for (original in originalFunctions) {
-            val transformed = transformedFunctions[original]
-            if (transformed != null && transformed != original) {
-                declarations.add(createDecoy(original, transformed))
+    private fun IrDeclarationContainer.patchWithDecoys(
+        originalFunctions: List<IrFunction>,
+        originalProperties: List<Pair<IrProperty, IrSimpleFunction>>
+    ) {
+        for (function in originalFunctions) {
+            val transformed = transformedFunctions[function]
+            if (transformed != null && transformed != function) {
+                declarations.add(createDecoy(function, transformed))
+            }
+        }
+        for ((property, getter) in originalProperties) {
+            val transformed = transformedFunctions[getter]
+            if (transformed != null && transformed != getter) {
+                val newGetter = property.getter
+                property.getter = (createDecoy(getter, transformed) as IrSimpleFunction)
+                    .also { it.parent = this }
+                declarations.add(newGetter!!)
+                newGetter.parent = this
             }
         }
     }
@@ -148,6 +192,37 @@ abstract class AbstractFunctionTransformer(
             transformExternal(function) else transform(function)
 
         transformedFunctions[function] = transformedFunction
+
+        if (transformedFunction != function) {
+            fun jvmNameAnnotation(name: String): IrConstructorCall {
+                val jvmName = pluginContext.referenceClass(DescriptorUtils.JVM_NAME)!!
+                return DeclarationIrBuilder(pluginContext, transformedFunction.symbol).run {
+                    irCall(jvmName.constructors.single()).apply {
+                        putValueArgument(0, irString(name))
+                    }
+                }
+            }
+
+            if (transformedFunction is IrSimpleFunction && function is IrSimpleFunction) {
+                transformedFunction.correspondingPropertySymbol =
+                    function.correspondingPropertySymbol
+            }
+
+            val descriptor = function.descriptor
+            if (descriptor is PropertyGetterDescriptor &&
+                !transformedFunction.hasAnnotation(DescriptorUtils.JVM_NAME)
+            ) {
+                val name = JvmAbi.getterName(descriptor.correspondingProperty.name.identifier)
+                transformedFunction.annotations += jvmNameAnnotation(name)
+            }
+
+            if (descriptor is PropertySetterDescriptor &&
+                !transformedFunction.hasAnnotation(DescriptorUtils.JVM_NAME)
+            ) {
+                val name = JvmAbi.setterName(descriptor.correspondingProperty.name.identifier)
+                transformedFunction.annotations += jvmNameAnnotation(name)
+            }
+        }
 
         return transformedFunction
     }
