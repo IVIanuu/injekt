@@ -17,5 +17,5 @@
 package com.ivianuu.injekt
 
 @Qualifier
-@Target(AnnotationTarget.TYPE, AnnotationTarget.EXPRESSION)
+@Target(AnnotationTarget.TYPE)
 annotation class Lazy

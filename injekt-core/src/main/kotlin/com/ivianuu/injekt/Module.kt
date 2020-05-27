@@ -19,6 +19,6 @@ package com.ivianuu.injekt
 import com.ivianuu.injekt.internal.TypeAnnotation
 
 @TypeAnnotation
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.TYPE)
 @Qualifier
 annotation class Module

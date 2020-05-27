@@ -20,7 +20,7 @@ import com.ivianuu.injekt.internal.TypeAnnotation
 import com.ivianuu.injekt.internal.injektIntrinsic
 
 @Qualifier
-@Target(AnnotationTarget.TYPE, AnnotationTarget.FUNCTION, AnnotationTarget.EXPRESSION)
+@Target(AnnotationTarget.TYPE, AnnotationTarget.FUNCTION)
 @TypeAnnotation
 annotation class Provider
 

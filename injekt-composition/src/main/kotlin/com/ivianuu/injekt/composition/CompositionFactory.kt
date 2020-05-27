@@ -22,7 +22,7 @@ import com.ivianuu.injekt.internal.injektIntrinsic
 
 @TypeAnnotation
 @Qualifier
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.TYPE)
 annotation class CompositionFactory
 
 inline fun <reified T, reified F> compositionFactoryOf(): F =
