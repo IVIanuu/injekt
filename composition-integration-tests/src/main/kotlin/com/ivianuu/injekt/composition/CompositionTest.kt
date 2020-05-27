@@ -104,7 +104,7 @@ class CompositionTest {
             @CompositionFactory 
             fun activityComponentFactory(): ActivityComponent { 
                 parent<AppComponent>()
-                scoped { Bar(get()) }
+                scoped { foo: Foo -> Bar(foo) }
                 return create()
             }
             
@@ -124,7 +124,7 @@ class CompositionTest {
             @CompositionFactory 
             fun fragmentComponentFactory(): FragmentComponent { 
                 parent<ActivityComponent>()
-                scoped { Baz(get(), get()) }
+                scoped { foo: Foo, bar: Bar -> Baz(foo, bar) }
                 return create()
             }
             
@@ -172,7 +172,7 @@ class CompositionTest {
                 @CompositionFactory
                 fun activityComponentFactory(): ActivityComponent {
                     parent<AppComponent>()
-                    scoped { Bar(get()) }
+                    scoped { foo: Foo -> Bar(foo) }
                     return create()
                 }
                 
@@ -204,7 +204,7 @@ class CompositionTest {
                 @CompositionFactory
                 fun fragmentComponentFactory(): FragmentComponent {
                     parent<ActivityComponent>()
-                    scoped { Baz(get(), get()) }
+                    scoped { foo: Foo, bar: Bar -> Baz(foo, bar) }
                     return create()
                 }
                 

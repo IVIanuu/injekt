@@ -18,7 +18,6 @@ package com.ivianuu.injekt.lol
 
 import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.create
-import com.ivianuu.injekt.get
 import com.ivianuu.injekt.transient
 
 class Foo
@@ -31,7 +30,7 @@ interface TestComponent {
 @Factory
 fun createComponent(): TestComponent {
     transient { Foo() }
-    transient { Bar(get()) }
+    transient { foo: Foo -> Bar(foo) }
     return create()
 }
 

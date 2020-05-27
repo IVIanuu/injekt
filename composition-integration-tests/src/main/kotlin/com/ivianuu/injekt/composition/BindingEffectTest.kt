@@ -39,7 +39,7 @@ class BindingEffectTest {
             companion object {
                 @Module
                 fun <T> bind() {
-                    transient { com.ivianuu.injekt.get<T>().toString() }
+                    transient { t: T -> t.toString() }
                 }
             }
         }
@@ -128,10 +128,10 @@ class BindingEffectTest {
                 annotation class BindAppService {
                     companion object {
                         @Module
-                        fun <T : AppService> bind() { 
+                        inline fun <reified T : AppService> bind() { 
                             scoped<T>()
                             map<KClass<out AppService>, AppService> { 
-                                put<T>(classOf<T>()) 
+                                put<T>(T::class) 
                             }
                         } 
                     }
@@ -186,8 +186,7 @@ class BindingEffectTest {
                 
                 @CompositionFactory
                 fun createActivityComponent(): ActivityComponent { 
-                    @ForActivity
-                    transient { Any() as ViewModelStoreOwner }
+                    transient<@ForActivity ViewModelStoreOwner> { Any() as ViewModelStoreOwner }
                     return create()
                 }
                 
@@ -211,22 +210,20 @@ class BindingEffectTest {
                 }
                 
                 @Module
-                inline fun <T : ViewModel, S : ViewModelStoreOwner> baseViewModel() { 
+                inline fun <reified T : ViewModel, S : ViewModelStoreOwner> baseViewModel() { 
                     transient<@UnscopedViewModel T>() 
-                    val clazz = classOf<T>()
-                    transient { 
-                        val viewModelStoreOwner = get<S>() 
-                        val viewModelProvider = get<@Provider () -> @UnscopedViewModel T>()
+                    transient { viewModelStoreOwner: S, viewModelStoreProvider: @Provider () -> @UnscopedViewModel T ->
                         ViewModelProvider(
                             viewModelStoreOwner,
                             object : ViewModelProvider.Factory {
                                 override fun <T : ViewModel> create(modelClass: Class<T>): T =
                                     viewModelProvider() as T
                             }
-                        ).get(clazz.java) 
+                        ).get(T::class.java) 
                     } 
                 }
                 
+                @Target(AnnotationTarget.TYPE)
                 @Qualifier 
                 private annotation class UnscopedViewModel
                 """
