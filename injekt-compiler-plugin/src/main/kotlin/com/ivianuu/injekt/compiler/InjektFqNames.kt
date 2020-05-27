@@ -56,7 +56,6 @@ object InjektFqNames {
     val AstScoped = InjektAst.child("Scoped")
     val AstSet = InjektAst.child("Set")
     val AstSetElement = AstSet.child("Element")
-    val AstTyped = InjektAst.child("Typed")
 
     val Assisted = InjektPackage.child("Assisted")
 
