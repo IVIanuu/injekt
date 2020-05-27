@@ -33,7 +33,8 @@ class DslCallChecker(
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
-        if (resolvedCall.resultingDescriptor.fqNameSafe !in InjektFqNames.ModuleDslNames) return
+        val resulting = resolvedCall.resultingDescriptor
+        if (resulting.fqNameSafe !in InjektFqNames.ModuleDslNames) return
         val enclosingInjektDslFunction = findEnclosingFunctionContext(context) {
             val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(context.trace, it)
             InjektFqNames.Module in typeAnnotations ||

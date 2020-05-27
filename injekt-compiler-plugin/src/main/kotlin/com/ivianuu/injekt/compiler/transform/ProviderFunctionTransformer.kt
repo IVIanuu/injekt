@@ -29,6 +29,7 @@ import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.withAnnotations
 import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -38,6 +39,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.functions
@@ -64,9 +66,58 @@ class ProviderFunctionTransformer(pluginContext: IrPluginContext) :
     }
 
     override fun transform(function: IrFunction): IrFunction {
-        val providerCalls = mutableListOf<IrCall>()
+        val originalProviderCalls = mutableListOf<IrCall>()
 
         function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitCall(expression: IrCall): IrExpression {
+                val callee = transformFunctionIfNeeded(expression.symbol.owner)
+                if (callee.hasTypeAnnotation(
+                        InjektFqNames.Provider,
+                        pluginContext.bindingContext
+                    )
+                ) {
+                    originalProviderCalls += expression
+                }
+
+                return super.visitCall(expression)
+            }
+        })
+
+        if (originalProviderCalls.isEmpty()) return function
+
+        val transformedFunction = function.deepCopyWithPreservingQualifiers(
+            wrapDescriptor = true
+        )
+
+        val oldParameters = transformedFunction.valueParameters.toList()
+        transformedFunction.valueParameters = oldParameters
+            .map {
+                it.copyTo(
+                    transformedFunction,
+                    type = it.type.withNoArgAnnotations(
+                        pluginContext,
+                        listOf(InjektFqNames.AstAssisted)
+                    )
+                )
+            }
+
+        val parametersMap = oldParameters
+            .map { it.symbol }
+            .zip(transformedFunction.valueParameters)
+            .toMap()
+
+        transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitGetValue(expression: IrGetValue): IrExpression {
+                return parametersMap[expression.symbol]?.let {
+                    DeclarationIrBuilder(pluginContext, it.symbol)
+                        .irGet(it)
+                } ?: super.visitGetValue(expression)
+            }
+        })
+
+        val providerCalls = mutableListOf<IrCall>()
+
+        transformedFunction.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = transformFunctionIfNeeded(expression.symbol.owner)
                 if (callee.hasTypeAnnotation(
@@ -81,9 +132,7 @@ class ProviderFunctionTransformer(pluginContext: IrPluginContext) :
             }
         })
 
-        if (providerCalls.isEmpty()) return function
-
-        function.addMetadataIfNotLocal()
+        transformedFunction.addMetadataIfNotLocal()
 
         // todo add a provider per request not by key
 
@@ -91,7 +140,7 @@ class ProviderFunctionTransformer(pluginContext: IrPluginContext) :
         fun addProviderValueParameterIfNeeded(providerKey: Key) {
             if (providerKey !in providerValueParameters) {
                 providerValueParameters[providerKey] =
-                    function.addValueParameter(
+                    transformedFunction.addValueParameter(
                         "dsl_provider\$${providerValueParameters.size}",
                         providerKey.type
                     )
@@ -128,12 +177,12 @@ class ProviderFunctionTransformer(pluginContext: IrPluginContext) :
         }
 
         transformFunctionBody(
-            function,
+            transformedFunction,
             providerValueParameters,
             providerCalls
         )
 
-        return function
+        return transformedFunction
     }
 
     override fun transformExternal(function: IrFunction): IrFunction {

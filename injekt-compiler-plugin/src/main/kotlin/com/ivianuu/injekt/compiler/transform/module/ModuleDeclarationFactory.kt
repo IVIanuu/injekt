@@ -29,6 +29,7 @@ import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.withAnnotations
+import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -55,7 +56,6 @@ class ModuleDeclarationFactory(
     private val moduleClass: IrClass,
     private val pluginContext: IrPluginContext,
     private val declarationStore: InjektDeclarationStore,
-    private val moduleProviderFactory: ModuleProviderFactory,
     private val nameProvider: NameProvider,
     private val symbols: InjektSymbols
 ) {
@@ -260,17 +260,17 @@ class ModuleDeclarationFactory(
                 )
             variableExpression = singleArgument!!
         } else if (singleArgument != null) {
-            val providerExpression = moduleProviderFactory.providerForDefinition(
-                singleArgument as IrFunctionExpression
-            )
-            val providerFunction = providerExpression.getFunctionFromLambdaExpression()
-            variableExpression = providerExpression
-            providerFunction.valueParameters.forEach {
+            val providerType = singleArgument.type
+                .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Provider))
+            variableExpression = singleArgument
+            val parameterNameProvider = NameProvider()
+
+            providerType.typeArguments.dropLast(1).forEach {
                 parameters += InjektDeclarationIrBuilder.FactoryParameter(
-                    it.name.asString(),
-                    it.type
+                    parameterNameProvider.allocateForType(it.typeOrFail).asString(),
+                    it.typeOrFail
                         .remapTypeParameters(moduleFunction, moduleClass),
-                    it.type.hasAnnotation(InjektFqNames.AstAssisted)
+                    it.typeOrFail.hasAnnotation(InjektFqNames.AstAssisted)
                 )
             }
             property = InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
@@ -281,9 +281,13 @@ class ModuleDeclarationFactory(
                         .remapTypeParameters(moduleFunction, moduleClass)
                 )
         } else {
-            val providerExpression = moduleProviderFactory.providerForClass(
-                bindingType.classOrNull!!.owner
-            )
+            val clazz = bindingType.classOrNull!!.owner
+            val providerExpression =
+                InjektDeclarationIrBuilder(pluginContext, moduleFunction.symbol)
+                    .classFactoryLambda(
+                        clazz,
+                        declarationStore.getMembersInjectorForClassOrNull(clazz)
+                    )
             val providerFunction = providerExpression.getFunctionFromLambdaExpression()
             variableExpression = providerExpression
             providerFunction.valueParameters.forEach {

@@ -61,8 +61,7 @@ abstract class AbstractFactory(
                 moduleLambdaMap = emptyMap()
             ),
             declarationStore = declarationStore,
-            symbols = symbols,
-            factoryMembers = factoryMembers
+            symbols = symbols
         )
 
         factoryExpressions = FactoryExpressions(

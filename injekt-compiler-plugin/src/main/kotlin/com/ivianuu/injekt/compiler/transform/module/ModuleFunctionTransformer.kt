@@ -37,7 +37,6 @@ import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclaration
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlockBody
@@ -59,12 +58,10 @@ import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ModuleFunctionTransformer(
@@ -81,7 +78,6 @@ class ModuleFunctionTransformer(
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         super.visitModuleFragment(declaration)
-        declaration.rewriteModuleCalls()
         transformedFunctions
             .filterNot { it.key.isExternalDeclaration() }
             .forEach {
@@ -127,9 +123,6 @@ class ModuleFunctionTransformer(
             transformedFunction.typeParameters.map { it.defaultType }
         )
 
-        val moduleProviderFactory =
-            ModuleProviderFactory(transformedFunction, declarationStore, pluginContext, symbols)
-
         val nameProvider = NameProvider()
 
         val allDeclarations = mutableListOf<ModuleDeclaration>()
@@ -138,13 +131,12 @@ class ModuleFunctionTransformer(
             moduleClass,
             pluginContext,
             declarationStore,
-            moduleProviderFactory,
             nameProvider,
             symbols
         )
         val variableByDeclaration = mutableMapOf<ModuleDeclaration, IrVariable>()
 
-        transformedFunction.body?.rewriteModuleCalls()
+        transformedFunction.rewriteTransformedFunctionCalls()
 
         val bodyStatements = transformedFunction.body?.statements?.toList() ?: emptyList()
 
@@ -284,20 +276,13 @@ class ModuleFunctionTransformer(
                 }
             }
 
-    private fun IrElement.rewriteModuleCalls() {
-        transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitCall(expression: IrCall): IrExpression {
-                if (!needsTransform(expression.symbol.owner)) return expression
-                val transformed = transformFunctionIfNeeded(expression.symbol.owner)
-                return DeclarationIrBuilder(pluginContext, transformed.symbol)
-                    .irCall(transformed).apply {
-                        copyTypeAndValueArgumentsFrom(expression)
-                        putValueArgument(
-                            valueArgumentsCount - 1,
-                            DeclarationIrBuilder(pluginContext, symbol).irNull()
-                        )
-                    }
-            }
-        })
+    override fun transformCall(transformed: IrFunction, expression: IrCall): IrCall {
+        return super.transformCall(transformed, expression).apply {
+            putValueArgument(
+                valueArgumentsCount - 1,
+                DeclarationIrBuilder(pluginContext, symbol).irNull()
+            )
+        }
     }
+
 }

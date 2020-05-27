@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.findPropertyGetter
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
 import com.ivianuu.injekt.compiler.getFunctionFromLambdaExpression
+import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getInjectConstructor
 import com.ivianuu.injekt.compiler.getQualifierFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -74,8 +75,7 @@ class ChildFactoryBindingResolver(
             .filter { it.hasAnnotation(InjektFqNames.AstChildFactory) }
             .forEach { function ->
                 val key =
-                    parentFactory.pluginContext.irBuiltIns.function(function.valueParameters.size)
-                        .typeWith(function.valueParameters.map { it.type } + function.returnType)
+                    function.getFunctionType(parentFactory.pluginContext.irBuiltIns)
                         .withNoArgAnnotations(
                             parentFactory.pluginContext,
                             listOf(InjektFqNames.ChildFactory)

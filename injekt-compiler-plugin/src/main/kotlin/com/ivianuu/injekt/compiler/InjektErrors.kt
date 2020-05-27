@@ -89,7 +89,7 @@ interface InjektErrors {
 
         @JvmField
         val NOT_A_CHILD_FACTORY = error(
-            "Not a @ChildFactory"
+            "Not a @ChildFactory function"
         )
 
         @JvmField

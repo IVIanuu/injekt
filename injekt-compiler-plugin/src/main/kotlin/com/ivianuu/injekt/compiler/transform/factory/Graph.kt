@@ -53,7 +53,6 @@ import org.jetbrains.kotlin.resolve.constants.StringValue
 class Graph(
     val parent: Graph?,
     val factory: AbstractFactory,
-    val factoryMembers: FactoryMembers,
     context: IrPluginContext,
     factoryModule: ModuleNode?,
     declarationStore: InjektDeclarationStore,

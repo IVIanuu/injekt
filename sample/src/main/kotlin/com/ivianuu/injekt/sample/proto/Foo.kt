@@ -14,26 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.lol
-
-import com.ivianuu.injekt.Factory
-import com.ivianuu.injekt.create
-import com.ivianuu.injekt.get
-import com.ivianuu.injekt.transient
+package com.ivianuu.injekt.sample.proto
 
 class Foo
 class Bar(foo: Foo)
-
-interface TestComponent {
-    val bar: Bar
-}
-
-@Factory
-fun createComponent(): TestComponent {
-    transient { Foo() }
-    transient { Bar(get()) }
-    return create()
-}
-
-val component = createComponent()
-fun invoke() = component.bar

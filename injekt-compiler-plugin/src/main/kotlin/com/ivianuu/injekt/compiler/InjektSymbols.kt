@@ -68,7 +68,6 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val astTyped = injektAst.childClass(InjektFqNames.AstTyped.shortName())
 
     val assisted = pluginContext.referenceClass(InjektFqNames.Assisted)!!
-    val assistedParameters = pluginContext.referenceClass(InjektFqNames.AssistedParameters)!!
 
     val childFactory = pluginContext.referenceClass(InjektFqNames.ChildFactory)!!
 

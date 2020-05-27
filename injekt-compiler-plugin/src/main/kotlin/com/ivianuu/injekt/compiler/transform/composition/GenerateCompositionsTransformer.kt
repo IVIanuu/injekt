@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.child
+import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getIrClass
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
@@ -260,11 +261,7 @@ class GenerateCompositionsTransformer(
                                     IrFunctionReferenceImpl(
                                         UNDEFINED_OFFSET,
                                         UNDEFINED_OFFSET,
-                                        irBuiltIns.function(factoryFunctionImpl.owner.valueParameters.size)
-                                            .typeWith(
-                                                factoryFunctionImpl.owner.valueParameters
-                                                    .map { it.type } + factoryFunctionImpl.owner.returnType
-                                            ),
+                                        factoryFunctionImpl.owner.getFunctionType(irBuiltIns),
                                         factoryFunctionImpl,
                                         0,
                                         null
@@ -342,11 +339,7 @@ class GenerateCompositionsTransformer(
                             IrFunctionReferenceImpl(
                                 UNDEFINED_OFFSET,
                                 UNDEFINED_OFFSET,
-                                irBuiltIns.function(childFactory.owner.valueParameters.size)
-                                    .typeWith(
-                                        childFactory.owner.valueParameters
-                                            .map { it.type } + childFactory.owner.returnType
-                                    ),
+                                childFactory.owner.getFunctionType(irBuiltIns),
                                 childFactory,
                                 0,
                                 null
@@ -360,17 +353,11 @@ class GenerateCompositionsTransformer(
                                 .child("alias")
                         ).single()
                     ).apply {
-                        val functionType = irBuiltIns.function(
-                            childFactory.owner
-                                .valueParameters
-                                .size
-                        ).typeWith(childFactory.owner
-                            .valueParameters
-                            .map { it.type } + childFactory.owner.returnType
-                        ).withNoArgAnnotations(
-                            pluginContext,
-                            listOf(InjektFqNames.ChildFactory)
-                        )
+                        val functionType = childFactory.owner.getFunctionType(irBuiltIns)
+                            .withNoArgAnnotations(
+                                pluginContext,
+                                listOf(InjektFqNames.ChildFactory)
+                            )
                         val aliasFunctionType = irBuiltIns.function(
                             childFactory.owner
                                 .valueParameters
