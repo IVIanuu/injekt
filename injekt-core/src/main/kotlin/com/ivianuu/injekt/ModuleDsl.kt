@@ -29,9 +29,7 @@ fun <S : T, T> alias(): Unit = injektIntrinsic()
 
 fun <T> transient(): Unit = injektIntrinsic()
 
-fun <T> transient(provider: @Provider Function<T>): Unit = injektIntrinsic()
-
-fun <T> transient(provider: @Provider () -> T): Unit = injektIntrinsic()
+fun <T> transient(provider: Function<T>): Unit = injektIntrinsic()
 
 annotation class Transient
 
@@ -39,4 +37,4 @@ fun <T> instance(instance: T): Unit = injektIntrinsic()
 
 fun <T> scoped(): Unit = injektIntrinsic()
 
-fun <T> scoped(provider: @Provider Function<T>): Unit = injektIntrinsic()
+fun <T> scoped(provider: Function<T>): Unit = injektIntrinsic()

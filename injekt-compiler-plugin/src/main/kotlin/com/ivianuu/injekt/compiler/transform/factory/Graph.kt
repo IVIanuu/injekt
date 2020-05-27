@@ -241,8 +241,7 @@ class Graph(
                                     .value
                                     .let { typeParameterName ->
                                         moduleNode.typeParametersMap.toList()
-                                            .filter { it.first.descriptor.name.asString() == typeParameterName }
-                                            .single()
+                                            .single { it.first.descriptor.name.asString() == typeParameterName }
                                             .second
                                     }
                             )

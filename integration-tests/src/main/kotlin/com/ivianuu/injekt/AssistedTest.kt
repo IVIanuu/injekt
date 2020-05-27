@@ -49,7 +49,9 @@ class AssistedTest {
         @InstanceFactory
         fun createDep(): @Provider (String) -> Dep {
             transient { Foo() }
-            transient { assisted: String -> Dep(assisted, get()) }
+            transient { assisted: @Assisted String, foo: Foo -> 
+                Dep(assisted, foo)
+            }
             return create()
         }
     """

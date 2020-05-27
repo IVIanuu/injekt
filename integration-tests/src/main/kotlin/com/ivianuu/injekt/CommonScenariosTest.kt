@@ -185,8 +185,7 @@ class CommonScenariosTest {
         @Factory
         fun factory(): TestComponent {
             transient { Foo() }
-            transient {
-                val fooProvider = get<@Provider () -> Foo>()
+            transient { fooProvider: @Provider () -> Foo ->
                 Bar(fooProvider())
             }
             return create()

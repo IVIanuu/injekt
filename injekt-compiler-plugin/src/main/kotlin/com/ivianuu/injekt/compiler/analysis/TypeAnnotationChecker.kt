@@ -89,14 +89,6 @@ class TypeAnnotationChecker : AdditionalTypeChecker {
         return typeAnnotations
     }
 
-    fun hasTypeAnnotation(
-        trace: BindingTrace,
-        element: KtElement,
-        module: ModuleDescriptor,
-        type: KotlinType?,
-        fqName: FqName
-    ): Boolean = fqName in getTypeAnnotations(trace, element, module, type)
-
     fun getTypeAnnotations(
         trace: BindingTrace,
         element: KtElement,

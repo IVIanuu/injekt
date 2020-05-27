@@ -16,61 +16,72 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.test.Foo
+import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
+import junit.framework.Assert.assertNotSame
+import junit.framework.Assert.assertSame
 import org.junit.Test
 
 class ProviderTest {
 
     @Test
-    fun testProviderFunction() = codegen(
+    fun testProviderOfTransient() = codegen(
         """
-        @Provider
-        fun getFoo(): Foo = getGeneric()
+        interface TestComponent {
+            val provider: @Provider () -> Foo
+        }
         
-        @Provider
-        fun <T> getGeneric(): T = get()
-        
-        @InstanceFactory
-        fun invoke(): Bar {
-            transient<Foo>()
-            transient { Bar(getFoo()) }
+        @Factory
+        fun createComponent(): TestComponent { 
+            transient { Foo() }
             return create()
         }
+        
+        fun invoke() = createComponent().provider
     """
-    )
+    ) {
+        val provider =
+            invokeSingleFile<@Provider () -> Foo>()
+        assertNotSame(provider(), provider())
+    }
 
     @Test
-    fun testProviderFunctionWithLambda() = codegen(
+    fun testProviderOfScoped() = codegen(
         """
-        @Provider
-        fun <T> something(block: @Provider () -> T): T { 
-            return block()
+        interface TestComponent {
+            val provider: @Provider () -> Foo
         }
         
-        @InstanceFactory
-        fun invoke(): Bar {
-            transient<Foo>()
-            transient { something { Bar(get()) } }
+        @Factory
+        fun createComponent(): TestComponent { 
+            scoped { Foo() }
             return create()
         }
+        
+        fun invoke() = createComponent().provider
     """
-    )
+    ) {
+        val provider =
+            invokeSingleFile<@Provider () -> Foo>()
+        assertSame(provider(), provider())
+    }
 
-    /*@Test // todo
-    fun testProviderFunctionWithLambdaProperty() = codegen("""
-        val lambdaProperty: @Provider () -> Bar = { Bar(get()) }
-        
-        @Provider
-        fun <T> something(block: @Provider () -> T): T {
-            return block()
-        }
-        
-        @InstanceFactory
-        fun invoke(): Bar {
-            transient<Foo>()
-            transient { something(lambdaProperty) }
+    @Test
+    fun testQualifiedProvider() = codegen(
+        """
+            @Target(AnnotationTarget.TYPE)
+            @Qualifier
+            annotation class TestQualifier1
+        @Factory
+        fun invoke(): @Provider () -> @TestQualifier1 Foo { 
+            transient<@TestQualifier1 Foo> { Foo() }
             return create()
         }
-    """)*/
+         """
+    ) {
+        assertOk()
+    }
 
 }

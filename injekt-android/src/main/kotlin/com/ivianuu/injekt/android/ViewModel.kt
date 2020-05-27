@@ -23,7 +23,6 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.composition.BindingAdapter
-import com.ivianuu.injekt.get
 import com.ivianuu.injekt.transient
 
 @BindingAdapter(ActivityComponent::class)
@@ -44,9 +43,7 @@ inline fun <reified T : ViewModel> activityViewModel() {
 @Module
 inline fun <reified T : ViewModel, S : ViewModelStoreOwner> baseViewModel() {
     transient<@UnscopedViewModel T>()
-    transient {
-        val viewModelStoreOwner = get<S>()
-        val viewModelProvider = get<@Provider () -> @UnscopedViewModel T>()
+    transient { viewModelStoreOwner: S, viewModelProvider: @Provider () -> @UnscopedViewModel T ->
         ViewModelProvider(
             viewModelStoreOwner,
             object : ViewModelProvider.Factory {
@@ -57,5 +54,6 @@ inline fun <reified T : ViewModel, S : ViewModelStoreOwner> baseViewModel() {
     }
 }
 
+@Target(AnnotationTarget.TYPE)
 @Qualifier
 private annotation class UnscopedViewModel

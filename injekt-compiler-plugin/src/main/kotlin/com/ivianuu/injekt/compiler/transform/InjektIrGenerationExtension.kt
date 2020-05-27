@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.androidEnabled
 import com.ivianuu.injekt.compiler.compositionsEnabled
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.android.AndroidEntryPointTransformer
 import com.ivianuu.injekt.compiler.transform.composition.BindingEffectTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionAggregateGenerator
@@ -99,10 +100,6 @@ class InjektIrGenerationExtension(
         // move the module block of a @Factory function to a separate @Module function
         factoryModuleTransformer.lower(moduleFragment)
 
-        ProviderFunctionTransformer(
-            pluginContext
-        ).lower(moduleFragment)
-
         // transform @Module functions
         moduleFunctionTransformer.lower(moduleFragment)
 
@@ -112,7 +109,7 @@ class InjektIrGenerationExtension(
         // patch metadata
         TmpMetadataPatcher(pluginContext).lower(moduleFragment)
 
-        //println(moduleFragment.dumpSrc())
+        println(moduleFragment.dumpSrc())
     }
 
 }

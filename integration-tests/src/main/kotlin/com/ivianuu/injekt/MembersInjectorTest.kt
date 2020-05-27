@@ -53,7 +53,7 @@ class MembersInjectorTest {
         @Factory
         fun createComponent(): TestComponent {
             scoped { Foo() }
-            scoped { Bar(get()) }
+            scoped { foo: Foo -> Bar(foo) }
             return create()
         }
         

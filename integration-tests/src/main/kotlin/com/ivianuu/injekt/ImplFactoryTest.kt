@@ -41,7 +41,7 @@ class ImplFactoryTest {
         @Factory
         fun createComponent(): TestComponent {
             transient { Foo() }
-            transient { Bar(get()) }
+            transient { foo: Foo -> Bar(foo) }
             return create()
         }
         
@@ -179,7 +179,7 @@ class ImplFactoryTest {
         @Factory
         fun createChild(): TestComponent {
             dependency(createDep())
-            transient { Bar(get()) }
+            transient { foo: Foo -> Bar(foo) }
             return create()
         }
         

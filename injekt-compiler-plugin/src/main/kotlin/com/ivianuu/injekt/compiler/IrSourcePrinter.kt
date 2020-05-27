@@ -856,15 +856,6 @@ private class IrSourcePrinterVisitor(
     }
 
     private var printIntsAsBinary = false
-    fun <T> withIntsAsBinaryLiterals(block: () -> T): T {
-        val prev = printIntsAsBinary
-        try {
-            printIntsAsBinary = true
-            return block()
-        } finally {
-            printIntsAsBinary = prev
-        }
-    }
 
     private fun intAsBinaryString(value: Int): String {
         if (value == 0) return "0"

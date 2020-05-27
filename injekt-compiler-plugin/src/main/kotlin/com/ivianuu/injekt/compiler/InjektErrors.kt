@@ -58,11 +58,6 @@ interface InjektErrors {
         )
 
         @JvmField
-        val GET_WITHOUT_PROVIDER = error(
-            "get can only be called from within a @Provider function"
-        )
-
-        @JvmField
         val INLINE_FACTORY_CALL_MUST_HAVE_CONCRETE_TYPE = error(
             "Inlined @Factory call cannot contain type parameters"
         )

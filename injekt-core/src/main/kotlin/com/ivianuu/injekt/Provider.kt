@@ -16,13 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.internal.TypeAnnotation
-import com.ivianuu.injekt.internal.injektIntrinsic
-
 @Qualifier
-@Target(AnnotationTarget.TYPE, AnnotationTarget.FUNCTION)
-@TypeAnnotation
+@Target(AnnotationTarget.TYPE)
 annotation class Provider
-
-@Provider
-fun <T> get(): T = injektIntrinsic()

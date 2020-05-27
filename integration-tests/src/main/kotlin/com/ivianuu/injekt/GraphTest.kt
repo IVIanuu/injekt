@@ -157,7 +157,9 @@ class GraphTest {
         fun factory(): TestComponent {
             transient<@TestQualifier1 String> { "a" }
             transient<@TestQualifier2 String> { "b" }
-            transient { Pair<String, String>(@TestQualifier1 get(), @TestQualifier2 get()) }
+            transient { a: @TestQualifier1 String, b: @TestQualifier2 String ->
+                Pair<String, String>(a, b)
+            }
             return create()
         }
 
