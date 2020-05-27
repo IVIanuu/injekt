@@ -30,7 +30,6 @@ import com.ivianuu.injekt.composition.CompositionFactory
 import com.ivianuu.injekt.composition.get
 import com.ivianuu.injekt.composition.parent
 import com.ivianuu.injekt.create
-import com.ivianuu.injekt.get
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.scope
 import com.ivianuu.injekt.transient
@@ -57,7 +56,9 @@ fun createFragmentComponent(instance: Fragment): FragmentComponent {
     parent<ActivityComponent>()
     scope<FragmentScoped>()
     instance(instance)
-    transient<@ForFragment CoroutineScope> { get<@ForFragment LifecycleOwner>().lifecycleScope }
+    transient<@ForFragment CoroutineScope> { lifecycleOwner: @ForFragment LifecycleOwner ->
+        lifecycleOwner.lifecycleScope
+    }
     alias<Fragment, @ForFragment LifecycleOwner>()
     alias<Fragment, @ForFragment SavedStateRegistryOwner>()
     alias<Fragment, @ForFragment ViewModelStoreOwner>()
