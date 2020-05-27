@@ -32,16 +32,11 @@ annotation class BindAppService {
     companion object {
         @Module
         inline fun <reified T : AppService> bind() {
-            bindAppService<T>()
+            scoped<T>()
+            map<KClass<out AppService>, AppService> {
+                put<T>(T::class)
+            }
         }
-    }
-}
-
-@Module
-inline fun <reified T : AppService> bindAppService() {
-    scoped<T>()
-    map<KClass<out AppService>, AppService> {
-        put<T>(T::class)
     }
 }
 
