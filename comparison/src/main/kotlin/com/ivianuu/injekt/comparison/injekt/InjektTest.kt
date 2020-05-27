@@ -16,9 +16,19 @@
 
 package com.ivianuu.injekt.comparison.injekt
 
+import com.ivianuu.injekt.InstanceFactory
 import com.ivianuu.injekt.comparison.base.InjectionTest
+import com.ivianuu.injekt.comparison.fibonacci.Fib1
+import com.ivianuu.injekt.comparison.fibonacci.Fib2
+import com.ivianuu.injekt.comparison.fibonacci.Fib3
+import com.ivianuu.injekt.comparison.fibonacci.Fib4
+import com.ivianuu.injekt.comparison.fibonacci.Fib5
+import com.ivianuu.injekt.comparison.fibonacci.Fib6
+import com.ivianuu.injekt.comparison.fibonacci.Fib7
 import com.ivianuu.injekt.comparison.fibonacci.Fib8
-import com.ivianuu.injekt.createInstance
+import com.ivianuu.injekt.create
+import com.ivianuu.injekt.get
+import com.ivianuu.injekt.transient
 
 object InjektTest : InjectionTest {
 
@@ -28,10 +38,22 @@ object InjektTest : InjectionTest {
     }
 
     override fun inject() {
-        createInstance<Fib8>()
+        createFib8()
     }
 
     override fun shutdown() {
     }
 
+    @InstanceFactory
+    private fun createFib8(): Fib8 {
+        transient { Fib1() }
+        transient { Fib2() }
+        transient { Fib3(get(), get()) }
+        transient { Fib4(get(), get()) }
+        transient { Fib5(get(), get()) }
+        transient { Fib6(get(), get()) }
+        transient { Fib7(get(), get()) }
+        transient { Fib8(get(), get()) }
+        return create()
+    }
 }

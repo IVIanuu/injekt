@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrElement
@@ -937,7 +938,11 @@ private class IrSourcePrinterVisitor(
             if (declaration.isAnnotationClass) {
                 print("annotation ")
             }
-            print("class ")
+            if (declaration.kind == ClassKind.OBJECT) {
+                print("object ")
+            } else {
+                print("class ")
+            }
         }
         print(declaration.name)
         if (declaration.typeParameters.isNotEmpty()) {

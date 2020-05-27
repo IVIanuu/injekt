@@ -18,9 +18,10 @@ package com.ivianuu.injekt.compiler.transform.composition
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
-import com.ivianuu.injekt.compiler.withNoArgQualifiers
+import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -33,8 +34,6 @@ import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.MetadataSource
-import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
@@ -146,7 +145,7 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         kind = ClassKind.INTERFACE
     }.apply {
         createImplicitParameterDeclarationWithWrappedDescriptor()
-        (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
+        addMetadataIfNotLocal()
         addFunction {
             this.name = InjektNameConventions.nameWithoutIllegalChars(
                 "get\$${requestedType.classifierOrFail.descriptor.fqNameSafe
@@ -167,7 +166,7 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         kind = ClassKind.INTERFACE
     }.apply {
         createImplicitParameterDeclarationWithWrappedDescriptor()
-        (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
+        addMetadataIfNotLocal()
         addFunction {
             this.name = InjektNameConventions.nameWithoutIllegalChars(
                 "inject\$${injectedType.classifierOrFail.descriptor.fqNameSafe
@@ -175,7 +174,7 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
             )
             returnType = irBuiltIns.function(1)
                 .typeWith(injectedType, irBuiltIns.unitType)
-                .withNoArgQualifiers(pluginContext, listOf(InjektFqNames.MembersInjector))
+                .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.MembersInjector))
 
             modality = Modality.ABSTRACT
         }.apply {

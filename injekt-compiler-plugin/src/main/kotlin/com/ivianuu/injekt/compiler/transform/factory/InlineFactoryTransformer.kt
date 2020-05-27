@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.getArgumentsWithIrIncludingNulls
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
@@ -32,7 +33,6 @@ import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrFile
-import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -73,7 +73,7 @@ class InlineFactoryTransformer(
                     }.apply {
                         parent = scope.getLocalDeclarationParent()
 
-                        metadata = MetadataSource.Function(descriptor)
+                        addMetadataIfNotLocal()
 
                         if (factoryFunction.hasAnnotation(InjektFqNames.Factory)) {
                             annotations += InjektDeclarationIrBuilder(pluginContext, symbol)

@@ -19,35 +19,33 @@ package com.ivianuu.injekt.compiler.transform.composition
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.NameProvider
+import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
-import com.ivianuu.injekt.compiler.getIrClass
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.backend.common.serialization.findPackage
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
+import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class BindingEffectTransformer(pluginContext: IrPluginContext) :
@@ -104,18 +102,18 @@ class BindingEffectTransformer(pluginContext: IrPluginContext) :
         annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
             .noArgSingleConstructorCall(symbols.module)
 
-        metadata = MetadataSource.Function(descriptor)
+        addMetadataIfNotLocal()
 
         body = DeclarationIrBuilder(pluginContext, symbol).run {
             irBlockBody {
-                val bindingEffectClass = pluginContext.referenceClass(effectFqName)!!
+                val effectClass = pluginContext.referenceClass(effectFqName)!!
                     .owner
 
                 val installIn =
-                    bindingEffectClass.getClassFromSingleValueAnnotationOrNull(
+                    effectClass.getClassFromSingleValueAnnotationOrNull(
                         InjektFqNames.BindingAdapter,
                         pluginContext
-                    ) ?: bindingEffectClass.getClassFromSingleValueAnnotationOrNull(
+                    ) ?: effectClass.getClassFromSingleValueAnnotationOrNull(
                         InjektFqNames.BindingEffect,
                         pluginContext
                     )!!
@@ -128,43 +126,16 @@ class BindingEffectTransformer(pluginContext: IrPluginContext) :
                     putTypeArgument(0, installIn.defaultType)
                 }
 
-                val effectModule =
-                    bindingEffectClass.descriptor.findPackage()
-                        .getMemberScope()
-                        .getContributedDescriptors()
-                        .filterIsInstance<FunctionDescriptor>()
-                        .filter {
-                            it.hasAnnotation(InjektFqNames.BindingAdapterFunction) ||
-                                    it.hasAnnotation(InjektFqNames.BindingEffectFunction)
-                        }
-                        .firstOrNull {
-                            val annotation =
-                                it.annotations.findAnnotation(InjektFqNames.BindingAdapterFunction)
-                                    ?: it.annotations.findAnnotation(InjektFqNames.BindingEffectFunction)!!
-                            val value = annotation.allValueArguments.values.single() as KClassValue
-                            value.getIrClass(pluginContext) == bindingEffectClass
-                        }
-                        ?.let { functionDescriptor ->
-                            pluginContext.referenceFunctions(functionDescriptor.fqNameSafe)
-                                .single { it.descriptor == functionDescriptor }
-                        }
-                        ?: error("Corrupt binding effect ${bindingEffectClass.dump()}")
+                val effectCompanion = effectClass.companionObject() as IrClass
 
-                +irCall(effectModule).apply {
-                    putTypeArgument(0, clazz.defaultType)
-                }
-
-                /*val bindingAdapterCompanion = bindingAdapterClass
-                    .companionObject() as IrClass
-
-                val adapterModule = bindingAdapterCompanion
+                val effectModule = effectCompanion
                     .functions
                     .single { it.hasAnnotation(InjektFqNames.Module) }
 
-                +irCall(adapterModule).apply {
-                    dispatchReceiver = irGetObject(bindingAdapterCompanion.symbol)
+                +irCall(effectModule).apply {
+                    dispatchReceiver = irGetObject(effectCompanion.symbol)
                     putTypeArgument(0, clazz.defaultType)
-                }*/
+                }
             }
         }
     }

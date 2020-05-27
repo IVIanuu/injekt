@@ -201,7 +201,7 @@ class InlineTest {
             inner class InnerClass {
                 init { 
                     @Module 
-                    fun localModule() { 
+                    fun localModule() {
                         instance(this@OuterClass)
                         transient { this@InnerClass }
                     } 
@@ -220,19 +220,19 @@ class InlineTest {
     fun testSimpleInlineModule() = codegen(
         """
         @Module 
-        inline fun <T : Any, S> inlinedModule(definition: @ProviderDsl (AssistedParameters) -> S) {
+        inline fun <T : Any, S> inlinedModule() {
             transient<T>()
-            inlinedModule2(definition)
+            inlinedModule2<S>()
         }
         
         @Module 
-        inline fun <P> inlinedModule2(definition: @ProviderDsl (AssistedParameters) -> P) {
-            transient(definition)
+        inline fun <P> inlinedModule2() {
+            transient<P>()
         }
         
         @InstanceFactory
         fun factory(): Bar { 
-            inlinedModule<Foo, Bar> { Bar(get()) }
+            inlinedModule<Foo, Bar>()
             return create()
         }
     """
@@ -301,12 +301,11 @@ class InlineTest {
         }
         
         @Module
-        inline fun <T : Any> systemService() {
-            val clazz = classOf<T>()
+        inline fun <reified T : Any> systemService() {
             transient<T> {
                 ContextCompat.getSystemService(
                     get<@TestQualifier1 Context>(),
-                    clazz.java
+                    T::class.java
                 )
             }
         }

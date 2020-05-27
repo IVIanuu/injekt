@@ -57,10 +57,11 @@ class FactoryChecker(
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (descriptor !is FunctionDescriptor || (descriptor.hasAnnotation(InjektFqNames.Factory) &&
-                    descriptor.hasAnnotation(InjektFqNames.ChildFactory) &&
-                    descriptor.hasAnnotation(InjektFqNames.CompositionFactory) &&
-                    descriptor.hasAnnotation(InjektFqNames.InstanceFactory))
+        if (descriptor !is FunctionDescriptor ||
+            (!descriptor.hasAnnotation(InjektFqNames.Factory) &&
+                    !descriptor.hasAnnotation(InjektFqNames.ChildFactory) &&
+                    !descriptor.hasAnnotation(InjektFqNames.CompositionFactory) &&
+                    !descriptor.hasAnnotation(InjektFqNames.InstanceFactory))
         ) return
 
         checkFactoriesLastStatementIsCreate(
@@ -90,23 +91,6 @@ class FactoryChecker(
             )
         }
 
-        if (!descriptor.isInline) {
-            if (descriptor.typeParameters.isNotEmpty()) {
-                context.trace.report(
-                    InjektErrors.FACTORY_WITH_TYPE_PARAMETERS_MUST_BE_INLINE
-                        .on(declaration)
-                )
-            }
-            descriptor.valueParameters.forEach { valueParameter ->
-                if (valueParameter.type.hasAnnotation(InjektFqNames.Module)) {
-                    context.trace.report(
-                        InjektErrors.MODULE_PARAMETER_WITHOUT_INLINE
-                            .on(valueParameter.findPsi() ?: declaration)
-                    )
-                }
-            }
-        }
-
         if (descriptor.hasAnnotation(InjektFqNames.ChildFactory) ||
             descriptor.hasAnnotation(InjektFqNames.CompositionFactory)
         ) {
@@ -133,15 +117,6 @@ class FactoryChecker(
                     .on(declaration)
             )
         }
-
-        descriptor.typeParameters.forEach { typeParameter ->
-            if (typeParameter.isReified) {
-                context.trace.report(
-                    InjektErrors.CANNOT_USE_REIFIED
-                        .on(typeParameter.findPsi() ?: declaration)
-                )
-            }
-        }
     }
 
     override fun check(
@@ -163,8 +138,11 @@ class FactoryChecker(
             }
 
             val enclosingCompositionFactory = findEnclosingFunctionContext(context) {
-                val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(context.trace, it)
-                InjektFqNames.CompositionFactory in typeAnnotations
+                typeAnnotationChecker.hasTypeAnnotation(
+                    context.trace,
+                    it,
+                    InjektFqNames.CompositionFactory
+                )
             }
 
             if (enclosingCompositionFactory == null) {
@@ -194,9 +172,11 @@ class FactoryChecker(
             "com.ivianuu.injekt.create" -> {
                 checkCreateInvocation(resolvedCall, reportOn, context)
                 val enclosingFactory = findEnclosingFunctionContext(context) {
-                    val typeAnnotations =
-                        typeAnnotationChecker.getTypeAnnotations(context.trace, it)
-                    InjektFqNames.Factory in typeAnnotations
+                    typeAnnotationChecker.hasTypeAnnotation(
+                        context.trace,
+                        it,
+                        InjektFqNames.Factory
+                    )
                 }
                 if (enclosingFactory != null) {
                     val type =

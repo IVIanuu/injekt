@@ -24,6 +24,23 @@ import org.junit.Test
 class ModuleTest {
 
     @Test
+    fun testModule() = codegen(
+        """
+        @Module
+        fun module(dependency: Any) {
+            scope<TestScope>()
+            dependency(dependency)
+            set<Any>()
+            map<String, Any>()
+            instance("hello world")
+            transient { (foo: Foo) ->
+                Bar(get())
+            }
+        }
+    """
+    )
+
+    @Test
     fun testValueParameterCapturingModule() = codegen(
         """
         @Module
@@ -139,6 +156,36 @@ class ModuleTest {
                     @Module 
                     fun calling() {
                         MyClass.Companion.module()
+                    } 
+                """
+            )
+        )
+    )
+
+    @Test
+    fun testMultipleCompileNestedWithReceiverModule() = multiCodegen(
+        listOf(
+            source(
+                """
+                class MyClass {
+                    companion object {
+                        @Module
+                        fun String.module() {
+                        
+                        }
+                    }
+                }
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    import MyClass.Companion.module
+                    
+                    @Module 
+                    fun calling() {
+                        "hello world".module()
                     } 
                 """
             )

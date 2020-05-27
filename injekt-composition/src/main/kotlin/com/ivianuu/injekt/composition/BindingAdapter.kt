@@ -20,9 +20,3 @@ import kotlin.reflect.KClass
 
 @Target(AnnotationTarget.ANNOTATION_CLASS)
 annotation class BindingAdapter(val installIn: KClass<*>)
-
-// todo remove once compiler issues are fixed
-@Target(AnnotationTarget.FUNCTION)
-annotation class BindingAdapterFunction(
-    val annotation: KClass<*>
-)

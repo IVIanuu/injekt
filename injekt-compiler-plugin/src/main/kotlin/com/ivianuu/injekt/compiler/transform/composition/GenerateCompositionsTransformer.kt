@@ -20,13 +20,14 @@ import com.ivianuu.injekt.compiler.CompositionSymbols
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.NameProvider
+import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.getIrClass
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
-import com.ivianuu.injekt.compiler.withNoArgQualifiers
+import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -45,8 +46,6 @@ import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.MetadataSource
-import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -290,7 +289,7 @@ class GenerateCompositionsTransformer(
         kind = ClassKind.INTERFACE
     }.apply {
         createImplicitParameterDeclarationWithWrappedDescriptor()
-        (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
+        addMetadataIfNotLocal()
 
         superTypes += compositionType
         entryPoints.forEach { superTypes += it }
@@ -312,7 +311,7 @@ class GenerateCompositionsTransformer(
                 if (childFactory) symbols.childFactory else symbols.factory
             )
 
-        metadata = MetadataSource.Function(descriptor)
+        addMetadataIfNotLocal()
 
         factory.owner.valueParameters.forEach {
             addValueParameter(
@@ -368,7 +367,7 @@ class GenerateCompositionsTransformer(
                         ).typeWith(childFactory.owner
                             .valueParameters
                             .map { it.type } + childFactory.owner.returnType
-                        ).withNoArgQualifiers(
+                        ).withNoArgAnnotations(
                             pluginContext,
                             listOf(InjektFqNames.ChildFactory)
                         )
@@ -379,7 +378,7 @@ class GenerateCompositionsTransformer(
                         ).typeWith(childFactory.owner
                             .valueParameters
                             .map { it.type } + compositionType.defaultType
-                        ).withNoArgQualifiers(
+                        ).withNoArgAnnotations(
                             pluginContext,
                             listOf(InjektFqNames.ChildFactory)
                         )

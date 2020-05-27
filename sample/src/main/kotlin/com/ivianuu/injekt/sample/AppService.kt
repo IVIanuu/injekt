@@ -20,9 +20,7 @@ import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.ApplicationScoped
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.classOf
 import com.ivianuu.injekt.composition.BindingAdapter
-import com.ivianuu.injekt.composition.BindingAdapterFunction
 import com.ivianuu.injekt.map
 import com.ivianuu.injekt.scoped
 import kotlin.reflect.KClass
@@ -30,14 +28,20 @@ import kotlin.reflect.KClass
 interface AppService
 
 @BindingAdapter(ApplicationComponent::class)
-annotation class BindAppService
+annotation class BindAppService {
+    companion object {
+        @Module
+        inline fun <reified T : AppService> bind() {
+            bindAppService<T>()
+        }
+    }
+}
 
-@BindingAdapterFunction(BindAppService::class)
 @Module
-inline fun <T : AppService> bindAppService() {
+inline fun <reified T : AppService> bindAppService() {
     scoped<T>()
     map<KClass<out AppService>, AppService> {
-        put<T>(classOf<T>())
+        put<T>(T::class)
     }
 }
 

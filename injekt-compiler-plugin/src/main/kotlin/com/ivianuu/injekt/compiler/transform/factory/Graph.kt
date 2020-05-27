@@ -31,6 +31,7 @@ import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.classOrNull
@@ -66,7 +67,6 @@ class Graph(
     private val mapBindingResolver: MapBindingResolver =
         MapBindingResolver(
             context,
-            symbols,
             factory,
             parent?.mapBindingResolver
         )
@@ -196,11 +196,12 @@ class Graph(
                         dependencyNode = DependencyNode(
                             dependency = function.returnType.getClass()!!,
                             key = dependencyType.asKey(),
-                            initializerAccessor = moduleNode.initializerAccessor.child(
-                                moduleNode.module.findPropertyGetter(dependencyName)
-                            )
+                            accessor = {
+                                irCall(moduleNode.module.findPropertyGetter(dependencyName)).apply {
+                                    dispatchReceiver = moduleNode.accessor(this@DependencyNode)
+                                }
+                            }
                         ),
-                        members = factoryMembers,
                         factory = factory
                     )
                 )
@@ -313,7 +314,6 @@ class Graph(
 
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstModule) }
-            .filterNot { it.hasAnnotation(InjektFqNames.AstInline) }
             .forEach { function ->
                 val includedModule = function.returnType.classOrNull!!.owner
 
@@ -321,14 +321,12 @@ class Graph(
                     .substitute(moduleNode.descriptorTypeParametersMap)
                     .asKey()
 
-                val moduleName = function.getAnnotation(InjektFqNames.AstPropertyPath)
-                    ?.getValueArgument(0)
-                    ?.let { it as IrConst<String> }
-                    ?.value
+                val moduleName = function.getAnnotation(InjektFqNames.AstPropertyPath)!!
+                    .getValueArgument(0)
+                    .let { it as IrConst<String> }
+                    .value
 
-                val property = moduleName?.let {
-                    moduleNode.module.findPropertyGetter(moduleName)
-                }
+                val propertyGetter = moduleNode.module.findPropertyGetter(moduleName)
 
                 val typeParametersMap = includedModule.typeParameters
                     .map {
@@ -339,18 +337,22 @@ class Graph(
                     .toMap()
                     .mapValues { it.value.substituteAndKeepQualifiers(moduleNode.typeParametersMap) }
 
+                val lambdaMap = function.valueParameters
+                    .map {
+                        includedModule
+                    }
+
                 addModule(
                     ModuleNode(
                         module = includedModule,
                         key = key,
-                        initializerAccessor = property?.let {
-                            moduleNode.initializerAccessor.child(
-                                it
-                            )
-                        }
-                            ?: { error("Module is stateless ${includedModule.dump()}") },
+                        accessor = {
+                            irCall(propertyGetter).apply {
+                                dispatchReceiver = moduleNode.accessor(this@ModuleNode)
+                            }
+                        },
                         typeParametersMap = typeParametersMap,
-                        isStateless = property == null
+                        moduleLambdaMap = emptyMap()
                     )
                 )
             }
@@ -367,8 +369,7 @@ class Graph(
             addExplicitBindingResolver(
                 ChildFactoryBindingResolver(
                     factory,
-                    descriptor,
-                    factoryMembers
+                    descriptor
                 )
             )
         }

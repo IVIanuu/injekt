@@ -56,6 +56,30 @@ class ImplFactoryTest {
     }
 
     @Test
+    fun testTransientWithAnnotatedClass() = codegen(
+        """
+        @Transient class AnnotatedBar(foo: Foo)
+        interface TestComponent {
+            val bar: AnnotatedBar
+        }
+        
+        @Factory
+        fun createComponent(): TestComponent {
+            transient<Foo>()
+            return create()
+        }
+        
+        val component = createComponent()
+        fun invoke() = component.bar
+    """
+    ) {
+        assertNotSame(
+            invokeSingleFile(),
+            invokeSingleFile()
+        )
+    }
+
+    @Test
     fun testTransientWithoutDefinition() = codegen(
         """
         interface TestComponent {

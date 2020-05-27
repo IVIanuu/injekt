@@ -23,7 +23,6 @@ import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
 import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 
 class DslCallChecker(
     private val typeAnnotationChecker: TypeAnnotationChecker
@@ -42,19 +41,6 @@ class DslCallChecker(
                     InjektFqNames.ChildFactory in typeAnnotations ||
                     InjektFqNames.CompositionFactory in typeAnnotations ||
                     InjektFqNames.InstanceFactory in typeAnnotations
-        }
-
-        if (enclosingInjektDslFunction != null &&
-            (resolvedCall.resultingDescriptor.name.asString() == "transient" ||
-                    resolvedCall.resultingDescriptor.name.asString() == "scoped") &&
-            resolvedCall.resultingDescriptor.valueParameters.isEmpty() &&
-            resolvedCall.typeArguments.values.single().isTypeParameter() &&
-            !enclosingInjektDslFunction.isInline
-        ) {
-            context.trace.report(
-                InjektErrors.GENERIC_BINDING_WITHOUT_INLINE_AND_DEFINITION
-                    .on(reportOn)
-            )
         }
 
         if (enclosingInjektDslFunction == null) {

@@ -35,7 +35,7 @@ object InjektFqNames {
     val AstChildFactory = InjektAst.child("ChildFactory")
     val AstDependency = InjektAst.child("Dependency")
     val AstEntryPoints = InjektAst.child("EntryPoints")
-    val AstInline = InjektAst.child("Inline")
+    val AstInstance = InjektAst.child("Instance")
     val AstMap = InjektAst.child("Map")
     val AstMapEntry = AstMap.child("Entry")
     val AstMapClassKey = AstMap.child("ClassKey")
@@ -56,16 +56,13 @@ object InjektFqNames {
     val AstScoped = InjektAst.child("Scoped")
     val AstSet = InjektAst.child("Set")
     val AstSetElement = AstSet.child("Element")
-    val AstStatic = InjektAst.child("Static")
     val AstTyped = InjektAst.child("Typed")
 
     val Assisted = InjektPackage.child("Assisted")
     val AssistedParameters = InjektPackage.child("AssistedParameters")
 
     val BindingAdapter = CompositionPackage.child("BindingAdapter")
-    val BindingAdapterFunction = CompositionPackage.child("BindingAdapterFunction")
     val BindingEffect = CompositionPackage.child("BindingEffect")
-    val BindingEffectFunction = CompositionPackage.child("BindingEffectFunction")
 
     val ChildFactory = InjektPackage.child("ChildFactory")
 
@@ -82,6 +79,8 @@ object InjektFqNames {
 
     val InstanceFactory = InjektPackage.child("InstanceFactory")
 
+    val LateinitProvider = InternalPackage.child("LateinitProvider")
+
     val MapDsl = InjektPackage.child("MapDsl")
     val MapOfValueFactory = InternalPackage.child("MapOfValueFactory")
     val MapOfProviderFactory = InternalPackage.child("MapOfProviderFactory")
@@ -95,7 +94,6 @@ object InjektFqNames {
     val NoOpMembersInjector = InternalPackage.child("NoOpMembersInjector")
 
     val Provider = InjektPackage.child("Provider")
-    val ProviderDsl = InjektPackage.child("ProviderDsl")
     val ProviderOfLazy = InternalPackage.child("ProviderOfLazy")
 
     val Qualifier = InjektPackage.child("Qualifier")

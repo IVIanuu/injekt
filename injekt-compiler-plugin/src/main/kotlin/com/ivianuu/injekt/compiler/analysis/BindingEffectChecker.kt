@@ -24,7 +24,6 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
@@ -53,50 +52,19 @@ class BindingEffectChecker : DeclarationChecker {
                 )
             }
 
-            /*val companion = descriptor.companionObjectDescriptor
+            val companion = descriptor.companionObjectDescriptor
             if (companion == null) {
                 context.trace.report(
                     InjektErrors.BINDING_ADAPTER_WITHOUT_COMPANION
                         .on(declaration)
                 )
                 return
-            }*/
+            }
 
-            val moduleFunction = (descriptor.containingDeclaration as PackageFragmentDescriptor)
-                .getMemberScope()
-                .getContributedDescriptors()
-                .filterIsInstance<FunctionDescriptor>()
-                .filter {
-                    it.hasAnnotation(
-                        if (descriptor.hasAnnotation(InjektFqNames.BindingAdapter)) {
-                            InjektFqNames.BindingAdapterFunction
-                        } else {
-                            InjektFqNames.BindingEffectFunction
-                        }
-                    )
-                }
-                .singleOrNull {
-                    val annotation =
-                        it.annotations.findAnnotation(
-                            if (descriptor.hasAnnotation(InjektFqNames.BindingAdapter)) {
-                                InjektFqNames.BindingAdapterFunction
-                            } else {
-                                InjektFqNames.BindingEffectFunction
-                            }
-                        )!!
-                    val value = annotation.allValueArguments.values.single() as KClassValue
-                    val type = value.getArgumentType(descriptor.module)
-                    type == descriptor.defaultType
-                }?.takeIf { it.hasAnnotation(InjektFqNames.Module) }
-                ?: error("Corrupt binding effect")
-
-            /*
             val moduleFunction = companion.unsubstitutedMemberScope
                 .getContributedDescriptors()
                 .filterIsInstance<FunctionDescriptor>()
-                .singleOrNull {
-                    it.hasAnnotation(InjektFqNames.Module)
-                }*/
+                .singleOrNull { it.hasAnnotation(InjektFqNames.Module) }
 
             if (moduleFunction == null) {
                 context.trace.report(

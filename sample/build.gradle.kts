@@ -33,5 +33,5 @@ dependencies {
     implementation(project(":injekt-android-work"))
     implementation(project(":injekt-core"))
     implementation(project(":injekt-common"))
-    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
+    //kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
 }

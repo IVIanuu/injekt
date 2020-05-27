@@ -18,11 +18,14 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.TypeAnnotationChecker
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
@@ -33,16 +36,25 @@ import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrMetadataSourceOwner
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
+import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
+import org.jetbrains.kotlin.ir.declarations.impl.IrPropertyImpl
 import org.jetbrains.kotlin.ir.descriptors.WrappedSimpleFunctionDescriptor
+import org.jetbrains.kotlin.ir.expressions.IrBlock
+import org.jetbrains.kotlin.ir.expressions.IrBlockBody
+import org.jetbrains.kotlin.ir.expressions.IrBody
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstKind
@@ -54,6 +66,7 @@ import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrPropertyReference
 import org.jetbrains.kotlin.ir.expressions.IrSpreadElement
+import org.jetbrains.kotlin.ir.expressions.IrStatementContainer
 import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
@@ -83,6 +96,7 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
@@ -94,6 +108,7 @@ import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
+import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -171,55 +186,54 @@ fun IrType.remapTypeParameters(
     source: IrTypeParametersContainer,
     target: IrTypeParametersContainer,
     srcToDstParameterMap: Map<IrTypeParameter, IrTypeParameter>? = null
-): IrType =
-    when (this) {
-        is IrSimpleType -> {
-            val classifier = classifier.owner
-            when {
-                classifier is IrTypeParameter -> {
-                    val newClassifier =
-                        srcToDstParameterMap?.get(classifier) ?: if (classifier.parent == source)
-                            target.typeParameters[classifier.index]
-                        else
-                            classifier
-                    IrSimpleTypeImpl(
-                        makeKotlinType(
-                            newClassifier.symbol,
-                            arguments,
-                            hasQuestionMark,
-                            annotations
-                        ),
+): IrType = when (this) {
+    is IrSimpleType -> {
+        val classifier = classifier.owner
+        when {
+            classifier is IrTypeParameter -> {
+                val newClassifier =
+                    srcToDstParameterMap?.get(classifier) ?: if (classifier.parent == source)
+                        target.typeParameters[classifier.index]
+                    else
+                        classifier
+                IrSimpleTypeImpl(
+                    makeKotlinType(
                         newClassifier.symbol,
-                        hasQuestionMark,
                         arguments,
-                        annotations
-                    )
-                }
-
-                classifier is IrClass -> {
-                    val arguments = arguments.map {
-                        when (it) {
-                            is IrTypeProjection -> makeTypeProjection(
-                                it.type.remapTypeParameters(source, target, srcToDstParameterMap),
-                                it.variance
-                            )
-                            else -> it
-                        }
-                    }
-                    IrSimpleTypeImpl(
-                        makeKotlinType(classifier.symbol, arguments, hasQuestionMark, annotations),
-                        classifier.symbol,
                         hasQuestionMark,
-                        arguments,
                         annotations
-                    )
-                }
-
-                else -> this
+                    ),
+                    newClassifier.symbol,
+                    hasQuestionMark,
+                    arguments,
+                    annotations
+                )
             }
+
+            classifier is IrClass -> {
+                val arguments = arguments.map {
+                    when (it) {
+                        is IrTypeProjection -> makeTypeProjection(
+                            it.type.remapTypeParameters(source, target, srcToDstParameterMap),
+                            it.variance
+                        )
+                        else -> it
+                    }
+                }
+                IrSimpleTypeImpl(
+                    makeKotlinType(classifier.symbol, arguments, hasQuestionMark, annotations),
+                    classifier.symbol,
+                    hasQuestionMark,
+                    arguments,
+                    annotations
+                )
+            }
+
+            else -> this
         }
-        else -> this
     }
+    else -> this
+}
 
 
 fun IrType.substituteAndKeepQualifiers(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {
@@ -268,7 +282,7 @@ fun makeKotlinType(
         .makeNullableAsSpecified(hasQuestionMark)
 }
 
-fun IrType.withNoArgQualifiers(pluginContext: IrPluginContext, qualifiers: List<FqName>): IrType {
+fun IrType.withNoArgAnnotations(pluginContext: IrPluginContext, qualifiers: List<FqName>): IrType {
     this as IrSimpleType
     return copy(
         arguments = arguments,
@@ -322,7 +336,7 @@ fun IrClass.findPropertyGetter(
         .singleOrNull { it.name.asString() == name }
         ?.getter ?: functions
         .singleOrNull { function ->
-            function.name.asString() == "get$name" // todo fix
+            function.name.asString() == "get${name.capitalize()}" // todo fix
         } ?: error("Couldn't find property '$name' in ${dump()}")
 }
 
@@ -386,18 +400,6 @@ inline fun <K, V> BindingTrace.getOrPut(
     return value
 }
 
-fun IrDeclaration.getNearestDeclarationContainer(
-    includeThis: Boolean = true
-): IrDeclarationContainer {
-    var current: IrElement? = if (includeThis) this else parent
-    while (current != null) {
-        if (current is IrDeclarationContainer) return current
-        current = (current as? IrDeclaration)?.parent
-    }
-
-    error("Couldn't get declaration container for $this")
-}
-
 fun IrType.isTypeParameter() = toKotlinType().isTypeParameter()
 
 val IrMemberAccessExpression.typeArguments: List<IrType>
@@ -427,7 +429,7 @@ fun <T> T.getClassFromSingleValueAnnotation(
             ?.single()
             ?.let { it as KClassValue }
             ?.getIrClass(pluginContext)
-        ?: error("Cannot get class value for $fqName for ${render()}")
+        ?: error("Cannot get class value for $fqName for ${dump()}")
 }
 
 fun KClassValue.getIrClass(
@@ -479,9 +481,10 @@ fun IrMemberAccessExpression.getArgumentsWithIrIncludingNulls(): List<Pair<IrVal
 
 fun IrValueParameter.getParameterName(): String {
     val function = (parent as IrFunction)
-    return when (this) {
-        function.dispatchReceiverParameter -> "\$this"
-        function.extensionReceiverParameter -> "\$receiver"
+    return when {
+        this == function.dispatchReceiverParameter -> "\$this"
+        this == function.extensionReceiverParameter -> "\$receiver"
+        name.asString() == "<this>" -> "\$this"
         else -> name.asString()
     }
 }
@@ -522,7 +525,7 @@ fun IrFunction.deepCopyWithPreservingQualifiers(
         }
     )
     acceptVoid(symbolRemapper)
-    val typeRemapper = DeepCopyTypeRemapper(symbolRemapper)
+    val typeRemapper = QualifierPreservingTypeRemapper(symbolRemapper)
     return (transform(
         object : DeepCopyIrTreeWithSymbols(symbolRemapper, typeRemapper) {
             override fun visitSimpleFunction(declaration: IrSimpleFunction): IrSimpleFunction {
@@ -531,7 +534,7 @@ fun IrFunction.deepCopyWithPreservingQualifiers(
                         if (it.descriptor in mappedDescriptors &&
                             declaration.metadata != null
                         ) {
-                            (it as IrFunctionImpl).metadata = MetadataSource.Function(it.descriptor)
+                            it.addMetadataIfNotLocal()
                         }
                     } else {
                         (it as IrFunctionImpl).metadata = declaration.metadata
@@ -556,7 +559,7 @@ fun IrFunction.deepCopyWithPreservingQualifiers(
         }
 }
 
-private class DeepCopyTypeRemapper(
+class QualifierPreservingTypeRemapper(
     private val symbolRemapper: SymbolRemapper
 ) : TypeRemapper {
 
@@ -604,3 +607,79 @@ private class DeepCopyTypeRemapper(
             annotations
         )
 }
+
+fun IrExpression.getFunctionFromLambdaExpression(): IrFunction {
+    this as IrBlock
+    return statements.first() as IrFunction
+}
+
+fun IrClass.getInjectConstructor(): IrConstructor? {
+    if (kind == ClassKind.OBJECT) return null
+    constructors
+        .firstOrNull {
+            it.hasAnnotation(InjektFqNames.Transient) ||
+                    it.hasAnnotatedAnnotations(InjektFqNames.Scope)
+        }?.let { return it }
+    return constructors.singleOrNull()
+}
+
+fun IrDeclaration.addToParentOrAbove(other: IrDeclarationWithVisibility) {
+    val parent = other.parent
+    this.parent = other.parent
+
+    if (other.visibility == Visibilities.LOCAL) {
+        var block: IrStatementContainer? = null
+        other.file.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitBlockBody(body: IrBlockBody): IrBody {
+                if (body.statements.any { it === other }) {
+                    block = body
+                }
+                return super.visitBlockBody(body)
+            }
+
+            override fun visitBlock(expression: IrBlock): IrExpression {
+                if (expression.statements.any { it === other }) {
+                    block = expression
+                }
+                return super.visitBlock(expression)
+            }
+        })
+
+        if (block != null) {
+            val index = block!!.statements.indexOf(other)
+            block!!.statements.add(index, this)
+        } else {
+            error(
+                "Corrupt parent ${other.render()} " +
+                        "parent ${parent.render()}"
+            )
+        }
+    } else {
+        (parent as IrDeclarationContainer).addChild(this)
+    }
+}
+
+fun <T> T.addMetadataIfNotLocal() where T : IrMetadataSourceOwner, T : IrDeclarationWithVisibility {
+    if (visibility != Visibilities.LOCAL) {
+        when (this) {
+            is IrClassImpl -> metadata = MetadataSource.Class(descriptor)
+            is IrFunctionImpl -> metadata = MetadataSource.Function(descriptor)
+            is IrPropertyImpl -> metadata = MetadataSource.Property(descriptor)
+        }
+    }
+}
+
+private val kindField by lazy {
+    IrClassImpl::class.java
+        .declaredFields
+        .single { it.name == "kind" }
+        .also { it.isAccessible = true }!!
+}
+
+fun IrClass.setClassKind(kind: ClassKind) {
+    kindField.set(this as IrClassImpl, kind)
+}
+
+fun IrDeclaration.isExternalDeclaration() = origin ==
+        IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
+        origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB

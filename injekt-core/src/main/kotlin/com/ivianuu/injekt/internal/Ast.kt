@@ -37,7 +37,7 @@ object InjektAst {
 
     annotation class Alias
 
-    annotation class Inline
+    annotation class Instance
 
     annotation class ObjectGraph
 
@@ -50,8 +50,6 @@ object InjektAst {
     annotation class Scope
 
     annotation class Scoped
-
-    annotation class Static
 
     annotation class Typed
 

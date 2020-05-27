@@ -16,72 +16,61 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.invokeSingleFile
-import junit.framework.Assert.assertNotSame
-import junit.framework.Assert.assertSame
 import org.junit.Test
 
 class ProviderTest {
 
     @Test
-    fun testProviderOfTransient() = codegen(
+    fun testProviderFunction() = codegen(
         """
-        interface TestComponent {
-            val provider: @Provider () -> Foo
-        }
+        @Provider
+        fun getFoo(): Foo = getGeneric()
         
-        @Factory
-        fun createComponent(): TestComponent { 
-            transient { Foo() }
+        @Provider
+        fun <T> getGeneric(): T = get()
+        
+        @InstanceFactory
+        fun invoke(): Bar {
+            transient<Foo>()
+            transient { Bar(getFoo()) }
             return create()
         }
-        
-        fun invoke() = createComponent().provider
     """
-    ) {
-        val provider =
-            invokeSingleFile<@Provider () -> Foo>()
-        assertNotSame(provider(), provider())
-    }
+    )
 
     @Test
-    fun testProviderOfScoped() = codegen(
+    fun testProviderFunctionWithLambda() = codegen(
         """
-        interface TestComponent {
-            val provider: @Provider () -> Foo
+        @Provider
+        fun <T> something(block: @Provider () -> T): T { 
+            return block()
         }
         
-        @Factory
-        fun createComponent(): TestComponent { 
-            scoped { Foo() }
+        @InstanceFactory
+        fun invoke(): Bar {
+            transient<Foo>()
+            transient { something { Bar(get()) } }
             return create()
         }
-        
-        fun invoke() = createComponent().provider
     """
-    ) {
-        val provider =
-            invokeSingleFile<@Provider () -> Foo>()
-        assertSame(provider(), provider())
-    }
+    )
 
-    @Test
-    fun testQualifiedProvider() = codegen(
-        """
-            @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
-            @Qualifier
-            annotation class TestQualifier1
-        @Factory
-        fun invoke(): @Provider () -> @TestQualifier1 Foo { 
-            @TestQualifier1 transient { Foo() }
+    /*@Test // todo
+    fun testProviderFunctionWithLambdaProperty() = codegen("""
+        val lambdaProperty: @Provider () -> Bar = { Bar(get()) }
+        
+        @Provider
+        fun <T> something(block: @Provider () -> T): T {
+            return block()
+        }
+        
+        @InstanceFactory
+        fun invoke(): Bar {
+            transient<Foo>()
+            transient { something(lambdaProperty) }
             return create()
         }
-         """
-    ) {
-        assertOk()
-    }
+    """)*/
 
 }

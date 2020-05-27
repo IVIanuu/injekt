@@ -111,9 +111,9 @@ class CommonScenariosTest {
         @Transient class WorkerB(@Assisted context: Context) : Worker(context)
         
         @Module 
-        inline fun <T : Worker> bindWorkerIntoMap() {
+        inline fun <reified T : Worker> bindWorkerIntoMap() {
             map<KClass<out Worker>, @Provider (Context) -> Worker> {
-                put<@Provider (Context) -> T>(classOf<T>())
+                put<@Provider (Context) -> T>(T::class)
             }
         }
         
@@ -200,5 +200,16 @@ class CommonScenariosTest {
     ) {
         invokeSingleFile()
     }
+
+    @Test
+    fun testProviderFunctionAsModuleParameter() = codegen(
+        """
+        @Module
+        inline fun <T : Any> action(provider: @Provider () -> T) {
+            transient { provider() }
+            set<Any> { add<T>() }
+        }
+    """
+    )
 
 }

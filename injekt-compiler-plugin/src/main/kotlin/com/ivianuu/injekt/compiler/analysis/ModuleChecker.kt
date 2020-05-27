@@ -18,12 +18,10 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors
-import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtCatchClause
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtForExpression
@@ -71,32 +69,6 @@ class ModuleChecker(
                     .on(declaration)
             )
         }
-
-        if (!descriptor.isInline) {
-            descriptor.valueParameters.forEach { valueParameter ->
-                if (valueParameter.type.hasAnnotation(InjektFqNames.ProviderDsl)) {
-                    context.trace.report(
-                        InjektErrors.PROVIDER_DSL_PARAMETER_WITHOUT_INLINE
-                            .on(valueParameter.findPsi() ?: declaration)
-                    )
-                }
-                if (valueParameter.type.hasAnnotation(InjektFqNames.Module)) {
-                    context.trace.report(
-                        InjektErrors.MODULE_PARAMETER_WITHOUT_INLINE
-                            .on(valueParameter.findPsi() ?: declaration)
-                    )
-                }
-            }
-        }
-
-        descriptor.typeParameters.forEach { typeParameter ->
-            if (typeParameter.isReified) {
-                context.trace.report(
-                    InjektErrors.CANNOT_USE_REIFIED
-                        .on(typeParameter.findPsi() ?: declaration)
-                )
-            }
-        }
     }
 
     override fun check(
@@ -117,8 +89,7 @@ class ModuleChecker(
             }
 
             val enclosingModule = findEnclosingFunctionContext(context) {
-                val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(context.trace, it)
-                InjektFqNames.Module in typeAnnotations
+                typeAnnotationChecker.hasTypeAnnotation(context.trace, it, InjektFqNames.Module)
             }
 
             if (enclosingModule == null) {

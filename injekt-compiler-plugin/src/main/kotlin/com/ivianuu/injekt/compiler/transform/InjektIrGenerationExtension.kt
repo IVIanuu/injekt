@@ -18,9 +18,8 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.androidEnabled
 import com.ivianuu.injekt.compiler.compositionsEnabled
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.android.AndroidEntryPointTransformer
-import com.ivianuu.injekt.compiler.transform.annotatedclass.ClassFactoryTransformer
-import com.ivianuu.injekt.compiler.transform.annotatedclass.MembersInjectorTransformer
 import com.ivianuu.injekt.compiler.transform.composition.BindingEffectTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionAggregateGenerator
 import com.ivianuu.injekt.compiler.transform.composition.CompositionEntryPointsTransformer
@@ -32,10 +31,7 @@ import com.ivianuu.injekt.compiler.transform.composition.ObjectGraphFunctionTran
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.InlineFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
-import com.ivianuu.injekt.compiler.transform.module.InlineModuleLambdaTransformer
-import com.ivianuu.injekt.compiler.transform.module.ModuleClassTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
-import com.ivianuu.injekt.compiler.transform.provider.ProviderDslFunctionTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
@@ -48,17 +44,11 @@ class InjektIrGenerationExtension(
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val declarationStore = InjektDeclarationStore(pluginContext)
 
-        val moduleFunctionTransformer = ModuleFunctionTransformer(pluginContext)
-
-        val moduleClassTransformer = ModuleClassTransformer(
-            pluginContext,
-            declarationStore,
-            moduleFunctionTransformer
-        ).also { declarationStore.moduleClassTransformer = it }
+        val moduleFunctionTransformer = ModuleFunctionTransformer(pluginContext, declarationStore)
+            .also { declarationStore.moduleFunctionTransformer = it }
 
         val factoryModuleTransformer = FactoryModuleTransformer(
-            pluginContext,
-            moduleFunctionTransformer
+            pluginContext
         ).also { declarationStore.factoryModuleTransformer = it }
         val factoryTransformer = RootFactoryTransformer(
             pluginContext,
@@ -101,13 +91,9 @@ class InjektIrGenerationExtension(
         }
 
         // generate a members injector for each annotated class
-        MembersInjectorTransformer(pluginContext)
-            .also { declarationStore.membersInjectorTransformer = it }
-            .lower(moduleFragment)
-
-        // generate a factory for each annotated class
-        ClassFactoryTransformer(pluginContext, declarationStore)
-            .also { declarationStore.classFactoryTransformer = it }
+        MembersInjectorTransformer(
+            pluginContext
+        ).also { declarationStore.membersInjectorTransformer = it }
             .lower(moduleFragment)
 
         // add a local @Factory fun at each call side of a inline factory
@@ -117,27 +103,20 @@ class InjektIrGenerationExtension(
         // move the module block of a @Factory function to a separate @Module function
         factoryModuleTransformer.lower(moduleFragment)
 
-        // transform inline @Module calls to pass data around
-        InlineModuleLambdaTransformer(pluginContext)
-            .lower(moduleFragment)
-
-        ProviderDslFunctionTransformer(
+        ProviderFunctionTransformer(
             pluginContext
         ).lower(moduleFragment)
-
-        ClassOfFunctionTransformer(pluginContext).lower(moduleFragment)
 
         // transform @Module functions
         moduleFunctionTransformer.lower(moduleFragment)
 
-        // generate a Module class for each @Module function
-        moduleClassTransformer.lower(moduleFragment)
-
         // generate factory implementations
         factoryTransformer.lower(moduleFragment)
 
-        // patch file metadata
-        FileMetadataPatcher(pluginContext).lower(moduleFragment)
+        // patch metadata
+        TmpMetadataPatcher(pluginContext).lower(moduleFragment)
+
+        println(moduleFragment.dumpSrc())
     }
 
 }

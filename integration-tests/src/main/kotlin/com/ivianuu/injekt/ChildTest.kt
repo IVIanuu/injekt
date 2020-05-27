@@ -33,6 +33,48 @@ class ChildTest {
         }
         class Child(val parent: Parent) {
             val component = parent.component.childFactory(this).also { it.child }
+        }
+        
+        interface ParentComponent {
+            val parent: Parent
+            val childFactory: @ChildFactory (Child) -> ChildComponent
+        }
+
+        interface ChildComponent {
+            val child: Child
+            val parent: Parent 
+        }
+        
+        @Factory
+        fun createParent(parent: Parent): ParentComponent {
+            instance(parent)
+            childFactory(::createChild)
+            return create()
+        }
+        
+        @ChildFactory
+        fun createChild(child: Child): ChildComponent {
+            instance(child)
+            return create()
+        }
+        
+        fun invoke() = Parent()
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testMultiNesting() = codegen(
+        """
+        class Parent {
+            val component = createParent(this).also { it.parent }
+            init {
+                Child(this)
+            }
+        }
+        class Child(val parent: Parent) {
+            val component = parent.component.childFactory(this).also { it.child }
             init {
                 Baby(this)
             }

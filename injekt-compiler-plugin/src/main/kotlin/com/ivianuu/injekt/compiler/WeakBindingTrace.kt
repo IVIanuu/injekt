@@ -36,7 +36,8 @@ class WeakBindingTrace {
         map[key.attributeOwnerId] = holder
     }
 
-    operator fun <K : IrAttributeContainer, V> get(slice: ReadOnlySlice<K, V>, key: K): V? {
+    operator fun <K : IrAttributeContainer,
+            V> get(slice: ReadOnlySlice<K, V>, key: K): V? {
         return map[key.attributeOwnerId]?.get(slice.key)
     }
 }

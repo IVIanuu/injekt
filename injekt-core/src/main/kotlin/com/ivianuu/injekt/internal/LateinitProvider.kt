@@ -14,9 +14,21 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.internal
 
-import com.ivianuu.injekt.internal.injektIntrinsic
-import kotlin.reflect.KClass
+import com.ivianuu.injekt.Provider
 
-fun <T : Any> classOf(): KClass<T> = injektIntrinsic()
+class LateinitProvider<T> : @Provider () -> T {
+    private var value: Any? = Uninitialized
+
+    fun init(value: T) {
+        check(this.value === Uninitialized)
+        this.value = value
+    }
+
+    override fun invoke(): T {
+        check(value !== Uninitialized)
+        return value as T
+    }
+
+}

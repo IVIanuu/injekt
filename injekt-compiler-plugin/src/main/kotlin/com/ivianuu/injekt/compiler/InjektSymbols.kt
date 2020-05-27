@@ -42,7 +42,7 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val astChildFactory = injektAst.childClass(InjektFqNames.AstChildFactory.shortName())
     val astDependency = injektAst.childClass(InjektFqNames.AstDependency.shortName())
     val astEntryPoints = injektAst.childClass(InjektFqNames.AstEntryPoints.shortName())
-    val astInline = injektAst.childClass(InjektFqNames.AstInline.shortName())
+    val astInstance = injektAst.childClass(InjektFqNames.AstInstance.shortName())
     val astMap = injektAst.childClass(InjektFqNames.AstMap.shortName())
     val astMapEntry = astMap.childClass(InjektFqNames.AstMapEntry.shortName())
     val astMapClassKey = astMap.childClass(InjektFqNames.AstMapClassKey.shortName())
@@ -65,7 +65,6 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val astScoped = injektAst.childClass(InjektFqNames.AstScoped.shortName())
     val astSet = injektAst.childClass(InjektFqNames.AstSet.shortName())
     val astSetElement = astSet.childClass(InjektFqNames.AstSetElement.shortName())
-    val astStatic = injektAst.childClass(InjektFqNames.AstStatic.shortName())
     val astTyped = injektAst.childClass(InjektFqNames.AstTyped.shortName())
 
     val assisted = pluginContext.referenceClass(InjektFqNames.Assisted)!!
@@ -80,6 +79,8 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
 
     val instanceFactory = pluginContext.referenceClass(InjektFqNames.InstanceFactory)!!
 
+    val lateinitProvider = pluginContext.referenceClass(InjektFqNames.LateinitProvider)!!
+
     val lazy = pluginContext.referenceClass(InjektFqNames.Lazy)!!
 
     val mapDsl = pluginContext.referenceClass(InjektFqNames.MapDsl)!!
@@ -92,7 +93,6 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val noOpMembersInjector = pluginContext.referenceClass(InjektFqNames.NoOpMembersInjector)!!
 
     val provider = pluginContext.referenceClass(InjektFqNames.Provider)!!
-    val providerDsl = pluginContext.referenceClass(InjektFqNames.ProviderDsl)!!
     val providerOfLazy = pluginContext.referenceClass(InjektFqNames.ProviderOfLazy)!!
 
     val setDsl = pluginContext.referenceClass(InjektFqNames.SetDsl)!!

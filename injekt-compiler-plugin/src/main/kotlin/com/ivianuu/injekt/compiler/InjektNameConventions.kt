@@ -17,9 +17,9 @@
 package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.backend.common.ir.allParameters
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.name
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
@@ -30,31 +30,18 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 object InjektNameConventions {
 
-    fun getFactoryNameForClass(
-        packageFqName: FqName,
-        classFqName: FqName
-    ): Name {
-        return getJoinedName(
-            packageFqName,
-            classFqName.child("BindingFactory")
-        )
-    }
-
-    fun getMembersInjectorNameForClass(
-        packageFqName: FqName,
-        classFqName: FqName
-    ): Name {
-        return getJoinedName(
-            packageFqName,
-            classFqName.child("MembersInjector")
-        )
-    }
+    fun getMembersInjectorNameForClass(className: Name): Name =
+        ("${className.asString()}_MembersInjector").asNameId()
 
     fun getModuleClassNameForModuleFunction(moduleFunction: IrFunction): Name =
-        getUniqueNameForFunctionWithSuffix(moduleFunction, "Impl")
+        ("${moduleFunction.descriptor.name.asString()}_${valueParametersHash(moduleFunction)}_Class")
+            .asNameId()
 
-    fun getClassImplNameForFactoryFunction(factoryFunction: IrFunction): Name =
-        getUniqueNameForFunctionWithSuffix(factoryFunction, "Impl")
+    fun getModuleFunctionNameForClass(moduleClass: IrClass): Name {
+        val withoutSuffix = moduleClass.name.asString().split("_")
+        val fullName = withoutSuffix.dropLast(2)
+        return fullName.joinToString("_").asNameId()
+    }
 
     fun getFunctionImplNameForFactoryCall(file: IrFile, call: IrCall): Name =
         getNameAtSourcePositionWithSuffix(file, call, "Impl")
@@ -114,12 +101,6 @@ object InjektNameConventions {
         )
     }
 
-    fun classParameterNameForTypeParameter(typeParameter: IrTypeParameter): Name =
-        "class\$${typeParameter.descriptor.name}".asNameId()
-
-    fun typeParameterNameForClassParameterName(name: Name): Name =
-        name.asString().removePrefix("class\$").asNameId()
-
     fun getCompositionElementNameForFunction(
         compositionFqName: FqName,
         moduleFunction: IrFunction
@@ -143,8 +124,7 @@ object InjektNameConventions {
 
     private fun getUniqueNameForFunctionWithSuffix(
         function: IrFunction,
-        suffix: String,
-        hashValueParameters: Boolean = true
+        suffix: String
     ): Name {
         return getJoinedName(
             function.getPackageFragment()!!.fqName,
@@ -152,13 +132,6 @@ object InjektNameConventions {
                 .child(valueParametersHash(function).toString())
                 .child(suffix)
         ).let { nameWithoutIllegalChars(it.asString()) }
-    }
-
-    fun getChildFactoryImplName(fqName: String): Name {
-        return (fqName
-            .split(".")
-            .last() + "_FactoryImpl")
-            .asNameId()
     }
 
     private fun getNameAtSourcePositionWithSuffix(

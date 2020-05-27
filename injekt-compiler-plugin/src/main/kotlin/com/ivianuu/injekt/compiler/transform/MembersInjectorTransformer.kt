@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.annotatedclass
+package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.NameProvider
+import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getParameterName
-import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
-import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
-import com.ivianuu.injekt.compiler.withNoArgQualifiers
+import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -52,21 +51,17 @@ import org.jetbrains.kotlin.ir.builders.irImplicitCast
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
-import org.jetbrains.kotlin.ir.builders.irTemporaryVar
+import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrProperty
-import org.jetbrains.kotlin.ir.declarations.MetadataSource
-import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.properties
@@ -74,7 +69,6 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.SpecialNames
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTransformer(context) {
 
@@ -123,7 +117,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
         membersInjectorByClass[clazz]?.let { return it }
         val membersInjector = DeclarationIrBuilder(pluginContext, clazz.symbol)
             .membersInjector(clazz) ?: return null
-        clazz.file.addChild(membersInjector)
+        clazz.addChild(membersInjector)
         membersInjectorByClass[clazz] = membersInjector
         return membersInjector
     }
@@ -149,17 +143,16 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
 
         return buildClass {
             kind = if (injectProperties.isNotEmpty()) ClassKind.CLASS else ClassKind.OBJECT
-            name = InjektNameConventions.getMembersInjectorNameForClass(
-                clazz.getPackageFragment()!!.fqName, clazz.descriptor.fqNameSafe
-            )
+            name = InjektNameConventions.getMembersInjectorNameForClass(clazz.descriptor.name)
             visibility = clazz.visibility
         }.apply clazz@{
+            parent = clazz
             superTypes += irBuiltIns.function(1)
                 .typeWith(clazz.defaultType, irBuiltIns.unitType)
 
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
-            (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
+            addMetadataIfNotLocal()
 
             val nameProvider = NameProvider()
 
@@ -168,7 +161,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                     name = nameProvider.allocateForGroup(property.name)
                     type = irBuiltIns.function(0)
                         .typeWith(property.getter!!.returnType)
-                        .withNoArgQualifiers(pluginContext, listOf(InjektFqNames.Provider))
+                        .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Provider))
                 }
             }
 
@@ -183,7 +176,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                             )
                             type = irBuiltIns.function(0)
                                 .typeWith(valueParameter.type)
-                                .withNoArgQualifiers(pluginContext, listOf(InjektFqNames.Provider))
+                                .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Provider))
                         }
                     }
             }
@@ -228,7 +221,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
             }.apply clazz@{
                 createImplicitParameterDeclarationWithWrappedDescriptor()
 
-                (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
+                addMetadataIfNotLocal()
 
                 addConstructor {
                     this.returnType = defaultType
@@ -251,7 +244,8 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                 }.apply {
                     dispatchReceiverParameter = thisReceiver!!.copyTo(this)
 
-                    metadata = MetadataSource.Function(descriptor)
+                    addMetadataIfNotLocal()
+
                     val instanceValueParameter = addValueParameter(
                         "\$instance",
                         clazz.defaultType
@@ -278,7 +272,8 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                 }.apply {
                     dispatchReceiverParameter = thisReceiver!!.copyTo(this)
 
-                    metadata = MetadataSource.Function(descriptor)
+                    addMetadataIfNotLocal()
+
                     val instanceValueParameter = addValueParameter(
                         "\$instance",
                         clazz.defaultType
@@ -425,7 +420,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                 pluginContext,
                 property.getter!!.symbol
             ).irBlockBody {
-                val tmp = irTemporaryVar(
+                val tmp = irTemporary(
                     irGetField(
                         irGet(property.getter!!.dispatchReceiverParameter!!),
                         property.backingField!!

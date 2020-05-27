@@ -148,29 +148,6 @@ class FactoryDslTest {
     }
 
     @Test
-    fun testFactoryWithTypeParametersAndWithoutInline() =
-        codegen(
-            """
-        interface Impl
-        @Factory
-        fun <T> factory(): Impl = create()
-    """
-        ) {
-            assertCompileError("inline")
-        }
-
-    @Test
-    fun testModuleWithReifiedTypeParameters() = codegen(
-        """
-            interface Impl
-        @InstanceFactory
-        fun <reified T> factory(): Impl = create()
-        """
-    ) {
-        assertCompileError("reified")
-    }
-
-    @Test
     fun testMutablePropertiesNotAllowedInFactoryImpls() =
         codegen(
             """
@@ -303,20 +280,6 @@ class FactoryDslTest {
     """
         ) {
             assertCompileError("type parameter")
-        }
-
-    @Test
-    fun testNonInlineFactoryWithModuleParameter() =
-        codegen(
-            """ 
-        @Factory
-        fun factory(block: @Module () -> Unit): TestComponent {
-            block()
-            return create()
-        }
-    """
-        ) {
-            assertCompileError("inline")
         }
 
     @Test

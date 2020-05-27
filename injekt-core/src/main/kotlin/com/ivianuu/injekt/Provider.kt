@@ -21,12 +21,8 @@ import com.ivianuu.injekt.internal.injektIntrinsic
 
 @Qualifier
 @Target(AnnotationTarget.TYPE, AnnotationTarget.FUNCTION, AnnotationTarget.EXPRESSION)
+@TypeAnnotation
 annotation class Provider
 
-@TypeAnnotation
-@Target(AnnotationTarget.TYPE, AnnotationTarget.FUNCTION, AnnotationTarget.EXPRESSION)
-@Qualifier
-annotation class ProviderDsl
-
-@ProviderDsl
+@Provider
 fun <T> get(): T = injektIntrinsic()

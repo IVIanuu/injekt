@@ -22,12 +22,13 @@ import com.ivianuu.injekt.compiler.getQualifierFqNames
 import com.ivianuu.injekt.compiler.getQualifiers
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.toAnnotationDescriptor
+import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
-import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.FqNameEqualityChecker
@@ -37,6 +38,7 @@ import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.getClass
+import org.jetbrains.kotlin.ir.types.isAny
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -47,43 +49,30 @@ import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 
-typealias InitializerAccessor = IrBuilderWithScope.(() -> IrExpression) -> IrExpression
-
-fun InitializerAccessor.child(
-    child: InitializerAccessor
-): InitializerAccessor = {
-    child {
-        invoke(this, it)
-    }
-}
-
-fun InitializerAccessor.child(
-    accessor: IrFunction
-): InitializerAccessor = child {
-    irCall(accessor).apply {
-        dispatchReceiver = it()
-    }
-}
-
 interface Node
 
 interface RequirementNode : Node {
     val key: Key
-    val initializerAccessor: InitializerAccessor
+    val accessor: FactoryExpression
 }
 
 class InstanceNode(
     override val key: Key,
-    override val initializerAccessor: InitializerAccessor
+    override val accessor: FactoryExpression
 ) : RequirementNode
 
 class ModuleNode(
     val module: IrClass,
     override val key: Key,
-    override val initializerAccessor: InitializerAccessor,
+    override val accessor: FactoryExpression,
     val typeParametersMap: Map<IrTypeParameterSymbol, IrType>,
-    val isStateless: Boolean
+    val moduleLambdaMap: Map<IrValueParameter, IrClass>
 ) : RequirementNode {
+    init {
+        check(!module.defaultType.isAny()) {
+            "Untyped module"
+        }
+    }
     val descriptor = module.declarations.single {
         it.hasAnnotation(InjektFqNames.AstModule)
     } as IrClass
@@ -103,20 +92,47 @@ class ModuleNode(
 class FactoryImplementationNode(
     val implFactory: ImplFactory,
     override val key: Key,
-    override val initializerAccessor: InitializerAccessor
+    override val accessor: FactoryExpression
 ) : RequirementNode
 
 class DependencyNode(
     val dependency: IrClass,
     override val key: Key,
-    override val initializerAccessor: InitializerAccessor
+    override val accessor: FactoryExpression
 ) : RequirementNode
 
-data class BindingRequest(
+class BindingRequest(
     val key: Key,
     val requestOrigin: FqName?,
     val requestType: RequestType = key.inferRequestType()
-)
+) {
+
+    fun copy(
+        key: Key = this.key,
+        requestOrigin: FqName? = this.requestOrigin,
+        requestType: RequestType = this.requestType
+    ): BindingRequest = BindingRequest(
+        key, requestOrigin, requestType
+    )
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as BindingRequest
+
+        if (key != other.key) return false
+        if (requestType != other.requestType) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = key.hashCode()
+        result = 31 * result + requestType.hashCode()
+        return result
+    }
+}
 
 fun Key.inferRequestType() = when {
     type.isFunction() && type.typeArguments.size == 1 && InjektFqNames.Provider in type.getQualifierFqNames() -> RequestType.Provider
@@ -146,21 +162,20 @@ class AssistedProvisionBindingNode(
     module: ModuleNode?,
     owner: AbstractFactory,
     origin: FqName?,
-    val provider: IrClass,
-    val typeArguments: List<IrType>
+    val provisionFunctionExpression: IrBuilderWithScope.() -> IrExpression,
+    val parameters: List<InjektDeclarationIrBuilder.FactoryParameter>
 ) : BindingNode(key, dependencies, targetScope, scoped, module, owner, origin)
 
 class ChildFactoryBindingNode(
     key: Key,
     owner: ImplFactory,
     origin: FqName?,
-    val childImplFactory: ImplFactory,
-    val childFactory: IrClass
+    val parent: IrClass,
+    val childFactoryExpression: FactoryExpression
 ) : BindingNode(
     key, listOf(
         BindingRequest(
-            childImplFactory.parent!!.clazz.defaultType
-                .asKey(),
+            parent.defaultType.asKey(),
             null
         )
     ),
@@ -183,7 +198,7 @@ class DependencyBindingNode(
     key: Key,
     owner: AbstractFactory,
     origin: FqName?,
-    val provider: IrClass,
+    val function: IrFunction,
     val requirementNode: DependencyNode
 ) : BindingNode(key, emptyList(), null, false, null, owner, origin)
 
@@ -289,8 +304,7 @@ class ProvisionBindingNode(
     module: ModuleNode?,
     owner: AbstractFactory,
     origin: FqName?,
-    val provider: IrClass,
-    val typeArguments: List<IrType>
+    val provisionFunctionExpression: IrBuilderWithScope.() -> IrExpression
 ) : BindingNode(key, dependencies, targetScope, scoped, module, owner, origin)
 
 class SetBindingNode(

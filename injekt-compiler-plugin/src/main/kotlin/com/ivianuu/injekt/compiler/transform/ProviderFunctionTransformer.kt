@@ -14,32 +14,26 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.provider
+package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.deepCopyWithPreservingQualifiers
 import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.hasTypeAnnotation
 import com.ivianuu.injekt.compiler.irTrace
-import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
-import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.factory.Key
 import com.ivianuu.injekt.compiler.transform.factory.asKey
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.withAnnotations
-import com.ivianuu.injekt.compiler.withNoArgQualifiers
+import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
-import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
-import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
@@ -55,115 +49,41 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ProviderDslFunctionTransformer(pluginContext: IrPluginContext) :
-    AbstractInjektTransformer(pluginContext) {
+class ProviderFunctionTransformer(pluginContext: IrPluginContext) :
+    AbstractFunctionTransformer(pluginContext, TransformOrder.TopDown) {
 
-    private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
-    private val decoys = mutableMapOf<IrFunction, IrFunction>()
-    private val transformingFunctions = mutableSetOf<IrFunction>()
-
-    override fun visitFile(declaration: IrFile): IrFile {
-        val originalFunctions = declaration.declarations.filterIsInstance<IrFunction>()
-        val result = super.visitFile(declaration)
-        result.patchWithDecoys(originalFunctions)
-        return result
-    }
-
-    override fun visitClass(declaration: IrClass): IrStatement {
-        val originalFunctions = declaration.declarations.filterIsInstance<IrFunction>()
-        val result = super.visitClass(declaration) as IrClass
-        result.patchWithDecoys(originalFunctions)
-        return result
-    }
-
-    private fun IrDeclarationContainer.patchWithDecoys(originalFunctions: List<IrFunction>) {
-        for (original in originalFunctions) {
-            val transformed = transformedFunctions[original]
-            if (transformed != null && transformed != original) {
-                declarations.add(
-                    original.deepCopyWithPreservingQualifiers(
-                        wrapDescriptor = false
-                    )
-                        .also { decoy ->
-                            decoys[original] = decoy
-                            InjektDeclarationIrBuilder(
-                                pluginContext,
-                                decoy.symbol
-                            ).run {
-                                decoy.body = builder.irExprBody(irInjektIntrinsicUnit())
-                            }
-                        }
-                )
-            }
-        }
-    }
-
-    override fun visitFunction(declaration: IrFunction): IrStatement =
-        super.visitFunction(transformFunctionIfNeeded(declaration)) as IrFunction
-
-    private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
-        if (function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get" &&
-            function.hasTypeAnnotation(InjektFqNames.ProviderDsl, pluginContext.bindingContext)
-        ) return function
-
-        if (function.origin == IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
-            function.origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
-        ) {
-            return if (function.hasTypeAnnotation(
-                    InjektFqNames.ProviderDsl,
-                    pluginContext.bindingContext
-                )
-            ) {
-                pluginContext.referenceFunctions(function.descriptor.fqNameSafe)
-                    .map { it.owner }
-                    .singleOrNull { other ->
-                        other.name == function.name &&
-                                other.valueParameters.any {
-                                    it.name.asString().startsWith("dsl_provider\$")
-                                }
-                    } ?: function
-            } else function
-        }
+    override fun needsTransform(function: IrFunction): Boolean {
         if (!function.hasTypeAnnotation(
-                InjektFqNames.ProviderDsl,
+                InjektFqNames.Provider,
                 pluginContext.bindingContext
             )
-        ) return function
-        transformedFunctions[function]?.let { return it }
-        if (function in transformedFunctions.values) return function
-        decoys[function]?.let { return it }
-        if (function in transformingFunctions) return function
-        transformingFunctions += function
+        ) return false
+        if (function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get")
+            return false
+        return true
+    }
 
-        val transformedFunction = function.deepCopyWithPreservingQualifiers(
-            wrapDescriptor = true
-        )
+    override fun transform(function: IrFunction): IrFunction {
+        val providerCalls = mutableListOf<IrCall>()
 
-        val providerDslCalls = mutableListOf<IrCall>()
-
-        transformedFunction.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
+        function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = transformFunctionIfNeeded(expression.symbol.owner)
                 if (callee.hasTypeAnnotation(
-                        InjektFqNames.ProviderDsl,
+                        InjektFqNames.Provider,
                         pluginContext.bindingContext
                     )
                 ) {
-                    providerDslCalls += expression
+                    providerCalls += expression
                 }
 
                 return super.visitCall(expression)
             }
         })
 
-        if (providerDslCalls.isEmpty()) {
-            transformedFunctions[function] = function
-            transformingFunctions -= function
-            return function
-        }
+        if (providerCalls.isEmpty()) return function
 
-        transformedFunctions[function] = transformedFunction
-        transformingFunctions -= function
+        function.addMetadataIfNotLocal()
 
         // todo add a provider per request not by key
 
@@ -171,26 +91,26 @@ class ProviderDslFunctionTransformer(pluginContext: IrPluginContext) :
         fun addProviderValueParameterIfNeeded(providerKey: Key) {
             if (providerKey !in providerValueParameters) {
                 providerValueParameters[providerKey] =
-                    transformedFunction.addValueParameter(
+                    function.addValueParameter(
                         "dsl_provider\$${providerValueParameters.size}",
                         providerKey.type
                     )
             }
         }
 
-        providerDslCalls.forEach { providerDslCall ->
-            val callee = transformFunctionIfNeeded(providerDslCall.symbol.owner)
+        providerCalls.forEach { providerCall ->
+            val callee = transformFunctionIfNeeded(providerCall.symbol.owner)
             if (callee.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get") {
                 val exprQualifiers =
-                    pluginContext.irTrace[InjektWritableSlices.QUALIFIERS, providerDslCall]
+                    pluginContext.irTrace[InjektWritableSlices.QUALIFIERS, providerCall]
                         ?: emptyList()
                 addProviderValueParameterIfNeeded(
                     irBuiltIns.function(0)
                         .typeWith(
-                            providerDslCall.getTypeArgument(0)!!
+                            providerCall.getTypeArgument(0)!!
                                 .withAnnotations(exprQualifiers)
                         )
-                        .withNoArgQualifiers(pluginContext, listOf(InjektFqNames.Provider))
+                        .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Provider))
                         .asKey()
                 )
             } else {
@@ -200,7 +120,7 @@ class ProviderDslFunctionTransformer(pluginContext: IrPluginContext) :
                     .map {
                         it.type.substitute(
                             callee.typeParameters,
-                            providerDslCall.typeArguments
+                            providerCall.typeArguments
                         ).asKey()
                     }
                     .forEach { addProviderValueParameterIfNeeded(it) }
@@ -208,25 +128,49 @@ class ProviderDslFunctionTransformer(pluginContext: IrPluginContext) :
         }
 
         transformFunctionBody(
-            transformedFunction,
+            function,
             providerValueParameters,
-            providerDslCalls
+            providerCalls
         )
 
-        return transformedFunction
+        return function
+    }
+
+    override fun transformExternal(function: IrFunction): IrFunction {
+        return pluginContext.referenceFunctions(function.descriptor.fqNameSafe)
+            .map { it.owner }
+            .singleOrNull { other ->
+                other.name == function.name &&
+                        other.valueParameters.any {
+                            it.name.asString().startsWith("dsl_provider\$")
+                        }
+            } ?: function
+    }
+
+    override fun createDecoy(original: IrFunction, transformed: IrFunction): IrFunction {
+        return original.deepCopyWithPreservingQualifiers(wrapDescriptor = false)
+            .also { decoy ->
+                decoys[original] = decoy
+                InjektDeclarationIrBuilder(
+                    pluginContext,
+                    decoy.symbol
+                ).run {
+                    decoy.body = builder.irExprBody(irInjektIntrinsicUnit())
+                }
+            }
     }
 
     private fun transformFunctionBody(
         function: IrFunction,
         providerValueParameters: Map<Key, IrValueParameter>,
-        providerDslFunctionCalls: List<IrCall>
+        providerFunctionCalls: List<IrCall>
     ) {
         function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
                 super.visitCall(expression)
-                return if (expression !in providerDslFunctionCalls) expression
+                return if (expression !in providerFunctionCalls) expression
                 else {
-                    transformProviderDslCall(
+                    transformProviderCall(
                         function, expression,
                         transformFunctionIfNeeded(expression.symbol.owner), providerValueParameters
                     )
@@ -235,7 +179,7 @@ class ProviderDslFunctionTransformer(pluginContext: IrPluginContext) :
         })
     }
 
-    private fun transformProviderDslCall(
+    private fun transformProviderCall(
         caller: IrFunction,
         originalCall: IrCall,
         transformedCallee: IrFunction,
@@ -252,7 +196,7 @@ class ProviderDslFunctionTransformer(pluginContext: IrPluginContext) :
                             typeArgument
                                 .withAnnotations(exprQualifiers)
                         )
-                        .withNoArgQualifiers(pluginContext, listOf(InjektFqNames.Provider))
+                        .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Provider))
                         .asKey()
                 ) ?: error(
                 "Couldn't find param for ${originalCall.render()} " +

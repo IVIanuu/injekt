@@ -103,11 +103,6 @@ interface InjektErrors {
         )
 
         @JvmField
-        val FACTORY_WITH_TYPE_PARAMETERS_MUST_BE_INLINE = error(
-            "@Factory functions with type parameters must be marked with inline"
-        )
-
-        @JvmField
         val CHILD_AND_COMPOSITION_FACTORY_CANNOT_HAVE_TYPE_PARAMETERS = error(
             "@ChildFactory or @CompositionFactory functions cannot have type parameters"
         )
@@ -115,11 +110,6 @@ interface InjektErrors {
         @JvmField
         val CHILD_AND_COMPOSITION_FACTORY_CANNOT_BE_INLINE = error(
             "@ChildFactory or @CompositionFactory cannot be marked with inline"
-        )
-
-        @JvmField
-        val MODULE_PARAMETER_WITHOUT_INLINE = error(
-            "@Factory or @ChildFactory or @Module functions with @Module function parameters must be marked with inline"
         )
 
         @JvmField
@@ -175,21 +165,6 @@ interface InjektErrors {
         @JvmField
         val CANNOT_BE_SUSPEND = error(
             "@Factory, @ChildFactory, @CompositionFactory or @Module cannot be suspend"
-        )
-
-        @JvmField
-        val CANNOT_USE_REIFIED = error(
-            "@Factory, @ChildFactory, @CompositionFactory or @Module functions cannot use reified"
-        )
-
-        @JvmField
-        val GENERIC_BINDING_WITHOUT_INLINE_AND_DEFINITION = error(
-            "Binding functions with a generic type can only be used inside a inline module or with a definition"
-        )
-
-        @JvmField
-        val PROVIDER_DSL_PARAMETER_WITHOUT_INLINE = error(
-            "@Module functions with definition parameters must be marked with inline"
         )
 
         @JvmField
@@ -286,7 +261,6 @@ interface InjektErrors {
         val PARENT_CALL_WITHOUT_COMPOSITION_FACTORY = error(
             "parent<T>() can only be called from inside a @CompositionFactory function"
         )
-
 
         @JvmField
         val RETURN_TYPE_NOT_ALLOWED_FOR_INJECT = error(
