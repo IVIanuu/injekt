@@ -138,7 +138,7 @@ class ImplFactory(
 
                         factoryLateinitProvider?.let { factoryLateinitProvider ->
                             +irCall(
-                                symbols.lateinitProvider
+                                symbols.lateinitFactory
                                     .functions
                                     .single { it.owner.name.asString() == "init" }
                             ).apply {

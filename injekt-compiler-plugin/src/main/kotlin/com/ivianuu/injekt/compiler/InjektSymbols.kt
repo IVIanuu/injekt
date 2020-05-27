@@ -78,7 +78,7 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
 
     val instanceFactory = pluginContext.referenceClass(InjektFqNames.InstanceFactory)!!
 
-    val lateinitProvider = pluginContext.referenceClass(InjektFqNames.LateinitProvider)!!
+    val lateinitFactory = pluginContext.referenceClass(InjektFqNames.LateinitFactory)!!
 
     val lazy = pluginContext.referenceClass(InjektFqNames.Lazy)!!
 

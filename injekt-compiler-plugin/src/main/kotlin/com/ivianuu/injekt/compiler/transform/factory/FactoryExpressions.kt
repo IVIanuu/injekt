@@ -509,7 +509,7 @@ class FactoryExpressions(
         factory as ImplFactory
 
         return cachedProviderExpression(binding.key) {
-            irCall(symbols.lateinitProvider.constructors.single()).apply {
+            irCall(symbols.lateinitFactory.constructors.single()).apply {
                 putTypeArgument(0, factory.clazz.superTypes.single())
             }
         }.also { factory.factoryLateinitProvider = it }

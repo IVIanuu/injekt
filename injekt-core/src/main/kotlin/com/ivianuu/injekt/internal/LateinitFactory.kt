@@ -18,7 +18,7 @@ package com.ivianuu.injekt.internal
 
 import com.ivianuu.injekt.Provider
 
-class LateinitProvider<T> : @Provider () -> T {
+class LateinitFactory<T> : @Provider () -> T {
     private var value: Any? = Uninitialized
 
     fun init(value: T) {

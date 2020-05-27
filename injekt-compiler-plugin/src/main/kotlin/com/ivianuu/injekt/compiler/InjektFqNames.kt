@@ -78,7 +78,7 @@ object InjektFqNames {
 
     val InstanceFactory = InjektPackage.child("InstanceFactory")
 
-    val LateinitProvider = InternalPackage.child("LateinitProvider")
+    val LateinitFactory = InternalPackage.child("LateinitFactory")
 
     val MapDsl = InjektPackage.child("MapDsl")
     val MapOfValueFactory = InternalPackage.child("MapOfValueFactory")
