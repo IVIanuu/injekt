@@ -63,7 +63,7 @@ class ModuleTest {
         
         @Module
         fun <T> capturingModule() {
-            transient<@TestQualifier1 T> { get<T>() }
+            transient<@TestQualifier1 T> { t: T -> t }
         }
         
         @InstanceFactory

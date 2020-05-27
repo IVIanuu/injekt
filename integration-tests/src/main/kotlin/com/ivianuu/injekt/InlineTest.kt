@@ -302,11 +302,8 @@ class InlineTest {
         
         @Module
         inline fun <reified T : Any> systemService() {
-            transient<T> {
-                ContextCompat.getSystemService(
-                    get<@TestQualifier1 Context>(),
-                    T::class.java
-                )
+            transient<T> { context: @TestQualifier1 Context ->
+                ContextCompat.getSystemService( context, T::class.java)
             }
         }
 

@@ -295,7 +295,7 @@ class ImplFactoryTest {
             """
         @Module
         fun <T : S, S> diyAlias() {
-            transient { get<T>() as S }
+            transient { from: T -> from as S }
         }
 
         @InstanceFactory
