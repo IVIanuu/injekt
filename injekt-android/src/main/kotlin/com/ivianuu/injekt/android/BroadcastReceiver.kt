@@ -34,7 +34,7 @@ import com.ivianuu.injekt.scope
 @Scope
 annotation class ReceiverScoped
 
-@Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+@Target(AnnotationTarget.TYPE)
 @Qualifier
 annotation class ForReceiver
 

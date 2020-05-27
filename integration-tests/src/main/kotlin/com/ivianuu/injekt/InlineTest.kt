@@ -290,7 +290,7 @@ class InlineTest {
                 source(
                     """
                     @Qualifier
-                    @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+                    @Target(AnnotationTarget.TYPE)
                     annotation class TestQualifier1
         class Context {
             fun <T : Any> getSystemService(clazz: Class<T>): T = error("not implemented")

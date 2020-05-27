@@ -40,7 +40,7 @@ import kotlinx.coroutines.CoroutineScope
 @Scope
 annotation class ActivityScoped
 
-@Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+@Target(AnnotationTarget.TYPE)
 @Qualifier
 annotation class ForActivity
 

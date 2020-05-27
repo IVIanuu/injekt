@@ -18,17 +18,14 @@ package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.getFunctionFromLambdaExpression
-import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.typeWith
-import com.ivianuu.injekt.compiler.withAnnotations
 import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
@@ -121,11 +118,8 @@ class ModuleDeclarationFactory(
         AliasDeclaration(call.getTypeArgument(0)!!, call.getTypeArgument(1)!!)
 
     private fun createBindingDeclaration(call: IrCall): BindingDeclaration {
-        val bindingQualifiers =
-            pluginContext.irTrace[InjektWritableSlices.QUALIFIERS, call] ?: emptyList()
         val bindingType = call.getTypeArgument(0)!!
             .remapTypeParameters(moduleFunction, moduleClass)
-            .withAnnotations(bindingQualifiers)
         return createBindingDeclarationFromSingleArgument(
             bindingType,
             if (call.valueArgumentsCount != 0) call.getValueArgument(0) else null,
@@ -136,14 +130,13 @@ class ModuleDeclarationFactory(
 
     private fun createMapDeclarations(call: IrCall): List<ModuleDeclaration> {
         val declarations = mutableListOf<ModuleDeclaration>()
-        val mapQualifiers =
-            pluginContext.irTrace[InjektWritableSlices.QUALIFIERS, call] ?: emptyList()
-        val mapKeyType = call.getTypeArgument(0)!!
-        val mapValueType = call.getTypeArgument(1)!!
 
-        val mapType = pluginContext.referenceClass(KotlinBuiltIns.FQ_NAMES.map)!!
-            .typeWith(mapKeyType, mapValueType)
-            .withAnnotations(mapQualifiers)
+        val mapType = if (call.typeArgumentsCount == 3) {
+            call.getTypeArgument(0)!!
+        } else {
+            pluginContext.referenceClass(KotlinBuiltIns.FQ_NAMES.map)!!
+                .typeWith(call.getTypeArgument(0)!!, call.getTypeArgument(1)!!)
+        }
 
         declarations += MapDeclaration(mapType)
 
@@ -168,13 +161,13 @@ class ModuleDeclarationFactory(
 
     private fun createSetDeclarations(call: IrCall): List<ModuleDeclaration> {
         val declarations = mutableListOf<ModuleDeclaration>()
-        val setQualifiers =
-            pluginContext.irTrace[InjektWritableSlices.QUALIFIERS, call] ?: emptyList()
-        val setElementType = call.getTypeArgument(0)!!
 
-        val setType = pluginContext.referenceClass(KotlinBuiltIns.FQ_NAMES.set)!!
-            .typeWith(setElementType)
-            .withAnnotations(setQualifiers)
+        val setType = if (call.typeArgumentsCount == 2) {
+            call.getTypeArgument(0)!!
+        } else {
+            pluginContext.referenceClass(KotlinBuiltIns.FQ_NAMES.set)!!
+                .typeWith(call.getTypeArgument(0)!!)
+        }
 
         declarations += SetDeclaration(setType)
 

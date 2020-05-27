@@ -33,7 +33,7 @@ fun dataModule() {
     transient { get<Application>().cacheDir!! }
 }
 
-@Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+@Target(AnnotationTarget.TYPE)
 @Qualifier
 annotation class DatabaseFile
 

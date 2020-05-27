@@ -18,10 +18,12 @@ package com.ivianuu.injekt
 
 import com.ivianuu.injekt.internal.injektIntrinsic
 
-@InjektDslMarker
-interface MapDsl<K, V> {
+interface MapDsl<M : Map<K, V>, K, V> {
     fun <T : V> put(entryKey: K)
     // todo fun <T : V> put(entryKey: K, definition: ProviderDefinition<T>)
 }
 
-fun <K, V> map(block: MapDsl<K, V>.() -> Unit = {}): Unit = injektIntrinsic()
+fun <K, V> map(block: MapDsl<Map<K, V>, K, V>.() -> Unit = {}): Unit = injektIntrinsic()
+
+@JvmName("qualifiedMap")
+fun <M : Map<K, V>, K, V> map(block: MapDsl<M, K, V>.() -> Unit = {}): Unit = injektIntrinsic()

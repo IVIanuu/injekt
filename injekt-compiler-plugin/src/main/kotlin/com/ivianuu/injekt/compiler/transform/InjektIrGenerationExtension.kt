@@ -55,9 +55,6 @@ class InjektIrGenerationExtension(
             declarationStore
         ).also { declarationStore.factoryTransformer = it }
 
-        // write qualifiers of expression to the irTrace
-        QualifiedMetadataTransformer(pluginContext).lower(moduleFragment)
-
         if (pluginContext.androidEnabled) {
             AndroidEntryPointTransformer(pluginContext).lower(moduleFragment)
         }

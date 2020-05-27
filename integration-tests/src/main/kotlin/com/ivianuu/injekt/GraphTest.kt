@@ -81,11 +81,11 @@ class GraphTest {
     @Test
     fun testQualified() = codegen(
         """
-        @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE) 
+        @Target(AnnotationTarget.TYPE) 
         @Qualifier 
         annotation class TestQualifier1
-        @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE) 
-        @Qualifier 
+        @Target(AnnotationTarget.TYPE) 
+        @Qualifier
         annotation class TestQualifier2
         interface TestComponent { 
             val foo1: @TestQualifier1 Foo 
@@ -93,9 +93,9 @@ class GraphTest {
         }
         
         @Factory
-        fun createComponent(): TestComponent {
-            @TestQualifier1 scoped { Foo() }
-            @TestQualifier2 scoped { Foo() }
+        fun createComponent(): TestComponent { 
+            scoped<@TestQualifier1 Foo> { Foo() }
+            scoped<@TestQualifier2 Foo> { Foo() }
             return create()
         }
         
@@ -112,7 +112,7 @@ class GraphTest {
     @Test
     fun testQualifiedWithValues() = codegen(
         """
-            @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+            @Target(AnnotationTarget.TYPE)
             @Qualifier
             annotation class QualifierWithValue(val value: String)
             
@@ -122,9 +122,9 @@ class GraphTest {
         }
         
         @Factory
-        fun createComponent(): TestComponent {
-            @QualifierWithValue("A") scoped { Foo() }
-            @QualifierWithValue("B") scoped { Foo() }
+        fun createComponent(): TestComponent { 
+            scoped<@QualifierWithValue("A") Foo> { Foo() }
+            scoped<@QualifierWithValue("B") Foo> { Foo() }
             return create()
         }
         
@@ -141,10 +141,10 @@ class GraphTest {
     @Test
     fun testQualifiedGet() = codegen(
         """
-        @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE) 
+        @Target(AnnotationTarget.TYPE) 
         @Qualifier 
         annotation class TestQualifier1
-        @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE) 
+        @Target(AnnotationTarget.TYPE) 
         @Qualifier 
         annotation class TestQualifier2
         interface TestComponent {
@@ -155,8 +155,8 @@ class GraphTest {
         
         @Factory
         fun factory(): TestComponent {
-            @TestQualifier1 transient { "a" }
-            @TestQualifier2 transient { "b" }
+            transient<@TestQualifier1 String> { "a" }
+            transient<@TestQualifier2 String> { "b" }
             transient { Pair<String, String>(@TestQualifier1 get(), @TestQualifier2 get()) }
             return create()
         }

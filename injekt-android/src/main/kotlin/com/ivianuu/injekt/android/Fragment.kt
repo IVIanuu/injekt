@@ -39,7 +39,7 @@ import kotlinx.coroutines.CoroutineScope
 @Scope
 annotation class FragmentScoped
 
-@Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+@Target(AnnotationTarget.TYPE)
 @Qualifier
 annotation class ForFragment
 

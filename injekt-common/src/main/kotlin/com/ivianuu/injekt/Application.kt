@@ -21,7 +21,7 @@ import com.ivianuu.injekt.composition.CompositionComponent
 @Scope
 annotation class ApplicationScoped
 
-@Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+@Target(AnnotationTarget.TYPE)
 @Qualifier
 annotation class ForApplication
 

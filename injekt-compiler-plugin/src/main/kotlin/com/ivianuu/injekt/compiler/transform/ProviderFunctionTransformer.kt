@@ -17,16 +17,13 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.deepCopyWithPreservingQualifiers
 import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.hasTypeAnnotation
-import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.transform.factory.Key
 import com.ivianuu.injekt.compiler.transform.factory.asKey
 import com.ivianuu.injekt.compiler.typeArguments
-import com.ivianuu.injekt.compiler.withAnnotations
 import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -150,15 +147,9 @@ class ProviderFunctionTransformer(pluginContext: IrPluginContext) :
         providerCalls.forEach { providerCall ->
             val callee = transformFunctionIfNeeded(providerCall.symbol.owner)
             if (callee.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get") {
-                val exprQualifiers =
-                    pluginContext.irTrace[InjektWritableSlices.QUALIFIERS, providerCall]
-                        ?: emptyList()
                 addProviderValueParameterIfNeeded(
                     irBuiltIns.function(0)
-                        .typeWith(
-                            providerCall.getTypeArgument(0)!!
-                                .withAnnotations(exprQualifiers)
-                        )
+                        .typeWith(providerCall.getTypeArgument(0)!!)
                         .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Provider))
                         .asKey()
                 )
@@ -235,16 +226,11 @@ class ProviderFunctionTransformer(pluginContext: IrPluginContext) :
         providerValueParameters: Map<Key, IrValueParameter>
     ): IrExpression {
         if (transformedCallee.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get") {
-            val exprQualifiers =
-                pluginContext.irTrace[InjektWritableSlices.QUALIFIERS, originalCall] ?: emptyList()
             val typeArgument = originalCall.getTypeArgument(0)!!
             val valueParameter = providerValueParameters
                 .get(
                     irBuiltIns.function(0)
-                        .typeWith(
-                            typeArgument
-                                .withAnnotations(exprQualifiers)
-                        )
+                        .typeWith(typeArgument)
                         .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Provider))
                         .asKey()
                 ) ?: error(

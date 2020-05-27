@@ -59,7 +59,7 @@ class ModuleTest {
     @Test
     fun testTypeParameterCapturingModule() = codegen(
         """
-        @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE) 
+        @Target(AnnotationTarget.TYPE) 
         @Qualifier 
         annotation class TestQualifier1
         

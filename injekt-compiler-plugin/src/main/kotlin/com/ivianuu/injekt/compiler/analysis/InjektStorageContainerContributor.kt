@@ -39,9 +39,9 @@ class InjektStorageContainerContributor(
         container.useInstance(MapChecker())
         container.useInstance(ModuleChecker(typeAnnotationChecker))
         container.useInstance(QualifierChecker())
-        container.useInstance(QualifiedExpressionCollector())
         container.useInstance(ObjectGraphFunctionChecker())
         container.useInstance(ProviderChecker(typeAnnotationChecker))
+        container.useInstance(SetChecker())
         container.useInstance(ScopeChecker())
         container.useInstance(typeAnnotationChecker)
     }

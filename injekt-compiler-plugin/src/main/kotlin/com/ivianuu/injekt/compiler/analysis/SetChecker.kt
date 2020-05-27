@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -16,35 +16,30 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
-import com.ivianuu.injekt.compiler.QualifiedExpressionsStore
+import com.ivianuu.injekt.compiler.InjektErrors
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.psi.KtCallExpression
-import org.jetbrains.kotlin.psi.psiUtil.endOffset
-import org.jetbrains.kotlin.psi.psiUtil.getAnnotationEntries
-import org.jetbrains.kotlin.psi.psiUtil.startOffsetSkippingComments
-import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
 import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class QualifiedExpressionCollector : CallChecker {
-
+class SetChecker : CallChecker {
     override fun check(
         resolvedCall: ResolvedCall<*>,
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
-        val callElement = resolvedCall.call.callElement
-        if (callElement !is KtCallExpression) return
-        val qualifiers = callElement.getAnnotationEntries()
-            .mapNotNull { context.trace[BindingContext.ANNOTATION, it] }
-        if (qualifiers.isEmpty()) return
-        QualifiedExpressionsStore.putQualifiers(
-            callElement.containingFile.name,
-            callElement.startOffsetSkippingComments,
-            callElement.endOffset,
-            qualifiers
-        )
+        val descriptor = resolvedCall.resultingDescriptor
+        if (descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.set") {
+            if (resolvedCall.typeArguments.size == 2) {
+                val setType = resolvedCall.typeArguments.values.first()
+                if (setType.constructor.declarationDescriptor != context.moduleDescriptor.builtIns.set) {
+                    context.trace.report(
+                        InjektErrors.NOT_A_SET
+                            .on(reportOn)
+                    )
+                }
+            }
+        }
     }
-
 }

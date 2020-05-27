@@ -149,7 +149,7 @@ interface InjektErrors {
 
         @JvmField
         val MISSING_QUALIFIER_TARGETS = error(
-            "@Qualifier must be annotated with @Target(AnnotationTarget.TYPE, AnnotationTarget.EXPRESSION)"
+            "@Qualifier must be annotated with @Target(AnnotationTarget.TYPE)"
         )
 
         @JvmField
@@ -300,6 +300,16 @@ interface InjektErrors {
         @JvmField
         val UNSUPPORTED_ANDROID_ENTRY_POINT = error(
             "@AndroidEntryPoint only supports Applications, Activities, Fragments, BroadcastReceivers and Services"
+        )
+
+        @JvmField
+        val NOT_A_MAP = error(
+            "Must be of type kotlin.collections.Map"
+        )
+
+        @JvmField
+        val NOT_A_SET = error(
+            "Must be of type kotlin.collections.Set"
         )
 
         init {

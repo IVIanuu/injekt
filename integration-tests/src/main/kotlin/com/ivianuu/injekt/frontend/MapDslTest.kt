@@ -76,4 +76,18 @@ class MapDslTest {
         assertCompileError("constant")
     }
 
+    @Test
+    fun testNotExactMapType() = codegen(
+        """
+        @Module
+        fun test() {
+            map<MutableMap<String, String>, String, String> {
+            }
+        }
+    """
+    ) {
+        assertCompileError("map")
+    }
+
 }
+

@@ -44,7 +44,7 @@ class QualifierChecker : DeclarationChecker {
             context.trace.report(InjektErrors.MUST_HAVE_RUNTIME_RETENTION.on(declaration))
         }
 
-        if (KotlinTarget.EXPRESSION !in targets || KotlinTarget.TYPE !in targets) {
+        if (KotlinTarget.TYPE !in targets) {
             context.trace.report(InjektErrors.MISSING_QUALIFIER_TARGETS.on(declaration))
         }
 

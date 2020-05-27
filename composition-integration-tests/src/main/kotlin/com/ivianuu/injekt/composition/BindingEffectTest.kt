@@ -191,7 +191,7 @@ class BindingEffectTest {
                     return create()
                 }
                 
-                @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+                @Target(AnnotationTarget.TYPE)
                 @Qualifier
                 annotation class ForActivity
                 
