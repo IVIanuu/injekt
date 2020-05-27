@@ -33,7 +33,7 @@ class ModuleTest {
             set<Any>()
             map<String, Any>()
             instance("hello world")
-            transient { (foo: Foo) ->
+            transient { foo: Foo ->
                 Bar(get())
             }
         }

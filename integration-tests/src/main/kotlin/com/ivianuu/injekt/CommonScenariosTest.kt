@@ -204,8 +204,8 @@ class CommonScenariosTest {
     @Test
     fun testProviderFunctionAsModuleParameter() = codegen(
         """
-        @Module
-        inline fun <T : Any> action(provider: @Provider () -> T) {
+        @Module 
+        fun <T : Any> action(provider: @Provider () -> T) {
             transient { provider() }
             set<Any> { add<T>() }
         }
