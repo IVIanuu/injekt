@@ -163,6 +163,16 @@ interface InjektErrors {
         )
 
         @JvmField
+        val CANNOT_HAVE_TAILREC_MODIFIER = error(
+            "@Factory, @ChildFactory, @CompositionFactory or @Module cannot have the tailrec modifier"
+        )
+
+        @JvmField
+        val MUST_BE_FINAL = error(
+            "@Factory, @ChildFactory, @CompositionFactory or @Module must be final"
+        )
+
+        @JvmField
         val BINDING_ADAPTER_WITHOUT_COMPANION = error(
             "@BindingAdapter annotated class needs a companion object"
         )

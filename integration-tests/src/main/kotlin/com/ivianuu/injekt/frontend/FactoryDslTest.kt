@@ -236,13 +236,17 @@ class FactoryDslTest {
     }
 
     @Test
-    fun testChildFactoryCannotBeSuspend() = codegen(
+    fun testOpenFactoryFails() = codegen(
         """
-        @ChildFactory 
-        suspend fun factory(): TestComponent = create()
-        """
+        class MyClass {
+            @Factory 
+            fun factory(): TestComponent {
+                return create()
+            }
+        }
+    """
     ) {
-        assertCompileError("suspend")
+        assertCompileError("final")
     }
 
     @Test
@@ -252,16 +256,6 @@ class FactoryDslTest {
         inline fun factory(): TestComponent = create()
     """
     )
-
-    @Test
-    fun testChildFactoryCannotBeInline() = codegen(
-        """
-        @ChildFactory
-        inline fun factory(): TestComponent = create()
-    """
-    ) {
-        assertCompileError("inline")
-    }
 
     @Test
     fun testFactoryCanHaveTypeParameters() = codegen(

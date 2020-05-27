@@ -91,6 +91,20 @@ class FactoryChecker(
             )
         }
 
+        if (descriptor.isTailrec) {
+            context.trace.report(
+                InjektErrors.CANNOT_HAVE_TAILREC_MODIFIER
+                    .on(declaration)
+            )
+        }
+
+        if (descriptor.modality != Modality.FINAL) {
+            context.trace.report(
+                InjektErrors.MUST_BE_FINAL
+                    .on(declaration)
+            )
+        }
+
         if (descriptor.hasAnnotation(InjektFqNames.ChildFactory) ||
             descriptor.hasAnnotation(InjektFqNames.CompositionFactory)
         ) {

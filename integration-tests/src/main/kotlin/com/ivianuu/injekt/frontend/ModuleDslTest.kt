@@ -249,6 +249,20 @@ class ModuleDslTest {
     }
 
     @Test
+    fun testOpenModuleFails() = codegen(
+        """
+        class MyClass {
+            @Factory 
+            fun module(): TestComponent {
+                return create()
+            }
+        }
+    """
+    ) {
+        assertCompileError("final")
+    }
+
+    @Test
     fun testBindingWithTypeParameterInNonInlineModule() =
         codegen(
             """ 

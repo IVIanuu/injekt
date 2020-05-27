@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtCatchClause
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -66,6 +67,21 @@ class ModuleChecker(
         if (descriptor.isSuspend) {
             context.trace.report(
                 InjektErrors.CANNOT_BE_SUSPEND
+                    .on(declaration)
+            )
+        }
+
+        if (descriptor.isTailrec) {
+            context.trace.report(
+                InjektErrors.CANNOT_HAVE_TAILREC_MODIFIER
+                    .on(declaration)
+            )
+        }
+
+
+        if (descriptor.modality != Modality.FINAL) {
+            context.trace.report(
+                InjektErrors.MUST_BE_FINAL
                     .on(declaration)
             )
         }
