@@ -24,7 +24,6 @@ object InjektAst {
         annotation class Class(val clazz: KClass<*>)
         annotation class Property(val name: String)
         annotation class TypeParameter(val name: String)
-        annotation class ValueParameter(val name: String)
     }
 
     annotation class ChildFactory

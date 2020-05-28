@@ -205,7 +205,7 @@ class BindingEffectTest {
                 }
                 
                 @Module
-                inline fun <T : ViewModel> activityViewModel() { 
+                inline fun <reified T : ViewModel> activityViewModel() { 
                     baseViewModel<T, @ForActivity ViewModelStoreOwner>()
                 }
                 

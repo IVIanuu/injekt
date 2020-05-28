@@ -16,10 +16,8 @@
 
 package com.ivianuu.injekt.composition
 
-import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.internal.injektIntrinsic
 
-@Qualifier
 @Target(AnnotationTarget.FUNCTION)
 annotation class CompositionFactory
 

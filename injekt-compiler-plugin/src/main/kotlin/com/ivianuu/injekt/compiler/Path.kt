@@ -23,7 +23,6 @@ import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
-import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.types.typeWith
@@ -76,17 +75,6 @@ class TypeParameterPath(val typeParameter: IrTypeParameter) : Path() {
     ): IrConstructorCall {
         return builder.irCall(symbols.astTypeParameterPath.constructors.single()).apply {
             putValueArgument(0, builder.irString(typeParameter.name.asString()))
-        }
-    }
-}
-
-class ValueParameterPath(val valueParameter: IrValueParameter) : Path() {
-    override fun asAnnotation(
-        builder: IrBuilderWithScope,
-        symbols: InjektSymbols
-    ): IrConstructorCall {
-        return builder.irCall(symbols.astValueParameterPath.constructors.single()).apply {
-            putValueArgument(0, builder.irString(valueParameter.name.asString()))
         }
     }
 }
