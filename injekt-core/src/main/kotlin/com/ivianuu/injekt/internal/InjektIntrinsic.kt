@@ -16,4 +16,5 @@
 
 package com.ivianuu.injekt.internal
 
-fun <T> injektIntrinsic(): T = error("Must be compiled with the injekt compiler")
+fun <T> injektIntrinsic(): T =
+    throw UnsupportedOperationException("Must be compiled with the injekt compiler")
