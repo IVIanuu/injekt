@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.composition
 
 import com.ivianuu.injekt.compiler.InjektNameConventions
-import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
+import com.ivianuu.injekt.compiler.addMetadata
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
@@ -83,7 +83,7 @@ class EntryPointOfTransformer(pluginContext: IrPluginContext) :
         annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
             .noArgSingleConstructorCall(symbols.module)
 
-        addMetadataIfNotLocal()
+        addMetadata()
 
         body = DeclarationIrBuilder(pluginContext, symbol).run {
             irBlockBody {

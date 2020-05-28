@@ -236,61 +236,67 @@ class FactoryDslTest {
     }
 
     @Test
-    fun testOpenFactoryFails() = codegen(
+    fun testFactoryInClassFails() = codegen(
         """
         class MyClass {
             @Factory 
-            open fun factory(): TestComponent {
-                return create()
-            }
+            fun factory(): TestComponent = create()
         }
-    """
+        """
     ) {
-        assertCompileError("final")
+        assertCompileError("top level")
     }
 
     @Test
-    fun testFactoryCanBeInline() = codegen(
+    fun testFactoryInObjectIsOk() = codegen(
+        """
+        object MyClass {
+            @Factory 
+            fun factory(): TestComponent = create()
+        }
+        """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testTopLevelFactoryIsOk() = codegen(
+        """
+        @Factory 
+        fun factory(): TestComponent = create()
+        """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testExtensionFactoryFails() = codegen(
+        """
+        @Factory 
+        fun String.factory(): TestComponent = create()
+        """
+    ) {
+        assertCompileError("extension")
+    }
+
+    @Test
+    fun testFactoryCannotBeInline() = codegen(
         """
         @Factory
         inline fun factory(): TestComponent = create()
     """
-    )
+    ) {
+        assertCompileError("inline")
+    }
 
     @Test
-    fun testFactoryCanHaveTypeParameters() = codegen(
+    fun testFactoryCannotHaveTypeParameters() = codegen(
         """
-        @Factory
-        inline fun <T> factory(): TestComponent = create()
+        @Factory 
+        fun <T> factory(): TestComponent = create()
     """
-    )
-
-    @Test
-    fun testChildFactoryCannotHaveTypeParameters() =
-        codegen(
-            """
-        @ChildFactory
-        inline fun <T> factory(): TestComponent = create()
-    """
-        ) {
-            assertCompileError("type parameter")
-        }
-
-    @Test
-    fun testCallingInlineFactoryWithTypeParametersNotAllowed() =
-        codegen(
-            """ 
-        @Factory
-        inline fun <T> factory(): TestComponent {
-            return create()
-        }
-
-        fun <T> callerWithTypeParameters() {
-            factory<T>()
-        }
-    """
-        ) {
-            assertCompileError("type param")
-        }
+    ) {
+        assertCompileError("type")
+    }
 
 }

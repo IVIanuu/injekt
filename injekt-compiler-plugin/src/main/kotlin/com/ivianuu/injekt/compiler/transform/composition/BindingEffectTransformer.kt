@@ -19,7 +19,7 @@ package com.ivianuu.injekt.compiler.transform.composition
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.NameProvider
-import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
+import com.ivianuu.injekt.compiler.addMetadata
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
@@ -38,7 +38,6 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -83,7 +82,7 @@ class BindingEffectTransformer(pluginContext: IrPluginContext) :
                     effect.type.classOrNull!!.descriptor.fqNameSafe
                 )
 
-                clazz.file.addChild(effectModule)
+                clazz.addChild(effectModule)
             }
         }
 
@@ -102,7 +101,7 @@ class BindingEffectTransformer(pluginContext: IrPluginContext) :
         annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
             .noArgSingleConstructorCall(symbols.module)
 
-        addMetadataIfNotLocal()
+        addMetadata()
 
         body = DeclarationIrBuilder(pluginContext, symbol).run {
             irBlockBody {

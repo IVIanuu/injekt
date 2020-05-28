@@ -55,8 +55,7 @@ abstract class AbstractFactory(
                     .asKey(),
                 module = moduleClass,
                 accessor = factoryModuleAccessor,
-                typeParametersMap = emptyMap(),
-                moduleLambdaMap = emptyMap()
+                typeParametersMap = emptyMap()
             ),
             declarationStore = declarationStore,
             symbols = symbols

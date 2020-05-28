@@ -106,27 +106,11 @@ class ModuleTest {
     )
 
     @Test
-    fun testIncludeLocalModule() = codegen(
-        """
-        @Module
-        fun outer() {
-            @Module
-            fun <T> inner(instance: T) {
-                instance(instance)
-            }
-            
-            inner("hello world")
-            inner(42)
-        }
-    """
-    )
-
-    @Test
     fun testBindingWithTypeParameterInInlineModule() =
         codegen(
             """ 
-        @Module
-        inline fun <T> module() {
+        @Module 
+        fun <T> module() {
             transient<T>()
         }
     """
@@ -154,36 +138,6 @@ class ModuleTest {
                     @Module 
                     fun calling() {
                         MyClass.Companion.module()
-                    } 
-                """
-            )
-        )
-    )
-
-    @Test
-    fun testMultipleCompileNestedWithReceiverModule() = multiCodegen(
-        listOf(
-            source(
-                """
-                class MyClass {
-                    companion object {
-                        @Module
-                        fun String.module() {
-                        
-                        }
-                    }
-                }
-            """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    import MyClass.Companion.module
-                    
-                    @Module 
-                    fun calling() {
-                        "hello world".module()
                     } 
                 """
             )

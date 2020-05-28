@@ -19,9 +19,8 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.NameProvider
-import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
+import com.ivianuu.injekt.compiler.addMetadata
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.getParameterName
 import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -153,7 +152,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
 
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
-            addMetadataIfNotLocal()
+            addMetadata()
 
             val nameProvider = NameProvider()
 
@@ -222,7 +221,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
             }.apply clazz@{
                 createImplicitParameterDeclarationWithWrappedDescriptor()
 
-                addMetadataIfNotLocal()
+                addMetadata()
 
                 addConstructor {
                     this.returnType = defaultType
@@ -245,7 +244,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                 }.apply {
                     dispatchReceiverParameter = thisReceiver!!.copyTo(this)
 
-                    addMetadataIfNotLocal()
+                    addMetadata()
 
                     val instanceValueParameter = addValueParameter(
                         "\$instance",
@@ -273,7 +272,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                 }.apply {
                     dispatchReceiverParameter = thisReceiver!!.copyTo(this)
 
-                    addMetadataIfNotLocal()
+                    addMetadata()
 
                     val instanceValueParameter = addValueParameter(
                         "\$instance",
@@ -386,7 +385,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
             dispatchReceiverParameter = function.dispatchReceiverParameter!!.copyTo(this)
             val valueParameters = function.valueParameters.map {
                 addValueParameter(
-                    it.getParameterName(),
+                    it.name.asString(),
                     it.type
                 )
             }

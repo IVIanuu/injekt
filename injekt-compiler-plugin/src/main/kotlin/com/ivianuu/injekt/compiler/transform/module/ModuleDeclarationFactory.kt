@@ -39,12 +39,10 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
-import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -83,8 +81,7 @@ class ModuleDeclarationFactory(
                 createMapDeclarations(call)
             calleeFqName == "com.ivianuu.injekt.set" ->
                 createSetDeclarations(call)
-            callee.hasAnnotation(InjektFqNames.Module) ||
-                    call.isModuleLambdaInvoke() ->
+            callee.hasAnnotation(InjektFqNames.Module) ->
                 listOf(createIncludedModuleDeclaration(call, callee))
             else -> emptyList()
         }
@@ -191,26 +188,13 @@ class ModuleDeclarationFactory(
         return declarations
     }
 
-    private fun IrCall.isModuleLambdaInvoke(): Boolean {
-        return origin == IrStatementOrigin.INVOKE &&
-                dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Module) == true
-    }
-
     private fun createIncludedModuleDeclaration(
         call: IrCall,
         includedModuleFunction: IrFunction
     ): ModuleDeclaration {
-        val includedClass: IrClass
-        val includedType: IrType
-
-        if (call.isModuleLambdaInvoke()) {
-            includedClass = pluginContext.irBuiltIns.anyClass.owner
-            includedType = pluginContext.irBuiltIns.anyType
-        } else {
-            includedClass = includedModuleFunction.returnType.classOrNull!!.owner
-            includedType = includedModuleFunction.returnType
-                .typeWith(*call.typeArguments.toTypedArray())
-        }
+        val includedClass = includedModuleFunction.returnType.classOrNull!!.owner
+        val includedType = includedModuleFunction.returnType
+            .typeWith(*call.typeArguments.toTypedArray())
 
         val path = if (includedClass.kind != ClassKind.OBJECT) {
             val property = InjektDeclarationIrBuilder(pluginContext, includedClass.symbol)
@@ -224,18 +208,8 @@ class ModuleDeclarationFactory(
             ClassPath(includedClass)
         }
 
-        val moduleLambdaTypeMap = call.getArgumentsWithIr()
-            .filter { it.first.type.hasAnnotation(InjektFqNames.Module) }
-            .map { (valueParameter, expression) ->
-                valueParameter to if (expression is IrFunctionExpression) {
-                    expression.function.returnType
-                } else expression.type.typeArguments.last().typeOrFail
-            }
-            .toMap()
-
         return IncludedModuleDeclaration(
             includedType,
-            moduleLambdaTypeMap,
             path,
             if (path is PropertyPath) call else null
         )

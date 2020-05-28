@@ -19,7 +19,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.NameProvider
-import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
+import com.ivianuu.injekt.compiler.addMetadata
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.getInjectConstructor
@@ -142,7 +142,7 @@ class InjektDeclarationIrBuilder(
         visibility = Visibilities.PUBLIC
     }.apply clazz@{
         createImplicitParameterDeclarationWithWrappedDescriptor()
-        addMetadataIfNotLocal()
+        addMetadata()
 
         addConstructor {
             this.returnType = defaultType

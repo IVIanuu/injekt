@@ -107,8 +107,6 @@ object InjektFqNames {
 
     val Transient = InjektPackage.child("Transient")
 
-    val TypeAnnotation = InternalPackage.child("TypeAnnotation")
-
     val Uninitialized = InternalPackage.child("Uninitialized")
 
     val ModuleDslNames = listOf(

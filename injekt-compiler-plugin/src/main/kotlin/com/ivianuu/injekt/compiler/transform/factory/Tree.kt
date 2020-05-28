@@ -28,7 +28,6 @@ import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.FqNameEqualityChecker
@@ -38,7 +37,6 @@ import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.getClass
-import org.jetbrains.kotlin.ir.types.isAny
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -65,14 +63,8 @@ class ModuleNode(
     val module: IrClass,
     override val key: Key,
     override val accessor: FactoryExpression,
-    val typeParametersMap: Map<IrTypeParameterSymbol, IrType>,
-    val moduleLambdaMap: Map<IrValueParameter, IrClass>
+    val typeParametersMap: Map<IrTypeParameterSymbol, IrType>
 ) : RequirementNode {
-    init {
-        check(!module.defaultType.isAny()) {
-            "Untyped module"
-        }
-    }
     val descriptor = module.declarations.single {
         it.hasAnnotation(InjektFqNames.AstModule)
     } as IrClass

@@ -26,9 +26,6 @@ import org.jetbrains.kotlin.name.Name
 
 class InjektSymbols(val pluginContext: IrPluginContext) {
 
-    val injektPackage = getPackage(InjektFqNames.InjektPackage)
-    val internalPackage = getPackage(InjektFqNames.InternalPackage)
-
     val injektAst = pluginContext.referenceClass(InjektFqNames.InjektAst)!!
 
     private fun IrClassSymbol.childClass(name: Name) = owner.declarations

@@ -17,12 +17,10 @@
 package com.ivianuu.injekt.composition
 
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.internal.TypeAnnotation
 import com.ivianuu.injekt.internal.injektIntrinsic
 
-@TypeAnnotation
 @Qualifier
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.TYPE)
+@Target(AnnotationTarget.FUNCTION)
 annotation class CompositionFactory
 
 inline fun <reified T, reified F> compositionFactoryOf(): F =

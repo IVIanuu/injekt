@@ -116,7 +116,6 @@ class ChildFactoryBindingResolver(
             parentFactory.pluginContext,
             moduleClass.symbol
         ).irLambda(key.type) { lambda ->
-
             val moduleAccessor = if (moduleClass.kind == ClassKind.OBJECT) {
                 val expr: FactoryExpression = { irGetObject(moduleClass.symbol) }
                 expr
@@ -125,6 +124,12 @@ class ChildFactoryBindingResolver(
                     .getModuleFunctionForClass(moduleClass)
                 val moduleVariable = irTemporary(
                     irCall(moduleFunction).apply {
+                        if (moduleFunction.dispatchReceiverParameter != null) {
+                            dispatchReceiver = irGetObject(
+                                moduleFunction.dispatchReceiverParameter!!.type.classOrNull!!
+                            )
+                        }
+
                         lambda.valueParameters.forEach {
                             putValueArgument(it.index, irGet(it))
                         }
@@ -625,7 +630,6 @@ class MapBindingResolver(
 
 class SetBindingResolver(
     private val pluginContext: IrPluginContext,
-    private val symbols: InjektSymbols,
     private val factoryImplementation: AbstractFactory,
     private val parent: SetBindingResolver?
 ) : BindingResolver {
@@ -711,7 +715,6 @@ class SetBindingResolver(
 }
 
 class LazyOrProviderBindingResolver(
-    private val symbols: InjektSymbols,
     private val factory: AbstractFactory
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): List<BindingNode> {

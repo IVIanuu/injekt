@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -42,9 +41,6 @@ object InjektNameConventions {
         val fullName = withoutSuffix.dropLast(2)
         return fullName.joinToString("_").asNameId()
     }
-
-    fun getFunctionImplNameForFactoryCall(file: IrFile, call: IrCall): Name =
-        getNameAtSourcePositionWithSuffix(file, call, "Impl")
 
     fun getBindingEffectModuleName(
         packageFqName: FqName,
@@ -149,8 +145,8 @@ object InjektNameConventions {
     }
 
     private fun valueParametersHash(function: IrFunction): Int {
-        return function.allParameters
-            .map { it.getParameterName() }
+        return function.valueParameters
+            .map { it.name.asString() }
             .hashCode()
     }
 

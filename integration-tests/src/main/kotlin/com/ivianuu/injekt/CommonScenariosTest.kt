@@ -150,28 +150,6 @@ class CommonScenariosTest {
     }
 
     @Test
-    fun buildInstanceFeature() = multiCodegen(
-        listOf(
-            source(
-                """
-                @Factory
-                inline fun <T> newInstance(block: @Module () -> Unit): T { 
-                    block()
-                    return create()
-                }
-            """
-            )
-        ),
-        listOf(
-            source(
-                """
-               fun invoke() = newInstance<Foo> { transient<Foo>() }
-            """
-            )
-        )
-    )
-
-    @Test
     fun testInjectionSiteProviderUsage() = codegen(
         """
         interface TestComponent {

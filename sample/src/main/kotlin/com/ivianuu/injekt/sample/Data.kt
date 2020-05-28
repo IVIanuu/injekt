@@ -29,8 +29,8 @@ import java.io.File
 @Module
 fun dataModule() {
     installIn<ApplicationComponent>()
-    transient<@DatabaseFile File> { application: @ForApplication Context ->
-        application.cacheDir
+    transient<@DatabaseFile File> { context: @ForApplication Context ->
+        context.cacheDir
     }
 }
 

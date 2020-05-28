@@ -58,8 +58,8 @@ interface InjektErrors {
         )
 
         @JvmField
-        val INLINE_FACTORY_CALL_MUST_HAVE_CONCRETE_TYPE = error(
-            "Inlined @Factory call cannot contain type parameters"
+        val FACTORY_WITH_TYPE_PARAMETERS = error(
+            "@Factory, @ChildFactory, @CompositionFactory or @InstanceFactory functions cannot contain type parameters"
         )
 
         @JvmField
@@ -93,18 +93,13 @@ interface InjektErrors {
         )
 
         @JvmField
-        val FACTORY_RETURN_TYPE_MUST_BE_ABSTRACT = error(
+        val IMPL_FACTORY_RETURN_TYPE_MUST_BE_ABSTRACT = error(
             "@Factory return types must be a interface or a abstract class"
         )
 
         @JvmField
-        val CHILD_AND_COMPOSITION_FACTORY_CANNOT_HAVE_TYPE_PARAMETERS = error(
-            "@ChildFactory or @CompositionFactory functions cannot have type parameters"
-        )
-
-        @JvmField
-        val CHILD_AND_COMPOSITION_FACTORY_CANNOT_BE_INLINE = error(
-            "@ChildFactory or @CompositionFactory cannot be marked with inline"
+        val FACTORY_CANNOT_BE_INLINE = error(
+            "@Factory, @ChildFactory, @CompositionFactory or @InstanceFactory cannot be marked with inline"
         )
 
         @JvmField
@@ -158,6 +153,21 @@ interface InjektErrors {
         )
 
         @JvmField
+        val MUST_BE_STATIC = error(
+            "@Factory, @ChildFactory, @CompositionFactory and @Module functions can only be declared at the top level or in objects"
+        )
+
+        @JvmField
+        val CANNOT_BE_EXTENSION = error(
+            "@Factory, @ChildFactory, @CompositionFactory and @Module cannot be extensions"
+        )
+
+        @JvmField
+        val CANNOT_BE_LOCAL = error(
+            "@Factory, @ChildFactory, @CompositionFactory and @Module functions cannot be local"
+        )
+
+        @JvmField
         val CANNOT_BE_SUSPEND = error(
             "@Factory, @ChildFactory, @CompositionFactory or @Module cannot be suspend"
         )
@@ -165,11 +175,6 @@ interface InjektErrors {
         @JvmField
         val CANNOT_HAVE_TAILREC_MODIFIER = error(
             "@Factory, @ChildFactory, @CompositionFactory or @Module cannot have the tailrec modifier"
-        )
-
-        @JvmField
-        val MUST_BE_FINAL = error(
-            "@Factory, @ChildFactory, @CompositionFactory or @Module must be final"
         )
 
         @JvmField

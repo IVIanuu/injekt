@@ -128,6 +128,54 @@ class ModuleDslTest {
     }
 
     @Test
+    fun testModuleInClassFails() = codegen(
+        """
+        class MyClass {
+            @Module 
+            fun module() {
+            }
+        }
+        """
+    ) {
+        assertCompileError("top level")
+    }
+
+    @Test
+    fun testModuleInObjectIsOk() = codegen(
+        """
+        object MyClass {
+            @Module
+            fun module() {
+            }
+        }
+        """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testTopLevelModuleIsOk() = codegen(
+        """
+        @Module 
+        fun module() {
+        }
+        """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testExtensionModuleFails() = codegen(
+        """
+        @Module 
+        fun String.module() {
+        }
+        """
+    ) {
+        assertCompileError("extension")
+    }
+
+    @Test
     fun testIfNotAllowedAroundModuleInvocation() =
         codegen(
             """
@@ -247,32 +295,5 @@ class ModuleDslTest {
     ) {
         assertCompileError("suspend")
     }
-
-    @Test
-    fun testOpenModuleFails() = codegen(
-        """
-        class MyClass {
-            @Factory 
-            open fun module(): TestComponent {
-                return create()
-            }
-        }
-    """
-    ) {
-        assertCompileError("final")
-    }
-
-    @Test
-    fun testBindingWithTypeParameterInNonInlineModule() =
-        codegen(
-            """ 
-        @Module
-        fun <T> module() {
-            transient<T>()
-        }
-    """
-        ) {
-            assertCompileError("inline")
-        }
 
 }

@@ -18,6 +18,7 @@ package com.ivianuu.injekt.comparison.dagger2
 
 import com.ivianuu.injekt.comparison.fibonacci.Fib8
 import dagger.Component
+import dagger.Module
 
 @Component
 interface Dagger2Component {
@@ -27,4 +28,9 @@ interface Dagger2Component {
     interface Factory {
         fun create(): Dagger2Component
     }
+}
+
+class Outer {
+    @Module
+    inner class MyModule
 }

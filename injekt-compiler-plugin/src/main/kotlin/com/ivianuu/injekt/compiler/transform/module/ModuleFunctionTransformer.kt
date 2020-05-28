@@ -20,11 +20,9 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.PropertyPath
-import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
-import com.ivianuu.injekt.compiler.addToParentOrAbove
+import com.ivianuu.injekt.compiler.addMetadata
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.deepCopyWithPreservingQualifiers
-import com.ivianuu.injekt.compiler.hasTypeAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.setClassKind
 import com.ivianuu.injekt.compiler.transform.AbstractFunctionTransformer
@@ -50,6 +48,7 @@ import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrVariable
@@ -61,6 +60,7 @@ import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -82,20 +82,19 @@ class ModuleFunctionTransformer(
         transformedFunctions
             .filterNot { it.key.isExternalDeclaration() }
             .forEach {
-                it.value.returnType.classOrNull!!.owner.addToParentOrAbove(
-                    it.value
-                )
+                (it.value.parent as IrDeclarationContainer)
+                    .addChild(it.value.returnType.classOrNull!!.owner)
             }
         return declaration
     }
 
     override fun needsTransform(function: IrFunction): Boolean =
-        function.hasTypeAnnotation(InjektFqNames.Module, pluginContext.bindingContext)
+        function.hasAnnotation(InjektFqNames.Module)
 
     override fun transform(function: IrFunction): IrFunction {
         val transformedFunction = function.deepCopyWithPreservingQualifiers(wrapDescriptor = true)
 
-        transformedFunction.addMetadataIfNotLocal()
+        transformedFunction.addMetadata()
 
         val moduleDescriptor = ModuleDescriptor(
             transformedFunction,
@@ -110,7 +109,7 @@ class ModuleFunctionTransformer(
             moduleDescriptor.moduleClass = this
             parent = transformedFunction.file
             createImplicitParameterDeclarationWithWrappedDescriptor()
-            addMetadataIfNotLocal()
+            addMetadata()
             copyTypeParametersFrom(transformedFunction)
             addChild(moduleDescriptor.clazz)
         }

@@ -74,7 +74,6 @@ class Graph(
     private val setBindingResolver: SetBindingResolver =
         SetBindingResolver(
             context,
-            symbols,
             factory,
             parent?.setBindingResolver
         )
@@ -85,7 +84,6 @@ class Graph(
     init {
         if (factoryModule != null) addModule(factoryModule)
         implicitBindingResolvers += LazyOrProviderBindingResolver(
-            symbols,
             factory
         )
         implicitBindingResolvers += mapBindingResolver
@@ -321,15 +319,14 @@ class Graph(
                     .substitute(moduleNode.descriptorTypeParametersMap)
                     .asKey()
 
-                val moduleName = function.getAnnotation(InjektFqNames.AstPropertyPath)!!
-                    .getValueArgument(0)
-                    .let { it as IrConst<String> }
-                    .value
-
                 val includedModuleAccessor = if (includedModule.kind == ClassKind.OBJECT) {
                     val expr: FactoryExpression = { irGetObject(includedModule.symbol) }
                     expr
                 } else {
+                    val moduleName = function.getAnnotation(InjektFqNames.AstPropertyPath)!!
+                        .getValueArgument(0)
+                        .let { it as IrConst<String> }
+                        .value
                     val propertyGetter = moduleNode.module.findPropertyGetter(moduleName)
                     val expr: FactoryExpression = expr@{
                         irCall(propertyGetter).apply {
@@ -353,8 +350,7 @@ class Graph(
                         module = includedModule,
                         key = key,
                         accessor = includedModuleAccessor,
-                        typeParametersMap = typeParametersMap,
-                        moduleLambdaMap = emptyMap()
+                        typeParametersMap = typeParametersMap
                     )
                 )
             }

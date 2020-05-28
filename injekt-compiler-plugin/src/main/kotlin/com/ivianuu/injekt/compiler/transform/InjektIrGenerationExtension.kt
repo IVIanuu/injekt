@@ -28,7 +28,6 @@ import com.ivianuu.injekt.compiler.transform.composition.GenerateCompositionsTra
 import com.ivianuu.injekt.compiler.transform.composition.ObjectGraphCallTransformer
 import com.ivianuu.injekt.compiler.transform.composition.ObjectGraphFunctionTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
-import com.ivianuu.injekt.compiler.transform.factory.InlineFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -90,10 +89,6 @@ class InjektIrGenerationExtension(
         MembersInjectorTransformer(
             pluginContext
         ).also { declarationStore.membersInjectorTransformer = it }
-            .lower(moduleFragment)
-
-        // add a local @Factory fun at each call side of a inline factory
-        InlineFactoryTransformer(pluginContext, declarationStore)
             .lower(moduleFragment)
 
         // move the module block of a @Factory function to a separate @Module function

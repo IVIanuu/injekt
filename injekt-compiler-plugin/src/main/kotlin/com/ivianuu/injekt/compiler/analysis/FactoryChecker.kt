@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.js.translate.callTranslator.getReturnType
@@ -45,12 +46,9 @@ import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
-import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.types.typeUtil.supertypes
 
-class FactoryChecker(
-    private val typeAnnotationChecker: TypeAnnotationChecker
-) : CallChecker, DeclarationChecker {
+class FactoryChecker : CallChecker, DeclarationChecker {
 
     override fun check(
         declaration: KtDeclaration,
@@ -63,6 +61,29 @@ class FactoryChecker(
                     !descriptor.hasAnnotation(InjektFqNames.CompositionFactory) &&
                     !descriptor.hasAnnotation(InjektFqNames.InstanceFactory))
         ) return
+
+        (descriptor.dispatchReceiverParameter?.value?.type?.constructor?.declarationDescriptor as? ClassDescriptor)?.let {
+            if (it.kind != ClassKind.OBJECT) {
+                context.trace.report(
+                    InjektErrors.MUST_BE_STATIC
+                        .on(declaration)
+                )
+            }
+        }
+
+        if (descriptor.extensionReceiverParameter != null) {
+            context.trace.report(
+                InjektErrors.CANNOT_BE_EXTENSION
+                    .on(declaration)
+            )
+        }
+
+        if (descriptor.visibility == Visibilities.LOCAL) {
+            context.trace.report(
+                InjektErrors.CANNOT_BE_LOCAL
+                    .on(declaration)
+            )
+        }
 
         checkFactoriesLastStatementIsCreate(
             declaration as KtFunction,
@@ -98,28 +119,17 @@ class FactoryChecker(
             )
         }
 
-        if (descriptor.modality != Modality.FINAL) {
+        if (descriptor.isInline) {
             context.trace.report(
-                InjektErrors.MUST_BE_FINAL
-                    .on(declaration)
+                InjektErrors.FACTORY_CANNOT_BE_INLINE
+                    .on(descriptor.findPsi() ?: declaration)
             )
         }
-
-        if (descriptor.hasAnnotation(InjektFqNames.ChildFactory) ||
-            descriptor.hasAnnotation(InjektFqNames.CompositionFactory)
-        ) {
-            if (descriptor.isInline) {
-                context.trace.report(
-                    InjektErrors.CHILD_AND_COMPOSITION_FACTORY_CANNOT_BE_INLINE
-                        .on(descriptor.findPsi() ?: declaration)
-                )
-            }
-            if (descriptor.typeParameters.isNotEmpty()) {
-                context.trace.report(
-                    InjektErrors.CHILD_AND_COMPOSITION_FACTORY_CANNOT_HAVE_TYPE_PARAMETERS
-                        .on(descriptor.findPsi() ?: declaration)
-                )
-            }
+        if (descriptor.typeParameters.isNotEmpty()) {
+            context.trace.report(
+                InjektErrors.FACTORY_WITH_TYPE_PARAMETERS
+                    .on(descriptor.findPsi() ?: declaration)
+            )
         }
 
         if (descriptor.hasAnnotation(InjektFqNames.CompositionFactory) &&
@@ -152,11 +162,7 @@ class FactoryChecker(
             }
 
             val enclosingCompositionFactory = findEnclosingFunctionContext(context) {
-                typeAnnotationChecker.hasTypeAnnotation(
-                    context.trace,
-                    it,
-                    InjektFqNames.CompositionFactory
-                )
+                it.hasAnnotation(InjektFqNames.CompositionFactory)
             }
 
             if (enclosingCompositionFactory == null) {
@@ -186,11 +192,7 @@ class FactoryChecker(
             "com.ivianuu.injekt.create" -> {
                 checkCreateInvocation(resolvedCall, reportOn, context)
                 val enclosingFactory = findEnclosingFunctionContext(context) {
-                    typeAnnotationChecker.hasTypeAnnotation(
-                        context.trace,
-                        it,
-                        InjektFqNames.Factory
-                    )
+                    it.hasAnnotation(InjektFqNames.Factory)
                 }
                 if (enclosingFactory != null) {
                     val type =
@@ -200,19 +202,6 @@ class FactoryChecker(
                         if (it is ClassDescriptor) checkImplType(it, context, reportOn)
                     }
                 }
-            }
-        }
-
-        if (resultingDescriptor is FunctionDescriptor &&
-            (resultingDescriptor.hasAnnotation(InjektFqNames.Factory) ||
-                    resultingDescriptor.hasAnnotation(InjektFqNames.InstanceFactory)) &&
-            resultingDescriptor.isInline
-        ) {
-            if (resolvedCall.typeArguments.any { it.value.isTypeParameter() }) {
-                context.trace.report(
-                    InjektErrors.INLINE_FACTORY_CALL_MUST_HAVE_CONCRETE_TYPE
-                        .on(reportOn)
-                )
             }
         }
 
@@ -316,7 +305,7 @@ class FactoryChecker(
     ) {
         if (clazz.modality != Modality.ABSTRACT) {
             context.trace.report(
-                InjektErrors.FACTORY_RETURN_TYPE_MUST_BE_ABSTRACT
+                InjektErrors.IMPL_FACTORY_RETURN_TYPE_MUST_BE_ABSTRACT
                     .on(reportOn)
             )
         }

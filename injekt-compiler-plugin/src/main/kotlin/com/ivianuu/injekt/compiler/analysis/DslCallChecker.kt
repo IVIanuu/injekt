@@ -18,15 +18,14 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
 import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class DslCallChecker(
-    private val typeAnnotationChecker: TypeAnnotationChecker
-) : CallChecker {
+class DslCallChecker : CallChecker {
 
     override fun check(
         resolvedCall: ResolvedCall<*>,
@@ -36,12 +35,11 @@ class DslCallChecker(
         val resulting = resolvedCall.resultingDescriptor
         if (resulting.fqNameSafe !in InjektFqNames.ModuleDslNames) return
         val enclosingInjektDslFunction = findEnclosingFunctionContext(context) {
-            val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(context.trace, it)
-            InjektFqNames.Module in typeAnnotations ||
-                    InjektFqNames.Factory in typeAnnotations ||
-                    InjektFqNames.ChildFactory in typeAnnotations ||
-                    InjektFqNames.CompositionFactory in typeAnnotations ||
-                    InjektFqNames.InstanceFactory in typeAnnotations
+            it.hasAnnotation(InjektFqNames.Module) ||
+                    it.hasAnnotation(InjektFqNames.Factory) ||
+                    it.hasAnnotation(InjektFqNames.ChildFactory) ||
+                    it.hasAnnotation(InjektFqNames.CompositionFactory) ||
+                    it.hasAnnotation(InjektFqNames.InstanceFactory)
         }
 
         if (enclosingInjektDslFunction == null) {

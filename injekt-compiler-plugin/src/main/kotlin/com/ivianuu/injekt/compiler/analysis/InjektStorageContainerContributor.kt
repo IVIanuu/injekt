@@ -22,9 +22,7 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.platform.TargetPlatform
 
-class InjektStorageContainerContributor(
-    private val typeAnnotationChecker: TypeAnnotationChecker
-) : StorageComponentContainerContributor {
+class InjektStorageContainerContributor : StorageComponentContainerContributor {
     override fun registerModuleComponents(
         container: StorageComponentContainer,
         platform: TargetPlatform,
@@ -33,15 +31,14 @@ class InjektStorageContainerContributor(
         container.useInstance(AndroidEntryPointChecker())
         container.useInstance(AnnotatedBindingChecker())
         container.useInstance(BindingEffectChecker())
-        container.useInstance(DslCallChecker(typeAnnotationChecker))
-        container.useInstance(FactoryChecker(typeAnnotationChecker))
+        container.useInstance(DslCallChecker())
+        container.useInstance(FactoryChecker())
         container.useInstance(MembersInjectorChecker())
         container.useInstance(MapChecker())
-        container.useInstance(ModuleChecker(typeAnnotationChecker))
+        container.useInstance(ModuleChecker())
         container.useInstance(QualifierChecker())
         container.useInstance(ObjectGraphFunctionChecker())
         container.useInstance(SetChecker())
         container.useInstance(ScopeChecker())
-        container.useInstance(typeAnnotationChecker)
     }
 }

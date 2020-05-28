@@ -16,9 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.TypeAnnotationChecker
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -38,7 +36,6 @@ import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -46,7 +43,6 @@ import org.jetbrains.kotlin.ir.declarations.IrMetadataSourceOwner
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
-import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
@@ -54,20 +50,14 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrPropertyImpl
 import org.jetbrains.kotlin.ir.descriptors.IrBuiltIns
 import org.jetbrains.kotlin.ir.descriptors.WrappedSimpleFunctionDescriptor
 import org.jetbrains.kotlin.ir.expressions.IrBlock
-import org.jetbrains.kotlin.ir.expressions.IrBlockBody
-import org.jetbrains.kotlin.ir.expressions.IrBody
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstKind
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
-import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
 import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
-import org.jetbrains.kotlin.ir.expressions.IrPropertyReference
 import org.jetbrains.kotlin.ir.expressions.IrSpreadElement
-import org.jetbrains.kotlin.ir.expressions.IrStatementContainer
 import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
@@ -97,7 +87,6 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
@@ -109,13 +98,9 @@ import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.resolve.constants.AnnotationValue
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
@@ -137,7 +122,6 @@ import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjectionImpl
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
-import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 
 fun Annotated.hasAnnotation(fqName: FqName): Boolean {
     return annotations.hasAnnotation(fqName)
@@ -390,17 +374,6 @@ fun IrElement.toConstantValue(): ConstantValue<*> {
     }
 }
 
-inline fun <K, V> BindingTrace.getOrPut(
-    slice: WritableSlice<K, V>,
-    key: K,
-    defaultValue: () -> V
-): V {
-    get(slice, key)?.let { return it }
-    val value = defaultValue()
-    record(slice, key, value)
-    return value
-}
-
 fun IrType.isTypeParameter() = toKotlinType().isTypeParameter()
 
 val IrMemberAccessExpression.typeArguments: List<IrType>
@@ -442,74 +415,14 @@ fun KClassValue.getIrClass(
 }
 
 val IrPluginContext.androidEnabled: Boolean
-    get() =
-        moduleDescriptor.findClassAcrossModuleDependencies(
-            ClassId.topLevel(InjektFqNames.AndroidEntryPoint)
-        ) != null
+    get() = referenceClass(InjektFqNames.AndroidEntryPoint) != null
 
 val IrPluginContext.compositionsEnabled: Boolean
-    get() =
-        moduleDescriptor.findClassAcrossModuleDependencies(
-            ClassId.topLevel(InjektFqNames.CompositionFactory)
-        ) != null
-
-fun IrMemberAccessExpression.getArgumentsWithIrIncludingNulls(): List<Pair<IrValueParameter, IrExpression?>> {
-    val res = mutableListOf<Pair<IrValueParameter, IrExpression?>>()
-    val irFunction = when (this) {
-        is IrFunctionAccessExpression -> this.symbol.owner
-        is IrFunctionReference -> this.symbol.owner
-        is IrPropertyReference -> {
-            assert(this.field == null) { "Field should be null to use `getArgumentsWithIr` on IrPropertyReference: ${this.dump()}}" }
-            this.getter!!.owner
-        }
-        else -> error(this)
-    }
-
-    dispatchReceiver?.let {
-        res += (irFunction.dispatchReceiverParameter!! to it)
-    }
-
-    extensionReceiver?.let {
-        res += (irFunction.extensionReceiverParameter!! to it)
-    }
-
-    irFunction.valueParameters.forEachIndexed { index, it ->
-        res += it to getValueArgument(index)
-    }
-
-    return res
-}
-
-fun IrValueParameter.getParameterName(): String {
-    val function = (parent as IrFunction)
-    return when {
-        this == function.dispatchReceiverParameter -> "\$this"
-        this == function.extensionReceiverParameter -> "\$receiver"
-        name.asString() == "<this>" -> "\$this"
-        else -> name.asString()
-    }
-}
+    get() = referenceClass(InjektFqNames.CompositionFactory) != null
 
 fun String.asNameId(): Name = Name.identifier(this)
 
 fun FqName.child(name: String) = child(name.asNameId())
-
-fun IrFunction.hasTypeAnnotation(
-    fqName: FqName,
-    bindingContext: BindingContext
-): Boolean {
-    if (hasAnnotation(fqName)) return true
-    val typeAnnotationChecker = TypeAnnotationChecker()
-    val bindingTrace = DelegatingBindingTrace(bindingContext, "Injekt IR")
-    return try {
-        typeAnnotationChecker.hasTypeAnnotation(
-            bindingTrace, descriptor,
-            fqName
-        )
-    } catch (e: Exception) {
-        false
-    }
-}
 
 fun IrFunction.deepCopyWithPreservingQualifiers(
     wrapDescriptor: Boolean
@@ -535,7 +448,7 @@ fun IrFunction.deepCopyWithPreservingQualifiers(
                         if (it.descriptor in mappedDescriptors &&
                             declaration.metadata != null
                         ) {
-                            it.addMetadataIfNotLocal()
+                            it.addMetadata()
                         }
                     } else {
                         (it as IrFunctionImpl).metadata = declaration.metadata
@@ -624,49 +537,14 @@ fun IrClass.getInjectConstructor(): IrConstructor? {
     return constructors.singleOrNull()
 }
 
-fun IrDeclaration.addToParentOrAbove(other: IrDeclarationWithVisibility) {
-    val parent = other.parent
-    this.parent = other.parent
-
-    if (other.visibility == Visibilities.LOCAL) {
-        var block: IrStatementContainer? = null
-        other.file.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitBlockBody(body: IrBlockBody): IrBody {
-                if (body.statements.any { it === other }) {
-                    block = body
-                }
-                return super.visitBlockBody(body)
-            }
-
-            override fun visitBlock(expression: IrBlock): IrExpression {
-                if (expression.statements.any { it === other }) {
-                    block = expression
-                }
-                return super.visitBlock(expression)
-            }
-        })
-
-        if (block != null) {
-            val index = block!!.statements.indexOf(other)
-            block!!.statements.add(index, this)
-        } else {
-            error(
-                "Corrupt parent ${other.render()} " +
-                        "parent ${parent.render()}"
-            )
-        }
-    } else {
-        (parent as IrDeclarationContainer).addChild(this)
+fun <T> T.addMetadata() where T : IrMetadataSourceOwner, T : IrDeclarationWithVisibility {
+    check(visibility != Visibilities.LOCAL) {
+        "Local declarations cannot have metadata ${render()}"
     }
-}
-
-fun <T> T.addMetadataIfNotLocal() where T : IrMetadataSourceOwner, T : IrDeclarationWithVisibility {
-    if (visibility != Visibilities.LOCAL) {
-        when (this) {
-            is IrClassImpl -> metadata = MetadataSource.Class(descriptor)
-            is IrFunctionImpl -> metadata = MetadataSource.Function(descriptor)
-            is IrPropertyImpl -> metadata = MetadataSource.Property(descriptor)
-        }
+    when (this) {
+        is IrClassImpl -> metadata = MetadataSource.Class(descriptor)
+        is IrFunctionImpl -> metadata = MetadataSource.Function(descriptor)
+        is IrPropertyImpl -> metadata = MetadataSource.Property(descriptor)
     }
 }
 

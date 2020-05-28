@@ -35,6 +35,7 @@ object InjektTest : InjectionTest {
     override fun shutdown() {
     }
 
-    @InstanceFactory
-    private fun createFib8(): Fib8 = create()
 }
+
+@InstanceFactory
+private fun createFib8(): Fib8 = create()

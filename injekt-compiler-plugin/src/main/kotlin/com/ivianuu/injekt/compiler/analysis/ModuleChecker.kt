@@ -18,10 +18,13 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtCatchClause
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -40,23 +43,37 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
 
-class ModuleChecker(
-    private val typeAnnotationChecker: TypeAnnotationChecker
-) : CallChecker, DeclarationChecker {
+class ModuleChecker : CallChecker, DeclarationChecker {
 
     override fun check(
         declaration: KtDeclaration,
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
+        if (descriptor !is FunctionDescriptor || !descriptor.hasAnnotation(InjektFqNames.Module)) return
 
-        if (descriptor !is FunctionDescriptor ||
-            !typeAnnotationChecker.hasTypeAnnotation(
-                context.trace,
-                descriptor,
-                InjektFqNames.Module
+        (descriptor.dispatchReceiverParameter?.value?.type?.constructor?.declarationDescriptor as? ClassDescriptor)?.let {
+            if (it.kind != ClassKind.OBJECT) {
+                context.trace.report(
+                    InjektErrors.MUST_BE_STATIC
+                        .on(declaration)
+                )
+            }
+        }
+
+        if (descriptor.extensionReceiverParameter != null) {
+            context.trace.report(
+                InjektErrors.CANNOT_BE_EXTENSION
+                    .on(declaration)
             )
-        ) return
+        }
+
+        if (descriptor.visibility == Visibilities.LOCAL) {
+            context.trace.report(
+                InjektErrors.CANNOT_BE_LOCAL
+                    .on(declaration)
+            )
+        }
 
         if (descriptor.returnType != null && descriptor.returnType != descriptor.builtIns.unitType) {
             context.trace.report(
@@ -74,14 +91,6 @@ class ModuleChecker(
         if (descriptor.isTailrec) {
             context.trace.report(
                 InjektErrors.CANNOT_HAVE_TAILREC_MODIFIER
-                    .on(declaration)
-            )
-        }
-
-
-        if (descriptor.modality != Modality.FINAL) {
-            context.trace.report(
-                InjektErrors.MUST_BE_FINAL
                     .on(declaration)
             )
         }
@@ -105,7 +114,7 @@ class ModuleChecker(
             }
 
             val enclosingModule = findEnclosingFunctionContext(context) {
-                typeAnnotationChecker.hasTypeAnnotation(context.trace, it, InjektFqNames.Module)
+                it.hasAnnotation(InjektFqNames.Module)
             }
 
             if (enclosingModule == null) {
@@ -129,10 +138,7 @@ class ModuleChecker(
             }
         }
 
-        if (resulting !is FunctionDescriptor || !typeAnnotationChecker.hasTypeAnnotation(
-                context.trace, resulting, InjektFqNames.Module
-            )
-        ) return
+        if (resulting !is FunctionDescriptor || !resulting.hasAnnotation(InjektFqNames.Module)) return
         checkInvocations(resolvedCall, reportOn, context)
     }
 
@@ -142,12 +148,11 @@ class ModuleChecker(
         context: CallCheckerContext
     ) {
         val enclosingInjektDslFunction = findEnclosingFunctionContext(context) {
-            val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(context.trace, it)
-            InjektFqNames.Module in typeAnnotations ||
-                    InjektFqNames.Factory in typeAnnotations ||
-                    InjektFqNames.ChildFactory in typeAnnotations ||
-                    InjektFqNames.CompositionFactory in typeAnnotations ||
-                    InjektFqNames.InstanceFactory in typeAnnotations
+            it.hasAnnotation(InjektFqNames.Module) ||
+                    it.hasAnnotation(InjektFqNames.Factory) ||
+                    it.hasAnnotation(InjektFqNames.ChildFactory) ||
+                    it.hasAnnotation(InjektFqNames.CompositionFactory) ||
+                    it.hasAnnotation(InjektFqNames.InstanceFactory)
         }
 
         when {
