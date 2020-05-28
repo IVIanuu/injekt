@@ -23,7 +23,7 @@ import com.ivianuu.injekt.compiler.IntKey
 import com.ivianuu.injekt.compiler.LongKey
 import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.StringKey
-import com.ivianuu.injekt.compiler.findGetter
+import com.ivianuu.injekt.compiler.findPropertyGetter
 import com.ivianuu.injekt.compiler.getIrClass
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
@@ -196,7 +196,7 @@ class Graph(
                             dependency = function.returnType.getClass()!!,
                             key = dependencyType.asKey(),
                             accessor = {
-                                irCall(moduleNode.module.findGetter(dependencyName)).apply {
+                                irCall(moduleNode.module.findPropertyGetter(dependencyName)).apply {
                                     dispatchReceiver = moduleNode.accessor(this@DependencyNode)
                                 }
                             }
@@ -327,7 +327,7 @@ class Graph(
                         .getValueArgument(0)
                         .let { it as IrConst<String> }
                         .value
-                    val propertyGetter = moduleNode.module.findGetter(moduleName)
+                    val propertyGetter = moduleNode.module.findPropertyGetter(moduleName)
                     val expr: FactoryExpression = expr@{
                         irCall(propertyGetter).apply {
                             dispatchReceiver = moduleNode.accessor(this@expr)
