@@ -36,7 +36,7 @@ object Publishing {
 }
 
 object Deps {
-    const val androidGradlePlugin = "com.android.tools.build:gradle:3.6.0"
+    const val androidGradlePlugin = "com.android.tools.build:gradle:4.0.0"
 
     object AndroidX {
         const val appCompat = "androidx.appcompat:appcompat:1.1.0"
