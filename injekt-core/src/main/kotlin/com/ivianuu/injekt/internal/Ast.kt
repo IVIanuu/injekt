@@ -39,6 +39,7 @@ object InjektAst {
 
     annotation class Instance
 
+    // todo move to composition
     annotation class ObjectGraph
 
     annotation class Module
