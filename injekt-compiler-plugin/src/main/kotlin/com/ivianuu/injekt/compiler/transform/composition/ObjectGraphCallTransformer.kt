@@ -105,7 +105,6 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                             irCall(
                                 irBuiltIns.function(1).functions
                                     .first { it.owner.name.asString() == "invoke" }
-                                    .owner
                             ).apply {
                                 dispatchReceiver = irCall(entryPoint.functions.single()).apply {
                                     dispatchReceiver = IrCallImpl(

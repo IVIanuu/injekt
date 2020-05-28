@@ -22,8 +22,11 @@ import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irBlockBody
+import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -61,11 +64,19 @@ class RootFactoryTransformer(
                 function.body = irBlockBody {
                     val moduleExpr = oldBody.statements
                         .first() as IrExpression
-                    val moduleVariable = irTemporary(moduleExpr)
 
                     val moduleClass = declarationStore.getModuleClassForFunction(
                         declarationStore.getModuleFunctionForFactory(function)
                     )
+
+                    val moduleAccessor = if (moduleClass.kind == ClassKind.OBJECT) {
+                        val expr: FactoryExpression = { irGetObject(moduleClass.symbol) }
+                        expr
+                    } else {
+                        val moduleVariable = irTemporary(moduleExpr)
+                        val expr: FactoryExpression = { irGet(moduleVariable) }
+                        expr
+                    }
 
                     when {
                         function.hasAnnotation(InjektFqNames.Factory) -> {
@@ -75,7 +86,7 @@ class RootFactoryTransformer(
                                 superType = function.returnType,
                                 moduleClass = moduleClass,
                                 factoryFunction = function,
-                                moduleVariable = moduleVariable,
+                                factoryModuleAccessor = moduleAccessor,
                                 pluginContext = pluginContext,
                                 symbols = symbols,
                                 declarationStore = declarationStore
@@ -87,7 +98,7 @@ class RootFactoryTransformer(
                             val instanceFactory = InstanceFactory(
                                 factoryFunction = function,
                                 moduleClass = moduleClass,
-                                moduleVariable = moduleVariable,
+                                factoryModuleAccessor = moduleAccessor,
                                 pluginContext = pluginContext,
                                 symbols = symbols,
                                 declarationStore = declarationStore

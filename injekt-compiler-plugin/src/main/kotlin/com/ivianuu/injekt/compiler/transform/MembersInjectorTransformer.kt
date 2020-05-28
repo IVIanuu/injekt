@@ -72,8 +72,6 @@ import org.jetbrains.kotlin.name.SpecialNames
 
 class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTransformer(context) {
 
-    private val membersInjectorByClass = mutableMapOf<IrClass, IrClass>()
-
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         val classes = mutableSetOf<IrClass>()
         val injectFunctionsByClass = mutableMapOf<IrClass, MutableList<IrFunction>>()
@@ -114,11 +112,14 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
     }
 
     fun getMembersInjectorForClass(clazz: IrClass): IrClass? {
-        membersInjectorByClass[clazz]?.let { return it }
+        clazz
+            .declarations
+            .filterIsInstance<IrClass>()
+            .singleOrNull { it.name == InjektNameConventions.getMembersInjectorNameForClass(clazz.name) }
+            ?.let { return it }
         val membersInjector = DeclarationIrBuilder(pluginContext, clazz.symbol)
             .membersInjector(clazz) ?: return null
         clazz.addChild(membersInjector)
-        membersInjectorByClass[clazz] = membersInjector
         return membersInjector
     }
 

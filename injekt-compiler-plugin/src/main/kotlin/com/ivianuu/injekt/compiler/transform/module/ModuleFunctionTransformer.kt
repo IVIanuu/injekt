@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform.module
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.NameProvider
+import com.ivianuu.injekt.compiler.PropertyPath
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.addToParentOrAbove
 import com.ivianuu.injekt.compiler.buildClass
@@ -159,9 +160,11 @@ class ModuleFunctionTransformer(
                         +stmt
                     } else {
                         declarations.forEach { declaration ->
-                            if (declaration is ModuleDeclarationWithProperty) {
+                            if (declaration is ModuleDeclarationWithPath &&
+                                declaration.path is PropertyPath
+                            ) {
                                 variableByDeclaration[declaration] =
-                                    irTemporary(declaration.variableExpression)
+                                    irTemporary(declaration.initializer!!)
                             }
                         }
                     }
@@ -175,12 +178,14 @@ class ModuleFunctionTransformer(
                     visibility = Visibilities.PUBLIC
                 }.apply {
                     val declarationsWithProperties = allDeclarations
-                        .filterIsInstance<ModuleDeclarationWithProperty>()
+                        .filterIsInstance<ModuleDeclarationWithPath>()
+                        .filter { it.path is PropertyPath }
+                        .map { it to it.path as PropertyPath }
 
                     isStatic = declarationsWithProperties
                         .none {
                             var captures = false
-                            it.variableExpression.transform(
+                            it.first.initializer!!.transform(
                                 object : IrElementTransformerVoid() {
                                     override fun visitGetValue(expression: IrGetValue): IrExpression {
                                         if (expression.symbol.owner.parent == transformedFunction) {
@@ -197,7 +202,7 @@ class ModuleFunctionTransformer(
                         emptyMap()
                     } else {
                         declarationsWithProperties
-                            .map { it.property }
+                            .map { it.second.property }
                             .associateWith {
                                 addValueParameter(
                                     it.name.asString(),
@@ -219,11 +224,11 @@ class ModuleFunctionTransformer(
                                 }
                             } else {
                                 declarationsWithProperties
-                                    .forEach { declaration ->
+                                    .forEach { (declaration, path) ->
                                         +irSetField(
                                             irGet(moduleClass.thisReceiver!!),
-                                            declaration.property.backingField!!,
-                                            declaration.variableExpression
+                                            path.property.backingField!!,
+                                            declaration.initializer!!
                                                 .deepCopyWithVariables()
                                         )
                                     }

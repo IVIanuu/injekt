@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler.transform.module
 import com.ivianuu.injekt.compiler.ClassPath
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.NameProvider
-import com.ivianuu.injekt.compiler.PropertyPath
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.remapTypeParameters
@@ -101,7 +100,7 @@ class ModuleDescriptor(
             addMetadataIfNotLocal()
             annotations += InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astDependency)
-            annotations += PropertyPath(declaration.property)
+            annotations += declaration.path
                 .asAnnotation(DeclarationIrBuilder(pluginContext, symbol), symbols)
         }
     }
@@ -173,10 +172,8 @@ class ModuleDescriptor(
             if (declaration.instance) {
                 annotations += builder.noArgSingleConstructorCall(symbols.astInstance)
             }
-            annotations += PropertyPath(declaration.property).asAnnotation(
-                DeclarationIrBuilder(pluginContext, symbol),
-                symbols
-            )
+            annotations += declaration.path
+                .asAnnotation(DeclarationIrBuilder(pluginContext, symbol), symbols)
 
             declaration.parameters.forEach { parameter ->
                 addValueParameter(
@@ -200,10 +197,8 @@ class ModuleDescriptor(
             addMetadataIfNotLocal()
             annotations += InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astModule)
-            annotations += PropertyPath(declaration.property).asAnnotation(
-                DeclarationIrBuilder(pluginContext, symbol),
-                symbols
-            )
+            annotations += declaration.path
+                .asAnnotation(DeclarationIrBuilder(pluginContext, symbol), symbols)
 
             declaration.moduleLambdaMap.forEach { (valueParameter, type) ->
                 addValueParameter(

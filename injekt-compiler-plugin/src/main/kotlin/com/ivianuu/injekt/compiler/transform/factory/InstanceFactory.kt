@@ -23,21 +23,20 @@ import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class InstanceFactory(
     factoryFunction: IrFunction,
     moduleClass: IrClass,
-    moduleVariable: IrVariable,
+    factoryModuleAccessor: FactoryExpression,
     pluginContext: IrPluginContext,
     symbols: InjektSymbols,
     declarationStore: InjektDeclarationStore
 ) : AbstractFactory(
     factoryFunction.descriptor.fqNameSafe,
     moduleClass,
-    moduleVariable,
+    factoryModuleAccessor,
     factoryFunction,
     pluginContext,
     symbols,

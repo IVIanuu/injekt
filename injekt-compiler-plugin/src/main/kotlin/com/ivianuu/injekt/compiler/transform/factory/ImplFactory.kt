@@ -45,7 +45,6 @@ import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
-import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
@@ -68,14 +67,14 @@ class ImplFactory(
     val parent: ImplFactory?,
     factoryFunction: IrFunction,
     moduleClass: IrClass,
-    moduleVariable: IrVariable,
+    factoryModuleAccessor: FactoryExpression,
     pluginContext: IrPluginContext,
     symbols: InjektSymbols,
     declarationStore: InjektDeclarationStore
 ) : AbstractFactory(
     origin,
     moduleClass,
-    moduleVariable,
+    factoryModuleAccessor,
     factoryFunction,
     pluginContext,
     symbols,

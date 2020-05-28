@@ -16,9 +16,11 @@
 
 package com.ivianuu.injekt.compiler.transform.module
 
+import com.ivianuu.injekt.compiler.ClassPath
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.NameProvider
+import com.ivianuu.injekt.compiler.PropertyPath
 import com.ivianuu.injekt.compiler.getFunctionFromLambdaExpression
 import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
@@ -29,6 +31,7 @@ import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
@@ -101,7 +104,7 @@ class ModuleDeclarationFactory(
             )
         return DependencyDeclaration(
             dependencyType,
-            property,
+            PropertyPath(property),
             call.getValueArgument(0)!!
         )
     }
@@ -209,12 +212,17 @@ class ModuleDeclarationFactory(
                 .typeWith(*call.typeArguments.toTypedArray())
         }
 
-        val property = InjektDeclarationIrBuilder(pluginContext, includedClass.symbol)
-            .fieldBakedProperty(
-                moduleClass,
-                Name.identifier(nameProvider.allocateForGroup(includedModuleFunction.name.asString())),
-                includedType
-            )
+        val path = if (includedClass.kind != ClassKind.OBJECT) {
+            val property = InjektDeclarationIrBuilder(pluginContext, includedClass.symbol)
+                .fieldBakedProperty(
+                    moduleClass,
+                    Name.identifier(nameProvider.allocateForGroup(includedModuleFunction.name.asString())),
+                    includedType
+                )
+            PropertyPath(property)
+        } else {
+            ClassPath(includedClass)
+        }
 
         val moduleLambdaTypeMap = call.getArgumentsWithIr()
             .filter { it.first.type.hasAnnotation(InjektFqNames.Module) }
@@ -228,8 +236,8 @@ class ModuleDeclarationFactory(
         return IncludedModuleDeclaration(
             includedType,
             moduleLambdaTypeMap,
-            property,
-            call
+            path,
+            if (path is PropertyPath) call else null
         )
     }
 
@@ -240,7 +248,7 @@ class ModuleDeclarationFactory(
         scoped: Boolean
     ): BindingDeclaration {
         val property: IrProperty
-        val variableExpression: IrExpression
+        val initializer: IrExpression
         val parameters =
             mutableListOf<InjektDeclarationIrBuilder.FactoryParameter>()
 
@@ -251,11 +259,11 @@ class ModuleDeclarationFactory(
                     nameProvider.allocateForType(bindingType),
                     bindingType
                 )
-            variableExpression = singleArgument!!
+            initializer = singleArgument!!
         } else if (singleArgument != null) {
             val providerType = singleArgument.type
                 .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Provider))
-            variableExpression = singleArgument
+            initializer = singleArgument
             val parameterNameProvider = NameProvider()
 
             providerType.typeArguments.dropLast(1).forEach {
@@ -270,7 +278,7 @@ class ModuleDeclarationFactory(
                 .fieldBakedProperty(
                     moduleClass,
                     nameProvider.allocateForType(bindingType),
-                    variableExpression.type
+                    initializer.type
                         .remapTypeParameters(moduleFunction, moduleClass)
                 )
         } else {
@@ -282,7 +290,7 @@ class ModuleDeclarationFactory(
                         declarationStore.getMembersInjectorForClassOrNull(clazz)
                     )
             val providerFunction = providerExpression.getFunctionFromLambdaExpression()
-            variableExpression = providerExpression
+            initializer = providerExpression
             providerFunction.valueParameters.forEach {
                 parameters += InjektDeclarationIrBuilder.FactoryParameter(
                     it.name.asString(),
@@ -295,7 +303,7 @@ class ModuleDeclarationFactory(
                 .fieldBakedProperty(
                     moduleClass,
                     nameProvider.allocateForType(bindingType),
-                    variableExpression.type
+                    initializer.type
                         .remapTypeParameters(moduleFunction, moduleClass)
                 )
         }
@@ -305,8 +313,8 @@ class ModuleDeclarationFactory(
             parameters = parameters,
             scoped = scoped,
             instance = instance,
-            property = property,
-            variableExpression = variableExpression
+            path = PropertyPath(property),
+            initializer = initializer
         )
     }
 

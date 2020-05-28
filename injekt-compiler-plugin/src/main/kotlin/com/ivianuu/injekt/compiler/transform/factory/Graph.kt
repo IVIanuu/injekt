@@ -31,7 +31,9 @@ import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.classOrNull
@@ -324,7 +326,18 @@ class Graph(
                     .let { it as IrConst<String> }
                     .value
 
-                val propertyGetter = moduleNode.module.findPropertyGetter(moduleName)
+                val includedModuleAccessor = if (includedModule.kind == ClassKind.OBJECT) {
+                    val expr: FactoryExpression = { irGetObject(includedModule.symbol) }
+                    expr
+                } else {
+                    val propertyGetter = moduleNode.module.findPropertyGetter(moduleName)
+                    val expr: FactoryExpression = expr@{
+                        irCall(propertyGetter).apply {
+                            dispatchReceiver = moduleNode.accessor(this@expr)
+                        }
+                    }
+                    expr
+                }
 
                 val typeParametersMap = includedModule.typeParameters
                     .map {
@@ -335,20 +348,11 @@ class Graph(
                     .toMap()
                     .mapValues { it.value.substituteAndKeepQualifiers(moduleNode.typeParametersMap) }
 
-                val lambdaMap = function.valueParameters
-                    .map {
-                        includedModule
-                    }
-
                 addModule(
                     ModuleNode(
                         module = includedModule,
                         key = key,
-                        accessor = {
-                            irCall(propertyGetter).apply {
-                                dispatchReceiver = moduleNode.accessor(this@ModuleNode)
-                            }
-                        },
+                        accessor = includedModuleAccessor,
                         typeParametersMap = typeParametersMap,
                         moduleLambdaMap = emptyMap()
                     )

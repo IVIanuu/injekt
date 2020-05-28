@@ -248,12 +248,12 @@ class InjektDeclarationIrBuilder(
         endOffset: Int = UNDEFINED_OFFSET,
         body: IrBlockBodyBuilder.(IrFunction) -> Unit
     ): IrExpression {
-        val returnType = type.typeArguments.last().typeOrNull!!
+        val lambdaType = type.typeArguments.last().typeOrNull!!
 
         val lambda = buildFun {
             origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
             name = Name.special("<anonymous>")
-            this.returnType = returnType
+            this.returnType = lambdaType
             visibility = Visibilities.LOCAL
         }.apply {
             type.typeArguments.dropLast(1).forEachIndexed { index, typeArgument ->

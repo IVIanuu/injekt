@@ -16,9 +16,9 @@
 
 package com.ivianuu.injekt.compiler.transform.module
 
+import com.ivianuu.injekt.compiler.Path
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
@@ -26,18 +26,18 @@ import org.jetbrains.kotlin.ir.types.IrType
 
 sealed class ModuleDeclaration
 
-sealed class ModuleDeclarationWithProperty(
-    val property: IrProperty,
-    val variableExpression: IrExpression
+sealed class ModuleDeclarationWithPath(
+    val path: Path,
+    val initializer: IrExpression?
 ) : ModuleDeclaration()
 
 class ScopeDeclaration(val scopeType: IrType) : ModuleDeclaration()
 
 class DependencyDeclaration(
     val dependencyType: IrType,
-    property: IrProperty,
-    variableExpression: IrExpression
-) : ModuleDeclarationWithProperty(property, variableExpression)
+    path: Path,
+    initializer: IrExpression
+) : ModuleDeclarationWithPath(path, initializer)
 
 class ChildFactoryDeclaration(
     val factoryRef: IrFunctionReference,
@@ -54,16 +54,16 @@ class BindingDeclaration(
     val parameters: List<InjektDeclarationIrBuilder.FactoryParameter>,
     val scoped: Boolean,
     val instance: Boolean,
-    property: IrProperty,
-    variableExpression: IrExpression
-) : ModuleDeclarationWithProperty(property, variableExpression)
+    path: Path,
+    initializer: IrExpression
+) : ModuleDeclarationWithPath(path, initializer)
 
 class IncludedModuleDeclaration(
     val includedType: IrType,
     val moduleLambdaMap: Map<IrValueParameter, IrType>,
-    property: IrProperty,
-    variableExpression: IrExpression
-) : ModuleDeclarationWithProperty(property, variableExpression)
+    path: Path,
+    initializer: IrExpression?
+) : ModuleDeclarationWithPath(path, initializer)
 
 class MapDeclaration(
     val mapType: IrType

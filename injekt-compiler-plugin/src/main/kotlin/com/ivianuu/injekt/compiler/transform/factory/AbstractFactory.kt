@@ -19,17 +19,15 @@ package com.ivianuu.injekt.compiler.transform.factory
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.name.FqName
 
 abstract class AbstractFactory(
     val origin: FqName,
     val moduleClass: IrClass,
-    val moduleVariable: IrVariable,
+    val factoryModuleAccessor: FactoryExpression,
     val factoryFunction: IrFunction,
     val pluginContext: IrPluginContext,
     val symbols: InjektSymbols,
@@ -56,7 +54,7 @@ abstract class AbstractFactory(
                 key = moduleClass.defaultType
                     .asKey(),
                 module = moduleClass,
-                accessor = { irGet(moduleVariable) },
+                accessor = factoryModuleAccessor,
                 typeParametersMap = emptyMap(),
                 moduleLambdaMap = emptyMap()
             ),

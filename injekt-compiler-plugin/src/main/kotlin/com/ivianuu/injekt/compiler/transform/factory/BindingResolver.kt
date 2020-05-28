@@ -34,8 +34,10 @@ import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irTemporary
@@ -103,9 +105,6 @@ class ChildFactoryBindingResolver(
                 parentFactory.pluginContext
             )
 
-        val moduleFunction = parentFactory.declarationStore
-            .getModuleFunctionForClass(moduleClass)
-
         val fqName = FqName(
             function.getAnnotation(InjektFqNames.AstName)!!
                 .getValueArgument(0)
@@ -117,20 +116,30 @@ class ChildFactoryBindingResolver(
             parentFactory.pluginContext,
             moduleClass.symbol
         ).irLambda(key.type) { lambda ->
-            val moduleVariable = irTemporary(
-                irCall(moduleFunction).apply {
-                    lambda.valueParameters.forEach {
-                        putValueArgument(it.index, irGet(it))
+
+            val moduleAccessor = if (moduleClass.kind == ClassKind.OBJECT) {
+                val expr: FactoryExpression = { irGetObject(moduleClass.symbol) }
+                expr
+            } else {
+                val moduleFunction = parentFactory.declarationStore
+                    .getModuleFunctionForClass(moduleClass)
+                val moduleVariable = irTemporary(
+                    irCall(moduleFunction).apply {
+                        lambda.valueParameters.forEach {
+                            putValueArgument(it.index, irGet(it))
+                        }
+                        putValueArgument(moduleFunction.valueParameters.lastIndex, irNull())
                     }
-                    putValueArgument(moduleFunction.valueParameters.lastIndex, irNull())
-                }
-            )
+                )
+                val expr: FactoryExpression = { irGet(moduleVariable) }
+                expr
+            }
             val childFactoryImpl = ImplFactory(
                 factoryFunction = lambda,
                 origin = fqName,
                 parent = parentFactory,
                 superType = superType,
-                moduleVariable = moduleVariable,
+                factoryModuleAccessor = moduleAccessor,
                 moduleClass = moduleClass,
                 pluginContext = parentFactory.pluginContext,
                 symbols = parentFactory.symbols,
