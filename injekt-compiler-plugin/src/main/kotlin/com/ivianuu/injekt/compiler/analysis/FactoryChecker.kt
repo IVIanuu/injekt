@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.diagnostics.Errors
@@ -61,6 +62,22 @@ class FactoryChecker : CallChecker, DeclarationChecker {
                     !descriptor.hasAnnotation(InjektFqNames.CompositionFactory) &&
                     !descriptor.hasAnnotation(InjektFqNames.InstanceFactory))
         ) return
+
+        val parentMemberScope = (descriptor.containingDeclaration as? ClassDescriptor)
+            ?.unsubstitutedMemberScope
+            ?: (descriptor.containingDeclaration as PackageFragmentDescriptor)
+                .getMemberScope()
+
+        if (parentMemberScope.getContributedDescriptors()
+                .filterIsInstance<FunctionDescriptor>()
+                .filter { it.name == descriptor.name }
+                .size > 1
+        ) {
+            context.trace.report(
+                InjektErrors.MULTIPLE_DECLARATIONS_WITH_SAME_NAME
+                    .on(declaration)
+            )
+        }
 
         (descriptor.dispatchReceiverParameter?.value?.type?.constructor?.declarationDescriptor as? ClassDescriptor)?.let {
             if (it.kind != ClassKind.OBJECT) {

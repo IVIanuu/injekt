@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.PropertyPath
 import com.ivianuu.injekt.compiler.addMetadata
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.deepCopyWithPreservingQualifiers
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.setClassKind
 import com.ivianuu.injekt.compiler.transform.AbstractFunctionTransformer
@@ -115,7 +116,7 @@ class ModuleFunctionTransformer(
         }
 
         transformedFunction.addValueParameter(
-            "\$moduleMarker",
+            "moduleMarker",
             irBuiltIns.anyNType
         )
 
@@ -254,11 +255,13 @@ class ModuleFunctionTransformer(
                 )
             }
 
+        println(moduleClass.dumpSrc())
+
         return transformedFunction
     }
 
     override fun transformExternal(function: IrFunction): IrFunction {
-        if (function.valueParameters.lastOrNull()?.name?.asString() == "\$moduleMarker") return function
+        if (function.valueParameters.lastOrNull()?.name?.asString() == "moduleMarker") return function
         return pluginContext.referenceFunctions(function.descriptor.fqNameSafe)
             .map { it.owner }
             .single { other ->
@@ -267,7 +270,7 @@ class ModuleFunctionTransformer(
                             val thisValueParameter =
                                 function.valueParameters.getOrNull(otherValueParameter.index)
                             otherValueParameter.name == thisValueParameter?.name ||
-                                    otherValueParameter.name.asString() == "\$moduleMarker"
+                                    otherValueParameter.name.asString() == "moduleMarker"
                 }
             }
     }

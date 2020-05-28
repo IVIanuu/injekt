@@ -130,7 +130,7 @@ class BindingEffectTransformer(pluginContext: IrPluginContext) :
 
                 val effectModule = effectCompanion
                     .functions
-                    .single { it.hasAnnotation(InjektFqNames.Module) }
+                    .first { it.hasAnnotation(InjektFqNames.Module) }
 
                 +irCall(effectModule).apply {
                     dispatchReceiver = irGetObject(effectCompanion.symbol)

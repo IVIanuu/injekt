@@ -204,6 +204,7 @@ class ModuleDeclarationFactory(
         val includedClass = includedModuleFunction.returnType.classOrNull!!.owner
         val includedType = includedModuleFunction.returnType
             .typeWith(*call.typeArguments.toTypedArray())
+            .remapTypeParameters(moduleFunction, moduleClass)
 
         val path = if (includedClass.kind != ClassKind.OBJECT) {
             val property = InjektDeclarationIrBuilder(pluginContext, includedClass.symbol)
@@ -232,8 +233,7 @@ class ModuleDeclarationFactory(
             .filter { it.descriptor.hasAnnotation(InjektFqNames.AstBinding) }
             .filter { it.descriptor.hasAnnotation(InjektFqNames.AstTypeParameterPath) }
             .map { bindingFunction ->
-                val bindingType: IrType
-                bindingType =
+                val bindingType =
                     bindingFunction.getAnnotation(InjektFqNames.AstTypeParameterPath)!!
                         .getValueArgument(0)!!
                         .let { it as IrConst<String> }.value
@@ -241,6 +241,7 @@ class ModuleDeclarationFactory(
                             val index = includedClass.typeParameters
                                 .indexOfFirst { it.name.asString() == typeParameterName }
                             call.getTypeArgument(index)!!
+                                .remapTypeParameters(moduleFunction, moduleClass)
                         }
                         .withAnnotations(bindingFunction.returnType.annotations)
 

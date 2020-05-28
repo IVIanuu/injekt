@@ -17,4 +17,4 @@
 package com.ivianuu.injekt.sample
 
 @BindAppService
-class UserAppService
+class UserAppService : AppService

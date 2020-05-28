@@ -212,7 +212,7 @@ class BindingEffectTest {
                 @Module
                 inline fun <reified T : ViewModel, S : ViewModelStoreOwner> baseViewModel() { 
                     transient<@UnscopedViewModel T>() 
-                    transient { viewModelStoreOwner: S, viewModelStoreProvider: @Provider () -> @UnscopedViewModel T ->
+                    transient { viewModelStoreOwner: S, viewModelProvider: @Provider () -> @UnscopedViewModel T ->
                         ViewModelProvider(
                             viewModelStoreOwner,
                             object : ViewModelProvider.Factory {

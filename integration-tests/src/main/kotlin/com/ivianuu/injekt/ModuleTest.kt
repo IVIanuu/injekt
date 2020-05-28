@@ -93,19 +93,6 @@ class ModuleTest {
     )
 
     @Test
-    fun testMultipleModulesWithSameName() = codegen(
-        """
-        @Module
-        fun module() {
-        }
-        
-        @Module
-        fun module(p0: String) {
-        }
-    """
-    )
-
-    @Test
     fun testBindingWithTypeParameterInInlineModule() =
         codegen(
             """ 

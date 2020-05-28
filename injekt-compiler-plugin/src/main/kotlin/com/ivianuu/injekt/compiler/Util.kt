@@ -94,7 +94,6 @@ import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isAnnotationClass
 import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
-import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
@@ -317,9 +316,7 @@ fun IrType.typeWith(vararg arguments: IrType): IrType = classifierOrFail.typeWit
 fun IrClass.findPropertyGetter(
     name: String
 ): IrFunction {
-    return properties
-        .singleOrNull { it.name.asString() == name }
-        ?.getter ?: functions
+    return functions
         .singleOrNull { function ->
             function.name.asString() == "get${name.capitalize()}" // todo fix
         } ?: error("Couldn't find property '$name' in ${dump()}")

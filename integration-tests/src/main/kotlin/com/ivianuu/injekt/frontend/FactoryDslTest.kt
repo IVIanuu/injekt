@@ -299,4 +299,17 @@ class FactoryDslTest {
         assertCompileError("type")
     }
 
+    @Test
+    fun testFactoriesWithSameName() = codegen(
+        """
+        @Factory
+        fun factory(): TestComponent = create()
+        
+        @Factory
+        fun factory(arg: String): TestComponent = create()
+    """
+    ) {
+        assertCompileError("multiple")
+    }
+
 }

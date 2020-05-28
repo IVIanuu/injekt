@@ -67,9 +67,9 @@ class ModuleNode(
     val descriptor = module.declarations.single {
         it.descriptor.name.asString() == "Descriptor"
     } as IrClass
-    val descriptorTypeParametersMap = descriptor.typeParameters.associateWith {
-        typeParametersMap.values.toList()[it.index]
-    }.mapKeys { it.key.symbol }
+    val descriptorTypeParametersMap = descriptor.typeParameters
+        .associateWith { typeParametersMap.values.toList()[it.index] }
+        .mapKeys { it.key.symbol }
 
     init {
         typeParametersMap.forEach {

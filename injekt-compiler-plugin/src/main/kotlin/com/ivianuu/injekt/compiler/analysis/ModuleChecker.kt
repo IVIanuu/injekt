@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtCatchClause
@@ -51,6 +52,22 @@ class ModuleChecker : CallChecker, DeclarationChecker {
         context: DeclarationCheckerContext
     ) {
         if (descriptor !is FunctionDescriptor || !descriptor.hasAnnotation(InjektFqNames.Module)) return
+
+        val parentMemberScope = (descriptor.containingDeclaration as? ClassDescriptor)
+            ?.unsubstitutedMemberScope
+            ?: (descriptor.containingDeclaration as PackageFragmentDescriptor)
+                .getMemberScope()
+
+        if (parentMemberScope.getContributedDescriptors()
+                .filterIsInstance<FunctionDescriptor>()
+                .filter { it.name == descriptor.name }
+                .size > 1
+        ) {
+            context.trace.report(
+                InjektErrors.MULTIPLE_DECLARATIONS_WITH_SAME_NAME
+                    .on(declaration)
+            )
+        }
 
         (descriptor.dispatchReceiverParameter?.value?.type?.constructor?.declarationDescriptor as? ClassDescriptor)?.let {
             if (it.kind != ClassKind.OBJECT) {

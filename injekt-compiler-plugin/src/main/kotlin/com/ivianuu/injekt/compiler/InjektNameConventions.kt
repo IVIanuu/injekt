@@ -33,7 +33,7 @@ object InjektNameConventions {
         ("${className.asString()}_MembersInjector").asNameId()
 
     fun getModuleClassNameForModuleFunction(moduleFunction: IrFunction): Name =
-        ("${moduleFunction.descriptor.name.asString()}_${valueParametersHash(moduleFunction)}_Class")
+        ("${moduleFunction.descriptor.name.asString()}_Class")
             .asNameId()
 
     fun getModuleFunctionNameForClass(moduleClass: IrClass): Name {
@@ -125,7 +125,6 @@ object InjektNameConventions {
         return getJoinedName(
             function.getPackageFragment()!!.fqName,
             function.descriptor.fqNameSafe
-                .child(valueParametersHash(function).toString())
                 .child(suffix)
         ).let { nameWithoutIllegalChars(it.asString()) }
     }
@@ -142,12 +141,6 @@ object InjektNameConventions {
                 .child(call.startOffset.toString())
                 .child(suffix)
         )
-    }
-
-    private fun valueParametersHash(function: IrFunction): Int {
-        return function.valueParameters
-            .map { it.name.asString() }
-            .hashCode()
     }
 
     private fun getJoinedName(

@@ -69,4 +69,61 @@ class InlineTest {
             )
         )
 
+    @Test
+    fun testNestedInlineModuleWithTypeParameters() =
+        multiCodegen(
+            listOf(
+                source(
+                    """
+                    @Qualifier
+                    @Target(AnnotationTarget.TYPE)
+                    annotation class TestQualifier1
+                    
+                    class Context { 
+                        fun <T : Any> getSystemService(clazz: Class<T>): T = error("not implemented")
+                    }
+        
+                    object ContextCompat { 
+                        fun <T : Any> getSystemService(context: Context, clazz: Class<T>): T = context.getSystemService(clazz)
+                    }
+        
+                    @Module
+                    inline fun <reified T : Any> baseSystemService() {
+                        transient<T> { context: @TestQualifier1 Context ->
+                        ContextCompat.getSystemService( context, T::class.java)
+                    }
+                }
+                """
+                )
+            ),
+            listOf(
+                source(
+                    """
+                    @Module
+                    inline fun <reified T : Any> systemService() {
+                        baseSystemService<T>()
+                    }
+                    """
+                )
+            ),
+            listOf(
+                source(
+                    """
+                    @Module 
+                    fun systemServices() { 
+                        systemService<Foo>()
+                        systemService<Bar>()
+                    }
+                    
+                    @InstanceFactory
+                    fun createComponent(): Bar {
+                        transient<@TestQualifier1 Context> { Context() }
+                        systemServices()
+                        return create()
+                    }
+                    """
+                )
+            )
+        )
+
 }
