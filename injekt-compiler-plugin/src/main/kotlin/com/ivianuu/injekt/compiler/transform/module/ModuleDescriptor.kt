@@ -57,8 +57,6 @@ class ModuleDescriptor(
         createImplicitParameterDeclarationWithWrappedDescriptor()
         addMetadata()
         copyTypeParametersFrom(moduleFunction)
-        annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
-            .noArgSingleConstructorCall(symbols.astModule)
     }
 
     fun addDeclarations(moduleDeclarations: List<ModuleDeclaration>) {

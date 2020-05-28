@@ -54,7 +54,7 @@ class BindingDeclaration(
     val scoped: Boolean,
     val instance: Boolean,
     path: Path,
-    initializer: IrExpression
+    initializer: IrExpression?
 ) : ModuleDeclarationWithPath(path, initializer)
 
 class IncludedModuleDeclaration(

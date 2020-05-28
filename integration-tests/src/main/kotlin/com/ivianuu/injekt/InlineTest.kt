@@ -31,41 +31,40 @@ class InlineTest {
                     @Qualifier
                     @Target(AnnotationTarget.TYPE)
                     annotation class TestQualifier1
-        class Context {
-            fun <T : Any> getSystemService(clazz: Class<T>): T = error("not implemented")
-        }
+                    
+                    class Context { 
+                        fun <T : Any> getSystemService(clazz: Class<T>): T = error("not implemented")
+                    }
         
-        object ContextCompat { 
-            fun <T : Any> getSystemService(context: Context, clazz: Class<T>): T = context.getSystemService(clazz)
-        }
+                    object ContextCompat { 
+                        fun <T : Any> getSystemService(context: Context, clazz: Class<T>): T = context.getSystemService(clazz)
+                    }
         
-        @Module
-        inline fun <reified T : Any> systemService() {
-            transient<T> { context: @TestQualifier1 Context ->
-                ContextCompat.getSystemService( context, T::class.java)
-            }
-        }
+                    @Module
+                    inline fun <reified T : Any> systemService() {
+                        transient<T> { context: @TestQualifier1 Context ->
+                        ContextCompat.getSystemService( context, T::class.java)
+                    }
+                }
 
-        @Module
-        fun systemServices() {
-            systemService<Foo>()
-            systemService<Bar>()
-        }
-        
-        
-    """
+                @Module
+                fun systemServices() {
+                    systemService<Foo>()
+                    systemService<Bar>()
+                }
+                """
                 )
             ),
             listOf(
                 source(
                     """
-        @InstanceFactory
-        fun createComponent(): Bar {
-            @TestQualifier1 transient { Context() }
-            systemServices()
-            return create()
-        }
-    """
+                    @InstanceFactory
+                    fun createComponent(): Bar {
+                        transient<@TestQualifier1 Context> { Context() }
+                        systemServices()
+                        return create()
+                    }
+                    """
                 )
             )
         )

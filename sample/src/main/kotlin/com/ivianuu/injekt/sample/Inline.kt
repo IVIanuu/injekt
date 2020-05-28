@@ -14,13 +14,26 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.sample
 
-@InstanceFactory
-fun <T> createInstance(): T = create()
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.internal.InjektAst
+import com.ivianuu.injekt.transient
 
-@InstanceFactory
-fun <T> createInstance(block: @Module () -> Unit): T {
-    block()
-    return create()
+@Module
+fun <T> inlinedModule() {
+    transient<T>()
+}
+
+fun <T> _inlinedModule(): inlinedModuleClass<T> {
+    return inlinedModuleClass<T>()
+}
+
+class inlinedModuleClass<T> {
+    @InjektAst.Module
+    interface Descriptor<T> {
+        @InjektAst.Binding
+        @InjektAst.Path.TypeParameter("T")
+        fun t(): T
+    }
 }

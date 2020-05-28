@@ -42,7 +42,6 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
-import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
@@ -66,7 +65,7 @@ class ModuleNode(
     val typeParametersMap: Map<IrTypeParameterSymbol, IrType>
 ) : RequirementNode {
     val descriptor = module.declarations.single {
-        it.hasAnnotation(InjektFqNames.AstModule)
+        it.descriptor.name.asString() == "Descriptor"
     } as IrClass
     val descriptorTypeParametersMap = descriptor.typeParameters.associateWith {
         typeParametersMap.values.toList()[it.index]

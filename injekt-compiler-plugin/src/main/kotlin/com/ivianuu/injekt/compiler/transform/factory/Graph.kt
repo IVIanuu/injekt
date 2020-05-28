@@ -171,7 +171,7 @@ class Graph(
         val module = moduleNode.module
 
         val descriptor = module.declarations.single {
-            it.hasAnnotation(InjektFqNames.AstModule)
+            it.descriptor.name.asString() == "Descriptor"
         } as IrClass
 
         val functions = descriptor.functions.toList()

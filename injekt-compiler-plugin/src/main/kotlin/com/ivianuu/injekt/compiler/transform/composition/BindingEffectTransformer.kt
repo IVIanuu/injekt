@@ -38,6 +38,7 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -82,7 +83,7 @@ class BindingEffectTransformer(pluginContext: IrPluginContext) :
                     effect.type.classOrNull!!.descriptor.fqNameSafe
                 )
 
-                clazz.addChild(effectModule)
+                clazz.file.addChild(effectModule)
             }
         }
 

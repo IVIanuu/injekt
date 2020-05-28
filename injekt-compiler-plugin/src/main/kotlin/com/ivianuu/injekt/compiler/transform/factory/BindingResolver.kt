@@ -216,6 +216,7 @@ class ModuleBindingResolver(
 
     private val allBindings = bindingFunctions
         .filter { it.hasAnnotation(InjektFqNames.AstBinding) }
+        .filterNot { it.hasAnnotation(InjektFqNames.AstTypeParameterPath) }
         .map { bindingFunction ->
             val bindingKey = bindingFunction.returnType
                 .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap)
