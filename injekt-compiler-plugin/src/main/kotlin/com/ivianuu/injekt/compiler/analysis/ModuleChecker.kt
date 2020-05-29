@@ -21,11 +21,10 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
-import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtCatchClause
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -55,13 +54,13 @@ class ModuleChecker : CallChecker, DeclarationChecker {
 
         val parentMemberScope = (descriptor.containingDeclaration as? ClassDescriptor)
             ?.unsubstitutedMemberScope
-            ?: (descriptor.containingDeclaration as PackageFragmentDescriptor)
-                .getMemberScope()
+            ?: (descriptor.containingDeclaration as? PackageFragmentDescriptor)
+                ?.getMemberScope()
 
-        if (parentMemberScope.getContributedDescriptors()
-                .filterIsInstance<FunctionDescriptor>()
-                .filter { it.name == descriptor.name }
-                .size > 1
+        if ((parentMemberScope?.getContributedDescriptors()
+                ?.filterIsInstance<FunctionDescriptor>()
+                ?.filter { it.name == descriptor.name }
+                ?.size ?: 0) > 1
         ) {
             context.trace.report(
                 InjektErrors.MULTIPLE_DECLARATIONS_WITH_SAME_NAME
@@ -69,25 +68,9 @@ class ModuleChecker : CallChecker, DeclarationChecker {
             )
         }
 
-        (descriptor.dispatchReceiverParameter?.value?.type?.constructor?.declarationDescriptor as? ClassDescriptor)?.let {
-            if (it.kind != ClassKind.OBJECT) {
-                context.trace.report(
-                    InjektErrors.MUST_BE_STATIC
-                        .on(declaration)
-                )
-            }
-        }
-
-        if (descriptor.extensionReceiverParameter != null) {
+        if (descriptor.modality != Modality.FINAL) {
             context.trace.report(
-                InjektErrors.CANNOT_BE_EXTENSION
-                    .on(declaration)
-            )
-        }
-
-        if (descriptor.visibility == Visibilities.LOCAL) {
-            context.trace.report(
-                InjektErrors.CANNOT_BE_LOCAL
+                InjektErrors.MODULE_MUST_BE_FINAL
                     .on(declaration)
             )
         }

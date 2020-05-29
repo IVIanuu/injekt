@@ -154,32 +154,22 @@ interface InjektErrors {
 
         @JvmField
         val EITHER_MODULE_OR_FACTORY = error(
-            "A function can only be annotated with one of @Factory, @ChildFactory, @CompositionFactory or @Module"
-        )
-
-        @JvmField
-        val MUST_BE_STATIC = error(
-            "@Factory, @ChildFactory, @CompositionFactory and @Module functions can only be declared at the top level or in objects"
-        )
-
-        @JvmField
-        val CANNOT_BE_EXTENSION = error(
-            "@Factory, @ChildFactory, @CompositionFactory and @Module cannot be extensions"
-        )
-
-        @JvmField
-        val CANNOT_BE_LOCAL = error(
-            "@Factory, @ChildFactory, @CompositionFactory and @Module functions cannot be local"
+            "A function can only be annotated with one of @Factory, @ChildFactory, @CompositionFactory, @InstanceFactory or @Module"
         )
 
         @JvmField
         val CANNOT_BE_SUSPEND = error(
-            "@Factory, @ChildFactory, @CompositionFactory or @Module cannot be suspend"
+            "@Factory, @ChildFactory, @CompositionFactory, @InstanceFactory or @Module cannot be suspend"
         )
 
         @JvmField
         val CANNOT_HAVE_TAILREC_MODIFIER = error(
-            "@Factory, @ChildFactory, @CompositionFactory or @Module cannot have the tailrec modifier"
+            "@Factory, @ChildFactory, @CompositionFactory, @InstanceFactory or @Module cannot have the tailrec modifier"
+        )
+
+        @JvmField
+        val MODULE_MUST_BE_FINAL = error(
+            "@Module must be final"
         )
 
         @JvmField

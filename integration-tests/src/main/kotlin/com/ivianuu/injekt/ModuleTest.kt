@@ -131,4 +131,46 @@ class ModuleTest {
         )
     )
 
+    @Test
+    fun testMultipleCompileNestedModuleInAnnotation() = multiCodegen(
+        listOf(
+            source(
+                """
+                    annotation class MyClass {
+                        companion object {
+                            @Module
+                            fun <T> module() {
+                                transient<T>()
+                            }
+                        }
+                    }
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    annotation class MyClass2 {
+                        companion object {
+                            @Module
+                            fun <T> module() {
+                                MyClass.module<T>()
+                            }
+                        }
+                    }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @Module 
+                    fun calling() {
+                        MyClass2.module<Foo>()
+                    } 
+                """
+            )
+        )
+    )
+
 }

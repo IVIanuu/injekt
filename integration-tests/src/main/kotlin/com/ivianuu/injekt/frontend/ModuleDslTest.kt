@@ -128,51 +128,16 @@ class ModuleDslTest {
     }
 
     @Test
-    fun testModuleInClassFails() = codegen(
+    fun testOpenModuleFails() = codegen(
         """
         class MyClass {
             @Module 
-            fun module() {
+            open fun module() {
             }
         }
         """
     ) {
-        assertCompileError("top level")
-    }
-
-    @Test
-    fun testModuleInObjectIsOk() = codegen(
-        """
-        object MyClass {
-            @Module
-            fun module() {
-            }
-        }
-        """
-    ) {
-        assertOk()
-    }
-
-    @Test
-    fun testTopLevelModuleIsOk() = codegen(
-        """
-        @Module 
-        fun module() {
-        }
-        """
-    ) {
-        assertOk()
-    }
-
-    @Test
-    fun testExtensionModuleFails() = codegen(
-        """
-        @Module 
-        fun String.module() {
-        }
-        """
-    ) {
-        assertCompileError("extension")
+        assertCompileError("final")
     }
 
     @Test

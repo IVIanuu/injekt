@@ -20,18 +20,21 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.PropertyPath
-import com.ivianuu.injekt.compiler.addMetadata
+import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
+import com.ivianuu.injekt.compiler.addToFileOrAbove
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.deepCopyWithPreservingQualifiers
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.setClassKind
 import com.ivianuu.injekt.compiler.transform.AbstractFunctionTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
+import com.ivianuu.injekt.compiler.typeWith
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
+import org.jetbrains.kotlin.backend.common.ir.allParameters
+import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -49,22 +52,23 @@ import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
+import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
 class ModuleFunctionTransformer(
     pluginContext: IrPluginContext,
@@ -83,8 +87,9 @@ class ModuleFunctionTransformer(
         transformedFunctions
             .filterNot { it.key.isExternalDeclaration() }
             .forEach {
-                (it.value.parent as IrDeclarationContainer)
-                    .addChild(it.value.returnType.classOrNull!!.owner)
+                it.value.returnType.classOrNull!!.owner.addToFileOrAbove(
+                    it.value
+                )
             }
         return declaration
     }
@@ -95,7 +100,33 @@ class ModuleFunctionTransformer(
     override fun transform(function: IrFunction): IrFunction {
         val transformedFunction = function.deepCopyWithPreservingQualifiers(wrapDescriptor = true)
 
-        transformedFunction.addMetadata()
+        transformedFunction.addMetadataIfNotLocal()
+
+        val oldValueParameters = transformedFunction.allParameters
+        transformedFunction.dispatchReceiverParameter = null
+        transformedFunction.extensionReceiverParameter = null
+        transformedFunction.valueParameters =
+            oldValueParameters.mapIndexed { index, valueParameter ->
+                valueParameter.copyTo(
+                    transformedFunction,
+                    index = index
+                )
+            }
+
+        val valueParametersMap = oldValueParameters
+            .map { it.symbol }
+            .zip(transformedFunction.valueParameters)
+            .toMap()
+
+        transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitGetValue(expression: IrGetValue): IrExpression {
+                return valueParametersMap[expression.symbol]
+                    ?.let {
+                        DeclarationIrBuilder(pluginContext, expression.symbol)
+                            .irGet(it)
+                    } ?: super.visitGetValue(expression)
+            }
+        })
 
         val moduleDescriptor = ModuleDescriptor(
             transformedFunction,
@@ -110,7 +141,7 @@ class ModuleFunctionTransformer(
             moduleDescriptor.moduleClass = this
             parent = transformedFunction.file
             createImplicitParameterDeclarationWithWrappedDescriptor()
-            addMetadata()
+            addMetadataIfNotLocal()
             copyTypeParametersFrom(transformedFunction)
             addChild(moduleDescriptor.clazz)
         }
@@ -255,24 +286,30 @@ class ModuleFunctionTransformer(
                 )
             }
 
-        println(moduleClass.dumpSrc())
-
         return transformedFunction
     }
 
     override fun transformExternal(function: IrFunction): IrFunction {
         if (function.valueParameters.lastOrNull()?.name?.asString() == "moduleMarker") return function
-        return pluginContext.referenceFunctions(function.descriptor.fqNameSafe)
-            .map { it.owner }
-            .single { other ->
-                other.valueParameters.size == function.valueParameters.size + 1 &&
-                        other.valueParameters.all { otherValueParameter ->
-                            val thisValueParameter =
-                                function.valueParameters.getOrNull(otherValueParameter.index)
-                            otherValueParameter.name == thisValueParameter?.name ||
-                                    otherValueParameter.name.asString() == "moduleMarker"
-                }
+
+        val transformedFunction = function.deepCopyWithPreservingQualifiers(wrapDescriptor = true)
+
+        val oldValueParameters = transformedFunction.allParameters
+        transformedFunction.dispatchReceiverParameter = null
+        transformedFunction.extensionReceiverParameter = null
+        transformedFunction.valueParameters =
+            oldValueParameters.mapIndexed { index, valueParameter ->
+                valueParameter.copyTo(transformedFunction, index = index)
             }
+
+        transformedFunction.addValueParameter("moduleMarker", irBuiltIns.anyNType)
+
+        val moduleClass = declarationStore.getModuleClassForFunction(function)
+
+        transformedFunction.returnType = moduleClass.defaultType
+            .typeWith(*function.typeParameters.map { it.defaultType }.toTypedArray())
+
+        return transformedFunction
     }
 
     override fun createDecoy(original: IrFunction, transformed: IrFunction): IrFunction =
@@ -284,7 +321,15 @@ class ModuleFunctionTransformer(
             }
 
     override fun transformCall(transformed: IrFunction, expression: IrCall): IrCall {
-        return super.transformCall(transformed, expression).apply {
+        return IrCallImpl(
+            expression.startOffset,
+            expression.endOffset,
+            transformed.returnType,
+            transformed.symbol,
+            expression.origin,
+            expression.superQualifierSymbol
+        ).apply {
+            copyTypeAndValueArgumentsFrom(expression, receiversAsArguments = true)
             putValueArgument(
                 valueArgumentsCount - 1,
                 DeclarationIrBuilder(pluginContext, symbol).irNull()

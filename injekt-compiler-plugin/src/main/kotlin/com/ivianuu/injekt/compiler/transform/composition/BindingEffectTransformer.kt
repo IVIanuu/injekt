@@ -19,7 +19,7 @@ package com.ivianuu.injekt.compiler.transform.composition
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.NameProvider
-import com.ivianuu.injekt.compiler.addMetadata
+import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
@@ -102,7 +102,7 @@ class BindingEffectTransformer(pluginContext: IrPluginContext) :
         annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
             .noArgSingleConstructorCall(symbols.module)
 
-        addMetadata()
+        addMetadataIfNotLocal()
 
         body = DeclarationIrBuilder(pluginContext, symbol).run {
             irBlockBody {

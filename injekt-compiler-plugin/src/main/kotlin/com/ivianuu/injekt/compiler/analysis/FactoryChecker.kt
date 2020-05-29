@@ -28,7 +28,6 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.js.translate.callTranslator.getReturnType
@@ -65,39 +64,16 @@ class FactoryChecker : CallChecker, DeclarationChecker {
 
         val parentMemberScope = (descriptor.containingDeclaration as? ClassDescriptor)
             ?.unsubstitutedMemberScope
-            ?: (descriptor.containingDeclaration as PackageFragmentDescriptor)
-                .getMemberScope()
+            ?: (descriptor.containingDeclaration as? PackageFragmentDescriptor)
+                ?.getMemberScope()
 
-        if (parentMemberScope.getContributedDescriptors()
-                .filterIsInstance<FunctionDescriptor>()
-                .filter { it.name == descriptor.name }
-                .size > 1
+        if ((parentMemberScope?.getContributedDescriptors()
+                ?.filterIsInstance<FunctionDescriptor>()
+                ?.filter { it.name == descriptor.name }
+                ?.size ?: 0) > 1
         ) {
             context.trace.report(
                 InjektErrors.MULTIPLE_DECLARATIONS_WITH_SAME_NAME
-                    .on(declaration)
-            )
-        }
-
-        (descriptor.dispatchReceiverParameter?.value?.type?.constructor?.declarationDescriptor as? ClassDescriptor)?.let {
-            if (it.kind != ClassKind.OBJECT) {
-                context.trace.report(
-                    InjektErrors.MUST_BE_STATIC
-                        .on(declaration)
-                )
-            }
-        }
-
-        if (descriptor.extensionReceiverParameter != null) {
-            context.trace.report(
-                InjektErrors.CANNOT_BE_EXTENSION
-                    .on(declaration)
-            )
-        }
-
-        if (descriptor.visibility == Visibilities.LOCAL) {
-            context.trace.report(
-                InjektErrors.CANNOT_BE_LOCAL
                     .on(declaration)
             )
         }

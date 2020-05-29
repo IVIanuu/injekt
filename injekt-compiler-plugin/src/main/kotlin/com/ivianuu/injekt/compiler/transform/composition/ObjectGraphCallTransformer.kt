@@ -18,7 +18,7 @@ package com.ivianuu.injekt.compiler.transform.composition
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
-import com.ivianuu.injekt.compiler.addMetadata
+import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.withNoArgAnnotations
@@ -144,7 +144,7 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         kind = ClassKind.INTERFACE
     }.apply {
         createImplicitParameterDeclarationWithWrappedDescriptor()
-        addMetadata()
+        addMetadataIfNotLocal()
         addFunction {
             this.name = InjektNameConventions.nameWithoutIllegalChars(
                 "get\$${requestedType.classifierOrFail.descriptor.fqNameSafe
@@ -165,7 +165,7 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         kind = ClassKind.INTERFACE
     }.apply {
         createImplicitParameterDeclarationWithWrappedDescriptor()
-        addMetadata()
+        addMetadataIfNotLocal()
         addFunction {
             this.name = InjektNameConventions.nameWithoutIllegalChars(
                 "inject\$${injectedType.classifierOrFail.descriptor.fqNameSafe

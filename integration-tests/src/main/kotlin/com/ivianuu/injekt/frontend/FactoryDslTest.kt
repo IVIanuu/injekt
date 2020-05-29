@@ -236,50 +236,6 @@ class FactoryDslTest {
     }
 
     @Test
-    fun testFactoryInClassFails() = codegen(
-        """
-        class MyClass {
-            @Factory 
-            fun factory(): TestComponent = create()
-        }
-        """
-    ) {
-        assertCompileError("top level")
-    }
-
-    @Test
-    fun testFactoryInObjectIsOk() = codegen(
-        """
-        object MyClass {
-            @Factory 
-            fun factory(): TestComponent = create()
-        }
-        """
-    ) {
-        assertOk()
-    }
-
-    @Test
-    fun testTopLevelFactoryIsOk() = codegen(
-        """
-        @Factory 
-        fun factory(): TestComponent = create()
-        """
-    ) {
-        assertOk()
-    }
-
-    @Test
-    fun testExtensionFactoryFails() = codegen(
-        """
-        @Factory 
-        fun String.factory(): TestComponent = create()
-        """
-    ) {
-        assertCompileError("extension")
-    }
-
-    @Test
     fun testFactoryCannotBeInline() = codegen(
         """
         @Factory

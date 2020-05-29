@@ -19,7 +19,7 @@ package com.ivianuu.injekt.compiler.transform.module
 import com.ivianuu.injekt.compiler.ClassPath
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.NameProvider
-import com.ivianuu.injekt.compiler.addMetadata
+import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
@@ -55,7 +55,7 @@ class ModuleDescriptor(
         name = Name.identifier("Descriptor")
     }.apply {
         createImplicitParameterDeclarationWithWrappedDescriptor()
-        addMetadata()
+        addMetadataIfNotLocal()
         copyTypeParametersFrom(moduleFunction)
     }
 
@@ -82,7 +82,7 @@ class ModuleDescriptor(
             returnType = declaration.scopeType.remapTypeParameters(moduleFunction, clazz),
             modality = Modality.ABSTRACT
         ).apply {
-            addMetadata()
+            addMetadataIfNotLocal()
             annotations += InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astScope)
         }
@@ -95,7 +95,7 @@ class ModuleDescriptor(
                 .remapTypeParameters(moduleClass, clazz),
             modality = Modality.ABSTRACT
         ).apply {
-            addMetadata()
+            addMetadataIfNotLocal()
             annotations += InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astDependency)
             annotations += declaration.path
@@ -110,7 +110,7 @@ class ModuleDescriptor(
                 .remapTypeParameters(moduleFunction, clazz),
             modality = Modality.ABSTRACT
         ).apply {
-            addMetadata()
+            addMetadataIfNotLocal()
             annotations += InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astChildFactory)
             if (declaration.factoryModuleClass != null) {
@@ -144,7 +144,7 @@ class ModuleDescriptor(
             returnType = declaration.aliasType.remapTypeParameters(moduleFunction, clazz),
             modality = Modality.ABSTRACT
         ).apply {
-            addMetadata()
+            addMetadataIfNotLocal()
             annotations += InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astAlias)
             addValueParameter(
@@ -161,7 +161,7 @@ class ModuleDescriptor(
                 .remapTypeParameters(moduleClass, clazz),
             modality = Modality.ABSTRACT
         ).apply {
-            addMetadata()
+            addMetadataIfNotLocal()
             val builder = InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
             annotations += builder.noArgSingleConstructorCall(symbols.astBinding)
             if (declaration.scoped) {
@@ -192,7 +192,7 @@ class ModuleDescriptor(
             returnType = declaration.includedType.remapTypeParameters(moduleClass, clazz),
             modality = Modality.ABSTRACT
         ).apply {
-            addMetadata()
+            addMetadataIfNotLocal()
             annotations += InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astModule)
             annotations += declaration.path
@@ -206,7 +206,7 @@ class ModuleDescriptor(
             returnType = declaration.mapType.remapTypeParameters(moduleFunction, clazz),
             modality = Modality.ABSTRACT
         ).apply {
-            addMetadata()
+            addMetadataIfNotLocal()
             annotations += InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astMap)
         }
@@ -218,7 +218,7 @@ class ModuleDescriptor(
             returnType = pluginContext.irBuiltIns.unitType,
             modality = Modality.ABSTRACT
         ).apply {
-            addMetadata()
+            addMetadataIfNotLocal()
             annotations += InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astMapEntry)
             addValueParameter(
@@ -241,7 +241,7 @@ class ModuleDescriptor(
             returnType = declaration.setType.remapTypeParameters(moduleFunction, clazz),
             modality = Modality.ABSTRACT
         ).apply {
-            addMetadata()
+            addMetadataIfNotLocal()
             annotations += InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astSet)
         }
@@ -253,7 +253,7 @@ class ModuleDescriptor(
             returnType = pluginContext.irBuiltIns.unitType,
             modality = Modality.ABSTRACT
         ).apply {
-            addMetadata()
+            addMetadataIfNotLocal()
             annotations += InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astSetElement)
             addValueParameter(

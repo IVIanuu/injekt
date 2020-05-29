@@ -20,7 +20,7 @@ import com.ivianuu.injekt.compiler.CompositionSymbols
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.NameProvider
-import com.ivianuu.injekt.compiler.addMetadata
+import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.getFunctionType
@@ -286,7 +286,7 @@ class GenerateCompositionsTransformer(
         kind = ClassKind.INTERFACE
     }.apply {
         createImplicitParameterDeclarationWithWrappedDescriptor()
-        addMetadata()
+        addMetadataIfNotLocal()
 
         superTypes += compositionType
         entryPoints.forEach { superTypes += it }
@@ -308,7 +308,7 @@ class GenerateCompositionsTransformer(
                 if (childFactory) symbols.childFactory else symbols.factory
             )
 
-        addMetadata()
+        addMetadataIfNotLocal()
 
         factory.owner.valueParameters.forEach {
             addValueParameter(

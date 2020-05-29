@@ -29,18 +29,22 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 object InjektNameConventions {
 
-    fun getMembersInjectorNameForClass(className: Name): Name =
-        ("${className.asString()}_MembersInjector").asNameId()
+    fun getMembersInjectorNameForClass(
+        packageFqName: FqName,
+        classFqName: FqName
+    ): Name {
+        return getJoinedName(
+            packageFqName,
+            classFqName.child("MembersInjector")
+        )
+    }
 
     fun getModuleClassNameForModuleFunction(moduleFunction: IrFunction): Name =
         ("${moduleFunction.descriptor.name.asString()}_Class")
             .asNameId()
 
-    fun getModuleFunctionNameForClass(moduleClass: IrClass): Name {
-        val withoutSuffix = moduleClass.name.asString().split("_")
-        val fullName = withoutSuffix.dropLast(2)
-        return fullName.joinToString("_").asNameId()
-    }
+    fun getModuleFunctionNameForClass(moduleClass: IrClass): Name =
+        moduleClass.name.asString().removeSuffix("_Class").asNameId()
 
     fun getBindingEffectModuleName(
         packageFqName: FqName,

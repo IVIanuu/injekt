@@ -124,12 +124,6 @@ class ChildFactoryBindingResolver(
                     .getModuleFunctionForClass(moduleClass)
                 val moduleVariable = irTemporary(
                     irCall(moduleFunction).apply {
-                        if (moduleFunction.dispatchReceiverParameter != null) {
-                            dispatchReceiver = irGetObject(
-                                moduleFunction.dispatchReceiverParameter!!.type.classOrNull!!
-                            )
-                        }
-
                         lambda.valueParameters.forEach {
                             putValueArgument(it.index, irGet(it))
                         }

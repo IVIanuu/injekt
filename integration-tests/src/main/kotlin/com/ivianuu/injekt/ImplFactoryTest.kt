@@ -410,4 +410,95 @@ class ImplFactoryTest {
         assertEquals("default", pair.first)
         assertEquals("non_default", pair.second)
     }
+
+    @Test
+    fun testComponentAsMemberFunction() = codegen(
+        """
+        interface TestComponent {
+            val dep: MyClass.Dep
+        }
+
+        class MyClass {
+            val outerField = ""
+            
+            @Transient class Dep(myClass: MyClass, foo: Foo)
+            @Factory
+            fun createComponent(userId: String): TestComponent {
+                transient<Foo>()
+                myModule()
+                return create()
+            }
+            
+            @Module
+            fun myModule() { 
+                instance(outerField)
+                myOtherModule()
+            }
+        }
+        
+        @Module 
+        fun MyClass.myOtherModule() { 
+            transient { this@myOtherModule } 
+        }
+        
+        fun invoke() = MyClass().createComponent("")
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testComponentExtensionFunction() = codegen(
+        """
+        interface TestComponent {
+            val dep: MyClass.Dep
+        }
+
+        class MyClass {
+            val outerField = ""
+            @Transient class Dep(myClass: MyClass, foo: Foo)
+        }
+
+        @Factory 
+        fun MyClass.createComponent(userId: String): TestComponent { 
+            transient<Foo>()
+            myModule()
+            return create()
+        }
+        
+        @Module 
+        fun MyClass.myModule() { 
+            instance(outerField)
+            myOtherModule() 
+        }
+        
+        @Module 
+        fun MyClass.myOtherModule() { 
+            transient { this@myOtherModule } 
+        }
+        
+        fun invoke() = MyClass().createComponent("")
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testLocalFunctionImplFactory() = codegen(
+        """
+        interface TestComponent { 
+            val bar: Bar 
+        }
+        fun createComponent(): TestComponent {
+            @Factory
+            fun factory(): TestComponent {
+                transient<Foo>()
+                transient<Bar>()
+                return create()
+            }
+            return factory()
+        }
+    """
+    )
+
 }

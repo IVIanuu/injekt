@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -50,6 +51,8 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrPropertyImpl
 import org.jetbrains.kotlin.ir.descriptors.IrBuiltIns
 import org.jetbrains.kotlin.ir.descriptors.WrappedSimpleFunctionDescriptor
 import org.jetbrains.kotlin.ir.expressions.IrBlock
+import org.jetbrains.kotlin.ir.expressions.IrBlockBody
+import org.jetbrains.kotlin.ir.expressions.IrBody
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstKind
@@ -58,6 +61,7 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrSpreadElement
+import org.jetbrains.kotlin.ir.expressions.IrStatementContainer
 import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
@@ -87,6 +91,7 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
@@ -98,6 +103,7 @@ import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
+import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -448,7 +454,7 @@ fun IrFunction.deepCopyWithPreservingQualifiers(
                         if (it.descriptor in mappedDescriptors &&
                             declaration.metadata != null
                         ) {
-                            it.addMetadata()
+                            it.addMetadataIfNotLocal()
                         }
                     } else {
                         (it as IrFunctionImpl).metadata = declaration.metadata
@@ -537,14 +543,47 @@ fun IrClass.getInjectConstructor(): IrConstructor? {
     return constructors.singleOrNull()
 }
 
-fun <T> T.addMetadata() where T : IrMetadataSourceOwner, T : IrDeclarationWithVisibility {
-    check(visibility != Visibilities.LOCAL) {
-        "Local declarations cannot have metadata ${render()}"
-    }
+fun <T> T.addMetadataIfNotLocal() where T : IrMetadataSourceOwner, T : IrDeclarationWithVisibility {
+    if (visibility == Visibilities.LOCAL) return
     when (this) {
         is IrClassImpl -> metadata = MetadataSource.Class(descriptor)
         is IrFunctionImpl -> metadata = MetadataSource.Function(descriptor)
         is IrPropertyImpl -> metadata = MetadataSource.Property(descriptor)
+    }
+}
+
+fun IrDeclaration.addToFileOrAbove(other: IrDeclarationWithVisibility) {
+    if (other.visibility == Visibilities.LOCAL) {
+        parent = other.parent
+        var block: IrStatementContainer? = null
+        other.file.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitBlockBody(body: IrBlockBody): IrBody {
+                if (body.statements.any { it === other }) {
+                    block = body
+                }
+                return super.visitBlockBody(body)
+            }
+
+            override fun visitBlock(expression: IrBlock): IrExpression {
+                if (expression.statements.any { it === other }) {
+                    block = expression
+                }
+                return super.visitBlock(expression)
+            }
+        })
+
+        if (block != null) {
+            val index = block!!.statements.indexOf(other)
+            block!!.statements.add(index, this)
+        } else {
+            error(
+                "Corrupt parent ${other.render()} " +
+                        "parent ${parent.render()}"
+            )
+        }
+    } else {
+        parent = other.file
+        other.file.addChild(this)
     }
 }
 

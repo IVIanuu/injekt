@@ -19,7 +19,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.NameProvider
-import com.ivianuu.injekt.compiler.addMetadata
+import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
@@ -61,6 +61,7 @@ import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.properties
@@ -68,8 +69,11 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.SpecialNames
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTransformer(context) {
+
+    private val membersInjectorByClass = mutableMapOf<IrClass, IrClass>()
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         val classes = mutableSetOf<IrClass>()
@@ -111,14 +115,11 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
     }
 
     fun getMembersInjectorForClass(clazz: IrClass): IrClass? {
-        clazz
-            .declarations
-            .filterIsInstance<IrClass>()
-            .singleOrNull { it.name == InjektNameConventions.getMembersInjectorNameForClass(clazz.name) }
-            ?.let { return it }
+        membersInjectorByClass[clazz]?.let { return it }
         val membersInjector = DeclarationIrBuilder(pluginContext, clazz.symbol)
             .membersInjector(clazz) ?: return null
         clazz.addChild(membersInjector)
+        membersInjectorByClass[clazz] = membersInjector
         return membersInjector
     }
 
@@ -143,7 +144,10 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
 
         return buildClass {
             kind = if (injectProperties.isNotEmpty()) ClassKind.CLASS else ClassKind.OBJECT
-            name = InjektNameConventions.getMembersInjectorNameForClass(clazz.descriptor.name)
+            name = InjektNameConventions.getMembersInjectorNameForClass(
+                clazz.getPackageFragment()!!.fqName,
+                clazz.descriptor.fqNameSafe
+            )
             visibility = clazz.visibility
         }.apply clazz@{
             parent = clazz
@@ -152,7 +156,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
 
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
-            addMetadata()
+            addMetadataIfNotLocal()
 
             val nameProvider = NameProvider()
 
@@ -221,7 +225,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
             }.apply clazz@{
                 createImplicitParameterDeclarationWithWrappedDescriptor()
 
-                addMetadata()
+                addMetadataIfNotLocal()
 
                 addConstructor {
                     this.returnType = defaultType
@@ -244,7 +248,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                 }.apply {
                     dispatchReceiverParameter = thisReceiver!!.copyTo(this)
 
-                    addMetadata()
+                    addMetadataIfNotLocal()
 
                     val instanceValueParameter = addValueParameter(
                         "\$instance",
@@ -272,7 +276,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                 }.apply {
                     dispatchReceiverParameter = thisReceiver!!.copyTo(this)
 
-                    addMetadata()
+                    addMetadataIfNotLocal()
 
                     val instanceValueParameter = addValueParameter(
                         "\$instance",

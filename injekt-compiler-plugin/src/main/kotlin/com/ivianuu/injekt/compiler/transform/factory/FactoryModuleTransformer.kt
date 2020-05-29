@@ -18,25 +18,25 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
-import com.ivianuu.injekt.compiler.addMetadata
+import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
+import com.ivianuu.injekt.compiler.addToFileOrAbove
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.ir.addChild
+import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.ir.copyBodyTo
-import org.jetbrains.kotlin.backend.common.ir.copyParameterDeclarationsFrom
+import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
+import org.jetbrains.kotlin.backend.common.ir.copyValueParametersToStatic
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
-import org.jetbrains.kotlin.ir.builders.irGetObject
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrBlockBody
-import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.statements
@@ -85,26 +85,21 @@ class FactoryModuleTransformer(
                 annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
                     .noArgSingleConstructorCall(symbols.module)
 
-                addMetadata()
+                addMetadataIfNotLocal()
 
-                copyParameterDeclarationsFrom(factoryFunction)
+                copyTypeParametersFrom(factoryFunction)
+                copyValueParametersToStatic(factoryFunction, IrDeclarationOrigin.DEFINED)
 
                 body = factoryFunction.copyBodyTo(this)
                 (body as IrBlockBody).statements.removeAt(body!!.statements.lastIndex)
             }
-            (factoryFunction.parent as IrDeclarationContainer)
-                .addChild(moduleFunction)
+            moduleFunction.addToFileOrAbove(factoryFunction)
             factoryFunction.body = irBlockBody {
                 +irCall(moduleFunction).apply {
                     factoryFunction.typeParameters.forEach {
                         putTypeArgument(it.index, it.defaultType)
                     }
-                    if (moduleFunction.dispatchReceiverParameter != null) {
-                        dispatchReceiver = irGetObject(
-                            moduleFunction.returnType.classOrNull!!
-                        )
-                    }
-                    factoryFunction.valueParameters.forEachIndexed { index, valueParameter ->
+                    factoryFunction.allParameters.forEachIndexed { index, valueParameter ->
                         putValueArgument(index, irGet(valueParameter))
                     }
                 }
