@@ -86,11 +86,9 @@ import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.referenceClassifier
 import org.jetbrains.kotlin.name.Name
@@ -248,12 +246,12 @@ class InjektDeclarationIrBuilder(
         endOffset: Int = UNDEFINED_OFFSET,
         body: IrBlockBodyBuilder.(IrFunction) -> Unit
     ): IrExpression {
-        val lambdaType = type.typeArguments.last().typeOrNull!!
+        val returnType = type.typeArguments.last().typeOrNull!!
 
         val lambda = buildFun {
             origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
             name = Name.special("<anonymous>")
-            this.returnType = lambdaType
+            this.returnType = returnType
             visibility = Visibilities.LOCAL
         }.apply {
             type.typeArguments.dropLast(1).forEachIndexed { index, typeArgument ->
@@ -330,24 +328,20 @@ class InjektDeclarationIrBuilder(
         }
     }
 
-    fun classFactoryLambda(clazz: IrClass, membersInjector: IrClass?): IrExpression {
+    fun classFactoryLambda(clazz: IrClass, membersInjector: IrFunction?): IrExpression {
         val parametersNameProvider = NameProvider()
         val membersInjectorParameters =
-            membersInjector?.companionObject()?.let { it as IrClass }
-                ?.functions
-                ?.filter { it.name.asString().startsWith("inject\$") }
-                ?.associateWith { injectFunction ->
-                    injectFunction.valueParameters
-                        .drop(1)
-                        .map { valueParameter ->
-                            FactoryParameter(
-                                name = parametersNameProvider.allocateForType(valueParameter.type)
-                                    .asString(),
-                                type = valueParameter.type,
-                                assisted = false
-                            )
-                        }
-                } ?: emptyMap()
+            membersInjector
+                ?.valueParameters
+                ?.drop(1)
+                ?.map { valueParameter ->
+                    FactoryParameter(
+                        name = parametersNameProvider.allocateForType(valueParameter.type)
+                            .asString(),
+                        type = valueParameter.type,
+                        assisted = false
+                    )
+                } ?: emptyList()
 
         val constructor = clazz.getInjectConstructor()
 
@@ -360,8 +354,7 @@ class InjektDeclarationIrBuilder(
             )
         } ?: emptyList()
 
-        val allParameters = constructorParameters +
-                membersInjectorParameters.values.flatten()
+        val allParameters = constructorParameters + membersInjectorParameters
 
         return factoryLambda(
             allParameters,
@@ -384,21 +377,20 @@ class InjektDeclarationIrBuilder(
                     val instance = irTemporary(createExpr())
 
                     val membersInjectorValueParametersByParameter = membersInjectorParameters
-                        .mapValues {
-                            it.value.map { parametersMap.getValue(it) }
-                        }
+                        .map { it to parametersMap.getValue(it) }
+                        .toMap()
 
-                    membersInjectorValueParametersByParameter.forEach { (injectFunction, parameters) ->
-                        +irCall(injectFunction).apply {
-                            dispatchReceiver =
-                                irGetObject((membersInjector.companionObject() as IrClass).symbol)
-                            putValueArgument(0, irGet(instance))
-                            parameters.forEachIndexed { index, valueParameter ->
-                                putValueArgument(
-                                    index + 1,
-                                    irGet(valueParameter)
+                    +irCall(membersInjector).apply {
+                        putValueArgument(0, irGet(instance))
+                        membersInjectorParameters.forEachIndexed { index, valueParameter ->
+                            putValueArgument(
+                                index + 1,
+                                irGet(
+                                    membersInjectorValueParametersByParameter.getValue(
+                                        valueParameter
+                                    )
                                 )
-                            }
+                            )
                         }
                     }
 

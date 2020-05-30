@@ -88,7 +88,6 @@ object InjektFqNames {
     val Lazy = InjektPackage.child("Lazy")
 
     val MembersInjector = InjektPackage.child("MembersInjector")
-    val NoOpMembersInjector = InternalPackage.child("NoOpMembersInjector")
 
     val Provider = InjektPackage.child("Provider")
     val ProviderOfLazy = InternalPackage.child("ProviderOfLazy")

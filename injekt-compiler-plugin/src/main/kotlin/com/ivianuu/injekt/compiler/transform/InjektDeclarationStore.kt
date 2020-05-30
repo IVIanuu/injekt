@@ -47,20 +47,20 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
     lateinit var membersInjectorTransformer: MembersInjectorTransformer
     lateinit var moduleFunctionTransformer: ModuleFunctionTransformer
 
-    fun getMembersInjectorForClassOrNull(clazz: IrClass): IrClass? {
+    fun getMembersInjectorForClassOrNull(clazz: IrClass): IrFunction? {
         return if (!clazz.isExternalDeclaration()) {
             membersInjectorTransformer.getMembersInjectorForClass(clazz)
         } else {
-            pluginContext.referenceClass(
+            pluginContext.referenceFunctions(
                 clazz.fqNameForIrSerialization
                     .parent()
                     .child(
-                        InjektNameConventions.getMembersInjectorNameForClass(
+                        InjektNameConventions.getFactoryNameForClass(
                             clazz.getPackageFragment()!!.fqName,
                             clazz.descriptor.fqNameSafe
                         )
                     )
-            )?.owner
+            ).singleOrNull()?.owner
         }
     }
 

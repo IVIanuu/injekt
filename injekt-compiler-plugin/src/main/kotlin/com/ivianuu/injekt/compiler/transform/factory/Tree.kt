@@ -38,7 +38,6 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.typeOrNull
-import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
@@ -245,13 +244,13 @@ class MembersInjectorBindingNode(
     key: Key,
     owner: AbstractFactory,
     origin: FqName?,
-    val membersInjector: IrClass
+    val membersInjector: IrFunction?
 ) : BindingNode(
     key,
-    membersInjector.constructors.singleOrNull()
+    membersInjector
         ?.valueParameters
-        ?.map { it.type.typeArguments.single() }
-        ?.map { BindingRequest(it.typeOrFail.asKey(), null) }
+        ?.drop(1)
+        ?.map { BindingRequest(it.type.asKey(), null) }
         ?: emptyList(),
     null,
     false,

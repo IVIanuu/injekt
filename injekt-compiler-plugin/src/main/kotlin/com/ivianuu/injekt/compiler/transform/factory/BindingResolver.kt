@@ -362,7 +362,6 @@ class MembersInjectorBindingResolver(
         val target =
             requestedKey.type.typeArguments.first().typeOrNull?.getClass() ?: return emptyList()
         val membersInjector = declarationStore.getMembersInjectorForClassOrNull(target)
-            ?: symbols.noOpMembersInjector.owner
         return listOf(
             MembersInjectorBindingNode(
                 key = requestedKey,

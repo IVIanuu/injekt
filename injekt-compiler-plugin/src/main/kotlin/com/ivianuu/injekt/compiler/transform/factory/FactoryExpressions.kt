@@ -347,7 +347,24 @@ class FactoryExpressions(
     }
 
     private fun instanceExpressionForMembersInjector(binding: MembersInjectorBindingNode): FactoryExpression {
-        return invokeProviderInstanceExpression(binding)
+        val dependencyExpressions = binding.dependencies
+            .map { getBindingExpression(it) }
+        return {
+            InjektDeclarationIrBuilder(pluginContext, scope.scopeOwnerSymbol)
+                .irLambda(binding.key.type) { lambda ->
+                    if (binding.membersInjector != null) {
+                        +irCall(binding.membersInjector).apply {
+                            putValueArgument(0, irGet(lambda.valueParameters.single()))
+                            dependencyExpressions.forEachIndexed { index, dependency ->
+                                putValueArgument(
+                                    index + 1,
+                                    dependency()
+                                )
+                            }
+                        }
+                    }
+                }
+        }
     }
 
     private fun instanceExpressionForNull(binding: NullBindingNode): FactoryExpression {
@@ -648,25 +665,23 @@ class FactoryExpressions(
 
     private fun providerExpressionForMembersInjector(binding: MembersInjectorBindingNode): FactoryExpression {
         val dependencyExpressions = binding.dependencies
-            .map {
-                getBindingExpression(
-                    it.copy(requestType = RequestType.Provider)
-                )
-            }
-        return cachedProviderExpression(binding.key) {
+            .map { getBindingExpression(it) }
+        return {
             instanceProvider(
-                if (dependencyExpressions.isNotEmpty()) {
-                    irCall(binding.membersInjector.constructors.single()).apply {
-                        dependencyExpressions.forEachIndexed { index, dependency ->
-                            putValueArgument(
-                                index,
-                                dependency()
-                            )
+                InjektDeclarationIrBuilder(pluginContext, scope.scopeOwnerSymbol)
+                    .irLambda(binding.key.type) { lambda ->
+                        if (binding.membersInjector != null) {
+                            +irCall(binding.membersInjector).apply {
+                                putValueArgument(0, irGet(lambda.valueParameters.single()))
+                                dependencyExpressions.forEachIndexed { index, dependency ->
+                                    putValueArgument(
+                                        index + 1,
+                                        dependency()
+                                    )
+                                }
+                            }
                         }
                     }
-                } else {
-                    irGetObject(binding.membersInjector.symbol)
-                }
             )
         }
     }

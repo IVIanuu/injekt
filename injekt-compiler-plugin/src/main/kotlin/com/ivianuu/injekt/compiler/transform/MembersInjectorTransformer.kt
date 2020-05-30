@@ -20,25 +20,20 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
-import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
-import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.lower.irIfThen
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
-import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
-import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addSetter
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildField
+import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irEqeqeq
@@ -56,24 +51,21 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrProperty
+import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.types.getClass
-import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.name.SpecialNames
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTransformer(context) {
 
-    private val membersInjectorByClass = mutableMapOf<IrClass, IrClass>()
+    private val injectFunctionsByClass = mutableMapOf<IrClass, IrFunction>()
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         val classes = mutableSetOf<IrClass>()
@@ -114,16 +106,16 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
         return super.visitModuleFragment(declaration)
     }
 
-    fun getMembersInjectorForClass(clazz: IrClass): IrClass? {
-        membersInjectorByClass[clazz]?.let { return it }
+    fun getMembersInjectorForClass(clazz: IrClass): IrFunction? {
+        injectFunctionsByClass[clazz]?.let { return it }
         val membersInjector = DeclarationIrBuilder(pluginContext, clazz.symbol)
             .membersInjector(clazz) ?: return null
         clazz.addChild(membersInjector)
-        membersInjectorByClass[clazz] = membersInjector
+        injectFunctionsByClass[clazz] = membersInjector
         return membersInjector
     }
 
-    private fun IrBuilderWithScope.membersInjector(clazz: IrClass): IrClass? {
+    private fun IrBuilderWithScope.membersInjector(clazz: IrClass): IrFunction? {
         val injectProperties = mutableListOf<IrProperty>()
         val injectFunctions = mutableListOf<IrFunction>()
 
@@ -142,234 +134,57 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
 
         if (injectProperties.isEmpty() && injectFunctions.isEmpty()) return null
 
-        return buildClass {
-            kind = if (injectProperties.isNotEmpty()) ClassKind.CLASS else ClassKind.OBJECT
+        return buildFun {
             name = InjektNameConventions.getMembersInjectorNameForClass(
                 clazz.getPackageFragment()!!.fqName,
                 clazz.descriptor.fqNameSafe
             )
             visibility = clazz.visibility
-        }.apply clazz@{
-            parent = clazz
-            superTypes += irBuiltIns.function(1)
-                .typeWith(clazz.defaultType, irBuiltIns.unitType)
-
-            createImplicitParameterDeclarationWithWrappedDescriptor()
-
+            returnType = irBuiltIns.unitType
+        }.apply {
             addMetadataIfNotLocal()
 
-            val nameProvider = NameProvider()
+            val parameters = mutableListOf<IrType>()
 
-            val fieldsByInjectProperty = injectProperties.associateWith { property ->
-                addField {
-                    name = nameProvider.allocateForGroup(property.name)
-                    type = irBuiltIns.function(0)
-                        .typeWith(property.getter!!.returnType)
-                        .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Provider))
-                }
+            parameters += clazz.defaultType
+
+            val parameterNameProvider = NameProvider()
+
+            val instanceParameter = addValueParameter(
+                parameterNameProvider.allocateForGroup("instance"),
+                clazz.defaultType
+            )
+
+            val parametersByInjectProperties = injectProperties.associateWith {
+                addValueParameter(
+                    parameterNameProvider.allocateForType(it.getter!!.returnType).asString(),
+                    it.getter!!.returnType
+                )
             }
 
-            val fieldsByInjectFunction = injectFunctions.associateWith { function ->
-                function.valueParameters
-                    .map { valueParameter ->
-                        addField {
-                            name = Name.identifier(
-                                nameProvider.allocateForGroup(
-                                    "${function.name}\$${valueParameter.name}"
-                                )
-                            )
-                            type = irBuiltIns.function(0)
-                                .typeWith(valueParameter.type)
-                                .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Provider))
-                        }
-                    }
-            }
-
-            addConstructor {
-                this.returnType = defaultType
-                isPrimary = true
-                visibility = Visibilities.PUBLIC
-            }.apply {
-                val valueParametersByField = (fieldsByInjectProperty.values +
-                        fieldsByInjectFunction.values.flatten()).associateWith {
+            val parametersByInjectFunctions = injectFunctions.associateWith { function ->
+                function.valueParameters.map {
                     addValueParameter(
-                        it.name.asString(),
+                        parameterNameProvider.allocateForType(it.type).asString(),
                         it.type
                     )
                 }
-
-                body = irBlockBody {
-                    with(
-                        InjektDeclarationIrBuilder(
-                            pluginContext,
-                            symbol
-                        )
-                    ) {
-                        initializeClassWithAnySuperClass(this@clazz.symbol)
-                    }
-                    valueParametersByField.forEach { (field, valueParameter) ->
-                        +irSetField(
-                            irGet(thisReceiver!!),
-                            field,
-                            irGet(valueParameter)
-                        )
-                    }
-                }
             }
 
-            val companion = buildClass {
-                kind = ClassKind.OBJECT
-                name = SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT
-                isCompanion = true
-                this.visibility = Visibilities.PUBLIC
-            }.apply clazz@{
-                createImplicitParameterDeclarationWithWrappedDescriptor()
-
-                addMetadataIfNotLocal()
-
-                addConstructor {
-                    this.returnType = defaultType
-                    isPrimary = true
-                    this.visibility = Visibilities.PUBLIC
-                }.apply {
-                    body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
-                        InjektDeclarationIrBuilder(pluginContext, symbol).run {
-                            initializeClassWithAnySuperClass(this@clazz.symbol)
-                        }
-                    }
-                }
-            }.also { addChild(it) }
-
-            val companionInjectFunctionsByProperty = injectProperties.associateWith { property ->
-                companion.addFunction {
-                    name =
-                        Name.identifier(nameProvider.allocateForGroup("inject\$${property.name}"))
-                    returnType = irBuiltIns.unitType
-                }.apply {
-                    dispatchReceiverParameter = thisReceiver!!.copyTo(this)
-
-                    addMetadataIfNotLocal()
-
-                    val instanceValueParameter = addValueParameter(
-                        "\$instance",
-                        clazz.defaultType
-                    )
-                    val valueValueParameter = addValueParameter(
-                        property.name.asString(),
-                        property.getter!!.returnType
-                    )
-
-                    body = irBlockBody {
+            body = DeclarationIrBuilder(pluginContext, symbol).run {
+                irBlockBody {
+                    parametersByInjectProperties.forEach { (property, valueParameter) ->
                         +irCall(property.setter!!).apply {
-                            dispatchReceiver = irGet(instanceValueParameter)
-                            putValueArgument(0, irGet(valueValueParameter))
+                            dispatchReceiver = irGet(instanceParameter)
+                            putValueArgument(0, irGet(valueParameter))
                         }
                     }
-                }
-            }
 
-            val componentInjectFunctionsByFunctions = injectFunctions.associateWith { function ->
-                companion.addFunction {
-                    name =
-                        Name.identifier(nameProvider.allocateForGroup("inject\$${function.name}"))
-                    returnType = irBuiltIns.unitType
-                }.apply {
-                    dispatchReceiverParameter = thisReceiver!!.copyTo(this)
-
-                    addMetadataIfNotLocal()
-
-                    val instanceValueParameter = addValueParameter(
-                        "\$instance",
-                        clazz.defaultType
-                    )
-                    val valueValueParameters = function.valueParameters.map { valueParameter ->
-                        addValueParameter(
-                            valueParameter.name.asString(),
-                            valueParameter.type
-                        )
-                    }
-
-                    body = irBlockBody {
+                    parametersByInjectFunctions.forEach { (function, valueParameters) ->
                         +irCall(function).apply {
-                            dispatchReceiver = irGet(instanceValueParameter)
-                            valueValueParameters.forEach {
-                                putValueArgument(it.index - 1, irGet(it))
-                            }
-                        }
-                    }
-                }
-            }
-
-            addFunction {
-                name = Name.identifier("invoke")
-                returnType = irBuiltIns.unitType
-            }.apply {
-                dispatchReceiverParameter = thisReceiver!!.copyTo(this)
-
-                overriddenSymbols += superTypes.single()
-                    .getClass()!!
-                    .functions
-                    .single { it.name.asString() == "invoke" }
-                    .symbol
-
-                val instanceValueParameter = addValueParameter(
-                    "\$instance",
-                    clazz.defaultType
-                )
-
-                body = irBlockBody {
-                    fieldsByInjectProperty.forEach { (property, field) ->
-                        +irCall(companionInjectFunctionsByProperty.getValue(property)).apply {
-                            dispatchReceiver = irGetObject(companion.symbol)
-                            putValueArgument(0, irGet(instanceValueParameter))
-                            putValueArgument(
-                                1,
-                                if (property.backingField!!.type.isFunction() &&
-                                    property.backingField!!.type.hasAnnotation(InjektFqNames.Provider)
-                                ) {
-                                    irGetField(irGet(dispatchReceiverParameter!!), field)
-                                } else {
-                                    irCall(
-                                        irBuiltIns.function(0)
-                                            .functions
-                                            .single { it.owner.name.asString() == "invoke" }
-                                    ).apply {
-                                        dispatchReceiver =
-                                            irGetField(irGet(dispatchReceiverParameter!!), field)
-                                    }
-                                }
-                            )
-                        }
-                    }
-
-                    fieldsByInjectFunction.forEach { (function, fields) ->
-                        +irCall(componentInjectFunctionsByFunctions.getValue(function)).apply {
-                            dispatchReceiver = irGetObject(companion.symbol)
-                            putValueArgument(0, irGet(instanceValueParameter))
-
-                            fields.forEachIndexed { index, field ->
-                                putValueArgument(
-                                    index + 1,
-                                    if (function.valueParameters[index].type.isFunction() &&
-                                        function.valueParameters[index].type.hasAnnotation(
-                                            InjektFqNames.Provider
-                                        )
-                                    ) {
-                                        irGetField(irGet(dispatchReceiverParameter!!), field)
-                                    } else {
-                                        irCall(
-                                            irBuiltIns.function(0)
-                                                .functions
-                                                .single { it.owner.name.asString() == "invoke" }
-                                        ).apply {
-                                            dispatchReceiver =
-                                                irGetField(
-                                                    irGet(dispatchReceiverParameter!!),
-                                                    field
-                                                )
-                                        }
-                                    }
-                                )
+                            dispatchReceiver = irGet(instanceParameter)
+                            valueParameters.forEachIndexed { index, valueParameter ->
+                                putValueArgument(index, irGet(valueParameter))
                             }
                         }
                     }
@@ -385,6 +200,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
         clazz.addFunction {
             name = Name.identifier("inject\$${function.name}")
             returnType = irBuiltIns.unitType
+            visibility = Visibilities.PUBLIC
         }.apply {
             dispatchReceiverParameter = function.dispatchReceiverParameter!!.copyTo(this)
             val valueParameters = function.valueParameters.map {
@@ -457,6 +273,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
             property.addSetter {
                 name = Name.identifier("inject\$${property.name}")
                 returnType = irBuiltIns.unitType
+                visibility = Visibilities.PUBLIC
             }.apply {
                 dispatchReceiverParameter =
                     property.getter!!.dispatchReceiverParameter!!.copyTo(this)

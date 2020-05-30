@@ -35,7 +35,19 @@ object InjektNameConventions {
     ): Name {
         return getJoinedName(
             packageFqName,
-            classFqName.child("MembersInjector")
+            classFqName.parent()
+                .child("inject_${classFqName.pathSegments().joinToString("_")}")
+        )
+    }
+
+    fun getFactoryNameForClass(
+        packageFqName: FqName,
+        classFqName: FqName
+    ): Name {
+        return getJoinedName(
+            packageFqName,
+            classFqName.parent()
+                .child("create_${classFqName.pathSegments().joinToString("_")}")
         )
     }
 

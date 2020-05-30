@@ -84,8 +84,6 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
 
     val module = pluginContext.referenceClass(InjektFqNames.Module)!!
 
-    val noOpMembersInjector = pluginContext.referenceClass(InjektFqNames.NoOpMembersInjector)!!
-
     val provider = pluginContext.referenceClass(InjektFqNames.Provider)!!
     val providerOfLazy = pluginContext.referenceClass(InjektFqNames.ProviderOfLazy)!!
 
