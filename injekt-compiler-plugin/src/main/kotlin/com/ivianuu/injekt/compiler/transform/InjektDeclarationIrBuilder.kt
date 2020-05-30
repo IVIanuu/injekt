@@ -331,29 +331,29 @@ class InjektDeclarationIrBuilder(
 
     fun classFactoryLambda(clazz: IrClass, membersInjector: IrFunction?): IrExpression {
         val parametersNameProvider = NameProvider()
+
+        val constructor = clazz.getInjectConstructor()
+
+        val constructorParameters = constructor?.valueParameters?.map { valueParameter ->
+            FactoryParameter(
+                name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
+                type = valueParameter.type,
+                assisted = valueParameter.annotations.hasAnnotation(InjektFqNames.Assisted)
+            )
+        } ?: emptyList()
+
         val membersInjectorParameters =
             membersInjector
                 ?.valueParameters
                 ?.drop(1)
                 ?.map { valueParameter ->
                     FactoryParameter(
-                        name = parametersNameProvider.allocateForType(valueParameter.type)
+                        name = parametersNameProvider.allocateForGroup(valueParameter.name)
                             .asString(),
                         type = valueParameter.type,
                         assisted = false
                     )
                 } ?: emptyList()
-
-        val constructor = clazz.getInjectConstructor()
-
-        val constructorParameters = constructor?.valueParameters?.map { valueParameter ->
-            FactoryParameter(
-                name = parametersNameProvider.allocateForType(valueParameter.type)
-                    .asString(),
-                type = valueParameter.type,
-                assisted = valueParameter.annotations.hasAnnotation(InjektFqNames.Assisted)
-            )
-        } ?: emptyList()
 
         val allParameters = constructorParameters + membersInjectorParameters
 
