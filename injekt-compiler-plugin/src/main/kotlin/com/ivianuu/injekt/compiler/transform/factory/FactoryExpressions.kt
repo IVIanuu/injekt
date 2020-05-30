@@ -206,7 +206,7 @@ class FactoryExpressions(
     }
 
     private fun instanceExpressionForChildFactory(binding: ChildFactoryBindingNode): FactoryExpression {
-        return invokeProviderInstanceExpression(binding)
+        return { binding.childFactoryExpression(this) }
     }
 
     private fun instanceExpressionForDelegate(binding: DelegateBindingNode): FactoryExpression =
