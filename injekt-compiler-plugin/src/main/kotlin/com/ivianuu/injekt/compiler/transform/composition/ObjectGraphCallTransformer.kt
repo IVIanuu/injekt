@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
@@ -103,7 +104,7 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                     newExpressionsByCall[call] =
                         DeclarationIrBuilder(pluginContext, call.symbol).run {
                             irCall(
-                                irBuiltIns.function(1).functions
+                                pluginContext.tmpFunction(1).functions
                                     .first { it.owner.name.asString() == "invoke" }
                             ).apply {
                                 dispatchReceiver = irCall(entryPoint.functions.single()).apply {
@@ -171,7 +172,7 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
                 "inject\$${injectedType.classifierOrFail.descriptor.fqNameSafe
                     .pathSegments().joinToString("_") { it.asString() }}"
             )
-            returnType = irBuiltIns.function(1)
+            returnType = pluginContext.tmpFunction(1)
                 .typeWith(injectedType, irBuiltIns.unitType)
                 .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.MembersInjector))
 

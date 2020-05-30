@@ -48,7 +48,6 @@ import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrPropertyImpl
-import org.jetbrains.kotlin.ir.descriptors.IrBuiltIns
 import org.jetbrains.kotlin.ir.descriptors.WrappedSimpleFunctionDescriptor
 import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrBlockBody
@@ -64,6 +63,7 @@ import org.jetbrains.kotlin.ir.expressions.IrSpreadElement
 import org.jetbrains.kotlin.ir.expressions.IrStatementContainer
 import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
+import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
@@ -123,6 +123,7 @@ import org.jetbrains.kotlin.resolve.constants.NullValue
 import org.jetbrains.kotlin.resolve.constants.ShortValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjectionImpl
@@ -602,7 +603,10 @@ fun IrDeclaration.isExternalDeclaration() = origin ==
         IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
         origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
 
-fun IrFunction.getFunctionType(irBuiltIns: IrBuiltIns): IrType {
-    return irBuiltIns.function(valueParameters.size)
+fun IrFunction.getFunctionType(pluginContext: IrPluginContext): IrType {
+    return pluginContext.tmpFunction(valueParameters.size)
         .typeWith(valueParameters.map { it.type } + returnType)
 }
+
+fun IrPluginContext.tmpFunction(n: Int): IrClassSymbol =
+    referenceClass(builtIns.getFunction(n).fqNameSafe)!!

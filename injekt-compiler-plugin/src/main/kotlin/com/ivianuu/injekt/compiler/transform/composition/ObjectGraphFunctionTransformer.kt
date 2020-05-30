@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.deepCopyWithPreservingQualifiers
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isTypeParameter
+import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.AbstractFunctionTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.factory.Key
@@ -176,7 +177,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
 
         unresolvedGetCalls
             .map {
-                irBuiltIns.function(1)
+                pluginContext.tmpFunction(1)
                     .typeWith(
                         it.extensionReceiver!!.type,
                         it.getTypeArgument(0)!!
@@ -216,7 +217,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
 
         unresolvedInjectCalls
             .map {
-                irBuiltIns.function(2)
+                pluginContext.tmpFunction(2)
                     .typeWith(
                         it.extensionReceiver!!.type,
                         it.getTypeArgument(0)!!,
@@ -300,7 +301,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                     in unresolvedGetCalls -> {
                         val valueParameter = valueParametersByUnresolvedProviderType
                             .getValue(
-                                irBuiltIns.function(1)
+                                pluginContext.tmpFunction(1)
                                     .typeWith(
                                         expression.extensionReceiver!!.type,
                                         expression.getTypeArgument(0)!!
@@ -320,7 +321,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                     in unresolvedInjectCalls -> {
                         val valueParameter = valueParametersByUnresolvedInjectorType
                             .getValue(
-                                irBuiltIns.function(2)
+                                pluginContext.tmpFunction(2)
                                     .typeWith(
                                         expression.extensionReceiver!!.type,
                                         expression.getTypeArgument(0)!!,

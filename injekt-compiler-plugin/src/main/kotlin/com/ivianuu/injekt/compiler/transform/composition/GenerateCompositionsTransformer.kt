@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getIrClass
+import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
@@ -261,7 +262,7 @@ class GenerateCompositionsTransformer(
                                     IrFunctionReferenceImpl(
                                         UNDEFINED_OFFSET,
                                         UNDEFINED_OFFSET,
-                                        factoryFunctionImpl.owner.getFunctionType(irBuiltIns),
+                                        factoryFunctionImpl.owner.getFunctionType(pluginContext),
                                         factoryFunctionImpl,
                                         0,
                                         null
@@ -339,7 +340,7 @@ class GenerateCompositionsTransformer(
                             IrFunctionReferenceImpl(
                                 UNDEFINED_OFFSET,
                                 UNDEFINED_OFFSET,
-                                childFactory.owner.getFunctionType(irBuiltIns),
+                                childFactory.owner.getFunctionType(pluginContext),
                                 childFactory,
                                 0,
                                 null
@@ -353,12 +354,12 @@ class GenerateCompositionsTransformer(
                                 .child("alias")
                         ).single()
                     ).apply {
-                        val functionType = childFactory.owner.getFunctionType(irBuiltIns)
+                        val functionType = childFactory.owner.getFunctionType(pluginContext)
                             .withNoArgAnnotations(
                                 pluginContext,
                                 listOf(InjektFqNames.ChildFactory)
                             )
-                        val aliasFunctionType = irBuiltIns.function(
+                        val aliasFunctionType = pluginContext.tmpFunction(
                             childFactory.owner
                                 .valueParameters
                                 .size

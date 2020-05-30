@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.getInjectConstructor
 import com.ivianuu.injekt.compiler.isTypeParameter
+import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.withNoArgAnnotations
@@ -408,7 +409,7 @@ class InjektDeclarationIrBuilder(
             Map<FactoryParameter, IrValueParameter>
         ) -> IrExpression
     ): IrExpression {
-        val lambdaType = irBuiltIns.function(parameters.size)
+        val lambdaType = pluginContext.tmpFunction(parameters.size)
             .typeWith(
                 parameters.map { parameter ->
                     if (parameter.assisted) parameter.type.withNoArgAnnotations(

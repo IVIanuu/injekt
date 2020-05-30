@@ -28,6 +28,7 @@ import com.ivianuu.injekt.compiler.getInjectConstructor
 import com.ivianuu.injekt.compiler.getQualifierFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
+import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
@@ -76,13 +77,12 @@ class ChildFactoryBindingResolver(
             .functions
             .filter { it.hasAnnotation(InjektFqNames.AstChildFactory) }
             .forEach { function ->
-                val key =
-                    function.getFunctionType(parentFactory.pluginContext.irBuiltIns)
-                        .withNoArgAnnotations(
-                            parentFactory.pluginContext,
-                            listOf(InjektFqNames.ChildFactory)
-                        )
-                        .asKey()
+                val key = function.getFunctionType(parentFactory.pluginContext)
+                    .withNoArgAnnotations(
+                        parentFactory.pluginContext,
+                        listOf(InjektFqNames.ChildFactory)
+                    )
+                    .asKey()
 
                 childFactories.getOrPut(key) { mutableListOf() } += childFactoryBindingNode(
                     key, function
@@ -251,7 +251,7 @@ class ModuleBindingResolver(
                             .filter { it.descriptor.hasAnnotation(InjektFqNames.AstAssisted) }
 
                         val assistedFactoryType =
-                            factory.pluginContext.irBuiltIns.function(assistedValueParameters.size)
+                            factory.pluginContext.tmpFunction(assistedValueParameters.size)
                                 .typeWith(
                                     assistedValueParameters
                                         .map {
@@ -358,7 +358,7 @@ class MembersInjectorBindingResolver(
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): List<BindingNode> {
         if (InjektFqNames.MembersInjector !in requestedKey.type.getQualifierFqNames()) return emptyList()
-        if (requestedKey.type.classOrNull != factoryImpl.pluginContext.irBuiltIns.function(1)) return emptyList()
+        if (requestedKey.type.classOrNull != factoryImpl.pluginContext.tmpFunction(1)) return emptyList()
         val target =
             requestedKey.type.typeArguments.first().typeOrNull?.getClass() ?: return emptyList()
         val membersInjector = declarationStore.getMembersInjectorForClassOrNull(target)
@@ -380,7 +380,7 @@ class AnnotatedClassBindingResolver(
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): List<BindingNode> {
         return if (requestedKey.type.isFunction() &&
-            requestedKey.type.classOrNull != pluginContext.irBuiltIns.function(0) &&
+            requestedKey.type.classOrNull != pluginContext.tmpFunction(0) &&
             InjektFqNames.Provider in requestedKey.type.getQualifierFqNames()
         ) {
             val clazz =
@@ -610,7 +610,7 @@ class MapBindingResolver(
         pluginContext.symbolTable.referenceClass(pluginContext.builtIns.map)
             .typeWith(
                 mapKey.type.typeArguments[0].typeOrFail,
-                pluginContext.irBuiltIns.function(0)
+                pluginContext.tmpFunction(0)
                     .typeWith(mapKey.type.typeArguments[1].typeOrFail)
                     .withNoArgAnnotations(pluginContext, listOf(qualifier))
             )
@@ -698,7 +698,7 @@ class SetBindingResolver(
     ) = SetBindingNode(
         pluginContext.symbolTable.referenceClass(pluginContext.builtIns.set)
             .typeWith(
-                pluginContext.irBuiltIns.function(0).typeWith(
+                pluginContext.tmpFunction(0).typeWith(
                     setKey.type.typeArguments.single().typeOrFail
                 ).withNoArgAnnotations(pluginContext, listOf(qualifier))
             ).asKey(),
@@ -715,7 +715,7 @@ class LazyOrProviderBindingResolver(
         val requestedType = requestedKey.type
         return when {
             requestedType.isFunction() &&
-                    requestedKey.type.classOrNull == factory.pluginContext.irBuiltIns.function(0) &&
+                    requestedKey.type.classOrNull == factory.pluginContext.tmpFunction(0) &&
                     InjektFqNames.Lazy in requestedType.getQualifierFqNames() ->
                 listOf(
                     LazyBindingNode(
@@ -725,7 +725,7 @@ class LazyOrProviderBindingResolver(
                     )
                 )
             requestedType.isFunction() &&
-                    requestedKey.type.classOrNull == factory.pluginContext.irBuiltIns.function(0) &&
+                    requestedKey.type.classOrNull == factory.pluginContext.tmpFunction(0) &&
                     InjektFqNames.Provider in requestedType.getQualifierFqNames() ->
                 listOf(
                     ProviderBindingNode(

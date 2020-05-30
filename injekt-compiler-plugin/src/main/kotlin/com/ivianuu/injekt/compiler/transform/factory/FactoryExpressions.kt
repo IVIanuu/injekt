@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
@@ -162,7 +163,7 @@ class FactoryExpressions(
         return {
             InjektDeclarationIrBuilder(pluginContext, factory.moduleClass.symbol)
                 .irLambda(
-                    pluginContext.irBuiltIns.function(
+                    pluginContext.tmpFunction(
                         assistedParameters
                             .size
                     ).typeWith(
@@ -256,7 +257,7 @@ class FactoryExpressions(
                         binding.valueKey.type.isFunction() &&
                                 binding.valueKey.type.hasAnnotation(InjektFqNames.Lazy) -> {
                             BindingRequest(
-                                pluginContext.irBuiltIns.function(0)
+                                pluginContext.tmpFunction(0)
                                     .typeWith(entryValue.key.type)
                                     .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Lazy))
                                     .asKey(),
@@ -421,7 +422,7 @@ class FactoryExpressions(
                         binding.elementKey.type.isFunction() &&
                                 binding.elementKey.type.hasAnnotation(InjektFqNames.Lazy) -> {
                             BindingRequest(
-                                pluginContext.irBuiltIns.function(0)
+                                pluginContext.tmpFunction(0)
                                     .typeWith(element.key.type)
                                     .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Lazy))
                                     .asKey(),
@@ -508,7 +509,7 @@ class FactoryExpressions(
         return cachedProviderExpression(binding.key) providerFieldExpression@{
             InjektDeclarationIrBuilder(pluginContext, factory.moduleClass.symbol)
                 .irLambda(
-                    pluginContext.irBuiltIns.function(0)
+                    pluginContext.tmpFunction(0)
                         .typeWith(binding.key.type)
                 ) {
                     +irReturn(
@@ -714,7 +715,7 @@ class FactoryExpressions(
             } else {
                 InjektDeclarationIrBuilder(pluginContext, factory.moduleClass.symbol)
                     .irLambda(
-                        pluginContext.irBuiltIns.function(0)
+                        pluginContext.tmpFunction(0)
                             .typeWith(binding.key.type)
                     ) {
                         +irReturn(
@@ -807,7 +808,7 @@ class FactoryExpressions(
                                     UNDEFINED_OFFSET,
                                     this@FactoryExpressions.pluginContext.irBuiltIns.arrayClass
                                         .typeWith(
-                                            pluginContext.irBuiltIns.function(0)
+                                            pluginContext.tmpFunction(0)
                                                 .typeWith(binding.key.type)
                                         ),
                                     binding.elementKey.type,
@@ -826,7 +827,7 @@ class FactoryExpressions(
         providerInitializer: IrBuilderWithScope.() -> IrExpression
     ): FactoryExpression {
         return members.cachedValue(
-            pluginContext.irBuiltIns.function(0)
+            pluginContext.tmpFunction(0)
                 .typeWith(key.type)
                 .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Provider))
                 .asKey(),
@@ -874,7 +875,7 @@ class FactoryExpressions(
         )
         return bindingExpression@{
             irCall(
-                pluginContext.irBuiltIns.function(0)
+                pluginContext.tmpFunction(0)
                     .functions
                     .single { it.owner.name.asString() == "invoke" }
             ).apply {

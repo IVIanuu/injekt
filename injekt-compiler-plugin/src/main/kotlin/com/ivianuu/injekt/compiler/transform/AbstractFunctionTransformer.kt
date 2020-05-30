@@ -144,7 +144,7 @@ abstract class AbstractFunctionTransformer(
         return IrFunctionExpressionImpl(
             expression.startOffset,
             expression.endOffset,
-            transformed.getFunctionType(irBuiltIns),
+            transformed.getFunctionType(pluginContext),
             transformed as IrSimpleFunction,
             expression.origin
         )
@@ -157,7 +157,7 @@ abstract class AbstractFunctionTransformer(
         return IrFunctionReferenceImpl(
             expression.startOffset,
             expression.endOffset,
-            transformed.getFunctionType(irBuiltIns),
+            transformed.getFunctionType(pluginContext),
             transformed.symbol,
             expression.typeArgumentsCount,
             null,
