@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
+import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -25,6 +26,7 @@ import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irBlockBody
+import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irReturn
@@ -49,10 +51,16 @@ class RootFactoryTransformer(
         declaration.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitFunctionNew(declaration: IrFunction): IrStatement {
                 if ((declaration.hasAnnotation(InjektFqNames.Factory) ||
-                            declaration.hasAnnotation(InjektFqNames.InstanceFactory)) &&
-                    declaration.typeParameters.isEmpty()
+                            declaration.hasAnnotation(InjektFqNames.InstanceFactory))
                 ) {
                     factoryFunctions += declaration
+                } else if (declaration.hasAnnotation(InjektFqNames.ChildFactory) ||
+                    declaration.hasAnnotation(InjektFqNames.CompositionFactory)
+                ) {
+                    declaration.body =
+                        InjektDeclarationIrBuilder(pluginContext, declaration.symbol).run {
+                            builder.irExprBody(irInjektIntrinsicUnit())
+                        }
                 }
                 return super.visitFunctionNew(declaration)
             }
