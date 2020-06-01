@@ -40,6 +40,21 @@ inline fun <reified T : ViewModel> activityViewModel() {
     baseViewModel<T, @ForActivity ViewModelStoreOwner>()
 }
 
+@BindingAdapter(FragmentComponent::class)
+annotation class FragmentViewModel {
+    companion object {
+        @Module
+        inline fun <reified T : ViewModel> bind() {
+            fragmentComponent<T>()
+        }
+    }
+}
+
+@Module
+inline fun <reified T : ViewModel> fragmentComponent() {
+    baseViewModel<T, @ForFragment ViewModelStoreOwner>()
+}
+
 @Module
 inline fun <reified T : ViewModel, S : ViewModelStoreOwner> baseViewModel() {
     transient<@UnscopedViewModel T>()
