@@ -10,7 +10,6 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/composition-integration-tests/composition-integration-tests.iml" filepath="$PROJECT_DIR$/.idea/modules/composition-integration-tests/composition-integration-tests.iml" group="injekt/composition-integration-tests" />
       <module fileurl="file://$PROJECT_DIR$/.idea/injekt.iml" filepath="$PROJECT_DIR$/.idea/injekt.iml" group="injekt" />
       <module fileurl="file://$PROJECT_DIR$/injekt-android/injekt-android.iml" filepath="$PROJECT_DIR$/injekt-android/injekt-android.iml" group="injekt/injekt-android" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-android-compose/injekt-android-compose.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-android-compose/injekt-android-compose.iml" group="injekt/injekt-android-compose" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-android-work/injekt-android-work.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-android-work/injekt-android-work.iml" group="injekt/injekt-android-work" />
       <module fileurl="file://$PROJECT_DIR$/injekt-common/injekt-common.iml" filepath="$PROJECT_DIR$/injekt-common/injekt-common.iml" group="injekt/injekt-common" />
       <module fileurl="file://$PROJECT_DIR$/injekt-compiler-plugin/injekt-compiler-plugin.iml" filepath="$PROJECT_DIR$/injekt-compiler-plugin/injekt-compiler-plugin.iml" group="injekt/injekt-compiler-plugin" />
@@ -34,6 +33,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/test-util/injekt.test-util.iml" filepath="$PROJECT_DIR$/.idea/modules/test-util/injekt.test-util.iml" group="injekt/test-util" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt_buildSrc.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt_buildSrc.iml" group="injekt/injekt_buildSrc" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/integration-tests/integration-tests.iml" filepath="$PROJECT_DIR$/.idea/modules/integration-tests/integration-tests.iml" group="injekt/integration-tests" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/lol/lol.iml" filepath="$PROJECT_DIR$/.idea/modules/lol/lol.iml" group="injekt/lol" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/sample/sample.iml" filepath="$PROJECT_DIR$/.idea/modules/sample/sample.iml" group="injekt/sample" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/studio-projects-injekt.iml" filepath="$PROJECT_DIR$/.idea/modules/studio-projects-injekt.iml" group="injekt" />
       <module fileurl="file://$PROJECT_DIR$/studio-projects.injekt.iml" filepath="$PROJECT_DIR$/studio-projects.injekt.iml" group="injekt" />

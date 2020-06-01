@@ -35,7 +35,6 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
-import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructors
@@ -172,35 +171,29 @@ class FactoryExpressions(
                                 binding.key.type
                     )
                 ) { lambda ->
-                    val provisionFunctionExpression = binding.provisionFunctionExpression(this)
                     +irReturn(
-                        irCall(provisionFunctionExpression.type
-                            .classOrNull!!
-                            .functions
-                            .single { it.owner.name.asString() == "invoke" }
-                        ).apply {
-                            dispatchReceiver = provisionFunctionExpression
-
-                            binding.parameters.forEachIndexed { index, parameter ->
-                                if (parameter.assisted) {
-                                    putValueArgument(
-                                        index,
-                                        irGet(
-                                            lambda.valueParameters[assistedParameters.indexOf(
+                        binding.createExpression(
+                            this,
+                            binding.parameters
+                                .associateWith { parameter ->
+                                    val expr: () -> IrExpression = if (parameter.assisted) {
+                                        {
+                                            irGet(
+                                                lambda.valueParameters[assistedParameters.indexOf(
+                                                    parameter
+                                                )]
+                                            )
+                                        }
+                                    } else {
+                                        {
+                                            dependencyExpressions[nonAssistedParameters.indexOf(
                                                 parameter
-                                            )]
-                                        )
-                                    )
-                                } else {
-                                    putValueArgument(
-                                        index,
-                                        dependencyExpressions[nonAssistedParameters.indexOf(
-                                            parameter
-                                        )]()
-                                    )
+                                            )]()
+                                        }
+                                    }
+                                    expr
                                 }
-                            }
-                        }
+                        )
                     )
                 }
         }
@@ -390,20 +383,17 @@ class FactoryExpressions(
                 .map { getBindingExpression(it) }
 
             val expression: FactoryExpression = bindingExpression@{
-                val provisionFunctionExpression = binding.provisionFunctionExpression(this)
-                irCall(provisionFunctionExpression.type
-                    .classOrNull!!
-                    .functions
-                    .single { it.owner.name.asString() == "invoke" }
-                ).apply {
-                    dispatchReceiver = provisionFunctionExpression
-                    dependencies.forEachIndexed { index, dependency ->
-                        putValueArgument(
-                            index,
-                            dependency()
-                        )
-                    }
-                }
+                binding.createExpression(
+                    this,
+                    binding.parameters
+                        .mapIndexed { index, parameter ->
+                            index to parameter
+                        }
+                        .associateWith { (index, parameter) ->
+                            { dependencies[index]() }
+                        }
+                        .mapKeys { it.key.second }
+                )
             }
             expression
         }
@@ -706,35 +696,25 @@ class FactoryExpressions(
             .map { getBindingExpression(it) }
 
         return cachedProviderExpression(binding.key) providerFieldExpression@{
-            val provisionFunctionExpression = binding.provisionFunctionExpression(this)
-
-            val newProvider = if (provisionFunctionExpression.type.isFunction() &&
-                provisionFunctionExpression.type.typeArguments.size == 1
-            ) {
-                provisionFunctionExpression
-            } else {
-                InjektDeclarationIrBuilder(pluginContext, factory.moduleClass.symbol)
-                    .irLambda(
-                        pluginContext.tmpFunction(0)
-                            .typeWith(binding.key.type)
-                    ) {
-                        +irReturn(
-                            irCall(provisionFunctionExpression.type
-                                .classOrNull!!
-                                .functions
-                                .single { it.owner.name.asString() == "invoke" }
-                            ).apply {
-                                dispatchReceiver = provisionFunctionExpression
-                                dependencyExpressions.forEachIndexed { index, dependency ->
-                                    putValueArgument(
-                                        index,
-                                        dependency()
-                                    )
+            val newProvider = InjektDeclarationIrBuilder(pluginContext, factory.moduleClass.symbol)
+                .irLambda(
+                    pluginContext.tmpFunction(0)
+                        .typeWith(binding.key.type)
+                ) {
+                    +irReturn(
+                        binding.createExpression(
+                            this,
+                            binding.parameters
+                                .mapIndexed { index, parameter ->
+                                    index to parameter
                                 }
-                            }
+                                .associateWith { (index, parameter) ->
+                                    { dependencyExpressions[index]() }
+                                }
+                                .mapKeys { it.key.second }
                         )
-                    }
-            }
+                    )
+                }
 
             if (binding.scoped) {
                 doubleCheck(newProvider)

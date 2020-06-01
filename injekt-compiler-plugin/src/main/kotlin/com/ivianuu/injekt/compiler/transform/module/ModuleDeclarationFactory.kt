@@ -59,6 +59,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ModuleDeclarationFactory(
     private val moduleFunction: IrFunction,
+    private val originalModuleFunction: IrFunction,
     private val moduleClass: IrClass,
     private val pluginContext: IrPluginContext,
     private val declarationStore: InjektDeclarationStore,
@@ -83,8 +84,18 @@ class ModuleDeclarationFactory(
                 listOf(createAliasDeclaration(call))
             calleeFqName == "com.ivianuu.injekt.transient" ||
                     calleeFqName == "com.ivianuu.injekt.scoped" ||
-                    calleeFqName == "com.ivianuu.injekt.instance" ->
-                listOf(createBindingDeclaration(call))
+                    calleeFqName == "com.ivianuu.injekt.instance" -> {
+                listOf(
+                    createBindingDeclaration(
+                        call.getTypeArgument(0)!!
+                            .remapTypeParameters(originalModuleFunction, moduleFunction)
+                            .remapTypeParameters(moduleFunction, moduleClass),
+                        if (call.valueArgumentsCount != 0) call.getValueArgument(0) else null,
+                        call.symbol.owner.name.asString() == "instance",
+                        call.symbol.owner.name.asString() == "scoped"
+                    )
+                )
+            }
             calleeFqName == "com.ivianuu.injekt.map" ->
                 createMapDeclarations(call)
             calleeFqName == "com.ivianuu.injekt.set" ->
@@ -124,17 +135,6 @@ class ModuleDeclarationFactory(
 
     private fun createAliasDeclaration(call: IrCall): AliasDeclaration =
         AliasDeclaration(call.getTypeArgument(0)!!, call.getTypeArgument(1)!!)
-
-    private fun createBindingDeclaration(call: IrCall): BindingDeclaration {
-        val bindingType = call.getTypeArgument(0)!!
-            .remapTypeParameters(moduleFunction, moduleClass)
-        return createBindingDeclarationFromSingleArgument(
-            bindingType,
-            if (call.valueArgumentsCount != 0) call.getValueArgument(0) else null,
-            call.symbol.owner.name.asString() == "instance",
-            call.symbol.owner.name.asString() == "scoped"
-        )
-    }
 
     private fun createMapDeclarations(call: IrCall): List<ModuleDeclaration> {
         val declarations = mutableListOf<ModuleDeclaration>()
@@ -204,6 +204,7 @@ class ModuleDeclarationFactory(
         val includedClass = includedModuleFunction.returnType.classOrNull!!.owner
         val includedType = includedModuleFunction.returnType
             .typeWith(*call.typeArguments.toTypedArray())
+            .remapTypeParameters(originalModuleFunction, moduleFunction)
             .remapTypeParameters(moduleFunction, moduleClass)
 
         val path = if (includedClass.kind != ClassKind.OBJECT) {
@@ -241,11 +242,12 @@ class ModuleDeclarationFactory(
                             val index = includedClass.typeParameters
                                 .indexOfFirst { it.name.asString() == typeParameterName }
                             call.getTypeArgument(index)!!
+                                .remapTypeParameters(originalModuleFunction, moduleFunction)
                                 .remapTypeParameters(moduleFunction, moduleClass)
                         }
                         .withAnnotations(bindingFunction.returnType.annotations)
 
-                createBindingDeclarationFromSingleArgument(
+                createBindingDeclaration(
                     bindingType,
                     null,
                     false,
@@ -256,7 +258,7 @@ class ModuleDeclarationFactory(
         return declarations
     }
 
-    private fun createBindingDeclarationFromSingleArgument(
+    private fun createBindingDeclaration(
         bindingType: IrType,
         singleArgument: IrExpression?,
         instance: Boolean,
@@ -287,6 +289,7 @@ class ModuleDeclarationFactory(
                 parameters += InjektDeclarationIrBuilder.FactoryParameter(
                     parameterNameProvider.allocateForType(it.typeOrFail).asString(),
                     it.typeOrFail
+                        .remapTypeParameters(originalModuleFunction, moduleFunction)
                         .remapTypeParameters(moduleFunction, moduleClass),
                     it.typeOrFail.hasAnnotation(InjektFqNames.AstAssisted)
                 )
@@ -297,6 +300,7 @@ class ModuleDeclarationFactory(
                         moduleClass,
                         nameProvider.allocateForType(bindingType),
                         initializer.type
+                            .remapTypeParameters(originalModuleFunction, moduleFunction)
                             .remapTypeParameters(moduleFunction, moduleClass)
                     )
             )
@@ -318,6 +322,7 @@ class ModuleDeclarationFactory(
                     parameters += InjektDeclarationIrBuilder.FactoryParameter(
                         it.name.asString(),
                         it.type
+                            .remapTypeParameters(originalModuleFunction, moduleFunction)
                             .remapTypeParameters(moduleFunction, moduleClass),
                         it.type.hasAnnotation(InjektFqNames.AstAssisted)
                     )
@@ -328,6 +333,7 @@ class ModuleDeclarationFactory(
                             moduleClass,
                             nameProvider.allocateForType(bindingType),
                             initializer.type
+                                .remapTypeParameters(originalModuleFunction, moduleFunction)
                                 .remapTypeParameters(moduleFunction, moduleClass)
                         )
                 )

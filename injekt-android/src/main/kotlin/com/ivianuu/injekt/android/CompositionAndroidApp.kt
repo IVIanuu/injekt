@@ -14,14 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.composition
+package com.ivianuu.injekt.android
 
-import com.ivianuu.injekt.internal.injektIntrinsic
-
-@Target(AnnotationTarget.FUNCTION)
-annotation class CompositionFactory
-
-inline fun <reified T, reified F> compositionFactoryOf(): F =
-    CompositionFactories.get(T::class)
-
-fun initializeCompositions(): Unit = injektIntrinsic()
+@Target(AnnotationTarget.CLASS)
+annotation class CompositionAndroidApp

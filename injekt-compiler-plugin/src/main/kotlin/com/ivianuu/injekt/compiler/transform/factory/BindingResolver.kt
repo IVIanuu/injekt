@@ -19,10 +19,10 @@ package com.ivianuu.injekt.compiler.transform.factory
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.MapKey
+import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.findPropertyGetter
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
-import com.ivianuu.injekt.compiler.getFunctionFromLambdaExpression
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getInjectConstructor
 import com.ivianuu.injekt.compiler.getQualifierFqNames
@@ -36,6 +36,8 @@ import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
+import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
@@ -43,9 +45,11 @@ import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.expressions.IrConst
+import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.superTypes
@@ -288,7 +292,7 @@ class ModuleBindingResolver(
                             targetScope = null,
                             scoped = scoped,
                             module = moduleNode,
-                            provisionFunctionExpression = {
+                            createExpression = {
                                 irCall(propertyGetter).apply {
                                     dispatchReceiver =
                                         moduleNode.accessor(this@AssistedProvisionBindingNode)
@@ -299,15 +303,19 @@ class ModuleBindingResolver(
                             origin = moduleNode.module.fqNameForIrSerialization
                         )
                     } else {
-                        val dependencies = bindingFunction.valueParameters
+                        val parameters = bindingFunction.valueParameters
                             .map {
-                                it.type
-                                    .substituteAndKeepQualifiers(
-                                        moduleNode.descriptorTypeParametersMap
-                                    )
-                                    .asKey()
+                                InjektDeclarationIrBuilder.FactoryParameter(
+                                    it.name.asString(),
+                                    it.type
+                                        .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap),
+                                    it.hasAnnotation(InjektFqNames.AstAssisted)
+                                )
                             }
-                            .map { BindingRequest(it, moduleRequestOrigin) }
+
+                        val dependencies = parameters
+                            .filterNot { it.assisted }
+                            .map { BindingRequest(it.type.asKey(), moduleRequestOrigin) }
 
                         ProvisionBindingNode(
                             key = bindingKey,
@@ -315,12 +323,26 @@ class ModuleBindingResolver(
                             targetScope = null,
                             scoped = scoped,
                             module = moduleNode,
-                            provisionFunctionExpression = {
-                                irCall(propertyGetter).apply {
-                                    dispatchReceiver =
-                                        moduleNode.accessor(this@ProvisionBindingNode)
+                            createExpression = { parametersMap ->
+                                irCall(propertyGetter.returnType
+                                    .classOrNull!!
+                                    .functions
+                                    .single { it.owner.name.asString() == "invoke" }
+                                ).apply {
+                                    dispatchReceiver = irCall(propertyGetter).apply {
+                                        dispatchReceiver =
+                                            moduleNode.accessor(this@ProvisionBindingNode)
+                                    }
+
+                                    parametersMap.values.forEachIndexed { index, expression ->
+                                        putValueArgument(
+                                            index,
+                                            expression()
+                                        )
+                                    }
                                 }
                             },
+                            parameters = parameters,
                             owner = factory,
                             origin = moduleNode.module.fqNameForIrSerialization
                         )
@@ -405,44 +427,51 @@ class AnnotatedClassBindingResolver(
 
             val scoped = scopeAnnotation != null
 
+            val parametersNameProvider = NameProvider()
+
+            val constructorParameters = constructor?.valueParameters?.map { valueParameter ->
+                InjektDeclarationIrBuilder.FactoryParameter(
+                    name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
+                    type = valueParameter.type,
+                    assisted = valueParameter.annotations.hasAnnotation(InjektFqNames.Assisted)
+                )
+            } ?: emptyList()
+
+            val membersInjector = declarationStore.getMembersInjectorForClassOrNull(clazz)
+
+            val membersInjectorParameters =
+                membersInjector
+                    ?.valueParameters
+                    ?.drop(1)
+                    ?.map { valueParameter ->
+                        InjektDeclarationIrBuilder.FactoryParameter(
+                            name = parametersNameProvider.allocateForGroup(valueParameter.name)
+                                .asString(),
+                            type = valueParameter.type,
+                            assisted = false
+                        )
+                    } ?: emptyList()
+
+            val allParameters =
+                constructorParameters + membersInjectorParameters
+
             val typeParametersMap = clazz
                 .typeParameters
                 .map { it.symbol }
                 .associateWith { requestedKey.type.typeArguments[it.owner.index].typeOrFail }
 
-            val factoryLambda = InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
-                .classFactoryLambda(
-                    clazz, declarationStore.getMembersInjectorForClassOrNull(clazz)
-                )
-
-            val factoryLambdaExpression = factory.factoryMembers.cachedValue(
-                factoryLambda.type.asKey()
-            ) { factoryLambda }
-
-            val parameters = factoryLambda.getFunctionFromLambdaExpression()
-                .valueParameters
-                .map { valueParameter ->
-                    InjektDeclarationIrBuilder.FactoryParameter(
-                        valueParameter.name.asString(),
-                        valueParameter.type
-                            .substituteAndKeepQualifiers(typeParametersMap),
-                        valueParameter.type.hasAnnotation(InjektFqNames.AstAssisted)
-                    )
-                }
-
-            val dependencies = factoryLambda.getFunctionFromLambdaExpression()
-                .valueParameters
-                .filterNot { it.type.hasAnnotation(InjektFqNames.AstAssisted) }
-                .map { valueParameter ->
+            val dependencies = allParameters
+                .filterNot { it.assisted }
+                .map { parameter ->
                     BindingRequest(
-                        valueParameter.type
+                        parameter.type
                             .substituteAndKeepQualifiers(typeParametersMap)
                             .asKey(),
                         constructor?.valueParameters
-                            ?.singleOrNull { it.name == valueParameter.name }
+                            ?.singleOrNull { it.name.asString() == parameter.name }
                             ?.descriptor
                             ?.fqNameSafe ?: clazz.properties
-                            .singleOrNull { it.name == valueParameter.name }
+                            .singleOrNull { it.name.asString() == parameter.name }
                             ?.descriptor?.fqNameSafe
                     )
                 }
@@ -454,8 +483,13 @@ class AnnotatedClassBindingResolver(
                     targetScope = scopeAnnotation?.fqName,
                     scoped = scoped,
                     module = null,
-                    provisionFunctionExpression = factoryLambdaExpression,
-                    parameters = parameters,
+                    createExpression = newInstanceExpression(
+                        clazz,
+                        constructor,
+                        membersInjector,
+                        constructorParameters, membersInjectorParameters
+                    ),
+                    parameters = allParameters,
                     owner = factory,
                     origin = clazz.fqNameForIrSerialization
                 )
@@ -487,28 +521,46 @@ class AnnotatedClassBindingResolver(
                 .map { it.symbol }
                 .associateWith { requestedKey.type.typeArguments[it.owner.index].typeOrFail }
 
-            val factoryLambda = InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
-                .classFactoryLambda(
-                    clazz, declarationStore
-                        .getMembersInjectorForClassOrNull(clazz)
-                )
-            val factoryLambdaExpression = factory.factoryMembers.cachedValue(
-                factoryLambda.type.asKey()
-            ) { factoryLambda }
+            val parametersNameProvider = NameProvider()
 
-            val dependencies = factoryLambda.getFunctionFromLambdaExpression()
-                .valueParameters
-                .filterNot { it.type.hasAnnotation(InjektFqNames.AstAssisted) }
-                .map { valueParameter ->
+            val constructorParameters = constructor?.valueParameters?.map { valueParameter ->
+                InjektDeclarationIrBuilder.FactoryParameter(
+                    name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
+                    type = valueParameter.type,
+                    assisted = valueParameter.annotations.hasAnnotation(InjektFqNames.Assisted)
+                )
+            } ?: emptyList()
+
+            val membersInjector = declarationStore.getMembersInjectorForClassOrNull(clazz)
+
+            val membersInjectorParameters =
+                membersInjector
+                    ?.valueParameters
+                    ?.drop(1)
+                    ?.map { valueParameter ->
+                        InjektDeclarationIrBuilder.FactoryParameter(
+                            name = parametersNameProvider.allocateForGroup(valueParameter.name)
+                                .asString(),
+                            type = valueParameter.type,
+                            assisted = false
+                        )
+                    } ?: emptyList()
+
+            val allParameters =
+                constructorParameters + membersInjectorParameters
+
+            val dependencies = allParameters
+                .filterNot { it.assisted }
+                .map { parameter ->
                     BindingRequest(
-                        valueParameter.type
+                        parameter.type
                             .substituteAndKeepQualifiers(typeParametersMap)
                             .asKey(),
                         constructor?.valueParameters
-                            ?.singleOrNull { it.name == valueParameter.name }
+                            ?.singleOrNull { it.name.asString() == parameter.name }
                             ?.descriptor
                             ?.fqNameSafe ?: clazz.properties
-                            .singleOrNull { it.name == valueParameter.name }
+                            .singleOrNull { it.name.asString() == parameter.name }
                             ?.descriptor?.fqNameSafe
                     )
                 }
@@ -520,11 +572,68 @@ class AnnotatedClassBindingResolver(
                     targetScope = scopeAnnotation?.fqName,
                     scoped = scoped,
                     module = null,
-                    provisionFunctionExpression = factoryLambdaExpression,
+                    createExpression = newInstanceExpression(
+                        clazz,
+                        constructor,
+                        membersInjector,
+                        constructorParameters,
+                        membersInjectorParameters
+                    ),
+                    parameters = allParameters,
                     owner = factory,
                     origin = clazz.fqNameForIrSerialization
                 )
             )
+        }
+    }
+
+    private fun newInstanceExpression(
+        clazz: IrClass,
+        constructor: IrConstructor?,
+        membersInjector: IrFunction?,
+        constructorParameters: List<InjektDeclarationIrBuilder.FactoryParameter>,
+        membersInjectorParameters: List<InjektDeclarationIrBuilder.FactoryParameter>
+    ): IrBuilderWithScope.(Map<InjektDeclarationIrBuilder.FactoryParameter, () -> IrExpression>) -> IrExpression {
+        return { parametersMap ->
+            fun createExpr() = if (clazz.kind == ClassKind.OBJECT) {
+                irGetObject(clazz.symbol)
+            } else {
+                irCall(constructor!!).apply {
+                    constructorParameters
+                        .forEachIndexed { index, parameter ->
+                            putValueArgument(
+                                index,
+                                parametersMap.getValue(parameter)()
+                            )
+                        }
+                }
+            }
+
+            if (membersInjector == null) {
+                createExpr()
+            } else {
+                irBlock {
+                    val instance = irTemporary(createExpr())
+
+                    val membersInjectorValueParametersByParameter = membersInjectorParameters
+                        .map { it to parametersMap.getValue(it) }
+                        .toMap()
+
+                    +irCall(membersInjector).apply {
+                        putValueArgument(0, irGet(instance))
+                        membersInjectorParameters.forEachIndexed { index, valueParameter ->
+                            putValueArgument(
+                                index + 1,
+                                membersInjectorValueParametersByParameter.getValue(
+                                    valueParameter
+                                )()
+                            )
+                        }
+                    }
+
+                    +irGet(instance)
+                }
+            }
         }
     }
 }

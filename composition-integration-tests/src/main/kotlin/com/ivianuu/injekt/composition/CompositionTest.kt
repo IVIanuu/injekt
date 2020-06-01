@@ -65,7 +65,7 @@ class CompositionTest {
                 }
                 
                 fun main() {
-                    generateCompositions()
+                    initializeCompositions()
                 }
                 """
             )
@@ -139,7 +139,7 @@ class CompositionTest {
             }
             
             fun invoke() {
-                generateCompositions()
+                initializeCompositions()
                 App() 
             }
             """
@@ -219,7 +219,7 @@ class CompositionTest {
                 }
                 
                 fun main() {
-                    generateCompositions()
+                    initializeCompositions()
                 }
                 """
             )

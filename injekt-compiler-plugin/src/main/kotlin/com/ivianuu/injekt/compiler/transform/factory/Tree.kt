@@ -152,7 +152,7 @@ class AssistedProvisionBindingNode(
     module: ModuleNode?,
     owner: AbstractFactory,
     origin: FqName?,
-    val provisionFunctionExpression: IrBuilderWithScope.() -> IrExpression,
+    val createExpression: IrBuilderWithScope.(Map<InjektDeclarationIrBuilder.FactoryParameter, () -> IrExpression>) -> IrExpression,
     val parameters: List<InjektDeclarationIrBuilder.FactoryParameter>
 ) : BindingNode(key, dependencies, targetScope, scoped, module, owner, origin)
 
@@ -294,7 +294,8 @@ class ProvisionBindingNode(
     module: ModuleNode?,
     owner: AbstractFactory,
     origin: FqName?,
-    val provisionFunctionExpression: IrBuilderWithScope.() -> IrExpression
+    val createExpression: IrBuilderWithScope.(Map<InjektDeclarationIrBuilder.FactoryParameter, () -> IrExpression>) -> IrExpression,
+    val parameters: List<InjektDeclarationIrBuilder.FactoryParameter>
 ) : BindingNode(key, dependencies, targetScope, scoped, module, owner, origin)
 
 class SetBindingNode(

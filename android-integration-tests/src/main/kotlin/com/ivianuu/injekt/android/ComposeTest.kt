@@ -45,7 +45,7 @@ class ComposeTest {
             
             @androidx.compose.Composable
             fun caller() {
-                generateCompositions()
+                initializeCompositions()
                 val foo = inject<Foo>()
             }
         """,
@@ -77,7 +77,7 @@ class ComposeTest {
             
             @androidx.compose.Composable
             fun caller() {
-                generateCompositions()
+                initializeCompositions()
                 val foo = inject<Foo>()
             }
         """,
@@ -115,7 +115,7 @@ class ComposeTest {
                 """
                 @androidx.compose.Composable 
                 fun caller() {
-                    generateCompositions()
+                    initializeCompositions()
                     val foo = inject<Foo>()
                 } 
             """
@@ -156,7 +156,7 @@ class ComposeTest {
                 """
                 @androidx.compose.Composable 
                 fun caller() {
-                    generateCompositions()
+                    initializeCompositions()
                     val foo = inject<Foo>()
                 } 
             """

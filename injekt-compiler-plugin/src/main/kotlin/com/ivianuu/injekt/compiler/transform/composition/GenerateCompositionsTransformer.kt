@@ -85,7 +85,7 @@ class GenerateCompositionsTransformer(
         declaration.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
                 if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.composition.generateCompositions"
+                    "com.ivianuu.injekt.composition.initializeCompositions"
                 ) {
                     generateCompositionsCalls += expression to currentFile
                 }

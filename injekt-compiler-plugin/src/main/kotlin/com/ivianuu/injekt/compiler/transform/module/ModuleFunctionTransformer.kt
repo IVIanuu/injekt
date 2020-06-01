@@ -23,17 +23,16 @@ import com.ivianuu.injekt.compiler.PropertyPath
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.addToFileOrAbove
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.deepCopyWithPreservingQualifiers
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.setClassKind
-import com.ivianuu.injekt.compiler.transform.AbstractFunctionTransformer
+import com.ivianuu.injekt.compiler.transform.AbstractFunctionTransformer2
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
-import com.ivianuu.injekt.compiler.typeWith
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.allParameters
+import org.jetbrains.kotlin.backend.common.ir.copyBodyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
@@ -42,9 +41,9 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
+import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irNull
@@ -63,17 +62,19 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
+import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
+import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ModuleFunctionTransformer(
     pluginContext: IrPluginContext,
     private val declarationStore: InjektDeclarationStore
-) : AbstractFunctionTransformer(pluginContext, TransformOrder.BottomUp) {
+) : AbstractFunctionTransformer2(pluginContext, TransformOrder.BottomUp) {
 
     fun getModuleFunctionForClass(moduleClass: IrClass): IrFunction =
         transformedFunctions.values
@@ -87,9 +88,7 @@ class ModuleFunctionTransformer(
         transformedFunctions
             .filterNot { it.key.isExternalDeclaration() }
             .forEach {
-                it.value.returnType.classOrNull!!.owner.addToFileOrAbove(
-                    it.value
-                )
+                it.value.returnType.classOrNull!!.owner.addToFileOrAbove(it.value)
             }
         return declaration
     }
@@ -98,44 +97,42 @@ class ModuleFunctionTransformer(
         function.hasAnnotation(InjektFqNames.Module)
 
     override fun transform(function: IrFunction): IrFunction {
-        val transformedFunction = function.deepCopyWithPreservingQualifiers(wrapDescriptor = true)
+        val transformedFunction = buildFun {
+            name = InjektNameConventions.getTransformedModuleFunctionNameForModule(
+                function.getPackageFragment()!!.fqName,
+                function.descriptor.fqNameSafe
+            )
+            isInline = function.isInline
+        }.apply {
+            parent = function.file
+            addMetadataIfNotLocal()
 
-        transformedFunction.addMetadataIfNotLocal()
+            annotations = function.annotations.map { it.deepCopyWithSymbols() }
 
-        val oldValueParameters = transformedFunction.allParameters
-        transformedFunction.dispatchReceiverParameter = null
-        transformedFunction.extensionReceiverParameter = null
-        transformedFunction.valueParameters =
-            oldValueParameters.mapIndexed { index, valueParameter ->
+            copyTypeParametersFrom(function)
+
+            valueParameters = function.allParameters.mapIndexed { index, valueParameter ->
                 valueParameter.copyTo(
-                    transformedFunction,
+                    this,
                     index = index
                 )
             }
 
-        val valueParametersMap = oldValueParameters
-            .map { it.symbol }
-            .zip(transformedFunction.valueParameters)
-            .toMap()
-
-        transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitGetValue(expression: IrGetValue): IrExpression {
-                return valueParametersMap[expression.symbol]
-                    ?.let {
-                        DeclarationIrBuilder(pluginContext, expression.symbol)
-                            .irGet(it)
-                    } ?: super.visitGetValue(expression)
-            }
-        })
+            body = function.copyBodyTo(this)
+        }
 
         val moduleDescriptor = ModuleDescriptor(
             transformedFunction,
+            function,
             pluginContext,
             symbols
         )
 
         val moduleClass = buildClass {
-            name = InjektNameConventions.getModuleClassNameForModuleFunction(transformedFunction)
+            name = InjektNameConventions.getModuleClassNameForModuleFunction(
+                function.getPackageFragment()!!.fqName,
+                transformedFunction.descriptor.fqNameSafe
+            )
             visibility = transformedFunction.visibility
         }.apply clazz@{
             moduleDescriptor.moduleClass = this
@@ -160,6 +157,7 @@ class ModuleFunctionTransformer(
         val allDeclarations = mutableListOf<ModuleDeclaration>()
         val moduleDeclarationFactory = ModuleDeclarationFactory(
             transformedFunction,
+            function,
             moduleClass,
             pluginContext,
             declarationStore,
@@ -168,7 +166,7 @@ class ModuleFunctionTransformer(
         )
         val variableByDeclaration = mutableMapOf<ModuleDeclaration, IrVariable>()
 
-        transformedFunction.rewriteTransformedFunctionCalls()
+        transformedFunction.rewriteTransformedFunctionRefs()
 
         val bodyStatements = transformedFunction.body?.statements?.toList() ?: emptyList()
 
@@ -290,35 +288,18 @@ class ModuleFunctionTransformer(
     }
 
     override fun transformExternal(function: IrFunction): IrFunction {
-        if (function.valueParameters.lastOrNull()?.name?.asString() == "moduleMarker") return function
-
-        val transformedFunction = function.deepCopyWithPreservingQualifiers(wrapDescriptor = true)
-
-        val oldValueParameters = transformedFunction.allParameters
-        transformedFunction.dispatchReceiverParameter = null
-        transformedFunction.extensionReceiverParameter = null
-        transformedFunction.valueParameters =
-            oldValueParameters.mapIndexed { index, valueParameter ->
-                valueParameter.copyTo(transformedFunction, index = index)
-            }
-
-        transformedFunction.addValueParameter("moduleMarker", irBuiltIns.anyNType)
-
-        val moduleClass = declarationStore.getModuleClassForFunction(function)
-
-        transformedFunction.returnType = moduleClass.defaultType
-            .typeWith(*function.typeParameters.map { it.defaultType }.toTypedArray())
-
-        return transformedFunction
+        return pluginContext.referenceFunctions(
+            function.getPackageFragment()!!.fqName
+                .child(
+                    InjektNameConventions.getTransformedModuleFunctionNameForModule(
+                        function.getPackageFragment()!!.fqName,
+                        function.descriptor.fqNameSafe
+                    )
+                )
+        ).single {
+            it.owner.valueParameters.lastOrNull()?.name?.asString() == "moduleMarker"
+        }.owner
     }
-
-    override fun createDecoy(original: IrFunction, transformed: IrFunction): IrFunction =
-        original.deepCopyWithPreservingQualifiers(wrapDescriptor = false)
-            .also { decoy ->
-                decoy.body = InjektDeclarationIrBuilder(pluginContext, decoy.symbol).run {
-                    builder.irExprBody(irInjektIntrinsicUnit())
-                }
-            }
 
     override fun transformCall(transformed: IrFunction, expression: IrCall): IrCall {
         return IrCallImpl(

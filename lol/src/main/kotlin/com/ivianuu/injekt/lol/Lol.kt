@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ *  
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -14,18 +14,30 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.android.compose
+package com.ivianuu.injekt.lol
 
-import androidx.activity.ComponentActivity
-import androidx.compose.Composable
-import androidx.compose.remember
-import androidx.ui.core.ContextAmbient
-import com.ivianuu.injekt.android.activityComponent
-import com.ivianuu.injekt.composition.get
+import com.ivianuu.injekt.InstanceFactory
+import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.create
+import com.ivianuu.injekt.scope
+import com.ivianuu.injekt.scoped
+import com.ivianuu.injekt.transient
 
-@Composable
-fun <T> inject(): T {
-    val activity = ContextAmbient.current as? ComponentActivity
-        ?: error("Activity expected")
-    return remember { activity.activityComponent.get() }
+@Scope
+annotation class TestScope
+
+class Foo
+class Bar(foo: Foo)
+
+@TestScope
+class MyClass(foo: Foo, bar: Bar)
+
+@InstanceFactory
+fun createBar(): MyClass {
+    scope<TestScope>()
+    scoped<Foo>()
+    transient<Bar>()
+    return create()
 }
+
+fun invoke() = createBar()

@@ -42,6 +42,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ModuleDescriptor(
     private val moduleFunction: IrFunction,
+    private val originalModuleFunction: IrFunction,
     private val pluginContext: IrPluginContext,
     private val symbols: InjektSymbols
 ) {
@@ -79,7 +80,9 @@ class ModuleDescriptor(
     private fun addScopeFunction(declaration: ScopeDeclaration) {
         clazz.addFunction(
             name = nameProvider.allocateForType(declaration.scopeType).asString(),
-            returnType = declaration.scopeType.remapTypeParameters(moduleFunction, clazz),
+            returnType = declaration.scopeType
+                .remapTypeParameters(originalModuleFunction, moduleFunction)
+                .remapTypeParameters(moduleFunction, clazz),
             modality = Modality.ABSTRACT
         ).apply {
             addMetadataIfNotLocal()
@@ -107,6 +110,7 @@ class ModuleDescriptor(
         clazz.addFunction(
             name = nameProvider.allocateForGroup(declaration.factoryRef.symbol.owner.name.asString()),
             returnType = declaration.factoryRef.symbol.owner.returnType
+                .remapTypeParameters(originalModuleFunction, moduleFunction)
                 .remapTypeParameters(moduleFunction, clazz),
             modality = Modality.ABSTRACT
         ).apply {
@@ -129,7 +133,9 @@ class ModuleDescriptor(
             declaration.factoryRef.symbol.owner.valueParameters.forEach { valueParameter ->
                 addValueParameter(
                     valueParameter.name.asString(),
-                    valueParameter.type.remapTypeParameters(moduleFunction, clazz)
+                    valueParameter.type
+                        .remapTypeParameters(originalModuleFunction, moduleFunction)
+                        .remapTypeParameters(moduleFunction, clazz)
                 )
             }
         }
@@ -141,7 +147,9 @@ class ModuleDescriptor(
                 declaration.originalType.classifierOrFail.descriptor.name.asString() +
                         "as${declaration.aliasType.classifierOrFail.descriptor.name.asString()}"
             ),
-            returnType = declaration.aliasType.remapTypeParameters(moduleFunction, clazz),
+            returnType = declaration.aliasType
+                .remapTypeParameters(originalModuleFunction, moduleFunction)
+                .remapTypeParameters(moduleFunction, clazz),
             modality = Modality.ABSTRACT
         ).apply {
             addMetadataIfNotLocal()
@@ -149,7 +157,9 @@ class ModuleDescriptor(
                 .noArgSingleConstructorCall(symbols.astAlias)
             addValueParameter(
                 name = "original",
-                type = declaration.originalType.remapTypeParameters(moduleFunction, clazz)
+                type = declaration.originalType
+                    .remapTypeParameters(originalModuleFunction, moduleFunction)
+                    .remapTypeParameters(moduleFunction, clazz)
             )
         }
     }
@@ -203,7 +213,9 @@ class ModuleDescriptor(
     private fun addMapFunction(declaration: MapDeclaration) {
         clazz.addFunction(
             name = nameProvider.allocateForGroup("map"),
-            returnType = declaration.mapType.remapTypeParameters(moduleFunction, clazz),
+            returnType = declaration.mapType
+                .remapTypeParameters(originalModuleFunction, moduleFunction)
+                .remapTypeParameters(moduleFunction, clazz),
             modality = Modality.ABSTRACT
         ).apply {
             addMetadataIfNotLocal()
@@ -223,11 +235,15 @@ class ModuleDescriptor(
                 .noArgSingleConstructorCall(symbols.astMapEntry)
             addValueParameter(
                 name = "map",
-                type = declaration.mapType.remapTypeParameters(moduleFunction, clazz)
+                type = declaration.mapType
+                    .remapTypeParameters(originalModuleFunction, moduleFunction)
+                    .remapTypeParameters(moduleFunction, clazz)
             )
             addValueParameter(
                 name = "entry",
-                type = declaration.entryValueType.remapTypeParameters(moduleFunction, clazz)
+                type = declaration.entryValueType
+                    .remapTypeParameters(originalModuleFunction, moduleFunction)
+                    .remapTypeParameters(moduleFunction, clazz)
             ).apply {
                 annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
                     .irMapKeyConstructorForKey(declaration.entryKey)
@@ -238,7 +254,9 @@ class ModuleDescriptor(
     private fun addSetFunction(declaration: SetDeclaration) {
         clazz.addFunction(
             name = nameProvider.allocateForGroup("set"),
-            returnType = declaration.setType.remapTypeParameters(moduleFunction, clazz),
+            returnType = declaration.setType
+                .remapTypeParameters(originalModuleFunction, moduleFunction)
+                .remapTypeParameters(moduleFunction, clazz),
             modality = Modality.ABSTRACT
         ).apply {
             addMetadataIfNotLocal()

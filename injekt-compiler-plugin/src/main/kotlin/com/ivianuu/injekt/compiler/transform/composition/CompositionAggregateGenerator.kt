@@ -99,7 +99,7 @@ class CompositionAggregateGenerator(
 
         installInCalls.forEach { (function, calls) ->
             calls.forEach { call ->
-                val compositionType = call.getTypeArgument(0)?.classOrNull
+                val compositionType = call.getTypeArgument(0)!!.classOrNull
                     ?: error("no class found in ${call.dump()}")
                 val elementClass = InjektDeclarationIrBuilder(pluginContext, function.symbol)
                     .emptyClass(

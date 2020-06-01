@@ -51,9 +51,20 @@ object InjektNameConventions {
         )
     }
 
-    fun getModuleClassNameForModuleFunction(moduleFunction: IrFunction): Name =
-        ("${moduleFunction.descriptor.name.asString()}_Class")
-            .asNameId()
+    fun getTransformedModuleFunctionNameForModule(
+        packageFqName: FqName,
+        moduleFqName: FqName
+    ): Name = getJoinedName(packageFqName, moduleFqName)
+
+    fun getModuleClassNameForModuleFunction(
+        packageFqName: FqName,
+        moduleFqName: FqName
+    ): Name = getJoinedName(
+        packageFqName,
+        moduleFqName
+            .parent()
+            .child("${moduleFqName.shortName()}_Class")
+    )
 
     fun getModuleFunctionNameForClass(moduleClass: IrClass): Name =
         moduleClass.name.asString().removeSuffix("_Class").asNameId()

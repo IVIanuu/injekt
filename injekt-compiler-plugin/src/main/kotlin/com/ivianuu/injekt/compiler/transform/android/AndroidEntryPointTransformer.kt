@@ -115,7 +115,6 @@ class AndroidEntryPointTransformer(pluginContext: IrPluginContext) :
                     extensionReceiver = thisExpr()
                 }
             },
-            generateComponents = true,
             initAsFirstStatement = false
         )
     }
@@ -160,7 +159,6 @@ class AndroidEntryPointTransformer(pluginContext: IrPluginContext) :
                     extensionReceiver = thisExpr()
                 }
             },
-            generateComponents = false,
             initAsFirstStatement = false
         )
     }
@@ -205,7 +203,6 @@ class AndroidEntryPointTransformer(pluginContext: IrPluginContext) :
                     extensionReceiver = thisExpr()
                 }
             },
-            generateComponents = false,
             initAsFirstStatement = false
         )
     }
@@ -270,7 +267,6 @@ class AndroidEntryPointTransformer(pluginContext: IrPluginContext) :
                     +irGet(tmpComponent)
                 }
             },
-            generateComponents = false,
             initAsFirstStatement = true
         )
     }
@@ -324,7 +320,6 @@ class AndroidEntryPointTransformer(pluginContext: IrPluginContext) :
                     +irGet(tmpComponent)
                 }
             },
-            generateComponents = false,
             initAsFirstStatement = false
         )
     }
@@ -334,7 +329,6 @@ class AndroidEntryPointTransformer(pluginContext: IrPluginContext) :
         functionPredicate: (IrSimpleFunction) -> Boolean,
         createFunction: (IrClass, IrSimpleFunction) -> IrSimpleFunction,
         componentAccessor: IrBuilderWithScope.(IrSimpleFunction, () -> IrExpression) -> IrExpression,
-        generateComponents: Boolean,
         initAsFirstStatement: Boolean
     ) {
         val superClass: IrClass = clazz.superTypes
@@ -366,16 +360,6 @@ class AndroidEntryPointTransformer(pluginContext: IrPluginContext) :
                 var initialized = false
                 fun initialize(startOffset: Int) {
                     initialized = true
-                    if (generateComponents) {
-                        +IrCallImpl(
-                            startOffset + 1,
-                            startOffset + 2,
-                            irBuiltIns.unitType,
-                            pluginContext.referenceFunctions(
-                                FqName("com.ivianuu.injekt.composition.generateCompositions")
-                            ).single()
-                        )
-                    }
                     +IrCallImpl(
                         startOffset + 3,
                         startOffset + 4,

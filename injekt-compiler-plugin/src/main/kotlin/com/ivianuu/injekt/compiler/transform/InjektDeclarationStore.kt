@@ -147,7 +147,12 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
         } else {
             val fqName = moduleFunction.getPackageFragment()!!
                 .fqName
-                .child(InjektNameConventions.getModuleClassNameForModuleFunction(moduleFunction))
+                .child(
+                    InjektNameConventions.getModuleClassNameForModuleFunction(
+                        moduleFunction.getPackageFragment()!!.fqName,
+                        moduleFunction.descriptor.fqNameSafe
+                    )
+                )
             return pluginContext.referenceClass(fqName)?.owner
         }
     }
