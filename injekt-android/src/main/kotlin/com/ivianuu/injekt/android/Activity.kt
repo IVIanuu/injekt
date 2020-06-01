@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.android
 
 import android.content.Context
+import android.content.res.Resources
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
@@ -58,6 +59,9 @@ fun createActivityComponent(instance: ComponentActivity): ActivityComponent {
     scope<ActivityScoped>()
     instance(instance)
     alias<ComponentActivity, @ForActivity Context>()
+    transient<@ForActivity Resources> { activity: ComponentActivity ->
+        activity.resources
+    }
     transient<@ForActivity CoroutineScope> { lifecycleOwner: @ForActivity LifecycleOwner ->
         lifecycleOwner.lifecycleScope
     }

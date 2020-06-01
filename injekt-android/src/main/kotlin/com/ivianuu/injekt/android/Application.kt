@@ -18,6 +18,7 @@ package com.ivianuu.injekt.android
 
 import android.app.Application
 import android.content.Context
+import android.content.res.Resources
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
@@ -45,6 +46,9 @@ fun createApplicationComponent(instance: Application): ApplicationComponent {
     scope<ApplicationScoped>()
     instance(instance)
     alias<Application, @ForApplication Context>()
+    transient<@ForApplication Resources> { app: Application ->
+        app.resources
+    }
     transient<@ForApplication CoroutineScope> { lifecycleOwner: @ForApplication LifecycleOwner ->
         lifecycleOwner.lifecycleScope
     }

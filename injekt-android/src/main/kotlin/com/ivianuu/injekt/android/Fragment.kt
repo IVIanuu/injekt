@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt.android
 
+import android.content.Context
+import android.content.res.Resources
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
@@ -56,6 +58,12 @@ fun createFragmentComponent(instance: Fragment): FragmentComponent {
     parent<ActivityComponent>()
     scope<FragmentScoped>()
     instance(instance)
+    transient<@ForFragment Context> { fragment: Fragment ->
+        fragment.context!!
+    }
+    transient<@ForFragment Resources> { fragment: Fragment ->
+        fragment.resources
+    }
     transient<@ForFragment CoroutineScope> { lifecycleOwner: @ForFragment LifecycleOwner ->
         lifecycleOwner.lifecycleScope
     }
