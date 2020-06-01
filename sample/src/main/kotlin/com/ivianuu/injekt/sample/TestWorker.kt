@@ -16,22 +16,17 @@
 
 package com.ivianuu.injekt.sample
 
-import android.app.Application
-import androidx.work.WorkerFactory
-import com.ivianuu.injekt.android.CompositionAndroidApp
-import com.ivianuu.injekt.inject
+import android.content.Context
+import androidx.work.Worker
+import androidx.work.WorkerParameters
+import com.ivianuu.injekt.Assisted
+import com.ivianuu.injekt.android.work.BindWorker
 
-@CompositionAndroidApp
-class App : Application() {
-
-    private val appServiceRunner: AppServiceRunner by inject()
-    private val repo: Repo by inject()
-    private val workerFactory: WorkerFactory by inject()
-
-    override fun onCreate() {
-        super.onCreate()
-        repo.refresh()
-        println("injected app $repo")
-    }
-
+@BindWorker
+class TestWorker(
+    @Assisted context: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val repo: Repo
+) : Worker(context, workerParams) {
+    override fun doWork(): Result = Result.success()
 }

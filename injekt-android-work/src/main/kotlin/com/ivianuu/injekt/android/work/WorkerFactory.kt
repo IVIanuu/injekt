@@ -39,14 +39,14 @@ annotation class BindWorker
 @Module
 inline fun <reified T : ListenableWorker> worker() {
     transient<T>()
-    map<KClass<out ListenableWorker>, ListenableWorker> {
-        put<T>(T::class)
+    map<KClass<out ListenableWorker>, @Provider (Context, WorkerParameters) -> ListenableWorker> {
+        put<@Provider (Context, WorkerParameters) -> T>(T::class)
     }
 }
 
 @Transient
 private class InjektWorkerFactory(
-    private val workers: Map<String, @Provider (Context, WorkerParameters) -> ListenableWorker>
+    private val workers: Map<KClass<out ListenableWorker>, @Provider (Context, WorkerParameters) -> ListenableWorker>
 ) : WorkerFactory() {
 
     override fun createWorker(
@@ -54,7 +54,7 @@ private class InjektWorkerFactory(
         workerClassName: String,
         workerParameters: WorkerParameters
     ): ListenableWorker? {
-        return workers[workerClassName]?.invoke(appContext, workerParameters)
+        return workers[Class.forName(workerClassName).kotlin]?.invoke(appContext, workerParameters)
             ?: error("Could not find a worker for $workerClassName")
     }
 }
