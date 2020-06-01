@@ -234,8 +234,8 @@ class ModuleFunctionTransformer(
                             .map { it.second.property }
                             .associateWith {
                                 addValueParameter(
-                                    it.name.asString(),
-                                    it.getter!!.returnType
+                                    it.field.name.asString(),
+                                    it.getter.returnType
                                 )
                             }
                     }
@@ -247,7 +247,7 @@ class ModuleFunctionTransformer(
                                 valueParametersByProperties.forEach { (property, valueParameter) ->
                                     +irSetField(
                                         irGet(moduleClass.thisReceiver!!),
-                                        property.backingField!!,
+                                        property.field,
                                         irGet(valueParameter)
                                     )
                                 }
@@ -256,7 +256,7 @@ class ModuleFunctionTransformer(
                                     .forEach { (declaration, path) ->
                                         +irSetField(
                                             irGet(moduleClass.thisReceiver!!),
-                                            path.property.backingField!!,
+                                            path.property.field,
                                             declaration.initializer!!
                                                 .deepCopyWithVariables()
                                         )

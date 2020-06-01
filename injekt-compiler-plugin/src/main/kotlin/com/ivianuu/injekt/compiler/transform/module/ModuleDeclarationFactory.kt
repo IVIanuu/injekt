@@ -113,7 +113,7 @@ class ModuleDeclarationFactory(
         val dependencyType = call.getTypeArgument(0)!!
             .remapTypeParameters(moduleFunction, moduleClass)
         val property = InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
-            .fieldBakedProperty(
+            .fieldBackedProperty(
                 moduleClass,
                 nameProvider.allocateForType(dependencyType),
                 dependencyType
@@ -209,7 +209,7 @@ class ModuleDeclarationFactory(
 
         val path = if (includedClass.kind != ClassKind.OBJECT) {
             val property = InjektDeclarationIrBuilder(pluginContext, includedClass.symbol)
-                .fieldBakedProperty(
+                .fieldBackedProperty(
                     moduleClass,
                     Name.identifier(nameProvider.allocateForGroup(includedModuleFunction.name.asString())),
                     includedType
@@ -272,7 +272,7 @@ class ModuleDeclarationFactory(
         if (instance) {
             path = PropertyPath(
                 InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
-                    .fieldBakedProperty(
+                    .fieldBackedProperty(
                         moduleClass,
                         nameProvider.allocateForType(bindingType),
                         bindingType
@@ -296,7 +296,7 @@ class ModuleDeclarationFactory(
             }
             path = PropertyPath(
                 InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
-                    .fieldBakedProperty(
+                    .fieldBackedProperty(
                         moduleClass,
                         nameProvider.allocateForType(bindingType),
                         initializer.type
@@ -329,7 +329,7 @@ class ModuleDeclarationFactory(
                 }
                 path = PropertyPath(
                     InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
-                        .fieldBakedProperty(
+                        .fieldBackedProperty(
                             moduleClass,
                             nameProvider.allocateForType(bindingType),
                             initializer.type

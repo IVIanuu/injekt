@@ -33,6 +33,7 @@ import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
+import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -55,6 +56,7 @@ import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.superTypes
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
@@ -433,7 +435,7 @@ class AnnotatedClassBindingResolver(
                 InjektDeclarationIrBuilder.FactoryParameter(
                     name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
                     type = valueParameter.type,
-                    assisted = valueParameter.annotations.hasAnnotation(InjektFqNames.Assisted)
+                    assisted = valueParameter.descriptor.hasAnnotation(InjektFqNames.Assisted)
                 )
             } ?: emptyList()
 
@@ -476,6 +478,17 @@ class AnnotatedClassBindingResolver(
                     )
                 }
 
+            val assistedParameters = allParameters
+                .filter { it.assisted }
+
+            val factoryKey = pluginContext.tmpFunction(assistedParameters.size)
+                .typeWith(assistedParameters.map { it.type } +
+                        clazz.defaultType.typeWith(*typeParametersMap.values.toTypedArray()))
+                .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Provider))
+                .asKey()
+
+            if (factoryKey != requestedKey) return emptyList()
+
             listOf(
                 AssistedProvisionBindingNode(
                     key = requestedKey,
@@ -487,11 +500,12 @@ class AnnotatedClassBindingResolver(
                         clazz,
                         constructor,
                         membersInjector,
-                        constructorParameters, membersInjectorParameters
+                        constructorParameters,
+                        membersInjectorParameters
                     ),
                     parameters = allParameters,
                     owner = factory,
-                    origin = clazz.fqNameForIrSerialization
+                    origin = clazz.descriptor.fqNameSafe
                 )
             )
         } else {
@@ -527,7 +541,7 @@ class AnnotatedClassBindingResolver(
                 InjektDeclarationIrBuilder.FactoryParameter(
                     name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
                     type = valueParameter.type,
-                    assisted = valueParameter.annotations.hasAnnotation(InjektFqNames.Assisted)
+                    assisted = valueParameter.descriptor.hasAnnotation(InjektFqNames.Assisted)
                 )
             } ?: emptyList()
 

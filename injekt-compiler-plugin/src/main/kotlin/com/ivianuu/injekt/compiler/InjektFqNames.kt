@@ -65,7 +65,7 @@ object InjektFqNames {
 
     val ChildFactory = InjektPackage.child("ChildFactory")
 
-    val CompositionAndroidApp = InjektPackage.child("CompositionAndroidApp")
+    val CompositionAndroidApp = AndroidPackage.child("CompositionAndroidApp")
     val CompositionComponent = CompositionPackage.child("CompositionComponent")
     val CompositionFactory = CompositionPackage.child("CompositionFactory")
     val CompositionFactories = CompositionPackage.child("CompositionFactories")

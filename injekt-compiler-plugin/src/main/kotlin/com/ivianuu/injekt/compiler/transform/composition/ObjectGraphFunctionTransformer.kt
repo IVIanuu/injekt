@@ -74,7 +74,12 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
         return true
     }
 
-    override fun transform(function: IrFunction): IrFunction {
+    override fun transform(
+        function: IrFunction,
+        callback: (IrFunction) -> Unit
+    ) {
+        callback(function)
+
         val originalUnresolvedGetCalls = mutableListOf<IrCall>()
         val originalUnresolvedInjectCalls = mutableListOf<IrCall>()
         val originalObjectGraphFunctionCalls = mutableListOf<IrCall>()
@@ -119,10 +124,12 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                 emptyMap(),
                 originalObjectGraphFunctionCalls
             )
-            return function
+            callback(function)
+            return
         }
 
         val transformedFunction = function.deepCopyWithPreservingQualifiers(wrapDescriptor = true)
+        callback(transformedFunction)
         val unresolvedGetCalls = mutableListOf<IrCall>()
         val unresolvedInjectCalls = mutableListOf<IrCall>()
         val objectGraphFunctionCalls = mutableListOf<IrCall>()
@@ -251,22 +258,22 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
             valueParametersByUnresolvedInjectCalls,
             objectGraphFunctionCalls
         )
-
-        return transformedFunction
     }
 
-    override fun transformExternal(function: IrFunction): IrFunction {
-        return if (function.hasAnnotation(InjektFqNames.AstObjectGraph)) {
-            pluginContext.referenceFunctions(function.descriptor.fqNameSafe)
-                .map { it.owner }
-                .single { other ->
-                    other.name == function.name &&
-                            other.valueParameters.any {
-                                it.name.asString().startsWith("og_provider\$") ||
-                                        it.name.asString().startsWith("og_injector\$")
-                            }
-                }
-        } else function
+    override fun transformExternal(function: IrFunction, callback: (IrFunction) -> Unit) {
+        callback(
+            if (function.hasAnnotation(InjektFqNames.AstObjectGraph)) {
+                pluginContext.referenceFunctions(function.descriptor.fqNameSafe)
+                    .map { it.owner }
+                    .single { other ->
+                        other.name == function.name &&
+                                other.valueParameters.any {
+                                    it.name.asString().startsWith("og_provider\$") ||
+                                            it.name.asString().startsWith("og_injector\$")
+                                }
+                    }
+            } else function
+        )
     }
 
     override fun createDecoy(original: IrFunction, transformed: IrFunction): IrFunction {
@@ -507,4 +514,5 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
             newAnnotations
         )
     }
+
 }

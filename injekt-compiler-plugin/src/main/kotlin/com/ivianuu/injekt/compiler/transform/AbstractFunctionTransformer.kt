@@ -16,38 +16,15 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
-import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
-import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
-import org.jetbrains.kotlin.ir.expressions.IrCall
-import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
-import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
-import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
-import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
-import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
-import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.load.java.JvmAbi
-import org.jetbrains.kotlin.resolve.DescriptorUtils
 
 abstract class AbstractFunctionTransformer(
     pluginContext: IrPluginContext,
@@ -56,12 +33,6 @@ abstract class AbstractFunctionTransformer(
 
     protected val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
     protected val decoys = mutableMapOf<IrFunction, IrFunction>()
-
-    override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
-        super.visitModuleFragment(declaration)
-        declaration.rewriteTransformedFunctionCalls()
-        return declaration
-    }
 
     override fun visitFile(declaration: IrFile): IrFile {
         val originalFunctions = mutableListOf<IrFunction>()
@@ -128,58 +99,20 @@ abstract class AbstractFunctionTransformer(
 
     protected abstract fun needsTransform(function: IrFunction): Boolean
 
-    protected abstract fun transform(function: IrFunction): IrFunction
+    protected abstract fun transform(
+        function: IrFunction,
+        callback: (IrFunction) -> Unit
+    )
 
-    protected abstract fun transformExternal(function: IrFunction): IrFunction
+    protected abstract fun transformExternal(
+        function: IrFunction,
+        callback: (IrFunction) -> Unit
+    )
 
     protected abstract fun createDecoy(
         original: IrFunction,
         transformed: IrFunction
     ): IrFunction
-
-    protected open fun transformFunctionExpression(
-        transformed: IrFunction,
-        expression: IrFunctionExpression
-    ): IrFunctionExpression {
-        return IrFunctionExpressionImpl(
-            expression.startOffset,
-            expression.endOffset,
-            transformed.getFunctionType(pluginContext),
-            transformed as IrSimpleFunction,
-            expression.origin
-        )
-    }
-
-    protected open fun transformFunctionReference(
-        transformed: IrFunction,
-        expression: IrFunctionReference
-    ): IrFunctionReference {
-        return IrFunctionReferenceImpl(
-            expression.startOffset,
-            expression.endOffset,
-            transformed.getFunctionType(pluginContext),
-            transformed.symbol,
-            expression.typeArgumentsCount,
-            null,
-            expression.origin
-        )
-    }
-
-    protected open fun transformCall(
-        transformed: IrFunction,
-        expression: IrCall
-    ): IrCall {
-        return IrCallImpl(
-            expression.startOffset,
-            expression.endOffset,
-            transformed.returnType,
-            transformed.symbol,
-            expression.origin,
-            expression.superQualifierSymbol
-        ).apply {
-            copyTypeAndValueArgumentsFrom(expression)
-        }
-    }
 
     protected fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
         transformedFunctions[function]?.let { return it }
@@ -188,71 +121,14 @@ abstract class AbstractFunctionTransformer(
 
         if (!needsTransform(function)) return function
 
-        val transformedFunction = if (function.isExternalDeclaration())
-            transformExternal(function) else transform(function)
-
-        transformedFunctions[function] = transformedFunction
-
-        if (transformedFunction != function) {
-            fun jvmNameAnnotation(name: String): IrConstructorCall {
-                val jvmName = pluginContext.referenceClass(DescriptorUtils.JVM_NAME)!!
-                return DeclarationIrBuilder(pluginContext, transformedFunction.symbol).run {
-                    irCall(jvmName.constructors.single()).apply {
-                        putValueArgument(0, irString(name))
-                    }
-                }
-            }
-
-            if (transformedFunction is IrSimpleFunction && function is IrSimpleFunction) {
-                transformedFunction.correspondingPropertySymbol =
-                    function.correspondingPropertySymbol
-            }
-
-            val descriptor = function.descriptor
-            if (descriptor is PropertyGetterDescriptor &&
-                !transformedFunction.hasAnnotation(DescriptorUtils.JVM_NAME)
-            ) {
-                val name = JvmAbi.getterName(descriptor.correspondingProperty.name.identifier)
-                transformedFunction.annotations += jvmNameAnnotation(name)
-            }
-
-            if (descriptor is PropertySetterDescriptor &&
-                !transformedFunction.hasAnnotation(DescriptorUtils.JVM_NAME)
-            ) {
-                val name = JvmAbi.setterName(descriptor.correspondingProperty.name.identifier)
-                transformedFunction.annotations += jvmNameAnnotation(name)
-            }
+        val callback: (IrFunction) -> Unit = {
+            transformedFunctions[function] = it
         }
 
-        return transformedFunction
-    }
+        if (function.isExternalDeclaration())
+            transformExternal(function, callback) else transform(function, callback)
 
-    protected fun IrElement.rewriteTransformedFunctionCalls() {
-        transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitFunctionExpression(expression: IrFunctionExpression): IrExpression {
-                val transformed = super.visitFunctionExpression(expression) as IrFunctionExpression
-                return if (!needsTransform(transformed.function)) transformed
-                else transformFunctionExpression(
-                    transformFunctionIfNeeded(transformed.function), transformed
-                )
-            }
-
-            override fun visitFunctionReference(expression: IrFunctionReference): IrExpression {
-                val transformed = super.visitFunctionReference(expression) as IrFunctionReference
-                return if (!needsTransform(transformed.symbol.owner)) transformed
-                else transformFunctionReference(
-                    transformFunctionIfNeeded(transformed.symbol.owner), transformed
-                )
-            }
-
-            override fun visitCall(expression: IrCall): IrExpression {
-                val transformed = super.visitCall(expression) as IrCall
-                return if (!needsTransform(transformed.symbol.owner)) transformed
-                else transformCall(
-                    transformFunctionIfNeeded(transformed.symbol.owner), transformed
-                )
-            }
-        })
+        return transformedFunctions.getValue(function)
     }
 
     enum class TransformOrder {

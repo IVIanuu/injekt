@@ -318,4 +318,32 @@ class SetTest {
         assertInternalError("already bound")
     }
 
+    @Test
+    fun testGenericSetBinding() = codegen(
+        """
+        @Module
+        fun <T : Command> intoSet() { 
+            set<Command> { add<T>() }
+        }
+        
+        @InstanceFactory
+        fun invoke(): Set<Command> {
+            transient { CommandA() }
+            intoSet<CommandA>()
+            transient { CommandB() }
+            intoSet<CommandB>()
+            transient { CommandC() }
+            intoSet<CommandC>()
+            return create()
+        }
+         """
+    ) {
+        val set =
+            invokeSingleFile<Set<Command>>().toList()
+        assertEquals(3, set.size)
+        assertTrue(set[0] is CommandA)
+        assertTrue(set[1] is CommandB)
+        assertTrue(set[2] is CommandC)
+    }
+
 }

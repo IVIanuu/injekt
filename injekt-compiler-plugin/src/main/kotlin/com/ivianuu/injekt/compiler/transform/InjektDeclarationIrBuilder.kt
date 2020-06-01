@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.getInjectConstructor
+import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.typeArguments
@@ -30,6 +31,7 @@ import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -44,8 +46,6 @@ import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
-import org.jetbrains.kotlin.ir.builders.declarations.addGetter
-import org.jetbrains.kotlin.ir.builders.declarations.addProperty
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildField
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
@@ -62,6 +62,7 @@ import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
+import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
@@ -90,7 +91,6 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.referenceClassifier
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
@@ -291,42 +291,46 @@ class InjektDeclarationIrBuilder(
         val assisted: Boolean
     )
 
-    fun fieldBakedProperty(
+    class FieldWithGetter(
+        val field: IrField,
+        val getter: IrFunction
+    )
+
+    fun fieldBackedProperty(
         clazz: IrClass,
         name: Name,
         type: IrType
-    ) = clazz.addProperty {
-        this.name = name
-    }.apply property@{
-        addMetadataIfNotLocal()
-
-        parent = clazz
-
-        backingField = buildField {
-            this.name = this@property.name
+    ): FieldWithGetter {
+        val field = buildField {
+            this.name = name
             this.type = type
             visibility = Visibilities.PRIVATE
         }.apply {
             parent = clazz
-            correspondingPropertySymbol = this@property.symbol
         }
-        addGetter {
+        clazz.addChild(field)
+
+        val getter = buildFun {
             this.name =
                 Name.identifier("get${name.asString().capitalize()}") // todo remove once fixed
             returnType = type
         }.apply {
             addMetadataIfNotLocal()
-
+            parent = clazz
             dispatchReceiverParameter = clazz.thisReceiver!!.copyTo(this)
             body = DeclarationIrBuilder(pluginContext, symbol).run {
                 irExprBody(
                     irGetField(
                         irGet(dispatchReceiverParameter!!),
-                        backingField!!
+                        field
                     )
                 )
             }
         }
+
+        clazz.addChild(getter)
+
+        return FieldWithGetter(field, getter)
     }
 
     fun classFactoryLambda(clazz: IrClass, membersInjector: IrFunction?): IrExpression {
@@ -338,7 +342,7 @@ class InjektDeclarationIrBuilder(
             FactoryParameter(
                 name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
                 type = valueParameter.type,
-                assisted = valueParameter.annotations.hasAnnotation(InjektFqNames.Assisted)
+                assisted = valueParameter.descriptor.hasAnnotation(InjektFqNames.Assisted)
             )
         } ?: emptyList()
 

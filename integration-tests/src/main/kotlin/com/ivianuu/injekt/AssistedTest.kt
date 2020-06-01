@@ -18,6 +18,8 @@ package com.ivianuu.injekt
 
 import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import org.junit.Test
 
 class AssistedTest {
@@ -58,5 +60,32 @@ class AssistedTest {
     ) {
         assertOk()
     }
+
+    @Test
+    fun testMultiCompileAssistedWithAnnotations() = multiCodegen(
+        listOf(
+            source(
+                """
+                @Transient 
+                class Dep(
+                    @Assisted val assisted: String,
+                    val foo: Foo
+                )
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @InstanceFactory 
+                    fun createDep(): @Provider (String) -> Dep { 
+                        instance(Foo())
+                        return create()
+                    }
+                """
+            )
+        )
+    )
+
 
 }

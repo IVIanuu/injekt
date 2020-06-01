@@ -277,10 +277,14 @@ class ModuleDescriptor(
             addValueParameter(
                 name = "set",
                 type = declaration.setType
+                    .remapTypeParameters(originalModuleFunction, moduleFunction)
+                    .remapTypeParameters(moduleFunction, clazz)
             )
             addValueParameter(
                 name = "element",
                 type = declaration.elementType
+                    .remapTypeParameters(originalModuleFunction, moduleFunction)
+                    .remapTypeParameters(moduleFunction, clazz)
             )
         }
     }
