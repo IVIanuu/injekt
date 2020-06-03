@@ -19,6 +19,6 @@ package com.ivianuu.injekt.internal
 import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Provider
 
-class ProviderOfLazy<T>(private val provider: () -> T) : @Provider () -> @Lazy () -> T {
+class ProviderOfLazy<T>(private val provider: @Provider () -> T) : @Provider () -> (@Lazy () -> T) {
     override fun invoke() = DoubleCheck(provider)
 }

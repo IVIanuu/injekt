@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrElement
@@ -808,6 +809,8 @@ private class IrSourcePrinterVisitor(
     }
 
     override fun visitProperty(declaration: IrProperty) {
+        declaration.printAnnotations(onePerLine = true)
+
         if (declaration.isLateinit) {
             print("lateinit")
         }
@@ -855,15 +858,6 @@ private class IrSourcePrinterVisitor(
     }
 
     private var printIntsAsBinary = false
-    fun <T> withIntsAsBinaryLiterals(block: () -> T): T {
-        val prev = printIntsAsBinary
-        try {
-            printIntsAsBinary = true
-            return block()
-        } finally {
-            printIntsAsBinary = prev
-        }
-    }
 
     private fun intAsBinaryString(value: Int): String {
         if (value == 0) return "0"
@@ -937,7 +931,11 @@ private class IrSourcePrinterVisitor(
             if (declaration.isAnnotationClass) {
                 print("annotation ")
             }
-            print("class ")
+            if (declaration.kind == ClassKind.OBJECT) {
+                print("object ")
+            } else {
+                print("class ")
+            }
         }
         print(declaration.name)
         if (declaration.typeParameters.isNotEmpty()) {

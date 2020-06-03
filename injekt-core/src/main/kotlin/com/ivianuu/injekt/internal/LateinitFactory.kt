@@ -16,5 +16,19 @@
 
 package com.ivianuu.injekt.internal
 
-@Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class TypeAnnotation
+import com.ivianuu.injekt.Provider
+
+class LateinitFactory<T> : @Provider () -> T {
+    private var value: Any? = Uninitialized
+
+    fun init(value: T) {
+        check(this.value === Uninitialized)
+        this.value = value
+    }
+
+    override fun invoke(): T {
+        check(value !== Uninitialized)
+        return value as T
+    }
+
+}

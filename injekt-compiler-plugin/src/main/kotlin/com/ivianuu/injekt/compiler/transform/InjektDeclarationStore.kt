@@ -17,39 +17,41 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektNameConventions
-import com.ivianuu.injekt.compiler.transform.annotatedclass.ClassFactoryTransformer
-import com.ivianuu.injekt.compiler.transform.annotatedclass.MembersInjectorTransformer
+import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
-import com.ivianuu.injekt.compiler.transform.module.ModuleClassTransformer
+import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.expressions.IrBlock
+import org.jetbrains.kotlin.ir.expressions.IrBlockBody
+import org.jetbrains.kotlin.ir.expressions.IrBody
+import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrStatementContainer
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.render
+import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
 
-    lateinit var classFactoryTransformer: ClassFactoryTransformer
     lateinit var factoryTransformer: RootFactoryTransformer
     lateinit var factoryModuleTransformer: FactoryModuleTransformer
     lateinit var membersInjectorTransformer: MembersInjectorTransformer
-    lateinit var moduleClassTransformer: ModuleClassTransformer
+    lateinit var moduleFunctionTransformer: ModuleFunctionTransformer
 
-    private fun IrDeclaration.isExternalDeclaration() = origin ==
-            IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
-            origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
-
-    fun getFactoryForClass(clazz: IrClass): IrClass {
+    fun getMembersInjectorForClassOrNull(clazz: IrClass): IrFunction? {
         return if (!clazz.isExternalDeclaration()) {
-            classFactoryTransformer.getFactoryForClass(clazz)
+            membersInjectorTransformer.getMembersInjectorForClass(clazz)
         } else {
-            pluginContext.referenceClass(
+            pluginContext.referenceFunctions(
                 clazz.fqNameForIrSerialization
                     .parent()
                     .child(
@@ -58,36 +60,58 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
                             clazz.descriptor.fqNameSafe
                         )
                     )
-            )!!.owner
-        }
-    }
-
-    fun getMembersInjectorForClassOrNull(clazz: IrClass): IrClass? {
-        return if (!clazz.isExternalDeclaration()) {
-            membersInjectorTransformer.getMembersInjectorForClass(clazz)
-        } else {
-            pluginContext.referenceClass(
-                clazz.fqNameForIrSerialization
-                    .parent()
-                    .child(
-                        InjektNameConventions.getMembersInjectorNameForClass(
-                            clazz.getPackageFragment()!!.fqName,
-                            clazz.descriptor.fqNameSafe
-                        )
-                    )
-            )?.owner
+            ).singleOrNull()?.owner
         }
     }
 
     fun getModuleFunctionForFactory(factoryFunction: IrFunction): IrFunction {
         return if (!factoryFunction.isExternalDeclaration()) {
-            factoryModuleTransformer.getModuleFunctionForFactoryFunction(factoryFunction)
+            val parent = factoryFunction.parent
+            val existingModule = if (parent is IrDeclarationContainer) {
+                parent
+                    .declarations
+                    .filterIsInstance<IrFunction>()
+                    .firstOrNull {
+                        it.descriptor.name == InjektNameConventions.getModuleNameForFactoryFunction(
+                            factoryFunction
+                        )
+                    }
+            } else if (parent is IrFunction) {
+                var block: IrStatementContainer? = null
+                factoryFunction.file.transformChildrenVoid(object : IrElementTransformerVoid() {
+                    override fun visitBlockBody(body: IrBlockBody): IrBody {
+                        if (body.statements.any { it === factoryFunction }) {
+                            block = body
+                        }
+                        return super.visitBlockBody(body)
+                    }
+
+                    override fun visitBlock(expression: IrBlock): IrExpression {
+                        if (expression.statements.any { it === factoryFunction }) {
+                            block = expression
+                        }
+                        return super.visitBlock(expression)
+                    }
+                })
+
+                if (block != null) {
+                    val index = block!!.statements.indexOf(factoryFunction)
+                    block!!.statements[index - 1] as IrFunction
+                } else {
+                    error("Corrupt parent ${factoryFunction.render()}")
+                }
+            } else {
+                null
+            }
+            existingModule ?: factoryModuleTransformer
+                .getModuleFunctionForFactoryFunction(factoryFunction)
         } else {
             pluginContext.referenceFunctions(
                 factoryFunction.descriptor.fqNameSafe
                     .parent()
                     .child(InjektNameConventions.getModuleNameForFactoryFunction(factoryFunction))
-            ).let {
+            ).filter { it.owner.valueParameters.lastOrNull()?.name?.asString() == "moduleMarker" }
+                .let {
                 it.singleOrNull()?.owner ?: error(
                     "Couldn't find factory function for\n${InjektNameConventions.getModuleNameForFactoryFunction(
                         factoryFunction
@@ -97,24 +121,39 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
         }
     }
 
+    fun getModuleFunctionForClass(moduleClass: IrClass): IrFunction {
+        return if (!moduleClass.isExternalDeclaration()) {
+            moduleFunctionTransformer.getModuleFunctionForClass(moduleClass)
+        } else {
+            pluginContext.referenceFunctions(
+                moduleClass.descriptor.fqNameSafe
+                    .parent()
+                    .child(InjektNameConventions.getModuleFunctionNameForClass(moduleClass))
+            ).single {
+                it.owner.returnType.classOrNull == moduleClass.symbol
+            }.owner
+        }
+    }
+
     fun getModuleClassForFunction(moduleFunction: IrFunction): IrClass {
-        return getModuleClassForFunctionOrNull(moduleFunction)
-            ?: throw IllegalStateException(
-                "Couldn't find module for ${moduleFunction.dump()} lol ?${
-                moduleFunction.getPackageFragment()!!.fqName
-                    .child(InjektNameConventions.getModuleClassNameForModuleFunction(moduleFunction))
-                }"
-            )
+        return getModuleClassForFunctionOrNull(moduleFunction) ?: error(
+            "Couldn't find class for function ${moduleFunction.dump()}"
+        )
     }
 
     fun getModuleClassForFunctionOrNull(moduleFunction: IrFunction): IrClass? {
         return if (!moduleFunction.isExternalDeclaration()) {
-            moduleClassTransformer.getModuleClassForFunction(moduleFunction)
+            moduleFunctionTransformer.getModuleClassForFunction(moduleFunction)
         } else {
-            pluginContext.referenceClass(
-                moduleFunction.getPackageFragment()!!.fqName
-                    .child(InjektNameConventions.getModuleClassNameForModuleFunction(moduleFunction))
-            )?.owner
+            val fqName = moduleFunction.getPackageFragment()!!
+                .fqName
+                .child(
+                    InjektNameConventions.getModuleClassNameForModuleFunction(
+                        moduleFunction.getPackageFragment()!!.fqName,
+                        moduleFunction.descriptor.fqNameSafe
+                    )
+                )
+            return pluginContext.referenceClass(fqName)?.owner
         }
     }
 

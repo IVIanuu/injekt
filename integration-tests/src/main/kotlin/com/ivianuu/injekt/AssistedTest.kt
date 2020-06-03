@@ -16,8 +16,12 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.test.assertOk
+import com.ivianuu.injekt.test.Bar
+import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import org.junit.Test
 
 class AssistedTest {
@@ -32,45 +36,55 @@ class AssistedTest {
         )
         
         @InstanceFactory
-        fun createDep(): @Provider (String) -> Dep {
-            instance(Foo())
+        fun invoke(): @Provider (String) -> Dep {
+            transient<Foo>()
             return create()
         }
     """
     ) {
-        assertOk()
+        val depFactory = invokeSingleFile<@Provider (String) -> Any>()
+        val result = depFactory("hello world")
     }
 
     @Test
     fun testAssistedInDsl() = codegen(
-        """
-        class Dep(val assisted: String, val foo: Foo)
-        
+        """ 
         @InstanceFactory
-        fun createDep(): @Provider (String) -> Dep {
-            transient { Foo() }
-            transient { (assisted: String) -> Dep(assisted, get()) }
+        fun invoke(): @Provider (Foo) -> Bar {
+            transient { foo: @Assisted Foo -> Bar(foo) }
             return create()
         }
     """
     ) {
-        assertOk()
+        val barFactory = invokeSingleFile<@Provider (Foo) -> Bar>()
+        val bar: Bar = barFactory(Foo())
     }
 
     @Test
-    fun testAssistedInDsl2() = codegen(
-        """
-        class Dep(val assisted: String, val foo: Foo)
-        
-        @InstanceFactory
-        fun createDep(): @Provider (String) -> Dep {
-            transient { Foo() }
-            transient { Dep(it.component1(), get()) }
-            return create()
-        }
-    """
-    ) {
-        assertOk()
-    }
+    fun testMultiCompileAssistedWithAnnotations() = multiCodegen(
+        listOf(
+            source(
+                """
+                @Transient 
+                class Dep(
+                    @Assisted val assisted: String,
+                    val foo: Foo
+                )
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @InstanceFactory 
+                    fun createDep(): @Provider (String) -> Dep { 
+                        instance(Foo())
+                        return create()
+                    }
+                """
+            )
+        )
+    )
+
 
 }

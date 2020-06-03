@@ -18,8 +18,6 @@ package com.ivianuu.injekt
 
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.multiCodegen
-import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
@@ -73,113 +71,6 @@ class InstanceFactoryTest {
             return create()
         }
     """
-    )
-
-    @Test
-    fun testLocalFunctionInstanceFactory() = codegen(
-        """
-        fun createInstance(): Bar {
-            @InstanceFactory
-            fun factory(): Bar {
-                transient<Foo>()
-                transient<Bar>()
-                return create()
-            }
-            return factory()
-        }
-    """
-    )
-
-    @Test
-    fun testInstanceFactoryLambda() = codegen(
-        """
-        fun createInstance(): Bar {
-            val factory = @InstanceFactory {
-                transient<Foo>()
-                transient<Bar>()
-                create<Bar>()
-            }
-            return factory()
-        }
-    """
-    )
-
-    @Test
-    fun testInlineFactory() = codegen(
-        """
-        @InstanceFactory
-        inline fun <T> createInstance(): T {
-            transient<Foo>()
-            transient<Bar>()
-            return create()
-        }
-        
-        fun invoke() {
-            createInstance<Foo>()
-            createInstance<Bar>()
-        }
-    """
-    )
-
-    @Test
-    fun testMultiCompilationInlineFactory() = multiCodegen(
-        listOf(
-            source(
-                """
-                    @InstanceFactory 
-                    inline fun <T> createInstance(): T { 
-                        transient<Foo>()
-                        transient<Bar>()
-                        return create()
-                    }
-                    """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    fun invoke() { 
-                        createInstance<Foo>()
-                        createInstance<Bar>()
-                    }
-                """
-            )
-        )
-    )
-
-    @Test
-    fun testMultiCompilationInlineFactoryWithSameName() = multiCodegen(
-        listOf(
-            source(
-                """
-                    @InstanceFactory
-                    inline fun <T> createInstance(): T { 
-                        transient<Foo>()
-                        transient<Bar>()
-                        return create()
-                    }
-                    
-                    @InstanceFactory 
-                    inline fun <T> createInstance(block: @Module () -> Unit): T {
-                        block()
-                        return create()
-                    }
-                    """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    fun invoke() { 
-                        createInstance<Foo>()
-                        createInstance<Bar> {
-                            transient<Foo>()
-                            transient<Bar>()
-                        }
-                    }
-                """
-            )
-        )
     )
 
     @Test
@@ -262,5 +153,20 @@ class InstanceFactoryTest {
         assertEquals("default", pair.first)
         assertEquals("non_default", pair.second)
     }
+
+    @Test
+    fun testLocalFunctionInstanceFactory() = codegen(
+        """
+        fun createInstance(): Bar {
+            @InstanceFactory
+            fun factory(): Bar {
+                transient<Foo>()
+                transient<Bar>()
+                return create()
+            }
+            return factory()
+        }
+    """
+    )
 
 }

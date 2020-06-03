@@ -33,6 +33,7 @@ import android.app.usage.UsageStatsManager
 import android.appwidget.AppWidgetManager
 import android.bluetooth.BluetoothManager
 import android.content.ClipboardManager
+import android.content.Context
 import android.content.RestrictionsManager
 import android.content.pm.LauncherApps
 import android.content.pm.ShortcutManager
@@ -78,9 +79,7 @@ import androidx.core.content.ContextCompat
 import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.ForApplication
 import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.classOf
 import com.ivianuu.injekt.composition.installIn
-import com.ivianuu.injekt.get
 import com.ivianuu.injekt.transient
 
 @Module
@@ -147,11 +146,8 @@ fun systemServiceModule() {
 }
 
 @Module
-inline fun <T : Any> systemService() {
-    transient<T> {
-        ContextCompat.getSystemService(
-            @ForApplication get(),
-            classOf<T>().java
-        )!!
+inline fun <reified T : Any> systemService() {
+    transient<T> { context: @ForApplication Context ->
+        ContextCompat.getSystemService(context, T::class.java)!!
     }
 }

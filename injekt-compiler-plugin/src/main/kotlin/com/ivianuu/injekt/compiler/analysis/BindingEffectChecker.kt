@@ -87,16 +87,14 @@ class BindingEffectChecker : DeclarationChecker {
                     val value = annotation.allValueArguments.values.single() as KClassValue
                     val type = value.getArgumentType(descriptor.module)
                     type == descriptor.defaultType
-                }?.takeIf { it.hasAnnotation(InjektFqNames.Module) }
-                ?: error("Corrupt binding effect")
+                }
+                ?.takeIf { it.hasAnnotation(InjektFqNames.Module) }
+                ?: error("Corrupt binding effect $descriptor ${declaration.text}")
 
-            /*
-            val moduleFunction = companion.unsubstitutedMemberScope
-                .getContributedDescriptors()
-                .filterIsInstance<FunctionDescriptor>()
-                .singleOrNull {
-                    it.hasAnnotation(InjektFqNames.Module)
-                }*/
+            /*val moduleFunction = companion.unsubstitutedMemberScope
+            .getContributedDescriptors()
+            .filterIsInstance<FunctionDescriptor>()
+            .singleOrNull { it.hasAnnotation(InjektFqNames.Module) }*/
 
             if (moduleFunction == null) {
                 context.trace.report(

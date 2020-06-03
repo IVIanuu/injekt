@@ -148,29 +148,6 @@ class FactoryDslTest {
     }
 
     @Test
-    fun testFactoryWithTypeParametersAndWithoutInline() =
-        codegen(
-            """
-        interface Impl
-        @Factory
-        fun <T> factory(): Impl = create()
-    """
-        ) {
-            assertCompileError("inline")
-        }
-
-    @Test
-    fun testModuleWithReifiedTypeParameters() = codegen(
-        """
-            interface Impl
-        @InstanceFactory
-        fun <reified T> factory(): Impl = create()
-        """
-    ) {
-        assertCompileError("reified")
-    }
-
-    @Test
     fun testMutablePropertiesNotAllowedInFactoryImpls() =
         codegen(
             """
@@ -259,27 +236,9 @@ class FactoryDslTest {
     }
 
     @Test
-    fun testChildFactoryCannotBeSuspend() = codegen(
-        """
-        @ChildFactory 
-        suspend fun factory(): TestComponent = create()
-        """
-    ) {
-        assertCompileError("suspend")
-    }
-
-    @Test
-    fun testFactoryCanBeInline() = codegen(
+    fun testFactoryCannotBeInline() = codegen(
         """
         @Factory
-        inline fun factory(): TestComponent = create()
-    """
-    )
-
-    @Test
-    fun testChildFactoryCannotBeInline() = codegen(
-        """
-        @ChildFactory
         inline fun factory(): TestComponent = create()
     """
     ) {
@@ -287,53 +246,26 @@ class FactoryDslTest {
     }
 
     @Test
-    fun testFactoryCanHaveTypeParameters() = codegen(
+    fun testFactoryCannotHaveTypeParameters() = codegen(
+        """
+        @Factory 
+        fun <T> factory(): TestComponent = create()
+    """
+    ) {
+        assertCompileError("type")
+    }
+
+    @Test
+    fun testFactoriesWithSameName() = codegen(
         """
         @Factory
-        inline fun <T> factory(): TestComponent = create()
-    """
-    )
-
-    @Test
-    fun testChildFactoryCannotHaveTypeParameters() =
-        codegen(
-            """
-        @ChildFactory
-        inline fun <T> factory(): TestComponent = create()
-    """
-        ) {
-            assertCompileError("type parameter")
-        }
-
-    @Test
-    fun testNonInlineFactoryWithModuleParameter() =
-        codegen(
-            """ 
+        fun factory(): TestComponent = create()
+        
         @Factory
-        fun factory(block: @Module () -> Unit): TestComponent {
-            block()
-            return create()
-        }
+        fun factory(arg: String): TestComponent = create()
     """
-        ) {
-            assertCompileError("inline")
-        }
-
-    @Test
-    fun testCallingInlineFactoryWithTypeParametersNotAllowed() =
-        codegen(
-            """ 
-        @Factory
-        inline fun <T> factory(): TestComponent {
-            return create()
-        }
-
-        fun <T> callerWithTypeParameters() {
-            factory<T>()
-        }
-    """
-        ) {
-            assertCompileError("type param")
-        }
+    ) {
+        assertCompileError("multiple")
+    }
 
 }

@@ -320,4 +320,35 @@ class MapTest {
         assertInternalError("already bound")
     }
 
+    @Test
+    fun testGenericMapBinding() = codegen(
+        """
+
+        @Module
+        inline fun <reified T : Command> intoMap() {
+            map<KClass<out Command>, Command> {
+                put<T>(T::class)
+            }
+        }
+        
+        @InstanceFactory
+        fun invoke(): Map<KClass<out Command>, Command> {
+            transient { CommandA() }
+            intoMap<CommandA>()
+            transient { CommandB() }
+            intoMap<CommandB>()
+            transient { CommandC() }
+            intoMap<CommandC>()
+            return create()
+        }
+        """
+    ) {
+        val map =
+            invokeSingleFile<Map<KClass<out Command>, Command>>()
+        assertEquals(3, map.size)
+        assertTrue(map[CommandA::class] is CommandA)
+        assertTrue(map[CommandB::class] is CommandB)
+        assertTrue(map[CommandC::class] is CommandC)
+    }
+
 }

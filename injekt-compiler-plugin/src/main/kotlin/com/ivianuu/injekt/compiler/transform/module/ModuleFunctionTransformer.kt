@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -17,176 +17,305 @@
 package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.deepCopyWithPreservingQualifiers
-import com.ivianuu.injekt.compiler.hasTypeAnnotation
-import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
-import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
+import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.NameProvider
+import com.ivianuu.injekt.compiler.PropertyPath
+import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
+import com.ivianuu.injekt.compiler.addToFileOrAbove
+import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.isExternalDeclaration
+import com.ivianuu.injekt.compiler.setClassKind
+import com.ivianuu.injekt.compiler.transform.AbstractFunctionTransformer2
+import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
+import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
+import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.addChild
+import org.jetbrains.kotlin.backend.common.ir.allParameters
+import org.jetbrains.kotlin.backend.common.ir.copyBodyTo
+import org.jetbrains.kotlin.backend.common.ir.copyTo
+import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
+import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.backend.common.pop
-import org.jetbrains.kotlin.backend.common.push
-import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
+import org.jetbrains.kotlin.ir.builders.declarations.buildFun
+import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
+import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irNull
+import org.jetbrains.kotlin.ir.builders.irReturn
+import org.jetbrains.kotlin.ir.builders.irSetField
+import org.jetbrains.kotlin.ir.builders.irTemporary
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
+import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
+import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.defaultType
+import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
+import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
+import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
+import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.isLocal
+import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ModuleFunctionTransformer(pluginContext: IrPluginContext) :
-    AbstractInjektTransformer(pluginContext) {
+class ModuleFunctionTransformer(
+    pluginContext: IrPluginContext,
+    private val declarationStore: InjektDeclarationStore
+) : AbstractFunctionTransformer2(pluginContext, TransformOrder.BottomUp) {
 
-    private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
+    fun getModuleFunctionForClass(moduleClass: IrClass): IrFunction =
+        transformedFunctions.values
+            .single { it.returnType.classOrNull!!.owner == moduleClass }
 
-    fun getTransformedModule(function: IrFunction): IrFunction {
-        return transformedFunctions[function] ?: function
+    fun getModuleClassForFunction(moduleFunction: IrFunction): IrClass =
+        transformFunctionIfNeeded(moduleFunction).returnType.classOrNull!!.owner
+
+    override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
+        super.visitModuleFragment(declaration)
+        transformedFunctions
+            .filterNot { it.key.isExternalDeclaration() }
+            .forEach {
+                it.value.returnType.classOrNull!!.owner.addToFileOrAbove(it.value)
+            }
+        return declaration
     }
 
-    override fun visitFunction(declaration: IrFunction): IrStatement =
-        transformFunctionIfNeeded(super.visitFunction(declaration) as IrFunction)
+    override fun needsTransform(function: IrFunction): Boolean =
+        function.hasAnnotation(InjektFqNames.Module)
 
-    private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
-        if (function.origin == IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
-            function.origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
-        ) {
-            return if (function.hasAnnotation(InjektFqNames.AstTyped)) {
-                pluginContext.referenceFunctions(function.descriptor.fqNameSafe)
-                    .map { it.owner }
-                    .single { other ->
-                        other.name == function.name &&
-                                other.valueParameters.any {
-                                    "class\$" in it.name.asString()
-                                }
-                    }
-            } else function
-        }
-        if (!function.hasTypeAnnotation(
-                InjektFqNames.Module,
-                pluginContext.bindingContext
+    override fun transform(function: IrFunction): IrFunction {
+        val transformedFunction = buildFun {
+            name = InjektNameConventions.getTransformedModuleFunctionNameForModule(
+                function.getPackageFragment()!!.fqName,
+                function.descriptor.fqNameSafe
             )
-        ) return function
-        transformedFunctions[function]?.let { return it }
-        if (function in transformedFunctions.values) return function
+            isInline = function.isInline
+        }.apply {
+            parent = function.file
+            addMetadataIfNotLocal()
 
-        val originalCaptures = mutableListOf<IrGetValue>()
-        function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
-            private val moduleStack = mutableListOf(function)
-            override fun visitFunction(declaration: IrFunction): IrStatement {
-                if (declaration.hasTypeAnnotation(
-                        InjektFqNames.Module,
-                        pluginContext.bindingContext
-                    )
+            annotations = function.annotations.map { it.deepCopyWithSymbols() }
+
+            copyTypeParametersFrom(function)
+
+            valueParameters = function.allParameters.mapIndexed { index, valueParameter ->
+                valueParameter.copyTo(
+                    this,
+                    index = index
                 )
-                    moduleStack.push(declaration)
-                return super.visitFunction(declaration)
-                    .also {
-                        if (declaration.hasTypeAnnotation(
-                                InjektFqNames.Module,
-                                pluginContext.bindingContext
-                            )
-                        )
-                            moduleStack.pop()
-                    }
             }
 
-            override fun visitGetValue(expression: IrGetValue): IrExpression {
-                if (function.isLocal &&
-                    moduleStack.last() == function &&
-                    expression.symbol.owner !in function.valueParameters
-                ) {
-                    originalCaptures += expression
-                }
-                return super.visitGetValue(expression)
-            }
-        })
-
-        if (originalCaptures.isEmpty()) {
-            transformedFunctions[function] = function
-            return function
+            body = function.copyBodyTo(this)
         }
 
-        val transformedFunction = function.deepCopyWithPreservingQualifiers(
-            wrapDescriptor = true
+        val moduleDescriptor = ModuleDescriptor(
+            transformedFunction,
+            function,
+            pluginContext,
+            symbols
         )
-        transformedFunctions[function] = transformedFunction
 
-        val captures = mutableListOf<IrGetValue>()
+        val moduleClass = buildClass {
+            name = InjektNameConventions.getModuleClassNameForModuleFunction(
+                function.getPackageFragment()!!.fqName,
+                transformedFunction.descriptor.fqNameSafe
+            )
+            visibility = transformedFunction.visibility
+        }.apply clazz@{
+            moduleDescriptor.moduleClass = this
+            parent = transformedFunction.file
+            createImplicitParameterDeclarationWithWrappedDescriptor()
+            addMetadataIfNotLocal()
+            copyTypeParametersFrom(transformedFunction)
+            addChild(moduleDescriptor.clazz)
+        }
 
-        transformedFunction.body?.transformChildrenVoid(object :
-            IrElementTransformerVoid() {
-            private val moduleStack = mutableListOf(transformedFunction)
-            override fun visitFunction(declaration: IrFunction): IrStatement {
-                if (declaration.hasTypeAnnotation(
-                        InjektFqNames.Module,
-                        pluginContext.bindingContext
+        transformedFunction.addValueParameter(
+            "moduleMarker",
+            irBuiltIns.anyNType
+        )
+
+        transformedFunction.returnType = moduleClass.typeWith(
+            transformedFunction.typeParameters.map { it.defaultType }
+        )
+
+        val nameProvider = NameProvider()
+
+        val allDeclarations = mutableListOf<ModuleDeclaration>()
+        val moduleDeclarationFactory = ModuleDeclarationFactory(
+            transformedFunction,
+            function,
+            moduleClass,
+            pluginContext,
+            declarationStore,
+            nameProvider,
+            symbols
+        )
+        val variableByDeclaration = mutableMapOf<ModuleDeclaration, IrVariable>()
+
+        transformedFunction.rewriteTransformedFunctionRefs()
+
+        val bodyStatements = transformedFunction.body?.statements?.toList() ?: emptyList()
+
+        transformedFunction.body =
+            DeclarationIrBuilder(pluginContext, transformedFunction.symbol).irBlockBody {
+                bodyStatements.forEach { stmt ->
+                    if (stmt !is IrCall) {
+                        +stmt
+                        return@forEach
+                    }
+
+                    val callee = stmt.symbol.owner
+                    val declarations = moduleDeclarationFactory.createDeclarations(
+                        callee, stmt
                     )
-                )
-                    moduleStack.push(declaration)
-                return super.visitFunction(declaration)
-                    .also {
-                        if (declaration.hasTypeAnnotation(
-                                InjektFqNames.Module,
-                                pluginContext.bindingContext
-                            )
-                        )
-                            moduleStack.pop()
+                    allDeclarations += declarations
+                    moduleDescriptor.addDeclarations(declarations)
+
+                    if (declarations.isEmpty()) {
+                        +stmt
+                    } else {
+                        declarations.forEach { declaration ->
+                            if (declaration is ModuleDeclarationWithPath &&
+                                declaration.path is PropertyPath
+                            ) {
+                                variableByDeclaration[declaration] =
+                                    irTemporary(declaration.initializer!!)
+                            }
+                        }
                     }
             }
 
-            override fun visitGetValue(expression: IrGetValue): IrExpression {
-                if (transformedFunction.isLocal &&
-                    moduleStack.last() == transformedFunction &&
-                    expression.symbol.owner !in transformedFunction.valueParameters
-                ) {
-                    captures += expression
-                }
-                return super.visitGetValue(expression)
-            }
-        })
+                var isStatic = false
 
-        val valueParameterByCapture = captures.associateWith { capture ->
-            transformedFunction.addValueParameter(
-                "capture_${captures.indexOf(capture)}",
-                capture.type
-            )
-        }
+                val moduleConstructor = moduleClass.addConstructor {
+                    returnType = moduleClass.defaultType
+                    isPrimary = true
+                    visibility = Visibilities.PUBLIC
+                }.apply {
+                    val declarationsWithProperties = allDeclarations
+                        .filterIsInstance<ModuleDeclarationWithPath>()
+                        .filter { it.path is PropertyPath }
+                        .map { it to it.path as PropertyPath }
 
-        transformedFunction.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitGetValue(expression: IrGetValue): IrExpression {
-                return valueParameterByCapture[expression]?.let {
-                    DeclarationIrBuilder(pluginContext, expression.symbol)
-                        .irGet(it)
-                } ?: super.visitGetValue(expression)
-            }
-        })
+                    isStatic = declarationsWithProperties
+                        .none {
+                            var captures = false
+                            it.first.initializer!!.transform(
+                                object : IrElementTransformerVoid() {
+                                    override fun visitGetValue(expression: IrGetValue): IrExpression {
+                                        if (expression.symbol.owner.parent == transformedFunction) {
+                                            captures = true
+                                        }
+                                        return super.visitGetValue(expression)
+                                    }
+                                }, null
+                            )
+                            captures
+                        } && moduleClass.typeParameters.isEmpty()
 
-        function.file.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
-            override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol != function.symbol) {
-                    return super.visitCall(expression)
-                }
-                return DeclarationIrBuilder(pluginContext, expression.symbol).run {
-                    irCall(transformedFunction).apply {
-                        copyTypeAndValueArgumentsFrom(expression)
-                        captures.forEach { capture ->
-                            val valueParameter = valueParameterByCapture.getValue(capture)
-                            putValueArgument(valueParameter.index, capture)
+                    val valueParametersByProperties = if (isStatic) {
+                        emptyMap()
+                    } else {
+                        declarationsWithProperties
+                            .map { it.second.property }
+                            .associateWith {
+                                addValueParameter(
+                                    it.field.name.asString(),
+                                    it.getter.returnType
+                                )
+                            }
+                    }
+
+                    body = InjektDeclarationIrBuilder(pluginContext, symbol).run {
+                        builder.irBlockBody {
+                            initializeClassWithAnySuperClass(moduleClass.symbol)
+                            if (!isStatic) {
+                                valueParametersByProperties.forEach { (property, valueParameter) ->
+                                    +irSetField(
+                                        irGet(moduleClass.thisReceiver!!),
+                                        property.field,
+                                        irGet(valueParameter)
+                                    )
+                                }
+                            } else {
+                                declarationsWithProperties
+                                    .forEach { (declaration, path) ->
+                                        +irSetField(
+                                            irGet(moduleClass.thisReceiver!!),
+                                            path.property.field,
+                                            declaration.initializer!!
+                                                .deepCopyWithVariables()
+                                        )
+                                    }
+                            }
                         }
                     }
                 }
+
+                if (isStatic) {
+                    moduleClass.setClassKind(ClassKind.OBJECT)
+                    doBuild().statements.clear()
+                }
+
+                +irReturn(
+                    if (isStatic) {
+                        irGetObject(moduleClass.symbol)
+                    } else {
+                        irCall(moduleConstructor).apply {
+                            variableByDeclaration.values.forEachIndexed { index, variable ->
+                                putValueArgument(index, irGet(variable))
+                            }
+                        }
+                    }
+                )
             }
-        })
 
         return transformedFunction
+    }
+
+    override fun transformExternal(function: IrFunction): IrFunction {
+        return pluginContext.referenceFunctions(
+            function.getPackageFragment()!!.fqName
+                .child(
+                    InjektNameConventions.getTransformedModuleFunctionNameForModule(
+                        function.getPackageFragment()!!.fqName,
+                        function.descriptor.fqNameSafe
+                    )
+                )
+        ).single {
+            it.owner.valueParameters.lastOrNull()?.name?.asString() == "moduleMarker"
+        }.owner
+    }
+
+    override fun transformCall(transformed: IrFunction, expression: IrCall): IrCall {
+        return IrCallImpl(
+            expression.startOffset,
+            expression.endOffset,
+            transformed.returnType,
+            transformed.symbol,
+            expression.origin,
+            expression.superQualifierSymbol
+        ).apply {
+            copyTypeAndValueArgumentsFrom(expression, receiversAsArguments = true)
+            putValueArgument(
+                valueArgumentsCount - 1,
+                DeclarationIrBuilder(pluginContext, symbol).irNull()
+            )
+        }
     }
 
 }

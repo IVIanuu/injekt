@@ -111,9 +111,9 @@ class CommonScenariosTest {
         @Transient class WorkerB(@Assisted context: Context) : Worker(context)
         
         @Module 
-        inline fun <T : Worker> bindWorkerIntoMap() {
+        inline fun <reified T : Worker> bindWorkerIntoMap() {
             map<KClass<out Worker>, @Provider (Context) -> Worker> {
-                put<@Provider (Context) -> T>(classOf<T>())
+                put<@Provider (Context) -> T>(T::class)
             }
         }
         
@@ -150,28 +150,6 @@ class CommonScenariosTest {
     }
 
     @Test
-    fun buildInstanceFeature() = multiCodegen(
-        listOf(
-            source(
-                """
-                @Factory
-                inline fun <T> newInstance(block: @Module () -> Unit): T { 
-                    block()
-                    return create()
-                }
-            """
-            )
-        ),
-        listOf(
-            source(
-                """
-               fun invoke() = newInstance<Foo> { transient<Foo>() }
-            """
-            )
-        )
-    )
-
-    @Test
     fun testInjectionSiteProviderUsage() = codegen(
         """
         interface TestComponent {
@@ -185,8 +163,7 @@ class CommonScenariosTest {
         @Factory
         fun factory(): TestComponent {
             transient { Foo() }
-            transient {
-                val fooProvider = get<@Provider () -> Foo>()
+            transient { fooProvider: @Provider () -> Foo ->
                 Bar(fooProvider())
             }
             return create()
@@ -200,5 +177,16 @@ class CommonScenariosTest {
     ) {
         invokeSingleFile()
     }
+
+    @Test
+    fun testProviderFunctionAsModuleParameter() = codegen(
+        """
+        @Module 
+        fun <T : Any> action(provider: @Provider () -> T) {
+            transient { provider() }
+            set<Any> { add<T>() }
+        }
+    """
+    )
 
 }

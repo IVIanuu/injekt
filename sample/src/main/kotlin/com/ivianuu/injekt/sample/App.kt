@@ -17,14 +17,16 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
-import com.ivianuu.injekt.android.AndroidEntryPoint
+import androidx.work.WorkerFactory
+import com.ivianuu.injekt.android.CompositionAndroidApp
 import com.ivianuu.injekt.inject
 
-@AndroidEntryPoint
+@CompositionAndroidApp
 class App : Application() {
 
     private val appServiceRunner: AppServiceRunner by inject()
     private val repo: Repo by inject()
+    private val workerFactory: WorkerFactory by inject()
 
     override fun onCreate() {
         super.onCreate()

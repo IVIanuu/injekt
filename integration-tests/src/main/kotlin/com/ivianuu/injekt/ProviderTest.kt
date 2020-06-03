@@ -71,12 +71,12 @@ class ProviderTest {
     @Test
     fun testQualifiedProvider() = codegen(
         """
-            @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+            @Target(AnnotationTarget.TYPE)
             @Qualifier
             annotation class TestQualifier1
         @Factory
         fun invoke(): @Provider () -> @TestQualifier1 Foo { 
-            @TestQualifier1 transient { Foo() }
+            transient<@TestQualifier1 Foo> { Foo() }
             return create()
         }
          """

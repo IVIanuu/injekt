@@ -18,10 +18,12 @@ package com.ivianuu.injekt
 
 import com.ivianuu.injekt.internal.injektIntrinsic
 
-@InjektDslMarker
-interface SetDsl<E> {
+interface SetDsl<S : Set<E>, E> {
     fun <T : E> add()
     // todo fun <T : E> add(definition: ProviderDefinition<T>)
 }
 
-fun <E> set(block: SetDsl<E>.() -> Unit = {}): Unit = injektIntrinsic()
+fun <E> set(block: SetDsl<Set<E>, E>.() -> Unit = {}): Unit = injektIntrinsic()
+
+@JvmName("qualifiedSet")
+fun <S : Set<E>, E> set(block: SetDsl<S, E>.() -> Unit = {}): Unit = injektIntrinsic()

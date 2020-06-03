@@ -26,9 +26,6 @@ import org.jetbrains.kotlin.name.Name
 
 class InjektSymbols(val pluginContext: IrPluginContext) {
 
-    val injektPackage = getPackage(InjektFqNames.InjektPackage)
-    val internalPackage = getPackage(InjektFqNames.InternalPackage)
-
     val injektAst = pluginContext.referenceClass(InjektFqNames.InjektAst)!!
 
     private fun IrClassSymbol.childClass(name: Name) = owner.declarations
@@ -42,7 +39,7 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val astChildFactory = injektAst.childClass(InjektFqNames.AstChildFactory.shortName())
     val astDependency = injektAst.childClass(InjektFqNames.AstDependency.shortName())
     val astEntryPoints = injektAst.childClass(InjektFqNames.AstEntryPoints.shortName())
-    val astInline = injektAst.childClass(InjektFqNames.AstInline.shortName())
+    val astInstance = injektAst.childClass(InjektFqNames.AstInstance.shortName())
     val astMap = injektAst.childClass(InjektFqNames.AstMap.shortName())
     val astMapEntry = astMap.childClass(InjektFqNames.AstMapEntry.shortName())
     val astMapClassKey = astMap.childClass(InjektFqNames.AstMapClassKey.shortName())
@@ -59,17 +56,13 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val astClassPath = astPath.childClass(InjektFqNames.AstClassPath.shortName())
     val astPropertyPath = astPath.childClass(InjektFqNames.AstPropertyPath.shortName())
     val astTypeParameterPath = astPath.childClass(InjektFqNames.AstTypeParameterPath.shortName())
-    val astValueParameterPath = astPath.childClass(InjektFqNames.AstValueParameterPath.shortName())
     val astParents = injektAst.childClass(InjektFqNames.AstParents.shortName())
     val astScope = injektAst.childClass(InjektFqNames.AstScope.shortName())
     val astScoped = injektAst.childClass(InjektFqNames.AstScoped.shortName())
     val astSet = injektAst.childClass(InjektFqNames.AstSet.shortName())
     val astSetElement = astSet.childClass(InjektFqNames.AstSetElement.shortName())
-    val astStatic = injektAst.childClass(InjektFqNames.AstStatic.shortName())
-    val astTyped = injektAst.childClass(InjektFqNames.AstTyped.shortName())
 
     val assisted = pluginContext.referenceClass(InjektFqNames.Assisted)!!
-    val assistedParameters = pluginContext.referenceClass(InjektFqNames.AssistedParameters)!!
 
     val childFactory = pluginContext.referenceClass(InjektFqNames.ChildFactory)!!
 
@@ -80,6 +73,8 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
 
     val instanceFactory = pluginContext.referenceClass(InjektFqNames.InstanceFactory)!!
 
+    val lateinitFactory = pluginContext.referenceClass(InjektFqNames.LateinitFactory)!!
+
     val lazy = pluginContext.referenceClass(InjektFqNames.Lazy)!!
 
     val mapDsl = pluginContext.referenceClass(InjektFqNames.MapDsl)!!
@@ -89,10 +84,7 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
 
     val module = pluginContext.referenceClass(InjektFqNames.Module)!!
 
-    val noOpMembersInjector = pluginContext.referenceClass(InjektFqNames.NoOpMembersInjector)!!
-
     val provider = pluginContext.referenceClass(InjektFqNames.Provider)!!
-    val providerDsl = pluginContext.referenceClass(InjektFqNames.ProviderDsl)!!
     val providerOfLazy = pluginContext.referenceClass(InjektFqNames.ProviderOfLazy)!!
 
     val setDsl = pluginContext.referenceClass(InjektFqNames.SetDsl)!!

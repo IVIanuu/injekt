@@ -3,7 +3,6 @@ include(
     ":comparison",
     ":composition-integration-tests",
     ":injekt-android",
-    ":injekt-android-compose",
     ":injekt-android-work",
     ":injekt-common",
     ":injekt-compiler-plugin",
@@ -11,6 +10,7 @@ include(
     ":injekt-core",
     ":injekt-gradle-plugin",
     ":integration-tests",
+    ":lol",
     ":sample",
     ":test-util"
 )

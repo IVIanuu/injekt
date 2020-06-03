@@ -14,18 +14,27 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.android.compose
+package com.ivianuu.injekt.android
 
-import androidx.activity.ComponentActivity
-import androidx.compose.Composable
-import androidx.compose.remember
-import androidx.ui.core.ContextAmbient
-import com.ivianuu.injekt.android.activityComponent
-import com.ivianuu.injekt.composition.get
+import com.ivianuu.injekt.test.codegen
+import org.junit.Test
 
-@Composable
-fun <T> inject(): T {
-    val activity = ContextAmbient.current as? ComponentActivity
-        ?: error("Activity expected")
-    return remember { activity.activityComponent.get() }
+class CompositionAndroidAppTest {
+
+    @Test
+    fun testCompositionAndroidApp() = codegen(
+        """
+        @CompositionAndroidApp
+        class MyApp : android.app.Application() { 
+            val foo: Foo by inject()
+        }
+        
+        @Module
+        fun fooModule() {
+            installIn<ApplicationComponent>()
+            transient<Foo>()
+        }
+    """
+    )
+
 }

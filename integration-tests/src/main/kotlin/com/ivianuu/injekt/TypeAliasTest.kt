@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -16,5 +16,22 @@
 
 package com.ivianuu.injekt
 
-@DslMarker
-annotation class InjektDslMarker
+import com.ivianuu.injekt.test.codegen
+import org.junit.Test
+
+class TypeAliasTest {
+
+    @Test
+    fun testAlias() = codegen(
+        """
+        typealias AliasedFoo = Foo
+        
+        @InstanceFactory
+        fun factory(): AliasedFoo {
+            transient<Foo>()
+            return create()
+        }
+    """
+    )
+
+}

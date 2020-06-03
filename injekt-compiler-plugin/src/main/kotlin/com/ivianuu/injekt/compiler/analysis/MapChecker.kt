@@ -38,10 +38,19 @@ class MapChecker : CallChecker {
     ) {
         val descriptor = resolvedCall.resultingDescriptor
         if (descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.map") {
-            val mapKeyType = resolvedCall.typeArguments.toList()
-                .first()
-                .second
-                ?.constructor?.declarationDescriptor?.fqNameSafe
+            if (resolvedCall.typeArguments.size == 3) {
+                val mapType = resolvedCall.typeArguments.values.first()
+                if (mapType.constructor.declarationDescriptor != context.moduleDescriptor.builtIns.map) {
+                    context.trace.report(
+                        InjektErrors.NOT_A_MAP
+                            .on(reportOn)
+                    )
+                }
+            }
+            val mapKeyType = resolvedCall.typeArguments
+                .entries
+                .single { it.key.name.asString() == "K" }
+                .value?.constructor?.declarationDescriptor?.fqNameSafe
 
             if (mapKeyType !in SupportedMapKeyTypes) {
                 context.trace.report(InjektErrors.UNSUPPORTED_MAP_KEY_TYPE.on(reportOn))
@@ -59,9 +68,7 @@ class MapChecker : CallChecker {
                 keyArg.getArgumentExpression()!!,
                 context.trace.bindingContext
             )
-            if (constant == null && keyArg.getArgumentExpression() !is KtClassLiteralExpression &&
-                keyArg.getArgumentExpression()?.text?.contains("classOf") != true
-            ) {
+            if (constant == null && keyArg.getArgumentExpression() !is KtClassLiteralExpression) {
                 context.trace.report(InjektErrors.MAP_KEY_MUST_BE_CONSTANT.on(reportOn))
             }
         }

@@ -24,6 +24,21 @@ import org.junit.Test
 class ModuleTest {
 
     @Test
+    fun testModule() = codegen(
+        """
+        @Module
+        fun module(dependency: Any) {
+            scope<TestScope>()
+            dependency(dependency)
+            set<Any>()
+            map<String, Any>()
+            instance("hello world")
+            transient { foo: Foo -> Bar(foo) }
+        }
+    """
+    )
+
+    @Test
     fun testValueParameterCapturingModule() = codegen(
         """
         @Module
@@ -42,13 +57,13 @@ class ModuleTest {
     @Test
     fun testTypeParameterCapturingModule() = codegen(
         """
-        @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE) 
+        @Target(AnnotationTarget.TYPE) 
         @Qualifier 
         annotation class TestQualifier1
         
         @Module
         fun <T> capturingModule() {
-            transient<@TestQualifier1 T> { get<T>() }
+            transient<@TestQualifier1 T> { t: T -> t }
         }
         
         @InstanceFactory
@@ -78,40 +93,11 @@ class ModuleTest {
     )
 
     @Test
-    fun testMultipleModulesWithSameName() = codegen(
-        """
-        @Module
-        fun module() {
-        }
-        
-        @Module
-        fun module(p0: String) {
-        }
-    """
-    )
-
-    @Test
-    fun testIncludeLocalModule() = codegen(
-        """
-        @Module
-        fun outer() {
-            @Module
-            fun <T> inner(instance: T) {
-                instance(instance)
-            }
-            
-            inner("hello world")
-            inner(42)
-        }
-    """
-    )
-
-    @Test
     fun testBindingWithTypeParameterInInlineModule() =
         codegen(
             """ 
-        @Module
-        inline fun <T> module() {
+        @Module 
+        fun <T> module() {
             transient<T>()
         }
     """
@@ -139,6 +125,48 @@ class ModuleTest {
                     @Module 
                     fun calling() {
                         MyClass.Companion.module()
+                    } 
+                """
+            )
+        )
+    )
+
+    @Test
+    fun testMultipleCompileNestedModuleInAnnotation() = multiCodegen(
+        listOf(
+            source(
+                """
+                    annotation class MyClass {
+                        companion object {
+                            @Module
+                            fun <T> module() {
+                                transient<T>()
+                            }
+                        }
+                    }
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    annotation class MyClass2 {
+                        companion object {
+                            @Module
+                            fun <T> module() {
+                                MyClass.module<T>()
+                            }
+                        }
+                    }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @Module 
+                    fun calling() {
+                        MyClass2.module<Foo>()
                     } 
                 """
             )

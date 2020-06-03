@@ -36,29 +36,29 @@ class BindingEffectTest {
         
         @BindingEffect(TestCompositionComponent::class)
         annotation class Effect1
-        
+
         @BindingEffectFunction(Effect1::class)
-        @Module
-        inline fun <T> effect1() {
-            transient { get<T>().toString() }
+        @Module 
+        fun <T> bind1() { 
+            transient { t: T -> t.toString() }
         }
         
         @BindingEffect(TestCompositionComponent::class)
         annotation class Effect2
         
         @BindingEffectFunction(Effect2::class)
-        @Module
-        inline fun <T : Any> effect2() {
+        @Module 
+        fun <T : Any> bind2() { 
             alias<T, Any>()
         }
-        
+
         @Effect1
         @Effect2
         @Transient
         class Dep
         
         fun invoke() {
-            generateCompositions()
+            initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             component.get<Dep>()
             component.get<String>()
@@ -84,10 +84,10 @@ class BindingEffectTest {
         
         @BindingAdapterFunction(BindAppService::class)
         @Module 
-        inline fun <T : AppService> bindAppService() { 
+        inline fun <reified T : AppService> bindAppService() { 
             scoped<T>()
             map<KClass<out AppService>, AppService> { 
-                put<T>(classOf<T>())
+                put<T>(T::class)
             }
         }
 
@@ -98,7 +98,7 @@ class BindingEffectTest {
         class MyAppServiceB : AppService
 
         fun invoke() {
-            generateCompositions()
+            initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             val appServices = component.get<Map<KClass<AppService>, AppService>>()
             println("app services " + appServices)
@@ -126,10 +126,10 @@ class BindingEffectTest {
                 
                 @BindingAdapterFunction(BindAppService::class)
                 @Module 
-                inline fun <T : AppService> bindAppService() { 
+                inline fun <reified T : AppService> bind() { 
                     scoped<T>()
                     map<KClass<out AppService>, AppService> { 
-                        put<T>(classOf<T>()) 
+                        put<T>(T::class) 
                     }
                 } 
         """
@@ -143,7 +143,7 @@ class BindingEffectTest {
                 class MyAppServiceB : AppService
                 
                 fun invoke() { 
-                    generateCompositions() 
+                    initializeCompositions() 
                     val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()() 
                     val appServices = component.get<Map<KClass<AppService>, AppService>>()
                     println("app services " + appServices) 
@@ -182,12 +182,11 @@ class BindingEffectTest {
                 
                 @CompositionFactory
                 fun createActivityComponent(): ActivityComponent { 
-                    @ForActivity
-                    transient { Any() as ViewModelStoreOwner }
+                    transient<@ForActivity ViewModelStoreOwner> { Any() as ViewModelStoreOwner }
                     return create()
                 }
                 
-                @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+                @Target(AnnotationTarget.TYPE)
                 @Qualifier
                 annotation class ForActivity
                 
@@ -195,28 +194,31 @@ class BindingEffectTest {
                 annotation class ActivityViewModel
                 
                 @BindingAdapterFunction(ActivityViewModel::class)
+                @Module 
+                inline fun <reified T : ViewModel> bind() {
+                    activityViewModel<T>()
+                }
+                
                 @Module
-                inline fun <T : ViewModel> activityViewModel() { 
+                inline fun <reified T : ViewModel> activityViewModel() { 
                     baseViewModel<T, @ForActivity ViewModelStoreOwner>()
                 }
                 
                 @Module
-                inline fun <T : ViewModel, S : ViewModelStoreOwner> baseViewModel() { 
+                inline fun <reified T : ViewModel, S : ViewModelStoreOwner> baseViewModel() { 
                     transient<@UnscopedViewModel T>() 
-                    val clazz = classOf<T>()
-                    transient { 
-                        val viewModelStoreOwner = get<S>() 
-                        val viewModelProvider = get<@Provider () -> @UnscopedViewModel T>()
+                    transient { viewModelStoreOwner: S, viewModelProvider: @Provider () -> @UnscopedViewModel T ->
                         ViewModelProvider(
                             viewModelStoreOwner,
                             object : ViewModelProvider.Factory {
                                 override fun <T : ViewModel> create(modelClass: Class<T>): T =
                                     viewModelProvider() as T
                             }
-                        ).get(clazz.java) 
+                        ).get(T::class.java) 
                     } 
                 }
                 
+                @Target(AnnotationTarget.TYPE)
                 @Qualifier 
                 private annotation class UnscopedViewModel
                 """
@@ -229,7 +231,7 @@ class BindingEffectTest {
                 class MainViewModel : ViewModel()
                 
                 fun run() {
-                    generateCompositions()
+                    initializeCompositions()
                     val component = compositionFactoryOf<ActivityComponent, () -> ActivityComponent>()()
                     component.get<MainViewModel>()
                 }
@@ -246,7 +248,7 @@ class BindingEffectTest {
         annotation class MyBindingAdapter
         
         @BindingAdapterFunction(MyBindingAdapter::class)
-        @Module
+        @Module 
         fun <T> func() {
         }
     """
@@ -257,18 +259,17 @@ class BindingEffectTest {
     @Test
     fun testCorrectBindingAdapter() = codegen(
         """
-        @BindingAdapter(TestComponent::class)
-        annotation class MyBindingAdapter {
-            companion object {
-                @Module
-                inline fun <T> bind() {
-                }
-            }
+        @BindingAdapter(TestCompositionComponent::class)
+        annotation class MyBindingAdapter
+        
+        @BindingAdapterFunction(MyBindingAdapter::class)
+        @Module
+        inline fun <T> bind() {
         }
     """
     )
 
-    @Test
+    // todo @Test
     fun testBindingAdapterWithoutCompanion() = codegen(
         """
         @BindingAdapter(TestComponent::class)
@@ -278,7 +279,7 @@ class BindingEffectTest {
         assertCompileError("companion")
     }
 
-    @Test
+    // todo @Test
     fun testBindingAdapterWithoutModule() = codegen(
         """
         @BindingAdapter(TestComponent::class)
@@ -295,11 +296,12 @@ class BindingEffectTest {
         """
         @BindingAdapter(TestComponent::class)
         annotation class MyBindingAdapter {
-            companion object {
-                @Module
-                fun bind() {
-                }
-            }
+            companion object
+        }
+        
+        @BindingAdapterFunction(MyBindingAdapter::class)
+        @Module
+        fun bind() {
         }
     """
     ) {
@@ -310,12 +312,11 @@ class BindingEffectTest {
     fun testBindingAdapterWithMultipleTypeParameters() = codegen(
         """
         @BindingAdapter(TestComponent::class)
-        annotation class MyBindingAdapter {
-            companion object {
-                @Module
-                fun <A, B> bind() {
-                }
-            }
+        annotation class MyBindingAdapter
+
+        @BindingAdapterFunction(MyBindingAdapter::class)
+        @Module
+        fun <A, B> bind() {
         }
     """
     ) {
@@ -326,12 +327,11 @@ class BindingEffectTest {
     fun testBindingAdapterWithTransient() = codegen(
         """
         @BindingAdapter(TestComponent::class)
-        annotation class MyBindingAdapter {
-            companion object {
-                @Module
-                fun <T> bind() {
-                }
-            }
+        annotation class MyBindingAdapter
+        
+        @BindingAdapterFunction(MyBindingAdapter::class)
+        @Module
+        fun <T> bind() {
         }
         
         @MyBindingAdapter
@@ -345,13 +345,12 @@ class BindingEffectTest {
     @Test
     fun testBindingEffectWithTransient() = codegen(
         """
-        @BindingEffect(TestComponent::class)
-        annotation class MyBindingEffect {
-            companion object {
-                @Module
-                fun <T> bind() {
-                }
-            }
+        @BindingEffect(TestCompositionComponent::class)
+        annotation class MyBindingEffect
+        
+        @BindingEffectFunction(MyBindingEffect::class)
+        @Module
+        fun <T> bind() {
         }
         
         @MyBindingEffect
@@ -366,12 +365,11 @@ class BindingEffectTest {
     fun testBindingAdapterWithScoped() = codegen(
         """
         @BindingAdapter(TestComponent::class)
-        annotation class MyBindingAdapter {
-            companion object {
-                @Module
-                fun <T> bind() {
-                }
-            }
+        annotation class MyBindingAdapter
+        
+        @BindingAdapterFunction(MyBindingAdapter::class)
+        @Module 
+        fun <T> bind() {
         }
         
         @TestScope
@@ -385,13 +383,12 @@ class BindingEffectTest {
     @Test
     fun testBindingEffectWithScoped() = codegen(
         """
-        @BindingEffect(TestComponent::class)
-        annotation class MyBindingEffect {
-            companion object {
-                @Module
-                fun <T> bind() {
-                }
-            }
+        @BindingEffect(TestCompositionComponent::class)
+        annotation class MyBindingEffect
+        
+        @BindingEffectFunction(MyBindingEffect::class)
+        @Module
+        fun <T> bind() {
         }
         
         @TestScope
@@ -402,17 +399,15 @@ class BindingEffectTest {
         assertOk()
     }
 
-
-    @Test
+    // todo @Test
     fun testBindingEffectNotInBounds() = codegen(
         """
-        @BindingAdapter(TestComponent::class)
-        annotation class MyBindingAdapter {
-            companion object {
-                @Module
-                fun <T : UpperBound> bind() {
-                }
-            }
+        @BindingAdapter(TestCompositionComponent::class)
+        annotation class MyBindingAdapter
+        
+        @BindingAdapterFunction(MyBindingAdapter::class)
+        @Module 
+        fun <T : UpperBound> bind() {
         }
         
         interface UpperBound

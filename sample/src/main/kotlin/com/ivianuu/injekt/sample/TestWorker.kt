@@ -14,13 +14,19 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.sample
 
-@InstanceFactory
-inline fun <T> createInstance(): T = create()
+import android.content.Context
+import androidx.work.Worker
+import androidx.work.WorkerParameters
+import com.ivianuu.injekt.Assisted
+import com.ivianuu.injekt.android.work.BindWorker
 
-@InstanceFactory
-inline fun <T> createInstance(block: @Module () -> Unit): T {
-    block()
-    return create()
+@BindWorker
+class TestWorker(
+    @Assisted context: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val repo: Repo
+) : Worker(context, workerParams) {
+    override fun doWork(): Result = Result.success()
 }

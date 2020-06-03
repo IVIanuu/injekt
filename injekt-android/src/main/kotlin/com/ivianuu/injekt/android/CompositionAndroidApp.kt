@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.internal
+package com.ivianuu.injekt.android
 
-import com.ivianuu.injekt.MembersInjector
-
-object NoOpMembersInjector : @MembersInjector (Any?) -> Unit {
-    override fun invoke(p1: Any?) {
-    }
-}
+@Target(AnnotationTarget.CLASS)
+annotation class CompositionAndroidApp

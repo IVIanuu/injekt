@@ -18,6 +18,7 @@ package com.ivianuu.injekt.android
 
 import android.app.Application
 import android.content.Context
+import android.content.res.Resources
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
@@ -28,7 +29,6 @@ import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.composition.CompositionFactory
 import com.ivianuu.injekt.composition.compositionFactoryOf
 import com.ivianuu.injekt.create
-import com.ivianuu.injekt.get
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.scope
 import com.ivianuu.injekt.transient
@@ -45,12 +45,13 @@ val Application.applicationComponent: ApplicationComponent
 fun createApplicationComponent(instance: Application): ApplicationComponent {
     scope<ApplicationScoped>()
     instance(instance)
-
     alias<Application, @ForApplication Context>()
-
-    @ForApplication
-    transient<CoroutineScope> { get<@ForApplication LifecycleOwner>().lifecycleScope }
-    @ForApplication
-    transient { ProcessLifecycleOwner.get() }
+    transient<@ForApplication Resources> { app: Application ->
+        app.resources
+    }
+    transient<@ForApplication CoroutineScope> { lifecycleOwner: @ForApplication LifecycleOwner ->
+        lifecycleOwner.lifecycleScope
+    }
+    transient<@ForApplication LifecycleOwner> { ProcessLifecycleOwner.get() }
     return create()
 }

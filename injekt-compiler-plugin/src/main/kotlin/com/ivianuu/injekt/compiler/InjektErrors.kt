@@ -58,13 +58,8 @@ interface InjektErrors {
         )
 
         @JvmField
-        val GET_WITHOUT_PROVIDER = error(
-            "get can only be called from within a @Provider function"
-        )
-
-        @JvmField
-        val INLINE_FACTORY_CALL_MUST_HAVE_CONCRETE_TYPE = error(
-            "Inlined @Factory call cannot contain type parameters"
+        val FACTORY_WITH_TYPE_PARAMETERS = error(
+            "@Factory, @ChildFactory, @CompositionFactory or @InstanceFactory functions cannot contain type parameters"
         )
 
         @JvmField
@@ -89,7 +84,7 @@ interface InjektErrors {
 
         @JvmField
         val NOT_A_CHILD_FACTORY = error(
-            "Not a @ChildFactory"
+            "Not a @ChildFactory function"
         )
 
         @JvmField
@@ -98,28 +93,18 @@ interface InjektErrors {
         )
 
         @JvmField
-        val FACTORY_RETURN_TYPE_MUST_BE_ABSTRACT = error(
+        val IMPL_FACTORY_RETURN_TYPE_MUST_BE_ABSTRACT = error(
             "@Factory return types must be a interface or a abstract class"
         )
 
         @JvmField
-        val FACTORY_WITH_TYPE_PARAMETERS_MUST_BE_INLINE = error(
-            "@Factory functions with type parameters must be marked with inline"
+        val FACTORY_CANNOT_BE_INLINE = error(
+            "@Factory, @ChildFactory, @CompositionFactory or @InstanceFactory cannot be marked with inline"
         )
 
         @JvmField
-        val CHILD_AND_COMPOSITION_FACTORY_CANNOT_HAVE_TYPE_PARAMETERS = error(
-            "@ChildFactory or @CompositionFactory functions cannot have type parameters"
-        )
-
-        @JvmField
-        val CHILD_AND_COMPOSITION_FACTORY_CANNOT_BE_INLINE = error(
-            "@ChildFactory or @CompositionFactory cannot be marked with inline"
-        )
-
-        @JvmField
-        val MODULE_PARAMETER_WITHOUT_INLINE = error(
-            "@Factory or @ChildFactory or @Module functions with @Module function parameters must be marked with inline"
+        val MULTIPLE_DECLARATIONS_WITH_SAME_NAME = error(
+            "Cannot have multiple functions with the same name"
         )
 
         @JvmField
@@ -159,7 +144,7 @@ interface InjektErrors {
 
         @JvmField
         val MISSING_QUALIFIER_TARGETS = error(
-            "@Qualifier must be annotated with @Target(AnnotationTarget.TYPE, AnnotationTarget.EXPRESSION)"
+            "@Qualifier must be annotated with @Target(AnnotationTarget.TYPE)"
         )
 
         @JvmField
@@ -169,27 +154,22 @@ interface InjektErrors {
 
         @JvmField
         val EITHER_MODULE_OR_FACTORY = error(
-            "A function can only be annotated with one of @Factory, @ChildFactory, @CompositionFactory or @Module"
+            "A function can only be annotated with one of @Factory, @ChildFactory, @CompositionFactory, @InstanceFactory or @Module"
         )
 
         @JvmField
         val CANNOT_BE_SUSPEND = error(
-            "@Factory, @ChildFactory, @CompositionFactory or @Module cannot be suspend"
+            "@Factory, @ChildFactory, @CompositionFactory, @InstanceFactory or @Module cannot be suspend"
         )
 
         @JvmField
-        val CANNOT_USE_REIFIED = error(
-            "@Factory, @ChildFactory, @CompositionFactory or @Module functions cannot use reified"
+        val CANNOT_HAVE_TAILREC_MODIFIER = error(
+            "@Factory, @ChildFactory, @CompositionFactory, @InstanceFactory or @Module cannot have the tailrec modifier"
         )
 
         @JvmField
-        val GENERIC_BINDING_WITHOUT_INLINE_AND_DEFINITION = error(
-            "Binding functions with a generic type can only be used inside a inline module or with a definition"
-        )
-
-        @JvmField
-        val PROVIDER_DSL_PARAMETER_WITHOUT_INLINE = error(
-            "@Module functions with definition parameters must be marked with inline"
+        val MODULE_MUST_BE_FINAL = error(
+            "@Module must be final"
         )
 
         @JvmField
@@ -287,7 +267,6 @@ interface InjektErrors {
             "parent<T>() can only be called from inside a @CompositionFactory function"
         )
 
-
         @JvmField
         val RETURN_TYPE_NOT_ALLOWED_FOR_INJECT = error(
             "@Inject functions cannot return anything"
@@ -326,6 +305,16 @@ interface InjektErrors {
         @JvmField
         val UNSUPPORTED_ANDROID_ENTRY_POINT = error(
             "@AndroidEntryPoint only supports Applications, Activities, Fragments, BroadcastReceivers and Services"
+        )
+
+        @JvmField
+        val NOT_A_MAP = error(
+            "Must be of type kotlin.collections.Map"
+        )
+
+        @JvmField
+        val NOT_A_SET = error(
+            "Must be of type kotlin.collections.Set"
         )
 
         init {

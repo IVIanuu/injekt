@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -21,7 +21,8 @@ import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 
-class FileMetadataPatcher(pluginContext: IrPluginContext) :
+// todo once we can use FIR
+class TmpMetadataPatcher(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     override fun visitFile(declaration: IrFile): IrFile {

@@ -18,20 +18,14 @@ package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
 import com.ivianuu.injekt.compiler.analysis.InjektStorageContainerContributor
-import com.ivianuu.injekt.compiler.analysis.InjektTypeAnnotationResolutionInterceptorExtension
-import com.ivianuu.injekt.compiler.analysis.QualifierAnnotationRetentionSuppressor
-import com.ivianuu.injekt.compiler.analysis.TypeAnnotationChecker
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
-import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
-import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
-import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
 
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
@@ -39,10 +33,9 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project: MockProject,
         configuration: CompilerConfiguration
     ) {
-        val typeAnnotationChecker = TypeAnnotationChecker()
         StorageComponentContainerContributor.registerExtension(
             project,
-            InjektStorageContainerContributor(typeAnnotationChecker)
+            InjektStorageContainerContributor()
         )
         Extensions.getArea(project)
             .getExtensionPoint(IrGenerationExtension.extensionPointName)
@@ -50,22 +43,6 @@ class InjektComponentRegistrar : ComponentRegistrar {
                 InjektIrGenerationExtension(project),
                 LoadingOrder.FIRST
             )
-        registerDiagnosticSuppressorExtension(
-            project,
-            QualifierAnnotationRetentionSuppressor()
-        )
-        TypeResolutionInterceptor.registerExtension(
-            project,
-            InjektTypeAnnotationResolutionInterceptorExtension(typeAnnotationChecker)
-        )
     }
 
-    private fun registerDiagnosticSuppressorExtension(
-        @Suppress("UNUSED_PARAMETER") project: Project,
-        extension: DiagnosticSuppressor
-    ) {
-        @Suppress("DEPRECATION")
-        Extensions.getRootArea().getExtensionPoint(DiagnosticSuppressor.EP_NAME)
-            .registerExtension(extension)
-    }
 }

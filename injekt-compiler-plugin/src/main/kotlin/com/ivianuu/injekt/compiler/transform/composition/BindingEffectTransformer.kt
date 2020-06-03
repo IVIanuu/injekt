@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform.composition
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.NameProvider
+import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
 import com.ivianuu.injekt.compiler.getIrClass
@@ -37,7 +38,6 @@ import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
@@ -104,18 +104,18 @@ class BindingEffectTransformer(pluginContext: IrPluginContext) :
         annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
             .noArgSingleConstructorCall(symbols.module)
 
-        metadata = MetadataSource.Function(descriptor)
+        addMetadataIfNotLocal()
 
         body = DeclarationIrBuilder(pluginContext, symbol).run {
             irBlockBody {
-                val bindingEffectClass = pluginContext.referenceClass(effectFqName)!!
+                val effectClass = pluginContext.referenceClass(effectFqName)!!
                     .owner
 
                 val installIn =
-                    bindingEffectClass.getClassFromSingleValueAnnotationOrNull(
+                    effectClass.getClassFromSingleValueAnnotationOrNull(
                         InjektFqNames.BindingAdapter,
                         pluginContext
-                    ) ?: bindingEffectClass.getClassFromSingleValueAnnotationOrNull(
+                    ) ?: effectClass.getClassFromSingleValueAnnotationOrNull(
                         InjektFqNames.BindingEffect,
                         pluginContext
                     )!!
@@ -127,6 +127,21 @@ class BindingEffectTransformer(pluginContext: IrPluginContext) :
                 ).apply {
                     putTypeArgument(0, installIn.defaultType)
                 }
+
+                /*val effectCompanion = effectClass.companionObject() as IrClass
+
+                val effectModule = effectCompanion
+                    .functions
+                    .first { it.hasAnnotation(InjektFqNames.Module) }
+
+                    +irCall(effectModule).apply {
+                        dispatchReceiver = irGetObject(effectCompanion.symbol)
+                        putTypeArgument(0, clazz.defaultType)
+                    }
+                 */
+
+                val bindingEffectClass = pluginContext.referenceClass(effectFqName)!!
+                    .owner
 
                 val effectModule =
                     bindingEffectClass.descriptor.findPackage()
@@ -153,18 +168,6 @@ class BindingEffectTransformer(pluginContext: IrPluginContext) :
                 +irCall(effectModule).apply {
                     putTypeArgument(0, clazz.defaultType)
                 }
-
-                /*val bindingAdapterCompanion = bindingAdapterClass
-                    .companionObject() as IrClass
-
-                val adapterModule = bindingAdapterCompanion
-                    .functions
-                    .single { it.hasAnnotation(InjektFqNames.Module) }
-
-                +irCall(adapterModule).apply {
-                    dispatchReceiver = irGetObject(bindingAdapterCompanion.symbol)
-                    putTypeArgument(0, clazz.defaultType)
-                }*/
             }
         }
     }

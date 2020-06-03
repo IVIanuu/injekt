@@ -27,15 +27,10 @@ fun <T : KFunction<*>> childFactory(factory: T): Unit = injektIntrinsic()
 
 fun <S : T, T> alias(): Unit = injektIntrinsic()
 
-fun <T> transient(): Unit = injektIntrinsic()
-
-inline fun <T> transient(definition: @ProviderDsl (AssistedParameters) -> T): Unit =
-    injektIntrinsic()
+fun <T> transient(provider: Function<T> = injektIntrinsic()): Unit = injektIntrinsic()
 
 annotation class Transient
 
 fun <T> instance(instance: T): Unit = injektIntrinsic()
 
-fun <T> scoped(): Unit = injektIntrinsic()
-
-inline fun <T> scoped(definition: @ProviderDsl (AssistedParameters) -> T): Unit = injektIntrinsic()
+fun <T> scoped(provider: Function<T> = injektIntrinsic()): Unit = injektIntrinsic()

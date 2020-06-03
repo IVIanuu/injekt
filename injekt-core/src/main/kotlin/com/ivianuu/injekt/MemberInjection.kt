@@ -21,7 +21,7 @@ import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
 @Qualifier
-@Target(AnnotationTarget.TYPE, AnnotationTarget.EXPRESSION)
+@Target(AnnotationTarget.TYPE)
 annotation class MembersInjector
 
 fun <T> Any.inject(): InjectProperty<T> = injektIntrinsic()

@@ -20,10 +20,12 @@ import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors
-import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtCatchClause
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtForExpression
@@ -41,23 +43,37 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
 
-class ModuleChecker(
-    private val typeAnnotationChecker: TypeAnnotationChecker
-) : CallChecker, DeclarationChecker {
+class ModuleChecker : CallChecker, DeclarationChecker {
 
     override fun check(
         declaration: KtDeclaration,
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
+        if (descriptor !is FunctionDescriptor || !descriptor.hasAnnotation(InjektFqNames.Module)) return
 
-        if (descriptor !is FunctionDescriptor ||
-            !typeAnnotationChecker.hasTypeAnnotation(
-                context.trace,
-                descriptor,
-                InjektFqNames.Module
+        val parentMemberScope = (descriptor.containingDeclaration as? ClassDescriptor)
+            ?.unsubstitutedMemberScope
+            ?: (descriptor.containingDeclaration as? PackageFragmentDescriptor)
+                ?.getMemberScope()
+
+        if ((parentMemberScope?.getContributedDescriptors()
+                ?.filterIsInstance<FunctionDescriptor>()
+                ?.filter { it.name == descriptor.name }
+                ?.size ?: 0) > 1
+        ) {
+            context.trace.report(
+                InjektErrors.MULTIPLE_DECLARATIONS_WITH_SAME_NAME
+                    .on(declaration)
             )
-        ) return
+        }
+
+        if (descriptor.modality != Modality.FINAL) {
+            context.trace.report(
+                InjektErrors.MODULE_MUST_BE_FINAL
+                    .on(declaration)
+            )
+        }
 
         if (descriptor.returnType != null && descriptor.returnType != descriptor.builtIns.unitType) {
             context.trace.report(
@@ -72,30 +88,11 @@ class ModuleChecker(
             )
         }
 
-        if (!descriptor.isInline) {
-            descriptor.valueParameters.forEach { valueParameter ->
-                if (valueParameter.type.hasAnnotation(InjektFqNames.ProviderDsl)) {
-                    context.trace.report(
-                        InjektErrors.PROVIDER_DSL_PARAMETER_WITHOUT_INLINE
-                            .on(valueParameter.findPsi() ?: declaration)
-                    )
-                }
-                if (valueParameter.type.hasAnnotation(InjektFqNames.Module)) {
-                    context.trace.report(
-                        InjektErrors.MODULE_PARAMETER_WITHOUT_INLINE
-                            .on(valueParameter.findPsi() ?: declaration)
-                    )
-                }
-            }
-        }
-
-        descriptor.typeParameters.forEach { typeParameter ->
-            if (typeParameter.isReified) {
-                context.trace.report(
-                    InjektErrors.CANNOT_USE_REIFIED
-                        .on(typeParameter.findPsi() ?: declaration)
-                )
-            }
+        if (descriptor.isTailrec) {
+            context.trace.report(
+                InjektErrors.CANNOT_HAVE_TAILREC_MODIFIER
+                    .on(declaration)
+            )
         }
     }
 
@@ -117,8 +114,7 @@ class ModuleChecker(
             }
 
             val enclosingModule = findEnclosingFunctionContext(context) {
-                val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(context.trace, it)
-                InjektFqNames.Module in typeAnnotations
+                it.hasAnnotation(InjektFqNames.Module)
             }
 
             if (enclosingModule == null) {
@@ -142,10 +138,7 @@ class ModuleChecker(
             }
         }
 
-        if (resulting !is FunctionDescriptor || !typeAnnotationChecker.hasTypeAnnotation(
-                context.trace, resulting, InjektFqNames.Module
-            )
-        ) return
+        if (resulting !is FunctionDescriptor || !resulting.hasAnnotation(InjektFqNames.Module)) return
         checkInvocations(resolvedCall, reportOn, context)
     }
 
@@ -155,12 +148,11 @@ class ModuleChecker(
         context: CallCheckerContext
     ) {
         val enclosingInjektDslFunction = findEnclosingFunctionContext(context) {
-            val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(context.trace, it)
-            InjektFqNames.Module in typeAnnotations ||
-                    InjektFqNames.Factory in typeAnnotations ||
-                    InjektFqNames.ChildFactory in typeAnnotations ||
-                    InjektFqNames.CompositionFactory in typeAnnotations ||
-                    InjektFqNames.InstanceFactory in typeAnnotations
+            it.hasAnnotation(InjektFqNames.Module) ||
+                    it.hasAnnotation(InjektFqNames.Factory) ||
+                    it.hasAnnotation(InjektFqNames.ChildFactory) ||
+                    it.hasAnnotation(InjektFqNames.CompositionFactory) ||
+                    it.hasAnnotation(InjektFqNames.InstanceFactory)
         }
 
         when {

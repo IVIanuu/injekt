@@ -17,72 +17,67 @@
 package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.Path
-import com.ivianuu.injekt.compiler.PropertyPath
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
-import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
 import org.jetbrains.kotlin.ir.types.IrType
 
-sealed class ModuleDeclaration(val statement: (IrBuilderWithScope.(() -> IrExpression) -> IrStatement)?)
+sealed class ModuleDeclaration
 
-class ScopeDeclaration(val scopeType: IrType) : ModuleDeclaration(null)
+sealed class ModuleDeclarationWithPath(
+    val path: Path,
+    val initializer: IrExpression?
+) : ModuleDeclaration()
+
+class ScopeDeclaration(val scopeType: IrType) : ModuleDeclaration()
 
 class DependencyDeclaration(
     val dependencyType: IrType,
-    val path: PropertyPath,
-    statement: IrBuilderWithScope.(() -> IrExpression) -> IrStatement
-) : ModuleDeclaration(statement)
+    path: Path,
+    initializer: IrExpression
+) : ModuleDeclarationWithPath(path, initializer)
 
 class ChildFactoryDeclaration(
     val factoryRef: IrFunctionReference,
     val factoryModuleClass: IrClass?
-) : ModuleDeclaration(null)
+) : ModuleDeclaration()
 
 class AliasDeclaration(
     val originalType: IrType,
     val aliasType: IrType
-) : ModuleDeclaration(null)
+) : ModuleDeclaration()
 
 class BindingDeclaration(
     val bindingType: IrType,
     val parameters: List<InjektDeclarationIrBuilder.FactoryParameter>,
     val scoped: Boolean,
-    val inline: Boolean,
-    val path: Path,
-    statement: (IrBuilderWithScope.(() -> IrExpression) -> IrStatement)?
-) : ModuleDeclaration(statement)
+    val instance: Boolean,
+    path: Path,
+    initializer: IrExpression?
+) : ModuleDeclarationWithPath(path, initializer)
 
 class IncludedModuleDeclaration(
     val includedType: IrType,
-    val inline: Boolean,
-    val path: Path?,
-    val capturedValueArguments: List<Parameter>,
-    statement: (IrBuilderWithScope.(() -> IrExpression) -> IrStatement)?
-) : ModuleDeclaration(statement) {
-    data class Parameter(
-        val path: Path,
-        val type: IrType
-    )
-}
+    path: Path,
+    initializer: IrExpression?
+) : ModuleDeclarationWithPath(path, initializer)
 
 class MapDeclaration(
     val mapType: IrType
-) : ModuleDeclaration(null)
+) : ModuleDeclaration()
 
 class MapEntryDeclaration(
     val mapType: IrType,
     val entryKey: IrExpression,
     val entryValueType: IrType
-) : ModuleDeclaration(null)
+) : ModuleDeclaration()
 
 class SetDeclaration(
     val setType: IrType
-) : ModuleDeclaration(null)
+) : ModuleDeclaration()
 
 class SetElementDeclaration(
     val setType: IrType,
     val elementType: IrType
-) : ModuleDeclaration(null)
+) : ModuleDeclaration()

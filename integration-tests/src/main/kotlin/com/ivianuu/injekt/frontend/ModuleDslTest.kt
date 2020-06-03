@@ -128,6 +128,19 @@ class ModuleDslTest {
     }
 
     @Test
+    fun testOpenModuleFails() = codegen(
+        """
+        class MyClass {
+            @Module 
+            open fun module() {
+            }
+        }
+        """
+    ) {
+        assertCompileError("final")
+    }
+
+    @Test
     fun testIfNotAllowedAroundModuleInvocation() =
         codegen(
             """
@@ -246,50 +259,6 @@ class ModuleDslTest {
         """
     ) {
         assertCompileError("suspend")
-    }
-
-    @Test
-    fun testBindingWithTypeParameterInNonInlineModule() =
-        codegen(
-            """ 
-        @Module
-        fun <T> module() {
-            transient<T>()
-        }
-    """
-        ) {
-            assertCompileError("inline")
-        }
-
-    @Test
-    fun testModuleWithReifiedTypeParameters() = codegen(
-        """ 
-        @Module
-        fun <reified T> module() {
-        }
-        """
-    ) {
-        assertCompileError("reified")
-    }
-
-    @Test
-    fun testInlineModuleWithDefinition() = codegen(
-        """ 
-        @Module
-        inline fun <T> module(definition: @ProviderDsl (AssistedParameters) -> T) {
-        }
-    """
-    )
-
-    @Test
-    fun testNonInlineModuleWithDefinition() = codegen(
-        """ 
-        @Module
-        fun <T> module(definition: @ProviderDsl (AssistedParameters) -> T) {
-        }
-    """
-    ) {
-        assertCompileError("inline")
     }
 
 }

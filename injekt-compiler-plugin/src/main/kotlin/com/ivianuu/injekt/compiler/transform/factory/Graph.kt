@@ -31,6 +31,9 @@ import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.classOrNull
@@ -52,7 +55,6 @@ import org.jetbrains.kotlin.resolve.constants.StringValue
 class Graph(
     val parent: Graph?,
     val factory: AbstractFactory,
-    val factoryMembers: FactoryMembers,
     context: IrPluginContext,
     factoryModule: ModuleNode?,
     declarationStore: InjektDeclarationStore,
@@ -66,14 +68,12 @@ class Graph(
     private val mapBindingResolver: MapBindingResolver =
         MapBindingResolver(
             context,
-            symbols,
             factory,
             parent?.mapBindingResolver
         )
     private val setBindingResolver: SetBindingResolver =
         SetBindingResolver(
             context,
-            symbols,
             factory,
             parent?.setBindingResolver
         )
@@ -84,7 +84,6 @@ class Graph(
     init {
         if (factoryModule != null) addModule(factoryModule)
         implicitBindingResolvers += LazyOrProviderBindingResolver(
-            symbols,
             factory
         )
         implicitBindingResolvers += mapBindingResolver
@@ -172,7 +171,7 @@ class Graph(
         val module = moduleNode.module
 
         val descriptor = module.declarations.single {
-            it.hasAnnotation(InjektFqNames.AstModule)
+            it.descriptor.name.asString() == "Descriptor"
         } as IrClass
 
         val functions = descriptor.functions.toList()
@@ -196,11 +195,12 @@ class Graph(
                         dependencyNode = DependencyNode(
                             dependency = function.returnType.getClass()!!,
                             key = dependencyType.asKey(),
-                            initializerAccessor = moduleNode.initializerAccessor.child(
-                                moduleNode.module.findPropertyGetter(dependencyName)
-                            )
+                            accessor = {
+                                irCall(moduleNode.module.findPropertyGetter(dependencyName)).apply {
+                                    dispatchReceiver = moduleNode.accessor(this@DependencyNode)
+                                }
+                            }
                         ),
-                        members = factoryMembers,
                         factory = factory
                     )
                 )
@@ -241,8 +241,7 @@ class Graph(
                                     .value
                                     .let { typeParameterName ->
                                         moduleNode.typeParametersMap.toList()
-                                            .filter { it.first.descriptor.name.asString() == typeParameterName }
-                                            .single()
+                                            .single { it.first.descriptor.name.asString() == typeParameterName }
                                             .second
                                     }
                             )
@@ -313,7 +312,6 @@ class Graph(
 
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstModule) }
-            .filterNot { it.hasAnnotation(InjektFqNames.AstInline) }
             .forEach { function ->
                 val includedModule = function.returnType.classOrNull!!.owner
 
@@ -321,13 +319,21 @@ class Graph(
                     .substitute(moduleNode.descriptorTypeParametersMap)
                     .asKey()
 
-                val moduleName = function.getAnnotation(InjektFqNames.AstPropertyPath)
-                    ?.getValueArgument(0)
-                    ?.let { it as IrConst<String> }
-                    ?.value
-
-                val property = moduleName?.let {
-                    moduleNode.module.findPropertyGetter(moduleName)
+                val includedModuleAccessor = if (includedModule.kind == ClassKind.OBJECT) {
+                    val expr: FactoryExpression = { irGetObject(includedModule.symbol) }
+                    expr
+                } else {
+                    val moduleName = function.getAnnotation(InjektFqNames.AstPropertyPath)!!
+                        .getValueArgument(0)
+                        .let { it as IrConst<String> }
+                        .value
+                    val propertyGetter = moduleNode.module.findPropertyGetter(moduleName)
+                    val expr: FactoryExpression = expr@{
+                        irCall(propertyGetter).apply {
+                            dispatchReceiver = moduleNode.accessor(this@expr)
+                        }
+                    }
+                    expr
                 }
 
                 val typeParametersMap = includedModule.typeParameters
@@ -343,14 +349,8 @@ class Graph(
                     ModuleNode(
                         module = includedModule,
                         key = key,
-                        initializerAccessor = property?.let {
-                            moduleNode.initializerAccessor.child(
-                                it
-                            )
-                        }
-                            ?: { error("Module is stateless ${includedModule.dump()}") },
-                        typeParametersMap = typeParametersMap,
-                        isStateless = property == null
+                        accessor = includedModuleAccessor,
+                        typeParametersMap = typeParametersMap
                     )
                 )
             }
@@ -367,8 +367,7 @@ class Graph(
             addExplicitBindingResolver(
                 ChildFactoryBindingResolver(
                     factory,
-                    descriptor,
-                    factoryMembers
+                    descriptor
                 )
             )
         }

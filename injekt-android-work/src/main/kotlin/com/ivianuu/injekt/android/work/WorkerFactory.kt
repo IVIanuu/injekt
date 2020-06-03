@@ -25,7 +25,6 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Transient
 import com.ivianuu.injekt.alias
-import com.ivianuu.injekt.classOf
 import com.ivianuu.injekt.composition.BindingAdapter
 import com.ivianuu.injekt.composition.BindingAdapterFunction
 import com.ivianuu.injekt.composition.installIn
@@ -38,16 +37,16 @@ annotation class BindWorker
 
 @BindingAdapterFunction(BindWorker::class)
 @Module
-inline fun <T : ListenableWorker> worker() {
+inline fun <reified T : ListenableWorker> worker() {
     transient<T>()
-    map<KClass<out ListenableWorker>, ListenableWorker> {
-        put<T>(classOf<T>())
+    map<KClass<out ListenableWorker>, @Provider (Context, WorkerParameters) -> ListenableWorker> {
+        put<@Provider (Context, WorkerParameters) -> T>(T::class)
     }
 }
 
 @Transient
-private class InjektWorkerFactory(
-    private val workers: Map<String, @Provider (Context, WorkerParameters) -> ListenableWorker>
+class InjektWorkerFactory(
+    private val workers: Map<KClass<out ListenableWorker>, @Provider (Context, WorkerParameters) -> ListenableWorker>
 ) : WorkerFactory() {
 
     override fun createWorker(
@@ -55,7 +54,7 @@ private class InjektWorkerFactory(
         workerClassName: String,
         workerParameters: WorkerParameters
     ): ListenableWorker? {
-        return workers[workerClassName]?.invoke(appContext, workerParameters)
+        return workers[Class.forName(workerClassName).kotlin]?.invoke(appContext, workerParameters)
             ?: error("Could not find a worker for $workerClassName")
     }
 }

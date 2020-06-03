@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -30,29 +31,31 @@ import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
-import org.jetbrains.kotlin.ir.builders.declarations.addField
-import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
+import org.jetbrains.kotlin.ir.builders.declarations.addFunction
+import org.jetbrains.kotlin.ir.builders.declarations.addGetter
+import org.jetbrains.kotlin.ir.builders.declarations.addProperty
+import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
+import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
-import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
-import org.jetbrains.kotlin.ir.declarations.MetadataSource
-import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
+import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
-import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
+import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -60,99 +63,92 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ImplFactory(
     origin: FqName,
-    val name: Name,
     superType: IrType,
     val parent: ImplFactory?,
-    typeParameterMap: Map<IrTypeParameterSymbol, IrType>,
-    irDeclarationParent: IrDeclarationParent,
+    factoryFunction: IrFunction,
     moduleClass: IrClass,
+    factoryModuleAccessor: FactoryExpression,
     pluginContext: IrPluginContext,
     symbols: InjektSymbols,
     declarationStore: InjektDeclarationStore
 ) : AbstractFactory(
     origin,
     moduleClass,
-    typeParameterMap,
+    factoryModuleAccessor,
+    factoryFunction,
     pluginContext,
     symbols,
     declarationStore
 ) {
+
     val clazz = buildClass {
-        this.name = this@ImplFactory.name
-        visibility = Visibilities.PRIVATE
-    }.apply {
-        this.parent = irDeclarationParent
+        name = Name.special("<impl>")
+        visibility = Visibilities.LOCAL
+    }.apply clazz@{
+        parent = factoryFunction
         createImplicitParameterDeclarationWithWrappedDescriptor()
-        (this as IrClassImpl).metadata = MetadataSource.Class(descriptor)
-        superTypes += superType.substituteWithFactoryTypeArguments()
+        superTypes += superType
     }
 
-    val constructor = clazz.addConstructor {
-        returnType = clazz.defaultType
-        isPrimary = true
-        visibility = Visibilities.PUBLIC
-    }
-    val factoryImplementationNode =
-        FactoryImplementationNode(
-            key = clazz.defaultType.asKey(),
-            implFactory = this,
-            initializerAccessor = { it() }
-        )
-
-    override val factoryMembers = ClassFactoryMembers(
-        pluginContext,
-        clazz,
-        factoryImplementationNode.implFactory
+    val factoryImplementationNode = FactoryImplementationNode(
+        key = clazz.defaultType.asKey(),
+        implFactory = this,
+        accessor = { error("") }
     )
 
-    val parentField by lazy {
-        if (parent != null) {
-            clazz.addField(
-                "parent",
-                parent.clazz.defaultType
-            )
-        } else null
-    }
-    val parentConstructorValueParameter by lazy {
-        if (parent != null) {
-            constructor.addValueParameter(
-                "parent",
-                parent.clazz.defaultType
-            )
-        } else null
-    }
-
-    val moduleConstructorValueParameter = lazy {
-        constructor.addValueParameter(
-            "module",
-            moduleClass.defaultType
-        )
-    }
-
-    val dependencyRequests =
+    private val dependencyRequests =
         mutableMapOf<IrDeclaration, BindingRequest>()
-    val implementedRequests = mutableMapOf<IrDeclaration, IrDeclaration>()
+    private val implementedRequests = mutableMapOf<IrDeclaration, IrDeclaration>()
 
-    init {
-        collectDependencyRequests()
-        init(parent, dependencyRequests.values.toList()) {
-            irGet(moduleConstructorValueParameter.value)
-        }
+    var factoryLateinitProvider: FactoryExpression? = null
 
-        DeclarationIrBuilder(pluginContext, clazz.symbol).run {
-            implementDependencyRequests()
-            writeConstructor()
-        }
-    }
+    fun getImplExpression(): IrExpression {
+        return DeclarationIrBuilder(pluginContext, factoryFunction.symbol).run {
+            irBlock {
+                factoryMembers.blockBuilder = this
 
-    fun getInitExpression(
-        moduleValueArguments: List<IrExpression?>
-    ): IrExpression {
-        return DeclarationIrBuilder(pluginContext, clazz.symbol).run {
-            irCall(constructor).apply {
-                if (constructor.valueParameters.isNotEmpty()) {
-                    putValueArgument(0, getModuleInitExpression(moduleValueArguments))
+                collectDependencyRequests()
+                init(parent, dependencyRequests.values.toList())
+
+                DeclarationIrBuilder(pluginContext, clazz.symbol).run {
+                    implementDependencyRequests()
                 }
+
+                +clazz
+
+                val constructor = clazz.addConstructor {
+                    returnType = clazz.defaultType
+                    isPrimary = true
+                    visibility = Visibilities.PUBLIC
+                }.apply {
+                    body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
+                        val superType = clazz.superTypes.single()
+                        +irDelegatingConstructorCall(
+                            if (superType.classOrNull!!.owner.kind == ClassKind.CLASS)
+                                superType.classOrNull!!.owner.constructors.single { it.valueParameters.isEmpty() }
+                            else context.irBuiltIns.anyClass.constructors.single().owner
+                        )
+                        +IrInstanceInitializerCallImpl(
+                            UNDEFINED_OFFSET,
+                            UNDEFINED_OFFSET,
+                            clazz.symbol,
+                            context.irBuiltIns.unitType
+                        )
+
+                        factoryLateinitProvider?.let { factoryLateinitProvider ->
+                            +irCall(
+                                symbols.lateinitFactory
+                                    .functions
+                                    .single { it.owner.name.asString() == "init" }
+                            ).apply {
+                                dispatchReceiver = factoryLateinitProvider()
+                                putValueArgument(0, irGet(clazz.thisReceiver!!))
+                            }
+                        }
+                    }
+                }
+
+                +irCall(constructor)
             }
         }
     }
@@ -165,7 +161,7 @@ class ImplFactory(
             .forEach { (declaration, request) ->
                 val binding = graph.getBinding(request)
                 implementedRequests[declaration] =
-                    factoryMembers.addDependencyRequestImplementation(declaration) { function ->
+                    addDependencyRequestImplementation(declaration) { function ->
                         val bindingExpression = factoryExpressions.getBindingExpression(
                             BindingRequest(
                                 binding.key,
@@ -174,13 +170,7 @@ class ImplFactory(
                             )
                         )
 
-                        bindingExpression
-                            .invoke(
-                                this@implementDependencyRequests,
-                                FactoryExpressionContext(this@ImplFactory) {
-                                    irGet(function.dispatchReceiverParameter!!)
-                                }
-                            )
+                        bindingExpression(this@implementDependencyRequests)
                     }
             }
     }
@@ -231,38 +221,37 @@ class ImplFactory(
         superTypeClass.collectDependencyRequests(superType.typeArguments.map { it.typeOrFail })
     }
 
-    private fun IrBuilderWithScope.writeConstructor() = constructor.apply {
-        val superType = clazz.superTypes.single().getClass()!!
-        body = irBlockBody {
-            +irDelegatingConstructorCall(
-                if (superType.kind == ClassKind.CLASS)
-                    superType.constructors.single { it.valueParameters.isEmpty() }
-                else context.irBuiltIns.anyClass.constructors.single().owner
-            )
-            +IrInstanceInitializerCallImpl(
-                UNDEFINED_OFFSET,
-                UNDEFINED_OFFSET,
-                clazz.symbol,
-                context.irBuiltIns.unitType
-            )
-
-            if (this@ImplFactory.parentField != null) {
-                +irSetField(
-                    irGet(clazz.thisReceiver!!),
-                    this@ImplFactory.parentField!!,
-                    irGet(parentConstructorValueParameter!!)
-                )
+    private fun addDependencyRequestImplementation(
+        declaration: IrDeclaration,
+        body: IrBuilderWithScope.(IrFunction) -> IrExpression
+    ): IrDeclaration {
+        fun IrFunctionImpl.implement(symbol: IrSimpleFunctionSymbol) {
+            overriddenSymbols += symbol
+            dispatchReceiverParameter = clazz.thisReceiver!!.copyTo(this)
+            DeclarationIrBuilder(pluginContext, symbol).apply {
+                this@implement.body = irExprBody(body(this, this@implement))
             }
+        }
 
-            factoryMembers.fields.values.forEach { (field, initializer) ->
-                +irSetField(
-                    irGet(clazz.thisReceiver!!),
-                    field,
-                    initializer(this, FactoryExpressionContext(this@ImplFactory) {
-                        irGet(clazz.thisReceiver!!)
-                    })
-                )
+        return when (declaration) {
+            is IrFunction -> {
+                clazz.addFunction {
+                    name = declaration.name
+                    returnType = declaration.returnType
+                    visibility = declaration.visibility
+                }.apply { implement(declaration.symbol as IrSimpleFunctionSymbol) }
             }
+            is IrProperty -> {
+                clazz.addProperty {
+                    name = declaration.name
+                    visibility = declaration.visibility
+                }.apply {
+                    addGetter {
+                        returnType = declaration.getter!!.returnType
+                    }.apply { (this as IrFunctionImpl).implement(declaration.getter!!.symbol) }
+                }
+            }
+            else -> error("Unexpected declaration ${declaration.dump()}")
         }
     }
 }

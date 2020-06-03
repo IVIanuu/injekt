@@ -22,10 +22,8 @@ import androidx.lifecycle.ViewModelStoreOwner
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.classOf
 import com.ivianuu.injekt.composition.BindingAdapter
 import com.ivianuu.injekt.composition.BindingAdapterFunction
-import com.ivianuu.injekt.get
 import com.ivianuu.injekt.transient
 
 @BindingAdapter(ActivityComponent::class)
@@ -33,25 +31,33 @@ annotation class ActivityViewModel
 
 @BindingAdapterFunction(ActivityViewModel::class)
 @Module
-inline fun <T : ViewModel> activityViewModel() {
+inline fun <reified T : ViewModel> activityViewModel() {
     baseViewModel<T, @ForActivity ViewModelStoreOwner>()
 }
 
+@BindingAdapter(FragmentComponent::class)
+annotation class FragmentViewModel
+
+@BindingAdapterFunction(FragmentViewModel::class)
 @Module
-inline fun <T : ViewModel, S : ViewModelStoreOwner> baseViewModel() {
+inline fun <reified T : ViewModel> fragmentComponent() {
+    baseViewModel<T, @ForFragment ViewModelStoreOwner>()
+}
+
+@Module
+inline fun <reified T : ViewModel, S : ViewModelStoreOwner> baseViewModel() {
     transient<@UnscopedViewModel T>()
-    transient {
-        val viewModelStoreOwner = get<S>()
-        val viewModelProvider = get<@Provider () -> @UnscopedViewModel T>()
+    transient { viewModelStoreOwner: S, viewModelProvider: @Provider () -> @UnscopedViewModel T ->
         ViewModelProvider(
             viewModelStoreOwner,
             object : ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T =
                     viewModelProvider() as T
             }
-        ).get(classOf<T>().java)
+        ).get(T::class.java)
     }
 }
 
+@Target(AnnotationTarget.TYPE)
 @Qualifier
 private annotation class UnscopedViewModel

@@ -16,10 +16,9 @@
 
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.backend.common.ir.allParameters
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.name
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
@@ -30,34 +29,45 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 object InjektNameConventions {
 
-    fun getFactoryNameForClass(
-        packageFqName: FqName,
-        classFqName: FqName
-    ): Name {
-        return getJoinedName(
-            packageFqName,
-            classFqName.child("BindingFactory")
-        )
-    }
-
     fun getMembersInjectorNameForClass(
         packageFqName: FqName,
         classFqName: FqName
     ): Name {
         return getJoinedName(
             packageFqName,
-            classFqName.child("MembersInjector")
+            classFqName.parent()
+                .child("inject_${classFqName.pathSegments().joinToString("_")}")
         )
     }
 
-    fun getModuleClassNameForModuleFunction(moduleFunction: IrFunction): Name =
-        getUniqueNameForFunctionWithSuffix(moduleFunction, "Impl")
+    fun getFactoryNameForClass(
+        packageFqName: FqName,
+        classFqName: FqName
+    ): Name {
+        return getJoinedName(
+            packageFqName,
+            classFqName.parent()
+                .child("create_${classFqName.pathSegments().joinToString("_")}")
+        )
+    }
 
-    fun getClassImplNameForFactoryFunction(factoryFunction: IrFunction): Name =
-        getUniqueNameForFunctionWithSuffix(factoryFunction, "Impl")
+    fun getTransformedModuleFunctionNameForModule(
+        packageFqName: FqName,
+        moduleFqName: FqName
+    ): Name = getJoinedName(packageFqName, moduleFqName)
 
-    fun getFunctionImplNameForFactoryCall(file: IrFile, call: IrCall): Name =
-        getNameAtSourcePositionWithSuffix(file, call, "Impl")
+    fun getModuleClassNameForModuleFunction(
+        packageFqName: FqName,
+        moduleFqName: FqName
+    ): Name = getJoinedName(
+        packageFqName,
+        moduleFqName
+            .parent()
+            .child("${moduleFqName.shortName()}_Class")
+    )
+
+    fun getModuleFunctionNameForClass(moduleClass: IrClass): Name =
+        moduleClass.name.asString().removeSuffix("_Class").asNameId()
 
     fun getBindingEffectModuleName(
         packageFqName: FqName,
@@ -114,12 +124,6 @@ object InjektNameConventions {
         )
     }
 
-    fun classParameterNameForTypeParameter(typeParameter: IrTypeParameter): Name =
-        "class\$${typeParameter.descriptor.name}".asNameId()
-
-    fun typeParameterNameForClassParameterName(name: Name): Name =
-        name.asString().removePrefix("class\$").asNameId()
-
     fun getCompositionElementNameForFunction(
         compositionFqName: FqName,
         moduleFunction: IrFunction
@@ -143,22 +147,13 @@ object InjektNameConventions {
 
     private fun getUniqueNameForFunctionWithSuffix(
         function: IrFunction,
-        suffix: String,
-        hashValueParameters: Boolean = true
+        suffix: String
     ): Name {
         return getJoinedName(
             function.getPackageFragment()!!.fqName,
             function.descriptor.fqNameSafe
-                .child(valueParametersHash(function).toString())
                 .child(suffix)
         ).let { nameWithoutIllegalChars(it.asString()) }
-    }
-
-    fun getChildFactoryImplName(fqName: String): Name {
-        return (fqName
-            .split(".")
-            .last() + "_FactoryImpl")
-            .asNameId()
     }
 
     private fun getNameAtSourcePositionWithSuffix(
@@ -173,12 +168,6 @@ object InjektNameConventions {
                 .child(call.startOffset.toString())
                 .child(suffix)
         )
-    }
-
-    private fun valueParametersHash(function: IrFunction): Int {
-        return function.allParameters
-            .map { it.getParameterName() }
-            .hashCode()
     }
 
     private fun getJoinedName(

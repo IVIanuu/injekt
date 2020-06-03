@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt.android
 
+import android.content.Context
+import android.content.res.Resources
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
@@ -30,7 +32,6 @@ import com.ivianuu.injekt.composition.CompositionFactory
 import com.ivianuu.injekt.composition.get
 import com.ivianuu.injekt.composition.parent
 import com.ivianuu.injekt.create
-import com.ivianuu.injekt.get
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.scope
 import com.ivianuu.injekt.transient
@@ -39,7 +40,7 @@ import kotlinx.coroutines.CoroutineScope
 @Scope
 annotation class FragmentScoped
 
-@Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+@Target(AnnotationTarget.TYPE)
 @Qualifier
 annotation class ForFragment
 
@@ -57,8 +58,15 @@ fun createFragmentComponent(instance: Fragment): FragmentComponent {
     parent<ActivityComponent>()
     scope<FragmentScoped>()
     instance(instance)
-    @ForFragment
-    transient<CoroutineScope> { get<@ForFragment LifecycleOwner>().lifecycleScope }
+    transient<@ForFragment Context> { fragment: Fragment ->
+        fragment.context!!
+    }
+    transient<@ForFragment Resources> { fragment: Fragment ->
+        fragment.resources
+    }
+    transient<@ForFragment CoroutineScope> { lifecycleOwner: @ForFragment LifecycleOwner ->
+        lifecycleOwner.lifecycleScope
+    }
     alias<Fragment, @ForFragment LifecycleOwner>()
     alias<Fragment, @ForFragment SavedStateRegistryOwner>()
     alias<Fragment, @ForFragment ViewModelStoreOwner>()

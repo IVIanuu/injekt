@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -14,12 +14,25 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.analysis
+package com.ivianuu.injekt.frontend
 
-import org.jetbrains.kotlin.diagnostics.Diagnostic
-import org.jetbrains.kotlin.resolve.diagnostics.DiagnosticSuppressor
+import com.ivianuu.injekt.test.assertCompileError
+import com.ivianuu.injekt.test.codegen
+import org.junit.Test
 
-abstract class AbstractDiagnosticSuppressor : DiagnosticSuppressor {
-    override fun isSuppressed(diagnostic: Diagnostic) =
-        isSuppressed(diagnostic, null)
+class SetDslTest {
+
+    @Test
+    fun testNotExactSetType() = codegen(
+        """
+        @Module
+        fun test() {
+            set<MutableSet<String>, String> {
+            }
+        }
+    """
+    ) {
+        assertCompileError("set")
+    }
+
 }

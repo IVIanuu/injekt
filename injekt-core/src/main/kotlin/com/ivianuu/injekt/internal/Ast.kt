@@ -24,21 +24,22 @@ object InjektAst {
         annotation class Class(val clazz: KClass<*>)
         annotation class Property(val name: String)
         annotation class TypeParameter(val name: String)
-        annotation class ValueParameter(val name: String)
     }
 
     annotation class ChildFactory
 
     annotation class Dependency
 
+    // todo move to composition
     annotation class EntryPoints(val values: Array<KClass<*>>)
 
     annotation class Binding
 
     annotation class Alias
 
-    annotation class Inline
+    annotation class Instance
 
+    // todo move to composition
     annotation class ObjectGraph
 
     annotation class Module
@@ -50,10 +51,6 @@ object InjektAst {
     annotation class Scope
 
     annotation class Scoped
-
-    annotation class Static
-
-    annotation class Typed
 
     annotation class Map {
         annotation class Entry

@@ -22,10 +22,13 @@ import com.ivianuu.injekt.compiler.addClass
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.builders.irUnit
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.expressions.IrBlockBody
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
@@ -58,12 +61,17 @@ class CompositionAggregateGenerator(
                         declaration.body?.transformChildrenVoid(object :
                             IrElementTransformerVoid() {
                             override fun visitCall(expression: IrCall): IrExpression {
-                                if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.composition.installIn") {
+                                return if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.composition.installIn") {
                                     installInCalls.getOrPut(declaration) { mutableListOf() } += expression
-                                }
-                                return super.visitCall(expression)
+                                    DeclarationIrBuilder(pluginContext, expression.symbol)
+                                        .irUnit()
+                                } else super.visitCall(expression)
                             }
                         })
+
+                        installInCalls[declaration]?.let { calls ->
+                            (declaration.body as IrBlockBody).statements -= calls
+                        }
                     }
                 }
                 return super.visitFunction(declaration)
@@ -91,7 +99,7 @@ class CompositionAggregateGenerator(
 
         installInCalls.forEach { (function, calls) ->
             calls.forEach { call ->
-                val compositionType = call.getTypeArgument(0)?.classOrNull
+                val compositionType = call.getTypeArgument(0)!!.classOrNull
                     ?: error("no class found in ${call.dump()}")
                 val elementClass = InjektDeclarationIrBuilder(pluginContext, function.symbol)
                     .emptyClass(

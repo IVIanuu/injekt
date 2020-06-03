@@ -53,7 +53,7 @@ class MembersInjectorTest {
         @Factory
         fun createComponent(): TestComponent {
             scoped { Foo() }
-            scoped { Bar(get()) }
+            scoped { foo: Foo -> Bar(foo) }
             return create()
         }
         
@@ -61,7 +61,10 @@ class MembersInjectorTest {
             val testComponent = createComponent()
             val myClass = MyClass()
             testComponent.injectMyClass(myClass)
-            check(myClass.foo === testComponent.foo)
+            check(myClass.foo === testComponent.foo) {
+                "my class foo " + myClass.foo.toString() +
+                "test component foo " + testComponent.foo.toString()
+            }
             check(myClass.foo2 === testComponent.foo)
             check(myClass.bar === testComponent.bar)
             check(myClass.bar2 === testComponent.bar)

@@ -62,20 +62,6 @@ class MapDslTest {
     }
 
     @Test
-    fun testClassOfMapKey() = codegen(
-        """
-        @Module
-        inline fun <T : Any> test() { 
-            map<KClass<*>, Any> {
-                put<String>(classOf<T>())
-            }
-        }
-    """
-    ) {
-        assertOk()
-    }
-
-    @Test
     fun testDynamicMapKey() = codegen(
         """
         fun key() = String::class
@@ -90,4 +76,18 @@ class MapDslTest {
         assertCompileError("constant")
     }
 
+    @Test
+    fun testNotExactMapType() = codegen(
+        """
+        @Module
+        fun test() {
+            map<MutableMap<String, String>, String, String> {
+            }
+        }
+    """
+    ) {
+        assertCompileError("map")
+    }
+
 }
+

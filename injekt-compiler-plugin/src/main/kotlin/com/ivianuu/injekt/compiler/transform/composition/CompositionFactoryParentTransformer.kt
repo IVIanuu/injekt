@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irUnit
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -50,10 +51,11 @@ class CompositionFactoryParentTransformer(pluginContext: IrPluginContext) :
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.composition.parent") {
+                return if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.composition.parent") {
                     parents += expression.getTypeArgument(0)!!
-                }
-                return super.visitCall(expression)
+                    DeclarationIrBuilder(pluginContext, expression.symbol)
+                        .irUnit()
+                } else super.visitCall(expression)
             }
         })
 

@@ -17,7 +17,6 @@
             <option value="$PROJECT_DIR$/comparison" />
             <option value="$PROJECT_DIR$/composition-integration-tests" />
             <option value="$PROJECT_DIR$/injekt-android" />
-            <option value="$PROJECT_DIR$/injekt-android-compose" />
             <option value="$PROJECT_DIR$/injekt-android-work" />
             <option value="$PROJECT_DIR$/injekt-common" />
             <option value="$PROJECT_DIR$/injekt-compiler-plugin" />
@@ -25,12 +24,12 @@
             <option value="$PROJECT_DIR$/injekt-core" />
             <option value="$PROJECT_DIR$/injekt-gradle-plugin" />
             <option value="$PROJECT_DIR$/integration-tests" />
+            <option value="$PROJECT_DIR$/lol" />
             <option value="$PROJECT_DIR$/sample" />
             <option value="$PROJECT_DIR$/test-util" />
           </set>
         </option>
         <option name="resolveModulePerSourceSet" value="false" />
-        <option name="useQualifiedModuleNames" value="true" />
       </GradleProjectSettings>
     </option>
   </component>

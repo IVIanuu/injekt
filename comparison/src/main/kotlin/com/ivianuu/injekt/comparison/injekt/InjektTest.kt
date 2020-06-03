@@ -16,9 +16,10 @@
 
 package com.ivianuu.injekt.comparison.injekt
 
+import com.ivianuu.injekt.InstanceFactory
 import com.ivianuu.injekt.comparison.base.InjectionTest
 import com.ivianuu.injekt.comparison.fibonacci.Fib8
-import com.ivianuu.injekt.createInstance
+import com.ivianuu.injekt.create
 
 object InjektTest : InjectionTest {
 
@@ -28,10 +29,13 @@ object InjektTest : InjectionTest {
     }
 
     override fun inject() {
-        createInstance<Fib8>()
+        createFib8()
     }
 
     override fun shutdown() {
     }
 
 }
+
+@InstanceFactory
+private fun createFib8(): Fib8 = create()

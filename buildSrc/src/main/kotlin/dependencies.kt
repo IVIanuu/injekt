@@ -32,16 +32,16 @@ object Build {
 object Publishing {
     const val groupId = "com.ivianuu.injekt"
     const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev162"
+    const val version = "${Build.versionName}-dev169"
 }
 
 object Deps {
-    const val androidGradlePlugin = "com.android.tools.build:gradle:3.6.0"
+    const val androidGradlePlugin = "com.android.tools.build:gradle:4.0.0"
 
     object AndroidX {
         const val appCompat = "androidx.appcompat:appcompat:1.1.0"
 
-        private const val composeVersion = "0.0.1-dev125"
+        private const val composeVersion = "0.0.1-dev133"
 
         object Compose {
             private const val version = composeVersion

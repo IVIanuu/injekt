@@ -27,7 +27,7 @@ class QualifierTest {
     fun testScopeNeedsRuntimeRetention() = codegen(
         """
         @Retention(AnnotationRetention.SOURCE)
-        @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+        @Target(AnnotationTarget.TYPE)
         @Qualifier
         annotation class MyQualifier
     """
@@ -39,7 +39,7 @@ class QualifierTest {
     fun testSuppressesExpressionSourceRetentionWarning() =
         codegen(
             """
-        @Target(AnnotationTarget.EXPRESSION, AnnotationTarget.TYPE)
+        @Target(AnnotationTarget.TYPE)
         @Qualifier
         annotation class MyQualifier
         """

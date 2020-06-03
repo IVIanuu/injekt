@@ -41,7 +41,7 @@ class ObjectGraphFunctionsTest {
         }
         
         fun invoke(): Foo { 
-            generateCompositions()
+            initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             return getInstance<TestCompositionComponent, Foo>(component)
         }
@@ -64,7 +64,7 @@ class ObjectGraphFunctionsTest {
         }
         
         fun invoke(): Foo { 
-            generateCompositions()
+            initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             return getInstance<Foo>(component)
         }
@@ -87,7 +87,7 @@ class ObjectGraphFunctionsTest {
         }
         
         fun invoke(): Foo { 
-            generateCompositions()
+            initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             return getInstance(component)
         }
@@ -115,7 +115,7 @@ class ObjectGraphFunctionsTest {
         }
         
         fun invoke(): Foo { 
-            generateCompositions()
+            initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             return nestedGetInstance<TestCompositionComponent, Foo>(component)
         }
@@ -143,7 +143,7 @@ class ObjectGraphFunctionsTest {
         }
         
         fun invoke(): Foo { 
-            generateCompositions()
+            initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             return nestedGetInstance<Foo>(component)
         }
@@ -171,7 +171,7 @@ class ObjectGraphFunctionsTest {
         }
         
         fun invoke(): Foo { 
-            generateCompositions()
+            initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             return getInstance(component)
         }
@@ -199,7 +199,7 @@ class ObjectGraphFunctionsTest {
         }
         
         fun invoke(): Foo { 
-            generateCompositions()
+            initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             val myClass = MyClass()
             injectInstance(component, myClass)
@@ -228,7 +228,7 @@ class ObjectGraphFunctionsTest {
         }
         
         fun invoke(): Foo { 
-            generateCompositions()
+            initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             val myClass = MyClass()
             injectInstance(component, myClass)
@@ -257,7 +257,7 @@ class ObjectGraphFunctionsTest {
         }
         
         fun invoke(): Foo { 
-            generateCompositions()
+            initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             val myClass = MyClass()
             injectInstance(component, myClass)
@@ -291,7 +291,7 @@ class ObjectGraphFunctionsTest {
         }
         
         fun invoke(): Foo { 
-            generateCompositions()
+            initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             val myClass = MyClass()
             injectInstance(component, myClass)
@@ -325,7 +325,7 @@ class ObjectGraphFunctionsTest {
         }
         
         fun invoke(): Foo { 
-            generateCompositions()
+            initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             val myClass = MyClass()
             injectInstance(component, myClass)
@@ -359,7 +359,7 @@ class ObjectGraphFunctionsTest {
         }
         
         fun invoke(): Foo { 
-            generateCompositions()
+            initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             val myClass = MyClass()
             injectInstance(component, myClass)
@@ -396,7 +396,7 @@ class ObjectGraphFunctionsTest {
             source(
                 """
                 fun invoke(): Foo { 
-                    generateCompositions() 
+                    initializeCompositions() 
                     val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
                     return getInstance<TestCompositionComponent, Foo>(component)
                 } 
@@ -436,7 +436,7 @@ class ObjectGraphFunctionsTest {
                 }
                 
                 fun invoke(): Foo { 
-                    generateCompositions() 
+                    initializeCompositions() 
                     val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()() 
                     val myClass = MyClass()
                     injectInstance(component, myClass)
@@ -532,4 +532,24 @@ class ObjectGraphFunctionsTest {
         }
     """
     )
+
+    @Test
+    fun testDeeplyNestedGet() = codegen(
+        """
+        fun getComponent(): TestCompositionComponent = error("lol")
+        
+        fun <T> inject(): T = getComponent().get<T>()
+
+        val topLevel = {
+            {
+                {
+                    {
+                        inject<Foo>()
+                    }
+                }
+            }
+        }
+    """
+    )
+
 }

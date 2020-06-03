@@ -35,7 +35,7 @@ object InjektFqNames {
     val AstChildFactory = InjektAst.child("ChildFactory")
     val AstDependency = InjektAst.child("Dependency")
     val AstEntryPoints = InjektAst.child("EntryPoints")
-    val AstInline = InjektAst.child("Inline")
+    val AstInstance = InjektAst.child("Instance")
     val AstMap = InjektAst.child("Map")
     val AstMapEntry = AstMap.child("Entry")
     val AstMapClassKey = AstMap.child("ClassKey")
@@ -51,16 +51,12 @@ object InjektFqNames {
     val AstClassPath = AstPath.child("Class")
     val AstPropertyPath = AstPath.child("Property")
     val AstTypeParameterPath = AstPath.child("TypeParameter")
-    val AstValueParameterPath = AstPath.child("ValueParameter")
     val AstScope = InjektAst.child("Scope")
     val AstScoped = InjektAst.child("Scoped")
     val AstSet = InjektAst.child("Set")
     val AstSetElement = AstSet.child("Element")
-    val AstStatic = InjektAst.child("Static")
-    val AstTyped = InjektAst.child("Typed")
 
     val Assisted = InjektPackage.child("Assisted")
-    val AssistedParameters = InjektPackage.child("AssistedParameters")
 
     val BindingAdapter = CompositionPackage.child("BindingAdapter")
     val BindingAdapterFunction = CompositionPackage.child("BindingAdapterFunction")
@@ -69,6 +65,7 @@ object InjektFqNames {
 
     val ChildFactory = InjektPackage.child("ChildFactory")
 
+    val CompositionAndroidApp = AndroidPackage.child("CompositionAndroidApp")
     val CompositionComponent = CompositionPackage.child("CompositionComponent")
     val CompositionFactory = CompositionPackage.child("CompositionFactory")
     val CompositionFactories = CompositionPackage.child("CompositionFactories")
@@ -82,6 +79,8 @@ object InjektFqNames {
 
     val InstanceFactory = InjektPackage.child("InstanceFactory")
 
+    val LateinitFactory = InternalPackage.child("LateinitFactory")
+
     val MapDsl = InjektPackage.child("MapDsl")
     val MapOfValueFactory = InternalPackage.child("MapOfValueFactory")
     val MapOfProviderFactory = InternalPackage.child("MapOfProviderFactory")
@@ -92,10 +91,8 @@ object InjektFqNames {
     val Lazy = InjektPackage.child("Lazy")
 
     val MembersInjector = InjektPackage.child("MembersInjector")
-    val NoOpMembersInjector = InternalPackage.child("NoOpMembersInjector")
 
     val Provider = InjektPackage.child("Provider")
-    val ProviderDsl = InjektPackage.child("ProviderDsl")
     val ProviderOfLazy = InternalPackage.child("ProviderOfLazy")
 
     val Qualifier = InjektPackage.child("Qualifier")
@@ -110,8 +107,6 @@ object InjektFqNames {
     val SingleInstanceFactory = InternalPackage.child("SingleInstanceFactory")
 
     val Transient = InjektPackage.child("Transient")
-
-    val TypeAnnotation = InternalPackage.child("TypeAnnotation")
 
     val Uninitialized = InternalPackage.child("Uninitialized")
 

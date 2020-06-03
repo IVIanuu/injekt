@@ -24,7 +24,6 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
@@ -113,12 +112,5 @@ class CompositionFactory(
     val parents = mutableSetOf<CompositionFactory>()
     val modules = mutableSetOf<IrFunctionSymbol>()
     val children = mutableSetOf<CompositionFactory>()
-
-    override fun toString(): String {
-        return "CompositionFactory(compositionType=${compositionType.defaultType.render()}, " +
-                "parents=$parents, " +
-                "modules=${modules.map { it.owner.render() }}, " +
-                "children=${children.map { it.factoryFunction.owner.render() }})"
-    }
 
 }

@@ -16,14 +16,13 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
-import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.types.typeWith
@@ -58,13 +57,13 @@ class ClassPath(val clazz: IrClass) : Path() {
     }
 }
 
-class PropertyPath(val property: IrProperty) : Path() {
+class PropertyPath(val property: InjektDeclarationIrBuilder.FieldWithGetter) : Path() {
     override fun asAnnotation(
         builder: IrBuilderWithScope,
         symbols: InjektSymbols
     ): IrConstructorCall {
         return builder.irCall(symbols.astPropertyPath.constructors.single()).apply {
-            putValueArgument(0, builder.irString(property.name.asString()))
+            putValueArgument(0, builder.irString(property.field.name.asString()))
         }
     }
 }
@@ -76,17 +75,6 @@ class TypeParameterPath(val typeParameter: IrTypeParameter) : Path() {
     ): IrConstructorCall {
         return builder.irCall(symbols.astTypeParameterPath.constructors.single()).apply {
             putValueArgument(0, builder.irString(typeParameter.name.asString()))
-        }
-    }
-}
-
-class ValueParameterPath(val valueParameter: IrValueParameter) : Path() {
-    override fun asAnnotation(
-        builder: IrBuilderWithScope,
-        symbols: InjektSymbols
-    ): IrConstructorCall {
-        return builder.irCall(symbols.astValueParameterPath.constructors.single()).apply {
-            putValueArgument(0, builder.irString(valueParameter.name.asString()))
         }
     }
 }
