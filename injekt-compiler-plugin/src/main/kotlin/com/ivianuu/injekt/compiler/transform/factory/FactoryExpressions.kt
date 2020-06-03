@@ -122,7 +122,7 @@ class FactoryExpressions(
                         is ProviderBindingNode -> instanceExpressionForProvider(binding)
                         is ProvisionBindingNode -> instanceExpressionForProvision(binding)
                         is SetBindingNode -> instanceExpressionForSet(binding)
-                    }
+                    }.wrapInFunction(binding.key)
                 }
             }
             RequestType.Provider -> {
@@ -160,7 +160,7 @@ class FactoryExpressions(
             .map { getBindingExpression(it) }
 
         return {
-            InjektDeclarationIrBuilder(pluginContext, factory.moduleClass.symbol)
+            InjektDeclarationIrBuilder(pluginContext, factory.factoryFunction.symbol)
                 .irLambda(
                     pluginContext.tmpFunction(
                         assistedParameters
@@ -168,7 +168,7 @@ class FactoryExpressions(
                     ).typeWith(
                         assistedParameters
                             .map { it.type } +
-                                binding.key.type
+                                binding.key.type.typeArguments.last().typeOrFail
                     )
                 ) { lambda ->
                     +irReturn(
@@ -214,7 +214,7 @@ class FactoryExpressions(
             }
         }
 
-        return expression.wrapInFunction(binding.key)
+        return expression
     }
 
     private fun instanceExpressionForFactoryImplementation(
@@ -337,7 +337,7 @@ class FactoryExpressions(
             }
         }
 
-        return expression.wrapInFunction(binding.key)
+        return expression
     }
 
     private fun instanceExpressionForMembersInjector(binding: MembersInjectorBindingNode): FactoryExpression {
@@ -398,7 +398,7 @@ class FactoryExpressions(
             expression
         }
 
-        return expression.wrapInFunction(binding.key)
+        return expression
     }
 
     private fun instanceExpressionForSet(binding: SetBindingNode): FactoryExpression {
@@ -472,7 +472,7 @@ class FactoryExpressions(
             }
         }
 
-        return expression.wrapInFunction(binding.key)
+        return expression
     }
 
     private fun providerExpressionForAssistedProvision(binding: AssistedProvisionBindingNode): FactoryExpression {
@@ -497,7 +497,7 @@ class FactoryExpressions(
     private fun providerExpressionForDependency(binding: DependencyBindingNode): FactoryExpression {
         val dependencyExpression = getRequirementExpression(binding.requirementNode)
         return cachedProviderExpression(binding.key) providerFieldExpression@{
-            InjektDeclarationIrBuilder(pluginContext, factory.moduleClass.symbol)
+            InjektDeclarationIrBuilder(pluginContext, factory.factoryFunction.symbol)
                 .irLambda(
                     pluginContext.tmpFunction(0)
                         .typeWith(binding.key.type)
@@ -696,17 +696,18 @@ class FactoryExpressions(
             .map { getBindingExpression(it) }
 
         return cachedProviderExpression(binding.key) providerFieldExpression@{
-            val newProvider = InjektDeclarationIrBuilder(pluginContext, factory.moduleClass.symbol)
-                .irLambda(
-                    pluginContext.tmpFunction(0)
-                        .typeWith(binding.key.type)
-                ) {
-                    +irReturn(
-                        binding.createExpression(
-                            this,
-                            binding.parameters
-                                .mapIndexed { index, parameter ->
-                                    index to parameter
+            val newProvider =
+                InjektDeclarationIrBuilder(pluginContext, factory.factoryFunction.symbol)
+                    .irLambda(
+                        pluginContext.tmpFunction(0)
+                            .typeWith(binding.key.type)
+                    ) {
+                        +irReturn(
+                            binding.createExpression(
+                                this,
+                                binding.parameters
+                                    .mapIndexed { index, parameter ->
+                                        index to parameter
                                 }
                                 .associateWith { (index, parameter) ->
                                     { dependencyExpressions[index]() }

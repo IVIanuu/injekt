@@ -294,10 +294,23 @@ class ModuleBindingResolver(
                             targetScope = null,
                             scoped = scoped,
                             module = moduleNode,
-                            createExpression = {
-                                irCall(propertyGetter).apply {
-                                    dispatchReceiver =
-                                        moduleNode.accessor(this@AssistedProvisionBindingNode)
+                            createExpression = { parametersMap ->
+                                irCall(propertyGetter.returnType
+                                    .classOrNull!!
+                                    .functions
+                                    .single { it.owner.name.asString() == "invoke" }
+                                ).apply {
+                                    dispatchReceiver = irCall(propertyGetter).apply {
+                                        dispatchReceiver =
+                                            moduleNode.accessor(this@AssistedProvisionBindingNode)
+                                    }
+
+                                    parametersMap.values.forEachIndexed { index, expression ->
+                                        putValueArgument(
+                                            index,
+                                            expression()
+                                        )
+                                    }
                                 }
                             },
                             parameters = parameters,
