@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
+import com.ivianuu.injekt.compiler.transform.factory.asKey
 import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -39,7 +40,6 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
@@ -48,7 +48,6 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
@@ -148,8 +147,7 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         addMetadataIfNotLocal()
         addFunction {
             this.name = InjektNameConventions.nameWithoutIllegalChars(
-                "get\$${requestedType.classifierOrFail.descriptor.fqNameSafe
-                    .pathSegments().joinToString("_") { it.asString() }}"
+                "get\$${requestedType.asKey().hashCode()}"
             )
             returnType = requestedType
             modality = Modality.ABSTRACT
@@ -169,8 +167,7 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         addMetadataIfNotLocal()
         addFunction {
             this.name = InjektNameConventions.nameWithoutIllegalChars(
-                "inject\$${injectedType.classifierOrFail.descriptor.fqNameSafe
-                    .pathSegments().joinToString("_") { it.asString() }}"
+                "inject\$${injectedType.asKey().hashCode()}"
             )
             returnType = pluginContext.tmpFunction(1)
                 .typeWith(injectedType, irBuiltIns.unitType)

@@ -198,7 +198,9 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
         function: IrFunction
     ) {
         clazz.addFunction {
-            name = Name.identifier("inject\$${function.name}")
+            name = Name.identifier(
+                "injectFun\$${function.descriptor.fqNameSafe.pathSegments().joinToString("_")}"
+            )
             returnType = irBuiltIns.unitType
             visibility = Visibilities.PUBLIC
         }.apply {
@@ -271,7 +273,10 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
             }
 
             property.addSetter {
-                name = Name.identifier("inject\$${property.name}")
+                name = Name.identifier(
+                    "injectProperty\$${property.descriptor.fqNameSafe.pathSegments()
+                        .joinToString("_")}"
+                )
                 returnType = irBuiltIns.unitType
                 visibility = Visibilities.PUBLIC
             }.apply {

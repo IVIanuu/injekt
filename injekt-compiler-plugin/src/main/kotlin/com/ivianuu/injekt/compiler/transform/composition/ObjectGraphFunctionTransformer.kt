@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.transform.composition
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.deepCopyWithPreservingQualifiers
-import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.AbstractFunctionTransformer
@@ -63,12 +62,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
     AbstractFunctionTransformer(pluginContext, TransformOrder.BottomUp) {
 
-    override fun needsTransform(function: IrFunction): Boolean {
-        if (function.isExternalDeclaration() && !function.hasAnnotation(InjektFqNames.AstObjectGraph))
-            return false
-
-        return true
-    }
+    override fun needsTransform(function: IrFunction): Boolean = true
 
     override fun transform(
         function: IrFunction,
@@ -289,18 +283,10 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
     }
 
     override fun createDecoy(original: IrFunction, transformed: IrFunction): IrFunction {
-        return original.deepCopyWithPreservingQualifiers(wrapDescriptor = false)
+        return original.deepCopyWithPreservingQualifiers(wrapDescriptor = true)
             .also { decoy ->
                 InjektDeclarationIrBuilder(pluginContext, decoy.symbol).run {
-                    if (transformed.valueParameters
-                            .any {
-                                it.name.asString().startsWith("og_provider\$") ||
-                                        it.name.asString().startsWith("og_injector\$")
-                            }
-                    ) {
-                        decoy.annotations += noArgSingleConstructorCall(symbols.astObjectGraph)
-                    }
-
+                    decoy.annotations += noArgSingleConstructorCall(symbols.astObjectGraph)
                     decoy.body = builder.irExprBody(irInjektIntrinsicUnit())
                 }
             }

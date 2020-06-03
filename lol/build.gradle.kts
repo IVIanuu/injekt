@@ -23,6 +23,8 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
 
 dependencies {
+    implementation(Deps.AndroidX.Compose.runtimeDesktop)
+    kotlinCompilerPluginClasspath(Deps.AndroidX.Compose.compiler)
     api(project(":injekt-core"))
     api(project(":injekt-composition"))
     kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
