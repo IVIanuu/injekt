@@ -809,6 +809,8 @@ private class IrSourcePrinterVisitor(
     }
 
     override fun visitProperty(declaration: IrProperty) {
+        declaration.printAnnotations(onePerLine = true)
+
         if (declaration.isLateinit) {
             print("lateinit")
         }

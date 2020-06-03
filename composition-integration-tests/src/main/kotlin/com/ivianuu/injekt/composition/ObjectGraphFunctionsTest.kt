@@ -532,4 +532,24 @@ class ObjectGraphFunctionsTest {
         }
     """
     )
+
+    @Test
+    fun testDeeplyNestedGet() = codegen(
+        """
+        fun getComponent(): TestCompositionComponent = error("lol")
+        
+        fun <T> inject(): T = getComponent().get<T>()
+
+        val topLevel = {
+            {
+                {
+                    {
+                        inject<Foo>()
+                    }
+                }
+            }
+        }
+    """
+    )
+
 }

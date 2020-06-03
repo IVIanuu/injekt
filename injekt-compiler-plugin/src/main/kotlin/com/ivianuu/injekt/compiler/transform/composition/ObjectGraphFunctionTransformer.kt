@@ -28,15 +28,14 @@ import com.ivianuu.injekt.compiler.transform.factory.asKey
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.withAnnotations
+import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irReturn
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
@@ -47,6 +46,7 @@ import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.typeOrNull
@@ -64,10 +64,6 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
     AbstractFunctionTransformer(pluginContext, TransformOrder.BottomUp) {
 
     override fun needsTransform(function: IrFunction): Boolean {
-        if (function.visibility == Visibilities.LOCAL &&
-            function.origin == IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
-        ) return false
-
         if (function.isExternalDeclaration() && !function.hasAnnotation(InjektFqNames.AstObjectGraph))
             return false
 
@@ -84,21 +80,27 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
         val originalUnresolvedInjectCalls = mutableListOf<IrCall>()
         val originalObjectGraphFunctionCalls = mutableListOf<IrCall>()
         var hasUnresolvedCalls = false
-        function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
+
+        fun IrType.isTypeParameterOfFunction(function: IrFunction): Boolean {
+            return isTypeParameter() && (classifierOrFail as IrTypeParameterSymbol).owner
+                .parent == function
+        }
+
+        function.body?.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = transformFunctionIfNeeded(expression.symbol.owner)
                 when {
                     callee.isObjectGraphGet -> {
-                        if (expression.extensionReceiver?.type?.isTypeParameter() == true ||
-                            expression.getTypeArgument(0)!!.isTypeParameter()
+                        if (expression.extensionReceiver?.type?.isTypeParameterOfFunction(function) == true ||
+                            expression.getTypeArgument(0)!!.isTypeParameterOfFunction(function)
                         ) {
                             originalUnresolvedGetCalls += expression
                             hasUnresolvedCalls = true
                         }
                     }
                     callee.isObjectGraphInject -> {
-                        if (expression.extensionReceiver?.type?.isTypeParameter() == true ||
-                            expression.getTypeArgument(0)!!.isTypeParameter()
+                        if (expression.extensionReceiver?.type?.isTypeParameterOfFunction(function) == true ||
+                            expression.getTypeArgument(0)!!.isTypeParameterOfFunction(function)
                         ) {
                             originalUnresolvedInjectCalls += expression
                             hasUnresolvedCalls = true
@@ -106,7 +108,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                     }
                     callee.symbol.owner.hasAnnotation(InjektFqNames.AstObjectGraph) -> {
                         originalObjectGraphFunctionCalls += expression
-                        if (expression.typeArguments.any { it.isTypeParameter() }) {
+                        if (expression.typeArguments.any { it.isTypeParameterOfFunction(function) }) {
                             hasUnresolvedCalls = true
                         }
                     }
@@ -139,16 +141,22 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                 val callee = transformFunctionIfNeeded(expression.symbol.owner)
                 when {
                     callee.isObjectGraphGet -> {
-                        if (expression.extensionReceiver?.type?.isTypeParameter() == true ||
-                            expression.getTypeArgument(0)!!.isTypeParameter()
+                        if (expression.extensionReceiver?.type?.isTypeParameterOfFunction(
+                                transformedFunction
+                            ) == true ||
+                            expression.getTypeArgument(0)!!
+                                .isTypeParameterOfFunction(transformedFunction)
                         ) {
                             unresolvedGetCalls += expression
                             hasUnresolvedCalls = true
                         }
                     }
                     callee.isObjectGraphInject -> {
-                        if (expression.extensionReceiver?.type?.isTypeParameter() == true ||
-                            expression.getTypeArgument(0)!!.isTypeParameter()
+                        if (expression.extensionReceiver?.type?.isTypeParameterOfFunction(
+                                transformedFunction
+                            ) == true ||
+                            expression.getTypeArgument(0)!!
+                                .isTypeParameterOfFunction(transformedFunction)
                         ) {
                             unresolvedInjectCalls += expression
                             hasUnresolvedCalls = true
@@ -156,7 +164,11 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                     }
                     callee.symbol.owner.hasAnnotation(InjektFqNames.AstObjectGraph) -> {
                         objectGraphFunctionCalls += expression
-                        if (expression.typeArguments.any { it.isTypeParameter() }) {
+                        if (expression.typeArguments.any {
+                                it.isTypeParameterOfFunction(
+                                    transformedFunction
+                                )
+                            }) {
                             hasUnresolvedCalls = true
                         }
                     }
