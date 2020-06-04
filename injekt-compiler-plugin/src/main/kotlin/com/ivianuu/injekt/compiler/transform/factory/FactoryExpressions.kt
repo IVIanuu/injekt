@@ -208,13 +208,11 @@ class FactoryExpressions(
 
     private fun instanceExpressionForDependency(binding: DependencyBindingNode): FactoryExpression {
         val dependencyExpression = getRequirementExpression(binding.requirementNode)
-        val expression: FactoryExpression = bindingExpression@{
+        return {
             irCall(binding.function).apply {
                 dispatchReceiver = dependencyExpression()
             }
         }
-
-        return expression
     }
 
     private fun instanceExpressionForFactoryImplementation(
@@ -278,7 +276,7 @@ class FactoryExpressions(
                 pairExpression
             }
 
-        val expression: FactoryExpression = bindingExpression@{
+        return {
             when (entryExpressions.size) {
                 0 -> {
                     irCall(
@@ -336,8 +334,6 @@ class FactoryExpressions(
                 }
             }
         }
-
-        return expression
     }
 
     private fun instanceExpressionForMembersInjector(binding: MembersInjectorBindingNode): FactoryExpression {
@@ -376,7 +372,7 @@ class FactoryExpressions(
     }
 
     private fun instanceExpressionForProvision(binding: ProvisionBindingNode): FactoryExpression {
-        val expression = if (binding.scoped) {
+        return if (binding.scoped) {
             invokeProviderInstanceExpression(binding)
         } else {
             val dependencies = binding.dependencies
@@ -397,8 +393,6 @@ class FactoryExpressions(
             }
             expression
         }
-
-        return expression
     }
 
     private fun instanceExpressionForSet(binding: SetBindingNode): FactoryExpression {
@@ -424,7 +418,7 @@ class FactoryExpressions(
                 )
             }
 
-        val expression: FactoryExpression = bindingExpression@{
+        return bindingExpression@{
             when (elementExpressions.size) {
                 0 -> {
                     irCall(
@@ -461,23 +455,21 @@ class FactoryExpressions(
                             IrVarargImpl(
                                 UNDEFINED_OFFSET,
                                 UNDEFINED_OFFSET,
-                                this@FactoryExpressions.pluginContext.irBuiltIns.arrayClass
+                                pluginContext.irBuiltIns.arrayClass
                                     .typeWith(binding.elementKey.type),
                                 binding.elementKey.type,
-                                elementExpressions.map { it() }
+                                elementExpressions.map<FactoryExpression, IrExpression> { it() }
                             )
                         )
                     }
                 }
             }
         }
-
-        return expression
     }
 
     private fun providerExpressionForAssistedProvision(binding: AssistedProvisionBindingNode): FactoryExpression {
-        return cachedProviderExpression(binding.key) {
-            instanceProvider(
+        return cachedFactoryExpression(binding.key) {
+            singleInstanceFactory(
                 getBindingExpression(
                     BindingRequest(binding.key, binding.origin, RequestType.Instance)
                 )()
@@ -486,8 +478,8 @@ class FactoryExpressions(
     }
 
     private fun providerExpressionForChildFactory(binding: ChildFactoryBindingNode): FactoryExpression {
-        return cachedProviderExpression(binding.key) {
-            instanceProvider(binding.childFactoryExpression(this))
+        return cachedFactoryExpression(binding.key) {
+            singleInstanceFactory(binding.childFactoryExpression(this))
         }
     }
 
@@ -496,7 +488,7 @@ class FactoryExpressions(
 
     private fun providerExpressionForDependency(binding: DependencyBindingNode): FactoryExpression {
         val dependencyExpression = getRequirementExpression(binding.requirementNode)
-        return cachedProviderExpression(binding.key) providerFieldExpression@{
+        return cachedFactoryExpression(binding.key) providerFieldExpression@{
             InjektDeclarationIrBuilder(pluginContext, factory.factoryFunction.symbol)
                 .irLambda(
                     pluginContext.tmpFunction(0)
@@ -516,7 +508,7 @@ class FactoryExpressions(
     ): FactoryExpression {
         factory as ImplFactory
 
-        return cachedProviderExpression(binding.key) {
+        return cachedFactoryExpression(binding.key) {
             irCall(symbols.lateinitFactory.constructors.single()).apply {
                 putTypeArgument(0, factory.clazz.superTypes.single())
             }
@@ -524,8 +516,8 @@ class FactoryExpressions(
     }
 
     private fun providerExpressionForInstance(binding: InstanceBindingNode): FactoryExpression {
-        return cachedProviderExpression(binding.key) {
-            instanceProvider(binding.requirementNode.accessor(this))
+        return cachedFactoryExpression(binding.key) {
+            singleInstanceFactory(binding.requirementNode.accessor(this))
         }
     }
 
@@ -537,7 +529,7 @@ class FactoryExpressions(
                 RequestType.Provider
             )
         )
-        return cachedProviderExpression(binding.key) {
+        return cachedFactoryExpression(binding.key) {
             irCall(
                 symbols.providerOfLazy
                     .constructors
@@ -576,7 +568,7 @@ class FactoryExpressions(
                 pairExpression
             }
 
-        return cachedProviderExpression(binding.key) providerFieldExpression@{
+        return cachedFactoryExpression(binding.key) providerFieldExpression@{
             val mapFactoryCompanion = when {
                 binding.valueKey.type.isFunction() &&
                         binding.valueKey.type.hasAnnotation(InjektFqNames.Provider) -> {
@@ -658,7 +650,7 @@ class FactoryExpressions(
         val dependencyExpressions = binding.dependencies
             .map { getBindingExpression(it) }
         return {
-            instanceProvider(
+            singleInstanceFactory(
                 InjektDeclarationIrBuilder(pluginContext, scope.scopeOwnerSymbol)
                     .irLambda(binding.key.type) { lambda ->
                         if (binding.membersInjector != null) {
@@ -678,7 +670,7 @@ class FactoryExpressions(
     }
 
     private fun providerExpressionForNull(binding: NullBindingNode): FactoryExpression {
-        return { instanceProvider(irNull()) }
+        return { singleInstanceFactory(irNull()) }
     }
 
     private fun providerExpressionForProvider(binding: ProviderBindingNode): FactoryExpression {
@@ -695,7 +687,7 @@ class FactoryExpressions(
         val dependencyExpressions = binding.dependencies
             .map { getBindingExpression(it) }
 
-        return cachedProviderExpression(binding.key) providerFieldExpression@{
+        return cachedFactoryExpression(binding.key) providerFieldExpression@{
             val newProvider =
                 InjektDeclarationIrBuilder(pluginContext, factory.factoryFunction.symbol)
                     .irLambda(
@@ -733,7 +725,7 @@ class FactoryExpressions(
                 )
             }
 
-        return cachedProviderExpression(binding.key) providerFieldExpression@{
+        return cachedFactoryExpression(binding.key) providerFieldExpression@{
             val setFactoryCompanion = when {
                 binding.elementKey.type.isFunction() &&
                         binding.elementKey.type.hasAnnotation(InjektFqNames.Provider) -> {
@@ -803,20 +795,20 @@ class FactoryExpressions(
         }
     }
 
-    private fun cachedProviderExpression(
+    private fun cachedFactoryExpression(
         key: Key,
-        providerInitializer: IrBuilderWithScope.() -> IrExpression
+        factoryInitializer: IrBuilderWithScope.() -> IrExpression
     ): FactoryExpression {
         return members.cachedValue(
             pluginContext.tmpFunction(0)
                 .typeWith(key.type)
                 .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Provider))
                 .asKey(),
-            providerInitializer
+            factoryInitializer
         )
     }
 
-    private fun IrBuilderWithScope.instanceProvider(instance: IrExpression): IrExpression {
+    private fun IrBuilderWithScope.singleInstanceFactory(instance: IrExpression): IrExpression {
         val instanceProviderCompanion = symbols.singleInstanceFactory.owner
             .companionObject() as IrClass
         return irCall(
