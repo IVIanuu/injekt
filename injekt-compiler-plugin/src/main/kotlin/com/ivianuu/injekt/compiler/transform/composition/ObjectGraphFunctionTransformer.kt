@@ -80,7 +80,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                 .parent == function
         }
 
-        function.body?.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
+        function?.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = transformFunctionIfNeeded(expression.symbol.owner)
                 when {
@@ -130,7 +130,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
         val unresolvedInjectCalls = mutableListOf<IrCall>()
         val objectGraphFunctionCalls = mutableListOf<IrCall>()
 
-        transformedFunction.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
+        transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = transformFunctionIfNeeded(expression.symbol.owner)
                 when {
@@ -300,7 +300,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
         valueParametersByUnresolvedInjectorType: Map<Key, IrValueParameter>,
         objectGraphFunctionCalls: List<IrCall>
     ) {
-        function.body?.transformChildrenVoid(object : IrElementTransformerVoid() {
+        function.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
                 return when (expression) {
                     in unresolvedGetCalls -> {

@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.androidEnabled
 import com.ivianuu.injekt.compiler.compositionsEnabled
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.android.AndroidEntryPointTransformer
 import com.ivianuu.injekt.compiler.transform.android.CompositionAndroidAppTransformer
 import com.ivianuu.injekt.compiler.transform.composition.BindingEffectTransformer
@@ -106,7 +107,7 @@ class InjektIrGenerationExtension(
         // patch metadata
         TmpMetadataPatcher(pluginContext).lower(moduleFragment)
 
-        //println(moduleFragment.dumpSrc())
+        println(moduleFragment.dumpSrc())
     }
 
 }
