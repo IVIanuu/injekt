@@ -54,6 +54,7 @@ import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -110,7 +111,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
         injectFunctionsByClass[clazz]?.let { return it }
         val membersInjector = DeclarationIrBuilder(pluginContext, clazz.symbol)
             .membersInjector(clazz) ?: return null
-        clazz.addChild(membersInjector)
+        clazz.file.addChild(membersInjector)
         injectFunctionsByClass[clazz] = membersInjector
         return membersInjector
     }
@@ -142,6 +143,7 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
             visibility = clazz.visibility
             returnType = irBuiltIns.unitType
         }.apply {
+            parent = clazz.file
             addMetadataIfNotLocal()
 
             val parameters = mutableListOf<IrType>()

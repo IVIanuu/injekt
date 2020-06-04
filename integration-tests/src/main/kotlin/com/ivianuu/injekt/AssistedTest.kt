@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.test.Bar
-import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
@@ -36,28 +34,36 @@ class AssistedTest {
         )
         
         @InstanceFactory
-        fun invoke(): @Provider (String) -> Dep {
+        fun factory(): @Provider (String) -> Dep {
             transient<Foo>()
             return create()
         }
+        
+        fun invoke() {
+            val depFactory = factory()
+            val result: Dep = depFactory("hello world")
+        }
     """
     ) {
-        val depFactory = invokeSingleFile<@Provider (String) -> Any>()
-        val result = depFactory("hello world")
+        invokeSingleFile()
     }
 
     @Test
     fun testAssistedInDsl() = codegen(
         """ 
         @InstanceFactory
-        fun invoke(): @Provider (Foo) -> Bar {
+        fun factory(): @Provider (Foo) -> Bar {
             transient { foo: @Assisted Foo -> Bar(foo) }
             return create()
         }
+        
+        fun invoke() {
+            val barFactory = factory()
+            val bar: Bar = barFactory(Foo())
+        }
     """
     ) {
-        val barFactory = invokeSingleFile<@Provider (Foo) -> Bar>()
-        val bar: Bar = barFactory(Foo())
+        invokeSingleFile()
     }
 
     @Test
@@ -77,14 +83,21 @@ class AssistedTest {
             source(
                 """
                     @InstanceFactory 
-                    fun createDep(): @Provider (String) -> Dep { 
+                    fun factory(): @Provider (String) -> Dep { 
                         instance(Foo())
                         return create()
                     }
-                """
+                    
+                    fun invoke() {
+                        val depFactory = factory()
+                        val result = depFactory("hello world")
+                    }
+                """,
+                name = "File.kt"
             )
         )
-    )
-
+    ) {
+        it.last().invokeSingleFile()
+    }
 
 }

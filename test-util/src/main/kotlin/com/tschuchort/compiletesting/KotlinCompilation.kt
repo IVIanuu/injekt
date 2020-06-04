@@ -366,7 +366,10 @@ class KotlinCompilation {
     ) {
         /** class loader to load the compile classes */
         val classLoader = URLClassLoader(
-            arrayOf(outputDirectory.toURI().toURL()),
+            arrayOf(
+                *(classpaths + outputDirectory)
+                    .map { it.toURI().toURL() }.toTypedArray()
+            ),
             this::class.java.classLoader
         )
 

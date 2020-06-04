@@ -132,16 +132,6 @@ fun KotlinCompilation.Result.assertOk() {
     assertEquals(KotlinCompilation.ExitCode.OK, exitCode)
 }
 
-fun KotlinCompilation.Result.expectNoErrorsWhileInvokingSingleFile() {
-    assertOk()
-
-    try {
-        invokeSingleFile()
-    } catch (e: Exception) {
-        throw AssertionError(e)
-    }
-}
-
 @JvmName("invokeSingleFileTypeless")
 fun KotlinCompilation.Result.invokeSingleFile(vararg args: Any?): Any? =
     invokeSingleFile<Any?>(*args)

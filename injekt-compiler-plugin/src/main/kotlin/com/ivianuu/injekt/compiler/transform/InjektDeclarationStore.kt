@@ -55,7 +55,7 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
                 clazz.fqNameForIrSerialization
                     .parent()
                     .child(
-                        InjektNameConventions.getFactoryNameForClass(
+                        InjektNameConventions.getMembersInjectorNameForClass(
                             clazz.getPackageFragment()!!.fqName,
                             clazz.descriptor.fqNameSafe
                         )

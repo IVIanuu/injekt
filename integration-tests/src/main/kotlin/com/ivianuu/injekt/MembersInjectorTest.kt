@@ -138,8 +138,17 @@ class MembersInjectorTest {
                     transient<MyClass>()
                     return create()
                 }
-            """
+                
+                fun invoke() {
+                    val instance = myClassFactory()
+                    instance.foo
+                    instance.foo2
+                }
+            """,
+                name = "File.kt"
             )
         )
-    )
+    ) {
+        it.last().invokeSingleFile()
+    }
 }
