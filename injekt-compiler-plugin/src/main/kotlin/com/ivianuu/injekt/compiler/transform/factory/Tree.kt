@@ -16,10 +16,9 @@
 
 package com.ivianuu.injekt.compiler.transform.factory
 
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.MapKey
-import com.ivianuu.injekt.compiler.getQualifierFqNames
 import com.ivianuu.injekt.compiler.getQualifiers
+import com.ivianuu.injekt.compiler.isNoArgProvider
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.toAnnotationDescriptor
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
@@ -41,7 +40,6 @@ import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
-import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 
@@ -125,7 +123,7 @@ class BindingRequest(
 }
 
 fun Key.inferRequestType() = when {
-    type.isFunction() && type.typeArguments.size == 1 && InjektFqNames.Provider in type.getQualifierFqNames() -> RequestType.Provider
+    type.isNoArgProvider() -> RequestType.Provider
     else -> RequestType.Instance
 }
 

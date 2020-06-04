@@ -18,6 +18,9 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.isLazy
+import com.ivianuu.injekt.compiler.isNoArgProvider
+import com.ivianuu.injekt.compiler.isProvider
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.typeArguments
@@ -39,8 +42,6 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.isVararg
 import org.jetbrains.kotlin.name.FqName
 
@@ -88,9 +89,7 @@ class FactoryExpressions(
                         )
                     )
                 ) {
-                    if (request.key.type.isFunction() &&
-                        request.key.type.hasAnnotation(InjektFqNames.Provider)
-                    ) {
+                    if (request.key.type.isProvider()) {
                         getBindingExpression(
                             BindingRequest(
                                 binding.key,
@@ -242,11 +241,9 @@ class FactoryExpressions(
             .map { (key, entryValue) ->
                 val entryValueExpression = getBindingExpression(
                     when {
-                        binding.valueKey.type.isFunction() &&
-                                binding.valueKey.type.hasAnnotation(InjektFqNames.Provider) ->
+                        binding.valueKey.type.isNoArgProvider() ->
                             entryValue.copy(requestType = RequestType.Provider)
-                        binding.valueKey.type.isFunction() &&
-                                binding.valueKey.type.hasAnnotation(InjektFqNames.Lazy) -> {
+                        binding.valueKey.type.isLazy() -> {
                             BindingRequest(
                                 pluginContext.tmpFunction(0)
                                     .typeWith(entryValue.key.type)
@@ -400,11 +397,9 @@ class FactoryExpressions(
             .map { element ->
                 getBindingExpression(
                     when {
-                        binding.elementKey.type.isFunction() &&
-                                binding.elementKey.type.hasAnnotation(InjektFqNames.Provider) ->
+                        binding.elementKey.type.isNoArgProvider() ->
                             element.copy(requestType = RequestType.Provider)
-                        binding.elementKey.type.isFunction() &&
-                                binding.elementKey.type.hasAnnotation(InjektFqNames.Lazy) -> {
+                        binding.elementKey.type.isLazy() -> {
                             BindingRequest(
                                 pluginContext.tmpFunction(0)
                                     .typeWith(element.key.type)
@@ -570,12 +565,10 @@ class FactoryExpressions(
 
         return cachedFactoryExpression(binding.key) providerFieldExpression@{
             val mapFactoryCompanion = when {
-                binding.valueKey.type.isFunction() &&
-                        binding.valueKey.type.hasAnnotation(InjektFqNames.Provider) -> {
+                binding.valueKey.type.isNoArgProvider() -> {
                     symbols.mapOfProviderFactory.owner.companionObject() as IrClass
                 }
-                binding.valueKey.type.isFunction() &&
-                        binding.valueKey.type.hasAnnotation(InjektFqNames.Lazy) -> {
+                binding.valueKey.type.isLazy() -> {
                     symbols.mapOfLazyFactory.owner.companionObject() as IrClass
                 }
                 else -> symbols.mapOfValueFactory.owner.companionObject() as IrClass
@@ -727,12 +720,10 @@ class FactoryExpressions(
 
         return cachedFactoryExpression(binding.key) providerFieldExpression@{
             val setFactoryCompanion = when {
-                binding.elementKey.type.isFunction() &&
-                        binding.elementKey.type.hasAnnotation(InjektFqNames.Provider) -> {
+                binding.elementKey.type.isNoArgProvider() -> {
                     symbols.setOfProviderFactory.owner.companionObject() as IrClass
                 }
-                binding.elementKey.type.isFunction() &&
-                        binding.elementKey.type.hasAnnotation(InjektFqNames.Lazy) -> {
+                binding.elementKey.type.isLazy() -> {
                     symbols.setOfLazyFactory.owner.companionObject() as IrClass
                 }
                 else -> symbols.setOfValueFactory.owner.companionObject() as IrClass

@@ -180,6 +180,56 @@ class SetTest {
     }
 
     @Test
+    fun testSetOfAssistedProviderInstance() = codegen(
+        """
+        @InstanceFactory
+        fun invoke(): Set<@Provider (String) -> Command> {
+            transient { arg: @Assisted String -> CommandA() }
+            transient { arg: @Assisted String -> CommandB() }
+            transient { arg: @Assisted String -> CommandC() }
+            set<@Provider (String) -> Command> {
+                add<@Provider (String) -> CommandA>()
+                add<@Provider (String) -> CommandB>()
+                add<@Provider (String) -> CommandC>()
+            }
+            return create()
+        }
+         """
+    ) {
+        val set =
+            invokeSingleFile<Set<@Provider (String) -> Command>>().toList()
+        assertEquals(3, set.size)
+        assertTrue(set[0]("a") is CommandA)
+        assertTrue(set[1]("b") is CommandB)
+        assertTrue(set[2]("c") is CommandC)
+    }
+
+    @Test
+    fun testSetOfAssistedProviderProvider() = codegen(
+        """
+        @InstanceFactory
+        fun invoke(): @Provider () -> Set<@Provider (String) -> Command> {
+            transient { arg: @Assisted String -> CommandA() }
+            transient { arg: @Assisted String -> CommandB() }
+            transient { arg: @Assisted String -> CommandC() }
+            set<@Provider (String) -> Command> {
+                add<@Provider (String) -> CommandA>()
+                add<@Provider (String) -> CommandB>()
+                add<@Provider (String) -> CommandC>()
+            }
+            return create()
+        }
+         """
+    ) {
+        val set =
+            invokeSingleFile<@Provider () -> Set<@Provider (String) -> Command>>()().toList()
+        assertEquals(3, set.size)
+        assertTrue(set[0]("a") is CommandA)
+        assertTrue(set[1]("b") is CommandB)
+        assertTrue(set[2]("c") is CommandC)
+    }
+
+    @Test
     fun testEmptySet() = codegen(
         """
         @InstanceFactory

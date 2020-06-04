@@ -15,6 +15,7 @@
   -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.ivianuu.injekt.sample">
 
     <application
@@ -32,6 +33,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <provider
+            android:name="androidx.work.impl.WorkManagerInitializer"
+            android:enabled="false"
+            tools:ignore="ExportedContentProvider" />
     </application>
 
 </manifest>

@@ -17,8 +17,12 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
+import androidx.work.Configuration
+import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import com.ivianuu.injekt.android.CompositionAndroidApp
+import com.ivianuu.injekt.android.applicationComponent
+import com.ivianuu.injekt.composition.get
 import com.ivianuu.injekt.inject
 
 @CompositionAndroidApp
@@ -31,6 +35,12 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         repo.refresh()
+
+        WorkManager.initialize(
+            this, Configuration.Builder()
+                .setWorkerFactory(applicationComponent.get()).build()
+        )
+
         println("injected app $repo")
     }
 

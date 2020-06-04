@@ -19,6 +19,8 @@ package com.ivianuu.injekt.sample
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModel
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.ivianuu.injekt.android.ActivityViewModel
 import com.ivianuu.injekt.android.AndroidEntryPoint
 import com.ivianuu.injekt.inject
@@ -30,6 +32,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        WorkManager.getInstance(this)
+            .enqueue(
+                OneTimeWorkRequestBuilder<TestWorker>()
+                    .build()
+            )
+
         println("Got view model $viewModel")
     }
 }

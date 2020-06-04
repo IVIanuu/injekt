@@ -28,5 +28,9 @@ class TestWorker(
     @Assisted workerParams: WorkerParameters,
     private val repo: Repo
 ) : Worker(context, workerParams) {
+    init {
+        println("hello $context $workerParams $repo")
+    }
+
     override fun doWork(): Result = Result.success()
 }

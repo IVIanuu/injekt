@@ -181,6 +181,56 @@ class MapTest {
     }
 
     @Test
+    fun testMapOfAssistedProvider() = codegen(
+        """
+        @InstanceFactory
+        fun invoke(): Map<KClass<out Command>, @Provider (String) -> Command> {
+            transient { arg: @Assisted String -> CommandA() }
+            transient { arg: @Assisted String -> CommandB() }
+            transient { arg: @Assisted String -> CommandC() }
+            map<KClass<out Command>, @Provider (String) -> Command> {
+                put<@Provider (String) -> CommandA>(CommandA::class)
+                put<@Provider (String) -> CommandB>(CommandB::class)
+                put<@Provider (String) -> CommandC>(CommandC::class)
+            }
+            return create()
+        }
+        """
+    ) {
+        val map =
+            invokeSingleFile<Map<KClass<out Command>, @Provider (String) -> Command>>()
+        assertEquals(3, map.size)
+        assertTrue(map[CommandA::class]!!("a") is CommandA)
+        assertTrue(map[CommandB::class]!!("b") is CommandB)
+        assertTrue(map[CommandC::class]!!("c") is CommandC)
+    }
+
+    @Test
+    fun testMapOfAssistedProviderProvider() = codegen(
+        """
+        @InstanceFactory
+        fun invoke(): @Provider () -> Map<KClass<out Command>, @Provider (String) -> Command> {
+            transient { arg: @Assisted String -> CommandA() }
+            transient { arg: @Assisted String -> CommandB() }
+            transient { arg: @Assisted String -> CommandC() }
+            map<KClass<out Command>, @Provider (String) -> Command> {
+                put<@Provider (String) -> CommandA>(CommandA::class)
+                put<@Provider (String) -> CommandB>(CommandB::class)
+                put<@Provider (String) -> CommandC>(CommandC::class)
+            }
+            return create()
+        }
+        """
+    ) {
+        val map =
+            invokeSingleFile<@Provider () -> Map<KClass<out Command>, @Provider (String) -> Command>>()()
+        assertEquals(3, map.size)
+        assertTrue(map[CommandA::class]!!("a") is CommandA)
+        assertTrue(map[CommandB::class]!!("b") is CommandB)
+        assertTrue(map[CommandC::class]!!("c") is CommandC)
+    }
+
+    @Test
     fun testEmptyMap() = codegen(
         """
         @InstanceFactory

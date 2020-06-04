@@ -27,6 +27,9 @@ import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getInjectConstructor
 import com.ivianuu.injekt.compiler.getQualifierFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.isAssistedProvider
+import com.ivianuu.injekt.compiler.isLazy
+import com.ivianuu.injekt.compiler.isNoArgProvider
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
@@ -62,7 +65,6 @@ import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
-import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -416,10 +418,7 @@ class AnnotatedClassBindingResolver(
     private val factory: AbstractFactory
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): List<BindingNode> {
-        return if (requestedKey.type.isFunction() &&
-            requestedKey.type.classOrNull != pluginContext.tmpFunction(0) &&
-            InjektFqNames.Provider in requestedKey.type.getQualifierFqNames()
-        ) {
+        return if (requestedKey.type.isAssistedProvider()) {
             val clazz =
                 requestedKey.type.typeArguments.last().typeOrNull?.getClass() ?: return emptyList()
 
@@ -850,9 +849,7 @@ class LazyOrProviderBindingResolver(
     override fun invoke(requestedKey: Key): List<BindingNode> {
         val requestedType = requestedKey.type
         return when {
-            requestedType.isFunction() &&
-                    requestedKey.type.classOrNull == factory.pluginContext.tmpFunction(0) &&
-                    InjektFqNames.Lazy in requestedType.getQualifierFqNames() ->
+            requestedType.isLazy() ->
                 listOf(
                     LazyBindingNode(
                         requestedKey,
@@ -860,9 +857,7 @@ class LazyOrProviderBindingResolver(
                         factory
                     )
                 )
-            requestedType.isFunction() &&
-                    requestedKey.type.classOrNull == factory.pluginContext.tmpFunction(0) &&
-                    InjektFqNames.Provider in requestedType.getQualifierFqNames() ->
+            requestedType.isNoArgProvider() ->
                 listOf(
                     ProviderBindingNode(
                         requestedKey,
