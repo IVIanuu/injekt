@@ -151,4 +151,67 @@ class MembersInjectorTest {
     ) {
         it.last().invokeSingleFile()
     }
+
+    @Test
+    fun testMultiCompilationMembersInjectorWithSubclass() = multiCodegen(
+        listOf(
+            source("""
+               abstract class RootClass {
+                    val rootBar: Bar by inject()
+                    private val foo: Foo by inject()
+                    val rootFoo: Foo get() = foo
+                } 
+            """)
+        ),
+        listOf(
+            source("""
+               abstract class SuperClass : RootClass() {
+                    val superBar: Bar by inject()
+                    private val foo: Foo by inject()
+                    val superFoo: Foo get() = foo
+                } 
+            """)
+        ),
+        listOf(
+            source("""
+                class MyClass : SuperClass() { 
+                    val foo: Foo by inject() 
+                    lateinit var foo2: Foo
+                    
+                    @Inject 
+                    fun injectFoo(foo: Foo) { 
+                        foo2 = foo
+                    }
+                }
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                @InstanceFactory
+                fun myClassFactory(): MyClass {
+                    transient<Foo>()
+                    transient<Bar>()
+                    transient<MyClass>()
+                    return create()
+                }
+                
+                fun invoke() {
+                    val instance = myClassFactory()
+                    instance.rootBar
+                    instance.rootFoo
+                    instance.superBar
+                    instance.superFoo
+                    instance.foo
+                    instance.foo2
+                }
+            """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        it.last().invokeSingleFile()
+    }
+
 }

@@ -89,7 +89,8 @@ class InjektIrGenerationExtension(
 
         // generate a members injector for each annotated class
         MembersInjectorTransformer(
-            pluginContext
+            pluginContext,
+            declarationStore
         ).also { declarationStore.membersInjectorTransformer = it }
             .lower(moduleFragment)
 

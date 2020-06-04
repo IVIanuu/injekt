@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
+import com.ivianuu.injekt.compiler.dumpSrc
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -64,7 +65,10 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTransformer(context) {
+class MembersInjectorTransformer(
+    context: IrPluginContext,
+    private val declarationStore: InjektDeclarationStore
+) : AbstractInjektTransformer(context) {
 
     private val injectFunctionsByClass = mutableMapOf<IrClass, IrFunction>()
 
@@ -117,23 +121,21 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
     }
 
     private fun IrBuilderWithScope.membersInjector(clazz: IrClass): IrFunction? {
-        val injectProperties = mutableListOf<IrProperty>()
-        val injectFunctions = mutableListOf<IrFunction>()
+        val injectProperties = clazz.properties
+            .filter {
+                it.backingField?.name?.asString()?.startsWith("injected\$") == true
+            }
+            .toList()
+        val injectFunctions = clazz.functions
+            .filter { it.hasAnnotation(InjektFqNames.Inject) }
+            .toList()
+        val superClassMemberInjectors = clazz.superTypes
+            .mapNotNull { it.classOrNull?.owner }
+            .mapNotNull { declarationStore.getMembersInjectorForClassOrNull(it) }
 
-        fun IrClass.collectInjectMembers() {
-            injectProperties += properties
-                .filter {
-                    it.backingField?.name?.asString()?.startsWith("injected\$") == true
-                }
-            injectFunctions += functions
-                .filter { it.hasAnnotation(InjektFqNames.Inject) }
-            superTypes
-                .forEach { it.classOrNull?.owner?.collectInjectMembers() }
-        }
-
-        clazz.collectInjectMembers()
-
-        if (injectProperties.isEmpty() && injectFunctions.isEmpty()) return null
+        if (injectProperties.isEmpty() &&
+            injectFunctions.isEmpty() &&
+            superClassMemberInjectors.isEmpty()) return null
 
         return buildFun {
             name = InjektNameConventions.getMembersInjectorNameForClass(
@@ -173,6 +175,17 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                 }
             }
 
+            val parametersBySuperMembersInjector = superClassMemberInjectors.associateWith { membersInjector ->
+                membersInjector.valueParameters
+                    .drop(1)
+                    .map {
+                        addValueParameter(
+                            parameterNameProvider.allocateForType(it.type).asString(),
+                            it.type
+                        )
+                    }
+            }
+
             body = DeclarationIrBuilder(pluginContext, symbol).run {
                 irBlockBody {
                     parametersByInjectProperties.forEach { (property, valueParameter) ->
@@ -187,6 +200,24 @@ class MembersInjectorTransformer(context: IrPluginContext) : AbstractInjektTrans
                             dispatchReceiver = irGet(instanceParameter)
                             valueParameters.forEachIndexed { index, valueParameter ->
                                 putValueArgument(index, irGet(valueParameter))
+                            }
+                        }
+                    }
+
+                    parametersByInjectFunctions.forEach { (function, valueParameters) ->
+                        +irCall(function).apply {
+                            dispatchReceiver = irGet(instanceParameter)
+                            valueParameters.forEachIndexed { index, valueParameter ->
+                                putValueArgument(index, irGet(valueParameter))
+                            }
+                        }
+                    }
+
+                    parametersBySuperMembersInjector.forEach { (membersInjector, valueParameters) ->
+                        +irCall(membersInjector).apply {
+                            putValueArgument(0, irGet(instanceParameter))
+                            valueParameters.forEachIndexed { index, valueParameter ->
+                                putValueArgument(index + 1, irGet(valueParameter))
                             }
                         }
                     }
