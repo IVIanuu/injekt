@@ -67,10 +67,8 @@ class MapDeclaration(
 class MapEntryDeclaration(
     val mapType: IrType,
     val entryKey: IrExpression,
-    val entryValueType: IrType,
-    val providerPath: Path?,
-    val providerInitializer: IrExpression?
-) : ModuleDeclaration(providerPath, providerInitializer)
+    val entryValueType: IrType
+) : ModuleDeclaration(null, null)
 
 class SetDeclaration(
     val setType: IrType
@@ -78,7 +76,5 @@ class SetDeclaration(
 
 class SetElementDeclaration(
     val setType: IrType,
-    val elementType: IrType,
-    val providerPath: Path?,
-    val providerInitializer: IrExpression?
-) : ModuleDeclaration(providerPath, providerInitializer)
+    val elementType: IrType
+) : ModuleDeclaration(null, null)

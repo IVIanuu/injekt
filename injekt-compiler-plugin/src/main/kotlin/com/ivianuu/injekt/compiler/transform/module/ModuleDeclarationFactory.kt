@@ -23,17 +23,14 @@ import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.Path
 import com.ivianuu.injekt.compiler.PropertyPath
 import com.ivianuu.injekt.compiler.TypeParameterPath
-import com.ivianuu.injekt.compiler.getFunctionFromLambdaExpression
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
-import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.withAnnotations
-import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -152,43 +149,11 @@ class ModuleDeclarationFactory(
         mapBlock?.function?.body?.transformChildrenVoid(object :
             IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol == symbols.mapDsl.functions.single {
-                        it.owner.name.asString() == "put" &&
-                                it.owner.valueParameters.size == 1
-                    }) {
-                    /*val providerWithPath = if (expression.valueArgumentsCount != 0) {
-                        val providerArg = expression.getValueArgument(0)!!
-                        val providerType = providerArg.type
-                            .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Provider))
-                        val parameterNameProvider = NameProvider()
-
-                        providerType.typeArguments.dropLast(1).forEach {
-                            parameters += InjektDeclarationIrBuilder.FactoryParameter(
-                                parameterNameProvider.allocateForType(it.typeOrFail).asString(),
-                                it.typeOrFail
-                                    .remapTypeParameters(originalModuleFunction, moduleFunction)
-                                    .remapTypeParameters(moduleFunction, moduleClass),
-                                it.typeOrFail.hasAnnotation(InjektFqNames.AstAssisted)
-                            )
-                        }
-                        path = PropertyPath(
-                            InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
-                                .fieldBackedProperty(
-                                    moduleClass,
-                                    nameProvider.allocateForType(bindingType),
-                                    initializer.type
-                                        .remapTypeParameters(originalModuleFunction, moduleFunction)
-                                        .remapTypeParameters(moduleFunction, moduleClass)
-                                )
-                        )
-                    } else null*/
-
+                if (expression.symbol == symbols.mapDsl.functions.single { it.owner.name.asString() == "put" }) {
                     declarations += MapEntryDeclaration(
                         mapType,
                         expression.getValueArgument(0)!!,
-                        expression.getTypeArgument(0)!!,
-                        null,
-                        null
+                        expression.getTypeArgument(0)!!
                     )
                 }
 
@@ -215,15 +180,10 @@ class ModuleDeclarationFactory(
         setBlock?.function?.body?.transformChildrenVoid(object :
             IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol == symbols.setDsl.functions.single {
-                        it.owner.name.asString() == "add" &&
-                                it.owner.valueParameters.isEmpty()
-                    }) {
+                if (expression.symbol == symbols.setDsl.functions.single { it.owner.name.asString() == "add" }) {
                     declarations += SetElementDeclaration(
                         setType,
-                        expression.getTypeArgument(0)!!,
-                        null,
-                        null
+                        expression.getTypeArgument(0)!!
                     )
                 }
                 return super.visitCall(expression)

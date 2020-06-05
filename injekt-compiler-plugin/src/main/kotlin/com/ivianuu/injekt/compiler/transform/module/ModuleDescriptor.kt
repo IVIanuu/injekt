@@ -225,12 +225,6 @@ class ModuleDescriptor(
             addMetadataIfNotLocal()
             annotations += InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astMapEntry)
-            if (declaration.providerPath != null) {
-                annotations += declaration.providerPath.asAnnotation(
-                    DeclarationIrBuilder(pluginContext, symbol),
-                    symbols
-                )
-            }
             addValueParameter(
                 name = "map",
                 type = declaration.mapType
@@ -272,12 +266,6 @@ class ModuleDescriptor(
             addMetadataIfNotLocal()
             annotations += InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astSetElement)
-            if (declaration.providerPath != null) {
-                annotations += declaration.providerPath.asAnnotation(
-                    DeclarationIrBuilder(pluginContext, symbol),
-                    symbols
-                )
-            }
             addValueParameter(
                 name = "set",
                 type = declaration.setType
