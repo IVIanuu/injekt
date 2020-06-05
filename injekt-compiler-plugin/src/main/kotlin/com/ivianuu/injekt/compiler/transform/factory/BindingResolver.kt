@@ -323,7 +323,7 @@ class ModuleBindingResolver(
                             scoped = scoped,
                             module = moduleNode,
                             createExpression = { parametersMap ->
-                                irCall(propertyGetter.returnType
+                                irCall(providerType
                                     .classOrNull!!
                                     .functions
                                     .single { it.owner.name.asString() == "invoke" }

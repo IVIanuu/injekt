@@ -16,8 +16,12 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.test.Bar
+import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
+import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class InlineTest {
@@ -125,5 +129,24 @@ class InlineTest {
                 )
             )
         )
+
+    @Test
+    fun testModuleWithGenericFunctionParameter() = codegen(
+        """ 
+        @Module 
+        fun <T, F : Function<T>> generic(provider: F) {
+            transient(provider)
+        }
+        
+        @InstanceFactory
+        fun invoke(): Bar {
+            generic { Foo() }
+            generic { foo: Foo -> Bar(foo) }
+            return create()
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
+    }
 
 }
