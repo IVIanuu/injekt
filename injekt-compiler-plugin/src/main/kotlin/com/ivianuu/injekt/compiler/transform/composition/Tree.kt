@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
@@ -46,8 +47,12 @@ class CompositionFactoryGraph(
     }
 
     private fun getFactoriesForCompositionType(type: IrClassSymbol): List<CompositionFactory> {
-        return allFactories.getValue(type)
-            .map { getOrCreateFactory(it, type) }
+        return try {
+            allFactories.getValue(type)
+                .map { getOrCreateFactory(it, type) }
+        } catch (e: Exception) {
+            error("Failed to get factories for ${type.defaultType.render()} we only have ${allFactories.keys.map { it.defaultType.render() }}")
+        }
     }
 
     private fun getOrCreateFactory(

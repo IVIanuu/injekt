@@ -23,8 +23,8 @@ import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.child
+import com.ivianuu.injekt.compiler.getClassesFromSingleArrayValueAnnotation
 import com.ivianuu.injekt.compiler.getFunctionType
-import com.ivianuu.injekt.compiler.getIrClass
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
@@ -35,8 +35,10 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
@@ -47,13 +49,12 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrFile
+import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrCall
-import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
@@ -62,19 +63,17 @@ import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.render
+import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.constants.ArrayValue
-import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class GenerateCompositionsTransformer(
     pluginContext: IrPluginContext,
-    private val declarationStore: InjektDeclarationStore,
-    private val compositionAggregateGenerator: CompositionAggregateGenerator
+    private val declarationStore: InjektDeclarationStore
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val compositionSymbols = CompositionSymbols(pluginContext)
@@ -95,49 +94,78 @@ class GenerateCompositionsTransformer(
 
         if (generateCompositionsCalls.isEmpty()) return super.visitModuleFragment(declaration)
 
-        val compositionsPackage =
-            pluginContext.moduleDescriptor.getPackage(InjektFqNames.CompositionsPackage)
-
         val allModules = mutableMapOf<IrClassSymbol, MutableList<IrFunctionSymbol>>()
         val allFactories = mutableMapOf<IrClassSymbol, MutableList<IrFunctionSymbol>>()
 
-        compositionAggregateGenerator.compositionElements
-            .forEach { (compositionType, elements) ->
-                elements.forEach {
-                    if (it.owner.hasAnnotation(InjektFqNames.CompositionFactory)) {
-                        allFactories.getOrPut(compositionType) { mutableListOf() } += it
-                    } else if (it.owner.hasAnnotation(InjektFqNames.Module)) {
-                        allModules.getOrPut(compositionType) { mutableListOf() } += it
-                    }
-                }
-            }
+        fun handleFunction(function: IrFunction) {
+            println("handle function ${function.render()}")
+            if (function.hasAnnotation(InjektFqNames.CompositionFactory)) {
+                println(
+                    "found factory ${function.render()} " +
+                            "factory ${function.returnType.classOrNull!!.defaultType.render()}"
+                )
+                allFactories.getOrPut(function.returnType.classOrNull!!) { mutableListOf() } += function.symbol
+            } else if (function.hasAnnotation(InjektFqNames.Module)) {
+                val metadata = declarationStore.getCompositionModuleMetadata(function)
+                    ?: return
+                val compositionTypes = metadata.getClassesFromSingleArrayValueAnnotation(
+                    InjektFqNames.AstCompositionTypes, pluginContext
+                )
 
-        compositionsPackage
-            .memberScope
-            .getContributedDescriptors()
-            .filterIsInstance<ClassDescriptor>()
-            .map {
-                val x = it.name.asString().split("___")
-                FqName(x[0].replace("__", ".")) to FqName(x[1].replace("__", "."))
-            }
-            .groupBy { it.first }
-            .mapValues { it.value.map { it.second } }
-            .mapKeys { pluginContext.referenceClass(it.key)!! }
-            .mapValues {
-                it.value.map {
-                    pluginContext.referenceFunctions(it).firstOrNull()
-                        ?: error("could not find for $it")
+                println("found module ${function.render()} " +
+                        "composition types ${compositionTypes.map { it.defaultType.render() }}"
+                )
+
+                compositionTypes.forEach { compositionType ->
+                    allModules.getOrPut(compositionType.symbol) { mutableListOf() } += function.symbol
                 }
             }
-            .forEach { (compositionType, elements) ->
-                elements.forEach {
-                    if (it.owner.hasAnnotation(InjektFqNames.CompositionFactory)) {
-                        allFactories.getOrPut(compositionType) { mutableListOf() } += it
-                    } else if (it.owner.hasAnnotation(InjektFqNames.Module)) {
-                        allModules.getOrPut(compositionType) { mutableListOf() } += it
-                    }
+        }
+
+        val moduleDescriptor = moduleFragment.descriptor
+
+        fun forEachPackageRecursive(
+            packageViewDescriptor: PackageViewDescriptor,
+            block: (PackageViewDescriptor) -> Unit
+        ) {
+            block(packageViewDescriptor)
+            moduleDescriptor.getSubPackagesOf(packageViewDescriptor.fqName) { true }
+                .map { moduleDescriptor.getPackage(it) }
+                .forEach { forEachPackageRecursive(it, block) }
+        }
+
+        forEachPackageRecursive(moduleFragment.descriptor.getPackage(FqName.ROOT)) { packageViewDescriptor ->
+            packageViewDescriptor.fragments
+                .map { it.getMemberScope() }
+                .flatMap { memberScope ->
+                    memberScope.getFunctionNames()
+                        .flatMap {
+                            memberScope.getContributedFunctions(
+                                it,
+                                NoLookupLocation.FROM_BACKEND
+                            )
+                        }
                 }
+                .filter {
+                    (it.hasAnnotation(InjektFqNames.Module) && it.valueParameters.lastOrNull()?.name?.asString() == "moduleMarker") ||
+                            it.hasAnnotation(InjektFqNames.CompositionFactory)
+                }
+                .flatMap { functionDescriptor ->
+                    pluginContext.referenceFunctions(functionDescriptor.fqNameSafe)
+                        .filter { it.descriptor == functionDescriptor }
+                }
+                .map { it.owner }
+                .filter { it.isExternalDeclaration() }
+                .distinct()
+                .forEach { handleFunction(it) }
+        }
+
+        moduleFragment.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitFunction(declaration: IrFunction): IrStatement {
+                handleFunction(declaration)
+                return super.visitFunction(declaration)
             }
+        })
 
         val graph = CompositionFactoryGraph(
             pluginContext,
@@ -168,25 +196,12 @@ class GenerateCompositionsTransformer(
 
                     val entryPoints = modules
                         .flatMap {
-                            it.owner.getAnnotation(InjektFqNames.AstEntryPoints)
-                                ?.getValueArgument(0)
-                                ?.let { it as IrVarargImpl }
-                                ?.elements
-                                ?.map { it as IrClassReference }
-                                ?.map { it.classType.classOrNull!! }
-                                ?: it.owner.descriptor
-                                    .annotations
-                                    .findAnnotation(InjektFqNames.AstEntryPoints)
-                                    ?.allValueArguments
-                                    ?.values
-                                    ?.single()
-                                    ?.let { it as ArrayValue }
-                                    ?.value
-                                    ?.filterIsInstance<KClassValue>()
-                                    ?.map { it.getIrClass(pluginContext).symbol }
-                                    .let { it ?: emptyList() }
+                            declarationStore.getCompositionModuleMetadata(it.owner)!!
+                                .getClassesFromSingleArrayValueAnnotation(
+                                    InjektFqNames.AstEntryPoints,
+                                    pluginContext
+                                ).map { it.defaultType }
                         }
-                        .map { it.defaultType }
                         .distinct()
 
                     val factoryType = compositionFactoryType(

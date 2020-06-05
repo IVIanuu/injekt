@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.isExternalDeclaration
+import com.ivianuu.injekt.compiler.transform.composition.CompositionModuleMetadataTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
@@ -42,10 +43,27 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
 
+    lateinit var compositionModuleMetadataTransformer: CompositionModuleMetadataTransformer
     lateinit var factoryTransformer: RootFactoryTransformer
     lateinit var factoryModuleTransformer: FactoryModuleTransformer
     lateinit var membersInjectorTransformer: MembersInjectorTransformer
     lateinit var moduleFunctionTransformer: ModuleFunctionTransformer
+
+    fun getCompositionModuleMetadata(function: IrFunction): IrClass? {
+        return if (!function.isExternalDeclaration()) {
+            compositionModuleMetadataTransformer.getCompositionModuleMetadata(function)
+        } else {
+            pluginContext.referenceClass(
+                function.getPackageFragment()!!.fqName
+                    .child(
+                        InjektNameConventions.getCompositionModuleMetadataForModule(
+                            function.getPackageFragment()!!.fqName,
+                            function.descriptor.fqNameSafe
+                        )
+                    )
+            )?.owner
+        }
+    }
 
     fun getMembersInjectorForClassOrNull(clazz: IrClass): IrFunction? {
         return if (!clazz.isExternalDeclaration()) {

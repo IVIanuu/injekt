@@ -51,6 +51,11 @@ object InjektNameConventions {
         )
     }
 
+    fun getCompositionModuleMetadataForModule(
+        packageFqName: FqName,
+        moduleFqName: FqName
+    ): Name = getJoinedName(packageFqName, moduleFqName.child("CompositionMetadata"))
+
     fun getTransformedModuleFunctionNameForModule(
         packageFqName: FqName,
         moduleFqName: FqName

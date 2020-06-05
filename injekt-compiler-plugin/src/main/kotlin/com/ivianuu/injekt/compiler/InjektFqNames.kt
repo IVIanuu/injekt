@@ -33,6 +33,7 @@ object InjektFqNames {
     val AstAssisted = InjektPackage.child("Assisted")
     val AstBinding = InjektAst.child("Binding")
     val AstChildFactory = InjektAst.child("ChildFactory")
+    val AstCompositionTypes = InjektAst.child("CompositionTypes")
     val AstDependency = InjektAst.child("Dependency")
     val AstEntryPoints = InjektAst.child("EntryPoints")
     val AstInstance = InjektAst.child("Instance")

@@ -63,6 +63,7 @@ import org.jetbrains.kotlin.ir.expressions.IrSpreadElement
 import org.jetbrains.kotlin.ir.expressions.IrStatementContainer
 import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
@@ -391,6 +392,30 @@ fun <T> T.getClassFromSingleValueAnnotationOrNull(
 ): IrClass? where T : IrDeclaration, T : IrAnnotationContainer {
     if (!hasAnnotation(fqName)) return null
     return getClassFromSingleValueAnnotation(fqName, pluginContext)
+}
+
+fun <T> T.getClassesFromSingleArrayValueAnnotation(
+    fqName: FqName,
+    pluginContext: IrPluginContext
+): List<IrClass> where T : IrDeclaration, T : IrAnnotationContainer {
+    return getAnnotation(fqName)
+        ?.getValueArgument(0)
+        ?.let { it as IrVarargImpl }
+        ?.elements
+        ?.map { it as IrClassReference }
+        ?.map { it.classType.classOrNull!! }
+        ?.map { it.owner }
+        ?: descriptor
+            .annotations
+            .findAnnotation(fqName)
+            ?.allValueArguments
+            ?.values
+            ?.single()
+            ?.let { it as ArrayValue }
+            ?.value
+            ?.filterIsInstance<KClassValue>()
+            ?.map { it.getIrClass(pluginContext).symbol.owner }
+            .let { it ?: emptyList() }
 }
 
 fun <T> T.getClassFromSingleValueAnnotation(

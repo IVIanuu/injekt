@@ -75,17 +75,19 @@ abstract class AbstractFunctionTransformer(
         for (function in originalFunctions) {
             val transformed = transformedFunctions[function]
             if (transformed != null && transformed != function) {
-                declarations.add(createDecoy(function, transformed))
+                val decoy = createDecoy(function, transformed)
+                if (decoy != null) declarations += decoy
             }
         }
         for ((property, getter) in originalProperties) {
             val transformed = transformedFunctions[getter]
             if (transformed != null && transformed != getter) {
-                val newGetter = property.getter
-                property.getter = (createDecoy(getter, transformed) as IrSimpleFunction)
-                    .also { it.parent = this }
-                declarations.add(newGetter!!)
-                newGetter.parent = this
+                val decoy = (createDecoy(getter, transformed) as? IrSimpleFunction)
+                    ?.also { it.parent = this }
+                if (decoy != null) {
+                    property.getter = decoy
+                    decoy.parent = this
+                }
             }
         }
     }
@@ -109,10 +111,10 @@ abstract class AbstractFunctionTransformer(
         callback: (IrFunction) -> Unit
     )
 
-    protected abstract fun createDecoy(
+    protected open fun createDecoy(
         original: IrFunction,
         transformed: IrFunction
-    ): IrFunction
+    ): IrFunction? = null
 
     protected fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
         transformedFunctions[function]?.let { return it }

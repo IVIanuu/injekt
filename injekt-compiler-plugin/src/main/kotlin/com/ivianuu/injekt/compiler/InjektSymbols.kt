@@ -37,6 +37,7 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val astAssisted = pluginContext.referenceClass(InjektFqNames.AstAssisted)!!
     val astBinding = injektAst.childClass(InjektFqNames.AstBinding.shortName())
     val astChildFactory = injektAst.childClass(InjektFqNames.AstChildFactory.shortName())
+    val astCompositionTypes = injektAst.childClass(InjektFqNames.AstCompositionTypes.shortName())
     val astDependency = injektAst.childClass(InjektFqNames.AstDependency.shortName())
     val astEntryPoints = injektAst.childClass(InjektFqNames.AstEntryPoints.shortName())
     val astInstance = injektAst.childClass(InjektFqNames.AstInstance.shortName())

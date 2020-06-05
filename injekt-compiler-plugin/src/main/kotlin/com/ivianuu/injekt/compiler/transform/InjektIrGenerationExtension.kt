@@ -21,9 +21,8 @@ import com.ivianuu.injekt.compiler.compositionsEnabled
 import com.ivianuu.injekt.compiler.transform.android.AndroidEntryPointTransformer
 import com.ivianuu.injekt.compiler.transform.android.CompositionAndroidAppTransformer
 import com.ivianuu.injekt.compiler.transform.composition.BindingEffectTransformer
-import com.ivianuu.injekt.compiler.transform.composition.CompositionAggregateGenerator
-import com.ivianuu.injekt.compiler.transform.composition.CompositionEntryPointsTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionFactoryParentTransformer
+import com.ivianuu.injekt.compiler.transform.composition.CompositionModuleMetadataTransformer
 import com.ivianuu.injekt.compiler.transform.composition.EntryPointOfTransformer
 import com.ivianuu.injekt.compiler.transform.composition.GenerateCompositionsTransformer
 import com.ivianuu.injekt.compiler.transform.composition.ObjectGraphCallTransformer
@@ -69,21 +68,17 @@ class InjektIrGenerationExtension(
             // generate a @Module entryPointModule() { entryPoint<T>() } module at each call site of entryPointOf<T>()
             EntryPointOfTransformer(pluginContext).lower(moduleFragment)
 
-            val compositionAggregateGenerator =
-                CompositionAggregateGenerator(pluginContext, project)
-                    .also { it.lower(moduleFragment) }
-
             // add @Parents annotation to @CompositionFactory functions
             CompositionFactoryParentTransformer(pluginContext)
                 .lower(moduleFragment)
 
-            CompositionEntryPointsTransformer(pluginContext)
+            CompositionModuleMetadataTransformer(pluginContext)
+                .also { declarationStore.compositionModuleMetadataTransformer = it }
                 .lower(moduleFragment)
 
             // generate composition factories
             GenerateCompositionsTransformer(
-                pluginContext, declarationStore,
-                compositionAggregateGenerator
+                pluginContext, declarationStore
             ).lower(moduleFragment)
         }
 

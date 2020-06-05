@@ -32,6 +32,7 @@ object InjektAst {
 
     // todo move to composition
     annotation class EntryPoints(val values: Array<KClass<*>>)
+    annotation class CompositionTypes(val values: Array<KClass<*>>)
 
     annotation class Binding
 

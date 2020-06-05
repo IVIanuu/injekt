@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
-import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.getInjectConstructor
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -33,7 +32,6 @@ import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
-import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -45,7 +43,6 @@ import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
-import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildField
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
@@ -135,26 +132,6 @@ class InjektDeclarationIrBuilder(
     val irBuiltIns = pluginContext.irBuiltIns
     val typeTranslator = pluginContext.typeTranslator
     fun KotlinType.toIrType() = typeTranslator.translateType(this)
-
-    fun emptyClass(name: Name): IrClass = buildClass {
-        this.name = name
-        visibility = Visibilities.PUBLIC
-    }.apply clazz@{
-        createImplicitParameterDeclarationWithWrappedDescriptor()
-        addMetadataIfNotLocal()
-
-        addConstructor {
-            this.returnType = defaultType
-            isPrimary = true
-            this.visibility = Visibilities.PUBLIC
-        }.apply {
-            body = InjektDeclarationIrBuilder(pluginContext, symbol).run {
-                builder.irBlockBody {
-                    initializeClassWithAnySuperClass(this@clazz.symbol)
-                }
-            }
-        }
-    }
 
     fun irInjektIntrinsicUnit(): IrExpression {
         return builder.irCall(
