@@ -38,6 +38,17 @@ class GraphTest {
         assertInternalError("no binding")
     }
 
+    // todo name
+    @Test
+    fun testCannotResolveDirectBindingWithAssistedParameters() = codegen(
+        """
+        @Transient class Dep(@Assisted bar: Bar)
+        @InstanceFactory fun createDep(): Dep = create()
+        """
+    ) {
+        assertInternalError("no binding")
+    }
+
     @Test
     fun testDuplicatedBindingFails() = codegen(
         """

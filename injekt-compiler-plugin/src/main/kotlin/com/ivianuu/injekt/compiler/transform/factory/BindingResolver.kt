@@ -524,10 +524,14 @@ class AnnotatedClassBindingResolver(
             val clazz = requestedKey.type.classOrNull?.owner ?: return emptyList()
             val constructor = clazz.getInjectConstructor()
 
+            if (constructor?.valueParameters?.any {
+                    it.descriptor.hasAnnotation(InjektFqNames.Assisted)
+                } == true) return emptyList()
+
             val scopeAnnotation = clazz.descriptor.getAnnotatedAnnotations(
-                    InjektFqNames.Scope,
-                    clazz.descriptor.module
-                )
+                InjektFqNames.Scope,
+                clazz.descriptor.module
+            )
                 .singleOrNull()
                 ?: constructor?.descriptor?.getAnnotatedAnnotations(
                     InjektFqNames.Scope,
