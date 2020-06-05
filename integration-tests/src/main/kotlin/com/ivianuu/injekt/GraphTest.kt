@@ -151,6 +151,64 @@ class GraphTest {
     }
 
     @Test
+    fun testQualifiedWithTypeParameters() = codegen(
+        """
+        @Target(AnnotationTarget.TYPE) 
+        @Qualifier 
+        annotation class QualifierWithType<T>
+            
+        interface TestComponent {
+            val foo1: @QualifierWithType<String> Foo
+            val foo2: @QualifierWithType<Int> Foo
+        }
+        
+        @Factory
+        fun createComponent(): TestComponent { 
+            scoped<@QualifierWithType<String> Foo> { Foo() }
+            scoped<@QualifierWithType<Int> Foo> { Foo() }
+            return create()
+        }
+        
+        fun invoke(): Pair<Foo, Foo> { 
+            val component = createComponent()
+            return component.foo1 to component.foo2
+        }
+    """
+    ) {
+        val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
+        assertNotSame(foo1, foo2)
+    }
+
+    @Test
+    fun testQualifiedWithTypeParametersMultiCompile() = codegen(
+        """
+        @Target(AnnotationTarget.TYPE) 
+        @Qualifier 
+        annotation class QualifierWithType<T>
+            
+        interface TestComponent {
+            val foo1: @QualifierWithType<String> Foo
+            val foo2: @QualifierWithType<Int> Foo
+        }
+        
+        @Factory
+        fun createComponent(): TestComponent { 
+            scoped<@QualifierWithType<String> Foo> { Foo() }
+            scoped<@QualifierWithType<Int> Foo> { Foo() }
+            return create()
+        }
+        
+        fun invoke(): Pair<Foo, Foo> { 
+            val component = createComponent()
+            return component.foo1 to component.foo2
+        }
+    """
+    ) {
+        val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
+        assertNotSame(foo1, foo2)
+    }
+
+    @Test
     fun testQualifiedGet() = codegen(
         """
         @Target(AnnotationTarget.TYPE) 

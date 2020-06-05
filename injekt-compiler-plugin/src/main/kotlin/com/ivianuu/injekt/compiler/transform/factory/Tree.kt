@@ -369,11 +369,13 @@ class Key(val type: IrType) {
     private fun List<IrConstructorCall>.qualifiersEquals(other: List<IrConstructorCall>): Boolean {
         if (size != other.size) return false
         for (i in indices) {
-            val thisAnnotation = this[i].toAnnotationDescriptor()
-            val otherAnnotation = other[i].toAnnotationDescriptor()
-            if (thisAnnotation.fqName != otherAnnotation.fqName) return false
-            val thisValues = thisAnnotation.allValueArguments.entries.toList()
-            val otherValues = otherAnnotation.allValueArguments.entries.toList()
+            val thisAnnotation = this[i]
+            val thisAnnotationDescriptor = thisAnnotation.toAnnotationDescriptor()
+            val otherAnnotation = other[i]
+            val otherAnnotationDescriptor = otherAnnotation.toAnnotationDescriptor()
+            if (thisAnnotation.hash() != otherAnnotation.hash()) return false
+            val thisValues = thisAnnotationDescriptor.allValueArguments.entries.toList()
+            val otherValues = otherAnnotationDescriptor.allValueArguments.entries.toList()
             if (thisValues.size != otherValues.size) return false
             for (j in thisValues.indices) {
                 val thisValue = thisValues[j]
@@ -391,8 +393,9 @@ class Key(val type: IrType) {
         .hashCode()
 
     private fun IrConstructorCall.hash(): Int {
-        var result = type.hashCode()
-        result = 31 * result + toAnnotationDescriptor()
+        var result = type.hashCodeForKey()
+        val descriptor = toAnnotationDescriptor()
+        result = 31 * result + descriptor
             .allValueArguments
             .map { it.key to it.value.value }
             .hashCode()
