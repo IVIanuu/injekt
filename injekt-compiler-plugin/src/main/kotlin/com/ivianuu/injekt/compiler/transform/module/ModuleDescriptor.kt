@@ -101,8 +101,9 @@ class ModuleDescriptor(
             addMetadataIfNotLocal()
             annotations += InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astDependency)
-            annotations += declaration.path
-                .asAnnotation(DeclarationIrBuilder(pluginContext, symbol), symbols)
+            declaration.path
+                ?.asAnnotation(DeclarationIrBuilder(pluginContext, symbol), symbols)
+                ?.let { annotations += it }
         }
     }
 
@@ -180,19 +181,9 @@ class ModuleDescriptor(
             if (declaration.instance) {
                 annotations += builder.noArgSingleConstructorCall(symbols.astInstance)
             }
-            annotations += declaration.path
-                .asAnnotation(DeclarationIrBuilder(pluginContext, symbol), symbols)
-
-            declaration.parameters.forEach { parameter ->
-                addValueParameter(
-                    name = parameter.name,
-                    type = parameter.type.remapTypeParameters(moduleClass, clazz)
-                ).apply {
-                    if (parameter.assisted) {
-                        annotations += builder.noArgSingleConstructorCall(symbols.astAssisted)
-                    }
-                }
-            }
+            declaration.path
+                ?.asAnnotation(DeclarationIrBuilder(pluginContext, symbol), symbols)
+                ?.let { annotations += it }
         }
     }
 
@@ -205,8 +196,9 @@ class ModuleDescriptor(
             addMetadataIfNotLocal()
             annotations += InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astModule)
-            annotations += declaration.path
-                .asAnnotation(DeclarationIrBuilder(pluginContext, symbol), symbols)
+            declaration.path
+                ?.asAnnotation(DeclarationIrBuilder(pluginContext, symbol), symbols)
+                ?.let { annotations += it }
         }
     }
 
@@ -233,6 +225,12 @@ class ModuleDescriptor(
             addMetadataIfNotLocal()
             annotations += InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astMapEntry)
+            if (declaration.providerPath != null) {
+                annotations += declaration.providerPath.asAnnotation(
+                    DeclarationIrBuilder(pluginContext, symbol),
+                    symbols
+                )
+            }
             addValueParameter(
                 name = "map",
                 type = declaration.mapType
@@ -274,6 +272,12 @@ class ModuleDescriptor(
             addMetadataIfNotLocal()
             annotations += InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
                 .noArgSingleConstructorCall(symbols.astSetElement)
+            if (declaration.providerPath != null) {
+                annotations += declaration.providerPath.asAnnotation(
+                    DeclarationIrBuilder(pluginContext, symbol),
+                    symbols
+                )
+            }
             addValueParameter(
                 name = "set",
                 type = declaration.setType

@@ -30,7 +30,6 @@ object InjektFqNames {
 
     val InjektAst = InternalPackage.child("InjektAst")
     val AstAlias = InjektAst.child("Alias")
-    val AstAssisted = InjektPackage.child("Assisted")
     val AstBinding = InjektAst.child("Binding")
     val AstChildFactory = InjektAst.child("ChildFactory")
     val AstCompositionTypes = InjektAst.child("CompositionTypes")

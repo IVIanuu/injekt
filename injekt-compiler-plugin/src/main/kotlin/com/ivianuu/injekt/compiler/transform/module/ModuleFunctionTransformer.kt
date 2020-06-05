@@ -189,9 +189,7 @@ class ModuleFunctionTransformer(
                         +stmt
                     } else {
                         declarations.forEach { declaration ->
-                            if (declaration is ModuleDeclarationWithPath &&
-                                declaration.path is PropertyPath
-                            ) {
+                            if (declaration.path is PropertyPath) {
                                 variableByDeclaration[declaration] =
                                     irTemporary(declaration.initializer!!)
                             }
@@ -207,7 +205,6 @@ class ModuleFunctionTransformer(
                     visibility = Visibilities.PUBLIC
                 }.apply {
                     val declarationsWithProperties = allDeclarations
-                        .filterIsInstance<ModuleDeclarationWithPath>()
                         .filter { it.path is PropertyPath }
                         .map { it to it.path as PropertyPath }
 

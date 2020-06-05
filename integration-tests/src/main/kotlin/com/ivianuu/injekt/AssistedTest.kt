@@ -29,7 +29,7 @@ class AssistedTest {
         """
         @Transient
         class Dep(
-            @Assisted val assisted: String,
+            val assisted: @Assisted String,
             val foo: Foo
         )
         
@@ -55,7 +55,7 @@ class AssistedTest {
                 """
                 @Transient 
                 class Dep(
-                    @Assisted val assisted: String,
+                    val assisted: @Assisted String,
                     val foo: Foo
                 )
                 """

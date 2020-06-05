@@ -20,7 +20,7 @@ import com.ivianuu.injekt.internal.injektIntrinsic
 
 interface SetDsl<S : Set<E>, E> {
     fun <T : E> add()
-    // todo fun <T : E> add(definition: ProviderDefinition<T>)
+    //fun <T : E> add(provider: Function<T>)
 }
 
 fun <E> set(block: SetDsl<Set<E>, E>.() -> Unit = {}): Unit = injektIntrinsic()

@@ -34,7 +34,6 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
         ?.symbol ?: error("Couldn't find $name in ${owner.dump()}")
 
     val astAlias = injektAst.childClass(InjektFqNames.AstAlias.shortName())
-    val astAssisted = pluginContext.referenceClass(InjektFqNames.AstAssisted)!!
     val astBinding = injektAst.childClass(InjektFqNames.AstBinding.shortName())
     val astChildFactory = injektAst.childClass(InjektFqNames.AstChildFactory.shortName())
     val astCompositionTypes = injektAst.childClass(InjektFqNames.AstCompositionTypes.shortName())

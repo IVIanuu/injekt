@@ -52,7 +52,7 @@ class CommonScenariosTest {
                     
                     @Transient
                     class OtherAssistedClass(
-                        @Assisted assisted: String,
+                        assisted: @Assisted String,
                         foo: Foo
                     )
                     
@@ -107,8 +107,8 @@ class CommonScenariosTest {
         
         @Transient class Context
         
-        @Transient class WorkerA(@Assisted context: Context, foo: Foo) : Worker(context)
-        @Transient class WorkerB(@Assisted context: Context) : Worker(context)
+        @Transient class WorkerA(context: @Assisted Context, foo: Foo) : Worker(context)
+        @Transient class WorkerB(context: @Assisted Context) : Worker(context)
         
         @Module 
         inline fun <reified T : Worker> bindWorkerIntoMap() {

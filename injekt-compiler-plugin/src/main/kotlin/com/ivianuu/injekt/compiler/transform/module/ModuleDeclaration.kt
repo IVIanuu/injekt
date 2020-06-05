@@ -23,61 +23,62 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
 import org.jetbrains.kotlin.ir.types.IrType
 
-sealed class ModuleDeclaration
-
-sealed class ModuleDeclarationWithPath(
-    val path: Path,
+sealed class ModuleDeclaration(
+    val path: Path?,
     val initializer: IrExpression?
-) : ModuleDeclaration()
+)
 
-class ScopeDeclaration(val scopeType: IrType) : ModuleDeclaration()
+class ScopeDeclaration(val scopeType: IrType) : ModuleDeclaration(null, null)
 
 class DependencyDeclaration(
     val dependencyType: IrType,
     path: Path,
     initializer: IrExpression
-) : ModuleDeclarationWithPath(path, initializer)
+) : ModuleDeclaration(path, initializer)
 
 class ChildFactoryDeclaration(
     val factoryRef: IrFunctionReference,
     val factoryModuleClass: IrClass?
-) : ModuleDeclaration()
+) : ModuleDeclaration(null, null)
 
 class AliasDeclaration(
     val originalType: IrType,
     val aliasType: IrType
-) : ModuleDeclaration()
+) : ModuleDeclaration(null, null)
 
 class BindingDeclaration(
     val bindingType: IrType,
-    val parameters: List<InjektDeclarationIrBuilder.FactoryParameter>,
     val scoped: Boolean,
     val instance: Boolean,
     path: Path,
     initializer: IrExpression?
-) : ModuleDeclarationWithPath(path, initializer)
+) : ModuleDeclaration(path, initializer)
 
 class IncludedModuleDeclaration(
     val includedType: IrType,
     path: Path,
     initializer: IrExpression?
-) : ModuleDeclarationWithPath(path, initializer)
+) : ModuleDeclaration(path, initializer)
 
 class MapDeclaration(
     val mapType: IrType
-) : ModuleDeclaration()
+) : ModuleDeclaration(null, null)
 
 class MapEntryDeclaration(
     val mapType: IrType,
     val entryKey: IrExpression,
-    val entryValueType: IrType
-) : ModuleDeclaration()
+    val entryValueType: IrType,
+    val providerPath: Path?,
+    val providerInitializer: IrExpression?
+) : ModuleDeclaration(providerPath, providerInitializer)
 
 class SetDeclaration(
     val setType: IrType
-) : ModuleDeclaration()
+) : ModuleDeclaration(null, null)
 
 class SetElementDeclaration(
     val setType: IrType,
-    val elementType: IrType
-) : ModuleDeclaration()
+    val elementType: IrType,
+    val providerPath: Path?,
+    val providerInitializer: IrExpression?
+) : ModuleDeclaration(providerPath, providerInitializer)

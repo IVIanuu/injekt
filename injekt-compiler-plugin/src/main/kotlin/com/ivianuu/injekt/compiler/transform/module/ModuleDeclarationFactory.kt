@@ -152,11 +152,43 @@ class ModuleDeclarationFactory(
         mapBlock?.function?.body?.transformChildrenVoid(object :
             IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol == symbols.mapDsl.functions.single { it.descriptor.name.asString() == "put" }) {
+                if (expression.symbol == symbols.mapDsl.functions.single {
+                        it.owner.name.asString() == "put" &&
+                                it.owner.valueParameters.size == 1
+                    }) {
+                    /*val providerWithPath = if (expression.valueArgumentsCount != 0) {
+                        val providerArg = expression.getValueArgument(0)!!
+                        val providerType = providerArg.type
+                            .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Provider))
+                        val parameterNameProvider = NameProvider()
+
+                        providerType.typeArguments.dropLast(1).forEach {
+                            parameters += InjektDeclarationIrBuilder.FactoryParameter(
+                                parameterNameProvider.allocateForType(it.typeOrFail).asString(),
+                                it.typeOrFail
+                                    .remapTypeParameters(originalModuleFunction, moduleFunction)
+                                    .remapTypeParameters(moduleFunction, moduleClass),
+                                it.typeOrFail.hasAnnotation(InjektFqNames.AstAssisted)
+                            )
+                        }
+                        path = PropertyPath(
+                            InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
+                                .fieldBackedProperty(
+                                    moduleClass,
+                                    nameProvider.allocateForType(bindingType),
+                                    initializer.type
+                                        .remapTypeParameters(originalModuleFunction, moduleFunction)
+                                        .remapTypeParameters(moduleFunction, moduleClass)
+                                )
+                        )
+                    } else null*/
+
                     declarations += MapEntryDeclaration(
                         mapType,
                         expression.getValueArgument(0)!!,
-                        expression.getTypeArgument(0)!!
+                        expression.getTypeArgument(0)!!,
+                        null,
+                        null
                     )
                 }
 
@@ -183,10 +215,15 @@ class ModuleDeclarationFactory(
         setBlock?.function?.body?.transformChildrenVoid(object :
             IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol == symbols.setDsl.functions.single { it.descriptor.name.asString() == "add" }) {
+                if (expression.symbol == symbols.setDsl.functions.single {
+                        it.owner.name.asString() == "add" &&
+                                it.owner.valueParameters.isEmpty()
+                    }) {
                     declarations += SetElementDeclaration(
                         setType,
-                        expression.getTypeArgument(0)!!
+                        expression.getTypeArgument(0)!!,
+                        null,
+                        null
                     )
                 }
                 return super.visitCall(expression)
@@ -265,8 +302,6 @@ class ModuleDeclarationFactory(
         scoped: Boolean
     ): BindingDeclaration {
         val initializer: IrExpression?
-        val parameters =
-            mutableListOf<InjektDeclarationIrBuilder.FactoryParameter>()
         val path: Path
 
         if (instance) {
@@ -280,20 +315,7 @@ class ModuleDeclarationFactory(
             )
             initializer = singleArgument!!
         } else if (singleArgument != null) {
-            val providerType = singleArgument.type
-                .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Provider))
             initializer = singleArgument
-            val parameterNameProvider = NameProvider()
-
-            providerType.typeArguments.dropLast(1).forEach {
-                parameters += InjektDeclarationIrBuilder.FactoryParameter(
-                    parameterNameProvider.allocateForType(it.typeOrFail).asString(),
-                    it.typeOrFail
-                        .remapTypeParameters(originalModuleFunction, moduleFunction)
-                        .remapTypeParameters(moduleFunction, moduleClass),
-                    it.typeOrFail.hasAnnotation(InjektFqNames.AstAssisted)
-                )
-            }
             path = PropertyPath(
                 InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
                     .fieldBackedProperty(
@@ -316,17 +338,7 @@ class ModuleDeclarationFactory(
                             clazz,
                             declarationStore.getMembersInjectorForClassOrNull(clazz)
                         )
-                val providerFunction = providerExpression.getFunctionFromLambdaExpression()
                 initializer = providerExpression
-                providerFunction.valueParameters.forEach {
-                    parameters += InjektDeclarationIrBuilder.FactoryParameter(
-                        it.name.asString(),
-                        it.type
-                            .remapTypeParameters(originalModuleFunction, moduleFunction)
-                            .remapTypeParameters(moduleFunction, moduleClass),
-                        it.type.hasAnnotation(InjektFqNames.AstAssisted)
-                    )
-                }
                 path = PropertyPath(
                     InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
                         .fieldBackedProperty(
@@ -342,7 +354,6 @@ class ModuleDeclarationFactory(
 
         return BindingDeclaration(
             bindingType = bindingType,
-            parameters = parameters,
             scoped = scoped,
             instance = instance,
             path = path,

@@ -88,6 +88,7 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.referenceClassifier
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
@@ -319,7 +320,7 @@ class InjektDeclarationIrBuilder(
             FactoryParameter(
                 name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
                 type = valueParameter.type,
-                assisted = valueParameter.descriptor.hasAnnotation(InjektFqNames.Assisted)
+                assisted = valueParameter.type.hasAnnotation(InjektFqNames.Assisted)
             )
         } ?: emptyList()
 
@@ -394,7 +395,7 @@ class InjektDeclarationIrBuilder(
             .typeWith(
                 parameters.map { parameter ->
                     if (parameter.assisted) parameter.type.withNoArgAnnotations(
-                        pluginContext, listOf(InjektFqNames.AstAssisted)
+                        pluginContext, listOf(InjektFqNames.Assisted)
                     ) else parameter.type
                 } + returnType)
 

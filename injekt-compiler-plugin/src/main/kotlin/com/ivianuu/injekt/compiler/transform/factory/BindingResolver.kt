@@ -23,6 +23,8 @@ import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.findPropertyGetter
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
+import com.ivianuu.injekt.compiler.getFunctionParameterTypes
+import com.ivianuu.injekt.compiler.getFunctionReturnType
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getInjectConstructor
 import com.ivianuu.injekt.compiler.getQualifierFqNames
@@ -250,45 +252,39 @@ class ModuleBindingResolver(
                     )
                 }
                 else -> {
-                    if (bindingFunction.valueParameters.any {
-                            it.descriptor.hasAnnotation(
-                                InjektFqNames.AstAssisted
+                    val providerType = propertyGetter.returnType
+                        .substituteAndKeepQualifiers(moduleNode.typeParametersMap)
+
+                    val parameters = providerType
+                        .getFunctionParameterTypes()
+                        .mapIndexed { index, type ->
+                            InjektDeclarationIrBuilder.FactoryParameter(
+                                "p$index",
+                                type,
+                                type.hasAnnotation(InjektFqNames.Assisted)
                             )
-                        }) {
-                        val assistedValueParameters = bindingFunction.valueParameters
-                            .filter { it.descriptor.hasAnnotation(InjektFqNames.AstAssisted) }
+                        }
+
+                    val dependencies = parameters
+                        .filterNot { it.assisted }
+                        .map { BindingRequest(it.type.asKey(), moduleRequestOrigin) }
+
+                    if (providerType.getFunctionParameterTypes()
+                            .any { it.hasAnnotation(InjektFqNames.Assisted) }
+                    ) {
+                        val assistedValueParameters = providerType
+                            .getFunctionParameterTypes()
+                            .filter { it.hasAnnotation(InjektFqNames.Assisted) }
 
                         val assistedFactoryType =
                             factory.pluginContext.tmpFunction(assistedValueParameters.size)
                                 .typeWith(
-                                    assistedValueParameters
-                                        .map {
-                                            it.type
-                                                .substituteAndKeepQualifiers(
-                                                    moduleNode.descriptorTypeParametersMap
-                                                )
-                                        } + bindingKey.type
-                                        .substituteAndKeepQualifiers(
-                                            moduleNode.descriptorTypeParametersMap
-                                        )
+                                    assistedValueParameters + providerType
+                                        .getFunctionReturnType()
                                 ).withNoArgAnnotations(
                                     factory.pluginContext,
                                     listOf(InjektFqNames.Provider)
                                 )
-
-                        val parameters = bindingFunction.valueParameters
-                            .map {
-                                InjektDeclarationIrBuilder.FactoryParameter(
-                                    it.name.asString(),
-                                    it.type
-                                        .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap),
-                                    it.descriptor.hasAnnotation(InjektFqNames.AstAssisted)
-                                )
-                            }
-
-                        val dependencies = parameters
-                            .filterNot { it.assisted }
-                            .map { BindingRequest(it.type.asKey(), moduleRequestOrigin) }
 
                         AssistedProvisionBindingNode(
                             key = assistedFactoryType.asKey(),
@@ -320,20 +316,6 @@ class ModuleBindingResolver(
                             origin = moduleNode.module.fqNameForIrSerialization
                         )
                     } else {
-                        val parameters = bindingFunction.valueParameters
-                            .map {
-                                InjektDeclarationIrBuilder.FactoryParameter(
-                                    it.name.asString(),
-                                    it.type
-                                        .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap),
-                                    it.descriptor.hasAnnotation(InjektFqNames.AstAssisted)
-                                )
-                            }
-
-                        val dependencies = parameters
-                            .filterNot { it.assisted }
-                            .map { BindingRequest(it.type.asKey(), moduleRequestOrigin) }
-
                         ProvisionBindingNode(
                             key = bindingKey,
                             dependencies = dependencies,
@@ -447,7 +429,7 @@ class AnnotatedClassBindingResolver(
                 InjektDeclarationIrBuilder.FactoryParameter(
                     name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
                     type = valueParameter.type,
-                    assisted = valueParameter.descriptor.hasAnnotation(InjektFqNames.Assisted)
+                    assisted = valueParameter.type.hasAnnotation(InjektFqNames.Assisted)
                 )
             } ?: emptyList()
 
@@ -525,7 +507,7 @@ class AnnotatedClassBindingResolver(
             val constructor = clazz.getInjectConstructor()
 
             if (constructor?.valueParameters?.any {
-                    it.descriptor.hasAnnotation(InjektFqNames.Assisted)
+                    it.type.hasAnnotation(InjektFqNames.Assisted)
                 } == true) return emptyList()
 
             val scopeAnnotation = clazz.descriptor.getAnnotatedAnnotations(
@@ -557,7 +539,7 @@ class AnnotatedClassBindingResolver(
                 InjektDeclarationIrBuilder.FactoryParameter(
                     name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
                     type = valueParameter.type,
-                    assisted = valueParameter.descriptor.hasAnnotation(InjektFqNames.Assisted)
+                    assisted = valueParameter.type.hasAnnotation(InjektFqNames.Assisted)
                 )
             } ?: emptyList()
 

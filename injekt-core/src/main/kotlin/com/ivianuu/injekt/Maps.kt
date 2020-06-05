@@ -20,7 +20,7 @@ import com.ivianuu.injekt.internal.injektIntrinsic
 
 interface MapDsl<M : Map<K, V>, K, V> {
     fun <T : V> put(entryKey: K)
-    // todo fun <T : V> put(entryKey: K, definition: ProviderDefinition<T>)
+    //fun <T : V> put(entryKey: K, provider: Function<T>)
 }
 
 fun <K, V> map(block: MapDsl<Map<K, V>, K, V>.() -> Unit = {}): Unit = injektIntrinsic()

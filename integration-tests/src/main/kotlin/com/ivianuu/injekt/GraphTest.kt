@@ -42,7 +42,7 @@ class GraphTest {
     @Test
     fun testCannotResolveDirectBindingWithAssistedParameters() = codegen(
         """
-        @Transient class Dep(@Assisted bar: Bar)
+        @Transient class Dep(bar: @Assisted Bar)
         @InstanceFactory fun createDep(): Dep = create()
         """
     ) {

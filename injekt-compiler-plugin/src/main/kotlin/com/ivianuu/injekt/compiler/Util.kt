@@ -382,6 +382,14 @@ fun IrElement.toConstantValue(): ConstantValue<*> {
 
 fun IrType.isTypeParameter() = toKotlinType().isTypeParameter()
 
+fun IrTypeArgument.hasAnnotation(fqName: FqName): Boolean =
+    typeOrNull?.hasAnnotation(fqName) == true
+
+fun IrType.getFunctionReturnType(): IrType = typeArguments.last().typeOrFail
+
+fun IrType.getFunctionParameterTypes(): List<IrType> = typeArguments.dropLast(1)
+    .map { it.typeOrFail }
+
 val IrMemberAccessExpression.typeArguments: List<IrType>
     get() =
         (0 until typeArgumentsCount).map { getTypeArgument(it)!! }
