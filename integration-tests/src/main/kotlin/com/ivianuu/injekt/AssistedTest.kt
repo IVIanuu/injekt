@@ -49,24 +49,6 @@ class AssistedTest {
     }
 
     @Test
-    fun testAssistedInDsl() = codegen(
-        """ 
-        @InstanceFactory
-        fun factory(): @Provider (Foo) -> Bar {
-            transient { foo: @Assisted Foo -> Bar(foo) }
-            return create()
-        }
-        
-        fun invoke() {
-            val barFactory = factory()
-            val bar: Bar = barFactory(Foo())
-        }
-    """
-    ) {
-        invokeSingleFile()
-    }
-
-    @Test
     fun testMultiCompileAssistedWithAnnotations() = multiCodegen(
         listOf(
             source(
@@ -92,6 +74,53 @@ class AssistedTest {
                         val depFactory = factory()
                         val result = depFactory("hello world")
                     }
+                """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        it.last().invokeSingleFile()
+    }
+
+
+    @Test
+    fun testAssistedInDsl() = codegen(
+        """ 
+        @InstanceFactory
+        fun factory(): @Provider (Foo) -> Bar {
+            transient { foo: @Assisted Foo -> Bar(foo) }
+            return create()
+        }
+        
+        fun invoke() {
+            val barFactory = factory()
+            val bar: Bar = barFactory(Foo())
+        }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testMultiCompileAssistedInDsl() = multiCodegen(
+        listOf(
+            source(
+                """
+                @Module 
+                fun assistedModule() { 
+                    transient { foo: @Assisted Foo -> Bar(foo) }
+                }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                @InstanceFactory 
+                fun invoke(): @Provider (Foo) -> Bar {
+                    assistedModule()
+                    return create()
+                }
                 """,
                 name = "File.kt"
             )

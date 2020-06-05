@@ -282,7 +282,7 @@ class ModuleBindingResolver(
                                     it.name.asString(),
                                     it.type
                                         .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap),
-                                    it.hasAnnotation(InjektFqNames.AstAssisted)
+                                    it.descriptor.hasAnnotation(InjektFqNames.AstAssisted)
                                 )
                             }
 
@@ -326,7 +326,7 @@ class ModuleBindingResolver(
                                     it.name.asString(),
                                     it.type
                                         .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap),
-                                    it.hasAnnotation(InjektFqNames.AstAssisted)
+                                    it.descriptor.hasAnnotation(InjektFqNames.AstAssisted)
                                 )
                             }
 
