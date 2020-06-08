@@ -226,4 +226,46 @@ class CompositionTest {
         )
     )
 
+    @Test
+    fun testCanInjectCompositionComponent() = codegen(
+        """
+        @CompositionFactory
+        fun factory(): TestCompositionComponent {
+            return create()
+        }
+        
+        fun invoke(component: TestCompositionComponent) { 
+            initializeCompositions()
+            val injectedComponent = component.get<TestCompositionComponent>()
+        }
+    """
+    )
+
+    @Test
+    fun testCanInjectCompositionComponentChildFactory() = codegen(
+        """
+        @CompositionComponent
+        interface ParentComponent
+        
+        @CompositionComponent
+        interface ChildComponent
+        
+        @CompositionFactory
+        fun parentFactory(): ParentComponent {
+            return create()
+        }
+        
+        @CompositionFactory
+        fun childFactory(): ChildComponent {
+            parent<ParentComponent>()
+            return create()
+        }
+        
+        fun invoke(component: ParentComponent) {
+            initializeCompositions()
+            val injectedComponent = component.get<@ChildFactory () -> ChildComponent>()
+        }
+    """
+    )
+
 }
