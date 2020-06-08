@@ -182,7 +182,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
             if (providerKey !in valueParametersByUnresolvedGetCalls) {
                 valueParametersByUnresolvedGetCalls[providerKey] =
                     transformedFunction.addValueParameter(
-                        "og_provider\$${valueParametersByUnresolvedGetCalls.size}",
+                        "og_provider${valueParametersByUnresolvedGetCalls.size}",
                         providerKey.type
                     )
             }
@@ -203,7 +203,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
             val callee = transformFunctionIfNeeded(objectGraphFunctionCall.symbol.owner)
             callee
                 .valueParameters
-                .filter { it.name.asString().startsWith("og_provider\$") }
+                .filter { it.name.asString().startsWith("og_provider") }
                 .map {
                     it to it.type.substitute(
                         callee.typeParameters,
@@ -222,7 +222,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
             if (injectorKey !in valueParametersByUnresolvedInjectCalls) {
                 valueParametersByUnresolvedInjectCalls[injectorKey] =
                     transformedFunction.addValueParameter(
-                        "og_injector\$${valueParametersByUnresolvedInjectCalls.size}",
+                        "og_injector${valueParametersByUnresolvedInjectCalls.size}",
                         injectorKey.type
                     )
             }
@@ -244,7 +244,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
             val callee = transformFunctionIfNeeded(objectGraphFunctionCall.symbol.owner)
             callee
                 .valueParameters
-                .filter { it.name.asString().startsWith("og_injector\$") }
+                .filter { it.name.asString().startsWith("og_injector") }
                 .map {
                     it to it.type.substitute(
                         callee.typeParameters,
@@ -274,8 +274,8 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                     .single { other ->
                         other.name == function.name &&
                                 other.valueParameters.any {
-                                    it.name.asString().startsWith("og_provider\$") ||
-                                            it.name.asString().startsWith("og_injector\$")
+                                    it.name.asString().startsWith("og_provider") ||
+                                            it.name.asString().startsWith("og_injector")
                                 }
                     }
             } else function
@@ -384,7 +384,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
 
                     if (valueArgument == null) {
                         valueArgument = when {
-                            valueParameter.name.asString().startsWith("og_provider\$") -> {
+                            valueParameter.name.asString().startsWith("og_provider") -> {
                                 val substitutedType = valueParameter.type
                                     .substituteByName(
                                         transformedFunction.typeParameters
@@ -427,7 +427,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                                     }
                                 }
                             }
-                            valueParameter.name.asString().startsWith("og_injector\$") -> {
+                            valueParameter.name.asString().startsWith("og_injector") -> {
                                 val substitutedType = valueParameter.type
                                     .substituteByName(
                                         transformedFunction.typeParameters

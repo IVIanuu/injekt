@@ -174,10 +174,6 @@ class InjektDeclarationIrBuilder(
     fun irMapKeyConstructorForKey(expression: IrExpression): IrConstructorCall {
         return when {
             expression is IrClassReference -> irClassKey(expression.classType)
-            expression is IrGetValue && expression.symbol.descriptor.name.asString()
-                .startsWith("class\$") -> {
-                irClassKey(expression.type.typeArguments.single().typeOrFail)
-            }
             expression is IrConst<*> -> {
                 when (expression.kind) {
                     is IrConstKind.Int -> builder.irCall(symbols.astMapIntKey.constructors.single())
