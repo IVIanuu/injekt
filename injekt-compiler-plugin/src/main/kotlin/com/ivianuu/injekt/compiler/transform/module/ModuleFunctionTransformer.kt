@@ -25,7 +25,7 @@ import com.ivianuu.injekt.compiler.addToFileOrAbove
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.setClassKind
-import com.ivianuu.injekt.compiler.transform.AbstractFunctionTransformer2
+import com.ivianuu.injekt.compiler.transform.AbstractFunctionTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
@@ -74,7 +74,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class ModuleFunctionTransformer(
     pluginContext: IrPluginContext,
     private val declarationStore: InjektDeclarationStore
-) : AbstractFunctionTransformer2(pluginContext, TransformOrder.BottomUp) {
+) : AbstractFunctionTransformer(pluginContext, TransformOrder.BottomUp) {
 
     fun getModuleFunctionForClass(moduleClass: IrClass): IrFunction =
         transformedFunctions.values
@@ -96,7 +96,7 @@ class ModuleFunctionTransformer(
     override fun needsTransform(function: IrFunction): Boolean =
         function.hasAnnotation(InjektFqNames.Module)
 
-    override fun transform(function: IrFunction): IrFunction {
+    override fun transform(function: IrFunction, callback: (IrFunction) -> Unit) {
         val transformedFunction = buildFun {
             name = InjektNameConventions.getTransformedModuleFunctionNameForModule(
                 function.getPackageFragment()!!.fqName,
@@ -120,6 +120,7 @@ class ModuleFunctionTransformer(
 
             body = function.copyBodyTo(this)
         }
+        callback(transformedFunction)
 
         val moduleDescriptor = ModuleDescriptor(
             transformedFunction,
@@ -195,7 +196,7 @@ class ModuleFunctionTransformer(
                             }
                         }
                     }
-            }
+                }
 
                 var isStatic = false
 
@@ -280,22 +281,22 @@ class ModuleFunctionTransformer(
                     }
                 )
             }
-
-        return transformedFunction
     }
 
-    override fun transformExternal(function: IrFunction): IrFunction {
-        return pluginContext.referenceFunctions(
-            function.getPackageFragment()!!.fqName
-                .child(
-                    InjektNameConventions.getTransformedModuleFunctionNameForModule(
-                        function.getPackageFragment()!!.fqName,
-                        function.descriptor.fqNameSafe
+    override fun transformExternal(function: IrFunction, callback: (IrFunction) -> Unit) {
+        callback(
+            pluginContext.referenceFunctions(
+                function.getPackageFragment()!!.fqName
+                    .child(
+                        InjektNameConventions.getTransformedModuleFunctionNameForModule(
+                            function.getPackageFragment()!!.fqName,
+                            function.descriptor.fqNameSafe
+                        )
                     )
-                )
-        ).single {
-            it.owner.valueParameters.lastOrNull()?.name?.asString() == "moduleMarker"
-        }.owner
+            ).single {
+                it.owner.valueParameters.lastOrNull()?.name?.asString() == "moduleMarker"
+            }.owner
+        )
     }
 
     override fun transformCall(transformed: IrFunction, expression: IrCall): IrCall {

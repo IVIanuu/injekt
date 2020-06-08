@@ -29,6 +29,11 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 object InjektNameConventions {
 
+    fun getTransformedModuleFunctionNameForObjectGraphFunction(
+        packageFqName: FqName,
+        moduleFqName: FqName
+    ): Name = getJoinedName(packageFqName, moduleFqName.child("OgImpl"))
+
     fun getMembersInjectorNameForClass(
         packageFqName: FqName,
         classFqName: FqName

@@ -40,7 +40,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
         Extensions.getArea(project)
             .getExtensionPoint(IrGenerationExtension.extensionPointName)
             .registerExtension(
-                InjektIrGenerationExtension(project),
+                InjektIrGenerationExtension(),
                 LoadingOrder.FIRST
             )
     }

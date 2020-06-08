@@ -16,9 +16,11 @@
 
 package com.ivianuu.injekt.compiler.transform.composition
 
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.deepCopyWithPreservingQualifiers
+import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.isTypeParameter
+import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.AbstractFunctionTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
@@ -29,10 +31,14 @@ import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.withAnnotations
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.allParameters
+import org.jetbrains.kotlin.backend.common.ir.copyBodyTo
+import org.jetbrains.kotlin.backend.common.ir.copyTo
+import org.jetbrains.kotlin.backend.common.ir.copyToWithoutSuperTypes
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
+import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -46,13 +52,16 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
+import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
+import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
+import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -81,7 +90,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                 .parent == function
         }
 
-        function?.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
+        function.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = transformFunctionIfNeeded(expression.symbol.owner)
                 when {
@@ -101,10 +110,17 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                             hasUnresolvedCalls = true
                         }
                     }
-                    callee.symbol.owner.hasAnnotation(InjektFqNames.AstObjectGraph) -> {
-                        originalObjectGraphFunctionCalls += expression
-                        if (expression.typeArguments.any { it.isTypeParameterOfFunction(function) }) {
-                            hasUnresolvedCalls = true
+                    else -> {
+                        if (expression.symbol != callee.symbol) {
+                            originalObjectGraphFunctionCalls += expression
+                            if (expression.typeArguments.any {
+                                    it.isTypeParameterOfFunction(
+                                        function
+                                    )
+                                }
+                            ) {
+                                hasUnresolvedCalls = true
+                            }
                         }
                     }
                 }
@@ -115,18 +131,57 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
         if (!hasUnresolvedCalls) {
             transformObjectGraphCalls(
                 function,
+                function,
                 emptyList(),
                 emptyMap(),
                 emptyList(),
                 emptyMap(),
                 originalObjectGraphFunctionCalls
             )
-            callback(function)
             return
         }
 
-        val transformedFunction = function.deepCopyWithPreservingQualifiers(wrapDescriptor = true)
+        val transformedFunction = buildFun {
+            name = InjektNameConventions.getTransformedModuleFunctionNameForObjectGraphFunction(
+                function.getPackageFragment()!!.fqName,
+                function.descriptor.fqNameSafe
+            )
+            returnType = function.returnType
+            isInline = function.isInline
+        }.apply {
+            parent = function.file
+            addMetadataIfNotLocal()
+
+            annotations = function.annotations.map { it.deepCopyWithSymbols() }
+
+            typeParameters = function.typeParameters.map { typeParameter ->
+                typeParameter.copyToWithoutSuperTypes(this)
+            }
+            typeParameters.forEach {
+                it.superTypes += function.typeParameters[it.index].superTypes
+                    .map { it.remapTypeParameters(function, this) }
+            }
+
+            valueParameters = function.allParameters.mapIndexed { index, valueParameter ->
+                valueParameter.copyTo(
+                    this,
+                    index = index,
+                    type = valueParameter.type.remapTypeParameters(function, this),
+                    varargElementType = valueParameter.varargElementType?.remapTypeParameters(
+                        function,
+                        this
+                    )
+                )
+            }
+
+            body = function.copyBodyTo(this)
+        }
+
+        transformedFunction.returnType = function.returnType
+            .remapTypeParameters(function, transformedFunction)
+
         callback(transformedFunction)
+
         val unresolvedGetCalls = mutableListOf<IrCall>()
         val unresolvedInjectCalls = mutableListOf<IrCall>()
         val objectGraphFunctionCalls = mutableListOf<IrCall>()
@@ -136,10 +191,11 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                 val callee = transformFunctionIfNeeded(expression.symbol.owner)
                 when {
                     callee.isObjectGraphGet -> {
-                        if (expression.extensionReceiver?.type?.isTypeParameterOfFunction(
-                                transformedFunction
-                            ) == true ||
+                        if (expression.extensionReceiver?.type
+                                ?.remapTypeParameters(function, transformedFunction)
+                                ?.isTypeParameterOfFunction(transformedFunction) == true ||
                             expression.getTypeArgument(0)!!
+                                .remapTypeParameters(function, transformedFunction)
                                 .isTypeParameterOfFunction(transformedFunction)
                         ) {
                             unresolvedGetCalls += expression
@@ -147,34 +203,32 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                         }
                     }
                     callee.isObjectGraphInject -> {
-                        if (expression.extensionReceiver?.type?.isTypeParameterOfFunction(
-                                transformedFunction
-                            ) == true ||
+                        if (expression.extensionReceiver?.type
+                                ?.remapTypeParameters(function, transformedFunction)
+                                ?.isTypeParameterOfFunction(transformedFunction) == true ||
                             expression.getTypeArgument(0)!!
+                                .remapTypeParameters(function, transformedFunction)
                                 .isTypeParameterOfFunction(transformedFunction)
                         ) {
                             unresolvedInjectCalls += expression
                             hasUnresolvedCalls = true
                         }
                     }
-                    callee.symbol.owner.hasAnnotation(InjektFqNames.AstObjectGraph) -> {
-                        objectGraphFunctionCalls += expression
-                        if (expression.typeArguments.any {
-                                it.isTypeParameterOfFunction(
-                                    transformedFunction
-                                )
-                            }) {
-                            hasUnresolvedCalls = true
+                    else -> {
+                        if (expression.symbol != callee.symbol) {
+                            objectGraphFunctionCalls += expression
+                            if (expression.typeArguments.any {
+                                    it.remapTypeParameters(function, transformedFunction)
+                                        .isTypeParameterOfFunction(transformedFunction)
+                                }) {
+                                hasUnresolvedCalls = true
+                            }
                         }
                     }
                 }
                 return super.visitCall(expression)
             }
         })
-
-        transformedFunction.annotations +=
-            InjektDeclarationIrBuilder(pluginContext, transformedFunction.symbol)
-                .noArgSingleConstructorCall(symbols.astObjectGraph)
 
         val valueParametersByUnresolvedGetCalls =
             mutableMapOf<Key, IrValueParameter>()
@@ -196,6 +250,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                         it.extensionReceiver!!.type,
                         it.getTypeArgument(0)!!
                     )
+                    .remapTypeParameters(function, transformedFunction)
                     .asKey()
             }
             .forEach { addProviderValueParameterIfNeeded(it) }
@@ -209,7 +264,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                     it to it.type.substitute(
                         callee.typeParameters,
                         objectGraphFunctionCall.typeArguments
-                    )
+                    ).remapTypeParameters(function, transformedFunction)
                 }
                 .filter { it.second.typeArguments.any { it.typeOrNull?.isTypeParameter() == true } }
                 .map { it.second.asKey() }
@@ -237,6 +292,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                         it.getTypeArgument(0)!!,
                         irBuiltIns.unitType
                     )
+                    .remapTypeParameters(function, transformedFunction)
                     .asKey()
             }
             .forEach { addInjectorValueParameterIfNeeded(it) }
@@ -250,7 +306,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                     it to it.type.substitute(
                         callee.typeParameters,
                         objectGraphFunctionCall.typeArguments
-                    )
+                    ).remapTypeParameters(function, transformedFunction)
                 }
                 .filter { it.second.typeArguments.any { it.typeOrNull?.isTypeParameter() == true } }
                 .map { it.second.asKey() }
@@ -258,6 +314,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
         }
 
         transformObjectGraphCalls(
+            function,
             transformedFunction,
             unresolvedGetCalls,
             valueParametersByUnresolvedGetCalls,
@@ -269,46 +326,43 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
 
     override fun transformExternal(function: IrFunction, callback: (IrFunction) -> Unit) {
         callback(
-            if (function.hasAnnotation(InjektFqNames.AstObjectGraph)) {
-                pluginContext.referenceFunctions(function.descriptor.fqNameSafe)
-                    .map { it.owner }
-                    .single { other ->
-                        other != function &&
-                                other.name == function.name &&
-                                other.valueParameters.all { otherValueParameter ->
-                                    val thisValueParameter =
-                                        function.valueParameters.getOrNull(otherValueParameter.index)
-                                    // todo the name check is unsafe compare types instead
-                                    (otherValueParameter.name == thisValueParameter?.name ||
-                                            (otherValueParameter.name.asString()
-                                                .startsWith("og_provider") ||
-                                                    otherValueParameter.name.asString()
-                                                        .startsWith("og_injector")))
-                                }
+            pluginContext.referenceFunctions(function.descriptor.fqNameSafe)
+                .map { it.owner }
+                .filter { other ->
+                    other.valueParameters.any {
+                        it.name.asString().startsWith("og_provider") ||
+                                it.name.asString().startsWith("og_injector")
                     }
-            } else function
+                }
+                .singleOrNull { other ->
+                    other != function &&
+                            other.name == function.name &&
+                            other.typeParameters.size == function.typeParameters.size &&
+                            other.typeParameters.all { it.name == function.typeParameters[it.index].name } &&
+                            other.valueParameters.all { otherValueParameter ->
+                                val thisValueParameter =
+                                    function.valueParameters.getOrNull(otherValueParameter.index)
+                                // todo the name check is unsafe compare types instead
+                                (otherValueParameter.name == thisValueParameter?.name ||
+                                        (otherValueParameter.name.asString()
+                                            .startsWith("og_provider") ||
+                                                otherValueParameter.name.asString()
+                                                    .startsWith("og_injector")))
+                            }
+                } ?: function
         )
     }
 
-    override fun createDecoy(original: IrFunction, transformed: IrFunction): IrFunction {
-        return original.deepCopyWithPreservingQualifiers(wrapDescriptor = true)
-            .also { decoy ->
-                InjektDeclarationIrBuilder(pluginContext, decoy.symbol).run {
-                    decoy.annotations += noArgSingleConstructorCall(symbols.astObjectGraph)
-                    decoy.body = builder.irExprBody(irInjektIntrinsicUnit())
-                }
-            }
-    }
-
     private fun transformObjectGraphCalls(
-        function: IrFunction,
+        originalFunction: IrFunction,
+        transformedFunction: IrFunction,
         unresolvedGetCalls: List<IrCall>,
         valueParametersByUnresolvedProviderType: Map<Key, IrValueParameter>,
         unresolvedInjectCalls: List<IrCall>,
         valueParametersByUnresolvedInjectorType: Map<Key, IrValueParameter>,
         objectGraphFunctionCalls: List<IrCall>
     ) {
-        function.transformChildrenVoid(object : IrElementTransformerVoid() {
+        transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
                 return when (expression) {
                     in unresolvedGetCalls -> {
@@ -319,6 +373,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                                         expression.extensionReceiver!!.type,
                                         expression.getTypeArgument(0)!!
                                     )
+                                    .remapTypeParameters(originalFunction, transformedFunction)
                                     .asKey()
                             )
                         DeclarationIrBuilder(pluginContext, expression.symbol).run {
@@ -340,6 +395,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                                         expression.getTypeArgument(0)!!,
                                         irBuiltIns.unitType
                                     )
+                                    .remapTypeParameters(originalFunction, transformedFunction)
                                     .asKey()
                             )
                         DeclarationIrBuilder(pluginContext, expression.symbol).run {
@@ -354,10 +410,12 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                         }
                     }
                     in objectGraphFunctionCalls -> {
-                        val transformedFunction = transformFunctionIfNeeded(expression.symbol.owner)
+                        val transformedCallee = transformFunctionIfNeeded(expression.symbol.owner)
                         transformObjectGraphFunctionCall(
-                            expression,
+                            originalFunction,
                             transformedFunction,
+                            expression,
+                            transformedCallee,
                             valueParametersByUnresolvedProviderType,
                             valueParametersByUnresolvedInjectorType
                         )
@@ -369,23 +427,27 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
     }
 
     private fun transformObjectGraphFunctionCall(
-        originalCall: IrCall,
+        originalFunction: IrFunction,
         transformedFunction: IrFunction,
+        originalCall: IrCall,
+        transformedCallee: IrFunction,
         valueParametersByUnresolvedProviderType: Map<Key, IrValueParameter>,
         valueParametersByUnresolvedInjectorType: Map<Key, IrValueParameter>
-    ): IrExpression =
-        DeclarationIrBuilder(pluginContext, transformedFunction.symbol).irCall(transformedFunction)
+    ): IrExpression {
+        return DeclarationIrBuilder(pluginContext, transformedCallee.symbol).irCall(
+            transformedCallee
+        )
             .apply {
-                dispatchReceiver = originalCall.dispatchReceiver
-                extensionReceiver = originalCall.extensionReceiver
-
                 originalCall.typeArguments.forEachIndexed { index, it ->
-                    putTypeArgument(index, it)
+                    putTypeArgument(
+                        index,
+                        it.remapTypeParameters(originalFunction, transformedFunction)
+                    )
                 }
 
-                transformedFunction.valueParameters.forEach { valueParameter ->
+                transformedCallee.allParameters.forEach { valueParameter ->
                     var valueArgument = try {
-                        originalCall.getValueArgument(valueParameter.index)
+                        originalCall.getArgumentsWithIr()[valueParameter.index].second
                     } catch (e: Throwable) {
                         null
                     }
@@ -394,8 +456,9 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                         valueArgument = when {
                             valueParameter.name.asString().startsWith("og_provider") -> {
                                 val substitutedType = valueParameter.type
+                                    .remapTypeParameters(originalFunction, transformedFunction)
                                     .substituteByName(
-                                        transformedFunction.typeParameters
+                                        transformedCallee.typeParameters
                                             .map { it.symbol }
                                             .zip(typeArguments)
                                             .toMap()
@@ -428,17 +491,19 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                                     else -> {
                                         DeclarationIrBuilder(pluginContext, symbol)
                                             .irGet(
-                                                valueParametersByUnresolvedProviderType.getValue(
+                                                valueParametersByUnresolvedProviderType.get(
                                                     substitutedType.asKey()
                                                 )
+                                                    ?: error("${substitutedType.asKey()} is missing we only have${valueParametersByUnresolvedProviderType.keys}")
                                             )
                                     }
                                 }
                             }
                             valueParameter.name.asString().startsWith("og_injector") -> {
                                 val substitutedType = valueParameter.type
+                                    .remapTypeParameters(originalFunction, transformedFunction)
                                     .substituteByName(
-                                        transformedFunction.typeParameters
+                                        transformedCallee.typeParameters
                                             .map { it.symbol }
                                             .zip(typeArguments)
                                             .toMap()
@@ -489,6 +554,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                     putValueArgument(valueParameter.index, valueArgument)
                 }
             }
+    }
 
     // todo remove once compose fixed it's stuff
     private fun IrType.substituteByName(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {

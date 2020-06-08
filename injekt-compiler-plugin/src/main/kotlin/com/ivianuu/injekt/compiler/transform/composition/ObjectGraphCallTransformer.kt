@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrFile
+import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -68,10 +69,14 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         objectGraphCalls.forEach { (call, file) ->
             when {
                 call.symbol.owner.isObjectGraphGet -> {
-                    val entryPoint = entryPointForGet(
-                        InjektNameConventions.getObjectGraphGetNameForCall(file, call),
-                        call.getTypeArgument(0)!!
-                    )
+                    val entryPoint = try {
+                        entryPointForGet(
+                            InjektNameConventions.getObjectGraphGetNameForCall(file, call),
+                            call.getTypeArgument(0)!!
+                        )
+                    } catch (e: Exception) {
+                        error("Not working ${call.dump()}")
+                    }
 
                     file.addChild(entryPoint)
 

@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.IntKey
 import com.ivianuu.injekt.compiler.LongKey
 import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.StringKey
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.findPropertyGetter
 import com.ivianuu.injekt.compiler.getIrClass
 import com.ivianuu.injekt.compiler.hasAnnotation

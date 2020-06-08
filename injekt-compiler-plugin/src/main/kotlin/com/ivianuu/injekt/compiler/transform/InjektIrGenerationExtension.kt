@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.androidEnabled
 import com.ivianuu.injekt.compiler.compositionsEnabled
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.android.AndroidEntryPointTransformer
 import com.ivianuu.injekt.compiler.transform.android.CompositionAndroidAppTransformer
 import com.ivianuu.injekt.compiler.transform.composition.BindingEffectTransformer
@@ -32,12 +33,9 @@ import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 
-class InjektIrGenerationExtension(
-    private val project: Project
-) : IrGenerationExtension {
+class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val declarationStore = InjektDeclarationStore(pluginContext)
