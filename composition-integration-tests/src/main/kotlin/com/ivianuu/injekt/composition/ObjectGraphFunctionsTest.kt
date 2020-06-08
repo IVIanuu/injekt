@@ -552,4 +552,29 @@ class ObjectGraphFunctionsTest {
     """
     )
 
+    @Test
+    fun testMultiCompileGetWithSameName() = multiCodegen(
+        listOf(
+            source(
+                """
+                inline fun <T> inject(): T = inject { error("") as TestCompositionComponent }
+
+                inline fun <C : Any, T> inject(componentProvider: () -> C): T {
+                    val component = componentProvider()
+                    return component.get()
+                }
+            """
+            )
+        ),
+        listOf(
+            source(
+                """ 
+                fun invoke() {
+                    inject<String>()
+                } 
+            """
+            )
+        )
+    )
+
 }

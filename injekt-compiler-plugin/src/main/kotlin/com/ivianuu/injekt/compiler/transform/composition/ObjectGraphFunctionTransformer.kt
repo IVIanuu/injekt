@@ -53,6 +53,7 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -272,10 +273,17 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                 pluginContext.referenceFunctions(function.descriptor.fqNameSafe)
                     .map { it.owner }
                     .single { other ->
-                        other.name == function.name &&
-                                other.valueParameters.any {
-                                    it.name.asString().startsWith("og_provider") ||
-                                            it.name.asString().startsWith("og_injector")
+                        other != function &&
+                                other.name == function.name &&
+                                other.valueParameters.all { otherValueParameter ->
+                                    val thisValueParameter =
+                                        function.valueParameters.getOrNull(otherValueParameter.index)
+                                    // todo the name check is unsafe compare types instead
+                                    (otherValueParameter.name == thisValueParameter?.name ||
+                                            (otherValueParameter.name.asString()
+                                                .startsWith("og_provider") ||
+                                                    otherValueParameter.name.asString()
+                                                        .startsWith("og_injector")))
                                 }
                     }
             } else function
