@@ -25,9 +25,6 @@ import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irExprBody
-import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
-import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
@@ -39,7 +36,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
-import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
@@ -156,7 +153,11 @@ abstract class AbstractFunctionTransformer(
             expression.origin,
             expression.superQualifierSymbol
         ).apply {
-            copyTypeAndValueArgumentsFrom(expression)
+            try {
+                copyTypeAndValueArgumentsFrom(expression)
+            } catch (e: Throwable) {
+                error("Couldn't transform ${expression.dumpSrc()} to ${transformed.render()}")
+            }
         }
     }
 
@@ -195,27 +196,24 @@ abstract class AbstractFunctionTransformer(
     protected fun IrElement.rewriteTransformedFunctionRefs() {
         transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFunctionExpression(expression: IrFunctionExpression): IrExpression {
-                val transformed = super.visitFunctionExpression(expression) as IrFunctionExpression
-                return if (!needsTransform(transformed.function)) transformed
-                else transformFunctionExpression(
-                    transformFunctionIfNeeded(transformed.function), transformed
-                )
+                val result = super.visitFunctionExpression(expression) as IrFunctionExpression
+                val transformed = transformFunctionIfNeeded(result.function)
+                return if (transformed == result.function) result
+                else transformFunctionExpression(transformed, result)
             }
 
             override fun visitFunctionReference(expression: IrFunctionReference): IrExpression {
-                val transformed = super.visitFunctionReference(expression) as IrFunctionReference
-                return if (!needsTransform(transformed.symbol.owner)) transformed
-                else transformFunctionReference(
-                    transformFunctionIfNeeded(transformed.symbol.owner), transformed
-                )
+                val result = super.visitFunctionReference(expression) as IrFunctionReference
+                val transformed = transformFunctionIfNeeded(result.symbol.owner)
+                return if (transformed == result.symbol.owner) result
+                else transformFunctionReference(transformed, result)
             }
 
             override fun visitCall(expression: IrCall): IrExpression {
-                val transformed = super.visitCall(expression) as IrCall
-                return if (!needsTransform(transformed.symbol.owner)) transformed
-                else transformCall(
-                    transformFunctionIfNeeded(transformed.symbol.owner), transformed
-                )
+                val result = super.visitCall(expression) as IrCall
+                val transformed = transformFunctionIfNeeded(result.symbol.owner)
+                return if (transformed == result.symbol.owner) result
+                else transformCall(transformed, result)
             }
         })
     }

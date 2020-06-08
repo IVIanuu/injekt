@@ -49,6 +49,7 @@ import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -336,6 +337,7 @@ class GenerateCompositionsTransformer(
                     valueParameters.forEach {
                         putValueArgument(it.index, irGet(it))
                     }
+                    putValueArgument(valueParameters.size, irNull())
                 }
 
                 +irCall(
