@@ -557,24 +557,41 @@ class ObjectGraphFunctionsTest {
         listOf(
             source(
                 """
-                inline fun <T> inject(): T = inject { error("") as TestCompositionComponent }
+                inline fun <T> inject(): T = inject { 
+                    compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+                }
 
                 inline fun <C : Any, T> inject(componentProvider: () -> C): T {
                     val component = componentProvider()
                     return component.get()
+                }
+                
+                @CompositionFactory
+                fun factory(): TestCompositionComponent {
+                    return create()
                 }
             """
             )
         ),
         listOf(
             source(
-                """ 
+                """
+                @Module
+                fun fooModule() {
+                    installIn<TestCompositionComponent>()
+                    transient<Foo>()
+                }
+
                 fun invoke() {
-                    inject<String>()
-                } 
-            """
+                    initializeCompositions()
+                    inject<Foo>()
+                }
+            """,
+                name = "File.kt"
             )
         )
-    )
+    ) {
+        it.last().invokeSingleFile()
+    }
 
 }

@@ -337,7 +337,9 @@ class GenerateCompositionsTransformer(
                     valueParameters.forEach {
                         putValueArgument(it.index, irGet(it))
                     }
-                    putValueArgument(valueParameters.size, irNull())
+                    if (factoryModule.valueParameters.size > valueParameters.size) {
+                        putValueArgument(valueParameters.size, irNull())
+                    }
                 }
 
                 +irCall(
@@ -397,7 +399,13 @@ class GenerateCompositionsTransformer(
                     }
                 }
 
-                modules.forEach { +irCall(it) }
+                modules.forEach {
+                    +irCall(it).apply {
+                        if (it.owner.valueParameters.isNotEmpty()) {
+                            putValueArgument(0, irNull())
+                        }
+                    }
+                }
 
                 +irReturn(
                     irCall(

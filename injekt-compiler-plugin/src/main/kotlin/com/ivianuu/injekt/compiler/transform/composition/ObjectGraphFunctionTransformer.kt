@@ -326,7 +326,15 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
 
     override fun transformExternal(function: IrFunction, callback: (IrFunction) -> Unit) {
         callback(
-            pluginContext.referenceFunctions(function.descriptor.fqNameSafe)
+            pluginContext.referenceFunctions(
+                function.getPackageFragment()!!.fqName
+                    .child(
+                        InjektNameConventions.getTransformedModuleFunctionNameForObjectGraphFunction(
+                            function.getPackageFragment()!!.fqName,
+                            function.descriptor.fqNameSafe
+                        )
+                    )
+            )
                 .map { it.owner }
                 .filter { other ->
                     other.valueParameters.any {
@@ -335,8 +343,8 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                     }
                 }
                 .singleOrNull { other ->
+                    println("other candidate ${other.render()} for ${function.render()}")
                     other != function &&
-                            other.name == function.name &&
                             other.typeParameters.size == function.typeParameters.size &&
                             other.typeParameters.all { it.name == function.typeParameters[it.index].name } &&
                             other.valueParameters.all { otherValueParameter ->
