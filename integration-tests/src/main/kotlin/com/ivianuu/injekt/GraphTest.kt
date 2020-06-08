@@ -311,4 +311,45 @@ class GraphTest {
         }
     """
     )
+
+    @Test
+    fun testGenericAnnotatedClass() = codegen(
+        """
+        @Transient
+        class Wrapper<T>(val value: T)
+        
+        interface WrappedComponent {
+            val fooWrapper: Wrapper<Foo>
+            val barWrapper: Wrapper<Bar>
+        }
+        
+        @Factory
+        fun createWrapperComponent(): WrappedComponent {
+            transient<Foo>()
+            transient<Bar>()
+            return create()
+        }
+    """
+    )
+
+    /*@Test
+    fun testGenericDslProvider() = codegen("""
+        class Wrapper<T>(val value: T)
+        
+        interface WrappedComponent {
+            val fooWrapper: Wrapper<Foo>
+            val barWrapper: Wrapper<Bar>
+        }
+        
+        @Factory
+        fun createWrapperComponent(): WrappedComponent {
+            transient<Foo>()
+            transient<Bar>()
+            transient(::createWrapper)
+            return create()
+        }
+        
+        private fun <T> createWrapper(value: T): Wrapper<T> = Wrapper(value)
+    """)*/
+
 }
