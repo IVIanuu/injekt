@@ -40,6 +40,7 @@ import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
+import org.jetbrains.kotlin.ir.util.hasDefaultValue
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 
@@ -92,15 +93,17 @@ class DependencyNode(
 class BindingRequest(
     val key: Key,
     val requestOrigin: FqName?,
+    val hasDefault: Boolean,
     val requestType: RequestType = key.inferRequestType()
 ) {
 
     fun copy(
         key: Key = this.key,
         requestOrigin: FqName? = this.requestOrigin,
+        hasDefault: Boolean = this.hasDefault,
         requestType: RequestType = this.requestType
     ): BindingRequest = BindingRequest(
-        key, requestOrigin, requestType
+        key, requestOrigin, hasDefault, requestType
     )
 
     override fun equals(other: Any?): Boolean {
@@ -150,7 +153,7 @@ class AssistedProvisionBindingNode(
     module: ModuleNode?,
     owner: AbstractFactory,
     origin: FqName?,
-    val createExpression: IrBuilderWithScope.(Map<InjektDeclarationIrBuilder.FactoryParameter, () -> IrExpression>) -> IrExpression,
+    val createExpression: IrBuilderWithScope.(Map<InjektDeclarationIrBuilder.FactoryParameter, () -> IrExpression?>) -> IrExpression,
     val parameters: List<InjektDeclarationIrBuilder.FactoryParameter>
 ) : BindingNode(key, dependencies, targetScope, scoped, module, owner, origin)
 
@@ -164,10 +167,24 @@ class ChildFactoryBindingNode(
     key, listOf(
         BindingRequest(
             parent.defaultType.asKey(),
-            null
+            null,
+            false
         )
     ),
     null, false, null, owner, origin
+)
+
+class DefaultValueBindingNode(
+    key: Key,
+    owner: AbstractFactory
+) : BindingNode(
+    key,
+    emptyList(),
+    null,
+    false,
+    null,
+    owner,
+    null
 )
 
 class DelegateBindingNode(
@@ -178,7 +195,7 @@ class DelegateBindingNode(
     val requestOrigin: FqName
 ) : BindingNode(
     key, listOf(
-        BindingRequest(originalKey, requestOrigin)
+        BindingRequest(originalKey, requestOrigin, false)
     ), null, false, null, owner, origin
 )
 
@@ -217,8 +234,9 @@ class LazyBindingNode(
     key,
     listOf(
         BindingRequest(
-            key = key.type.typeArguments.single().typeOrFail.asKey(),
-            origin
+            key.type.typeArguments.single().typeOrFail.asKey(),
+            origin,
+            false
         )
     ),
     null,
@@ -248,7 +266,7 @@ class MembersInjectorBindingNode(
     membersInjector
         ?.valueParameters
         ?.drop(1)
-        ?.map { BindingRequest(it.type.asKey(), null) }
+        ?.map { BindingRequest(it.type.asKey(), null, it.hasDefaultValue()) }
         ?: emptyList(),
     null,
     false,
@@ -276,7 +294,13 @@ class ProviderBindingNode(
     origin: FqName?
 ) : BindingNode(
     key,
-    listOf(BindingRequest(key.type.typeArguments.single().typeOrFail.asKey(), origin)),
+    listOf(
+        BindingRequest(
+            key.type.typeArguments.single().typeOrFail.asKey(),
+            origin,
+            false
+        )
+    ),
     null,
     false,
     null,
@@ -292,7 +316,7 @@ class ProvisionBindingNode(
     module: ModuleNode?,
     owner: AbstractFactory,
     origin: FqName?,
-    val createExpression: IrBuilderWithScope.(Map<InjektDeclarationIrBuilder.FactoryParameter, () -> IrExpression>) -> IrExpression,
+    val createExpression: IrBuilderWithScope.(Map<InjektDeclarationIrBuilder.FactoryParameter, () -> IrExpression?>) -> IrExpression,
     val parameters: List<InjektDeclarationIrBuilder.FactoryParameter>
 ) : BindingNode(key, dependencies, targetScope, scoped, module, owner, origin)
 

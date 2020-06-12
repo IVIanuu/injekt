@@ -7,4 +7,7 @@
     <option name="apiVersion" value="1.3" />
     <option name="languageVersion" value="1.4" />
   </component>
+  <component name="KotlinCompilerSettings">
+    <option name="additionalArguments" value="-version -XXLanguage:+NewInference" />
+  </component>
 </project>

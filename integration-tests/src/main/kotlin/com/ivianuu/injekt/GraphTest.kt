@@ -258,7 +258,7 @@ class GraphTest {
     }
 
     @Test
-    fun testReturnsInstanceForNullableBinidng() =
+    fun testReturnsInstanceForNullableBinding() =
         codegen(
             """
         @InstanceFactory
@@ -283,6 +283,72 @@ class GraphTest {
         ) {
             assertNull(invokeSingleFile())
         }
+
+    @Test
+    fun testDefaultParametersSupportWithAnnotations() = codegen(
+        """
+        
+        @Transient
+        class Dep(val value: String = "default")
+        
+        @InstanceFactory
+        fun withDefault(): Dep {
+            return create()
+        }
+
+        @InstanceFactory
+        fun withoutDefault(): Dep {
+            instance("not default")
+            return create()
+        }
+        
+        fun invoke(): Pair<String, String> = withoutDefault().value to withDefault().value
+        
+        """
+    ) {
+        assertEquals("not default" to "default", invokeSingleFile())
+    }
+
+    @Test
+    fun testDefaultParametersSupportInDsl() = codegen(
+        """
+        class Dep(val value: String)
+        
+        fun createDep(value: String = "default") = Dep(value)
+        
+        @InstanceFactory
+        fun withDefault(): Dep {
+            transient(::createDep)
+            return create()
+        }
+
+        @InstanceFactory
+        fun withoutDefault(): Dep {
+            instance("not default")
+            transient(::createDep)
+            return create()
+        }
+        
+        fun invoke(): Pair<String, String> = withoutDefault().value to withDefault().value
+        
+        """
+    ) {
+        assertEquals("not default" to "default", invokeSingleFile())
+    }
+
+    @Test
+    fun testPrefersDefaultValueOverNullForNullableMissingParameter() = codegen(
+        """
+        class Dep(val value: String? = "default")
+        
+        @InstanceFactory
+        fun createDep(): Dep = create()
+        
+        fun invoke() = createDep().value
+        """
+    ) {
+        assertEquals("default", invokeSingleFile())
+    }
 
     @Test
     fun testAliasWithTypeParameters() = codegen(

@@ -49,14 +49,15 @@ class InstanceFactory(
                 factoryMembers.blockBuilder = this
 
                 val instanceRequest = BindingRequest(
-                    factoryFunction.returnType
+                    key = factoryFunction.returnType
                         .asKey(),
-                    factoryFunction.descriptor.fqNameSafe
+                    requestOrigin = factoryFunction.descriptor.fqNameSafe,
+                    hasDefault = false
                 )
 
                 init(null, listOf(instanceRequest))
 
-                +factoryExpressions.getBindingExpression(instanceRequest)(this)
+                +factoryExpressions.getBindingExpression(instanceRequest)(this)!!
             }
         }
     }

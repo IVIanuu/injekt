@@ -166,11 +166,12 @@ class ImplFactory(
                             BindingRequest(
                                 binding.key,
                                 request.requestOrigin,
+                                false, // todo add default support
                                 RequestType.Instance
                             )
                         )
 
-                        bindingExpression(this@implementDependencyRequests)
+                        bindingExpression(this@implementDependencyRequests)!!
                     }
             }
     }
@@ -189,7 +190,8 @@ class ImplFactory(
                                 }
                             )
                             .asKey(),
-                        declaration.descriptor.fqNameSafe
+                        declaration.descriptor.fqNameSafe,
+                        false // todo add default value support
                     )
                 }
 

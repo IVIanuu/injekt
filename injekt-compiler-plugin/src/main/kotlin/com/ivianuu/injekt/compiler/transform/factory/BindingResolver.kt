@@ -66,6 +66,7 @@ import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.hasDefaultValue
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.name.FqName
@@ -259,15 +260,18 @@ class ModuleBindingResolver(
                         .getFunctionParameterTypes()
                         .mapIndexed { index, type ->
                             InjektDeclarationIrBuilder.FactoryParameter(
-                                "p$index",
-                                type,
-                                type.hasAnnotation(InjektFqNames.Assisted)
+                                name = "p$index",
+                                type = type,
+                                assisted = type.hasAnnotation(InjektFqNames.Assisted),
+                                hasDefault = false
                             )
                         }
 
                     val dependencies = parameters
                         .filterNot { it.assisted }
-                        .map { BindingRequest(it.type.asKey(), moduleRequestOrigin) }
+                        .map {
+                            BindingRequest(it.type.asKey(), moduleRequestOrigin, it.hasDefault)
+                        }
 
                     if (providerType.getFunctionParameterTypes()
                             .any { it.hasAnnotation(InjektFqNames.Assisted) }
@@ -429,7 +433,8 @@ class AnnotatedClassBindingResolver(
                 InjektDeclarationIrBuilder.FactoryParameter(
                     name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
                     type = valueParameter.type,
-                    assisted = valueParameter.type.hasAnnotation(InjektFqNames.Assisted)
+                    assisted = valueParameter.type.hasAnnotation(InjektFqNames.Assisted),
+                    hasDefault = valueParameter.hasDefaultValue()
                 )
             } ?: emptyList()
 
@@ -444,7 +449,8 @@ class AnnotatedClassBindingResolver(
                             name = parametersNameProvider.allocateForGroup(valueParameter.name)
                                 .asString(),
                             type = valueParameter.type,
-                            assisted = false
+                            assisted = false,
+                            hasDefault = valueParameter.hasDefaultValue()
                         )
                     } ?: emptyList()
 
@@ -460,15 +466,16 @@ class AnnotatedClassBindingResolver(
                 .filterNot { it.assisted }
                 .map { parameter ->
                     BindingRequest(
-                        parameter.type
+                        key = parameter.type
                             .substituteAndKeepQualifiers(typeParametersMap)
                             .asKey(),
-                        constructor?.valueParameters
+                        requestOrigin = constructor?.valueParameters
                             ?.singleOrNull { it.name.asString() == parameter.name }
                             ?.descriptor
                             ?.fqNameSafe ?: clazz.properties
                             .singleOrNull { it.name.asString() == parameter.name }
-                            ?.descriptor?.fqNameSafe
+                            ?.descriptor?.fqNameSafe,
+                        hasDefault = parameter.hasDefault
                     )
                 }
 
@@ -539,7 +546,8 @@ class AnnotatedClassBindingResolver(
                 InjektDeclarationIrBuilder.FactoryParameter(
                     name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
                     type = valueParameter.type,
-                    assisted = valueParameter.type.hasAnnotation(InjektFqNames.Assisted)
+                    assisted = valueParameter.type.hasAnnotation(InjektFqNames.Assisted),
+                    hasDefault = valueParameter.hasDefaultValue()
                 )
             } ?: emptyList()
 
@@ -554,7 +562,8 @@ class AnnotatedClassBindingResolver(
                             name = parametersNameProvider.allocateForGroup(valueParameter.name)
                                 .asString(),
                             type = valueParameter.type,
-                            assisted = false
+                            assisted = false,
+                            hasDefault = valueParameter.hasDefaultValue()
                         )
                     } ?: emptyList()
 
@@ -565,15 +574,16 @@ class AnnotatedClassBindingResolver(
                 .filterNot { it.assisted }
                 .map { parameter ->
                     BindingRequest(
-                        parameter.type
+                        key = parameter.type
                             .substituteAndKeepQualifiers(typeParametersMap)
                             .asKey(),
-                        constructor?.valueParameters
+                        requestOrigin = constructor?.valueParameters
                             ?.singleOrNull { it.name.asString() == parameter.name }
                             ?.descriptor
                             ?.fqNameSafe ?: clazz.properties
                             .singleOrNull { it.name.asString() == parameter.name }
-                            ?.descriptor?.fqNameSafe
+                            ?.descriptor?.fqNameSafe,
+                        hasDefault = parameter.hasDefault
                     )
                 }
 
@@ -605,7 +615,7 @@ class AnnotatedClassBindingResolver(
         membersInjector: IrFunction?,
         constructorParameters: List<InjektDeclarationIrBuilder.FactoryParameter>,
         membersInjectorParameters: List<InjektDeclarationIrBuilder.FactoryParameter>
-    ): IrBuilderWithScope.(Map<InjektDeclarationIrBuilder.FactoryParameter, () -> IrExpression>) -> IrExpression {
+    ): IrBuilderWithScope.(Map<InjektDeclarationIrBuilder.FactoryParameter, () -> IrExpression?>) -> IrExpression {
         return { parametersMap ->
             fun createExpr() = if (clazz.kind == ClassKind.OBJECT) {
                 irGetObject(clazz.symbol)

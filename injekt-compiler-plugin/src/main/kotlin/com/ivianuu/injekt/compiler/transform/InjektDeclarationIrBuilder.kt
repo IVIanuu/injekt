@@ -89,6 +89,7 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.hasDefaultValue
 import org.jetbrains.kotlin.ir.util.referenceClassifier
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
@@ -262,7 +263,8 @@ class InjektDeclarationIrBuilder(
     data class FactoryParameter(
         val name: String,
         val type: IrType,
-        val assisted: Boolean
+        val assisted: Boolean,
+        val hasDefault: Boolean
     )
 
     class FieldWithGetter(
@@ -316,7 +318,8 @@ class InjektDeclarationIrBuilder(
             FactoryParameter(
                 name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
                 type = valueParameter.type,
-                assisted = valueParameter.type.hasAnnotation(InjektFqNames.Assisted)
+                assisted = valueParameter.type.hasAnnotation(InjektFqNames.Assisted),
+                hasDefault = valueParameter.hasDefaultValue()
             )
         } ?: emptyList()
 
@@ -329,7 +332,8 @@ class InjektDeclarationIrBuilder(
                         name = parametersNameProvider.allocateForGroup(valueParameter.name)
                             .asString(),
                         type = valueParameter.type,
-                        assisted = false
+                        assisted = false,
+                        hasDefault = valueParameter.hasDefaultValue()
                     )
                 } ?: emptyList()
 

@@ -64,7 +64,7 @@ class FactoryExpressions(
     fun getRequirementExpression(node: RequirementNode): FactoryExpression {
         requirementExpressions[node]?.let { return it }
         val expression = members.cachedValue(node.key) {
-            node.accessor(this)
+            node.accessor(this)!!
         }
         requirementExpressions[node] = expression
         return expression
@@ -85,6 +85,7 @@ class FactoryExpressions(
                         BindingRequest(
                             binding.key,
                             binding.origin,
+                            request.hasDefault,
                             RequestType.Provider
                         )
                     )
@@ -94,6 +95,7 @@ class FactoryExpressions(
                             BindingRequest(
                                 binding.key,
                                 binding.origin,
+                                request.hasDefault,
                                 RequestType.Provider
                             )
                         )
@@ -106,6 +108,7 @@ class FactoryExpressions(
                             binding
                         )
                         is ChildFactoryBindingNode -> instanceExpressionForChildFactory(binding)
+                        is DefaultValueBindingNode -> DefaultValueFactoryExpression
                         is DelegateBindingNode -> instanceExpressionForDelegate(binding)
                         is DependencyBindingNode -> instanceExpressionForDependency(binding)
                         is FactoryImplementationBindingNode -> instanceExpressionForFactoryImplementation(
@@ -121,7 +124,11 @@ class FactoryExpressions(
                         is ProviderBindingNode -> instanceExpressionForProvider(binding)
                         is ProvisionBindingNode -> instanceExpressionForProvision(binding)
                         is SetBindingNode -> instanceExpressionForSet(binding)
-                    }.wrapInFunction(binding.key)
+                    }
+                        .let {
+                            if (it != DefaultValueFactoryExpression)
+                                it.wrapInFunction(binding.key) else it
+                        }
                 }
             }
             RequestType.Provider -> {
@@ -130,6 +137,7 @@ class FactoryExpressions(
                         binding
                     )
                     is ChildFactoryBindingNode -> providerExpressionForChildFactory(binding)
+                    is DefaultValueBindingNode -> DefaultValueFactoryExpression
                     is DelegateBindingNode -> providerExpressionForDelegate(binding)
                     is DependencyBindingNode -> providerExpressionForDependency(binding)
                     is FactoryImplementationBindingNode -> providerExpressionForFactoryImplementation(
@@ -175,7 +183,7 @@ class FactoryExpressions(
                             this,
                             binding.parameters
                                 .associateWith { parameter ->
-                                    val expr: () -> IrExpression = if (parameter.assisted) {
+                                    val expr: () -> IrExpression? = if (parameter.assisted) {
                                         {
                                             irGet(
                                                 lambda.valueParameters[assistedParameters.indexOf(
@@ -187,7 +195,7 @@ class FactoryExpressions(
                                         {
                                             dependencyExpressions[nonAssistedParameters.indexOf(
                                                 parameter
-                                            )]()
+                                            )]?.invoke(this)
                                         }
                                     }
                                     expr
@@ -231,7 +239,7 @@ class FactoryExpressions(
                     binding.dependencies.single().copy(
                         requestType = RequestType.Provider
                     )
-                )()
+                )()!!
             )
         }
     }
@@ -245,11 +253,12 @@ class FactoryExpressions(
                             entryValue.copy(requestType = RequestType.Provider)
                         binding.valueKey.type.isLazy() -> {
                             BindingRequest(
-                                pluginContext.tmpFunction(0)
+                                key = pluginContext.tmpFunction(0)
                                     .typeWith(entryValue.key.type)
                                     .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Lazy))
                                     .asKey(),
-                                entryValue.requestOrigin
+                                requestOrigin = entryValue.requestOrigin,
+                                hasDefault = false
                             )
                         }
                         else -> entryValue
@@ -324,7 +333,7 @@ class FactoryExpressions(
                                     binding.keyKey.type,
                                     binding.valueKey.type
                                 ),
-                                entryExpressions.map { it() }
+                                entryExpressions.map { it()!! }
                             ),
                         )
                     }
@@ -361,9 +370,10 @@ class FactoryExpressions(
     private fun instanceExpressionForProvider(binding: ProviderBindingNode): FactoryExpression {
         return getBindingExpression(
             BindingRequest(
-                binding.key.type.typeArguments.single().typeOrFail.asKey(),
-                binding.origin,
-                RequestType.Provider
+                key = binding.key.type.typeArguments.single().typeOrFail.asKey(),
+                requestOrigin = binding.origin,
+                hasDefault = false,
+                requestType = RequestType.Provider
             )
         )
     }
@@ -401,11 +411,12 @@ class FactoryExpressions(
                             element.copy(requestType = RequestType.Provider)
                         binding.elementKey.type.isLazy() -> {
                             BindingRequest(
-                                pluginContext.tmpFunction(0)
+                                key = pluginContext.tmpFunction(0)
                                     .typeWith(element.key.type)
                                     .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Lazy))
                                     .asKey(),
-                                element.requestOrigin
+                                requestOrigin = element.requestOrigin,
+                                hasDefault = false
                             )
                         }
                         else -> element
@@ -453,7 +464,7 @@ class FactoryExpressions(
                                 pluginContext.irBuiltIns.arrayClass
                                     .typeWith(binding.elementKey.type),
                                 binding.elementKey.type,
-                                elementExpressions.map<FactoryExpression, IrExpression> { it() }
+                                elementExpressions.map { it()!! }
                             )
                         )
                     }
@@ -466,15 +477,20 @@ class FactoryExpressions(
         return cachedFactoryExpression(binding.key) {
             singleInstanceFactory(
                 getBindingExpression(
-                    BindingRequest(binding.key, binding.origin, RequestType.Instance)
-                )()
+                    BindingRequest(
+                        key = binding.key,
+                        requestOrigin = binding.origin,
+                        hasDefault = false,
+                        requestType = RequestType.Instance
+                    )
+                )()!!
             )
         }
     }
 
     private fun providerExpressionForChildFactory(binding: ChildFactoryBindingNode): FactoryExpression {
         return cachedFactoryExpression(binding.key) {
-            singleInstanceFactory(binding.childFactoryExpression(this))
+            singleInstanceFactory(binding.childFactoryExpression(this)!!)
         }
     }
 
@@ -512,16 +528,17 @@ class FactoryExpressions(
 
     private fun providerExpressionForInstance(binding: InstanceBindingNode): FactoryExpression {
         return cachedFactoryExpression(binding.key) {
-            singleInstanceFactory(binding.requirementNode.accessor(this))
+            singleInstanceFactory(binding.requirementNode.accessor(this)!!)
         }
     }
 
     private fun providerExpressionForLazy(binding: LazyBindingNode): FactoryExpression {
         val dependencyExpression = getBindingExpression(
             BindingRequest(
-                binding.key.type.typeArguments.single().typeOrFail.asKey(),
-                binding.origin,
-                RequestType.Provider
+                key = binding.key.type.typeArguments.single().typeOrFail.asKey(),
+                requestOrigin = binding.origin,
+                hasDefault = false,
+                requestType = RequestType.Provider
             )
         )
         return cachedFactoryExpression(binding.key) {
@@ -540,9 +557,10 @@ class FactoryExpressions(
             .map { (key, entryValue) ->
                 val entryValueExpression = getBindingExpression(
                     BindingRequest(
-                        entryValue.key,
-                        binding.origin,
-                        RequestType.Provider
+                        key = entryValue.key,
+                        requestOrigin = binding.origin,
+                        hasDefault = false,
+                        requestType = RequestType.Provider
                     )
                 )
                 val pairExpression: FactoryExpression = pairExpression@{
@@ -629,7 +647,7 @@ class FactoryExpressions(
                                         binding.keyKey.type,
                                         binding.valueKey.type
                                     ),
-                                    entryExpressions.map { it() }
+                                    entryExpressions.map { it()!! }
                                 ),
                             )
                         }
@@ -669,9 +687,10 @@ class FactoryExpressions(
     private fun providerExpressionForProvider(binding: ProviderBindingNode): FactoryExpression {
         return getBindingExpression(
             BindingRequest(
-                binding.dependencies.single().key,
-                binding.origin,
-                RequestType.Provider
+                key = binding.dependencies.single().key,
+                requestOrigin = binding.origin,
+                hasDefault = false,
+                requestType = RequestType.Provider
             )
         )
     }
@@ -776,7 +795,7 @@ class FactoryExpressions(
                                                 .typeWith(binding.key.type)
                                         ),
                                     binding.elementKey.type,
-                                    elementExpressions.map { it() }
+                                    elementExpressions.map { it()!! }
                                 )
                             )
                         }
@@ -823,8 +842,8 @@ class FactoryExpressions(
 
     private fun FactoryExpression.wrapInFunction(key: Key): FactoryExpression {
         val factoryExpression = this
-        val function = members.getGetFunction(key) function@{ function ->
-            factoryExpression()
+        val function = members.getGetFunction(key) function@{
+            factoryExpression()!!
         }
         return bindingExpression@{ irCall(function) }
     }
@@ -832,9 +851,10 @@ class FactoryExpressions(
     private fun invokeProviderInstanceExpression(binding: BindingNode): FactoryExpression {
         val providerExpression = getBindingExpression(
             BindingRequest(
-                binding.key,
-                binding.origin,
-                RequestType.Provider
+                key = binding.key,
+                requestOrigin = binding.origin,
+                hasDefault = false,
+                requestType = RequestType.Provider
             )
         )
         return bindingExpression@{
@@ -850,4 +870,6 @@ class FactoryExpressions(
 
 }
 
-typealias FactoryExpression = IrBuilderWithScope.() -> IrExpression
+typealias FactoryExpression = IrBuilderWithScope.() -> IrExpression?
+
+val DefaultValueFactoryExpression: FactoryExpression = { null }
