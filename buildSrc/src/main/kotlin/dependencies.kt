@@ -32,7 +32,7 @@ object Build {
 object Publishing {
     const val groupId = "com.ivianuu.injekt"
     const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev175"
+    const val version = "${Build.versionName}-dev176"
 }
 
 object Deps {
