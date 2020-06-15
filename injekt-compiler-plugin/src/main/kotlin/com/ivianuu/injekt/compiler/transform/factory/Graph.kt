@@ -84,7 +84,6 @@ class Graph(
     private val resolvedBindings = mutableMapOf<Key, BindingNode>()
 
     private val chain = mutableSetOf<Key>()
-    private val resolvedCircularDeps = mutableListOf<Pair<Key, Key>>()
 
     init {
         if (factoryModule != null) addModule(factoryModule)
@@ -172,8 +171,12 @@ class Graph(
         check(request.key !in chain || chain.any {
             ((it.type.isLazy() || it.type.isProvider()) &&
                     it.type.typeArguments.singleOrNull()?.typeOrNull == request.key.type)
-        }) {
-            "Circular dependency for '${request.key}' in '${factory.origin}' chain ${chain + request.key}"
+        } || (request.requestingKey != null && chain.any {
+            ((it.type.isLazy() || it.type.isProvider()) &&
+                    it.type.typeArguments.singleOrNull()?.typeOrNull == request.requestingKey.type)
+        })) {
+            // todo pretty print
+            "Circular dependency for '${request.key}' in '${factory.origin}' chain ${chain.toList() + request.key}"
         }
 
         // we don't have to check further because it's a legal cycle
@@ -412,7 +415,7 @@ class Graph(
     ) {
         mapBindingResolver.putMapEntry(
             mapKey, entryKey,
-            BindingRequest(entryValue, origin, false)
+            BindingRequest(entryValue, mapKey, origin, false)
         )
     }
 
@@ -427,7 +430,7 @@ class Graph(
     ) {
         setBindingResolver.addSetElement(
             setKey,
-            BindingRequest(elementKey, origin, false)
+            BindingRequest(elementKey, setKey, origin, false)
         )
     }
 }

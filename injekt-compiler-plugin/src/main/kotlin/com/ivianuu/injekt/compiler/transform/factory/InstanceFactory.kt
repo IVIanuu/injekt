@@ -51,6 +51,7 @@ class InstanceFactory(
                 val instanceRequest = BindingRequest(
                     key = factoryFunction.returnType
                         .asKey(),
+                    requestingKey = null,
                     requestOrigin = factoryFunction.descriptor.fqNameSafe,
                     hasDefault = false
                 )

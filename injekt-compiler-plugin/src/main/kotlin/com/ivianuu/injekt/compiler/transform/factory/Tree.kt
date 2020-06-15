@@ -92,6 +92,7 @@ class DependencyNode(
 
 class BindingRequest(
     val key: Key,
+    val requestingKey: Key?,
     val requestOrigin: FqName?,
     val hasDefault: Boolean,
     val requestType: RequestType = key.inferRequestType()
@@ -99,11 +100,12 @@ class BindingRequest(
 
     fun copy(
         key: Key = this.key,
+        requestingKey: Key? = this.requestingKey,
         requestOrigin: FqName? = this.requestOrigin,
         hasDefault: Boolean = this.hasDefault,
         requestType: RequestType = this.requestType
     ): BindingRequest = BindingRequest(
-        key, requestOrigin, hasDefault, requestType
+        key, requestingKey, requestOrigin, hasDefault, requestType
     )
 
     override fun equals(other: Any?): Boolean {
@@ -167,6 +169,7 @@ class ChildFactoryBindingNode(
     key, listOf(
         BindingRequest(
             parent.defaultType.asKey(),
+            key,
             null,
             false
         )
@@ -195,7 +198,7 @@ class DelegateBindingNode(
     val requestOrigin: FqName
 ) : BindingNode(
     key, listOf(
-        BindingRequest(originalKey, requestOrigin, false)
+        BindingRequest(originalKey, key, requestOrigin, false)
     ), null, false, null, owner, origin
 )
 
@@ -235,6 +238,7 @@ class LazyBindingNode(
     listOf(
         BindingRequest(
             key.type.typeArguments.single().typeOrFail.asKey(),
+            key,
             origin,
             false
         )
@@ -266,7 +270,7 @@ class MembersInjectorBindingNode(
     membersInjector
         ?.valueParameters
         ?.drop(1)
-        ?.map { BindingRequest(it.type.asKey(), null, it.hasDefaultValue()) }
+        ?.map { BindingRequest(it.type.asKey(), key, null, it.hasDefaultValue()) }
         ?: emptyList(),
     null,
     false,
@@ -297,6 +301,7 @@ class ProviderBindingNode(
     listOf(
         BindingRequest(
             key.type.typeArguments.single().typeOrFail.asKey(),
+            key,
             origin,
             false
         )

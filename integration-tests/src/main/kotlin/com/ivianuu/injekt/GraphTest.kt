@@ -89,6 +89,20 @@ class GraphTest {
     }
 
     @Test
+    fun testCircularDependencyWithProvider2() = codegen(
+        """
+        @TestScope class A(b: B)
+        @Transient class B(a: @Lazy () -> A)
+        @InstanceFactory fun invoke(): B {
+            scope<TestScope>()
+            return create()
+        }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
     fun testScopeMismatch() = codegen(
         """
         @TestScope2 class Dep

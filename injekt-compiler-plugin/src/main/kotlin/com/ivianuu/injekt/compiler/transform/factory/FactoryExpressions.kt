@@ -84,6 +84,7 @@ class FactoryExpressions(
                 if (bindingExpressions.containsKey(
                         BindingRequest(
                             binding.key,
+                            request.requestingKey,
                             binding.origin,
                             request.hasDefault,
                             RequestType.Provider
@@ -94,6 +95,7 @@ class FactoryExpressions(
                         getBindingExpression(
                             BindingRequest(
                                 binding.key,
+                                request.requestingKey,
                                 binding.origin,
                                 request.hasDefault,
                                 RequestType.Provider
@@ -261,6 +263,7 @@ class FactoryExpressions(
                                             listOf(InjektFqNames.Lazy)
                                         )
                                         .asKey(),
+                                    requestingKey = binding.keyKey,
                                     requestOrigin = entryValue.requestOrigin,
                                     hasDefault = false
                                 )
@@ -375,6 +378,7 @@ class FactoryExpressions(
         return getBindingExpression(
             BindingRequest(
                 key = binding.key.type.typeArguments.single().typeOrFail.asKey(),
+                requestingKey = binding.key,
                 requestOrigin = binding.origin,
                 hasDefault = false,
                 requestType = RequestType.Provider
@@ -423,6 +427,7 @@ class FactoryExpressions(
                                             listOf(InjektFqNames.Lazy)
                                         )
                                         .asKey(),
+                                    requestingKey = binding.key,
                                     requestOrigin = element.requestOrigin,
                                     hasDefault = false
                                 )
@@ -486,6 +491,7 @@ class FactoryExpressions(
                 getBindingExpression(
                     BindingRequest(
                         key = binding.key,
+                        requestingKey = binding.key,
                         requestOrigin = binding.origin,
                         hasDefault = false,
                         requestType = RequestType.Instance
@@ -544,6 +550,7 @@ class FactoryExpressions(
             val dependencyExpression = getBindingExpression(
                 BindingRequest(
                     key = binding.key.type.typeArguments.single().typeOrFail.asKey(),
+                    requestingKey = binding.key,
                     requestOrigin = binding.origin,
                     hasDefault = false,
                     requestType = RequestType.Provider
@@ -567,6 +574,7 @@ class FactoryExpressions(
                     val entryValueExpression = getBindingExpression(
                         BindingRequest(
                             key = entryValue.key,
+                            requestingKey = binding.key,
                             requestOrigin = binding.origin,
                             hasDefault = false,
                             requestType = RequestType.Provider
@@ -697,6 +705,7 @@ class FactoryExpressions(
         return getBindingExpression(
             BindingRequest(
                 key = binding.dependencies.single().key,
+                requestingKey = binding.key,
                 requestOrigin = binding.origin,
                 hasDefault = false,
                 requestType = RequestType.Provider
@@ -861,6 +870,7 @@ class FactoryExpressions(
         val providerExpression = getBindingExpression(
             BindingRequest(
                 key = binding.key,
+                requestingKey = binding.key,
                 requestOrigin = binding.origin,
                 hasDefault = false,
                 requestType = RequestType.Provider

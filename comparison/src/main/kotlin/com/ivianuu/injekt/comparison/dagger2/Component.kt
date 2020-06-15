@@ -18,7 +18,9 @@ package com.ivianuu.injekt.comparison.dagger2
 
 import com.ivianuu.injekt.comparison.fibonacci.Fib8
 import dagger.Component
+import dagger.Lazy
 import dagger.Module
+import javax.inject.Inject
 
 @Component
 interface Dagger2Component {
@@ -30,7 +32,16 @@ interface Dagger2Component {
     }
 }
 
-class Outer {
-    @Module
-    inner class MyModule
+class Foo @Inject constructor(bar: Bar)
+
+class Bar @Inject constructor(foo: Lazy<Foo>)
+
+@Component
+interface FooComponent {
+    val foo: Foo
+}
+
+@Component
+interface BarComponent {
+    val bar: Bar
 }

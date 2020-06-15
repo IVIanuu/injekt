@@ -270,7 +270,12 @@ class ModuleBindingResolver(
                     val dependencies = parameters
                         .filterNot { it.assisted }
                         .map {
-                            BindingRequest(it.type.asKey(), moduleRequestOrigin, it.hasDefault)
+                            BindingRequest(
+                                key = it.type.asKey(),
+                                requestingKey = bindingKey,
+                                requestOrigin = moduleRequestOrigin,
+                                hasDefault = it.hasDefault
+                            )
                         }
 
                     if (providerType.getFunctionParameterTypes()
@@ -469,6 +474,7 @@ class AnnotatedClassBindingResolver(
                         key = parameter.type
                             .substituteAndKeepQualifiers(typeParametersMap)
                             .asKey(),
+                        requestingKey = requestedKey,
                         requestOrigin = constructor?.valueParameters
                             ?.singleOrNull { it.name.asString() == parameter.name }
                             ?.descriptor
@@ -577,6 +583,7 @@ class AnnotatedClassBindingResolver(
                         key = parameter.type
                             .substituteAndKeepQualifiers(typeParametersMap)
                             .asKey(),
+                        requestingKey = requestedKey,
                         requestOrigin = constructor?.valueParameters
                             ?.singleOrNull { it.name.asString() == parameter.name }
                             ?.descriptor
