@@ -64,7 +64,10 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
 
     val childFactory = pluginContext.referenceClass(InjektFqNames.ChildFactory)!!
 
+    val delegateFactory = pluginContext.referenceClass(InjektFqNames.DelegateFactory)!!
+
     val doubleCheck = pluginContext.referenceClass(InjektFqNames.DoubleCheck)!!
+
     val factory = pluginContext.referenceClass(InjektFqNames.Factory)!!
 
     val injectProperty = pluginContext.referenceClass(InjektFqNames.InjectProperty)!!

@@ -34,7 +34,7 @@ abstract class AbstractFactory(
     val declarationStore: InjektDeclarationStore
 ) {
 
-    val factoryMembers = FactoryMembers(pluginContext)
+    val factoryMembers = FactoryMembers(pluginContext, symbols)
 
     lateinit var graph: Graph
         private set

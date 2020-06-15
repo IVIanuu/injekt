@@ -69,6 +69,8 @@ object InjektFqNames {
     val CompositionFactory = CompositionPackage.child("CompositionFactory")
     val CompositionFactories = CompositionPackage.child("CompositionFactories")
 
+    val DelegateFactory = InternalPackage.child("DelegateFactory")
+
     val DoubleCheck = InternalPackage.child("DoubleCheck")
 
     val Factory = InjektPackage.child("Factory")

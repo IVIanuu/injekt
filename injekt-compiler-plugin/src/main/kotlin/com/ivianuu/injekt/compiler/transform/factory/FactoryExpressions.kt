@@ -160,13 +160,13 @@ class FactoryExpressions(
     }
 
     private fun instanceExpressionForAssistedProvision(binding: AssistedProvisionBindingNode): FactoryExpression {
-        val (assistedParameters, nonAssistedParameters) = binding.parameters
-            .partition { it.assisted }
-
-        val dependencyExpressions = binding.dependencies
-            .map { getBindingExpression(it) }
-
         return {
+            val (assistedParameters, nonAssistedParameters) = binding.parameters
+                .partition { it.assisted }
+
+            val dependencyExpressions = binding.dependencies
+                .map { getBindingExpression(it) }
+
             InjektDeclarationIrBuilder(pluginContext, factory.factoryFunction.symbol)
                 .irLambda(
                     pluginContext.tmpFunction(
@@ -195,7 +195,7 @@ class FactoryExpressions(
                                         {
                                             dependencyExpressions[nonAssistedParameters.indexOf(
                                                 parameter
-                                            )]?.invoke(this)
+                                            )](this)
                                         }
                                     }
                                     expr
@@ -214,8 +214,8 @@ class FactoryExpressions(
         getBindingExpression(binding.dependencies.single())
 
     private fun instanceExpressionForDependency(binding: DependencyBindingNode): FactoryExpression {
-        val dependencyExpression = getRequirementExpression(binding.requirementNode)
         return {
+            val dependencyExpression = getRequirementExpression(binding.requirementNode)
             irCall(binding.function).apply {
                 dispatchReceiver = dependencyExpression()
             }
@@ -245,44 +245,47 @@ class FactoryExpressions(
     }
 
     private fun instanceExpressionForMap(binding: MapBindingNode): FactoryExpression {
-        val entryExpressions = binding.entries
-            .map { (key, entryValue) ->
-                val entryValueExpression = getBindingExpression(
-                    when {
-                        binding.valueKey.type.isNoArgProvider() ->
-                            entryValue.copy(requestType = RequestType.Provider)
-                        binding.valueKey.type.isLazy() -> {
-                            BindingRequest(
-                                key = pluginContext.tmpFunction(0)
-                                    .typeWith(entryValue.key.type)
-                                    .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Lazy))
-                                    .asKey(),
-                                requestOrigin = entryValue.requestOrigin,
-                                hasDefault = false
+        return {
+            val entryExpressions = binding.entries
+                .map { (key, entryValue) ->
+                    val entryValueExpression = getBindingExpression(
+                        when {
+                            binding.valueKey.type.isNoArgProvider() ->
+                                entryValue.copy(requestType = RequestType.Provider)
+                            binding.valueKey.type.isLazy() -> {
+                                BindingRequest(
+                                    key = pluginContext.tmpFunction(0)
+                                        .typeWith(entryValue.key.type)
+                                        .withNoArgAnnotations(
+                                            pluginContext,
+                                            listOf(InjektFqNames.Lazy)
+                                        )
+                                        .asKey(),
+                                    requestOrigin = entryValue.requestOrigin,
+                                    hasDefault = false
+                                )
+                            }
+                            else -> entryValue
+                        }
+                    )
+                    val pairExpression: FactoryExpression = pairExpression@{
+                        irCall(pair.constructors.single()).apply {
+                            putTypeArgument(0, binding.keyKey.type)
+                            putTypeArgument(1, binding.valueKey.type)
+
+                            putValueArgument(
+                                0,
+                                with(key) { asExpression() }
+                            )
+                            putValueArgument(
+                                1,
+                                entryValueExpression()
                             )
                         }
-                        else -> entryValue
                     }
-                )
-                val pairExpression: FactoryExpression = pairExpression@{
-                    irCall(pair.constructors.single()).apply {
-                        putTypeArgument(0, binding.keyKey.type)
-                        putTypeArgument(1, binding.valueKey.type)
-
-                        putValueArgument(
-                            0,
-                            with(key) { asExpression() }
-                        )
-                        putValueArgument(
-                            1,
-                            entryValueExpression()
-                        )
-                    }
+                    pairExpression
                 }
-                pairExpression
-            }
 
-        return {
             when (entryExpressions.size) {
                 0 -> {
                     irCall(
@@ -343,9 +346,10 @@ class FactoryExpressions(
     }
 
     private fun instanceExpressionForMembersInjector(binding: MembersInjectorBindingNode): FactoryExpression {
-        val dependencyExpressions = binding.dependencies
-            .map { getBindingExpression(it) }
         return {
+            val dependencyExpressions = binding.dependencies
+                .map { getBindingExpression(it) }
+
             InjektDeclarationIrBuilder(pluginContext, scope.scopeOwnerSymbol)
                 .irLambda(binding.key.type) { lambda ->
                     if (binding.membersInjector != null) {
@@ -382,10 +386,10 @@ class FactoryExpressions(
         return if (binding.scoped) {
             invokeProviderInstanceExpression(binding)
         } else {
-            val dependencies = binding.dependencies
-                .map { getBindingExpression(it) }
-
             val expression: FactoryExpression = bindingExpression@{
+                val dependencies = binding.dependencies
+                    .map { getBindingExpression(it) }
+
                 binding.createExpression(
                     this,
                     binding.parameters
@@ -403,28 +407,31 @@ class FactoryExpressions(
     }
 
     private fun instanceExpressionForSet(binding: SetBindingNode): FactoryExpression {
-        val elementExpressions = binding.dependencies
-            .map { element ->
-                getBindingExpression(
-                    when {
-                        binding.elementKey.type.isNoArgProvider() ->
-                            element.copy(requestType = RequestType.Provider)
-                        binding.elementKey.type.isLazy() -> {
-                            BindingRequest(
-                                key = pluginContext.tmpFunction(0)
-                                    .typeWith(element.key.type)
-                                    .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Lazy))
-                                    .asKey(),
-                                requestOrigin = element.requestOrigin,
-                                hasDefault = false
-                            )
-                        }
-                        else -> element
-                    }
-                )
-            }
-
         return bindingExpression@{
+            val elementExpressions = binding.dependencies
+                .map { element ->
+                    getBindingExpression(
+                        when {
+                            binding.elementKey.type.isNoArgProvider() ->
+                                element.copy(requestType = RequestType.Provider)
+                            binding.elementKey.type.isLazy() -> {
+                                BindingRequest(
+                                    key = pluginContext.tmpFunction(0)
+                                        .typeWith(element.key.type)
+                                        .withNoArgAnnotations(
+                                            pluginContext,
+                                            listOf(InjektFqNames.Lazy)
+                                        )
+                                        .asKey(),
+                                    requestOrigin = element.requestOrigin,
+                                    hasDefault = false
+                                )
+                            }
+                            else -> element
+                        }
+                    )
+                }
+
             when (elementExpressions.size) {
                 0 -> {
                     irCall(
@@ -498,8 +505,8 @@ class FactoryExpressions(
         getBindingExpression(binding.dependencies.single().copy(requestType = RequestType.Provider))
 
     private fun providerExpressionForDependency(binding: DependencyBindingNode): FactoryExpression {
-        val dependencyExpression = getRequirementExpression(binding.requirementNode)
         return cachedFactoryExpression(binding.key) providerFieldExpression@{
+            val dependencyExpression = getRequirementExpression(binding.requirementNode)
             InjektDeclarationIrBuilder(pluginContext, factory.factoryFunction.symbol)
                 .irLambda(
                     pluginContext.tmpFunction(0)
@@ -533,15 +540,16 @@ class FactoryExpressions(
     }
 
     private fun providerExpressionForLazy(binding: LazyBindingNode): FactoryExpression {
-        val dependencyExpression = getBindingExpression(
-            BindingRequest(
-                key = binding.key.type.typeArguments.single().typeOrFail.asKey(),
-                requestOrigin = binding.origin,
-                hasDefault = false,
-                requestType = RequestType.Provider
-            )
-        )
         return cachedFactoryExpression(binding.key) {
+            val dependencyExpression = getBindingExpression(
+                BindingRequest(
+                    key = binding.key.type.typeArguments.single().typeOrFail.asKey(),
+                    requestOrigin = binding.origin,
+                    hasDefault = false,
+                    requestType = RequestType.Provider
+                )
+            )
+
             irCall(
                 symbols.providerOfLazy
                     .constructors
@@ -553,35 +561,35 @@ class FactoryExpressions(
     }
 
     private fun providerExpressionForMap(binding: MapBindingNode): FactoryExpression {
-        val entryExpressions = binding.entries
-            .map { (key, entryValue) ->
-                val entryValueExpression = getBindingExpression(
-                    BindingRequest(
-                        key = entryValue.key,
-                        requestOrigin = binding.origin,
-                        hasDefault = false,
-                        requestType = RequestType.Provider
-                    )
-                )
-                val pairExpression: FactoryExpression = pairExpression@{
-                    irCall(pair.constructors.single()).apply {
-                        putTypeArgument(0, binding.keyKey.type)
-                        putTypeArgument(1, binding.valueKey.type)
-
-                        putValueArgument(
-                            0,
-                            with(key) { asExpression() }
-                        )
-                        putValueArgument(
-                            1,
-                            entryValueExpression()
-                        )
-                    }
-                }
-                pairExpression
-            }
-
         return cachedFactoryExpression(binding.key) providerFieldExpression@{
+            val entryExpressions = binding.entries
+                .map { (key, entryValue) ->
+                    val entryValueExpression = getBindingExpression(
+                        BindingRequest(
+                            key = entryValue.key,
+                            requestOrigin = binding.origin,
+                            hasDefault = false,
+                            requestType = RequestType.Provider
+                        )
+                    )
+                    val pairExpression: FactoryExpression = pairExpression@{
+                        irCall(pair.constructors.single()).apply {
+                            putTypeArgument(0, binding.keyKey.type)
+                            putTypeArgument(1, binding.valueKey.type)
+
+                            putValueArgument(
+                                0,
+                                with(key) { asExpression() }
+                            )
+                            putValueArgument(
+                                1,
+                                entryValueExpression()
+                            )
+                        }
+                    }
+                    pairExpression
+                }
+
             val mapFactoryCompanion = when {
                 binding.valueKey.type.isNoArgProvider() -> {
                     symbols.mapOfProviderFactory.owner.companionObject() as IrClass
@@ -658,9 +666,10 @@ class FactoryExpressions(
     }
 
     private fun providerExpressionForMembersInjector(binding: MembersInjectorBindingNode): FactoryExpression {
-        val dependencyExpressions = binding.dependencies
-            .map { getBindingExpression(it) }
         return {
+            val dependencyExpressions = binding.dependencies
+                .map { getBindingExpression(it) }
+
             singleInstanceFactory(
                 InjektDeclarationIrBuilder(pluginContext, scope.scopeOwnerSymbol)
                     .irLambda(binding.key.type) { lambda ->
@@ -696,10 +705,10 @@ class FactoryExpressions(
     }
 
     private fun providerExpressionForProvision(binding: ProvisionBindingNode): FactoryExpression {
-        val dependencyExpressions = binding.dependencies
-            .map { getBindingExpression(it) }
-
         return cachedFactoryExpression(binding.key) providerFieldExpression@{
+            val dependencyExpressions = binding.dependencies
+                .map { getBindingExpression(it) }
+
             val newProvider =
                 InjektDeclarationIrBuilder(pluginContext, factory.factoryFunction.symbol)
                     .irLambda(
@@ -712,14 +721,14 @@ class FactoryExpressions(
                                 binding.parameters
                                     .mapIndexed { index, parameter ->
                                         index to parameter
-                                }
-                                .associateWith { (index, parameter) ->
-                                    { dependencyExpressions[index]() }
-                                }
-                                .mapKeys { it.key.second }
+                                    }
+                                    .associateWith { (index, parameter) ->
+                                        { dependencyExpressions[index]() }
+                                    }
+                                    .mapKeys { it.key.second }
+                            )
                         )
-                    )
-                }
+                    }
 
             if (binding.scoped) {
                 doubleCheck(newProvider)
@@ -730,14 +739,14 @@ class FactoryExpressions(
     }
 
     private fun providerExpressionForSet(binding: SetBindingNode): FactoryExpression {
-        val elementExpressions = binding.dependencies
-            .map {
-                getBindingExpression(
-                    it.copy(requestType = RequestType.Provider)
-                )
-            }
-
         return cachedFactoryExpression(binding.key) providerFieldExpression@{
+            val elementExpressions = binding.dependencies
+                .map {
+                    getBindingExpression(
+                        it.copy(requestType = RequestType.Provider)
+                    )
+                }
+
             val setFactoryCompanion = when {
                 binding.elementKey.type.isNoArgProvider() -> {
                     symbols.setOfProviderFactory.owner.companionObject() as IrClass

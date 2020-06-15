@@ -27,6 +27,8 @@ import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.findPropertyGetter
 import com.ivianuu.injekt.compiler.getIrClass
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.isLazy
+import com.ivianuu.injekt.compiler.isProvider
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
@@ -40,6 +42,7 @@ import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
+import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
@@ -81,6 +84,7 @@ class Graph(
     private val resolvedBindings = mutableMapOf<Key, BindingNode>()
 
     private val chain = mutableSetOf<Key>()
+    private val resolvedCircularDeps = mutableListOf<Pair<Key, Key>>()
 
     init {
         if (factoryModule != null) addModule(factoryModule)
@@ -165,12 +169,20 @@ class Graph(
     }
 
     fun validate(request: BindingRequest) {
-        check(request.key !in chain) {
-            "Circular dependency for '${request.key}' in '${factory.origin}'"
+        check(request.key !in chain || chain.any {
+            ((it.type.isLazy() || it.type.isProvider()) &&
+                    it.type.typeArguments.singleOrNull()?.typeOrNull == request.key.type)
+        }) {
+            "Circular dependency for '${request.key}' in '${factory.origin}' chain ${chain + request.key}"
         }
+
+        // we don't have to check further because it's a legal cycle
+        if (request.key in chain) return
+
         chain += request.key
         val binding = getBinding(request)
-        binding.dependencies.forEach { validate(it) }
+        binding.dependencies
+            .forEach { validate(it) }
         chain -= request.key
     }
 
