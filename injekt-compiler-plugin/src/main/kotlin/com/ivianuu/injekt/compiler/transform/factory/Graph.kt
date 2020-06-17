@@ -168,15 +168,27 @@ class Graph(
     }
 
     fun validate(request: BindingRequest) {
-        check(request.key !in chain || chain.any {
-            ((it.type.isLazy() || it.type.isProvider()) &&
-                    it.type.typeArguments.singleOrNull()?.typeOrNull == request.key.type)
-        } || (request.requestingKey != null && chain.any {
-            ((it.type.isLazy() || it.type.isProvider()) &&
-                    it.type.typeArguments.singleOrNull()?.typeOrNull == request.requestingKey.type)
-        })) {
+        check(request.key !in chain || chain
+            .toList()
+            .let { it.subList(it.indexOf(request.key), it.size) }
+            .any {
+                (it.type.isLazy() || it.type.isProvider()) &&
+                        it.type.typeArguments.singleOrNull()?.typeOrNull == request.key.type
+            } || (request.requestingKey != null &&
+                chain
+                    .toList()
+                    .let { it.subList(it.indexOf(request.key), it.size) }
+                    .any {
+                        (it.type.isLazy() || it.type.isProvider()) &&
+                                it.type.typeArguments.singleOrNull()?.typeOrNull == request.requestingKey.type
+                    }
+                )
+        ) {
+            val chain = (chain.toList() + request.key)
+                .let { it.subList(it.indexOf(request.key), it.size) }
+
             // todo pretty print
-            "Circular dependency for '${request.key}' in '${factory.origin}' chain ${chain.toList() + request.key}"
+            "Circular dependency for '${request.key}' in '${factory.origin}' chain $chain"
         }
 
         // we don't have to check further because it's a legal cycle

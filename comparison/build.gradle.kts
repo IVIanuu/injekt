@@ -30,7 +30,6 @@ android {
 
     defaultConfig {
         applicationId = Build.applicationIdComparison
-        buildToolsVersion = Build.buildToolsVersion
         minSdkVersion(Build.minSdkComparison)
         targetSdkVersion(Build.targetSdk)
         versionCode = Build.versionCode
