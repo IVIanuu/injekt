@@ -171,18 +171,7 @@ class Graph(
         check(request.key !in chain || chain
             .toList()
             .let { it.subList(it.indexOf(request.key), it.size) }
-            .any {
-                (it.type.isLazy() || it.type.isProvider()) &&
-                        it.type.typeArguments.singleOrNull()?.typeOrNull == request.key.type
-            } || (request.requestingKey != null &&
-                chain
-                    .toList()
-                    .let { it.subList(it.indexOf(request.key), it.size) }
-                    .any {
-                        (it.type.isLazy() || it.type.isProvider()) &&
-                                it.type.typeArguments.singleOrNull()?.typeOrNull == request.requestingKey.type
-                    }
-                )
+            .any { it.type.isLazy() || it.type.isProvider() }
         ) {
             val chain = (chain.toList() + request.key)
                 .let { it.subList(it.indexOf(request.key), it.size) }

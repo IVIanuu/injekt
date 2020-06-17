@@ -103,6 +103,21 @@ class GraphTest {
     }
 
     @Test
+    fun testCircularDependencyWithIrrelevantProvider() = codegen(
+        """
+        @TestScope class A(b: B)
+        @Transient class B(a: A)
+        @Transient class C(b: @Lazy () -> B)
+        @InstanceFactory fun invoke(): B {
+            scope<TestScope>()
+            return create()
+        }
+    """
+    ) {
+        assertInternalError("circular")
+    }
+
+    @Test
     fun testScopeMismatch() = codegen(
         """
         @TestScope2 class Dep
