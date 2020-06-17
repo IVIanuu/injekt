@@ -21,6 +21,7 @@ import com.ivianuu.injekt.test.CommandA
 import com.ivianuu.injekt.test.CommandB
 import com.ivianuu.injekt.test.CommandC
 import com.ivianuu.injekt.test.assertInternalError
+import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertEquals
@@ -399,6 +400,45 @@ class MapTest {
         assertTrue(map[CommandA::class] is CommandA)
         assertTrue(map[CommandB::class] is CommandB)
         assertTrue(map[CommandC::class] is CommandC)
+    }
+
+    @Test
+    fun testQualifiedMapOfValue() = codegen(
+        """
+        @InstanceFactory
+        fun invoke(): @TestQualifier1 Map<KClass<*>, Any> {
+            map<@TestQualifier1 Map<KClass<*>, Any>, KClass<*>, Any>()
+            return create()
+        }
+        """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testQualifiedMapOfProvider() = codegen(
+        """
+        @InstanceFactory
+        fun invoke(): @TestQualifier1 Map<KClass<*>, @Provider () -> Any> {
+            map<@TestQualifier1 Map<KClass<*>, Any>, KClass<*>, Any>()
+            return create()
+        }
+        """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testQualifiedMapOfLazy() = codegen(
+        """
+        @InstanceFactory
+        fun invoke(): @TestQualifier1 Map<KClass<*>, @Lazy () -> Any> {
+            map<@TestQualifier1 Map<KClass<*>, Any>, KClass<*>, Any>()
+            return create()
+        }
+        """
+    ) {
+        assertOk()
     }
 
 }

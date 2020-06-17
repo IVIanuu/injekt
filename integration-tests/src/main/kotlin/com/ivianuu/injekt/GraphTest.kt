@@ -120,14 +120,6 @@ class GraphTest {
     @Test
     fun testQualified() = codegen(
         """
-        @Target(AnnotationTarget.TYPE) 
-        @Qualifier 
-        annotation class TestQualifier1
-        
-        @Target(AnnotationTarget.TYPE) 
-        @Qualifier
-        annotation class TestQualifier2
-        
         interface TestComponent { 
             val foo1: @TestQualifier1 Foo 
             val foo2: @TestQualifier2 Foo
@@ -239,12 +231,6 @@ class GraphTest {
     @Test
     fun testQualifiedGet() = codegen(
         """
-        @Target(AnnotationTarget.TYPE) 
-        @Qualifier 
-        annotation class TestQualifier1
-        @Target(AnnotationTarget.TYPE) 
-        @Qualifier 
-        annotation class TestQualifier2
         interface TestComponent {
             val a: @TestQualifier1 String
             val b: @TestQualifier2 String

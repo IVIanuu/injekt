@@ -57,10 +57,6 @@ class ModuleTest {
     @Test
     fun testTypeParameterCapturingModule() = codegen(
         """
-        @Target(AnnotationTarget.TYPE) 
-        @Qualifier 
-        annotation class TestQualifier1
-        
         @Module
         fun <T> capturingModule() {
             transient<@TestQualifier1 T> { t: T -> t }

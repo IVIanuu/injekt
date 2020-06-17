@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.test
 
+import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.compiler.InjektComponentRegistrar
 import com.tschuchort.compiletesting.KotlinCompilation
@@ -173,6 +174,14 @@ annotation class TestScope
 
 @Scope
 annotation class TestScope2
+
+@Target(AnnotationTarget.TYPE)
+@Qualifier
+annotation class TestQualifier1
+
+@Target(AnnotationTarget.TYPE)
+@Qualifier
+annotation class TestQualifier2
 
 interface Command
 

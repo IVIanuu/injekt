@@ -39,6 +39,7 @@ import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.typeWith
+import com.ivianuu.injekt.compiler.withAnnotations
 import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -752,6 +753,7 @@ class MapBindingResolver(
                     .typeWith(mapKey.type.typeArguments[1].typeOrFail)
                     .withNoArgAnnotations(pluginContext, listOf(qualifier))
             )
+            .withAnnotations(mapKey.type.annotations)
             .asKey(),
         factory,
         map.origin,
@@ -839,7 +841,9 @@ class SetBindingResolver(
                 pluginContext.tmpFunction(0).typeWith(
                     setKey.type.typeArguments.single().typeOrFail
                 ).withNoArgAnnotations(pluginContext, listOf(qualifier))
-            ).asKey(),
+            )
+            .withAnnotations(setKey.type.annotations)
+            .asKey(),
         factoryImplementation,
         set.origin,
         set.elements

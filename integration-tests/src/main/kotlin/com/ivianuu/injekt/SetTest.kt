@@ -21,6 +21,7 @@ import com.ivianuu.injekt.test.CommandA
 import com.ivianuu.injekt.test.CommandB
 import com.ivianuu.injekt.test.CommandC
 import com.ivianuu.injekt.test.assertInternalError
+import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertEquals
@@ -394,6 +395,45 @@ class SetTest {
         assertTrue(set[0] is CommandA)
         assertTrue(set[1] is CommandB)
         assertTrue(set[2] is CommandC)
+    }
+
+    @Test
+    fun testQualifiedSetOfValue() = codegen(
+        """
+        @InstanceFactory
+        fun invoke(): @TestQualifier1 Set<Any> {
+            set<@TestQualifier1 Set<Any>, Any>()
+            return create()
+        }
+        """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testQualifiedMapOfProvider() = codegen(
+        """
+        @InstanceFactory
+        fun invoke(): @TestQualifier1 Set<@Provider () -> Any> {
+            set<@TestQualifier1 Set<Any>, Any>()
+            return create()
+        }
+        """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testQualifiedMapOfLazy() = codegen(
+        """
+        @InstanceFactory
+        fun invoke(): @TestQualifier1 Set<@Lazy () -> Any> {
+            set<@TestQualifier1 Set<Any>, Any>()
+            return create()
+        }
+        """
+    ) {
+        assertOk()
     }
 
 }
