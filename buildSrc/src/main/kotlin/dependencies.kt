@@ -68,7 +68,7 @@ object Deps {
     }
 
     const val bintrayGradlePlugin =
-        "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4"
+        "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.5"
 
     const val buildConfigGradlePlugin =
         "gradle.plugin.de.fuerstenau:BuildConfigPlugin:1.1.8"
