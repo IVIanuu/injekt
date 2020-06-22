@@ -45,7 +45,7 @@ inline fun <reified T : ListenableWorker> worker() {
 }
 
 @Transient
-class InjektWorkerFactory(
+internal class InjektWorkerFactory(
     private val workers: Map<KClass<out ListenableWorker>, @Provider (Context, WorkerParameters) -> ListenableWorker>
 ) : WorkerFactory() {
 
