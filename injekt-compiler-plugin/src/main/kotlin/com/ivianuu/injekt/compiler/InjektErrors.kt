@@ -317,6 +317,16 @@ interface InjektErrors {
             "Must be of type kotlin.collections.Set"
         )
 
+        @JvmField
+        val MUST_BE_SUBTYPE_OF_ALIAS_TYPE = error(
+            "Must be of subtype of alias type"
+        )
+
+        @JvmField
+        val ALIAS_ANNOTATION_WITHOUT_TRANSIENT_OR_SCOPED = error(
+            "@Alias must be combined with @Transient, @Scope or @BindingAdapter annotations"
+        )
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,

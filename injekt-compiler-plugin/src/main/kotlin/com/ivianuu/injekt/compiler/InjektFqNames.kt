@@ -55,6 +55,8 @@ object InjektFqNames {
     val AstSet = InjektAst.child("Set")
     val AstSetElement = AstSet.child("Element")
 
+    val Alias = CompositionPackage.child("Alias")
+
     val Assisted = InjektPackage.child("Assisted")
 
     val BindingAdapter = CompositionPackage.child("BindingAdapter")

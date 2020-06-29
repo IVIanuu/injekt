@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 
 class CompositionSymbols(val pluginContext: IrPluginContext) {
+    val alias = pluginContext.referenceClass(InjektFqNames.Alias)!!
     val bindingAdapter = pluginContext.referenceClass(InjektFqNames.BindingAdapter)!!
     val compositionComposition = pluginContext.referenceClass(InjektFqNames.CompositionComponent)!!
     val compositionFactory = pluginContext.referenceClass(InjektFqNames.CompositionFactory)!!

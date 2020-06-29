@@ -28,6 +28,7 @@ class InjektStorageContainerContributor : StorageComponentContainerContributor {
         platform: TargetPlatform,
         moduleDescriptor: ModuleDescriptor
     ) {
+        container.useInstance(AliasChecker())
         container.useInstance(AndroidEntryPointChecker())
         container.useInstance(AnnotatedBindingChecker())
         container.useInstance(BindingEffectChecker())

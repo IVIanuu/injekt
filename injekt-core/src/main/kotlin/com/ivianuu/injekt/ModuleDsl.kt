@@ -17,6 +17,7 @@
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.internal.injektIntrinsic
+import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 
 fun <T> scope(): Unit = injektIntrinsic()
@@ -30,6 +31,8 @@ fun <S : T, T> alias(): Unit = injektIntrinsic()
 fun <T> transient(provider: Function<T> = injektIntrinsic()): Unit = injektIntrinsic()
 
 annotation class Transient
+
+annotation class Scoped<T>
 
 fun <T> instance(instance: T): Unit = injektIntrinsic()
 
