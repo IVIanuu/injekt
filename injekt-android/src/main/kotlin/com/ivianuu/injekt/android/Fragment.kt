@@ -64,9 +64,6 @@ fun createFragmentComponent(instance: Fragment): FragmentComponent {
     transient<@ForFragment Resources> { fragment: Fragment ->
         fragment.resources
     }
-    transient<@ForFragment CoroutineScope> { lifecycleOwner: @ForFragment LifecycleOwner ->
-        lifecycleOwner.lifecycleScope
-    }
     alias<Fragment, @ForFragment LifecycleOwner>()
     alias<Fragment, @ForFragment SavedStateRegistryOwner>()
     alias<Fragment, @ForFragment ViewModelStoreOwner>()

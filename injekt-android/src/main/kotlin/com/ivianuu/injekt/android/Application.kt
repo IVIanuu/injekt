@@ -49,9 +49,6 @@ fun createApplicationComponent(instance: Application): ApplicationComponent {
     transient<@ForApplication Resources> { app: Application ->
         app.resources
     }
-    transient<@ForApplication CoroutineScope> { lifecycleOwner: @ForApplication LifecycleOwner ->
-        lifecycleOwner.lifecycleScope
-    }
     transient<@ForApplication LifecycleOwner> { ProcessLifecycleOwner.get() }
     return create()
 }

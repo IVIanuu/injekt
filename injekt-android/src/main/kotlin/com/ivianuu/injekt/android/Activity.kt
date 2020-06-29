@@ -62,9 +62,6 @@ fun createActivityComponent(instance: ComponentActivity): ActivityComponent {
     transient<@ForActivity Resources> { activity: ComponentActivity ->
         activity.resources
     }
-    transient<@ForActivity CoroutineScope> { lifecycleOwner: @ForActivity LifecycleOwner ->
-        lifecycleOwner.lifecycleScope
-    }
     alias<ComponentActivity, @ForActivity LifecycleOwner>()
     alias<ComponentActivity, @ForActivity SavedStateRegistryOwner>()
     alias<ComponentActivity, @ForActivity ViewModelStoreOwner>()
