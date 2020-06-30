@@ -51,7 +51,7 @@ fun BroadcastReceiver.newReceiverComponent(
 @CompositionFactory
 fun createReceiverComponent(instance: BroadcastReceiver): ReceiverComponent {
     parent<ApplicationComponent>()
-    scope<ServiceScoped>()
+    scope<ReceiverScoped>()
     instance(instance)
     return create()
 }
