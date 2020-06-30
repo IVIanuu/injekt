@@ -46,7 +46,6 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
     lateinit var compositionModuleMetadataTransformer: CompositionModuleMetadataTransformer
     lateinit var factoryTransformer: RootFactoryTransformer
     lateinit var factoryModuleTransformer: FactoryModuleTransformer
-    lateinit var membersInjectorTransformer: MembersInjectorTransformer
     lateinit var moduleFunctionTransformer: ModuleFunctionTransformer
 
     fun getCompositionModuleMetadata(function: IrFunction): IrClass? {
@@ -62,23 +61,6 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
                         )
                     )
             )?.owner
-        }
-    }
-
-    fun getMembersInjectorForClassOrNull(clazz: IrClass): IrFunction? {
-        return if (!clazz.isExternalDeclaration()) {
-            membersInjectorTransformer.getMembersInjectorForClass(clazz)
-        } else {
-            pluginContext.referenceFunctions(
-                clazz.fqNameForIrSerialization
-                    .parent()
-                    .child(
-                        InjektNameConventions.getMembersInjectorNameForClass(
-                            clazz.getPackageFragment()!!.fqName,
-                            clazz.descriptor.fqNameSafe
-                        )
-                    )
-            ).singleOrNull()?.owner
         }
     }
 

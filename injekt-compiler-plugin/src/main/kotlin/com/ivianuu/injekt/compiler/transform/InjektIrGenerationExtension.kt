@@ -16,11 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.androidEnabled
 import com.ivianuu.injekt.compiler.compositionsEnabled
-import com.ivianuu.injekt.compiler.dumpSrc
-import com.ivianuu.injekt.compiler.transform.android.AndroidEntryPointTransformer
-import com.ivianuu.injekt.compiler.transform.android.CompositionAndroidAppTransformer
 import com.ivianuu.injekt.compiler.transform.composition.BindingEffectTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionFactoryParentTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionModuleMetadataTransformer
@@ -51,11 +47,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             declarationStore
         ).also { declarationStore.factoryTransformer = it }
 
-        if (pluginContext.androidEnabled) {
-            CompositionAndroidAppTransformer(pluginContext).lower(moduleFragment)
-            AndroidEntryPointTransformer(pluginContext).lower(moduleFragment)
-        }
-
         if (pluginContext.compositionsEnabled) {
             ObjectGraphFunctionTransformer(pluginContext).lower(moduleFragment)
 
@@ -79,13 +70,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
                 pluginContext, declarationStore
             ).lower(moduleFragment)
         }
-
-        // generate a members injector for each annotated class
-        MembersInjectorTransformer(
-            pluginContext,
-            declarationStore
-        ).also { declarationStore.membersInjectorTransformer = it }
-            .lower(moduleFragment)
 
         // move the module block of a @Factory function to a separate @Module function
         factoryModuleTransformer.lower(moduleFragment)

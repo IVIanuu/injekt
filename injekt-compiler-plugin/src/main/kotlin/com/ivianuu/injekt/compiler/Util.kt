@@ -452,9 +452,6 @@ fun KClassValue.getIrClass(
         .let { pluginContext.referenceClass(it)!!.owner }
 }
 
-val IrPluginContext.androidEnabled: Boolean
-    get() = referenceClass(InjektFqNames.AndroidEntryPoint) != null
-
 val IrPluginContext.compositionsEnabled: Boolean
     get() = referenceClass(InjektFqNames.CompositionFactory) != null
 

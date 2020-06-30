@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.android
 
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.ApplicationComponent
@@ -30,6 +31,7 @@ import com.ivianuu.injekt.composition.get
 import com.ivianuu.injekt.composition.parent
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.instance
+import com.ivianuu.injekt.internal.injektIntrinsic
 import com.ivianuu.injekt.scope
 import com.ivianuu.injekt.transient
 

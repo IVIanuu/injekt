@@ -309,7 +309,7 @@ class InjektDeclarationIrBuilder(
         return FieldWithGetter(field, getter)
     }
 
-    fun classFactoryLambda(clazz: IrClass, membersInjector: IrFunction?): IrExpression {
+    fun classFactoryLambda(clazz: IrClass): IrExpression {
         val parametersNameProvider = NameProvider()
 
         val constructor = clazz.getInjectConstructor()
@@ -323,61 +323,17 @@ class InjektDeclarationIrBuilder(
             )
         } ?: emptyList()
 
-        val membersInjectorParameters =
-            membersInjector
-                ?.valueParameters
-                ?.drop(1)
-                ?.map { valueParameter ->
-                    FactoryParameter(
-                        name = parametersNameProvider.allocateForGroup(valueParameter.name)
-                            .asString(),
-                        type = valueParameter.type,
-                        assisted = false,
-                        hasDefault = valueParameter.hasDefaultValue()
-                    )
-                } ?: emptyList()
-
-        val allParameters = constructorParameters + membersInjectorParameters
-
         return factoryLambda(
-            allParameters,
+            constructorParameters,
             clazz.defaultType
         ) { lambda, parametersMap ->
-            fun createExpr() = if (clazz.kind == ClassKind.OBJECT) {
+            if (clazz.kind == ClassKind.OBJECT) {
                 irGetObject(clazz.symbol)
             } else {
                 irCall(constructor!!).apply {
                     constructorParameters
                         .map { parametersMap.getValue(it) }
                         .forEach { putValueArgument(it.index, irGet(it)) }
-                }
-            }
-
-            if (membersInjector == null) {
-                createExpr()
-            } else {
-                builder.irBlock {
-                    val instance = irTemporary(createExpr())
-
-                    val membersInjectorValueParametersByParameter = membersInjectorParameters
-                        .map { it to parametersMap.getValue(it) }
-                        .toMap()
-
-                    +irCall(membersInjector).apply {
-                        putValueArgument(0, irGet(instance))
-                        membersInjectorParameters.forEachIndexed { index, valueParameter ->
-                            putValueArgument(
-                                index + 1,
-                                irGet(
-                                    membersInjectorValueParametersByParameter.getValue(
-                                        valueParameter
-                                    )
-                                )
-                            )
-                        }
-                    }
-
-                    +irGet(instance)
                 }
             }
         }

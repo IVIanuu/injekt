@@ -56,10 +56,6 @@ class CommonScenariosTest {
                         foo: Foo
                     )
                     
-                    class OtherMembersInjectorTarget {
-                        val foo: Foo by inject()
-                    }
-                    
                     interface OtherChildComponent {
                         val foo: Foo
                     }
@@ -91,7 +87,6 @@ class CommonScenariosTest {
                     interface ThisComponent {
                         val annotated: OtherAnnotatedClass
                         val assisted: @Provider (String) -> OtherAssistedClass
-                        val injector: @MembersInjector (OtherMembersInjectorTarget) -> Unit
                         val childFactory: @ChildFactory () -> OtherChildComponent
                         val commandSet: Set<Command>
                     }
@@ -124,7 +119,7 @@ class CommonScenariosTest {
         )
         
         interface AppComponent {
-            val injectApp: @MembersInjector (App) -> Unit
+            val workerFactory: WorkerFactory
         }
         
         @Factory
@@ -135,44 +130,13 @@ class CommonScenariosTest {
             return create()
         }
         
-        class App { 
-            private val workerFactory: WorkerFactory by inject()
-            
+        class App {  
             init {
-                createAppComponent().injectApp(this)
+                createAppComponent().workerFactory
             }
         }
         
         fun invoke() = App()
-    """
-    ) {
-        invokeSingleFile()
-    }
-
-    @Test
-    fun testInjectionSiteProviderUsage() = codegen(
-        """
-        interface TestComponent {
-            val injector: @MembersInjector (InjectClass) -> Unit 
-        }
-         
-        class InjectClass {
-            private val bar: Bar by inject()
-        }
-        
-        @Factory
-        fun factory(): TestComponent {
-            transient { Foo() }
-            transient { fooProvider: @Provider () -> Foo ->
-                Bar(fooProvider())
-            }
-            return create()
-        }
-        
-        fun invoke() {
-            val component = factory()
-            component.injector(InjectClass())
-        }
     """
     ) {
         invokeSingleFile()

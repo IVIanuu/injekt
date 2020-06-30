@@ -29,6 +29,7 @@ import com.ivianuu.injekt.composition.get
 import com.ivianuu.injekt.composition.parent
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.instance
+import com.ivianuu.injekt.internal.injektIntrinsic
 import com.ivianuu.injekt.scope
 
 @Scope

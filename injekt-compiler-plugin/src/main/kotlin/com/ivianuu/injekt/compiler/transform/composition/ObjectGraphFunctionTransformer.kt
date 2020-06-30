@@ -93,34 +93,23 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
         function.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = transformFunctionIfNeeded(expression.symbol.owner)
-                when {
-                    callee.isObjectGraphGet -> {
-                        if (expression.extensionReceiver?.type?.isTypeParameterOfFunction(function) == true ||
-                            expression.getTypeArgument(0)!!.isTypeParameterOfFunction(function)
-                        ) {
-                            originalUnresolvedGetCalls += expression
-                            hasUnresolvedCalls = true
-                        }
+                if (callee.isObjectGraphGet) {
+                    if (expression.extensionReceiver?.type?.isTypeParameterOfFunction(function) == true ||
+                        expression.getTypeArgument(0)!!.isTypeParameterOfFunction(function)
+                    ) {
+                        originalUnresolvedGetCalls += expression
+                        hasUnresolvedCalls = true
                     }
-                    callee.isObjectGraphInject -> {
-                        if (expression.extensionReceiver?.type?.isTypeParameterOfFunction(function) == true ||
-                            expression.getTypeArgument(0)!!.isTypeParameterOfFunction(function)
-                        ) {
-                            originalUnresolvedInjectCalls += expression
-                            hasUnresolvedCalls = true
-                        }
-                    }
-                    else -> {
-                        if (expression.symbol != callee.symbol) {
-                            originalObjectGraphFunctionCalls += expression
-                            if (expression.typeArguments.any {
-                                    it.isTypeParameterOfFunction(
-                                        function
-                                    )
-                                }
-                            ) {
-                                hasUnresolvedCalls = true
+                } else {
+                    if (expression.symbol != callee.symbol) {
+                        originalObjectGraphFunctionCalls += expression
+                        if (expression.typeArguments.any {
+                                it.isTypeParameterOfFunction(
+                                    function
+                                )
                             }
+                        ) {
+                            hasUnresolvedCalls = true
                         }
                     }
                 }
@@ -189,40 +178,25 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
         transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
                 val callee = transformFunctionIfNeeded(expression.symbol.owner)
-                when {
-                    callee.isObjectGraphGet -> {
-                        if (expression.extensionReceiver?.type
-                                ?.remapTypeParameters(function, transformedFunction)
-                                ?.isTypeParameterOfFunction(transformedFunction) == true ||
-                            expression.getTypeArgument(0)!!
-                                .remapTypeParameters(function, transformedFunction)
-                                .isTypeParameterOfFunction(transformedFunction)
-                        ) {
-                            unresolvedGetCalls += expression
-                            hasUnresolvedCalls = true
-                        }
+                if (callee.isObjectGraphGet) {
+                    if (expression.extensionReceiver?.type
+                            ?.remapTypeParameters(function, transformedFunction)
+                            ?.isTypeParameterOfFunction(transformedFunction) == true ||
+                        expression.getTypeArgument(0)!!
+                            .remapTypeParameters(function, transformedFunction)
+                            .isTypeParameterOfFunction(transformedFunction)
+                    ) {
+                        unresolvedGetCalls += expression
+                        hasUnresolvedCalls = true
                     }
-                    callee.isObjectGraphInject -> {
-                        if (expression.extensionReceiver?.type
-                                ?.remapTypeParameters(function, transformedFunction)
-                                ?.isTypeParameterOfFunction(transformedFunction) == true ||
-                            expression.getTypeArgument(0)!!
-                                .remapTypeParameters(function, transformedFunction)
-                                .isTypeParameterOfFunction(transformedFunction)
-                        ) {
-                            unresolvedInjectCalls += expression
+                } else {
+                    if (expression.symbol != callee.symbol) {
+                        objectGraphFunctionCalls += expression
+                        if (expression.typeArguments.any {
+                                it.remapTypeParameters(function, transformedFunction)
+                                    .isTypeParameterOfFunction(transformedFunction)
+                            }) {
                             hasUnresolvedCalls = true
-                        }
-                    }
-                    else -> {
-                        if (expression.symbol != callee.symbol) {
-                            objectGraphFunctionCalls += expression
-                            if (expression.typeArguments.any {
-                                    it.remapTypeParameters(function, transformedFunction)
-                                        .isTypeParameterOfFunction(transformedFunction)
-                                }) {
-                                hasUnresolvedCalls = true
-                            }
                         }
                     }
                 }

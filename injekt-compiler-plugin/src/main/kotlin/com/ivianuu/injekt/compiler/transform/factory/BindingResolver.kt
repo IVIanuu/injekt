@@ -381,28 +381,6 @@ class ModuleBindingResolver(
     }
 }
 
-class MembersInjectorBindingResolver(
-    private val symbols: InjektSymbols,
-    private val declarationStore: InjektDeclarationStore,
-    private val factoryImpl: AbstractFactory
-) : BindingResolver {
-    override fun invoke(requestedKey: Key): List<BindingNode> {
-        if (InjektFqNames.MembersInjector !in requestedKey.type.getQualifierFqNames()) return emptyList()
-        if (requestedKey.type.classOrNull != factoryImpl.pluginContext.tmpFunction(1)) return emptyList()
-        val target =
-            requestedKey.type.typeArguments.first().typeOrNull?.getClass() ?: return emptyList()
-        val membersInjector = declarationStore.getMembersInjectorForClassOrNull(target)
-        return listOf(
-            MembersInjectorBindingNode(
-                key = requestedKey,
-                membersInjector = membersInjector,
-                owner = factoryImpl,
-                origin = target.fqNameForIrSerialization
-            )
-        )
-    }
-}
-
 class AnnotatedClassBindingResolver(
     private val pluginContext: IrPluginContext,
     private val declarationStore: InjektDeclarationStore,
@@ -443,31 +421,12 @@ class AnnotatedClassBindingResolver(
                 )
             } ?: emptyList()
 
-            val membersInjector = declarationStore.getMembersInjectorForClassOrNull(clazz)
-
-            val membersInjectorParameters =
-                membersInjector
-                    ?.valueParameters
-                    ?.drop(1)
-                    ?.map { valueParameter ->
-                        InjektDeclarationIrBuilder.FactoryParameter(
-                            name = parametersNameProvider.allocateForGroup(valueParameter.name)
-                                .asString(),
-                            type = valueParameter.type,
-                            assisted = false,
-                            hasDefault = valueParameter.hasDefaultValue()
-                        )
-                    } ?: emptyList()
-
-            val allParameters =
-                constructorParameters + membersInjectorParameters
-
             val typeParametersMap = clazz
                 .typeParameters
                 .map { it.symbol }
                 .associateWith { requestedKey.type.typeArguments[it.owner.index].typeOrFail }
 
-            val dependencies = allParameters
+            val dependencies = constructorParameters
                 .filterNot { it.assisted }
                 .map { parameter ->
                     BindingRequest(
@@ -485,7 +444,7 @@ class AnnotatedClassBindingResolver(
                     )
                 }
 
-            val assistedParameters = allParameters
+            val assistedParameters = constructorParameters
                 .filter { it.assisted }
 
             val factoryKey = pluginContext.tmpFunction(assistedParameters.size)
@@ -506,11 +465,9 @@ class AnnotatedClassBindingResolver(
                     createExpression = newInstanceExpression(
                         clazz,
                         constructor,
-                        membersInjector,
-                        constructorParameters,
-                        membersInjectorParameters
+                        constructorParameters
                     ),
-                    parameters = allParameters,
+                    parameters = constructorParameters,
                     owner = factory,
                     origin = clazz.descriptor.fqNameSafe
                 )
@@ -557,26 +514,7 @@ class AnnotatedClassBindingResolver(
                 )
             } ?: emptyList()
 
-            val membersInjector = declarationStore.getMembersInjectorForClassOrNull(clazz)
-
-            val membersInjectorParameters =
-                membersInjector
-                    ?.valueParameters
-                    ?.drop(1)
-                    ?.map { valueParameter ->
-                        InjektDeclarationIrBuilder.FactoryParameter(
-                            name = parametersNameProvider.allocateForGroup(valueParameter.name)
-                                .asString(),
-                            type = valueParameter.type,
-                            assisted = false,
-                            hasDefault = valueParameter.hasDefaultValue()
-                        )
-                    } ?: emptyList()
-
-            val allParameters =
-                constructorParameters + membersInjectorParameters
-
-            val dependencies = allParameters
+            val dependencies = constructorParameters
                 .filterNot { it.assisted }
                 .map { parameter ->
                     BindingRequest(
@@ -604,11 +542,9 @@ class AnnotatedClassBindingResolver(
                     createExpression = newInstanceExpression(
                         clazz,
                         constructor,
-                        membersInjector,
-                        constructorParameters,
-                        membersInjectorParameters
+                        constructorParameters
                     ),
-                    parameters = allParameters,
+                    parameters = constructorParameters,
                     owner = factory,
                     origin = clazz.fqNameForIrSerialization
                 )
@@ -619,12 +555,10 @@ class AnnotatedClassBindingResolver(
     private fun newInstanceExpression(
         clazz: IrClass,
         constructor: IrConstructor?,
-        membersInjector: IrFunction?,
-        constructorParameters: List<InjektDeclarationIrBuilder.FactoryParameter>,
-        membersInjectorParameters: List<InjektDeclarationIrBuilder.FactoryParameter>
+        constructorParameters: List<InjektDeclarationIrBuilder.FactoryParameter>
     ): IrBuilderWithScope.(Map<InjektDeclarationIrBuilder.FactoryParameter, () -> IrExpression?>) -> IrExpression {
         return { parametersMap ->
-            fun createExpr() = if (clazz.kind == ClassKind.OBJECT) {
+            if (clazz.kind == ClassKind.OBJECT) {
                 irGetObject(clazz.symbol)
             } else {
                 irCall(constructor!!).apply {
@@ -635,32 +569,6 @@ class AnnotatedClassBindingResolver(
                                 parametersMap.getValue(parameter)()
                             )
                         }
-                }
-            }
-
-            if (membersInjector == null) {
-                createExpr()
-            } else {
-                irBlock {
-                    val instance = irTemporary(createExpr())
-
-                    val membersInjectorValueParametersByParameter = membersInjectorParameters
-                        .map { it to parametersMap.getValue(it) }
-                        .toMap()
-
-                    +irCall(membersInjector).apply {
-                        putValueArgument(0, irGet(instance))
-                        membersInjectorParameters.forEachIndexed { index, valueParameter ->
-                            putValueArgument(
-                                index + 1,
-                                membersInjectorValueParametersByParameter.getValue(
-                                    valueParameter
-                                )()
-                            )
-                        }
-                    }
-
-                    +irGet(instance)
                 }
             }
         }

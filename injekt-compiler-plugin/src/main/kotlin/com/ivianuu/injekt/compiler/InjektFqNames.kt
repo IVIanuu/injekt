@@ -76,7 +76,6 @@ object InjektFqNames {
     val Factory = InjektPackage.child("Factory")
 
     val Inject = InjektPackage.child("Inject")
-    val InjectProperty = InjektPackage.child("InjectProperty")
 
     val InstanceFactory = InjektPackage.child("InstanceFactory")
 
@@ -87,8 +86,6 @@ object InjektFqNames {
     val MapOfProviderFactory = InternalPackage.child("MapOfProviderFactory")
 
     val Module = InjektPackage.child("Module")
-
-    val MembersInjector = InjektPackage.child("MembersInjector")
 
     val Provider = InjektPackage.child("Provider")
 

@@ -295,10 +295,7 @@ class ModuleDeclarationFactory(
                 val clazz = bindingType.classOrNull!!.owner
                 val providerExpression =
                     InjektDeclarationIrBuilder(pluginContext, moduleFunction.symbol)
-                        .classFactoryLambda(
-                            clazz,
-                            declarationStore.getMembersInjectorForClassOrNull(clazz)
-                        )
+                        .classFactoryLambda(clazz)
                 initializer = providerExpression
                 path = PropertyPath(
                     InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)

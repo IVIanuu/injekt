@@ -354,14 +354,10 @@ class ImplFactoryTest {
         codegen(
             """
         interface BaseComponent<T> {
-            val inject: @MembersInjector (T) -> Unit
+            val dep: Foo
         }
         
-        class Injectable { 
-            private val foo: Foo by inject()
-        }
-        
-        interface ImplComponent : BaseComponent<Injectable>
+        interface ImplComponent : BaseComponent<Foo>
         
         @Factory
         fun createImplComponent(): ImplComponent {
@@ -375,15 +371,11 @@ class ImplFactoryTest {
     fun testComponentWithGenericSuperType() = codegen(
         """
         interface TypedComponent<T> {
-            val inject: @MembersInjector (T) -> Unit
-        }
-        
-        class Injectable {
-            private val foo: Foo by inject()
+            val dep: T
         }
 
         @Factory
-        fun createImplComponent(): TypedComponent<Injectable> {
+        fun createImplComponent(): TypedComponent<Foo> {
             transient { Foo() }
             return create()
         }

@@ -19,5 +19,3 @@ package com.ivianuu.injekt.composition
 import com.ivianuu.injekt.internal.injektIntrinsic
 
 fun <T> Any.get(): T = injektIntrinsic()
-
-fun <T> Any.inject(instance: T): Unit = injektIntrinsic()

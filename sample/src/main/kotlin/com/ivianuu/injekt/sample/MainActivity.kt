@@ -22,13 +22,12 @@ import androidx.lifecycle.ViewModel
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.ivianuu.injekt.android.ActivityViewModel
-import com.ivianuu.injekt.android.AndroidEntryPoint
-import com.ivianuu.injekt.inject
+import com.ivianuu.injekt.android.activityComponent
+import com.ivianuu.injekt.composition.get
 
-@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
-    private val viewModel: MainViewModel by inject()
+    private val viewModel: MainViewModel by lazy { activityComponent.get() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

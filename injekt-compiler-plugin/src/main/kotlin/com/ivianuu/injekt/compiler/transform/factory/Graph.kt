@@ -84,16 +84,9 @@ class Graph(
 
     init {
         if (factoryModule != null) addModule(factoryModule)
-        implicitBindingResolvers += NoArgProviderBindingResolver(
-            factory
-        )
+        implicitBindingResolvers += NoArgProviderBindingResolver(factory)
         implicitBindingResolvers += mapBindingResolver
         implicitBindingResolvers += setBindingResolver
-        implicitBindingResolvers += MembersInjectorBindingResolver(
-            symbols,
-            declarationStore,
-            factory
-        )
         if (factory is ImplFactory) {
             implicitBindingResolvers += FactoryImplementationBindingResolver(
                 factory.factoryImplementationNode

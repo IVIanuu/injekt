@@ -57,7 +57,7 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol.owner.isObjectGraphGet || expression.symbol.owner.isObjectGraphInject) {
+                if (expression.symbol.owner.isObjectGraphGet) {
                     objectGraphCalls += expression to currentFile
                 }
                 return super.visitCall(expression)
@@ -67,70 +67,33 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         val newExpressionsByCall = mutableMapOf<IrCall, IrExpression>()
 
         objectGraphCalls.forEach { (call, file) ->
-            when {
-                call.symbol.owner.isObjectGraphGet -> {
-                    val entryPoint = try {
-                        entryPointForGet(
-                            InjektNameConventions.getObjectGraphGetNameForCall(file, call),
-                            call.getTypeArgument(0)!!
-                        )
-                    } catch (e: Exception) {
-                        error("Not working ${call.dump()}")
-                    }
-
-                    file.addChild(entryPoint)
-
-                    newExpressionsByCall[call] =
-                        DeclarationIrBuilder(pluginContext, call.symbol).run {
-                            irCall(entryPoint.functions.single()).apply {
-                                dispatchReceiver = IrCallImpl(
-                                    call.startOffset,
-                                    call.endOffset,
-                                    entryPoint.defaultType,
-                                    pluginContext.referenceFunctions(
-                                        FqName("com.ivianuu.injekt.composition.entryPointOf")
-                                    ).single()
-                                ).apply {
-                                    putTypeArgument(0, entryPoint.defaultType)
-                                    putValueArgument(0, call.extensionReceiver)
-                                }
-                            }
-                        }
-                }
-                call.symbol.owner.isObjectGraphInject -> {
-                    val entryPoint = entryPointForInject(
-                        InjektNameConventions.getObjectGraphInjectNameForCall(file, call),
-                        call.getValueArgument(0)!!.type
-                    )
-
-                    file.addChild(entryPoint)
-
-                    newExpressionsByCall[call] =
-                        DeclarationIrBuilder(pluginContext, call.symbol).run {
-                            irCall(
-                                pluginContext.tmpFunction(1).functions
-                                    .first { it.owner.name.asString() == "invoke" }
-                            ).apply {
-                                dispatchReceiver = irCall(entryPoint.functions.single()).apply {
-                                    dispatchReceiver = IrCallImpl(
-                                        call.startOffset,
-                                        call.endOffset,
-                                        entryPoint.defaultType,
-                                        pluginContext.referenceFunctions(
-                                            FqName("com.ivianuu.injekt.composition.entryPointOf")
-                                        ).single()
-                                    ).apply {
-                                        putTypeArgument(0, entryPoint.defaultType)
-                                        putValueArgument(0, call.extensionReceiver)
-                                    }
-                                }
-
-                                putValueArgument(0, call.getValueArgument(0)!!)
-                            }
-                        }
-                }
-                else -> error("Unexpected call ${call.dump()}")
+            val entryPoint = try {
+                entryPointForGet(
+                    InjektNameConventions.getObjectGraphGetNameForCall(file, call),
+                    call.getTypeArgument(0)!!
+                )
+            } catch (e: Exception) {
+                error("Not working ${call.dump()}")
             }
+
+            file.addChild(entryPoint)
+
+            newExpressionsByCall[call] =
+                DeclarationIrBuilder(pluginContext, call.symbol).run {
+                    irCall(entryPoint.functions.single()).apply {
+                        dispatchReceiver = IrCallImpl(
+                            call.startOffset,
+                            call.endOffset,
+                            entryPoint.defaultType,
+                            pluginContext.referenceFunctions(
+                                FqName("com.ivianuu.injekt.composition.entryPointOf")
+                            ).single()
+                        ).apply {
+                            putTypeArgument(0, entryPoint.defaultType)
+                            putValueArgument(0, call.extensionReceiver)
+                        }
+                    }
+                }
         }
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
@@ -161,26 +124,4 @@ class ObjectGraphCallTransformer(pluginContext: IrPluginContext) :
         }
     }
 
-    private fun entryPointForInject(
-        name: Name,
-        injectedType: IrType
-    ) = buildClass {
-        this.name = name
-        kind = ClassKind.INTERFACE
-    }.apply {
-        createImplicitParameterDeclarationWithWrappedDescriptor()
-        addMetadataIfNotLocal()
-        addFunction {
-            this.name = InjektNameConventions.nameWithoutIllegalChars(
-                "inject\$${injectedType.asKey().hashCode()}"
-            )
-            returnType = pluginContext.tmpFunction(1)
-                .typeWith(injectedType, irBuiltIns.unitType)
-                .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.MembersInjector))
-
-            modality = Modality.ABSTRACT
-        }.apply {
-            dispatchReceiverParameter = thisReceiver?.copyTo(this)
-        }
-    }
 }
