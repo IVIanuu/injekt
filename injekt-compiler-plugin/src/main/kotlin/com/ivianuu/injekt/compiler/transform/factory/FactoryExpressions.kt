@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.isLazy
 import com.ivianuu.injekt.compiler.isNoArgProvider
 import com.ivianuu.injekt.compiler.isProvider
 import com.ivianuu.injekt.compiler.tmpFunction
@@ -117,7 +116,6 @@ class FactoryExpressions(
                             binding
                         )
                         is InstanceBindingNode -> instanceExpressionForInstance(binding)
-                        is LazyBindingNode -> instanceExpressionForLazy(binding)
                         is MapBindingNode -> instanceExpressionForMap(binding)
                         is MembersInjectorBindingNode -> instanceExpressionForMembersInjector(
                             binding
@@ -146,7 +144,6 @@ class FactoryExpressions(
                         binding
                     )
                     is InstanceBindingNode -> providerExpressionForInstance(binding)
-                    is LazyBindingNode -> providerExpressionForLazy(binding)
                     is MapBindingNode -> providerExpressionForMap(binding)
                     is MembersInjectorBindingNode -> providerExpressionForMembersInjector(binding)
                     is NullBindingNode -> providerExpressionForNull(binding)
@@ -234,42 +231,13 @@ class FactoryExpressions(
         return getRequirementExpression(binding.requirementNode)
     }
 
-    private fun instanceExpressionForLazy(binding: LazyBindingNode): FactoryExpression {
-        return {
-            doubleCheck(
-                getBindingExpression(
-                    binding.dependencies.single().copy(
-                        requestType = RequestType.Provider
-                    )
-                )()!!
-            )
-        }
-    }
-
     private fun instanceExpressionForMap(binding: MapBindingNode): FactoryExpression {
         return {
             val entryExpressions = binding.entries
                 .map { (key, entryValue) ->
                     val entryValueExpression = getBindingExpression(
-                        when {
-                            binding.valueKey.type.isNoArgProvider() ->
-                                entryValue.copy(requestType = RequestType.Provider)
-                            binding.valueKey.type.isLazy() -> {
-                                BindingRequest(
-                                    key = pluginContext.tmpFunction(0)
-                                        .typeWith(entryValue.key.type)
-                                        .withNoArgAnnotations(
-                                            pluginContext,
-                                            listOf(InjektFqNames.Lazy)
-                                        )
-                                        .asKey(),
-                                    requestingKey = binding.keyKey,
-                                    requestOrigin = entryValue.requestOrigin,
-                                    hasDefault = false
-                                )
-                            }
-                            else -> entryValue
-                        }
+                        if (binding.valueKey.type.isNoArgProvider()) entryValue.copy(requestType = RequestType.Provider)
+                        else entryValue
                     )
                     val pairExpression: FactoryExpression = pairExpression@{
                         irCall(pair.constructors.single()).apply {
@@ -415,25 +383,8 @@ class FactoryExpressions(
             val elementExpressions = binding.dependencies
                 .map { element ->
                     getBindingExpression(
-                        when {
-                            binding.elementKey.type.isNoArgProvider() ->
-                                element.copy(requestType = RequestType.Provider)
-                            binding.elementKey.type.isLazy() -> {
-                                BindingRequest(
-                                    key = pluginContext.tmpFunction(0)
-                                        .typeWith(element.key.type)
-                                        .withNoArgAnnotations(
-                                            pluginContext,
-                                            listOf(InjektFqNames.Lazy)
-                                        )
-                                        .asKey(),
-                                    requestingKey = binding.key,
-                                    requestOrigin = element.requestOrigin,
-                                    hasDefault = false
-                                )
-                            }
-                            else -> element
-                        }
+                        if (binding.elementKey.type.isNoArgProvider()) element.copy(requestType = RequestType.Provider)
+                        else element
                     )
                 }
 
@@ -545,28 +496,6 @@ class FactoryExpressions(
         }
     }
 
-    private fun providerExpressionForLazy(binding: LazyBindingNode): FactoryExpression {
-        return cachedFactoryExpression(binding.key) {
-            val dependencyExpression = getBindingExpression(
-                BindingRequest(
-                    key = binding.key.type.typeArguments.single().typeOrFail.asKey(),
-                    requestingKey = binding.key,
-                    requestOrigin = binding.origin,
-                    hasDefault = false,
-                    requestType = RequestType.Provider
-                )
-            )
-
-            irCall(
-                symbols.providerOfLazy
-                    .constructors
-                    .single()
-            ).apply {
-                putValueArgument(0, dependencyExpression())
-            }
-        }
-    }
-
     private fun providerExpressionForMap(binding: MapBindingNode): FactoryExpression {
         return cachedFactoryExpression(binding.key) providerFieldExpression@{
             val entryExpressions = binding.entries
@@ -598,15 +527,9 @@ class FactoryExpressions(
                     pairExpression
                 }
 
-            val mapFactoryCompanion = when {
-                binding.valueKey.type.isNoArgProvider() -> {
-                    symbols.mapOfProviderFactory.owner.companionObject() as IrClass
-                }
-                binding.valueKey.type.isLazy() -> {
-                    symbols.mapOfLazyFactory.owner.companionObject() as IrClass
-                }
-                else -> symbols.mapOfValueFactory.owner.companionObject() as IrClass
-            }
+            val mapFactoryCompanion = if (binding.valueKey.type.isNoArgProvider()) {
+                symbols.mapOfProviderFactory.owner.companionObject() as IrClass
+            } else symbols.mapOfValueFactory.owner.companionObject() as IrClass
 
             if (entryExpressions.isEmpty()) {
                 irCall(
@@ -756,15 +679,9 @@ class FactoryExpressions(
                     )
                 }
 
-            val setFactoryCompanion = when {
-                binding.elementKey.type.isNoArgProvider() -> {
-                    symbols.setOfProviderFactory.owner.companionObject() as IrClass
-                }
-                binding.elementKey.type.isLazy() -> {
-                    symbols.setOfLazyFactory.owner.companionObject() as IrClass
-                }
-                else -> symbols.setOfValueFactory.owner.companionObject() as IrClass
-            }
+            val setFactoryCompanion = if (binding.elementKey.type.isNoArgProvider()) {
+                symbols.setOfProviderFactory.owner.companionObject() as IrClass
+            } else symbols.setOfValueFactory.owner.companionObject() as IrClass
 
             if (elementExpressions.isEmpty()) {
                 irCall(

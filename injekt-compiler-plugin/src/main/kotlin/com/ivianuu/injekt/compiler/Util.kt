@@ -642,10 +642,6 @@ fun IrFunction.getFunctionType(pluginContext: IrPluginContext): IrType {
 fun IrPluginContext.tmpFunction(n: Int): IrClassSymbol =
     referenceClass(builtIns.getFunction(n).fqNameSafe)!!
 
-fun IrType.isLazy() = isFunction() &&
-        typeArguments.size == 1 &&
-        hasAnnotation(InjektFqNames.Lazy)
-
 fun IrType.isProvider() = isFunction() && hasAnnotation(InjektFqNames.Provider)
 
 fun IrType.isNoArgProvider() = isProvider() && typeArguments.size == 1

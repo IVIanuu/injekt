@@ -23,11 +23,9 @@ import com.ivianuu.injekt.compiler.IntKey
 import com.ivianuu.injekt.compiler.LongKey
 import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.StringKey
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.findPropertyGetter
 import com.ivianuu.injekt.compiler.getIrClass
 import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.isLazy
 import com.ivianuu.injekt.compiler.isProvider
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
@@ -42,7 +40,6 @@ import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
-import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
@@ -87,7 +84,7 @@ class Graph(
 
     init {
         if (factoryModule != null) addModule(factoryModule)
-        implicitBindingResolvers += LazyOrProviderBindingResolver(
+        implicitBindingResolvers += NoArgProviderBindingResolver(
             factory
         )
         implicitBindingResolvers += mapBindingResolver
@@ -171,7 +168,7 @@ class Graph(
         check(request.key !in chain || chain
             .toList()
             .let { it.subList(it.indexOf(request.key), it.size) }
-            .any { it.type.isLazy() || it.type.isProvider() }
+            .any { it.type.isProvider() }
         ) {
             val chain = (chain.toList() + request.key)
                 .let { it.subList(it.indexOf(request.key), it.size) }

@@ -131,56 +131,6 @@ class SetTest {
     }
 
     @Test
-    fun testSetOfLazyInstance() = codegen(
-        """
-        @InstanceFactory
-        fun invoke(): Set<@Lazy () -> Command> {
-            transient { CommandA() }
-            transient { CommandB() }
-            transient { CommandC() }
-            set<Command> {
-                add<CommandA>()
-                add<CommandB>()
-                add<CommandC>()
-            }
-            return create()
-        }
-         """
-    ) {
-        val set =
-            invokeSingleFile<Set<@Lazy () -> Command>>().toList()
-        assertEquals(3, set.size)
-        assertTrue(set[0]() is CommandA)
-        assertTrue(set[1]() is CommandB)
-        assertTrue(set[2]() is CommandC)
-    }
-
-    @Test
-    fun testSetOfLazyProvider() = codegen(
-        """
-        @InstanceFactory
-        fun invoke(): @Provider () -> Set<@Lazy () -> Command> {
-            transient { CommandA() }
-            transient { CommandB() }
-            transient { CommandC() }
-            set<Command> {
-                add<CommandA>()
-                add<CommandB>()
-                add<CommandC>()
-            }
-            return create()
-        }
-         """
-    ) {
-        val set =
-            invokeSingleFile<@Provider () -> Set<@Lazy () -> Command>>()().toList()
-        assertEquals(3, set.size)
-        assertTrue(set[0]() is CommandA)
-        assertTrue(set[1]() is CommandB)
-        assertTrue(set[2]() is CommandC)
-    }
-
-    @Test
     fun testSetOfAssistedProviderInstance() = codegen(
         """
         @InstanceFactory
@@ -415,19 +365,6 @@ class SetTest {
         """
         @InstanceFactory
         fun invoke(): @TestQualifier1 Set<@Provider () -> Any> {
-            set<@TestQualifier1 Set<Any>, Any>()
-            return create()
-        }
-        """
-    ) {
-        assertOk()
-    }
-
-    @Test
-    fun testQualifiedMapOfLazy() = codegen(
-        """
-        @InstanceFactory
-        fun invoke(): @TestQualifier1 Set<@Lazy () -> Any> {
             set<@TestQualifier1 Set<Any>, Any>()
             return create()
         }

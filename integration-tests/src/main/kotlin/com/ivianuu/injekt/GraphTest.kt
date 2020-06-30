@@ -78,7 +78,7 @@ class GraphTest {
     fun testCircularDependencyWithProvider() = codegen(
         """
         @TestScope class A(b: B)
-        @Transient class B(a: @Lazy () -> A)
+        @Transient class B(a: @Provider () -> A)
         @InstanceFactory fun invoke(): A {
             scope<TestScope>()
             return create()
@@ -92,7 +92,7 @@ class GraphTest {
     fun testCircularDependencyWithProvider2() = codegen(
         """
         @TestScope class A(b: B)
-        @Transient class B(a: @Lazy () -> A)
+        @Transient class B(a: @Provider () -> A)
         @InstanceFactory fun invoke(): B {
             scope<TestScope>()
             return create()
@@ -107,7 +107,7 @@ class GraphTest {
         """
         @TestScope class A(b: B)
         @Transient class B(a: A)
-        @Transient class C(b: @Lazy () -> B)
+        @Transient class C(b: @Provider () -> B)
         @InstanceFactory fun invoke(): B {
             scope<TestScope>()
             return create()

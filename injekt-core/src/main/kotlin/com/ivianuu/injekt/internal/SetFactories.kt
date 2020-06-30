@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.internal
 
-import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Provider
 
 class SetOfValueFactory<E>(private val providers: Set<@Provider () -> E>) : @Provider () -> Set<E> {
@@ -51,25 +50,6 @@ class SetOfProviderFactory<E>(private val providers: Set<@Provider () -> E>) :
             SetOfProviderFactory(setOf(*elements))
 
         fun <E> empty(): SetOfProviderFactory<E> = EMPTY as SetOfProviderFactory<E>
-
-    }
-}
-
-class SetOfLazyFactory<E>(private val providers: Set<@Provider () -> E>) :
-    @Provider () -> Set<@Lazy () -> E> {
-    override fun invoke(): Set<@Lazy () -> E> = providers
-        .mapTo(LinkedHashSet(providers.size)) { DoubleCheck(it) }
-
-    companion object {
-        private val EMPTY = SetOfLazyFactory<Any?>(emptySet())
-
-        fun <E> create(element: @Provider () -> E): SetOfLazyFactory<E> =
-            SetOfLazyFactory(setOf(element))
-
-        fun <E> create(vararg elements: @Provider () -> E): SetOfLazyFactory<E> =
-            SetOfLazyFactory(setOf(*elements))
-
-        fun <E> empty(): SetOfLazyFactory<E> = EMPTY as SetOfLazyFactory<E>
 
     }
 }

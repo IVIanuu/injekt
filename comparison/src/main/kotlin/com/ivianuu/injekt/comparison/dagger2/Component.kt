@@ -31,17 +31,3 @@ interface Dagger2Component {
         fun create(): Dagger2Component
     }
 }
-
-class Foo @Inject constructor(bar: Bar)
-
-class Bar @Inject constructor(foo: Lazy<Foo>)
-
-@Component
-interface FooComponent {
-    val foo: Foo
-}
-
-@Component
-interface BarComponent {
-    val bar: Bar
-}

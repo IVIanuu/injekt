@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.internal
 
-import com.ivianuu.injekt.Lazy
 import com.ivianuu.injekt.Provider
 
 class MapOfValueFactory<K, V>(private val providers: Map<K, @Provider () -> V>) :
@@ -36,27 +35,6 @@ class MapOfValueFactory<K, V>(private val providers: Map<K, @Provider () -> V>) 
         ): MapOfValueFactory<K, V> = MapOfValueFactory(mapOf(*pairs))
 
         fun <K, V> empty(): MapOfValueFactory<K, V> = EMPTY as MapOfValueFactory<K, V>
-
-    }
-}
-
-class MapOfLazyFactory<K, V>(private val providers: Map<K, @Provider () -> V>) :
-    @Provider () -> Map<K, @Lazy () -> V> {
-    override fun invoke(): Map<K, @Lazy () -> V> = providers
-        .mapValues { DoubleCheck(it.value) }
-
-    companion object {
-        private val EMPTY = MapOfLazyFactory<Any?, Any?>(emptyMap())
-
-        fun <K, V> create(
-            pair: Pair<K, () -> V>
-        ): MapOfLazyFactory<K, V> = MapOfLazyFactory(mapOf(pair))
-
-        fun <K, V> create(
-            vararg pairs: Pair<K, () -> V>
-        ): MapOfLazyFactory<K, V> = MapOfLazyFactory(mapOf(*pairs))
-
-        fun <K, V> empty(): MapOfLazyFactory<K, V> = EMPTY as MapOfLazyFactory<K, V>
 
     }
 }

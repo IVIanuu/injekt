@@ -229,27 +229,6 @@ class InstanceBindingNode(
     val requirementNode: InstanceNode,
 ) : BindingNode(key, emptyList(), null, false, null, owner, origin)
 
-class LazyBindingNode(
-    key: Key,
-    origin: FqName?,
-    owner: AbstractFactory
-) : BindingNode(
-    key,
-    listOf(
-        BindingRequest(
-            key.type.typeArguments.single().typeOrFail.asKey(),
-            key,
-            origin,
-            false
-        )
-    ),
-    null,
-    false,
-    null,
-    owner,
-    origin
-)
-
 class MapBindingNode(
     key: Key,
     owner: AbstractFactory,

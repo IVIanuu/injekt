@@ -76,22 +76,17 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
 
     val lateinitFactory = pluginContext.referenceClass(InjektFqNames.LateinitFactory)!!
 
-    val lazy = pluginContext.referenceClass(InjektFqNames.Lazy)!!
-
     val mapDsl = pluginContext.referenceClass(InjektFqNames.MapDsl)!!
     val mapOfValueFactory = pluginContext.referenceClass(InjektFqNames.MapOfValueFactory)!!
     val mapOfProviderFactory = pluginContext.referenceClass(InjektFqNames.MapOfProviderFactory)!!
-    val mapOfLazyFactory = pluginContext.referenceClass(InjektFqNames.MapOfLazyFactory)!!
 
     val module = pluginContext.referenceClass(InjektFqNames.Module)!!
 
     val provider = pluginContext.referenceClass(InjektFqNames.Provider)!!
-    val providerOfLazy = pluginContext.referenceClass(InjektFqNames.ProviderOfLazy)!!
 
     val setDsl = pluginContext.referenceClass(InjektFqNames.SetDsl)!!
     val setOfValueFactory = pluginContext.referenceClass(InjektFqNames.SetOfValueFactory)!!
     val setOfProviderFactory = pluginContext.referenceClass(InjektFqNames.SetOfProviderFactory)!!
-    val setOfLazyFactory = pluginContext.referenceClass(InjektFqNames.SetOfLazyFactory)!!
 
     val singleInstanceFactory = pluginContext.referenceClass(InjektFqNames.SingleInstanceFactory)!!
 

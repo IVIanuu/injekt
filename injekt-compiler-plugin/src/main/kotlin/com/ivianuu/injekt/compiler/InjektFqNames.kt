@@ -85,16 +85,12 @@ object InjektFqNames {
     val MapDsl = InjektPackage.child("MapDsl")
     val MapOfValueFactory = InternalPackage.child("MapOfValueFactory")
     val MapOfProviderFactory = InternalPackage.child("MapOfProviderFactory")
-    val MapOfLazyFactory = InternalPackage.child("MapOfLazyFactory")
 
     val Module = InjektPackage.child("Module")
-
-    val Lazy = InjektPackage.child("Lazy")
 
     val MembersInjector = InjektPackage.child("MembersInjector")
 
     val Provider = InjektPackage.child("Provider")
-    val ProviderOfLazy = InternalPackage.child("ProviderOfLazy")
 
     val Qualifier = InjektPackage.child("Qualifier")
 
@@ -103,7 +99,6 @@ object InjektFqNames {
     val SetDsl = InjektPackage.child("SetDsl")
     val SetOfValueFactory = InternalPackage.child("SetOfValueFactory")
     val SetOfProviderFactory = InternalPackage.child("SetOfProviderFactory")
-    val SetOfLazyFactory = InternalPackage.child("SetOfLazyFactory")
 
     val SingleInstanceFactory = InternalPackage.child("SingleInstanceFactory")
 

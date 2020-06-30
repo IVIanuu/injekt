@@ -30,7 +30,6 @@ import com.ivianuu.injekt.compiler.getInjectConstructor
 import com.ivianuu.injekt.compiler.getQualifierFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isAssistedProvider
-import com.ivianuu.injekt.compiler.isLazy
 import com.ivianuu.injekt.compiler.isNoArgProvider
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.tmpFunction
@@ -713,7 +712,6 @@ class MapBindingResolver(
                         map.origin,
                         map.entries
                     ),
-                    frameworkBinding(InjektFqNames.Lazy, mapKey, map),
                     frameworkBinding(InjektFqNames.Provider, mapKey, map)
                 )
             }
@@ -807,7 +805,6 @@ class SetBindingResolver(
                         set.origin,
                         set.elements
                     ),
-                    frameworkBinding(InjektFqNames.Lazy, setKey, set),
                     frameworkBinding(InjektFqNames.Provider, setKey, set)
                 )
             }
@@ -850,20 +847,12 @@ class SetBindingResolver(
     )
 }
 
-class LazyOrProviderBindingResolver(
+class NoArgProviderBindingResolver(
     private val factory: AbstractFactory
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): List<BindingNode> {
         val requestedType = requestedKey.type
         return when {
-            requestedType.isLazy() ->
-                listOf(
-                    LazyBindingNode(
-                        requestedKey,
-                        null,
-                        factory
-                    )
-                )
             requestedType.isNoArgProvider() ->
                 listOf(
                     ProviderBindingNode(

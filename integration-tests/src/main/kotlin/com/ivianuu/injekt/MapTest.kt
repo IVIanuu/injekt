@@ -132,56 +132,6 @@ class MapTest {
     }
 
     @Test
-    fun testMapOfLazyInstance() = codegen(
-        """
-        @InstanceFactory
-        fun invoke(): Map<KClass<out Command>, @Lazy () -> Command> {
-            transient { CommandA() }
-            transient { CommandB() }
-            transient { CommandC() }
-            map<KClass<out Command>, Command> {
-                put<CommandA>(CommandA::class)
-                put<CommandB>(CommandB::class)
-                put<CommandC>(CommandC::class)
-            }
-            return create()
-        }
-         """
-    ) {
-        val map =
-            invokeSingleFile<Map<KClass<out Command>, @Lazy () -> Command>>()
-        assertEquals(3, map.size)
-        assertTrue(map[CommandA::class]!!() is CommandA)
-        assertTrue(map[CommandB::class]!!() is CommandB)
-        assertTrue(map[CommandC::class]!!() is CommandC)
-    }
-
-    @Test
-    fun testMapOfLazyProvider() = codegen(
-        """
-        @InstanceFactory
-        fun invoke(): @Provider () -> Map<KClass<out Command>, @Lazy () -> Command> {
-            transient { CommandA() }
-            transient { CommandB() }
-            transient { CommandC() }
-            map<KClass<out Command>, Command> {
-                put<CommandA>(CommandA::class)
-                put<CommandB>(CommandB::class)
-                put<CommandC>(CommandC::class)
-            }
-            return create()
-        }
-         """
-    ) {
-        val map =
-            invokeSingleFile<@Provider () -> Map<KClass<out Command>, @Lazy () -> Command>>()()
-        assertEquals(3, map.size)
-        assertTrue(map[CommandA::class]!!() is CommandA)
-        assertTrue(map[CommandB::class]!!() is CommandB)
-        assertTrue(map[CommandC::class]!!() is CommandC)
-    }
-
-    @Test
     fun testMapOfAssistedProvider() = codegen(
         """
         @InstanceFactory
@@ -420,19 +370,6 @@ class MapTest {
         """
         @InstanceFactory
         fun invoke(): @TestQualifier1 Map<KClass<*>, @Provider () -> Any> {
-            map<@TestQualifier1 Map<KClass<*>, Any>, KClass<*>, Any>()
-            return create()
-        }
-        """
-    ) {
-        assertOk()
-    }
-
-    @Test
-    fun testQualifiedMapOfLazy() = codegen(
-        """
-        @InstanceFactory
-        fun invoke(): @TestQualifier1 Map<KClass<*>, @Lazy () -> Any> {
             map<@TestQualifier1 Map<KClass<*>, Any>, KClass<*>, Any>()
             return create()
         }
