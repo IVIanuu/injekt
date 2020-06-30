@@ -22,11 +22,6 @@ object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
     val InternalPackage = InjektPackage.child("internal")
     val CompositionPackage = InjektPackage.child("composition")
-    val CompositionsPackage = CompositionPackage.child("internal")
-
-    val AndroidPackage = InjektPackage.child("android")
-
-    val AndroidEntryPoint = AndroidPackage.child("AndroidEntryPoint")
 
     val InjektAst = InternalPackage.child("InjektAst")
     val AstAlias = InjektAst.child("Alias")
@@ -64,7 +59,6 @@ object InjektFqNames {
 
     val ChildFactory = InjektPackage.child("ChildFactory")
 
-    val CompositionAndroidApp = AndroidPackage.child("CompositionAndroidApp")
     val CompositionComponent = CompositionPackage.child("CompositionComponent")
     val CompositionFactory = CompositionPackage.child("CompositionFactory")
     val CompositionFactories = CompositionPackage.child("CompositionFactories")
