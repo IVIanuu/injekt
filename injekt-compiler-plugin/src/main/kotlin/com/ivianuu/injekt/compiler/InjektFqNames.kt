@@ -69,8 +69,6 @@ object InjektFqNames {
 
     val Factory = InjektPackage.child("Factory")
 
-    val Inject = InjektPackage.child("Inject")
-
     val InstanceFactory = InjektPackage.child("InstanceFactory")
 
     val LateinitFactory = InternalPackage.child("LateinitFactory")
