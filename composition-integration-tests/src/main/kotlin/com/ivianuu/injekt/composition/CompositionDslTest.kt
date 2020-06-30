@@ -139,17 +139,4 @@ class CompositionDslTest {
             assertCompileError("@CompositionComponent")
         }
 
-    @Test
-    fun testObjectGraphInjectWithoutCompositionComponent() =
-        codegen(
-            """
-        val component = Any()
-        fun inject() {
-            component.inject("")
-        }
-    """
-        ) {
-            assertCompileError("@CompositionComponent")
-        }
-
 }

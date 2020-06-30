@@ -57,9 +57,8 @@ class CompositionTest {
                 }
                 
                 class BarEntryPointConsumer(private val testComponent: TestCompositionComponent) { 
-                    private val bar: Bar by inject()
-                    fun doInject() {
-                        testComponent.inject(this)
+                    private val bar: Bar = testComponent.get()
+                    fun print() {
                         println(bar)
                     }
                 }
@@ -91,9 +90,8 @@ class CompositionTest {
             
             class App { 
                 val component = compositionFactoryOf<AppComponent, () -> AppComponent>()() 
-                private val foo: Foo by inject()
+                val foo: Foo = component.get()
                 init { 
-                    component.inject(this)
                     Activity(this) 
                 } 
             }
@@ -110,10 +108,9 @@ class CompositionTest {
             
             class Activity(private val app: App) { 
                 val component = app.component.get<@ChildFactory () -> ActivityComponent>()() 
-                private val foo: Foo by inject() 
-                private val bar: Bar by inject()
-                init { 
-                    component.inject(this)
+                val foo: Foo = component.get() 
+                val bar: Bar = component.get()
+                init {
                     Fragment(this)
                 } 
             }
@@ -130,12 +127,9 @@ class CompositionTest {
             
             class Fragment(private val activity: Activity) { 
                 private val component = activity.component.get<@ChildFactory () -> FragmentComponent>()() 
-                private val foo: Foo by inject() 
-                private val bar: Bar by inject() 
-                private val baz: Baz by inject()
-                init {
-                    component.inject(this) 
-                } 
+                val foo: Foo = component.get()
+                val bar: Bar = component.get()
+                val baz: Baz = component.get()
             }
             
             fun invoke() {
@@ -178,10 +172,7 @@ class CompositionTest {
                 
                 class App { 
                     val component = compositionFactoryOf<AppComponent, () -> AppComponent>()()
-                    private val foo: Foo by inject()
-                    init {
-                        component.inject(this)
-                    }
+                    private val foo: Foo = component.get()
                 }
                 """
             )
@@ -191,11 +182,8 @@ class CompositionTest {
                 """
                 class Activity(private val app: App) {
                     val component = app.component.get<@ChildFactory () -> ActivityComponent>()()
-                    private val foo: Foo by inject()
-                    private val bar: Bar by inject()
-                    init {
-                        component.inject(this)
-                    }
+                    private val foo: Foo = component.get()
+                    private val bar: Bar = component.get()
                 }
                 
                 @CompositionComponent
@@ -210,12 +198,9 @@ class CompositionTest {
                 
                 class Fragment(private val activity: Activity) {
                     private val component = activity.component.get<@ChildFactory () -> FragmentComponent>()()
-                    private val foo: Foo by inject()
-                    private val bar: Bar by inject() 
-                    private val baz: Baz by inject()
-                    init {
-                        component.inject(this)
-                    }
+                    private val foo: Foo = component.get()
+                    private val bar: Bar = component.get()
+                    private val baz: Baz = component.get()
                 }
                 
                 fun main() {
