@@ -34,17 +34,6 @@ object InjektNameConventions {
         moduleFqName: FqName
     ): Name = getJoinedName(packageFqName, moduleFqName.child("OgImpl"))
 
-    fun getFactoryNameForClass(
-        packageFqName: FqName,
-        classFqName: FqName
-    ): Name {
-        return getJoinedName(
-            packageFqName,
-            classFqName.parent()
-                .child("create_${classFqName.pathSegments().joinToString("_")}")
-        )
-    }
-
     fun getCompositionModuleMetadataForModule(
         packageFqName: FqName,
         moduleFqName: FqName
@@ -108,9 +97,6 @@ object InjektNameConventions {
     fun getObjectGraphGetNameForCall(file: IrFile, call: IrCall): Name =
         getNameAtSourcePositionWithSuffix(file, call, "Get")
 
-    fun getObjectGraphInjectNameForCall(file: IrFile, call: IrCall): Name =
-        getNameAtSourcePositionWithSuffix(file, call, "Inject")
-
     fun getEntryPointModuleNameForCall(file: IrFile, call: IrCall): Name =
         getNameAtSourcePositionWithSuffix(file, call, "EntryPointModule")
 
@@ -121,16 +107,6 @@ object InjektNameConventions {
             factoryFunction,
             "FactoryModule"
         )
-    }
-
-    fun getCompositionElementNameForFunction(
-        compositionFqName: FqName,
-        moduleFunction: IrFunction
-    ): Name {
-        return (compositionFqName.asString()
-            .replace(".", "__") + "___" + moduleFunction.descriptor.fqNameSafe.asString()
-            .replace(".", "__"))
-            .asNameId()
     }
 
     fun nameWithoutIllegalChars(name: String): Name = name
