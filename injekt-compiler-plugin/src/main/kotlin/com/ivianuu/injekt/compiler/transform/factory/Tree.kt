@@ -40,7 +40,6 @@ import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
-import org.jetbrains.kotlin.ir.util.hasDefaultValue
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 
@@ -238,25 +237,6 @@ class MapBindingNode(
     val keyKey = key.type.typeArguments[0].typeOrFail.asKey()
     val valueKey = key.type.typeArguments[1].typeOrFail.asKey()
 }
-
-class MembersInjectorBindingNode(
-    key: Key,
-    owner: AbstractFactory,
-    origin: FqName?,
-    val membersInjector: IrFunction?
-) : BindingNode(
-    key,
-    membersInjector
-        ?.valueParameters
-        ?.drop(1)
-        ?.map { BindingRequest(it.type.asKey(), key, null, it.hasDefaultValue()) }
-        ?: emptyList(),
-    null,
-    false,
-    null,
-    owner,
-    origin
-)
 
 class NullBindingNode(
     key: Key,

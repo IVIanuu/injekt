@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.transform.composition
 
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.tmpFunction
@@ -52,7 +51,6 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
-import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.typeOrNull
@@ -81,7 +79,6 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
         callback(function)
 
         val originalUnresolvedGetCalls = mutableListOf<IrCall>()
-        val originalUnresolvedInjectCalls = mutableListOf<IrCall>()
         val originalObjectGraphFunctionCalls = mutableListOf<IrCall>()
         var hasUnresolvedCalls = false
 
@@ -121,8 +118,6 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
             transformObjectGraphCalls(
                 function,
                 function,
-                emptyList(),
-                emptyMap(),
                 emptyList(),
                 emptyMap(),
                 originalObjectGraphFunctionCalls
@@ -172,7 +167,6 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
         callback(transformedFunction)
 
         val unresolvedGetCalls = mutableListOf<IrCall>()
-        val unresolvedInjectCalls = mutableListOf<IrCall>()
         val objectGraphFunctionCalls = mutableListOf<IrCall>()
 
         transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
@@ -245,55 +239,11 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                 .forEach { addProviderValueParameterIfNeeded(it) }
         }
 
-        val valueParametersByUnresolvedInjectCalls =
-            mutableMapOf<Key, IrValueParameter>()
-
-        fun addInjectorValueParameterIfNeeded(injectorKey: Key) {
-            if (injectorKey !in valueParametersByUnresolvedInjectCalls) {
-                valueParametersByUnresolvedInjectCalls[injectorKey] =
-                    transformedFunction.addValueParameter(
-                        "og_injector${valueParametersByUnresolvedInjectCalls.size}",
-                        injectorKey.type
-                    )
-            }
-        }
-
-        unresolvedInjectCalls
-            .map {
-                pluginContext.tmpFunction(2)
-                    .typeWith(
-                        it.extensionReceiver!!.type,
-                        it.getTypeArgument(0)!!,
-                        irBuiltIns.unitType
-                    )
-                    .remapTypeParameters(function, transformedFunction)
-                    .asKey()
-            }
-            .forEach { addInjectorValueParameterIfNeeded(it) }
-
-        objectGraphFunctionCalls.forEach { objectGraphFunctionCall ->
-            val callee = transformFunctionIfNeeded(objectGraphFunctionCall.symbol.owner)
-            callee
-                .valueParameters
-                .filter { it.name.asString().startsWith("og_injector") }
-                .map {
-                    it to it.type.substitute(
-                        callee.typeParameters,
-                        objectGraphFunctionCall.typeArguments
-                    ).remapTypeParameters(function, transformedFunction)
-                }
-                .filter { it.second.typeArguments.any { it.typeOrNull?.isTypeParameter() == true } }
-                .map { it.second.asKey() }
-                .forEach { addInjectorValueParameterIfNeeded(it) }
-        }
-
         transformObjectGraphCalls(
             function,
             transformedFunction,
             unresolvedGetCalls,
             valueParametersByUnresolvedGetCalls,
-            unresolvedInjectCalls,
-            valueParametersByUnresolvedInjectCalls,
             objectGraphFunctionCalls
         )
     }
@@ -312,8 +262,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                 .map { it.owner }
                 .filter { other ->
                     other.valueParameters.any {
-                        it.name.asString().startsWith("og_provider") ||
-                                it.name.asString().startsWith("og_injector")
+                        it.name.asString().startsWith("og_provider")
                     }
                 }
                 .singleOrNull { other ->
@@ -327,9 +276,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                                 // todo the name check is unsafe compare types instead
                                 (otherValueParameter.name == thisValueParameter?.name ||
                                         (otherValueParameter.name.asString()
-                                            .startsWith("og_provider") ||
-                                                otherValueParameter.name.asString()
-                                                    .startsWith("og_injector")))
+                                            .startsWith("og_provider")))
                             }
                 } ?: function
         )
@@ -340,8 +287,6 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
         transformedFunction: IrFunction,
         unresolvedGetCalls: List<IrCall>,
         valueParametersByUnresolvedProviderType: Map<Key, IrValueParameter>,
-        unresolvedInjectCalls: List<IrCall>,
-        valueParametersByUnresolvedInjectorType: Map<Key, IrValueParameter>,
         objectGraphFunctionCalls: List<IrCall>
     ) {
         transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
@@ -368,29 +313,6 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                             }
                         }
                     }
-                    in unresolvedInjectCalls -> {
-                        val valueParameter = valueParametersByUnresolvedInjectorType
-                            .getValue(
-                                pluginContext.tmpFunction(2)
-                                    .typeWith(
-                                        expression.extensionReceiver!!.type,
-                                        expression.getTypeArgument(0)!!,
-                                        irBuiltIns.unitType
-                                    )
-                                    .remapTypeParameters(originalFunction, transformedFunction)
-                                    .asKey()
-                            )
-                        DeclarationIrBuilder(pluginContext, expression.symbol).run {
-                            irCall(
-                                valueParameter.type.classOrNull!!
-                                    .functions.first { it.owner.name.asString() == "invoke" }
-                            ).apply {
-                                dispatchReceiver = irGet(valueParameter)
-                                putValueArgument(0, expression.extensionReceiver!!)
-                                putValueArgument(1, expression.getValueArgument(0)!!)
-                            }
-                        }
-                    }
                     in objectGraphFunctionCalls -> {
                         val transformedCallee = transformFunctionIfNeeded(expression.symbol.owner)
                         transformObjectGraphFunctionCall(
@@ -398,8 +320,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                             transformedFunction,
                             expression,
                             transformedCallee,
-                            valueParametersByUnresolvedProviderType,
-                            valueParametersByUnresolvedInjectorType
+                            valueParametersByUnresolvedProviderType
                         )
                     }
                     else -> super.visitCall(expression)
@@ -413,8 +334,7 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
         transformedFunction: IrFunction,
         originalCall: IrCall,
         transformedCallee: IrFunction,
-        valueParametersByUnresolvedProviderType: Map<Key, IrValueParameter>,
-        valueParametersByUnresolvedInjectorType: Map<Key, IrValueParameter>
+        valueParametersByUnresolvedProviderType: Map<Key, IrValueParameter>
     ): IrExpression {
         return DeclarationIrBuilder(pluginContext, transformedCallee.symbol).irCall(
             transformedCallee
@@ -477,54 +397,6 @@ class ObjectGraphFunctionTransformer(pluginContext: IrPluginContext) :
                                                     substitutedType.asKey()
                                                 )
                                                     ?: error("${substitutedType.asKey()} is missing we only have${valueParametersByUnresolvedProviderType.keys}")
-                                            )
-                                    }
-                                }
-                            }
-                            valueParameter.name.asString().startsWith("og_injector") -> {
-                                val substitutedType = valueParameter.type
-                                    .remapTypeParameters(originalFunction, transformedFunction)
-                                    .substituteByName(
-                                        transformedCallee.typeParameters
-                                            .map { it.symbol }
-                                            .zip(typeArguments)
-                                            .toMap()
-                                    )
-
-                                val componentType = substitutedType.typeArguments[0].typeOrFail
-                                val instanceType = substitutedType.typeArguments[1].typeOrFail
-
-                                when {
-                                    !componentType.isTypeParameter() && !instanceType.isTypeParameter() -> {
-                                        InjektDeclarationIrBuilder(pluginContext, symbol).run {
-                                            irLambda(substitutedType) { lambda ->
-                                                +irReturn(
-                                                    IrCallImpl(
-                                                        originalCall.startOffset,
-                                                        originalCall.endOffset,
-                                                        irBuiltIns.unitType,
-                                                        pluginContext.referenceFunctions(
-                                                            FqName("com.ivianuu.injekt.composition.inject")
-                                                        ).single()
-                                                    ).apply {
-                                                        extensionReceiver =
-                                                            irGet(lambda.valueParameters[0])
-                                                        putTypeArgument(0, instanceType)
-                                                        putValueArgument(
-                                                            0,
-                                                            irGet(lambda.valueParameters[1])
-                                                        )
-                                                    }
-                                                )
-                                            }
-                                        }
-                                    }
-                                    else -> {
-                                        DeclarationIrBuilder(pluginContext, symbol)
-                                            .irGet(
-                                                valueParametersByUnresolvedInjectorType.getValue(
-                                                    substitutedType.asKey()
-                                                )
                                             )
                                     }
                                 }

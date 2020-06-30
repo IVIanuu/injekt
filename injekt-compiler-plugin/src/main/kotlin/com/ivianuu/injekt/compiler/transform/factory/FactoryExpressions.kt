@@ -117,9 +117,6 @@ class FactoryExpressions(
                         )
                         is InstanceBindingNode -> instanceExpressionForInstance(binding)
                         is MapBindingNode -> instanceExpressionForMap(binding)
-                        is MembersInjectorBindingNode -> instanceExpressionForMembersInjector(
-                            binding
-                        )
                         is NullBindingNode -> instanceExpressionForNull(binding)
                         is ProviderBindingNode -> instanceExpressionForProvider(binding)
                         is ProvisionBindingNode -> instanceExpressionForProvision(binding)
@@ -145,7 +142,6 @@ class FactoryExpressions(
                     )
                     is InstanceBindingNode -> providerExpressionForInstance(binding)
                     is MapBindingNode -> providerExpressionForMap(binding)
-                    is MembersInjectorBindingNode -> providerExpressionForMembersInjector(binding)
                     is NullBindingNode -> providerExpressionForNull(binding)
                     is ProviderBindingNode -> providerExpressionForProvider(binding)
                     is ProvisionBindingNode -> providerExpressionForProvision(binding)
@@ -313,28 +309,6 @@ class FactoryExpressions(
                     }
                 }
             }
-        }
-    }
-
-    private fun instanceExpressionForMembersInjector(binding: MembersInjectorBindingNode): FactoryExpression {
-        return {
-            val dependencyExpressions = binding.dependencies
-                .map { getBindingExpression(it) }
-
-            InjektDeclarationIrBuilder(pluginContext, scope.scopeOwnerSymbol)
-                .irLambda(binding.key.type) { lambda ->
-                    if (binding.membersInjector != null) {
-                        +irCall(binding.membersInjector).apply {
-                            putValueArgument(0, irGet(lambda.valueParameters.single()))
-                            dependencyExpressions.forEachIndexed { index, dependency ->
-                                putValueArgument(
-                                    index + 1,
-                                    dependency()
-                                )
-                            }
-                        }
-                    }
-                }
         }
     }
 
@@ -593,30 +567,6 @@ class FactoryExpressions(
                     }
                 }
             }
-        }
-    }
-
-    private fun providerExpressionForMembersInjector(binding: MembersInjectorBindingNode): FactoryExpression {
-        return {
-            val dependencyExpressions = binding.dependencies
-                .map { getBindingExpression(it) }
-
-            singleInstanceFactory(
-                InjektDeclarationIrBuilder(pluginContext, scope.scopeOwnerSymbol)
-                    .irLambda(binding.key.type) { lambda ->
-                        if (binding.membersInjector != null) {
-                            +irCall(binding.membersInjector).apply {
-                                putValueArgument(0, irGet(lambda.valueParameters.single()))
-                                dependencyExpressions.forEachIndexed { index, dependency ->
-                                    putValueArgument(
-                                        index + 1,
-                                        dependency()
-                                    )
-                                }
-                            }
-                        }
-                    }
-            )
         }
     }
 
