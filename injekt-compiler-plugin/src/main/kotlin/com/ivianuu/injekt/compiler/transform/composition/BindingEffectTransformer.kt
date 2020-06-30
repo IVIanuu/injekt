@@ -22,32 +22,30 @@ import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
-import com.ivianuu.injekt.compiler.getIrClass
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.backend.common.serialization.findPackage
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
+import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class BindingEffectTransformer(pluginContext: IrPluginContext) :
@@ -128,44 +126,14 @@ class BindingEffectTransformer(pluginContext: IrPluginContext) :
                     putTypeArgument(0, installIn.defaultType)
                 }
 
-                /*val effectCompanion = effectClass.companionObject() as IrClass
+                val effectCompanion = effectClass.companionObject() as IrClass
 
                 val effectModule = effectCompanion
                     .functions
                     .first { it.hasAnnotation(InjektFqNames.Module) }
 
-                    +irCall(effectModule).apply {
-                        dispatchReceiver = irGetObject(effectCompanion.symbol)
-                        putTypeArgument(0, clazz.defaultType)
-                    }
-                 */
-
-                val bindingEffectClass = pluginContext.referenceClass(effectFqName)!!
-                    .owner
-
-                val effectModule =
-                    bindingEffectClass.descriptor.findPackage()
-                        .getMemberScope()
-                        .getContributedDescriptors()
-                        .filterIsInstance<FunctionDescriptor>()
-                        .filter {
-                            it.hasAnnotation(InjektFqNames.BindingAdapterFunction) ||
-                                    it.hasAnnotation(InjektFqNames.BindingEffectFunction)
-                        }
-                        .firstOrNull {
-                            val annotation =
-                                it.annotations.findAnnotation(InjektFqNames.BindingAdapterFunction)
-                                    ?: it.annotations.findAnnotation(InjektFqNames.BindingEffectFunction)!!
-                            val value = annotation.allValueArguments.values.single() as KClassValue
-                            value.getIrClass(pluginContext) == bindingEffectClass
-                        }
-                        ?.let { functionDescriptor ->
-                            pluginContext.referenceFunctions(functionDescriptor.fqNameSafe)
-                                .single { it.descriptor == functionDescriptor }
-                        }
-                        ?: error("Corrupt binding effect ${bindingEffectClass.dump()}")
-
                 +irCall(effectModule).apply {
+                    dispatchReceiver = irGetObject(effectCompanion.symbol)
                     putTypeArgument(0, clazz.defaultType)
                 }
             }
