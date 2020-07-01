@@ -28,6 +28,7 @@ import com.ivianuu.injekt.internal.injektIntrinsic
 @TypeAnnotation
 annotation class Readable
 
+// todo replace with @Given once possible
 fun <T> given(): T = injektIntrinsic()
 
 inline fun <R> Any.runReading(
