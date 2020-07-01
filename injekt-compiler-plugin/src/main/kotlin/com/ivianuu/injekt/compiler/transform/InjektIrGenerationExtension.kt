@@ -22,8 +22,8 @@ import com.ivianuu.injekt.compiler.transform.composition.CompositionFactoryParen
 import com.ivianuu.injekt.compiler.transform.composition.CompositionModuleMetadataTransformer
 import com.ivianuu.injekt.compiler.transform.composition.EntryPointOfTransformer
 import com.ivianuu.injekt.compiler.transform.composition.GenerateCompositionsTransformer
-import com.ivianuu.injekt.compiler.transform.composition.ObjectGraphCallTransformer
-import com.ivianuu.injekt.compiler.transform.composition.ObjectGraphFunctionTransformer
+import com.ivianuu.injekt.compiler.transform.composition.ReadableFunctionTransformer
+import com.ivianuu.injekt.compiler.transform.composition.RunReadingTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
@@ -48,9 +48,9 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         ).also { declarationStore.factoryTransformer = it }
 
         if (pluginContext.compositionsEnabled) {
-            ObjectGraphFunctionTransformer(pluginContext).lower(moduleFragment)
+            ReadableFunctionTransformer(pluginContext).lower(moduleFragment)
 
-            ObjectGraphCallTransformer(pluginContext).lower(moduleFragment)
+            RunReadingTransformer(pluginContext).lower(moduleFragment)
 
             BindingEffectTransformer(pluginContext).lower(moduleFragment)
 

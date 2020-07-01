@@ -19,26 +19,25 @@ package com.ivianuu.injekt.sample
 import android.app.Application
 import androidx.work.Configuration
 import androidx.work.WorkManager
-import androidx.work.WorkerFactory
 import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.composition.get
 import com.ivianuu.injekt.composition.initializeCompositions
+import com.ivianuu.injekt.composition.runReading
 
 class App : Application() {
-
-    private val appServiceRunner: AppServiceRunner by lazy { applicationComponent.get() }
-    private val repo: Repo by lazy { applicationComponent.get() }
-    private val workerFactory: WorkerFactory by lazy { applicationComponent.get() }
 
     override fun onCreate() {
         initializeCompositions()
         super.onCreate()
+        val repo: Repo = applicationComponent.runReading { get() }
         repo.refresh()
 
-        WorkManager.initialize(
-            this, Configuration.Builder()
-                .setWorkerFactory(applicationComponent.get()).build()
-        )
+        applicationComponent.runReading {
+            WorkManager.initialize(
+                this, Configuration.Builder()
+                    .setWorkerFactory(get()).build()
+            )
+        }
 
         println("injected app $repo")
     }

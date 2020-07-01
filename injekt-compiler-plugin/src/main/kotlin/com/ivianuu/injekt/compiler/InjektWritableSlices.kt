@@ -16,12 +16,12 @@
 
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.util.slicedMap.BasicWritableSlice
+import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
+import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 
-class CompositionSymbols(val pluginContext: IrPluginContext) {
-    val bindingAdapter = pluginContext.referenceClass(InjektFqNames.BindingAdapter)!!
-    val compositionComposition = pluginContext.referenceClass(InjektFqNames.CompositionComponent)!!
-    val compositionFactory = pluginContext.referenceClass(InjektFqNames.CompositionFactory)!!
-    val compositionFactories = pluginContext.referenceClass(InjektFqNames.CompositionFactories)!!
-    val readable = pluginContext.referenceClass(InjektFqNames.Readable)!!
+object InjektWritableSlices {
+    val TYPE_ANNOTATIONS: WritableSlice<Any, MutableSet<FqName>> =
+        BasicWritableSlice(RewritePolicy.DO_NOTHING)
 }

@@ -299,12 +299,16 @@ class ModuleFunctionTransformer(
         )
     }
 
-    override fun transformCall(transformed: IrFunction, expression: IrCall): IrCall {
+    override fun transformCall(
+        callingFunction: IrFunction?,
+        transformedCallee: IrFunction,
+        expression: IrCall
+    ): IrCall {
         return IrCallImpl(
             expression.startOffset,
             expression.endOffset,
-            transformed.returnType,
-            transformed.symbol,
+            transformedCallee.returnType,
+            transformedCallee.symbol,
             expression.origin,
             expression.superQualifierSymbol
         ).apply {

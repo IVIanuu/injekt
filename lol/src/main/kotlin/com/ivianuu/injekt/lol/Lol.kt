@@ -16,28 +16,45 @@
 
 package com.ivianuu.injekt.lol
 
-import com.ivianuu.injekt.InstanceFactory
-import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.composition.CompositionComponent
+import com.ivianuu.injekt.composition.CompositionFactory
+import com.ivianuu.injekt.composition.compositionFactoryOf
+import com.ivianuu.injekt.composition.get
+import com.ivianuu.injekt.composition.installIn
+import com.ivianuu.injekt.composition.parent
+import com.ivianuu.injekt.composition.runReading
 import com.ivianuu.injekt.create
-import com.ivianuu.injekt.scope
 import com.ivianuu.injekt.scoped
-import com.ivianuu.injekt.transient
-
-@Scope
-annotation class TestScope
 
 class Foo
 class Bar(foo: Foo)
 
-@TestScope
-class MyClass(foo: Foo, bar: Bar)
+@CompositionComponent
+interface AppComponent
 
-@InstanceFactory
-fun createBar(): MyClass {
-    scope<TestScope>()
-    scoped<Foo>()
-    transient<Bar>()
+@CompositionFactory
+fun appComponentFactory(): AppComponent {
     return create()
 }
 
-fun invoke() = createBar()
+@Module
+fun appModule() {
+    installIn<AppComponent>()
+    scoped { Foo() }
+}
+
+@CompositionComponent
+interface ActivityComponent
+
+@CompositionFactory
+fun activityComponentFactory(): ActivityComponent {
+    parent<AppComponent>()
+    scoped { foo: Foo -> Bar(foo) }
+    return create()
+}
+
+class App {
+    val component = compositionFactoryOf<AppComponent, () -> AppComponent>()()
+    private val foo: Foo = component.runReading { get() }
+}

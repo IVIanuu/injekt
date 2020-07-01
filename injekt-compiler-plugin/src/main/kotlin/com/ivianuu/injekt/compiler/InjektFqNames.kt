@@ -79,6 +79,8 @@ object InjektFqNames {
 
     val Provider = InjektPackage.child("Provider")
 
+    val Readable = CompositionPackage.child("Readable")
+
     val Qualifier = InjektPackage.child("Qualifier")
 
     val Scope = InjektPackage.child("Scope")
@@ -90,6 +92,8 @@ object InjektFqNames {
     val SingleInstanceFactory = InternalPackage.child("SingleInstanceFactory")
 
     val Transient = InjektPackage.child("Transient")
+
+    val TypeAnnotation = InternalPackage.child("TypeAnnotation")
 
     val Uninitialized = InternalPackage.child("Uninitialized")
 

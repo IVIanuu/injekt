@@ -14,17 +14,7 @@
  * limitations under the License.
  */
 
-plugins {
-    kotlin("jvm")
-}
+package com.ivianuu.injekt.internal
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
-
-dependencies {
-    api(project(":injekt-core"))
-    api(project(":injekt-composition"))
-    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
-    testImplementation(Deps.junit)
-}
+@Target(AnnotationTarget.ANNOTATION_CLASS)
+annotation class TypeAnnotation

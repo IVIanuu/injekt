@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.Path
 import com.ivianuu.injekt.compiler.PropertyPath
 import com.ivianuu.injekt.compiler.TypeParameterPath
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.remapTypeParameters
@@ -49,7 +50,6 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
@@ -225,7 +225,8 @@ class ModuleDeclarationFactory(
 
         val includedDescriptor = includedClass
             .declarations
-            .single { it.descriptor.name.asString() == "Descriptor" } as IrClass
+            .singleOrNull { it.descriptor.name.asString() == "Descriptor" } as? IrClass
+            ?: error("No descriptor found for ${includedModuleFunction.dumpSrc()}")
 
         declarations += includedDescriptor
             .functions

@@ -16,6 +16,21 @@
 
 package com.ivianuu.injekt.composition
 
+import com.ivianuu.injekt.internal.TypeAnnotation
 import com.ivianuu.injekt.internal.injektIntrinsic
 
-fun <T> Any.get(): T = injektIntrinsic()
+@Target(
+    AnnotationTarget.TYPE,
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.TYPE_PARAMETER,
+    AnnotationTarget.PROPERTY
+)
+@TypeAnnotation
+annotation class Readable
+
+fun <T> given(): T = injektIntrinsic()
+
+fun <R> Any.runReading(block: @Readable () -> R): R = injektIntrinsic()
+
+@Readable
+fun <T> get(value: T = given()): T = value
