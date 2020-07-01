@@ -36,6 +36,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -166,6 +167,13 @@ abstract class AbstractFunctionTransformer(
         if (function in transformedFunctions.values) return function
 
         if (!needsTransform(function)) return function
+
+        return transformFunction(function)
+    }
+
+    protected fun transformFunction(function: IrFunction): IrFunction {
+        transformedFunctions[function]?.let { return it }
+        if (function in transformedFunctions.values) return function
 
         originalTransformedFunctions += function
 

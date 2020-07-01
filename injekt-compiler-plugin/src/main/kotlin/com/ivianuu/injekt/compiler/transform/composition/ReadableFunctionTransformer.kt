@@ -20,12 +20,18 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.remapTypeParameters
+import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
+import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.AbstractFunctionTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
+import com.ivianuu.injekt.compiler.transform.factory.BindingRequest
+import com.ivianuu.injekt.compiler.transform.factory.asKey
 import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.typeWith
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -56,30 +62,38 @@ import org.jetbrains.kotlin.ir.builders.irIfThenElse
 import org.jetbrains.kotlin.ir.builders.irImplicitCast
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
+import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrValueSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
+import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -95,7 +109,7 @@ class ReadableFunctionTransformer(
 ) : AbstractFunctionTransformer(pluginContext, TransformOrder.BottomUp) {
 
     fun getContextForFunction(readable: IrFunction): IrClass =
-        transformFunctionIfNeeded(readable).valueParameters.last().type.classOrNull!!.owner
+        transformFunction(readable).valueParameters.last().type.classOrNull!!.owner
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         super.visitModuleFragment(declaration)
@@ -103,19 +117,14 @@ class ReadableFunctionTransformer(
         val symbolRemapper = DeepCopySymbolRemapper()
         declaration.acceptVoid(symbolRemapper)
 
-        val typeRemapper = ReadableTypeRemapper(
-            pluginContext,
-            symbolRemapper,
-            pluginContext.typeTranslator
-        )
+        val typeRemapper = ReadableTypeRemapper(pluginContext, symbolRemapper)
         // for each declaration, we create a deepCopy transformer It is important here that we
         // use the "preserving metadata" variant since we are using this copy to *replace* the
         // originals, or else the module we would produce wouldn't have any metadata in it.
         val transformer = DeepCopyIrTreeWithSymbolsPreservingMetadata(
             pluginContext,
             symbolRemapper,
-            typeRemapper,
-            pluginContext.typeTranslator
+            typeRemapper
         ).also { typeRemapper.deepCopy = it }
         declaration.files.forEach {
             it.transformChildren(
@@ -232,17 +241,16 @@ class ReadableFunctionTransformer(
 
         transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol.owner.isReadable(pluginContext.bindingContext)) {
+                if (expression.symbol.owner.isReadable(pluginContext.bindingContext) ||
+                    expression.isReadableLambdaInvoke()
+                ) {
                     readableCalls += expression
                 }
                 return super.visitCall(expression)
             }
         })
 
-        val genericReadableCalls = readableCalls
-            .filter { it.typeArgumentsCount != 0 }
-
-        val genericFunctionMap = mutableMapOf<IrFunction, IrFunction>()
+        val genericFunctionMap = mutableListOf<Pair<IrFunction, IrFunction>>()
 
         fun addFunctionsFromGenericContext(
             genericContext: IrClass,
@@ -253,7 +261,7 @@ class ReadableFunctionTransformer(
             genericContext.functions
                 .filterNot { it.isFakeOverride }
                 .forEach { genericContextFunction ->
-                    genericFunctionMap[genericContextFunction] = contextClass.addFunction {
+                    genericFunctionMap += genericContextFunction to contextClass.addFunction {
                         name = InjektNameConventions
                             .getReadableContextParamNameForContext(
                                 genericContextFunction.getPackageFragment()!!.fqName,
@@ -291,6 +299,7 @@ class ReadableFunctionTransformer(
         }
 
         readableCalls
+            .filterNot { it.isReadableLambdaInvoke() }
             .forEach { call ->
                 val callContext = getContextForFunction(call.symbol.owner)
                 handleSubcontext(callContext, call, call.typeArguments)
@@ -302,7 +311,7 @@ class ReadableFunctionTransformer(
                     }
                     .forEach { (_, expr) ->
                         expr as IrFunctionExpression
-                        val transformedLambda = transformFunctionIfNeeded(expr.function)
+                        val transformedLambda = transformFunction(expr.function)
                         val lambdaContext = getContextForFunction(transformedLambda)
                         handleSubcontext(lambdaContext, expr, emptyList())
                     }
@@ -353,25 +362,45 @@ class ReadableFunctionTransformer(
             }
 
             override fun visitCall(expression: IrCall): IrExpression {
-                val transformed = transformFunctionIfNeeded(expression.symbol.owner)
-                if (!transformed.isReadable(pluginContext.bindingContext)) return super.visitCall(
-                    expression
-                )
+                val result = super.visitCall(expression) as IrCall
+                if (!result.symbol.owner.isReadable(pluginContext.bindingContext) &&
+                    !result.isReadableLambdaInvoke()
+                ) return result
 
-                val calleeContext = getContextForFunction(transformed)
+                if (result.isReadableLambdaInvoke()) {
+                    return DeclarationIrBuilder(pluginContext, result.symbol).run {
+                        IrCallImpl(
+                            result.startOffset,
+                            result.endOffset,
+                            result.type,
+                            pluginContext.tmpFunction(result.symbol.owner.valueParameters.size + 1)
+                                .functions
+                                .first { it.owner.name.asString() == "invoke" }
+                        ).apply {
+                            copyTypeAndValueArgumentsFrom(result)
+                            putValueArgument(valueArgumentsCount - 1, irGet(contextValueParameter))
+                        }
+                    }
+                }
 
-                val contextArgument = DeclarationIrBuilder(pluginContext, expression.symbol).run {
-                    if (transformed.typeParameters.isNotEmpty()) {
-                        irBlock(origin = IrStatementOrigin.OBJECT_LITERAL) {
-                            val contextImpl = buildClass {
-                                name = Name.special("<context>")
-                                visibility = Visibilities.LOCAL
-                            }.apply clazz@{
-                                parent = transformedFunction
-                                createImplicitParameterDeclarationWithWrappedDescriptor()
+                val transformedCallee = transformFunctionIfNeeded(result.symbol.owner)
+                val transformedCall = transformCall(transformedCallee, result)
 
-                                superTypes += calleeContext.defaultType
-                                    .typeWith(*expression.typeArguments.toTypedArray())
+                val contextArgument =
+                    DeclarationIrBuilder(pluginContext, transformedCall.symbol).run {
+                        if (transformedCallee.typeParameters.isNotEmpty() && !transformedCall.isReadableLambdaInvoke()) {
+                            val calleeContext = getContextForFunction(transformedCallee)
+
+                            irBlock(origin = IrStatementOrigin.OBJECT_LITERAL) {
+                                val contextImpl = buildClass {
+                                    name = Name.special("<context>")
+                                    visibility = Visibilities.LOCAL
+                                }.apply clazz@{
+                                    parent = transformedFunction
+                                    createImplicitParameterDeclarationWithWrappedDescriptor()
+
+                                    superTypes += calleeContext.defaultType
+                                        .typeWith(*transformedCall.typeArguments.toTypedArray())
 
                                 addConstructor {
                                     returnType = defaultType
@@ -385,31 +414,61 @@ class ReadableFunctionTransformer(
                                     }
                                 }
 
-                                calleeContext.functions
-                                    .filterNot { it.isFakeOverride }
-                                    .forEach { calleeFunction ->
-                                        val thisContextFunction =
-                                            genericFunctionMap.getValue(calleeFunction)
-                                        addFunction {
-                                            name = calleeFunction.name
-                                            returnType = calleeFunction.returnType
-                                                .remapTypeParameters(
-                                                    calleeFunction,
-                                                    thisContextFunction
-                                                )
-                                            visibility = calleeFunction.visibility
-                                        }.apply {
+                                    fun implementFunctions(
+                                        superClass: IrClass,
+                                        typeArguments: List<IrType>
+                                    ) {
+                                        for (declaration in superClass.declarations.toList()) {
+                                            if (declaration !is IrFunction) continue
+                                            if (declaration is IrConstructor) continue
+                                            if (declaration.isFakeOverride) continue
+                                            if (declaration.dispatchReceiverParameter?.type == irBuiltIns.anyType) break
+                                            addFunction {
+                                                name = declaration.name
+                                                returnType = declaration.returnType
+                                                // todo this would be correct but codegen fails
+                                                /*.substituteAndKeepQualifiers(
+                                                    superClass.typeParameters.map { it.symbol }.associateWith {
+                                                        typeArguments[it.owner.index]
+                                                    }
+                                                )*/
+                                                visibility = declaration.visibility
+                                            }.apply {
                                             dispatchReceiverParameter = thisReceiver!!.copyTo(this)
                                             body = DeclarationIrBuilder(
                                                 pluginContext,
                                                 symbol
                                             ).irExprBody(
-                                                irCall(thisContextFunction).apply {
+                                                irCall(
+                                                    genericFunctionMap.firstOrNull { (a, b) ->
+                                                        a == declaration &&
+                                                                a.returnType.substitute(
+                                                                    superClass.typeParameters,
+                                                                    typeArguments
+                                                                ) == b.returnType
+                                                    }?.second?.symbol ?: declaration.symbol
+                                                ).apply {
                                                     dispatchReceiver = irGet(contextValueParameter)
                                                 }
                                             )
+                                            }
                                         }
+
+                                        superClass.superTypes
+                                            .map { it to it.classOrNull?.owner }
+                                            .forEach { (superType, clazz) ->
+                                                if (clazz != null)
+                                                    implementFunctions(
+                                                        clazz,
+                                                        superType.typeArguments.map { it.typeOrFail })
+                                            }
                                     }
+
+                                    val superType = superTypes.single()
+                                    val superTypeClass = superType.getClass()!!
+                                    implementFunctions(
+                                        superTypeClass,
+                                        superType.typeArguments.map { it.typeOrFail })
                             }
                             +contextImpl
                             +irCall(contextImpl.constructors.single())
@@ -419,7 +478,7 @@ class ReadableFunctionTransformer(
                     }
                 }
 
-                return transformCall(transformed, expression).apply {
+                return transformedCall.apply {
                     putValueArgument(valueArgumentsCount - 1, contextArgument)
                 }
             }

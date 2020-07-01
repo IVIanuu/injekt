@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform.composition
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.analysis.TypeAnnotationChecker
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
@@ -35,4 +36,9 @@ fun IrFunction.isReadable(bindingContext: BindingContext): Boolean {
     } catch (e: Exception) {
         false
     }
+}
+
+fun IrCall.isReadableLambdaInvoke(): Boolean {
+    return symbol.owner.name.asString() == "invoke" &&
+            dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Readable) == true
 }

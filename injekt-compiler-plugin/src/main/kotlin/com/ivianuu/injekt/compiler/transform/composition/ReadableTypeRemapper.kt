@@ -71,6 +71,7 @@ import org.jetbrains.kotlin.ir.util.TypeRemapper
 import org.jetbrains.kotlin.ir.util.TypeTranslator
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
@@ -83,7 +84,6 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
     private val context: IrPluginContext,
     private val symbolRemapper: DeepCopySymbolRemapper,
     private val typeRemapper: TypeRemapper,
-    private val typeTranslator: TypeTranslator,
     symbolRenamer: SymbolRenamer = SymbolRenamer.DEFAULT
 ) : DeepCopyIrTreeWithSymbols(symbolRemapper, typeRemapper, symbolRenamer) {
 
@@ -308,8 +308,7 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 class ReadableTypeRemapper(
     private val context: IrPluginContext,
-    private val symbolRemapper: SymbolRemapper,
-    private val typeTranslator: TypeTranslator
+    private val symbolRemapper: SymbolRemapper
 ) : TypeRemapper {
 
     lateinit var deepCopy: IrElementTransformerVoid
@@ -333,16 +332,6 @@ class ReadableTypeRemapper(
 
     private fun List<IrConstructorCall>.hasAnnotation(fqName: FqName): Boolean =
         any { it.annotationClass?.fqNameOrNull() == fqName }
-
-    private fun KotlinType.toIrType(): IrType = typeTranslator.translateType(this)
-
-    private fun IrType.isFunction(): Boolean {
-        val classifier = classifierOrNull ?: return false
-        val name = classifier.descriptor.name.asString()
-        if (!name.startsWith("Function")) return false
-        classifier.descriptor.name
-        return true
-    }
 
     override fun remapType(type: IrType): IrType {
         if (type !is IrSimpleType) return type
@@ -368,7 +357,7 @@ class ReadableTypeRemapper(
             ),
             type.hasQuestionMark,
             newIrArguments.map { remapTypeArgument(it) },
-            emptyList(),
+            type.annotations,
             null
         )
     }

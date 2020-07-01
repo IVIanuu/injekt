@@ -117,7 +117,7 @@ class ReadableTest {
         }
         
         @Readable
-        fun <R> withFoo(block: @Readable Foo.() -> R): R = func().block()
+        fun <R> withFoo(block: @Readable (Foo) -> R): R = block(func())
         
         fun invoke(): Foo {
             initializeCompositions()
@@ -125,7 +125,7 @@ class ReadableTest {
             return component.runReading {
                 withFoo {
                     other()
-                    this
+                    it
                 }
             }
         }

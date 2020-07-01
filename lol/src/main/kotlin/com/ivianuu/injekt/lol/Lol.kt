@@ -17,44 +17,55 @@
 package com.ivianuu.injekt.lol
 
 import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.Transient
+import com.ivianuu.injekt.alias
+import com.ivianuu.injekt.composition.BindingEffect
 import com.ivianuu.injekt.composition.CompositionComponent
 import com.ivianuu.injekt.composition.CompositionFactory
+import com.ivianuu.injekt.composition.Readable
 import com.ivianuu.injekt.composition.compositionFactoryOf
 import com.ivianuu.injekt.composition.get
+import com.ivianuu.injekt.composition.given
+import com.ivianuu.injekt.composition.initializeCompositions
 import com.ivianuu.injekt.composition.installIn
 import com.ivianuu.injekt.composition.parent
 import com.ivianuu.injekt.composition.runReading
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.scoped
+import com.ivianuu.injekt.transient
 
 class Foo
 class Bar(foo: Foo)
 
 @CompositionComponent
-interface AppComponent
+interface TestCompositionComponent
 
 @CompositionFactory
-fun appComponentFactory(): AppComponent {
+fun factory(): TestCompositionComponent {
+    transient { Foo() }
     return create()
 }
 
-@Module
-fun appModule() {
-    installIn<AppComponent>()
-    scoped { Foo() }
+@Readable
+fun func(foo: Foo = given()): Foo {
+    return foo
 }
 
-@CompositionComponent
-interface ActivityComponent
-
-@CompositionFactory
-fun activityComponentFactory(): ActivityComponent {
-    parent<AppComponent>()
-    scoped { foo: Foo -> Bar(foo) }
-    return create()
+@Readable
+fun other() {
 }
 
-class App {
-    val component = compositionFactoryOf<AppComponent, () -> AppComponent>()()
-    private val foo: Foo = component.runReading { get() }
+@Readable
+fun <R> withFoo(block: @Readable (Foo) -> R): R = block(func())
+
+fun invoke(): Foo {
+    initializeCompositions()
+    val component =
+        compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+    return component.runReading {
+        withFoo {
+            other()
+            it
+        }
+    }
 }

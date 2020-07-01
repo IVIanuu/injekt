@@ -31,6 +31,7 @@ import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.util.dump
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
@@ -84,7 +85,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         // patch metadata
         TmpMetadataPatcher(pluginContext).lower(moduleFragment)
 
-        //println(moduleFragment.dumpSrc())
+        println(moduleFragment.dumpSrc())
     }
 
 }
