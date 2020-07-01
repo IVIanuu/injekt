@@ -518,8 +518,16 @@ fun IrFunction.getFunctionType(pluginContext: IrPluginContext): IrType {
         .typeWith(valueParameters.map { it.type } + returnType)
 }
 
+fun IrFunction.getSuspendFunctionType(pluginContext: IrPluginContext): IrType {
+    return pluginContext.tmpSuspendFunction(valueParameters.size)
+        .typeWith(valueParameters.map { it.type } + returnType)
+}
+
 fun IrPluginContext.tmpFunction(n: Int): IrClassSymbol =
     referenceClass(builtIns.getFunction(n).fqNameSafe)!!
+
+fun IrPluginContext.tmpSuspendFunction(n: Int): IrClassSymbol =
+    referenceClass(builtIns.getSuspendFunction(n).fqNameSafe)!!
 
 fun IrType.isProvider() = isFunction() && hasAnnotation(InjektFqNames.Provider)
 

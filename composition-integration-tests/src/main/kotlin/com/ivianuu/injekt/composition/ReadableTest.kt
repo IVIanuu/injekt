@@ -117,7 +117,7 @@ class ReadableTest {
         }
         
         @Readable
-        fun <R> withFoo(block: @Readable (Foo) -> R): R = block(Foo())
+        fun <R> withFoo(block: @Readable (Foo) -> R): R = block(func())
         
         fun invoke(): Foo {
             initializeCompositions()
@@ -193,6 +193,43 @@ class ReadableTest {
     }
 
     @Test
+    fun test() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            transient { Foo() }
+            return create() 
+        }
+        
+        @Readable
+        suspend fun suspending(): Foo {
+            delay(1000)
+            return get()
+        }
+        
+        @Readable
+        suspend fun nonSuspending(): Foo {
+            delay(1000)
+            return get()
+        }
+        
+        fun invoke() { 
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            GlobalScope.launch {
+                repeat(2) {
+                    component.runReading {
+                        suspending()
+                        nonSuspending()
+                        delay(1000)
+                    }
+                }
+            }
+        }
+    """.trimIndent()
+    )
+
+    @Test
     fun testSuspendingReadableLambda() = codegen(
         """
         @CompositionFactory 
@@ -202,24 +239,28 @@ class ReadableTest {
         }
         
         @Readable
-        fun func(foo: Foo = given()): Foo {
+        suspend fun func(foo: Foo = given()): Foo {
+            delay(1000)
             return foo
         }
         
         @Readable
-        fun other() {
+        suspend fun other() { 
+            delay(1000)
         }
         
         @Readable
-        fun <R> withFoo(block: @Readable (Foo) -> R): R = block(func())
+        suspend fun <R> withFoo(block: @Readable suspend (Foo) -> R): R = block(func())
         
         fun invoke(): Foo {
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            return component.runReading {
-                withFoo {
-                    other()
-                    it
+            return runBlocking {
+                component.runReading {
+                    withFoo {
+                        other()
+                        it
+                    }
                 }
             }
         }

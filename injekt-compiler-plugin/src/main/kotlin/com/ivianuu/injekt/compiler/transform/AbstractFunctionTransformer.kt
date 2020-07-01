@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.addToFileOrAbove
 import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.getFunctionType
+import com.ivianuu.injekt.compiler.getSuspendFunctionType
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -37,6 +38,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -121,7 +123,8 @@ abstract class AbstractFunctionTransformer(
         return IrFunctionExpressionImpl(
             expression.startOffset,
             expression.endOffset,
-            transformedCallee.getFunctionType(pluginContext),
+            if (transformedCallee.isSuspend) transformedCallee.getSuspendFunctionType(pluginContext)
+            else transformedCallee.getFunctionType(pluginContext),
             transformedCallee as IrSimpleFunction,
             expression.origin
         )
@@ -134,7 +137,8 @@ abstract class AbstractFunctionTransformer(
         return IrFunctionReferenceImpl(
             expression.startOffset,
             expression.endOffset,
-            transformedCallee.getFunctionType(pluginContext),
+            if (transformedCallee.isSuspend) transformedCallee.getSuspendFunctionType(pluginContext)
+            else transformedCallee.getFunctionType(pluginContext),
             transformedCallee.symbol,
             expression.typeArgumentsCount,
             null,

@@ -26,6 +26,7 @@ import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.tmpFunction
+import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import com.ivianuu.injekt.compiler.transform.AbstractFunctionTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.factory.BindingRequest
@@ -92,6 +93,7 @@ import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.isSuspend
+import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -158,6 +160,7 @@ class ReadableFunctionTransformer(
             isSuspend = function.isSuspend
             if (function.visibility == Visibilities.LOCAL) visibility = Visibilities.LOCAL
             else Visibilities.PUBLIC
+            origin = function.origin
         }.apply {
             if (function.visibility == Visibilities.LOCAL) parent = function.parent
             else function.file
@@ -304,7 +307,7 @@ class ReadableFunctionTransformer(
         val lambdasByReadableCall = readableCalls.associateWith { call ->
             call.getArgumentsWithIr()
                 .filter { (valueParameter, expr) ->
-                    valueParameter.type.isFunction() &&
+                    (valueParameter.type.isFunction() || valueParameter.type.isSuspendFunction()) &&
                             valueParameter.type.hasAnnotation(InjektFqNames.Readable) &&
                             expr is IrFunctionExpression
                 }
@@ -381,9 +384,15 @@ class ReadableFunctionTransformer(
                             result.startOffset,
                             result.endOffset,
                             result.type,
-                            pluginContext.tmpFunction(result.symbol.owner.valueParameters.size + 1)
-                                .functions
-                                .first { it.owner.name.asString() == "invoke" }
+                            if (result.symbol.owner.isSuspend) {
+                                pluginContext.tmpSuspendFunction(result.symbol.owner.valueParameters.size + 1)
+                                    .functions
+                                    .first { it.owner.name.asString() == "invoke" }
+                            } else {
+                                pluginContext.tmpFunction(result.symbol.owner.valueParameters.size + 1)
+                                    .functions
+                                    .first { it.owner.name.asString() == "invoke" }
+                            }
                         ).apply {
                             copyTypeAndValueArgumentsFrom(result)
                             putValueArgument(valueArgumentsCount - 1, irGet(contextValueParameter))

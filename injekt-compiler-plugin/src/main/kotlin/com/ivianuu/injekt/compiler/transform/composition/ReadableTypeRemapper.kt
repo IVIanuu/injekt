@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform.composition
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.makeKotlinType
 import com.ivianuu.injekt.compiler.tmpFunction
+import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.builtins.isFunctionType
@@ -73,6 +74,7 @@ import org.jetbrains.kotlin.ir.util.TypeTranslator
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunction
+import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
@@ -324,12 +326,9 @@ class ReadableTypeRemapper(
         scopeStack.pop()
     }
 
-    private val IrConstructorCall.annotationClass
-        get() = this.symbol.descriptor.returnType.constructor.declarationDescriptor
-
     override fun remapType(type: IrType): IrType {
         if (type !is IrSimpleType) return type
-        if (!type.isFunction()) return underlyingRemapType(type)
+        if (!type.isFunction() && !type.isSuspendFunction()) return underlyingRemapType(type)
         if (!type.hasAnnotation(InjektFqNames.Readable)) return underlyingRemapType(type)
         val oldIrArguments = type.arguments
         val extraArgs = listOf(
@@ -344,8 +343,13 @@ class ReadableTypeRemapper(
                     oldIrArguments.last()
 
         val classifier = symbolRemapper.getReferencedClassifier(
-            context
-                .tmpFunction(oldIrArguments.size - 1 + extraArgs.size)
+            if (type.isSuspendFunction()) {
+                context
+                    .tmpSuspendFunction(oldIrArguments.size - 1 + extraArgs.size)
+            } else {
+                context
+                    .tmpFunction(oldIrArguments.size - 1 + extraArgs.size)
+            }
         )
         val newArguments = newIrArguments.map { remapTypeArgument(it) }
 
