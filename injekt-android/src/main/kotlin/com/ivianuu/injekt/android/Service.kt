@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.android
 
 import android.app.Service
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.ApplicationComponent
@@ -29,9 +28,9 @@ import com.ivianuu.injekt.composition.CompositionComponent
 import com.ivianuu.injekt.composition.CompositionFactory
 import com.ivianuu.injekt.composition.get
 import com.ivianuu.injekt.composition.parent
+import com.ivianuu.injekt.composition.runReading
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.instance
-import com.ivianuu.injekt.internal.injektIntrinsic
 import com.ivianuu.injekt.scope
 import com.ivianuu.injekt.transient
 
@@ -46,8 +45,9 @@ annotation class ForService
 interface ServiceComponent
 
 fun Service.newServiceComponent(): ServiceComponent {
-    return application.applicationComponent
-        .get<@ChildFactory (Service) -> ServiceComponent>()(this)
+    return application.applicationComponent.runReading {
+        get<@ChildFactory (Service) -> ServiceComponent>()(this)
+    }
 }
 
 @CompositionFactory

@@ -16,30 +16,39 @@
 
 package com.ivianuu.injekt.sample
 
+import android.content.Context
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModel
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.ivianuu.injekt.android.ActivityViewModel
+import com.ivianuu.injekt.android.ForActivity
 import com.ivianuu.injekt.android.activityComponent
+import com.ivianuu.injekt.composition.Readable
 import com.ivianuu.injekt.composition.get
+import com.ivianuu.injekt.composition.runReading
 
 class MainActivity : AppCompatActivity() {
 
-    private val viewModel: MainViewModel by lazy { activityComponent.get() }
+    private val viewModel: MainViewModel by lazy {
+        activityComponent.runReading { get() }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        WorkManager.getInstance(this)
-            .enqueue(
-                OneTimeWorkRequestBuilder<TestWorker>()
-                    .build()
-            )
-
+        activityComponent.runReading { enqueueWork() }
         println("Got view model $viewModel")
     }
+}
+
+@Readable
+private fun enqueueWork() {
+    WorkManager.getInstance(get<@ForActivity Context>())
+        .enqueue(
+            OneTimeWorkRequestBuilder<TestWorker>()
+                .build()
+        )
 }
 
 @ActivityViewModel
