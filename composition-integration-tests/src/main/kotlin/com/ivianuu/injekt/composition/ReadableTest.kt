@@ -88,14 +88,46 @@ class ReadableTest {
             return foo
         }
         
-        fun init() {
+        fun invoke(): Foo { 
             initializeCompositions()
-        }
-        
-        fun invoke(): Foo {
-            init()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             return component.runReading { func() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testSimpleReadableLambda() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            transient { Foo() }
+            return create() 
+        }
+        
+        @Readable
+        fun func(foo: Foo = given()): Foo {
+            return foo
+        }
+        
+        @Readable
+        fun other() {
+        }
+        
+        @Readable
+        fun <R> withFoo(block: @Readable Foo.() -> R): R = func().block()
+        
+        fun invoke(): Foo {
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReading {
+                withFoo {
+                    other()
+                    this
+                }
+            }
         }
     """
     ) {
