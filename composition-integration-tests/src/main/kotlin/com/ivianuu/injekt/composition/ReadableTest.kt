@@ -193,43 +193,6 @@ class ReadableTest {
     }
 
     @Test
-    fun test() = codegen(
-        """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            transient { Foo() }
-            return create() 
-        }
-        
-        @Readable
-        suspend fun suspending(): Foo {
-            delay(1000)
-            return get()
-        }
-        
-        @Readable
-        suspend fun nonSuspending(): Foo {
-            delay(1000)
-            return get()
-        }
-        
-        fun invoke() { 
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            GlobalScope.launch {
-                repeat(2) {
-                    component.runReading {
-                        suspending()
-                        nonSuspending()
-                        delay(1000)
-                    }
-                }
-            }
-        }
-    """.trimIndent()
-    )
-
-    @Test
     fun testSuspendingReadableLambda() = codegen(
         """
         @CompositionFactory 
