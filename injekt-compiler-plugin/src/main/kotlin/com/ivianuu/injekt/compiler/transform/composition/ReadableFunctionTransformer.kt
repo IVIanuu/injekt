@@ -39,6 +39,7 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.builders.createTmpVariable
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
@@ -60,21 +61,29 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.symbols.IrValueSymbol
+import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.getPackageFragment
+import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isFunction
+import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
@@ -90,6 +99,34 @@ class ReadableFunctionTransformer(
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         super.visitModuleFragment(declaration)
+
+        val symbolRemapper = DeepCopySymbolRemapper()
+        declaration.acceptVoid(symbolRemapper)
+
+        val typeRemapper = ReadableTypeRemapper(
+            pluginContext,
+            symbolRemapper,
+            pluginContext.typeTranslator
+        )
+        // for each declaration, we create a deepCopy transformer It is important here that we
+        // use the "preserving metadata" variant since we are using this copy to *replace* the
+        // originals, or else the module we would produce wouldn't have any metadata in it.
+        val transformer = DeepCopyIrTreeWithSymbolsPreservingMetadata(
+            pluginContext,
+            symbolRemapper,
+            typeRemapper,
+            pluginContext.typeTranslator
+        ).also { typeRemapper.deepCopy = it }
+        declaration.files.forEach {
+            it.transformChildren(
+                transformer,
+                null
+            )
+        }
+        // just go through and patch all of the parents to make sure things are properly wired
+        // up.
+        declaration.patchDeclarationParents()
+
         transformedFunctions
             .filterNot { it.key.isExternalDeclaration() }
             .forEach {
@@ -97,6 +134,7 @@ class ReadableFunctionTransformer(
                     it.value.valueParameters.last().type.classOrNull!!.owner
                 )
             }
+
         return declaration
     }
 
@@ -206,21 +244,24 @@ class ReadableFunctionTransformer(
 
         val genericFunctionMap = mutableMapOf<IrFunction, IrFunction>()
 
-        genericReadableCalls.forEach { call ->
-            val calleeContext = getContextForFunction(call.symbol.owner)
-            contextClass.superTypes += calleeContext.superTypes
-            calleeContext.functions
+        fun addFunctionsFromGenericContext(
+            genericContext: IrClass,
+            element: IrElement,
+            typeArguments: List<IrType>
+        ) {
+            contextClass.superTypes += genericContext.superTypes
+            genericContext.functions
                 .filterNot { it.isFakeOverride }
-                .forEach { calleeContextFunction ->
-                    genericFunctionMap[calleeContextFunction] = contextClass.addFunction {
+                .forEach { genericContextFunction ->
+                    genericFunctionMap[genericContextFunction] = contextClass.addFunction {
                         name = InjektNameConventions
                             .getReadableContextParamNameForContext(
-                                calleeContextFunction.getPackageFragment()!!.fqName,
-                                call,
-                                calleeContextFunction
+                                genericContextFunction.getPackageFragment()!!.fqName,
+                                element,
+                                genericContextFunction
                             )
-                        returnType = calleeContextFunction.returnType
-                            .substitute(calleeContext.typeParameters, call.typeArguments)
+                        returnType = genericContextFunction.returnType
+                            .substitute(genericContext.typeParameters, typeArguments)
                         modality = Modality.ABSTRACT
                     }.apply {
                         dispatchReceiverParameter = contextClass.thisReceiver?.copyTo(this)
@@ -228,13 +269,44 @@ class ReadableFunctionTransformer(
                 }
         }
 
-        readableCalls
-            .filter { it.typeArgumentsCount == 0 }
-            .map { call ->
-                val context = getContextForFunction(call.symbol.owner)
-                context.defaultType.typeWith(*call.typeArguments.toTypedArray())
+        fun addSubcontext(
+            subcontext: IrClass,
+            typeArguments: List<IrType>
+        ) {
+            contextClass.superTypes += subcontext.defaultType.typeWith(*typeArguments.toTypedArray())
+        }
+
+        fun handleSubcontext(
+            subcontext: IrClass,
+            element: IrElement,
+            typeArguments: List<IrType>
+        ) {
+            if (subcontext.typeParameters.isNotEmpty()) {
+                addFunctionsFromGenericContext(
+                    subcontext, element, typeArguments
+                )
+            } else {
+                addSubcontext(subcontext, typeArguments)
             }
-            .forEach { contextClass.superTypes += it }
+        }
+
+        readableCalls
+            .forEach { call ->
+                val callContext = getContextForFunction(call.symbol.owner)
+                handleSubcontext(callContext, call, call.typeArguments)
+                call.getArgumentsWithIr()
+                    .filter { (valueParameter, expr) ->
+                        valueParameter.type.isFunction() &&
+                                valueParameter.type.hasAnnotation(InjektFqNames.Readable) &&
+                                expr is IrFunctionExpression
+                    }
+                    .forEach { (_, expr) ->
+                        expr as IrFunctionExpression
+                        val transformedLambda = transformFunctionIfNeeded(expr.function)
+                        val lambdaContext = getContextForFunction(transformedLambda)
+                        handleSubcontext(lambdaContext, expr, emptyList())
+                    }
+            }
 
         val contextValueParameter = transformedFunction.addValueParameter(
             "readable_context",
@@ -295,6 +367,7 @@ class ReadableFunctionTransformer(
                                 name = Name.special("<context>")
                                 visibility = Visibilities.LOCAL
                             }.apply clazz@{
+                                parent = transformedFunction
                                 createImplicitParameterDeclarationWithWrappedDescriptor()
 
                                 superTypes += calleeContext.defaultType

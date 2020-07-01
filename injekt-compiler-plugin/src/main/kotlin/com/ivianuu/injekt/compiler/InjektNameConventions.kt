@@ -118,10 +118,10 @@ object InjektNameConventions {
 
     fun getReadableContextParamNameForContext(
         packageFqName: FqName,
-        call: IrCall,
+        element: IrElement,
         contextFunction: IrFunction
     ): Name =
-        getNameAtSourcePositionWithSuffix(packageFqName, call, contextFunction.name.asString())
+        getNameAtSourcePositionWithSuffix(packageFqName, element, contextFunction.name.asString())
 
     fun getEntryPointModuleNameForCall(packageFqName: FqName, call: IrCall): Name =
         getNameAtSourcePositionWithSuffix(packageFqName, call, "EntryPointModule")

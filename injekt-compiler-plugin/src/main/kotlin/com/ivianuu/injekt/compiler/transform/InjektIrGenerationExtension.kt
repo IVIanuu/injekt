@@ -49,11 +49,11 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         ).also { declarationStore.factoryTransformer = it }
 
         if (pluginContext.compositionsEnabled) {
+            BindingEffectTransformer(pluginContext).lower(moduleFragment)
+
             ReadableFunctionTransformer(pluginContext).lower(moduleFragment)
 
             RunReadingTransformer(pluginContext).lower(moduleFragment)
-
-            BindingEffectTransformer(pluginContext).lower(moduleFragment)
 
             // generate a @Module entryPointModule() { entryPoint<T>() } module at each call site of entryPointOf<T>()
             EntryPointOfTransformer(pluginContext).lower(moduleFragment)
@@ -84,7 +84,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         // patch metadata
         TmpMetadataPatcher(pluginContext).lower(moduleFragment)
 
-        println(moduleFragment.dumpSrc())
+        //println(moduleFragment.dumpSrc())
     }
 
 }
