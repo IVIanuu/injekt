@@ -16,28 +16,56 @@
 
 package com.ivianuu.injekt.lol
 
-import com.ivianuu.injekt.InstanceFactory
-import com.ivianuu.injekt.Scope
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.Transient
+import com.ivianuu.injekt.alias
+import com.ivianuu.injekt.composition.BindingEffect
+import com.ivianuu.injekt.composition.CompositionComponent
+import com.ivianuu.injekt.composition.CompositionFactory
+import com.ivianuu.injekt.composition.Readable
+import com.ivianuu.injekt.composition.compositionFactoryOf
+import com.ivianuu.injekt.composition.get
+import com.ivianuu.injekt.composition.given
+import com.ivianuu.injekt.composition.initializeCompositions
+import com.ivianuu.injekt.composition.installIn
+import com.ivianuu.injekt.composition.parent
+import com.ivianuu.injekt.composition.runReading
 import com.ivianuu.injekt.create
-import com.ivianuu.injekt.scope
 import com.ivianuu.injekt.scoped
 import com.ivianuu.injekt.transient
-
-@Scope
-annotation class TestScope
 
 class Foo
 class Bar(foo: Foo)
 
-@TestScope
-class MyClass(foo: Foo, bar: Bar)
+@CompositionComponent
+interface TestCompositionComponent
 
-@InstanceFactory
-fun createBar(): MyClass {
-    scope<TestScope>()
-    scoped<Foo>()
-    transient<Bar>()
+@CompositionFactory
+fun factory(): TestCompositionComponent {
+    transient { Foo() }
     return create()
 }
 
-fun invoke() = createBar()
+@Readable
+fun func(foo: Foo = given()): Foo {
+    return foo
+}
+
+@Readable
+fun other() {
+}
+
+@Readable
+fun <R> withFoo(block: @Readable (Foo) -> R): R = block(func())
+
+fun invoke(): Foo {
+    initializeCompositions()
+    val component =
+        compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+    return component.runReading {
+        withFoo {
+            other()
+            it
+        }
+    }
+}

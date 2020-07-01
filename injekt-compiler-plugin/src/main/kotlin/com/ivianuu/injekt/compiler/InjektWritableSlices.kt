@@ -14,18 +14,14 @@
  * limitations under the License.
  */
 
-plugins {
-    kotlin("jvm")
-    kotlin("kapt")
-}
+package com.ivianuu.injekt.compiler
 
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
-apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.util.slicedMap.BasicWritableSlice
+import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
+import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 
-dependencies {
-    implementation(project(":injekt-core"))
-    implementation(project(":injekt-composition"))
-    implementation(project(":test-util"))
-    kapt(project(":test-util"))
+object InjektWritableSlices {
+    val TYPE_ANNOTATIONS: WritableSlice<Any, MutableSet<FqName>> =
+        BasicWritableSlice(RewritePolicy.DO_NOTHING)
 }

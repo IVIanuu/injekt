@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.addToFileOrAbove
 import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.getFunctionType
+import com.ivianuu.injekt.compiler.getSuspendFunctionType
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -36,6 +37,8 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
+import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -46,10 +49,9 @@ abstract class AbstractFunctionTransformer(
 ) : AbstractInjektTransformer(pluginContext) {
 
     protected val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
+    protected val originalTransformedFunctions = mutableSetOf<IrFunction>()
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
-        super.visitModuleFragment(declaration)
-
         val functionsToTransform = mutableListOf<IrFunction>()
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
@@ -98,7 +100,8 @@ abstract class AbstractFunctionTransformer(
         })
 
         declaration.rewriteTransformedFunctionRefs()
-        return declaration
+
+        return super.visitModuleFragment(declaration)
     }
 
     protected abstract fun needsTransform(function: IrFunction): Boolean
@@ -114,27 +117,29 @@ abstract class AbstractFunctionTransformer(
     )
 
     protected open fun transformFunctionExpression(
-        transformed: IrFunction,
+        transformedCallee: IrFunction,
         expression: IrFunctionExpression
     ): IrFunctionExpression {
         return IrFunctionExpressionImpl(
             expression.startOffset,
             expression.endOffset,
-            transformed.getFunctionType(pluginContext),
-            transformed as IrSimpleFunction,
+            if (transformedCallee.isSuspend) transformedCallee.getSuspendFunctionType(pluginContext)
+            else transformedCallee.getFunctionType(pluginContext),
+            transformedCallee as IrSimpleFunction,
             expression.origin
         )
     }
 
     protected open fun transformFunctionReference(
-        transformed: IrFunction,
+        transformedCallee: IrFunction,
         expression: IrFunctionReference
     ): IrFunctionReference {
         return IrFunctionReferenceImpl(
             expression.startOffset,
             expression.endOffset,
-            transformed.getFunctionType(pluginContext),
-            transformed.symbol,
+            if (transformedCallee.isSuspend) transformedCallee.getSuspendFunctionType(pluginContext)
+            else transformedCallee.getFunctionType(pluginContext),
+            transformedCallee.symbol,
             expression.typeArgumentsCount,
             null,
             expression.origin
@@ -142,21 +147,21 @@ abstract class AbstractFunctionTransformer(
     }
 
     protected open fun transformCall(
-        transformed: IrFunction,
+        transformedCallee: IrFunction,
         expression: IrCall
     ): IrCall {
         return IrCallImpl(
             expression.startOffset,
             expression.endOffset,
-            transformed.returnType,
-            transformed.symbol,
+            transformedCallee.returnType,
+            transformedCallee.symbol,
             expression.origin,
             expression.superQualifierSymbol
         ).apply {
             try {
                 copyTypeAndValueArgumentsFrom(expression)
             } catch (e: Throwable) {
-                error("Couldn't transform ${expression.dumpSrc()} to ${transformed.render()}")
+                error("Couldn't transform ${expression.dumpSrc()} to ${transformedCallee.render()}")
             }
         }
     }
@@ -166,6 +171,15 @@ abstract class AbstractFunctionTransformer(
         if (function in transformedFunctions.values) return function
 
         if (!needsTransform(function)) return function
+
+        return transformFunction(function)
+    }
+
+    protected fun transformFunction(function: IrFunction): IrFunction {
+        transformedFunctions[function]?.let { return it }
+        if (function in transformedFunctions.values) return function
+
+        originalTransformedFunctions += function
 
         val callback: (IrFunction) -> Unit = {
             transformedFunctions[function] = it
@@ -193,27 +207,39 @@ abstract class AbstractFunctionTransformer(
         return transformedFunction
     }
 
+    protected open fun isTransformedFunction(function: IrFunction): Boolean =
+        function in transformedFunctions.values && function !in originalTransformedFunctions
+
     protected fun IrElement.rewriteTransformedFunctionRefs() {
         transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFunctionExpression(expression: IrFunctionExpression): IrExpression {
                 val result = super.visitFunctionExpression(expression) as IrFunctionExpression
                 val transformed = transformFunctionIfNeeded(result.function)
-                return if (transformed == result.function) result
-                else transformFunctionExpression(transformed, result)
+                return if (isTransformedFunction(transformed)) transformFunctionExpression(
+                    transformed,
+                    result
+                )
+                else result
             }
 
             override fun visitFunctionReference(expression: IrFunctionReference): IrExpression {
                 val result = super.visitFunctionReference(expression) as IrFunctionReference
                 val transformed = transformFunctionIfNeeded(result.symbol.owner)
-                return if (transformed == result.symbol.owner) result
-                else transformFunctionReference(transformed, result)
+                return if (isTransformedFunction(transformed)) transformFunctionReference(
+                    transformed,
+                    result
+                )
+                else result
             }
 
             override fun visitCall(expression: IrCall): IrExpression {
                 val result = super.visitCall(expression) as IrCall
                 val transformed = transformFunctionIfNeeded(result.symbol.owner)
-                return if (transformed == result.symbol.owner) result
-                else transformCall(transformed, result)
+                return if (isTransformedFunction(transformed)) transformCall(
+                    transformed,
+                    result
+                )
+                else result
             }
         })
     }

@@ -127,12 +127,12 @@ class CompositionDslTest {
         }
 
     @Test
-    fun testObjectGraphGetWithoutCompositionComponent() =
+    fun testRunReadingWithoutCompositionComponent() =
         codegen(
             """
         val component = Any()
         fun inject() {
-            component.get<String>()
+            component.runReading {}
         }
     """
         ) {

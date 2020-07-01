@@ -17,19 +17,21 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.compositionsEnabled
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.composition.BindingEffectTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionFactoryParentTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionModuleMetadataTransformer
 import com.ivianuu.injekt.compiler.transform.composition.EntryPointOfTransformer
 import com.ivianuu.injekt.compiler.transform.composition.GenerateCompositionsTransformer
-import com.ivianuu.injekt.compiler.transform.composition.ObjectGraphCallTransformer
-import com.ivianuu.injekt.compiler.transform.composition.ObjectGraphFunctionTransformer
+import com.ivianuu.injekt.compiler.transform.composition.ReadableFunctionTransformer
+import com.ivianuu.injekt.compiler.transform.composition.RunReadingTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.util.dump
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
@@ -48,11 +50,11 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         ).also { declarationStore.factoryTransformer = it }
 
         if (pluginContext.compositionsEnabled) {
-            ObjectGraphFunctionTransformer(pluginContext).lower(moduleFragment)
-
-            ObjectGraphCallTransformer(pluginContext).lower(moduleFragment)
-
             BindingEffectTransformer(pluginContext).lower(moduleFragment)
+
+            ReadableFunctionTransformer(pluginContext).lower(moduleFragment)
+
+            RunReadingTransformer(pluginContext).lower(moduleFragment)
 
             // generate a @Module entryPointModule() { entryPoint<T>() } module at each call site of entryPointOf<T>()
             EntryPointOfTransformer(pluginContext).lower(moduleFragment)
@@ -83,7 +85,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         // patch metadata
         TmpMetadataPatcher(pluginContext).lower(moduleFragment)
 
-        //println(moduleFragment.dumpSrc())
+        println(moduleFragment.dump())
     }
 
 }

@@ -95,6 +95,7 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.constants.AnnotationValue
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
@@ -117,6 +118,7 @@ import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjectionImpl
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
+import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 
 fun Annotated.hasAnnotation(fqName: FqName): Boolean {
     return annotations.hasAnnotation(fqName)
@@ -284,9 +286,6 @@ fun IrType.getQualifiers(): List<IrConstructorCall> {
                 .hasAnnotation(InjektFqNames.Qualifier)
         }
 }
-
-fun IrType.getQualifierFqNames(): List<FqName> =
-    getQualifiers().map { it.type.getClass()!!.fqNameForIrSerialization }
 
 private fun IrType.copy(
     arguments: List<IrTypeArgument>,
@@ -466,7 +465,10 @@ fun <T> T.addMetadataIfNotLocal() where T : IrMetadataSourceOwner, T : IrDeclara
 }
 
 fun IrDeclaration.addToFileOrAbove(other: IrDeclarationWithVisibility) {
-    if (other.visibility == Visibilities.LOCAL) {
+    if (other.visibility != Visibilities.LOCAL) {
+        parent = other.file
+        other.file.addChild(this)
+    } else {
         parent = other.parent
         var block: IrStatementContainer? = null
         other.file.transformChildrenVoid(object : IrElementTransformerVoid() {
@@ -490,13 +492,9 @@ fun IrDeclaration.addToFileOrAbove(other: IrDeclarationWithVisibility) {
             block!!.statements.add(index, this)
         } else {
             error(
-                "Corrupt parent ${other.render()} " +
-                        "parent ${parent.render()}"
+                "${dumpSrc()} has a corrupt parent\n${other.dumpSrc()} ours is \n ${parent.dumpSrc()}"
             )
         }
-    } else {
-        parent = other.file
-        other.file.addChild(this)
     }
 }
 
@@ -520,11 +518,30 @@ fun IrFunction.getFunctionType(pluginContext: IrPluginContext): IrType {
         .typeWith(valueParameters.map { it.type } + returnType)
 }
 
+fun IrFunction.getSuspendFunctionType(pluginContext: IrPluginContext): IrType {
+    return pluginContext.tmpSuspendFunction(valueParameters.size)
+        .typeWith(valueParameters.map { it.type } + returnType)
+}
+
 fun IrPluginContext.tmpFunction(n: Int): IrClassSymbol =
     referenceClass(builtIns.getFunction(n).fqNameSafe)!!
+
+fun IrPluginContext.tmpSuspendFunction(n: Int): IrClassSymbol =
+    referenceClass(builtIns.getSuspendFunction(n).fqNameSafe)!!
 
 fun IrType.isProvider() = isFunction() && hasAnnotation(InjektFqNames.Provider)
 
 fun IrType.isNoArgProvider() = isProvider() && typeArguments.size == 1
 
 fun IrType.isAssistedProvider() = isProvider() && typeArguments.size > 1
+
+inline fun <K, V> BindingTrace.getOrPut(
+    slice: WritableSlice<K, V>,
+    key: K,
+    defaultValue: () -> V
+): V {
+    get(slice, key)?.let { return it }
+    val value = defaultValue()
+    record(slice, key, value)
+    return value
+}

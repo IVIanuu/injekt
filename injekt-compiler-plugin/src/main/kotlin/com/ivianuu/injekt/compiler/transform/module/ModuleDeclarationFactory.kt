@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.Path
 import com.ivianuu.injekt.compiler.PropertyPath
 import com.ivianuu.injekt.compiler.TypeParameterPath
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.remapTypeParameters
@@ -49,7 +50,6 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
@@ -150,7 +150,8 @@ class ModuleDeclarationFactory(
         mapBlock?.function?.body?.transformChildrenVoid(object :
             IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol == symbols.mapDsl.functions.single { it.owner.name.asString() == "put" }) {
+                if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.MapDsl.put") {
+                    // todo symbols.mapDsl.functions.single { it.owner.name.asString() == "put" }
                     declarations += MapEntryDeclaration(
                         mapType,
                         expression.getValueArgument(0)!!,
@@ -181,7 +182,8 @@ class ModuleDeclarationFactory(
         setBlock?.function?.body?.transformChildrenVoid(object :
             IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol == symbols.setDsl.functions.single { it.owner.name.asString() == "add" }) {
+                if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.SetDsl.add") {
+                    // todo symbols.setDsl.functions.single { it.owner.name.asString() == "add" }
                     declarations += SetElementDeclaration(
                         setType,
                         expression.getTypeArgument(0)!!
@@ -225,7 +227,8 @@ class ModuleDeclarationFactory(
 
         val includedDescriptor = includedClass
             .declarations
-            .single { it.descriptor.name.asString() == "Descriptor" } as IrClass
+            .singleOrNull { it.descriptor.name.asString() == "Descriptor" } as? IrClass
+            ?: error("No descriptor found for ${includedModuleFunction.dumpSrc()}")
 
         declarations += includedDescriptor
             .functions

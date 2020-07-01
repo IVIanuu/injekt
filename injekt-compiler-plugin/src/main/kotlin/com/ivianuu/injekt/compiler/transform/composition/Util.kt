@@ -16,8 +16,29 @@
 
 package com.ivianuu.injekt.compiler.transform.composition
 
+import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.analysis.TypeAnnotationChecker
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 
-val IrFunction.isObjectGraphGet: Boolean
-    get() = descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.composition.get"
+fun IrFunction.isReadable(bindingContext: BindingContext): Boolean {
+    if (hasAnnotation(InjektFqNames.Readable)) return true
+    val typeAnnotationChecker = TypeAnnotationChecker()
+    val bindingTrace = DelegatingBindingTrace(bindingContext, "Injekt IR")
+    return try {
+        typeAnnotationChecker.hasTypeAnnotation(
+            bindingTrace, descriptor,
+            InjektFqNames.Readable
+        )
+    } catch (e: Exception) {
+        false
+    }
+}
+
+fun IrCall.isReadableLambdaInvoke(): Boolean {
+    return symbol.owner.name.asString() == "invoke" &&
+            dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Readable) == true
+}

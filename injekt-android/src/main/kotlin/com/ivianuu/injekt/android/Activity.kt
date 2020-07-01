@@ -21,7 +21,6 @@ import android.content.res.Resources
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
-import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.ChildFactory
 import com.ivianuu.injekt.Qualifier
@@ -31,11 +30,11 @@ import com.ivianuu.injekt.composition.CompositionComponent
 import com.ivianuu.injekt.composition.CompositionFactory
 import com.ivianuu.injekt.composition.get
 import com.ivianuu.injekt.composition.parent
+import com.ivianuu.injekt.composition.runReading
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.scope
 import com.ivianuu.injekt.transient
-import kotlinx.coroutines.CoroutineScope
 
 @Scope
 annotation class ActivityScoped
@@ -49,8 +48,9 @@ interface ActivityComponent
 
 val ComponentActivity.activityComponent: ActivityComponent
     get() = lifecycle.singleton {
-        retainedActivityComponent
-            .get<@ChildFactory (ComponentActivity) -> ActivityComponent>()(this)
+        retainedActivityComponent.runReading {
+            get<@ChildFactory (ComponentActivity) -> ActivityComponent>()(this)
+        }
     }
 
 @CompositionFactory

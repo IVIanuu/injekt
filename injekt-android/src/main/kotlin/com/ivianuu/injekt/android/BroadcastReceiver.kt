@@ -27,9 +27,9 @@ import com.ivianuu.injekt.composition.CompositionComponent
 import com.ivianuu.injekt.composition.CompositionFactory
 import com.ivianuu.injekt.composition.get
 import com.ivianuu.injekt.composition.parent
+import com.ivianuu.injekt.composition.runReading
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.instance
-import com.ivianuu.injekt.internal.injektIntrinsic
 import com.ivianuu.injekt.scope
 
 @Scope
@@ -45,8 +45,9 @@ interface ReceiverComponent
 fun BroadcastReceiver.newReceiverComponent(
     context: Context
 ): ReceiverComponent {
-    return (context.applicationContext as Application).applicationComponent
-        .get<@ChildFactory (BroadcastReceiver) -> ReceiverComponent>()(this)
+    return (context.applicationContext as Application).applicationComponent.runReading {
+        get<@ChildFactory (BroadcastReceiver) -> ReceiverComponent>()(this)
+    }
 }
 
 @CompositionFactory

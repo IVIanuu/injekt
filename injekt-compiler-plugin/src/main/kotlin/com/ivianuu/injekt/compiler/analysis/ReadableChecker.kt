@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -26,31 +25,32 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors
-import org.jetbrains.kotlin.psi.KtCatchClause
 import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.psi.KtForExpression
-import org.jetbrains.kotlin.psi.KtIfExpression
-import org.jetbrains.kotlin.psi.KtTryExpression
-import org.jetbrains.kotlin.psi.KtWhenExpression
-import org.jetbrains.kotlin.psi.KtWhileExpression
 import org.jetbrains.kotlin.resolve.calls.callUtil.isCallableReference
 import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
 import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
-import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
+import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 
-class ModuleChecker : CallChecker, DeclarationChecker {
+class ReadableChecker(
+    private val typeAnnotationChecker: TypeAnnotationChecker
+) : CallChecker, DeclarationChecker {
 
     override fun check(
         declaration: KtDeclaration,
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (descriptor !is FunctionDescriptor || !descriptor.hasAnnotation(InjektFqNames.Module)) return
+        if (descriptor !is FunctionDescriptor || !typeAnnotationChecker.hasTypeAnnotation(
+                context.trace,
+                descriptor,
+                InjektFqNames.Readable
+            )
+        ) return
 
         val parentMemberScope = (descriptor.containingDeclaration as? ClassDescriptor)
             ?.unsubstitutedMemberScope
@@ -75,19 +75,6 @@ class ModuleChecker : CallChecker, DeclarationChecker {
             )
         }
 
-        if (descriptor.returnType != null && descriptor.returnType != descriptor.builtIns.unitType) {
-            context.trace.report(
-                InjektErrors.RETURN_TYPE_NOT_ALLOWED_FOR_MODULE.on(declaration)
-            )
-        }
-
-        if (descriptor.isSuspend) {
-            context.trace.report(
-                InjektErrors.CANNOT_BE_SUSPEND
-                    .on(declaration)
-            )
-        }
-
         if (descriptor.isTailrec) {
             context.trace.report(
                 InjektErrors.CANNOT_HAVE_TAILREC_MODIFIER
@@ -103,42 +90,24 @@ class ModuleChecker : CallChecker, DeclarationChecker {
     ) {
         val resulting = resolvedCall.resultingDescriptor
 
-        if (resulting.fqNameSafe.asString() == "com.ivianuu.injekt.composition.installIn") {
-            if (resolvedCall.typeArguments.values.single()?.constructor?.declarationDescriptor?.annotations
-                    ?.hasAnnotation(InjektFqNames.CompositionComponent) != true
+        if (resulting.fqNameSafe.asString() == "com.ivianuu.injekt.composition.runReading") {
+            val receiver = resolvedCall.extensionReceiver!!.type
+            if (receiver.constructor.declarationDescriptor?.annotations?.hasAnnotation(InjektFqNames.CompositionComponent) != true &&
+                !receiver.isTypeParameter()
             ) {
                 context.trace.report(
                     InjektErrors.NOT_A_COMPOSITION_COMPONENT
                         .on(reportOn)
                 )
             }
-
-            val enclosingModule = findEnclosingFunctionContext(context) {
-                it.hasAnnotation(InjektFqNames.Module)
-            }
-
-            if (enclosingModule == null) {
-                context.trace.report(
-                    InjektErrors.INSTALL_IN_CALL_WITHOUT_MODULE
-                        .on(reportOn)
-                )
-            } else {
-                if (enclosingModule.valueParameters.isNotEmpty()) {
-                    context.trace.report(
-                        InjektErrors.COMPOSITION_MODULE_CANNOT_HAVE_VALUE_PARAMETERS
-                            .on(reportOn)
-                    )
-                }
-                if (enclosingModule.typeParameters.isNotEmpty()) {
-                    context.trace.report(
-                        InjektErrors.COMPOSITION_MODULE_CANNOT_HAVE_TYPE_PARAMETERS
-                            .on(reportOn)
-                    )
-                }
-            }
         }
 
-        if (resulting !is FunctionDescriptor || !resulting.hasAnnotation(InjektFqNames.Module)) return
+        if (resulting !is FunctionDescriptor || !typeAnnotationChecker.hasTypeAnnotation(
+                context.trace,
+                resulting,
+                InjektFqNames.Readable
+            )
+        ) return
         checkInvocations(resolvedCall, reportOn, context)
     }
 
@@ -147,52 +116,21 @@ class ModuleChecker : CallChecker, DeclarationChecker {
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
-        val enclosingInjektDslFunction = findEnclosingFunctionContext(context) {
-            it.hasAnnotation(InjektFqNames.Module) ||
-                    it.hasAnnotation(InjektFqNames.Factory) ||
-                    it.hasAnnotation(InjektFqNames.ChildFactory) ||
-                    it.hasAnnotation(InjektFqNames.CompositionFactory) ||
-                    it.hasAnnotation(InjektFqNames.InstanceFactory)
+        val enclosingReadableFunction = findEnclosingFunctionContext(context) {
+            typeAnnotationChecker.hasTypeAnnotation(context.trace, it, InjektFqNames.Readable)
         }
 
         when {
-            enclosingInjektDslFunction != null -> {
-                var isConditional = false
-
-                var walker: PsiElement? = resolvedCall.call.callElement
-                while (walker != null) {
-                    val parent = walker.parent
-                    if (parent is KtIfExpression ||
-                        parent is KtForExpression ||
-                        parent is KtWhenExpression ||
-                        parent is KtTryExpression ||
-                        parent is KtCatchClause ||
-                        parent is KtWhileExpression
-                    ) {
-                        isConditional = true
-                    }
-                    walker = try {
-                        walker.parent
-                    } catch (e: Throwable) {
-                        null
-                    }
-                }
-
-                if (isConditional) {
-                    context.trace.report(
-                        InjektErrors.CONDITIONAL_NOT_ALLOWED_IN_MODULE_AND_FACTORIES.on(reportOn)
-                    )
-                }
-
+            enclosingReadableFunction != null -> {
                 if (context.scope.parentsWithSelf.any {
                         it.isScopeForDefaultParameterValuesOf(
-                            enclosingInjektDslFunction
+                            enclosingReadableFunction
                         )
                     }) {
                     context.trace.report(
                         Errors.UNSUPPORTED.on(
                             reportOn,
-                            "@Module function calls in a context of default parameter value"
+                            "@Readable function calls in a context of default parameter value"
                         )
                     )
                 }
@@ -202,7 +140,7 @@ class ModuleChecker : CallChecker, DeclarationChecker {
             }
             else -> {
                 context.trace.report(
-                    InjektErrors.FORBIDDEN_MODULE_INVOCATION.on(reportOn)
+                    InjektErrors.FORBIDDEN_READABLE_INVOCATION.on(reportOn)
                 )
             }
         }

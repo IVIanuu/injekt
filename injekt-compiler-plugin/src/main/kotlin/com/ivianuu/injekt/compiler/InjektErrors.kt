@@ -38,6 +38,11 @@ interface InjektErrors {
         )
 
         @JvmField
+        val FORBIDDEN_READABLE_INVOCATION = error(
+            "Only @Readable functions can invoke @Readable functions"
+        )
+
+        @JvmField
         val FORBIDDEN_DSL_FUNCTION_INVOCATION = error(
             "Only @Factory, @ChildFactory, @CompositionFactory or @Module functions can invoke this function"
         )
@@ -59,7 +64,7 @@ interface InjektErrors {
 
         @JvmField
         val FACTORY_WITH_TYPE_PARAMETERS = error(
-            "@Factory, @ChildFactory, @CompositionFactory or @InstanceFactory functions cannot contain type parameters"
+            "Cannot contain type parameters"
         )
 
         @JvmField
@@ -99,7 +104,7 @@ interface InjektErrors {
 
         @JvmField
         val FACTORY_CANNOT_BE_INLINE = error(
-            "@Factory, @ChildFactory, @CompositionFactory or @InstanceFactory cannot be marked with inline"
+            "Cannot be marked with inline"
         )
 
         @JvmField
@@ -159,17 +164,17 @@ interface InjektErrors {
 
         @JvmField
         val CANNOT_BE_SUSPEND = error(
-            "@Factory, @ChildFactory, @CompositionFactory, @InstanceFactory or @Module cannot be suspend"
+            "Cannot be suspend"
         )
 
         @JvmField
         val CANNOT_HAVE_TAILREC_MODIFIER = error(
-            "@Factory, @ChildFactory, @CompositionFactory, @InstanceFactory or @Module cannot have the tailrec modifier"
+            "Cannot have the tailrec modifier"
         )
 
         @JvmField
-        val MODULE_MUST_BE_FINAL = error(
-            "@Module must be final"
+        val MUST_BE_FINAL = error(
+            "Must be final"
         )
 
         @JvmField

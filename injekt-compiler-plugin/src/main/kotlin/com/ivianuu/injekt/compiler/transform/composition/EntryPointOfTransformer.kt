@@ -62,7 +62,7 @@ class EntryPointOfTransformer(pluginContext: IrPluginContext) :
         entryPointOfCalls.forEach { (call, file) ->
             file.addChild(
                 entryPointModule(
-                    InjektNameConventions.getEntryPointModuleNameForCall(file, call),
+                    InjektNameConventions.getEntryPointModuleNameForCall(file.fqName, call),
                     call.getValueArgument(0)!!.type,
                     call.getTypeArgument(0)!!
                 )

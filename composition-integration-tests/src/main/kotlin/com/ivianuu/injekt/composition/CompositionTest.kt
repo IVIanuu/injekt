@@ -36,7 +36,7 @@ class CompositionTest {
                 
                 class FooEntryPointConsumer(testComponent: TestCompositionComponent) {
                     init {
-                        testComponent.get<Foo>()
+                        testComponent.runReading { get<Foo>() }
                     }
                 }
                 """
@@ -57,7 +57,7 @@ class CompositionTest {
                 }
                 
                 class BarEntryPointConsumer(private val testComponent: TestCompositionComponent) { 
-                    private val bar: Bar = testComponent.get()
+                    private val bar: Bar = testComponent.runReading { get() }
                     fun print() {
                         println(bar)
                     }
@@ -90,7 +90,7 @@ class CompositionTest {
             
             class App { 
                 val component = compositionFactoryOf<AppComponent, () -> AppComponent>()() 
-                val foo: Foo = component.get()
+                val foo: Foo = component.runReading { get() }
                 init { 
                     Activity(this) 
                 } 
@@ -107,9 +107,11 @@ class CompositionTest {
             }
             
             class Activity(private val app: App) { 
-                val component = app.component.get<@ChildFactory () -> ActivityComponent>()() 
-                val foo: Foo = component.get() 
-                val bar: Bar = component.get()
+                val component = app.component.runReading {
+                    get<@ChildFactory () -> ActivityComponent>()() 
+                }
+                val foo: Foo = component.runReading { get()  }
+                val bar: Bar = component.runReading { get() }
                 init {
                     Fragment(this)
                 } 
@@ -126,10 +128,12 @@ class CompositionTest {
             }
             
             class Fragment(private val activity: Activity) { 
-                private val component = activity.component.get<@ChildFactory () -> FragmentComponent>()() 
-                val foo: Foo = component.get()
-                val bar: Bar = component.get()
-                val baz: Baz = component.get()
+                private val component = activity.component.runReading {
+                    get<@ChildFactory () -> FragmentComponent>()() 
+                }
+                val foo: Foo = component.runReading { get() }
+                val bar: Bar = component.runReading { get() }
+                val baz: Baz = component.runReading { get() }
             }
             
             fun invoke() {
@@ -172,7 +176,7 @@ class CompositionTest {
                 
                 class App { 
                     val component = compositionFactoryOf<AppComponent, () -> AppComponent>()()
-                    private val foo: Foo = component.get()
+                    private val foo: Foo = component.runReading { get() }
                 }
                 """
             )
@@ -181,9 +185,9 @@ class CompositionTest {
             source(
                 """
                 class Activity(private val app: App) {
-                    val component = app.component.get<@ChildFactory () -> ActivityComponent>()()
-                    private val foo: Foo = component.get()
-                    private val bar: Bar = component.get()
+                    val component = app.component.runReading { get<@ChildFactory () -> ActivityComponent>()() }
+                    private val foo: Foo = component.runReading { get() }
+                    private val bar: Bar = component.runReading { get() }
                 }
                 
                 @CompositionComponent
@@ -197,10 +201,10 @@ class CompositionTest {
                 }
                 
                 class Fragment(private val activity: Activity) {
-                    private val component = activity.component.get<@ChildFactory () -> FragmentComponent>()()
-                    private val foo: Foo = component.get()
-                    private val bar: Bar = component.get()
-                    private val baz: Baz = component.get()
+                    private val component = activity.component.runReading { get<@ChildFactory () -> FragmentComponent>()() }
+                    private val foo: Foo = component.runReading { get() }
+                    private val bar: Bar = component.runReading { get() }
+                    private val baz: Baz = component.runReading { get() }
                 }
                 
                 fun main() {
@@ -221,7 +225,9 @@ class CompositionTest {
         
         fun invoke(component: TestCompositionComponent) { 
             initializeCompositions()
-            val injectedComponent = component.get<TestCompositionComponent>()
+            val injectedComponent = component.runReading {
+                get<TestCompositionComponent>()
+            }
         }
     """
     )
@@ -248,7 +254,9 @@ class CompositionTest {
         
         fun invoke(component: ParentComponent) {
             initializeCompositions()
-            val injectedComponent = component.get<@ChildFactory () -> ChildComponent>()
+            val injectedComponent = component.runReading {
+                get<@ChildFactory () -> ChildComponent>()
+            }
         }
     """
     )

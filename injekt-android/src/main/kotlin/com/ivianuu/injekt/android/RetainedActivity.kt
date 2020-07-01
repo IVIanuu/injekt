@@ -26,6 +26,7 @@ import com.ivianuu.injekt.composition.CompositionComponent
 import com.ivianuu.injekt.composition.CompositionFactory
 import com.ivianuu.injekt.composition.get
 import com.ivianuu.injekt.composition.parent
+import com.ivianuu.injekt.composition.runReading
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.scope
 
@@ -42,8 +43,9 @@ val ComponentActivity.retainedActivityComponent: RetainedActivityComponent
 
         synchronized(holder) {
             if (holder.component == null) {
-                holder.component = application.applicationComponent
-                    .get<@ChildFactory () -> RetainedActivityComponent>()()
+                holder.component = application.applicationComponent.runReading {
+                    get<@ChildFactory () -> RetainedActivityComponent>()()
+                }
             }
         }
 

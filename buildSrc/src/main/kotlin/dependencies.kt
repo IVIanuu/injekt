@@ -73,6 +73,13 @@ object Deps {
     const val buildConfigGradlePlugin =
         "gradle.plugin.de.fuerstenau:BuildConfigPlugin:1.1.8"
 
+    object Coroutines {
+        private const val version = "1.3.7-SNAPSHOT"
+        const val android = "org.jetbrains.kotlinx:kotlinx-coroutines-android:$version"
+        const val core = "org.jetbrains.kotlinx:kotlinx-coroutines-core:$version"
+        const val test = "org.jetbrains.kotlinx:kotlinx-coroutines-test:$version"
+    }
+
     object Dagger2 {
         private const val version = "2.26"
         const val dagger2 = "com.google.dagger:dagger:$version"

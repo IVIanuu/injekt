@@ -16,10 +16,11 @@
 
 package com.ivianuu.injekt.compiler
 
+import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.name
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.util.getPackageFragment
@@ -28,11 +29,6 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 object InjektNameConventions {
-
-    fun getTransformedModuleFunctionNameForObjectGraphFunction(
-        packageFqName: FqName,
-        moduleFqName: FqName
-    ): Name = getJoinedName(packageFqName, moduleFqName.child("OgImpl"))
 
     fun getCompositionModuleMetadataForModule(
         packageFqName: FqName,
@@ -43,6 +39,24 @@ object InjektNameConventions {
         packageFqName: FqName,
         moduleFqName: FqName
     ): Name = getJoinedName(packageFqName, moduleFqName)
+
+    fun getTransformedReadableFunctionNameForReadable(
+        packageFqName: FqName,
+        readable: IrFunction
+    ): Name = getNameAtSourcePositionWithSuffix(
+        packageFqName,
+        readable,
+        "Impl"
+    )
+
+    fun getContextClassNameForReadableFunction(
+        packageFqName: FqName,
+        readable: IrFunction
+    ): Name = getNameAtSourcePositionWithSuffix(
+        packageFqName,
+        readable,
+        "Context"
+    )
 
     fun getModuleClassNameForModuleFunction(
         packageFqName: FqName,
@@ -73,7 +87,7 @@ object InjektNameConventions {
         factoryFunction: IrFunctionSymbol
     ): Name {
         return getNameAtSourcePositionWithSuffix(
-            file, call,
+            file.fqName, call,
             factoryFunction.descriptor.name.asString() + "_Type"
         )
     }
@@ -88,17 +102,29 @@ object InjektNameConventions {
             (factoryFunction.descriptor.name.asString() + "_Factory").asNameId()
         } else {
             getNameAtSourcePositionWithSuffix(
-                file, call,
+                file.fqName, call,
                 factoryFunction.descriptor.name.asString() + "_Factory"
             )
         }
     }
 
     fun getObjectGraphGetNameForCall(file: IrFile, call: IrCall): Name =
-        getNameAtSourcePositionWithSuffix(file, call, "Get")
+        getNameAtSourcePositionWithSuffix(file.fqName, call, "Get")
 
-    fun getEntryPointModuleNameForCall(file: IrFile, call: IrCall): Name =
-        getNameAtSourcePositionWithSuffix(file, call, "EntryPointModule")
+    fun getReadableContextParamNameForValueParameter(
+        file: IrFile,
+        valueParameter: IrValueParameter
+    ): Name = getNameAtSourcePositionWithSuffix(file.fqName, valueParameter, "Get")
+
+    fun getReadableContextParamNameForContext(
+        packageFqName: FqName,
+        element: IrElement,
+        contextFunction: IrFunction
+    ): Name =
+        getNameAtSourcePositionWithSuffix(packageFqName, element, contextFunction.name.asString())
+
+    fun getEntryPointModuleNameForCall(packageFqName: FqName, call: IrCall): Name =
+        getNameAtSourcePositionWithSuffix(packageFqName, call, "EntryPointModule")
 
     fun getModuleNameForFactoryFunction(
         factoryFunction: IrFunction
@@ -132,15 +158,14 @@ object InjektNameConventions {
     }
 
     private fun getNameAtSourcePositionWithSuffix(
-        file: IrFile,
-        call: IrCall,
+        packageFqName: FqName,
+        element: IrElement,
         suffix: String
     ): Name {
         return getJoinedName(
-            file.fqName,
-            file.fqName
-                .child(file.name.replace(".kt", ""))
-                .child(call.startOffset.toString())
+            packageFqName,
+            packageFqName
+                .child(element.startOffset.toString())
                 .child(suffix)
         )
     }

@@ -53,9 +53,7 @@ object InjektFqNames {
     val Assisted = InjektPackage.child("Assisted")
 
     val BindingAdapter = CompositionPackage.child("BindingAdapter")
-    val BindingAdapterFunction = CompositionPackage.child("BindingAdapterFunction")
     val BindingEffect = CompositionPackage.child("BindingEffect")
-    val BindingEffectFunction = CompositionPackage.child("BindingEffectFunction")
 
     val ChildFactory = InjektPackage.child("ChildFactory")
 
@@ -81,6 +79,8 @@ object InjektFqNames {
 
     val Provider = InjektPackage.child("Provider")
 
+    val Readable = CompositionPackage.child("Readable")
+
     val Qualifier = InjektPackage.child("Qualifier")
 
     val Scope = InjektPackage.child("Scope")
@@ -92,6 +92,8 @@ object InjektFqNames {
     val SingleInstanceFactory = InternalPackage.child("SingleInstanceFactory")
 
     val Transient = InjektPackage.child("Transient")
+
+    val TypeAnnotation = InternalPackage.child("TypeAnnotation")
 
     val Uninitialized = InternalPackage.child("Uninitialized")
 
