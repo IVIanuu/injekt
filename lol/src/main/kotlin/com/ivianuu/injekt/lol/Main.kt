@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.sample
+package com.ivianuu.injekt.lol
 
-class Logger {
-    fun log(msg: String) {
-    }
+fun main() {
+    invoke()
 }
