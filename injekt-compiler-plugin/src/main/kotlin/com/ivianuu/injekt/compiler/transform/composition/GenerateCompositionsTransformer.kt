@@ -70,6 +70,8 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.isExternalDeclaration
 
 class GenerateCompositionsTransformer(
     pluginContext: IrPluginContext,
