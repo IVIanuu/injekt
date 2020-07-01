@@ -20,15 +20,13 @@ import com.ivianuu.injekt.compiler.addToFileOrAbove
 import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.isExternalDeclaration
-import com.ivianuu.injekt.compiler.transform.composition.ReadableFunctionTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irExprBody
-import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -50,7 +48,7 @@ abstract class AbstractFunctionTransformer(
     protected val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
     protected val originalTransformedFunctions = mutableSetOf<IrFunction>()
 
-    override fun visitFile(declaration: IrFile): IrFile {
+    override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         val functionsToTransform = mutableListOf<IrFunction>()
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
@@ -100,7 +98,7 @@ abstract class AbstractFunctionTransformer(
 
         declaration.rewriteTransformedFunctionRefs()
 
-        return super.visitFile(declaration)
+        return super.visitModuleFragment(declaration)
     }
 
     protected abstract fun needsTransform(function: IrFunction): Boolean
@@ -116,7 +114,6 @@ abstract class AbstractFunctionTransformer(
     )
 
     protected open fun transformFunctionExpression(
-        callingFunction: IrFunction?,
         transformedCallee: IrFunction,
         expression: IrFunctionExpression
     ): IrFunctionExpression {
@@ -130,7 +127,6 @@ abstract class AbstractFunctionTransformer(
     }
 
     protected open fun transformFunctionReference(
-        callingFunction: IrFunction?,
         transformedCallee: IrFunction,
         expression: IrFunctionReference
     ): IrFunctionReference {
@@ -146,7 +142,6 @@ abstract class AbstractFunctionTransformer(
     }
 
     protected open fun transformCall(
-        callingFunction: IrFunction?,
         transformedCallee: IrFunction,
         expression: IrCall
     ): IrCall {
@@ -183,10 +178,6 @@ abstract class AbstractFunctionTransformer(
 
         val transformedFunction = transformedFunctions.getValue(function)
 
-        if (this is ReadableFunctionTransformer) {
-            println("transformed ${function.render()} to ${transformedFunction.render()}")
-        }
-
         if (!function.isExternalDeclaration() && function != transformedFunction) {
             function.valueParameters
                 .filter { it.defaultValue != null }
@@ -205,38 +196,14 @@ abstract class AbstractFunctionTransformer(
     }
 
     protected open fun isTransformedFunction(function: IrFunction): Boolean =
-        (function in transformedFunctions.values && function !in originalTransformedFunctions)
-            .also {
-                if (this is ReadableFunctionTransformer) {
-                    println(
-                        "is trans ${function.dumpSrc()} ? in trans ${function in transformedFunctions.values} " +
-                                "is orig ${function in originalTransformedFunctions}"
-                    )
-                }
-            }
+        function in transformedFunctions.values && function !in originalTransformedFunctions
 
     protected fun IrElement.rewriteTransformedFunctionRefs() {
-        val functionStack = mutableListOf<IrFunction>()
-        if (this is IrFunction) functionStack += functionStack
         transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitFunction(declaration: IrFunction): IrStatement {
-                functionStack += declaration
-                return super.visitFunction(declaration)
-                    .also { functionStack.pop() }
-            }
-
             override fun visitFunctionExpression(expression: IrFunctionExpression): IrExpression {
                 val result = super.visitFunctionExpression(expression) as IrFunctionExpression
                 val transformed = transformFunctionIfNeeded(result.function)
-                if (this@AbstractFunctionTransformer is ReadableFunctionTransformer) {
-                    println(
-                        "visit expr ${expression.dumpSrc()} is transformed ${isTransformedFunction(
-                            transformed
-                        )}"
-                    )
-                }
                 return if (isTransformedFunction(transformed)) transformFunctionExpression(
-                    functionStack.lastOrNull(),
                     transformed,
                     result
                 )
@@ -246,15 +213,7 @@ abstract class AbstractFunctionTransformer(
             override fun visitFunctionReference(expression: IrFunctionReference): IrExpression {
                 val result = super.visitFunctionReference(expression) as IrFunctionReference
                 val transformed = transformFunctionIfNeeded(result.symbol.owner)
-                if (this@AbstractFunctionTransformer is ReadableFunctionTransformer) {
-                    println(
-                        "visit ref ${expression.dumpSrc()} is transformed ${isTransformedFunction(
-                            transformed
-                        )}"
-                    )
-                }
                 return if (isTransformedFunction(transformed)) transformFunctionReference(
-                    functionStack.lastOrNull(),
                     transformed,
                     result
                 )
@@ -264,15 +223,7 @@ abstract class AbstractFunctionTransformer(
             override fun visitCall(expression: IrCall): IrExpression {
                 val result = super.visitCall(expression) as IrCall
                 val transformed = transformFunctionIfNeeded(result.symbol.owner)
-                if (this@AbstractFunctionTransformer is ReadableFunctionTransformer) {
-                    println(
-                        "visit call ${expression.dumpSrc()} is transformed ${isTransformedFunction(
-                            transformed
-                        )}"
-                    )
-                }
                 return if (isTransformedFunction(transformed)) transformCall(
-                    functionStack.lastOrNull(),
                     transformed,
                     result
                 )

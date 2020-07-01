@@ -20,11 +20,11 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.transform.AbstractFunctionTransformer
+import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeWith
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -40,9 +40,11 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.builders.createTmpVariable
+import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
+import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irEqeqeq
@@ -59,6 +61,7 @@ import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
+import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.symbols.IrValueSymbol
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
@@ -67,10 +70,13 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
+import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.statements
+import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -195,9 +201,35 @@ class ReadableFunctionTransformer(
             }
         })
 
-        // todo add contexts of passed lambdas
+        val genericReadableCalls = readableCalls
+            .filter { it.typeArgumentsCount != 0 }
+
+        val genericFunctionMap = mutableMapOf<IrFunction, IrFunction>()
+
+        genericReadableCalls.forEach { call ->
+            val calleeContext = getContextForFunction(call.symbol.owner)
+            contextClass.superTypes += calleeContext.superTypes
+            calleeContext.functions
+                .filterNot { it.isFakeOverride }
+                .forEach { calleeContextFunction ->
+                    genericFunctionMap[calleeContextFunction] = contextClass.addFunction {
+                        name = InjektNameConventions
+                            .getReadableContextParamNameForContext(
+                                calleeContextFunction.getPackageFragment()!!.fqName,
+                                call,
+                                calleeContextFunction
+                            )
+                        returnType = calleeContextFunction.returnType
+                            .substitute(calleeContext.typeParameters, call.typeArguments)
+                        modality = Modality.ABSTRACT
+                    }.apply {
+                        dispatchReceiverParameter = contextClass.thisReceiver?.copyTo(this)
+                    }
+                }
+        }
 
         readableCalls
+            .filter { it.typeArgumentsCount == 0 }
             .map { call ->
                 val context = getContextForFunction(call.symbol.owner)
                 context.defaultType.typeWith(*call.typeArguments.toTypedArray())
@@ -247,6 +279,77 @@ class ReadableFunctionTransformer(
                     ?.let { DeclarationIrBuilder(pluginContext, it.symbol).irGet(it) }
                     ?: super.visitGetValue(expression)
             }
+
+            override fun visitCall(expression: IrCall): IrExpression {
+                val transformed = transformFunctionIfNeeded(expression.symbol.owner)
+                if (!transformed.isReadable(pluginContext.bindingContext)) return super.visitCall(
+                    expression
+                )
+
+                val calleeContext = getContextForFunction(transformed)
+
+                val contextArgument = DeclarationIrBuilder(pluginContext, expression.symbol).run {
+                    if (transformed.typeParameters.isNotEmpty()) {
+                        irBlock(origin = IrStatementOrigin.OBJECT_LITERAL) {
+                            val contextImpl = buildClass {
+                                name = Name.special("<context>")
+                                visibility = Visibilities.LOCAL
+                            }.apply clazz@{
+                                createImplicitParameterDeclarationWithWrappedDescriptor()
+
+                                superTypes += calleeContext.defaultType
+                                    .typeWith(*expression.typeArguments.toTypedArray())
+
+                                addConstructor {
+                                    returnType = defaultType
+                                    isPrimary = true
+                                    visibility = Visibilities.PUBLIC
+                                }.apply {
+                                    InjektDeclarationIrBuilder(pluginContext, symbol).run {
+                                        body = builder.irBlockBody {
+                                            initializeClassWithAnySuperClass(this@clazz.symbol)
+                                        }
+                                    }
+                                }
+
+                                calleeContext.functions
+                                    .filterNot { it.isFakeOverride }
+                                    .forEach { calleeFunction ->
+                                        val thisContextFunction =
+                                            genericFunctionMap.getValue(calleeFunction)
+                                        addFunction {
+                                            name = calleeFunction.name
+                                            returnType = calleeFunction.returnType
+                                                .remapTypeParameters(
+                                                    calleeFunction,
+                                                    thisContextFunction
+                                                )
+                                            visibility = calleeFunction.visibility
+                                        }.apply {
+                                            dispatchReceiverParameter = thisReceiver!!.copyTo(this)
+                                            body = DeclarationIrBuilder(
+                                                pluginContext,
+                                                symbol
+                                            ).irExprBody(
+                                                irCall(thisContextFunction).apply {
+                                                    dispatchReceiver = irGet(contextValueParameter)
+                                                }
+                                            )
+                                        }
+                                    }
+                            }
+                            +contextImpl
+                            +irCall(contextImpl.constructors.single())
+                        }
+                    } else {
+                        irGet(contextValueParameter)
+                    }
+                }
+
+                return transformCall(transformed, expression).apply {
+                    putValueArgument(valueArgumentsCount - 1, contextArgument)
+                }
+            }
         })
     }
 
@@ -270,24 +373,6 @@ class ReadableFunctionTransformer(
                         .owner
                 }
         )
-    }
-
-    override fun transformCall(
-        callingFunction: IrFunction?,
-        transformedCallee: IrFunction,
-        expression: IrCall
-    ): IrCall {
-        return super.transformCall(callingFunction, transformedCallee, expression).apply {
-            putValueArgument(
-                valueArgumentsCount - 1,
-                DeclarationIrBuilder(pluginContext, symbol).run {
-                    println("calling $callingFunction transformed parent ${transformedCallee.parent}")
-                    irGet(callingFunction!!.valueParameters.last())
-                }
-            )
-        }.also {
-            println("transformed call ${expression.dumpSrc()} to ${it.dumpSrc()}")
-        }
     }
 
 }

@@ -107,7 +107,6 @@ class RunReadingTransformer(
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression =
                 newExpressionsByCall[expression]
-                    ?.also { println("lololo ${expression.dump()} to ${it.dump()}") }
                     ?: super.visitCall(expression)
         })
 

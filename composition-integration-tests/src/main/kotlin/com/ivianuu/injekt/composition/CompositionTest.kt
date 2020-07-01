@@ -185,7 +185,7 @@ class CompositionTest {
             source(
                 """
                 class Activity(private val app: App) {
-                    val component = app.component.get<@ChildFactory () -> ActivityComponent>()()
+                    val component = app.component.runReading { get<@ChildFactory () -> ActivityComponent>()() }
                     private val foo: Foo = component.runReading { get() }
                     private val bar: Bar = component.runReading { get() }
                 }
@@ -201,7 +201,7 @@ class CompositionTest {
                 }
                 
                 class Fragment(private val activity: Activity) {
-                    private val component = activity.component.get<@ChildFactory () -> FragmentComponent>()()
+                    private val component = activity.component.runReading { get<@ChildFactory () -> FragmentComponent>()() }
                     private val foo: Foo = component.runReading { get() }
                     private val bar: Bar = component.runReading { get() }
                     private val baz: Baz = component.runReading { get() }

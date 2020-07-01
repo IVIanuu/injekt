@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.compositionsEnabled
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.composition.BindingEffectTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionFactoryParentTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionModuleMetadataTransformer
@@ -83,7 +84,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         // patch metadata
         TmpMetadataPatcher(pluginContext).lower(moduleFragment)
 
-        //println(moduleFragment.dumpSrc())
+        println(moduleFragment.dumpSrc())
     }
 
 }

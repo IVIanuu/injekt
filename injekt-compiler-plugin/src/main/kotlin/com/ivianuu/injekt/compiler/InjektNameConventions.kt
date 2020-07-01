@@ -114,11 +114,17 @@ object InjektNameConventions {
     fun getReadableContextParamNameForValueParameter(
         file: IrFile,
         valueParameter: IrValueParameter
-    ): Name =
-        getNameAtSourcePositionWithSuffix(file.fqName, valueParameter, "Get")
+    ): Name = getNameAtSourcePositionWithSuffix(file.fqName, valueParameter, "Get")
 
-    fun getEntryPointModuleNameForCall(file: IrFile, call: IrCall): Name =
-        getNameAtSourcePositionWithSuffix(file.fqName, call, "EntryPointModule")
+    fun getReadableContextParamNameForContext(
+        packageFqName: FqName,
+        call: IrCall,
+        contextFunction: IrFunction
+    ): Name =
+        getNameAtSourcePositionWithSuffix(packageFqName, call, contextFunction.name.asString())
+
+    fun getEntryPointModuleNameForCall(packageFqName: FqName, call: IrCall): Name =
+        getNameAtSourcePositionWithSuffix(packageFqName, call, "EntryPointModule")
 
     fun getModuleNameForFactoryFunction(
         factoryFunction: IrFunction

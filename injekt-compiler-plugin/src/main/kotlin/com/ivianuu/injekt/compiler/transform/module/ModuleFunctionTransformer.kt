@@ -300,7 +300,6 @@ class ModuleFunctionTransformer(
     }
 
     override fun transformCall(
-        callingFunction: IrFunction?,
         transformedCallee: IrFunction,
         expression: IrCall
     ): IrCall {
