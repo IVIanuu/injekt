@@ -117,6 +117,100 @@ class ReadableTest {
         }
         
         @Readable
+        fun <R> withFoo(block: @Readable (Foo) -> R): R = block(Foo())
+        
+        fun invoke(): Foo {
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReading {
+                withFoo {
+                    other()
+                    it
+                }
+            }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testSuspendBlockInReadingBlock() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            transient { Foo() }
+            return create() 
+        }
+        
+        @Readable
+        suspend fun func(foo: Foo = given()): Foo {
+            delay(1000)
+            return foo
+        }
+        
+        fun invoke(): Foo { 
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReading {
+                runBlocking { 
+                    func()
+                }
+            }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testReadingBlockInSuspendBlock() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            transient { Foo() }
+            return create() 
+        }
+        
+        @Readable
+        suspend fun func(foo: Foo = given()): Foo {
+            delay(1000)
+            return foo
+        }
+        
+        fun invoke(): Foo { 
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return runBlocking {
+                component.runReading {
+                    func()
+                }
+            }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testSuspendingReadableLambda() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            transient { Foo() }
+            return create() 
+        }
+        
+        @Readable
+        fun func(foo: Foo = given()): Foo {
+            return foo
+        }
+        
+        @Readable
+        fun other() {
+        }
+        
+        @Readable
         fun <R> withFoo(block: @Readable (Foo) -> R): R = block(func())
         
         fun invoke(): Foo {

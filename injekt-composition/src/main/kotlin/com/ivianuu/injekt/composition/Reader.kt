@@ -30,7 +30,15 @@ annotation class Readable
 
 fun <T> given(): T = injektIntrinsic()
 
-inline fun <R> Any.runReading(block: @Readable () -> R): R = injektIntrinsic()
+inline fun <R> Any.runReading(
+    block: @Readable () -> R
+): R = block()
+
+@JvmName("actualRunReading")
+inline fun <R> runReading(
+    context: Any,
+    block: (Any) -> R
+): R = block(context)
 
 @Readable
 fun <T> get(value: T = given()): T = value

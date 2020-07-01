@@ -91,6 +91,7 @@ import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isFunction
+import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -154,6 +155,7 @@ class ReadableFunctionTransformer(
                 function
             )
             isInline = function.isInline
+            isSuspend = function.isSuspend
             if (function.visibility == Visibilities.LOCAL) visibility = Visibilities.LOCAL
             else Visibilities.PUBLIC
         }.apply {
@@ -299,18 +301,22 @@ class ReadableFunctionTransformer(
             }
         }
 
+        val lambdasByReadableCall = readableCalls.associateWith { call ->
+            call.getArgumentsWithIr()
+                .filter { (valueParameter, expr) ->
+                    valueParameter.type.isFunction() &&
+                            valueParameter.type.hasAnnotation(InjektFqNames.Readable) &&
+                            expr is IrFunctionExpression
+                }
+        }
+
         readableCalls
             .forEach { call ->
                 if (!call.isReadableLambdaInvoke()) {
                     val callContext = getContextForFunction(call.symbol.owner)
                     handleSubcontext(callContext, call, call.typeArguments)
                 }
-                call.getArgumentsWithIr()
-                    .filter { (_, expr) ->
-                        expr.type.isFunction() &&
-                                expr.type.hasAnnotation(InjektFqNames.Readable) &&
-                                expr is IrFunctionExpression
-                    }
+                lambdasByReadableCall.getValue(call)
                     .forEach { (_, expr) ->
                         expr as IrFunctionExpression
                         val transformedLambda = transformFunction(expr.function)
@@ -404,17 +410,25 @@ class ReadableFunctionTransformer(
                                     superTypes += calleeContext.defaultType
                                         .typeWith(*transformedCall.typeArguments.toTypedArray())
 
-                                addConstructor {
-                                    returnType = defaultType
-                                    isPrimary = true
-                                    visibility = Visibilities.PUBLIC
-                                }.apply {
-                                    InjektDeclarationIrBuilder(pluginContext, symbol).run {
-                                        body = builder.irBlockBody {
-                                            initializeClassWithAnySuperClass(this@clazz.symbol)
+                                    lambdasByReadableCall.getValue(expression)
+                                        .forEach { (_, expr) ->
+                                            expr as IrFunctionExpression
+                                            val transformedLambda = transformFunction(expr.function)
+                                            superTypes += getContextForFunction(transformedLambda)
+                                                .defaultType
+                                        }
+
+                                    addConstructor {
+                                        returnType = defaultType
+                                        isPrimary = true
+                                        visibility = Visibilities.PUBLIC
+                                    }.apply {
+                                        InjektDeclarationIrBuilder(pluginContext, symbol).run {
+                                            body = builder.irBlockBody {
+                                                initializeClassWithAnySuperClass(this@clazz.symbol)
+                                            }
                                         }
                                     }
-                                }
 
                                     fun implementFunctions(
                                         superClass: IrClass,
@@ -436,24 +450,27 @@ class ReadableFunctionTransformer(
                                                 )*/
                                                 visibility = declaration.visibility
                                             }.apply {
-                                            dispatchReceiverParameter = thisReceiver!!.copyTo(this)
-                                            body = DeclarationIrBuilder(
-                                                pluginContext,
-                                                symbol
-                                            ).irExprBody(
-                                                irCall(
-                                                    genericFunctionMap.firstOrNull { (a, b) ->
-                                                        a == declaration &&
-                                                                a.returnType.substituteAndKeepQualifiers(
-                                                                    superClass.typeParameters
-                                                                        .map { it.symbol }
-                                                                        .zip(typeArguments).toMap()
-                                                                ) == b.returnType
-                                                    }?.second?.symbol ?: declaration.symbol
-                                                ).apply {
-                                                    dispatchReceiver = irGet(contextValueParameter)
-                                                }
-                                            )
+                                                dispatchReceiverParameter =
+                                                    thisReceiver!!.copyTo(this)
+                                                body = DeclarationIrBuilder(
+                                                    pluginContext,
+                                                    symbol
+                                                ).irExprBody(
+                                                    irCall(
+                                                        genericFunctionMap.firstOrNull { (a, b) ->
+                                                            a == declaration &&
+                                                                    a.returnType.substituteAndKeepQualifiers(
+                                                                        superClass.typeParameters
+                                                                            .map { it.symbol }
+                                                                            .zip(typeArguments)
+                                                                            .toMap()
+                                                                    ) == b.returnType
+                                                        }?.second?.symbol ?: declaration.symbol
+                                                    ).apply {
+                                                        dispatchReceiver =
+                                                            irGet(contextValueParameter)
+                                                    }
+                                                )
                                             }
                                         }
 
@@ -467,19 +484,19 @@ class ReadableFunctionTransformer(
                                             }
                                     }
 
-                                    val superType = superTypes.single()
-                                    val superTypeClass = superType.getClass()!!
-                                    implementFunctions(
-                                        superTypeClass,
-                                        superType.typeArguments.map { it.typeOrFail })
+                                    superTypes.forEach { superType ->
+                                        implementFunctions(
+                                            superType.getClass()!!,
+                                            superType.typeArguments.map { it.typeOrFail })
+                                    }
+                                }
+                                +contextImpl
+                                +irCall(contextImpl.constructors.single())
                             }
-                            +contextImpl
-                            +irCall(contextImpl.constructors.single())
+                        } else {
+                            irGet(contextValueParameter)
                         }
-                    } else {
-                        irGet(contextValueParameter)
                     }
-                }
 
                 return transformedCall.apply {
                     putValueArgument(valueArgumentsCount - 1, contextArgument)

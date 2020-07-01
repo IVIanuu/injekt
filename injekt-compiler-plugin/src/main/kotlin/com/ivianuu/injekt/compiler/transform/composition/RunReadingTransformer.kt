@@ -80,12 +80,10 @@ class RunReadingTransformer(
             newExpressionsByCall[call] =
                 DeclarationIrBuilder(pluginContext, call.symbol).run {
                     irCall(
-                        pluginContext.tmpFunction(1)
-                            .owner
-                            .functions
-                            .first { it.name.asString() == "invoke" }
+                        pluginContext.referenceFunctions(
+                            FqName("com.ivianuu.injekt.composition.runReading")
+                        ).single { it.owner.extensionReceiverParameter == null }
                     ).apply {
-                        dispatchReceiver = call.getValueArgument(0)!!
                         putValueArgument(
                             0,
                             IrCallImpl(
@@ -99,6 +97,10 @@ class RunReadingTransformer(
                                 putTypeArgument(0, entryPoint.defaultType)
                                 putValueArgument(0, call.extensionReceiver)
                             }
+                        )
+                        putValueArgument(
+                            1,
+                            call.getValueArgument(0)!!
                         )
                     }
                 }

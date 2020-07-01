@@ -30,6 +30,9 @@ dependencies {
     api(project(":injekt-compiler-plugin"))
     api(project(":injekt-core"))
 
+    api(Deps.Coroutines.core)
+    api(Deps.Coroutines.test)
+
     api(Deps.Kotlin.compilerEmbeddable)
 
     implementation(Deps.AndroidX.Compose.runtimeDesktop)
