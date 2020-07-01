@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.composition
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.makeKotlinType
 import com.ivianuu.injekt.compiler.tmpFunction
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.pop
@@ -323,20 +324,13 @@ class ReadableTypeRemapper(
         scopeStack.pop()
     }
 
-    private fun IrType.isReadable(): Boolean {
-        return annotations.hasAnnotation(InjektFqNames.Readable)
-    }
-
     private val IrConstructorCall.annotationClass
         get() = this.symbol.descriptor.returnType.constructor.declarationDescriptor
-
-    private fun List<IrConstructorCall>.hasAnnotation(fqName: FqName): Boolean =
-        any { it.annotationClass?.fqNameOrNull() == fqName }
 
     override fun remapType(type: IrType): IrType {
         if (type !is IrSimpleType) return type
         if (!type.isFunction()) return underlyingRemapType(type)
-        if (!type.isReadable()) return underlyingRemapType(type)
+        if (!type.hasAnnotation(InjektFqNames.Readable)) return underlyingRemapType(type)
         val oldIrArguments = type.arguments
         val extraArgs = listOf(
             makeTypeProjection(
@@ -349,26 +343,31 @@ class ReadableTypeRemapper(
                     extraArgs +
                     oldIrArguments.last()
 
+        val classifier = symbolRemapper.getReferencedClassifier(
+            context
+                .tmpFunction(oldIrArguments.size - 1 + extraArgs.size)
+        )
+        val newArguments = newIrArguments.map { remapTypeArgument(it) }
+
         return IrSimpleTypeImpl(
-            null,
-            symbolRemapper.getReferencedClassifier(
-                context
-                    .tmpFunction(oldIrArguments.size - 1 + extraArgs.size)
-            ),
+            makeKotlinType(classifier, newArguments, type.hasQuestionMark, type.annotations),
+            classifier,
             type.hasQuestionMark,
-            newIrArguments.map { remapTypeArgument(it) },
+            newArguments,
             type.annotations,
             null
         )
     }
 
     private fun underlyingRemapType(type: IrSimpleType): IrType {
+        val classifier = symbolRemapper.getReferencedClassifier(type.classifier)
+        val arguments = type.arguments.map { remapTypeArgument(it) }
         return IrSimpleTypeImpl(
-            null,
-            symbolRemapper.getReferencedClassifier(type.classifier),
+            makeKotlinType(classifier, arguments, type.hasQuestionMark, type.annotations),
+            classifier,
             type.hasQuestionMark,
-            type.arguments.map { remapTypeArgument(it) },
-            type.annotations.map { it.transform(deepCopy, null) as IrConstructorCall },
+            arguments,
+            type.annotations,
             type.abbreviation?.remapTypeAbbreviation()
         )
     }

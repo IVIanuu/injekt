@@ -84,7 +84,6 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
@@ -93,9 +92,7 @@ import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.statements
-import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -260,6 +257,8 @@ class ReadableFunctionTransformer(
             contextClass.superTypes += genericContext.superTypes
             genericContext.functions
                 .filterNot { it.isFakeOverride }
+                .filterNot { it.dispatchReceiverParameter?.type == irBuiltIns.anyType }
+                .filterNot { it is IrConstructor }
                 .forEach { genericContextFunction ->
                     genericFunctionMap += genericContextFunction to contextClass.addFunction {
                         name = InjektNameConventions
@@ -269,7 +268,9 @@ class ReadableFunctionTransformer(
                                 genericContextFunction
                             )
                         returnType = genericContextFunction.returnType
-                            .substitute(genericContext.typeParameters, typeArguments)
+                            .substituteAndKeepQualifiers(genericContext.typeParameters
+                                .map { it.symbol }
+                                .zip(typeArguments).toMap())
                         modality = Modality.ABSTRACT
                     }.apply {
                         dispatchReceiverParameter = contextClass.thisReceiver?.copyTo(this)
@@ -299,14 +300,15 @@ class ReadableFunctionTransformer(
         }
 
         readableCalls
-            .filterNot { it.isReadableLambdaInvoke() }
             .forEach { call ->
-                val callContext = getContextForFunction(call.symbol.owner)
-                handleSubcontext(callContext, call, call.typeArguments)
+                if (!call.isReadableLambdaInvoke()) {
+                    val callContext = getContextForFunction(call.symbol.owner)
+                    handleSubcontext(callContext, call, call.typeArguments)
+                }
                 call.getArgumentsWithIr()
-                    .filter { (valueParameter, expr) ->
-                        valueParameter.type.isFunction() &&
-                                valueParameter.type.hasAnnotation(InjektFqNames.Readable) &&
+                    .filter { (_, expr) ->
+                        expr.type.isFunction() &&
+                                expr.type.hasAnnotation(InjektFqNames.Readable) &&
                                 expr is IrFunctionExpression
                     }
                     .forEach { (_, expr) ->
@@ -442,9 +444,10 @@ class ReadableFunctionTransformer(
                                                 irCall(
                                                     genericFunctionMap.firstOrNull { (a, b) ->
                                                         a == declaration &&
-                                                                a.returnType.substitute(
-                                                                    superClass.typeParameters,
-                                                                    typeArguments
+                                                                a.returnType.substituteAndKeepQualifiers(
+                                                                    superClass.typeParameters
+                                                                        .map { it.symbol }
+                                                                        .zip(typeArguments).toMap()
                                                                 ) == b.returnType
                                                     }?.second?.symbol ?: declaration.symbol
                                                 ).apply {

@@ -150,7 +150,8 @@ class ModuleDeclarationFactory(
         mapBlock?.function?.body?.transformChildrenVoid(object :
             IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol == symbols.mapDsl.functions.single { it.owner.name.asString() == "put" }) {
+                if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.MapDsl.put") {
+                    // todo symbols.mapDsl.functions.single { it.owner.name.asString() == "put" }
                     declarations += MapEntryDeclaration(
                         mapType,
                         expression.getValueArgument(0)!!,
@@ -181,7 +182,8 @@ class ModuleDeclarationFactory(
         setBlock?.function?.body?.transformChildrenVoid(object :
             IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol == symbols.setDsl.functions.single { it.owner.name.asString() == "add" }) {
+                if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.SetDsl.add") {
+                    // todo symbols.setDsl.functions.single { it.owner.name.asString() == "add" }
                     declarations += SetElementDeclaration(
                         setType,
                         expression.getTypeArgument(0)!!

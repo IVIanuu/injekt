@@ -287,9 +287,6 @@ fun IrType.getQualifiers(): List<IrConstructorCall> {
         }
 }
 
-fun IrType.getQualifierFqNames(): List<FqName> =
-    getQualifiers().map { it.type.getClass()!!.fqNameForIrSerialization }
-
 private fun IrType.copy(
     arguments: List<IrTypeArgument>,
     annotations: List<IrConstructorCall>
