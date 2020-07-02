@@ -357,4 +357,67 @@ class ReadableTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
+    @Test
+    fun testAbstractReadableFunction() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            transient { Foo() }
+            return create() 
+        }
+        
+        interface Super {
+            @Readable
+            fun func(): Foo
+        }
+        
+        class Impl : Super {
+            @Readable
+            override fun func(): Foo {
+                return get()
+            }
+        }
+
+        fun invoke(): Foo { 
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReading { Impl().func() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testOpenReadableFunction() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            transient { Foo() }
+            return create() 
+        }
+        
+        open class Super {
+            @Readable
+            open fun func(): Foo = get()
+        }
+        
+        class Impl : Super() {
+            @Readable
+            override fun func(): Foo {
+                super.func()
+                return get()
+            }
+        }
+
+        fun invoke(): Foo { 
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReading { Impl().func() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
 }

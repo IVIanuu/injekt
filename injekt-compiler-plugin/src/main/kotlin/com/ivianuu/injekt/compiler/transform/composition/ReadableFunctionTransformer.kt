@@ -75,6 +75,7 @@ import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
+import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.IrValueSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
@@ -183,6 +184,10 @@ class ReadableFunctionTransformer(
             if (function.visibility == Visibilities.LOCAL) parent = function.parent
             else function.file
             addMetadataIfNotLocal()
+
+            overriddenSymbols += (function as IrFunctionImpl).overriddenSymbols.map {
+                transformFunctionIfNeeded(it.owner).symbol as IrSimpleFunctionSymbol
+            }
 
             annotations = function.annotations.map { it.deepCopyWithSymbols() }
             if (function.visibility != Visibilities.LOCAL) {
@@ -357,33 +362,35 @@ class ReadableFunctionTransformer(
         val variableByValueParameter = mutableMapOf<IrValueSymbol, IrVariable>()
         val ignoredGetValues = mutableSetOf<IrGetValue>()
 
-        transformedFunction.body =
-            with(DeclarationIrBuilder(pluginContext, transformedFunction.symbol)) {
-                irBlockBody {
-                    thisParameters.forEach { valueParameter ->
-                        variableByValueParameter[valueParameter.symbol] = createTmpVariable(
-                            irIfThenElse(
-                                valueParameter.type,
-                                irEqeqeq(
-                                    irGet(valueParameter)
-                                        .also { ignoredGetValues += it },
-                                    irGetObject(symbols.uninitialized)
-                                ),
-                                irCall(providerFunctionByParameter.getValue(valueParameter.symbol)).apply {
-                                    dispatchReceiver = irGet(contextValueParameter)
-                                },
-                                irImplicitCast(
-                                    irGet(valueParameter)
-                                        .also { ignoredGetValues += it },
-                                    originalTypeByValueParameter[valueParameter]!!
+        if (function.body != null) {
+            transformedFunction.body =
+                with(DeclarationIrBuilder(pluginContext, transformedFunction.symbol)) {
+                    irBlockBody {
+                        thisParameters.forEach { valueParameter ->
+                            variableByValueParameter[valueParameter.symbol] = createTmpVariable(
+                                irIfThenElse(
+                                    valueParameter.type,
+                                    irEqeqeq(
+                                        irGet(valueParameter)
+                                            .also { ignoredGetValues += it },
+                                        irGetObject(symbols.uninitialized)
+                                    ),
+                                    irCall(providerFunctionByParameter.getValue(valueParameter.symbol)).apply {
+                                        dispatchReceiver = irGet(contextValueParameter)
+                                    },
+                                    irImplicitCast(
+                                        irGet(valueParameter)
+                                            .also { ignoredGetValues += it },
+                                        originalTypeByValueParameter[valueParameter]!!
+                                    )
                                 )
                             )
-                        )
-                    }
+                        }
 
-                    transformedFunction.body?.statements?.forEach { +it }
+                        transformedFunction.body?.statements?.forEach { +it }
+                    }
                 }
-            }
+        }
 
         transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitGetValue(expression: IrGetValue): IrExpression {
