@@ -288,4 +288,47 @@ class ReadableTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
+    @Test
+    fun testSuspendNestedReadable() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            transient { Foo() }
+            return create() 
+        }
+        
+        @Readable
+        suspend fun createFoo(foo: Foo = given()): Foo {
+            delay(1000)
+            return foo
+        }
+        
+        fun <R> nonReadable(block: () -> R) = block()
+        
+        @Readable
+        fun <R> readable(block: @Readable () -> R) = block()
+        
+        fun invoke() {
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            component.runReading {
+                nonReadable { 
+                    readable { 
+                        nonReadable { 
+                            readable {
+                                GlobalScope.launch {
+                                    createFoo()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    """
+    ) {
+        //assertTrue(invokeSingleFile() is Foo)
+    }
+
 }
+
