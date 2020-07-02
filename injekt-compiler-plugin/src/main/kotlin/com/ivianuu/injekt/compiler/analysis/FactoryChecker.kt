@@ -58,8 +58,7 @@ class FactoryChecker : CallChecker, DeclarationChecker {
         if (descriptor !is FunctionDescriptor ||
             (!descriptor.hasAnnotation(InjektFqNames.Factory) &&
                     !descriptor.hasAnnotation(InjektFqNames.ChildFactory) &&
-                    !descriptor.hasAnnotation(InjektFqNames.CompositionFactory) &&
-                    !descriptor.hasAnnotation(InjektFqNames.InstanceFactory))
+                    !descriptor.hasAnnotation(InjektFqNames.CompositionFactory))
         ) return
 
         val parentMemberScope = (descriptor.containingDeclaration as? ClassDescriptor)
@@ -89,7 +88,6 @@ class FactoryChecker : CallChecker, DeclarationChecker {
                 it.fqName == InjektFqNames.ChildFactory ||
                         it.fqName == InjektFqNames.Factory ||
                         it.fqName == InjektFqNames.CompositionFactory ||
-                        it.fqName == InjektFqNames.InstanceFactory ||
                         it.fqName == InjektFqNames.Module
             }
             .size
@@ -261,8 +259,7 @@ class FactoryChecker : CallChecker, DeclarationChecker {
         val enclosingModuleFunction = findDirectEnclosingFunctionContext(context) {
             it.hasAnnotation(InjektFqNames.Factory) ||
                     it.hasAnnotation(InjektFqNames.ChildFactory) ||
-                    it.hasAnnotation(InjektFqNames.CompositionFactory) ||
-                    it.hasAnnotation(InjektFqNames.InstanceFactory)
+                    it.hasAnnotation(InjektFqNames.CompositionFactory)
         }
 
         when {

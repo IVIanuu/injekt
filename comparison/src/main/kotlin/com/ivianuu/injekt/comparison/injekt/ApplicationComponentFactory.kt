@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -17,28 +17,8 @@
 package com.ivianuu.injekt.comparison.injekt
 
 import com.ivianuu.injekt.ApplicationComponent
-import com.ivianuu.injekt.comparison.base.InjectionTest
-import com.ivianuu.injekt.comparison.fibonacci.Fib8
-import com.ivianuu.injekt.composition.compositionFactoryOf
-import com.ivianuu.injekt.composition.get
-import com.ivianuu.injekt.composition.runReading
+import com.ivianuu.injekt.composition.CompositionFactory
+import com.ivianuu.injekt.create
 
-object InjektTest : InjectionTest {
-
-    override val name = "Injekt"
-
-    private var component: ApplicationComponent? = null
-
-    override fun setup() {
-        component = compositionFactoryOf<ApplicationComponent, () -> ApplicationComponent>()()
-    }
-
-    override fun inject() {
-        component!!.runReading { get<Fib8>() }
-    }
-
-    override fun shutdown() {
-        component = null
-    }
-
-}
+@CompositionFactory
+fun createApplicationComponent(): ApplicationComponent = create()

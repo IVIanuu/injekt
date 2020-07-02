@@ -43,7 +43,6 @@ import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
-import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -62,7 +61,6 @@ import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.hasDefaultValue
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.name.FqName
@@ -72,7 +70,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.module
 typealias BindingResolver = (Key) -> List<BindingNode>
 
 class ChildFactoryBindingResolver(
-    private val parentFactory: ImplFactory,
+    private val parentFactory: FactoryImpl,
     descriptor: IrClass
 ) : BindingResolver {
 
@@ -139,7 +137,7 @@ class ChildFactoryBindingResolver(
                 val expr: FactoryExpression = { irGet(moduleVariable) }
                 expr
             }
-            val childFactoryImpl = ImplFactory(
+            val childFactoryImpl = FactoryImpl(
                 factoryFunction = lambda,
                 origin = fqName,
                 parent = parentFactory,
@@ -167,7 +165,7 @@ class ChildFactoryBindingResolver(
 class DependencyBindingResolver(
     private val moduleNode: ModuleNode,
     private val dependencyNode: DependencyNode,
-    private val factory: AbstractFactory
+    private val factory: FactoryImpl
 ) : BindingResolver {
 
     private val allDependencyFunctions = dependencyNode.dependency
@@ -203,7 +201,7 @@ class DependencyBindingResolver(
 class ModuleBindingResolver(
     private val moduleNode: ModuleNode,
     descriptor: IrClass,
-    private val factory: AbstractFactory
+    private val factory: FactoryImpl
 ) : BindingResolver {
 
     // todo make this the actual module function name origin or even better the exact location
@@ -377,7 +375,7 @@ class ModuleBindingResolver(
 class AnnotatedClassBindingResolver(
     private val pluginContext: IrPluginContext,
     private val declarationStore: InjektDeclarationStore,
-    private val factory: AbstractFactory
+    private val factory: FactoryImpl
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): List<BindingNode> {
         return if (requestedKey.type.isAssistedProvider()) {
@@ -566,7 +564,7 @@ class AnnotatedClassBindingResolver(
 
 class MapBindingResolver(
     private val pluginContext: IrPluginContext,
-    private val factory: AbstractFactory,
+    private val factory: FactoryImpl,
     private val parent: MapBindingResolver?
 ) : BindingResolver {
 
@@ -659,7 +657,7 @@ class MapBindingResolver(
 
 class SetBindingResolver(
     private val pluginContext: IrPluginContext,
-    private val factoryImplementation: AbstractFactory,
+    private val factoryImplementation: FactoryImpl,
     private val parent: SetBindingResolver?
 ) : BindingResolver {
 
@@ -745,7 +743,7 @@ class SetBindingResolver(
 }
 
 class NoArgProviderBindingResolver(
-    private val factory: AbstractFactory
+    private val factory: FactoryImpl
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): List<BindingNode> {
         val requestedType = requestedKey.type

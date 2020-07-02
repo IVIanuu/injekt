@@ -35,8 +35,8 @@ class DslTest {
     @Test
     fun testDslFunctionInFactory() = codegen(
         """
-        @InstanceFactory
-        fun module(): Int {
+        @Factory
+        fun module(): TestComponent1<Int> {
             instance(42)
             return create()
         }

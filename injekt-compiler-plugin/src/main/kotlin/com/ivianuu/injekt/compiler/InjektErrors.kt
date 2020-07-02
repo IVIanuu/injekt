@@ -59,7 +59,7 @@ interface InjektErrors {
 
         @JvmField
         val CREATE_WITHOUT_FACTORY = error(
-            "create can only be called from within a @Factory, @ChildFactory, @CompositionFactory or @InstanceFactory function"
+            "create can only be called from within a @Factory, @ChildFactory or @CompositionFactory function"
         )
 
         @JvmField
@@ -159,7 +159,7 @@ interface InjektErrors {
 
         @JvmField
         val EITHER_MODULE_OR_FACTORY = error(
-            "A function can only be annotated with one of @Factory, @ChildFactory, @CompositionFactory, @InstanceFactory or @Module"
+            "A function can only be annotated with one of @Factory, @ChildFactory, @CompositionFactory or @Module"
         )
 
         @JvmField

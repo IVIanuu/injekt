@@ -33,8 +33,8 @@ class SetTest {
     @Test
     fun testSetOfValueInstance() = codegen(
         """
-        @InstanceFactory
-        fun invoke(): Set<Command> {
+        @Factory
+        fun factory(): TestComponent1<Set<Command>> {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
@@ -45,6 +45,8 @@ class SetTest {
             }
             return create()
         }
+        
+        fun invoke() = factory().a
          """
     ) {
         val set =
@@ -58,7 +60,7 @@ class SetTest {
     @Test
     fun testSetOfValueProvider() = codegen(
         """
-        @InstanceFactory
+        @Factory
         fun invoke(): @Provider () -> Set<Command> {
             transient { CommandA() }
             transient { CommandB() }
@@ -83,8 +85,8 @@ class SetTest {
     @Test
     fun testSetOfProviderInstance() = codegen(
         """
-        @InstanceFactory
-        fun invoke(): Set<@Provider () -> Command> {
+        @Factory
+        fun factory(): TestComponent1<Set<@Provider () -> Command>> {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
@@ -95,6 +97,8 @@ class SetTest {
             }
             return create()
         }
+        
+        fun invoke() = factory().a
          """
     ) {
         val set =
@@ -108,7 +112,7 @@ class SetTest {
     @Test
     fun testSetOfProviderProvider() = codegen(
         """
-        @InstanceFactory
+        @Factory
         fun invoke(): @Provider () -> Set<@Provider () -> Command> {
             transient { CommandA() }
             transient { CommandB() }
@@ -133,8 +137,8 @@ class SetTest {
     @Test
     fun testSetOfAssistedProviderInstance() = codegen(
         """
-        @InstanceFactory
-        fun invoke(): Set<@Provider (String) -> Command> {
+        @Factory
+        fun factory(): TestComponent1<Set<@Provider (String) -> Command>> {
             transient { arg: @Assisted String -> CommandA() }
             transient { arg: @Assisted String -> CommandB() }
             transient { arg: @Assisted String -> CommandC() }
@@ -145,6 +149,8 @@ class SetTest {
             }
             return create()
         }
+        
+        fun invoke() = factory().a
          """
     ) {
         val set =
@@ -158,8 +164,8 @@ class SetTest {
     @Test
     fun testSetOfAssistedProviderProvider() = codegen(
         """
-        @InstanceFactory
-        fun invoke(): @Provider () -> Set<@Provider (String) -> Command> {
+        @Factory
+        fun invoke(): TestComponent1<@Provider () -> Set<@Provider (String) -> Command>> {
             transient { arg: @Assisted String -> CommandA() }
             transient { arg: @Assisted String -> CommandB() }
             transient { arg: @Assisted String -> CommandC() }
@@ -183,11 +189,13 @@ class SetTest {
     @Test
     fun testEmptySet() = codegen(
         """
-        @InstanceFactory
-        fun invoke(): Set<Command> {
+        @Factory
+        fun factory(): TestComponent1<Set<Command>> {
             set<Command>()
             return create()
         }
+        
+        fun invoke() = factory().a
          """
     ) {
         val set =
@@ -198,8 +206,8 @@ class SetTest {
     @Test
     fun testUndeclaredSet() = codegen(
         """
-        @InstanceFactory
-        fun createInstance(): Set<Command> {
+        @Factory
+        fun createInstance(): TestComponent1<Set<Command>> {
             return create()
         }
         """
@@ -210,14 +218,16 @@ class SetTest {
     @Test
     fun testSingleElementSet() = codegen(
         """
-        @InstanceFactory
-        fun invoke(): Set<Command> {
+        @Factory
+        fun factory(): TestComponent1<Set<Command>> {
             transient { CommandA() }
             set<Command> {
                 add<CommandA>()
             }
             return create()
         }
+        
+        fun invoke() = factory().a
          """
     ) {
         val set =
@@ -228,8 +238,8 @@ class SetTest {
     @Test
     fun testSetOverridesFails() = codegen(
         """
-        @InstanceFactory
-        fun createInstance(): Set<Command> {
+        @Factory
+        fun factory(): TestComponent1<Set<Command>> {
             transient { CommandA() }
             transient { CommandB() }
             set<Command> {
@@ -327,8 +337,8 @@ class SetTest {
             set<Command> { add<T>() }
         }
         
-        @InstanceFactory
-        fun invoke(): Set<Command> {
+        @Factory
+        fun factory(): TestComponent1<Set<Command>> {
             transient { CommandA() }
             intoSet<CommandA>()
             transient { CommandB() }
@@ -337,6 +347,8 @@ class SetTest {
             intoSet<CommandC>()
             return create()
         }
+
+        fun invoke() = factory().a
          """
     ) {
         val set =
@@ -350,11 +362,13 @@ class SetTest {
     @Test
     fun testQualifiedSetOfValue() = codegen(
         """
-        @InstanceFactory
-        fun invoke(): @TestQualifier1 Set<Any> {
+        @Factory
+        fun factory(): TestComponent1<@TestQualifier1 Set<Any>> {
             set<@TestQualifier1 Set<Any>, Any>()
             return create()
         }
+
+        fun invoke() = factory().a
         """
     ) {
         assertOk()
@@ -363,11 +377,13 @@ class SetTest {
     @Test
     fun testQualifiedMapOfProvider() = codegen(
         """
-        @InstanceFactory
-        fun invoke(): @TestQualifier1 Set<@Provider () -> Any> {
+        @Factory
+        fun factory(): TestComponent1<@TestQualifier1 Set<@Provider () -> Any>> {
             set<@TestQualifier1 Set<Any>, Any>()
             return create()
         }
+
+        fun invoke() = factory().a
         """
     ) {
         assertOk()

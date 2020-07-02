@@ -170,6 +170,21 @@ class Baz(foo: Foo, bar: Bar)
 
 interface TestComponent
 
+interface TestComponent1<A> {
+    val a: A
+}
+
+interface TestComponent2<A, B> {
+    val a: A
+    val b: B
+}
+
+interface TestComponent3<A, B, C> {
+    val a: A
+    val b: B
+    val c: C
+}
+
 @Scope
 annotation class TestScope
 

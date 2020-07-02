@@ -34,8 +34,8 @@ class MapTest {
     @Test
     fun testMapOfValueInstance() = codegen(
         """
-        @InstanceFactory
-        fun invoke(): Map<KClass<out Command>, Command> {
+        @Factory
+        fun factory(): TestComponent1<Map<KClass<out Command>, Command>> {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
@@ -46,6 +46,8 @@ class MapTest {
             }
             return create()
         }
+        
+        fun invoke() = factory().a
         """
     ) {
         val map =
@@ -59,8 +61,8 @@ class MapTest {
     @Test
     fun testMapOfValueProvider() = codegen(
         """
-        @InstanceFactory
-        fun invoke(): @Provider () -> Map<KClass<out Command>, Command> {
+        @Factory
+        fun factory(): TestComponent1<@Provider () -> Map<KClass<out Command>, Command>> {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
@@ -71,6 +73,8 @@ class MapTest {
             }
             return create()
         }
+        
+        fun invoke() = factory().a
         """
     ) {
         val map =
@@ -84,8 +88,12 @@ class MapTest {
     @Test
     fun testMapOfProviderInstance() = codegen(
         """
-        @InstanceFactory
-        fun invoke(): Map<KClass<out Command>, @Provider () -> Command> {
+        interface Component {
+            val value: Map<KClass<out Command>, @Provider () -> Command>
+        }
+        
+        @Factory
+        fun factory(): Component {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
@@ -96,6 +104,8 @@ class MapTest {
             }
             return create()
         }
+        
+        fun invoke() = factory().value
     """
     ) {
         val map =
@@ -109,8 +119,12 @@ class MapTest {
     @Test
     fun testMapOfProviderProvider() = codegen(
         """
-        @InstanceFactory
-        fun invoke(): @Provider () -> Map<KClass<out Command>, @Provider () -> Command> {
+        interface Component {
+            val value: @Provider () -> Map<KClass<out Command>, @Provider () -> Command>
+        }
+        
+        @Factory
+        fun factory(): Component {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
@@ -121,6 +135,8 @@ class MapTest {
             }
             return create()
         }
+        
+        fun invoke() = factory().value
     """
     ) {
         val map =
@@ -134,8 +150,8 @@ class MapTest {
     @Test
     fun testMapOfAssistedProvider() = codegen(
         """
-        @InstanceFactory
-        fun invoke(): Map<KClass<out Command>, @Provider (String) -> Command> {
+        @Factory
+        fun factory(): TestComponent1<Map<KClass<out Command>, @Provider (String) -> Command>> {
             transient { arg: @Assisted String -> CommandA() }
             transient { arg: @Assisted String -> CommandB() }
             transient { arg: @Assisted String -> CommandC() }
@@ -146,6 +162,8 @@ class MapTest {
             }
             return create()
         }
+        
+        fun invoke() = factory().a
         """
     ) {
         val map =
@@ -159,8 +177,8 @@ class MapTest {
     @Test
     fun testMapOfAssistedProviderProvider() = codegen(
         """
-        @InstanceFactory
-        fun invoke(): @Provider () -> Map<KClass<out Command>, @Provider (String) -> Command> {
+        @Factory
+        fun factory(): TestComponent1<@Provider () -> Map<KClass<out Command>, @Provider (String) -> Command>> {
             transient { arg: @Assisted String -> CommandA() }
             transient { arg: @Assisted String -> CommandB() }
             transient { arg: @Assisted String -> CommandC() }
@@ -171,6 +189,8 @@ class MapTest {
             }
             return create()
         }
+        
+        fun invoke() = factory().a
         """
     ) {
         val map =
@@ -184,11 +204,13 @@ class MapTest {
     @Test
     fun testEmptyMap() = codegen(
         """
-        @InstanceFactory
-        fun invoke(): Map<KClass<out Command>, Command> {
+        @Factory
+        fun factory(): TestComponent1<Map<KClass<out Command>, Command>> {
             map<KClass<out Command>, Command>()
             return create()
         }
+        
+        fun invoke() = factory().a
          """
     ) {
         val map =
@@ -199,10 +221,12 @@ class MapTest {
     @Test
     fun testUndeclaredMap() = codegen(
         """
-        @InstanceFactory
-        fun createComponent(): Map<String, Command> {
+        @Factory
+        fun factory(): TestComponent1<Map<String, Command>> {
             return create()
         }
+        
+        fun invoke() = factory().a
         """
     ) {
         assertInternalError("no binding found")
@@ -211,14 +235,16 @@ class MapTest {
     @Test
     fun testSingleEntryMap() = codegen(
         """
-        @InstanceFactory
-        fun invoke(): Map<KClass<out Command>, Command> {
+        @Factory
+        fun invoke(): TestComponent1<Map<KClass<out Command>, Command>> {
             transient { CommandA() }
             map<KClass<out Command>, Command> {
                 put<CommandA>(CommandA::class)
             }
             return create()
         }
+        
+        fun invoke() = factory().a
          """
     ) {
         val map =
@@ -230,8 +256,8 @@ class MapTest {
     @Test
     fun testMapOverrideFails() = codegen(
         """
-        @InstanceFactory
-        fun createComponent(): Map<String, Command> {
+        @Factory
+        fun factory(): TestComponent1<Map<String, Command>> {
             transient { CommandA() }
             transient { CommandB() }
             map<String, Command> {
@@ -240,6 +266,8 @@ class MapTest {
             }
             return create()
         }
+        
+        fun invoke() = factory().a
     """
     ) {
         assertInternalError("already bound")
@@ -324,7 +352,6 @@ class MapTest {
     @Test
     fun testGenericMapBinding() = codegen(
         """
-
         @Module
         inline fun <reified T : Command> intoMap() {
             map<KClass<out Command>, Command> {
@@ -332,8 +359,8 @@ class MapTest {
             }
         }
         
-        @InstanceFactory
-        fun invoke(): Map<KClass<out Command>, Command> {
+        @Factory
+        fun factory(): TestComponent1<Map<KClass<out Command>, Command>> {
             transient { CommandA() }
             intoMap<CommandA>()
             transient { CommandB() }
@@ -342,6 +369,8 @@ class MapTest {
             intoMap<CommandC>()
             return create()
         }
+        
+        fun invoke() = factory().a
         """
     ) {
         val map =
@@ -355,11 +384,13 @@ class MapTest {
     @Test
     fun testQualifiedMapOfValue() = codegen(
         """
-        @InstanceFactory
-        fun invoke(): @TestQualifier1 Map<KClass<*>, Any> {
+        @Factory
+        fun factory(): TestComponent1<@TestQualifier1 Map<KClass<*>, Any>> {
             map<@TestQualifier1 Map<KClass<*>, Any>, KClass<*>, Any>()
             return create()
         }
+        
+        fun invoke() = factory().a
         """
     ) {
         assertOk()
@@ -368,11 +399,13 @@ class MapTest {
     @Test
     fun testQualifiedMapOfProvider() = codegen(
         """
-        @InstanceFactory
-        fun invoke(): @TestQualifier1 Map<KClass<*>, @Provider () -> Any> {
+        @Factory
+        fun factory(): TestComponent1<@TestQualifier1 Map<KClass<*>, @Provider () -> Any>> {
             map<@TestQualifier1 Map<KClass<*>, Any>, KClass<*>, Any>()
             return create()
         }
+        
+        fun invoke() = factory().a
         """
     ) {
         assertOk()

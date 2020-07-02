@@ -33,14 +33,18 @@ class AssistedTest {
             val foo: Foo
         )
         
-        @InstanceFactory
-        fun factory(): @Provider (String) -> Dep {
+        interface Component {
+            val value: @Provider (String) -> Dep
+        }
+        
+        @Factory
+        fun factory(): Component {
             transient<Foo>()
             return create()
         }
         
         fun invoke() {
-            val depFactory = factory()
+            val depFactory = factory().value
             val result: Dep = depFactory("hello world")
         }
     """
@@ -64,14 +68,18 @@ class AssistedTest {
         listOf(
             source(
                 """
-                    @InstanceFactory 
-                    fun factory(): @Provider (String) -> Dep { 
+                    interface Component {
+                        val value: @Provider (String) -> Dep
+                    }
+
+                    @Factory 
+                    fun factory(): Component { 
                         instance(Foo())
                         return create()
                     }
                     
                     fun invoke() {
-                        val depFactory = factory()
+                        val depFactory = factory().value
                         val result = depFactory("hello world")
                     }
                 """,
@@ -85,15 +93,19 @@ class AssistedTest {
 
     @Test
     fun testAssistedInDsl() = codegen(
-        """ 
-        @InstanceFactory
-        fun factory(): @Provider (Foo) -> Bar {
+        """
+        interface Component {
+            val value: @Provider (Foo) -> Bar
+        }
+        
+        @Factory
+        fun factory(): Component {
             transient { foo: @Assisted Foo -> Bar(foo) }
             return create()
         }
         
         fun invoke() {
-            val barFactory = factory()
+            val barFactory = factory().value
             val bar: Bar = barFactory(Foo())
         }
     """
@@ -116,11 +128,17 @@ class AssistedTest {
         listOf(
             source(
                 """
-                @InstanceFactory 
-                fun invoke(): @Provider (Foo) -> Bar {
+                interface Component {
+                    val value: @Provider (Foo) -> Bar
+                }
+                
+                @Factory 
+                fun factory(): Component {
                     assistedModule()
                     return create()
                 }
+                
+                fun invoke() = factory().value
                 """,
                 name = "File.kt"
             )

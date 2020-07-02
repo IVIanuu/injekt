@@ -58,8 +58,8 @@ class InlineTest {
             listOf(
                 source(
                     """
-                    @InstanceFactory
-                    fun createComponent(): Bar {
+                    @Factory
+                    fun factory(): TestComponent1<Bar> {
                         transient<@TestQualifier1 Context> { Context() }
                         systemServices()
                         return create()
@@ -111,8 +111,8 @@ class InlineTest {
                         systemService<Bar>()
                     }
                     
-                    @InstanceFactory
-                    fun createComponent(): Bar {
+                    @Factory
+                    fun factory(): TestComponent1<Bar> {
                         transient<@TestQualifier1 Context> { Context() }
                         systemServices()
                         return create()
@@ -130,12 +130,14 @@ class InlineTest {
             transient(provider)
         }
         
-        @InstanceFactory
-        fun invoke(): Bar {
+        @Factory
+        fun factory(): TestComponent1<Bar> {
             generic { Foo() }
             generic { foo: Foo -> Bar(foo) }
             return create()
         }
+        
+        fun invoke() = factory().a
     """
     ) {
         assertTrue(invokeSingleFile() is Bar)

@@ -32,19 +32,15 @@ class ImplFactoryTest {
     @Test
     fun testTransient() = codegen(
         """
-        interface TestComponent {
-            val bar: Bar
-        }
-        
         @Factory
-        fun createComponent(): TestComponent {
+        fun factory(): TestComponent1<Bar> {
             transient { Foo() }
             transient { foo: Foo -> Bar(foo) }
             return create()
         }
         
-        val component = createComponent()
-        fun invoke() = component.bar
+        val component = factory()
+        fun invoke() = component.a
     """
     ) {
         assertNotSame(
@@ -56,18 +52,14 @@ class ImplFactoryTest {
     @Test
     fun testScoped() = codegen(
         """
-        interface TestComponent {
-            val foo: Foo
-        }
-        
         @Factory
-        fun createComponent(): TestComponent {
+        fun factory(): TestComponent1<Foo> {
             scoped { Foo() }
             return create()
         }
         
-        val component = createComponent()
-        fun invoke() = component.foo
+        val component = factory()
+        fun invoke() = component.a
     """
     ) {
         assertSame(
@@ -80,18 +72,15 @@ class ImplFactoryTest {
     fun testAnnotatedClass() = codegen(
         """
         @Transient class AnnotatedBar(foo: Foo)
-        interface TestComponent {
-            val bar: AnnotatedBar
-        }
         
         @Factory
-        fun createComponent(): TestComponent {
+        fun factory(): TestComponent1<AnnotatedBar> {
             transient<Foo>()
             return create()
         }
         
-        val component = createComponent()
-        fun invoke() = component.bar
+        val component = factory()
+        fun invoke() = component.a
     """
     ) {
         assertNotSame(
@@ -103,19 +92,15 @@ class ImplFactoryTest {
     @Test
     fun testBindingWithoutDefinition() = codegen(
         """
-        interface TestComponent {
-            val bar: Bar
-        }
-        
         @Factory
-        fun createComponent(): TestComponent {
+        fun factory(): TestComponent1<Bar> {
             transient<Foo>()
             transient<Bar>()
             return create()
         }
         
-        val component = createComponent()
-        fun invoke() = component.bar
+        val component = factory()
+        fun invoke() = component.a
     """
     ) {
         assertTrue(invokeSingleFile() is Bar)
@@ -124,19 +109,16 @@ class ImplFactoryTest {
     @Test
     fun testBindingFromPassedProvider() = codegen(
         """
-        interface TestComponent {
-            val bar: Bar
-        }
-        
+
         @Factory
-        fun createComponent(provider: (Foo) -> Bar): TestComponent {
+        fun createComponent(provider: (Foo) -> Bar): TestComponent1<Bar> {
             transient<Foo>()
             transient(provider)
             return create()
         }
         
         val component = createComponent { Bar(it) }
-        fun invoke() = component.bar
+        fun invoke() = component.a
     """
     ) {
         assertTrue(invokeSingleFile() is Bar)
@@ -145,12 +127,8 @@ class ImplFactoryTest {
     @Test
     fun testBindingFromProviderReference() = codegen(
         """
-        interface TestComponent {
-            val bar: Bar
-        }
-        
         @Factory
-        fun createComponent(): TestComponent {
+        fun factory(): TestComponent1<Bar> {
             transient<Foo>()
             transient(::createBar)
             return create()
@@ -158,8 +136,8 @@ class ImplFactoryTest {
         
         fun createBar(foo: Foo): Bar = Bar(foo)
         
-        val component = createComponent()
-        fun invoke() = component.bar
+        val component = factory()
+        fun invoke() = component.a
     """
     ) {
         assertTrue(invokeSingleFile() is Bar)
@@ -168,11 +146,13 @@ class ImplFactoryTest {
     @Test
     fun testInstance() = codegen(
         """
-        @InstanceFactory
-        fun invoke(foo: Foo): Foo {
+        @Factory
+        fun factory(foo: Foo): TestComponent1<Foo> {
             instance(foo)
             return create()
         }
+        
+        fun invoke(foo: Foo) = factory(foo).a
          """
     ) {
         val foo = Foo()
@@ -187,11 +167,13 @@ class ImplFactoryTest {
             instance(foo)
         }
         
-        @InstanceFactory
-        fun invoke(foo: Foo): Foo {
+        @Factory
+        fun factory(foo: Foo): TestComponent1<Foo> {
             module(foo)
             return create()
         }
+        
+        fun invoke(foo: Foo) = factory(foo).a
         """
     ) {
         val foo = Foo()
@@ -210,19 +192,15 @@ class ImplFactoryTest {
             transient { Foo() }
             return create()
         }
-        
-        interface TestComponent {
-            val bar: Bar
-        }
 
         @Factory
-        fun createChild(): TestComponent {
+        fun createChild(): TestComponent1<Bar> {
             dependency(createDep())
             transient { foo: Foo -> Bar(foo) }
             return create()
         }
         
-        fun invoke() = createChild().bar
+        fun invoke() = createChild().a
     """
     ) {
         assertTrue(invokeSingleFile() is Bar)
@@ -231,20 +209,15 @@ class ImplFactoryTest {
     @Test
     fun testAlias() = codegen(
         """
-        interface TestComponent {
-            val any: Any
-            val foo: Foo
-        }
-        
         @Factory
-        fun createComponent(): TestComponent {
+        fun factory(): TestComponent2<Any, Foo> {
             scoped { Foo() }
             alias<Foo, Any>()
             return create()
         }
         
-        val component = createComponent()
-        fun invoke() = component.foo to component.any
+        val component = factory()
+        fun invoke() = component.a to component.b
     """
     ) {
         val (foo, any) = (invokeSingleFile() as Pair<Foo, Any>)
@@ -267,17 +240,13 @@ class ImplFactoryTest {
     @Test
     fun testFactoryImplementationBinding() = codegen(
         """
-        interface TestComponent {
-            val dep: Dep
-        }
-        
-        @Transient class Dep(val testComponent: TestComponent)
+        @Transient class Dep(val testComponent: TestComponent1<Dep>)
         
         @Factory
-        fun createComponent(): TestComponent = create()
+        fun factory(): TestComponent1<Dep> = create()
         
-        fun invoke(): Pair<TestComponent, TestComponent> = createComponent().let {
-            it to it.dep.testComponent
+        fun invoke(): Pair<TestComponent1<Dep>, TestComponent1<Dep>> = factory().let {
+            it to it.a.testComponent
         }
     """
     ) {
@@ -288,15 +257,10 @@ class ImplFactoryTest {
     @Test
     fun testGenericAnnotatedClass() = codegen(
         """
-        interface TestComponent {
-            val stringDep: Dep<String> 
-            val intDep: Dep<Int>
-        }
-        
         @Transient class Dep<T>(val value: T)
         
         @Factory
-        fun createComponent(): TestComponent {
+        fun factory(): TestComponent2<Dep<String>, Dep<Int>> {
             instance("hello world")
             instance(0)
             return create()
@@ -307,18 +271,13 @@ class ImplFactoryTest {
     @Test
     fun testModuleWithTypeArguments() = codegen(
         """
-        interface TestComponent {
-            val string: String
-            val int: Int
-        }
-        
         @Module
         fun <T> generic(instance: T) {
             instance(instance)
         }
 
         @Factory
-        fun createComponent(): TestComponent { 
+        fun factory(): TestComponent2<String, Int> { 
             generic("hello world")
             generic(42)
             return create()
@@ -337,13 +296,15 @@ class ImplFactoryTest {
             transient { from: T -> from as S }
         }
 
-        @InstanceFactory
-        fun invoke(): Any {
+        @Factory
+        fun factory(): TestComponent1<Any> {
             transient<Foo>()
             transient<Bar>()
             diyAlias<Bar, Any>()
             return create()
         }
+        
+        fun invoke() = factory().a
          """
         ) {
             assertTrue(invokeSingleFile() is Bar)
@@ -385,17 +346,13 @@ class ImplFactoryTest {
     @Test
     fun testFactoryWithDefaultParameters() = codegen(
         """
-        interface TestComponent {
-            val string: String
-        }
-        
         @Factory
-        fun createComponent(string: String = "default"): TestComponent {
+        fun factory(string: String = "default"): TestComponent1<String> {
             instance(string)
             return create()
         }
         
-        fun invoke() = createComponent().string to createComponent("non_default").string
+        fun invoke() = factory().a to factory("non_default").a
     """
     ) {
         val pair = invokeSingleFile<Pair<String, String>>()
@@ -406,16 +363,12 @@ class ImplFactoryTest {
     @Test
     fun testComponentAsMemberFunction() = codegen(
         """
-        interface TestComponent {
-            val dep: MyClass.Dep
-        }
-
         class MyClass {
             val outerField = ""
             
             @Transient class Dep(myClass: MyClass, foo: Foo)
             @Factory
-            fun createComponent(userId: String): TestComponent {
+            fun createComponent(userId: String): TestComponent1<Dep> {
                 transient<Foo>()
                 myModule()
                 return create()
@@ -442,17 +395,13 @@ class ImplFactoryTest {
     @Test
     fun testComponentExtensionFunction() = codegen(
         """
-        interface TestComponent {
-            val dep: MyClass.Dep
-        }
-
         class MyClass {
             val outerField = ""
             @Transient class Dep(myClass: MyClass, foo: Foo)
         }
 
         @Factory 
-        fun MyClass.createComponent(userId: String): TestComponent { 
+        fun MyClass.createComponent(userId: String): TestComponent1<MyClass.Dep> { 
             transient<Foo>()
             myModule()
             return create()
@@ -478,12 +427,9 @@ class ImplFactoryTest {
     @Test
     fun testLocalFunctionImplFactory() = codegen(
         """
-        interface TestComponent { 
-            val bar: Bar 
-        }
-        fun createComponent(): TestComponent {
+        fun factory(): TestComponent1<Bar> {
             @Factory
-            fun factory(): TestComponent {
+            fun factory(): TestComponent1<Bar> {
                 transient<Foo>()
                 transient<Bar>()
                 return create()

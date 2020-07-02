@@ -32,7 +32,7 @@ class GraphTest {
     fun testMissingBindingFails() = codegen(
         """
         @Transient class Dep(bar: Bar)
-        @InstanceFactory fun createDep(): Dep = create()
+        @Factory fun createDep(): TestComponent1<Dep> = create()
         """
     ) {
         assertInternalError("no binding")
@@ -43,7 +43,7 @@ class GraphTest {
     fun testCannotResolveDirectBindingWithAssistedParameters() = codegen(
         """
         @Transient class Dep(bar: @Assisted Bar)
-        @InstanceFactory fun createDep(): Dep = create()
+        @Factory fun createDep(): TestComponent1<Dep> = create()
         """
     ) {
         assertInternalError("no binding")
@@ -52,8 +52,8 @@ class GraphTest {
     @Test
     fun testDuplicatedBindingFails() = codegen(
         """
-        @InstanceFactory
-        fun createFoo(): Foo {
+        @Factory
+        fun createFoo(): TestComponent1<Foo> {
             transient { Foo() }
             transient { Foo() }
             return create()
@@ -68,7 +68,7 @@ class GraphTest {
         """
         @Transient class A(b: B)
         @Transient class B(a: A)
-        @InstanceFactory fun createA(): A = create()
+        @Factory fun createA(): TestComponent1<A> = create()
     """
     ) {
         assertInternalError("circular")
@@ -79,7 +79,7 @@ class GraphTest {
         """
         @TestScope class A(b: B)
         @Transient class B(a: @Provider () -> A)
-        @InstanceFactory fun invoke(): A {
+        @Factory fun invoke(): TestComponent1<A> {
             scope<TestScope>()
             return create()
         }
@@ -93,7 +93,7 @@ class GraphTest {
         """
         @TestScope class A(b: B)
         @Transient class B(a: @Provider () -> A)
-        @InstanceFactory fun invoke(): B {
+        @Factory fun invoke(): TestComponent1<B> {
             scope<TestScope>()
             return create()
         }
@@ -108,7 +108,7 @@ class GraphTest {
         @TestScope class A(b: B)
         @Transient class B(a: A)
         @Transient class C(b: @Provider () -> B)
-        @InstanceFactory fun invoke(): B {
+        @Factory fun invoke(): TestComponent1<B> {
             scope<TestScope>()
             return create()
         }
@@ -122,8 +122,8 @@ class GraphTest {
         """
         @TestScope2 class Dep
 
-        @InstanceFactory
-        fun createDep(): Dep {
+        @Factory
+        fun createDep(): TestComponent1<Dep> {
             scope<TestScope>()
             return create()
         }
@@ -135,21 +135,16 @@ class GraphTest {
     @Test
     fun testQualified() = codegen(
         """
-        interface TestComponent { 
-            val foo1: @TestQualifier1 Foo 
-            val foo2: @TestQualifier2 Foo
-        }
-        
         @Factory
-        fun createComponent(): TestComponent { 
+        fun factory(): TestComponent2<@TestQualifier1 Foo, @TestQualifier2 Foo> { 
             scoped<@TestQualifier1 Foo> { Foo() }
             scoped<@TestQualifier2 Foo> { Foo() }
             return create()
         }
         
         fun invoke(): Pair<Foo, Foo> { 
-            val component = createComponent()
-            return component.foo1 to component.foo2
+            val component = factory()
+            return component.a to component.b
         }
     """
     ) {
@@ -158,26 +153,22 @@ class GraphTest {
     }
 
     @Test
-    fun testQualifiedWithValues() = codegen("""
+    fun testQualifiedWithValues() = codegen(
+        """
         @Target(AnnotationTarget.TYPE) 
         @Qualifier 
         annotation class QualifierWithValue(val value: String)
-            
-        interface TestComponent {
-            val foo1: @QualifierWithValue("A") Foo
-            val foo2: @QualifierWithValue("B") Foo
-        }
-        
+
         @Factory
-        fun createComponent(): TestComponent { 
+        fun factory(): TestComponent2<@QualifierWithValue("A") Foo, @QualifierWithValue("B") Foo> { 
             scoped<@QualifierWithValue("A") Foo> { Foo() }
             scoped<@QualifierWithValue("B") Foo> { Foo() }
             return create()
         }
         
         fun invoke(): Pair<Foo, Foo> { 
-            val component = createComponent()
-            return component.foo1 to component.foo2
+            val component = factory()
+            return component.a to component.b
         }
     """
     ) {
@@ -191,22 +182,17 @@ class GraphTest {
         @Target(AnnotationTarget.TYPE) 
         @Qualifier 
         annotation class QualifierWithType<T>
-            
-        interface TestComponent {
-            val foo1: @QualifierWithType<String> Foo
-            val foo2: @QualifierWithType<Int> Foo
-        }
         
         @Factory
-        fun createComponent(): TestComponent { 
+        fun factory(): TestComponent2<@QualifierWithType<String> Foo, @QualifierWithType<Int> Foo> { 
             scoped<@QualifierWithType<String> Foo> { Foo() }
             scoped<@QualifierWithType<Int> Foo> { Foo() }
             return create()
         }
         
         fun invoke(): Pair<Foo, Foo> { 
-            val component = createComponent()
-            return component.foo1 to component.foo2
+            val component = factory()
+            return component.a to component.b
         }
     """
     ) {
@@ -220,22 +206,17 @@ class GraphTest {
         @Target(AnnotationTarget.TYPE) 
         @Qualifier 
         annotation class QualifierWithType<T>
-            
-        interface TestComponent {
-            val foo1: @QualifierWithType<String> Foo
-            val foo2: @QualifierWithType<Int> Foo
-        }
         
         @Factory
-        fun createComponent(): TestComponent { 
+        fun factory(): TestComponent2<@QualifierWithType<String> Foo, @QualifierWithType<Int> Foo> { 
             scoped<@QualifierWithType<String> Foo> { Foo() }
             scoped<@QualifierWithType<Int> Foo> { Foo() }
             return create()
         }
         
         fun invoke(): Pair<Foo, Foo> { 
-            val component = createComponent()
-            return component.foo1 to component.foo2
+            val component = factory()
+            return component.a to component.b
         }
     """
     ) {
@@ -246,14 +227,8 @@ class GraphTest {
     @Test
     fun testQualifiedGet() = codegen(
         """
-        interface TestComponent {
-            val a: @TestQualifier1 String
-            val b: @TestQualifier2 String
-            val pair: Pair<String, String>
-        }
-        
         @Factory
-        fun factory(): TestComponent {
+        fun factory(): TestComponent3<@TestQualifier1 String, @TestQualifier2 String, Pair<String, String>> {
             transient<@TestQualifier1 String> { "a" }
             transient<@TestQualifier2 String> { "b" }
             transient { a: @TestQualifier1 String, b: @TestQualifier2 String ->
@@ -264,7 +239,7 @@ class GraphTest {
 
         fun invoke(): Pair<Pair<String, String>, Pair<String, String>> { 
             val component = factory()
-            return component.a to component.b to component.pair
+            return component.a to component.b to component.c
         }
     """
     ) {
@@ -275,8 +250,8 @@ class GraphTest {
     @Test
     fun testIgnoresNullability() = codegen(
         """
-        @InstanceFactory
-        fun createFoo(): Foo {
+        @Factory
+        fun createFoo(): TestComponent1<Foo> {
             transient<Foo> { Foo() }
             transient<Foo?> { null }
             return create()
@@ -290,8 +265,8 @@ class GraphTest {
     fun testReturnsInstanceForNullableBinding() =
         codegen(
             """
-        @InstanceFactory
-        fun invoke(): Foo? {
+        @Factory
+        fun invoke(): TestComponent1<Foo?> {
             transient<Foo?>()
             return create()
         }
@@ -301,17 +276,18 @@ class GraphTest {
         }
 
     @Test
-    fun testReturnsNullOnMissingNullableBinding() =
-        codegen(
-            """
-        @InstanceFactory
-        fun invoke(): Foo? {
+    fun testReturnsNullOnMissingNullableBinding() = codegen(
+        """
+        @Factory
+        fun factory(): TestComponent1<Foo?> {
             return create()
         }
+        
+        fun invoke() = factory().a
         """
-        ) {
-            assertNull(invokeSingleFile())
-        }
+    ) {
+        assertNull(invokeSingleFile())
+    }
 
     @Test
     fun testAliasWithTypeParameters() = codegen(
@@ -321,8 +297,8 @@ class GraphTest {
             alias<A, B>()
         }
         
-        @InstanceFactory
-        fun createFooAsAny(): Any {
+        @Factory
+        fun createFooAsAny(): TestComponent1<Any> {
             transient<Foo>()
             fakeAlias<Foo, Any>()
             return create()
@@ -333,8 +309,8 @@ class GraphTest {
     @Test
     fun testTypeWithStarProjectedArg() = codegen(
         """
-        @InstanceFactory
-        fun createList(): List<*> {
+        @Factory
+        fun factory(): TestComponent1<List<*>> {
             instance<List<*>>(listOf<Any?>())
             return create()
         }

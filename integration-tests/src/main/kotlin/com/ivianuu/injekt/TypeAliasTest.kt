@@ -26,8 +26,12 @@ class TypeAliasTest {
         """
         typealias AliasedFoo = Foo
         
-        @InstanceFactory
-        fun factory(): AliasedFoo {
+        interface Component {
+            val value: AliasedFoo
+        }
+        
+        @Factory
+        fun factory(): Component {
             transient<Foo>()
             return create()
         }

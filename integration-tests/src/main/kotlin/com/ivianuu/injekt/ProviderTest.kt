@@ -29,17 +29,13 @@ class ProviderTest {
     @Test
     fun testProviderOfTransient() = codegen(
         """
-        interface TestComponent {
-            val provider: @Provider () -> Foo
-        }
-        
         @Factory
-        fun createComponent(): TestComponent { 
+        fun factory(): TestComponent1<@Provider () -> Foo> { 
             transient { Foo() }
             return create()
         }
         
-        fun invoke() = createComponent().provider
+        fun invoke() = factory().a
     """
     ) {
         val provider =
@@ -50,17 +46,13 @@ class ProviderTest {
     @Test
     fun testProviderOfScoped() = codegen(
         """
-        interface TestComponent {
-            val provider: @Provider () -> Foo
-        }
-        
         @Factory
-        fun createComponent(): TestComponent { 
+        fun factory(): TestComponent1<@Provider () -> Foo> { 
             scoped { Foo() }
             return create()
         }
         
-        fun invoke() = createComponent().provider
+        fun invoke() = factory().a
     """
     ) {
         val provider =

@@ -55,7 +55,7 @@ import org.jetbrains.kotlin.resolve.constants.StringValue
 
 class Graph(
     val parent: Graph?,
-    val factory: AbstractFactory,
+    val factory: FactoryImpl,
     context: IrPluginContext,
     factoryModule: ModuleNode?,
     declarationStore: InjektDeclarationStore,
@@ -87,7 +87,7 @@ class Graph(
         implicitBindingResolvers += NoArgProviderBindingResolver(factory)
         implicitBindingResolvers += mapBindingResolver
         implicitBindingResolvers += setBindingResolver
-        if (factory is ImplFactory) {
+        if (factory is FactoryImpl) {
             implicitBindingResolvers += FactoryImplementationBindingResolver(
                 factory.factoryImplementationNode
             )
@@ -370,7 +370,7 @@ class Graph(
             )
         )
 
-        if (factory is ImplFactory) {
+        if (factory is FactoryImpl) {
             addExplicitBindingResolver(
                 ChildFactoryBindingResolver(
                     factory,

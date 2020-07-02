@@ -21,6 +21,3 @@ annotation class Factory
 
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.TYPE)
 annotation class ChildFactory
-
-@Target(AnnotationTarget.FUNCTION)
-annotation class InstanceFactory

@@ -26,8 +26,8 @@ class InlineClassTest {
         """
         inline class InlineFoo(val foo: Foo)
         
-        @InstanceFactory
-        fun factory(): InlineFoo {
+        @Factory
+        fun factory(): TestComponent1<InlineFoo> {
             transient<Foo>()
             transient { foo: Foo -> InlineFoo(foo) }
             return create()
@@ -41,8 +41,8 @@ class InlineClassTest {
         @Transient
         inline class InlineFoo(val foo: Foo)
  
-        @InstanceFactory
-        fun factory(): InlineFoo {
+        @Factory
+        fun factory(): TestComponent1<InlineFoo> {
             transient<Foo>()
             return create()
         }

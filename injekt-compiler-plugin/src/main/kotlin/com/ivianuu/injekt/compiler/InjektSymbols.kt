@@ -70,8 +70,6 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
 
     val factory = pluginContext.referenceClass(InjektFqNames.Factory)!!
 
-    val instanceFactory = pluginContext.referenceClass(InjektFqNames.InstanceFactory)!!
-
     val lateinitFactory = pluginContext.referenceClass(InjektFqNames.LateinitFactory)!!
 
     val mapDsl = pluginContext.referenceClass(InjektFqNames.MapDsl)!!

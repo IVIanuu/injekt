@@ -61,24 +61,16 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ImplFactory(
-    origin: FqName,
-    superType: IrType,
-    val parent: ImplFactory?,
-    factoryFunction: IrFunction,
-    moduleClass: IrClass,
-    factoryModuleAccessor: FactoryExpression,
-    pluginContext: IrPluginContext,
-    symbols: InjektSymbols,
-    declarationStore: InjektDeclarationStore
-) : AbstractFactory(
-    origin,
-    moduleClass,
-    factoryModuleAccessor,
-    factoryFunction,
-    pluginContext,
-    symbols,
-    declarationStore
+class FactoryImpl(
+    val origin: FqName,
+    val superType: IrType,
+    val parent: FactoryImpl?,
+    val factoryFunction: IrFunction,
+    val moduleClass: IrClass,
+    val factoryModuleAccessor: FactoryExpression,
+    val pluginContext: IrPluginContext,
+    val symbols: InjektSymbols,
+    val declarationStore: InjektDeclarationStore
 ) {
 
     val clazz = buildClass {
@@ -92,7 +84,7 @@ class ImplFactory(
 
     val factoryImplementationNode = FactoryImplementationNode(
         key = clazz.defaultType.asKey(),
-        implFactory = this,
+        factoryImpl = this,
         accessor = { error("") }
     )
 
@@ -102,13 +94,41 @@ class ImplFactory(
 
     var factoryLateinitProvider: FactoryExpression? = null
 
+    private val factoryMembers = FactoryMembers(pluginContext, symbols)
+
+    private lateinit var graph: Graph
+    private lateinit var factoryExpressions: FactoryExpressions
+
     fun getImplExpression(): IrExpression {
         return DeclarationIrBuilder(pluginContext, factoryFunction.symbol).run {
             irBlock {
                 factoryMembers.blockBuilder = this
 
                 collectDependencyRequests()
-                init(parent, dependencyRequests.values.toList())
+                graph = Graph(
+                    parent = parent?.graph,
+                    factory = this@FactoryImpl,
+                    context = pluginContext,
+                    factoryModule = ModuleNode(
+                        key = moduleClass.defaultType
+                            .asKey(),
+                        module = moduleClass,
+                        accessor = factoryModuleAccessor,
+                        typeParametersMap = emptyMap()
+                    ),
+                    declarationStore = declarationStore,
+                    symbols = symbols
+                )
+
+                factoryExpressions = FactoryExpressions(
+                    graph = graph,
+                    pluginContext = pluginContext,
+                    symbols = symbols,
+                    members = factoryMembers,
+                    parent = parent?.factoryExpressions,
+                    factory = this@FactoryImpl
+                )
+                dependencyRequests.forEach { graph.validate(it.value) }
 
                 DeclarationIrBuilder(pluginContext, clazz.symbol).run {
                     implementDependencyRequests()

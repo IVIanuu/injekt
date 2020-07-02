@@ -78,7 +78,7 @@ class ModuleNode(
 }
 
 class FactoryImplementationNode(
-    val implFactory: ImplFactory,
+    val factoryImpl: FactoryImpl,
     override val key: Key,
     override val accessor: FactoryExpression
 ) : RequirementNode
@@ -140,7 +140,7 @@ sealed class BindingNode(
     val targetScope: FqName?,
     val scoped: Boolean,
     val module: ModuleNode?,
-    val owner: AbstractFactory,
+    val owner: FactoryImpl,
     val origin: FqName?
 ) : Node
 
@@ -150,7 +150,7 @@ class AssistedProvisionBindingNode(
     targetScope: FqName?,
     scoped: Boolean,
     module: ModuleNode?,
-    owner: AbstractFactory,
+    owner: FactoryImpl,
     origin: FqName?,
     val createExpression: IrBuilderWithScope.(Map<InjektDeclarationIrBuilder.FactoryParameter, () -> IrExpression?>) -> IrExpression,
     val parameters: List<InjektDeclarationIrBuilder.FactoryParameter>
@@ -158,7 +158,7 @@ class AssistedProvisionBindingNode(
 
 class ChildFactoryBindingNode(
     key: Key,
-    owner: ImplFactory,
+    owner: FactoryImpl,
     origin: FqName?,
     val parent: IrClass,
     val childFactoryExpression: FactoryExpression
@@ -175,7 +175,7 @@ class ChildFactoryBindingNode(
 
 class DelegateBindingNode(
     key: Key,
-    owner: AbstractFactory,
+    owner: FactoryImpl,
     origin: FqName?,
     val originalKey: Key,
     val requestOrigin: FqName
@@ -187,7 +187,7 @@ class DelegateBindingNode(
 
 class DependencyBindingNode(
     key: Key,
-    owner: AbstractFactory,
+    owner: FactoryImpl,
     origin: FqName?,
     val function: IrFunction,
     val requirementNode: DependencyNode
@@ -201,20 +201,20 @@ class FactoryImplementationBindingNode(
     null,
     false,
     null,
-    factoryImplementationNode.implFactory,
+    factoryImplementationNode.factoryImpl,
     factoryImplementationNode.key.type.getClass()!!.fqNameForIrSerialization
 )
 
 class InstanceBindingNode(
     key: Key,
-    owner: AbstractFactory,
+    owner: FactoryImpl,
     origin: FqName?,
     val requirementNode: InstanceNode,
 ) : BindingNode(key, emptyList(), null, false, null, owner, origin)
 
 class MapBindingNode(
     key: Key,
-    owner: AbstractFactory,
+    owner: FactoryImpl,
     origin: FqName?,
     val entries: Map<MapKey, BindingRequest>
 ) : BindingNode(key, entries.values.toList(), null, false, null, owner, origin) {
@@ -224,7 +224,7 @@ class MapBindingNode(
 
 class NullBindingNode(
     key: Key,
-    owner: AbstractFactory
+    owner: FactoryImpl
 ) : BindingNode(
     key,
     emptyList(),
@@ -237,7 +237,7 @@ class NullBindingNode(
 
 class ProviderBindingNode(
     key: Key,
-    owner: AbstractFactory,
+    owner: FactoryImpl,
     origin: FqName?
 ) : BindingNode(
     key,
@@ -261,7 +261,7 @@ class ProvisionBindingNode(
     targetScope: FqName?,
     scoped: Boolean,
     module: ModuleNode?,
-    owner: AbstractFactory,
+    owner: FactoryImpl,
     origin: FqName?,
     val createExpression: IrBuilderWithScope.(Map<InjektDeclarationIrBuilder.FactoryParameter, () -> IrExpression?>) -> IrExpression,
     val parameters: List<InjektDeclarationIrBuilder.FactoryParameter>
@@ -269,7 +269,7 @@ class ProvisionBindingNode(
 
 class SetBindingNode(
     key: Key,
-    owner: AbstractFactory,
+    owner: FactoryImpl,
     origin: FqName?,
     val elements: Set<BindingRequest>
 ) : BindingNode(key, elements.toList(), null, false, null, owner, origin) {

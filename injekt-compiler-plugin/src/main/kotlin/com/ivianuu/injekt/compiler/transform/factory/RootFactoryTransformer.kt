@@ -34,7 +34,6 @@ import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -50,9 +49,7 @@ class RootFactoryTransformer(
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitFunctionNew(declaration: IrFunction): IrStatement {
-                if ((declaration.hasAnnotation(InjektFqNames.Factory) ||
-                            declaration.hasAnnotation(InjektFqNames.InstanceFactory))
-                ) {
+                if (declaration.hasAnnotation(InjektFqNames.Factory)) {
                     factoryFunctions += declaration
                 } else if (declaration.hasAnnotation(InjektFqNames.ChildFactory) ||
                     declaration.hasAnnotation(InjektFqNames.CompositionFactory)
@@ -86,36 +83,19 @@ class RootFactoryTransformer(
                         expr
                     }
 
-                    when {
-                        function.hasAnnotation(InjektFqNames.Factory) -> {
-                            val implFactory = ImplFactory(
-                                origin = function.descriptor.fqNameSafe,
-                                parent = null,
-                                superType = function.returnType,
-                                moduleClass = moduleClass,
-                                factoryFunction = function,
-                                factoryModuleAccessor = moduleAccessor,
-                                pluginContext = pluginContext,
-                                symbols = symbols,
-                                declarationStore = declarationStore
-                            )
+                    val implFactory = FactoryImpl(
+                        origin = function.descriptor.fqNameSafe,
+                        parent = null,
+                        superType = function.returnType,
+                        moduleClass = moduleClass,
+                        factoryFunction = function,
+                        factoryModuleAccessor = moduleAccessor,
+                        pluginContext = pluginContext,
+                        symbols = symbols,
+                        declarationStore = declarationStore
+                    )
 
-                            +irReturn(implFactory.getImplExpression())
-                        }
-                        function.hasAnnotation(InjektFqNames.InstanceFactory) -> {
-                            val instanceFactory = InstanceFactory(
-                                factoryFunction = function,
-                                moduleClass = moduleClass,
-                                factoryModuleAccessor = moduleAccessor,
-                                pluginContext = pluginContext,
-                                symbols = symbols,
-                                declarationStore = declarationStore
-                            )
-
-                            +irReturn(instanceFactory.getInstanceExpression())
-                        }
-                        else -> error("Unexpected factory ${function.dump()}")
-                    }
+                    +irReturn(implFactory.getImplExpression())
                 }
             }
         }

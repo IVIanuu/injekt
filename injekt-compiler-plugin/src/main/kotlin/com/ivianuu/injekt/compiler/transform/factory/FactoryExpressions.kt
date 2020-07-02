@@ -50,7 +50,7 @@ class FactoryExpressions(
     private val symbols: InjektSymbols,
     private val members: FactoryMembers,
     private val parent: FactoryExpressions?,
-    private val factory: AbstractFactory
+    private val factory: FactoryImpl
 ) {
 
     private val bindingExpressions = mutableMapOf<BindingRequest, FactoryExpression>()
@@ -445,7 +445,7 @@ class FactoryExpressions(
     private fun providerExpressionForFactoryImplementation(
         binding: FactoryImplementationBindingNode
     ): FactoryExpression {
-        factory as ImplFactory
+        factory as FactoryImpl
 
         return cachedFactoryExpression(binding.key) {
             irCall(symbols.lateinitFactory.constructors.single()).apply {

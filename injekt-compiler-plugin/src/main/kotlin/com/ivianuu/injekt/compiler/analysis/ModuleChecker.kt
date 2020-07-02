@@ -151,8 +151,7 @@ class ModuleChecker : CallChecker, DeclarationChecker {
             it.hasAnnotation(InjektFqNames.Module) ||
                     it.hasAnnotation(InjektFqNames.Factory) ||
                     it.hasAnnotation(InjektFqNames.ChildFactory) ||
-                    it.hasAnnotation(InjektFqNames.CompositionFactory) ||
-                    it.hasAnnotation(InjektFqNames.InstanceFactory)
+                    it.hasAnnotation(InjektFqNames.CompositionFactory)
         }
 
         when {
