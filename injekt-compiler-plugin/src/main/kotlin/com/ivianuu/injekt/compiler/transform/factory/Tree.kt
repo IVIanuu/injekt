@@ -50,11 +50,6 @@ interface RequirementNode : Node {
     val accessor: FactoryExpression
 }
 
-class InstanceNode(
-    override val key: Key,
-    override val accessor: FactoryExpression
-) : RequirementNode
-
 class ModuleNode(
     val module: IrClass,
     override val key: Key,
