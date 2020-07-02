@@ -21,6 +21,8 @@ import com.ivianuu.injekt.test.assertCompileError
 import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -101,7 +103,7 @@ class ReadableTest {
         }
         
         @Readable
-        fun func(foo: Foo = given()): Foo {
+        fun func(foo: Foo = get()): Foo {
             return foo
         }
         
@@ -125,7 +127,7 @@ class ReadableTest {
         }
         
         @Readable
-        fun func(foo: Foo = given()): Foo {
+        fun func(foo: Foo = get()): Foo {
             return foo
         }
         
@@ -161,7 +163,7 @@ class ReadableTest {
         }
         
         @Readable
-        fun createFoo(foo: Foo = given()): Foo {
+        fun createFoo(foo: Foo = get()): Foo {
             return foo
         }
         
@@ -200,7 +202,7 @@ class ReadableTest {
         }
         
         @Readable
-        suspend fun func(foo: Foo = given()): Foo {
+        suspend fun func(foo: Foo = get()): Foo {
             delay(1000)
             return foo
         }
@@ -229,7 +231,7 @@ class ReadableTest {
         }
         
         @Readable
-        suspend fun func(foo: Foo = given()): Foo {
+        suspend fun func(foo: Foo = get()): Foo {
             delay(1000)
             return foo
         }
@@ -258,7 +260,7 @@ class ReadableTest {
         }
         
         @Readable
-        suspend fun func(foo: Foo = given()): Foo {
+        suspend fun func(foo: Foo = get()): Foo {
             delay(1000)
             return foo
         }
@@ -298,7 +300,7 @@ class ReadableTest {
         }
         
         @Readable
-        suspend fun createFoo(foo: Foo = given()): Foo {
+        suspend fun createFoo(foo: Foo = get()): Foo {
             delay(1000)
             return foo
         }
@@ -340,7 +342,7 @@ class ReadableTest {
         }
         
         @Readable
-        fun func(foo: Foo = given()): Foo {
+        fun func(foo: Foo = get()): Foo {
             return foo
         }
         
@@ -418,6 +420,58 @@ class ReadableTest {
     """
     ) {
         assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun multiCompileReadable() = multiCodegen(
+        listOf(
+            source(
+                """
+                @Readable
+                fun foo(): Foo {
+                    return get()
+                } 
+            """
+            ),
+        ),
+        listOf(
+            source(
+                """
+                
+                @Readable
+                fun bar(): Bar {
+                    return Bar(foo())
+                }
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                @CompositionFactory 
+                fun factory(): TestCompositionComponent {
+                    transient { Foo() }
+                    return create() 
+                }
+        
+                @Readable
+                fun <R> withBar(block: @Readable (Bar) -> R): R = block(bar())
+        
+                fun invoke(): Foo {
+                    initializeCompositions()
+                    val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+                    return component.runReading {
+                        withBar {
+                            foo()
+                        }
+                    }
+                }
+                """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        assertTrue(it.last().invokeSingleFile() is Foo)
     }
 
 }

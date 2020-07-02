@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.remapTypeParameters
@@ -34,7 +33,6 @@ import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.typeWith
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
-import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
@@ -89,12 +87,12 @@ import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.irCall
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
@@ -163,39 +161,6 @@ class ReadableFunctionTransformer(
             return
         }
 
-        val parametersMap = transformedFunction.valueParameters.associateWith { valueParameter ->
-            val defaultExpr = valueParameter.defaultValue?.expression
-            val isGiven = defaultExpr is IrCall && defaultExpr.symbol.descriptor
-                .fqNameSafe.asString() == "com.ivianuu.injekt.composition.given"
-            valueParameter.copyTo(
-                transformedFunction,
-                index = valueParameter.index,
-                type = if (isGiven) irBuiltIns.anyNType else valueParameter.type
-            )
-        }
-        transformedFunction.valueParameters = parametersMap.values.toList()
-
-        transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitGetValue(expression: IrGetValue): IrExpression {
-                return parametersMap[expression.symbol.owner]
-                    ?.let { DeclarationIrBuilder(pluginContext, it.symbol).irGet(it) }
-                    ?: super.visitGetValue(expression)
-            }
-        })
-
-        val thisParameters = transformedFunction.valueParameters
-            .filter { valueParameter ->
-                val defaultExpr = valueParameter.defaultValue?.expression
-                defaultExpr is IrCall && defaultExpr.symbol.descriptor
-                    .fqNameSafe.asString() == "com.ivianuu.injekt.composition.given"
-            }
-        thisParameters
-            .forEach {
-                it.defaultValue = DeclarationIrBuilder(pluginContext, it.symbol).run {
-                    irExprBody(irGetObject(symbols.uninitialized))
-                }
-            }
-
         val contextClass = buildClass {
             kind = ClassKind.INTERFACE
             name = InjektNameConventions.getContextClassNameForReadableFunction(
@@ -217,24 +182,7 @@ class ReadableFunctionTransformer(
             }
         }
 
-        val originalTypeByValueParameter = thisParameters.associateWith {
-            function.allParameters[it.index].type
-                .remapTypeParameters(function, transformedFunction)
-        }
-
-        val providerFunctionByParameter = thisParameters.associateWith { valueParameter ->
-            contextClass.addFunction {
-                name = InjektNameConventions.getReadableContextParamNameForValueParameter(
-                    function.file, valueParameter
-                )
-                returnType = originalTypeByValueParameter[valueParameter]!!
-                    .remapTypeParameters(transformedFunction, contextClass)
-                modality = Modality.ABSTRACT
-            }.apply {
-                dispatchReceiverParameter = contextClass.thisReceiver?.copyTo(this)
-            }
-        }.mapKeys { it.key.symbol }
-
+        val getCalls = mutableListOf<IrCall>()
         val readableCalls = mutableListOf<IrCall>()
 
         transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
@@ -253,11 +201,27 @@ class ReadableFunctionTransformer(
                     (expression.symbol.owner.isReadable(pluginContext.bindingContext) ||
                             expression.isReadableLambdaInvoke())
                 ) {
-                    readableCalls += expression
+                    if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.composition.get") {
+                        getCalls += expression
+                    } else {
+                        readableCalls += expression
+                    }
                 }
                 return super.visitCall(expression)
             }
         })
+
+        val providerFunctionByGetCall = getCalls.associateWith { getCall ->
+            contextClass.addFunction {
+                name =
+                    InjektNameConventions.getProvideFunctionNameForGetCall(function.file, getCall)
+                returnType = getCall.type
+                    .remapTypeParameters(transformedFunction, contextClass)
+                modality = Modality.ABSTRACT
+            }.apply {
+                dispatchReceiverParameter = contextClass.thisReceiver?.copyTo(this)
+            }
+        }
 
         val genericFunctionMap = mutableListOf<Pair<IrFunction, IrFunction>>()
 
@@ -330,45 +294,16 @@ class ReadableFunctionTransformer(
             contextClass.typeWith(transformedFunction.typeParameters.map { it.defaultType })
         )
 
-        val variableByValueParameter = mutableMapOf<IrValueSymbol, IrVariable>()
-        val ignoredGetValues = mutableSetOf<IrGetValue>()
-
-        if (function.body != null) {
-            transformedFunction.body =
-                with(DeclarationIrBuilder(pluginContext, transformedFunction.symbol)) {
-                    irBlockBody {
-                        thisParameters.forEach { valueParameter ->
-                            variableByValueParameter[valueParameter.symbol] = createTmpVariable(
-                                irIfThenElse(
-                                    valueParameter.type,
-                                    irEqeqeq(
-                                        irGet(valueParameter)
-                                            .also { ignoredGetValues += it },
-                                        irGetObject(symbols.uninitialized)
-                                    ),
-                                    irCall(providerFunctionByParameter.getValue(valueParameter.symbol)).apply {
-                                        dispatchReceiver = irGet(contextValueParameter)
-                                    },
-                                    irImplicitCast(
-                                        irGet(valueParameter)
-                                            .also { ignoredGetValues += it },
-                                        originalTypeByValueParameter[valueParameter]!!
-                                    )
-                                )
-                            )
-                        }
-
-                        transformedFunction.body?.statements?.forEach { +it }
-                    }
-                }
-        }
-
         transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitGetValue(expression: IrGetValue): IrExpression {
-                return if (expression in ignoredGetValues) super.visitGetValue(expression)
-                else variableByValueParameter[expression.symbol]
-                    ?.let { DeclarationIrBuilder(pluginContext, it.symbol).irGet(it) }
-                    ?: super.visitGetValue(expression)
+            override fun visitCall(expression: IrCall): IrExpression {
+                return if (expression in getCalls) {
+                    val providerFunction = providerFunctionByGetCall.getValue(expression)
+                    DeclarationIrBuilder(pluginContext, expression.symbol).run {
+                        irCall(providerFunction).apply {
+                            dispatchReceiver = irGet(contextValueParameter)
+                        }
+                    }
+                } else super.visitCall(expression)
             }
         })
 
@@ -580,4 +515,3 @@ class ReadableFunctionTransformer(
     }
 
 }
-

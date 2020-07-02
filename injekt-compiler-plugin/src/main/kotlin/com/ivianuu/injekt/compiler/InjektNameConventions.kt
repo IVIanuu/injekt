@@ -97,10 +97,10 @@ object InjektNameConventions {
     fun getObjectGraphGetNameForCall(file: IrFile, call: IrCall): Name =
         getNameAtSourcePositionWithSuffix(file.fqName, call, "Get")
 
-    fun getReadableContextParamNameForValueParameter(
+    fun getProvideFunctionNameForGetCall(
         file: IrFile,
-        valueParameter: IrValueParameter
-    ): Name = getNameAtSourcePositionWithSuffix(file.fqName, valueParameter, "Get")
+        call: IrCall
+    ): Name = getNameAtSourcePositionWithSuffix(file.fqName, call, "Get")
 
     fun getReadableContextParamNameForContext(
         packageFqName: FqName,

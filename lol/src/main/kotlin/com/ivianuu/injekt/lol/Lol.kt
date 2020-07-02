@@ -25,7 +25,6 @@ import com.ivianuu.injekt.composition.CompositionFactory
 import com.ivianuu.injekt.composition.Readable
 import com.ivianuu.injekt.composition.compositionFactoryOf
 import com.ivianuu.injekt.composition.get
-import com.ivianuu.injekt.composition.given
 import com.ivianuu.injekt.composition.initializeCompositions
 import com.ivianuu.injekt.composition.installIn
 import com.ivianuu.injekt.composition.parent
@@ -47,7 +46,7 @@ fun factory(): TestCompositionComponent {
 }
 
 @Readable
-fun func(foo: Foo = given()): Foo {
+fun func(foo: Foo = get()): Foo {
     return foo
 }
 
