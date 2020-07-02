@@ -31,10 +31,10 @@ class TmpMetadataPatcher(pluginContext: IrPluginContext) :
         (declaration as IrFileImpl).metadata =
             MetadataSource.File(
                 (declaration.metadata!!.descriptors + (declaration.declarations
-                    .filterNot {
-                        it.hasAnnotation(InjektFqNames.Module) || it.hasAnnotation(
-                            InjektFqNames.Readable
-                        )
+                    .filter {
+                        it.origin == InjektOrigin ||
+                                (!it.hasAnnotation(InjektFqNames.Module) &&
+                                        !it.hasAnnotation(InjektFqNames.Readable))
                     })
                     .map { it.descriptor })
                     .distinct()

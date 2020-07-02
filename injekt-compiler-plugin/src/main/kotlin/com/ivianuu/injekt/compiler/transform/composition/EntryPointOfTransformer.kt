@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
+import com.ivianuu.injekt.compiler.transform.InjektOrigin
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -79,6 +80,7 @@ class EntryPointOfTransformer(pluginContext: IrPluginContext) :
     ) = buildFun {
         this.name = name
         returnType = irBuiltIns.unitType
+        origin = InjektOrigin
     }.apply {
         annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
             .noArgSingleConstructorCall(symbols.module)

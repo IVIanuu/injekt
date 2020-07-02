@@ -753,7 +753,7 @@ private class IrSourcePrinterVisitor(
 
     override fun visitVariable(declaration: IrVariable) {
         if (declaration.isLateinit) {
-            print("lateinit")
+            print("lateinit ")
         }
         when {
             declaration.isConst -> print("const ")

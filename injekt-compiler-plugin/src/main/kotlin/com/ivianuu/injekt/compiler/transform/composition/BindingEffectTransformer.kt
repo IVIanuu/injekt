@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
+import com.ivianuu.injekt.compiler.transform.InjektOrigin
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -98,6 +99,7 @@ class BindingEffectTransformer(pluginContext: IrPluginContext) :
         this.name = name
         visibility = clazz.visibility
         returnType = irBuiltIns.unitType
+        origin = InjektOrigin
     }.apply {
         annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
             .noArgSingleConstructorCall(symbols.module)
