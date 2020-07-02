@@ -16,13 +16,17 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.dumpSrc
+import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.transform.composition.CompositionModuleMetadataTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -31,13 +35,15 @@ import org.jetbrains.kotlin.ir.expressions.IrBlockBody
 import org.jetbrains.kotlin.ir.expressions.IrBody
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementContainer
-import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.annotations.argumentValue
+import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
@@ -64,9 +70,9 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
     }
 
     fun getModuleFunctionForFactory(factoryFunction: IrFunction): IrFunction {
-        return if (!factoryFunction.isExternalDeclaration()) {
+        val existingModule = if (!factoryFunction.isExternalDeclaration()) {
             val parent = factoryFunction.parent
-            val existingModule = if (parent is IrDeclarationContainer) {
+            if (parent is IrDeclarationContainer) {
                 parent
                     .declarations
                     .filterIsInstance<IrFunction>()
@@ -102,35 +108,25 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
             } else {
                 null
             }
-            existingModule ?: factoryModuleTransformer
-                .getModuleFunctionForFactoryFunction(factoryFunction)
-        } else {
-            pluginContext.referenceFunctions(
-                factoryFunction.descriptor.fqNameSafe
-                    .parent()
-                    .child(InjektNameConventions.getModuleNameForFactoryFunction(factoryFunction))
-            ).filter { it.owner.valueParameters.lastOrNull()?.name?.asString() == "moduleMarker" }
-                .let {
-                it.singleOrNull()?.owner ?: error(
-                    "Couldn't find factory function for\n${InjektNameConventions.getModuleNameForFactoryFunction(
-                        factoryFunction
-                    )} all ${it.map { it.owner.render() }}\nfactory ${factoryFunction.render()}"
-                )
-            }
-        }
+        } else null
+
+        return existingModule ?: factoryModuleTransformer
+            .getModuleFunctionForFactoryFunction(factoryFunction)
     }
 
     fun getModuleFunctionForClass(moduleClass: IrClass): IrFunction {
         return if (!moduleClass.isExternalDeclaration()) {
             moduleFunctionTransformer.getModuleFunctionForClass(moduleClass)
         } else {
-            pluginContext.referenceFunctions(
-                moduleClass.descriptor.fqNameSafe
-                    .parent()
-                    .child(InjektNameConventions.getModuleFunctionNameForClass(moduleClass))
-            ).single {
-                it.owner.returnType.classOrNull == moduleClass.symbol
-            }.owner
+            val moduleFunctionFqName =
+                moduleClass.descriptor.annotations.findAnnotation(InjektFqNames.AstName)!!
+                    .argumentValue("name")
+                    .let { it as StringValue }
+                    .value
+                    .let { FqName(it) }
+            moduleFunctionTransformer.getTransformedModuleFunction(
+                pluginContext.referenceFunctions(moduleFunctionFqName).single().owner
+            )
         }
     }
 
@@ -144,15 +140,19 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
         return if (!moduleFunction.isExternalDeclaration()) {
             moduleFunctionTransformer.getModuleClassForFunction(moduleFunction)
         } else {
-            val fqName = moduleFunction.getPackageFragment()!!
-                .fqName
-                .child(
-                    InjektNameConventions.getModuleClassNameForModuleFunction(
-                        moduleFunction.getPackageFragment()!!.fqName,
-                        moduleFunction.descriptor.fqNameSafe
-                    )
-                )
-            return pluginContext.referenceClass(fqName)?.owner
+            pluginContext.moduleDescriptor.getPackage(moduleFunction.getPackageFragment()!!.fqName)
+                .memberScope
+                .getContributedDescriptors()
+                .filterIsInstance<ClassDescriptor>()
+                .filter { it.hasAnnotation(InjektFqNames.AstModule) }
+                .filter { it.hasAnnotation(InjektFqNames.AstName) }
+                .single {
+                    it.annotations.findAnnotation(InjektFqNames.AstName)!!
+                        .argumentValue("name")
+                        .let { it as StringValue }
+                        .value == moduleFunction.descriptor.fqNameSafe.asString()
+                }
+                .let { pluginContext.referenceClass(it.fqNameSafe)!!.owner }
         }
     }
 

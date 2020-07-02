@@ -19,27 +19,43 @@ package com.ivianuu.injekt.sample
 import android.content.Context
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.Composable
+import androidx.compose.remember
 import androidx.lifecycle.ViewModel
+import androidx.ui.core.setContent
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.android.ActivityViewModel
 import com.ivianuu.injekt.android.ForActivity
 import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.composition.Readable
 import com.ivianuu.injekt.composition.get
 import com.ivianuu.injekt.composition.runReading
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
-    private val viewModel: MainViewModel by lazy {
-        activityComponent.runReading { get() }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        activityComponent.runReading { enqueueWork() }
-        println("Got view model $viewModel")
+        setContent {
+            activityComponent.runReading {
+                WithMainViewModel {
+                    GlobalScope.launch {
+                        enqueueWork()
+                    }
+                }
+            }
+        }
     }
+}
+
+@Readable
+@Composable
+fun WithMainViewModel(children: @Composable (MainViewModel) -> Unit) {
+    val viewModel = remember { get<MainViewModel>() }
+    children(viewModel)
 }
 
 @Readable

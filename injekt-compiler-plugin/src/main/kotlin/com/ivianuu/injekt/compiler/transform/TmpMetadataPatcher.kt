@@ -16,10 +16,12 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 
 // todo once we can use FIR
 class TmpMetadataPatcher(pluginContext: IrPluginContext) :
@@ -27,7 +29,16 @@ class TmpMetadataPatcher(pluginContext: IrPluginContext) :
 
     override fun visitFile(declaration: IrFile): IrFile {
         (declaration as IrFileImpl).metadata =
-            MetadataSource.File(declaration.declarations.map { it.descriptor })
+            MetadataSource.File(
+                (declaration.metadata!!.descriptors + (declaration.declarations
+                    .filterNot {
+                        it.hasAnnotation(InjektFqNames.Module) || it.hasAnnotation(
+                            InjektFqNames.Readable
+                        )
+                    })
+                    .map { it.descriptor })
+                    .distinct()
+            )
         return super.visitFile(declaration)
     }
 

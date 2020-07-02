@@ -357,7 +357,7 @@ class ReadableTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
-    @Test
+    // todo @Test
     fun testAbstractReadableFunction() = codegen(
         """
         @CompositionFactory 
@@ -388,7 +388,7 @@ class ReadableTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
-    @Test
+    // todo @Test
     fun testOpenReadableFunction() = codegen(
         """
         @CompositionFactory 

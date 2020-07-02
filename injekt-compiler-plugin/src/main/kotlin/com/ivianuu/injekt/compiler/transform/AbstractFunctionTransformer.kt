@@ -22,6 +22,13 @@ import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getSuspendFunctionType
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.copyBodyTo
+import org.jetbrains.kotlin.backend.common.ir.copyTo
+import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
+import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
@@ -29,6 +36,11 @@ import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
+import org.jetbrains.kotlin.ir.descriptors.WrappedFunctionDescriptorWithContainerSource
+import org.jetbrains.kotlin.ir.descriptors.WrappedPropertyGetterDescriptor
+import org.jetbrains.kotlin.ir.descriptors.WrappedPropertySetterDescriptor
+import org.jetbrains.kotlin.ir.descriptors.WrappedSimpleFunctionDescriptor
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
@@ -36,86 +48,33 @@ import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
+import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
+import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.serialization.deserialization.descriptors.DescriptorWithContainerSource
 
 abstract class AbstractFunctionTransformer(
-    pluginContext: IrPluginContext,
-    private val transformOrder: TransformOrder
+    pluginContext: IrPluginContext
 ) : AbstractInjektTransformer(pluginContext) {
 
     protected val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
     protected val originalTransformedFunctions = mutableSetOf<IrFunction>()
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
-        val functionsToTransform = mutableListOf<IrFunction>()
-
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitFunction(declaration: IrFunction): IrStatement {
-                return when (transformOrder) {
-                    TransformOrder.BottomUp -> {
-                        if (needsTransform(declaration)) functionsToTransform += declaration
-                        super.visitFunction(declaration) as IrFunction
-                    }
-                    TransformOrder.TopDown -> {
-                        val result = super.visitFunction(declaration) as IrFunction
-                        if (needsTransform(result)) functionsToTransform += result
-                        result
-                    }
-                }
-            }
+            override fun visitFunction(declaration: IrFunction): IrStatement =
+                transformFunctionIfNeeded(super.visitFunction(declaration) as IrFunction)
         })
 
-        functionsToTransform.forEach { function ->
-            val transformedFunction = transformFunctionIfNeeded(function)
-            if (transformedFunction != function &&
-                function.visibility != Visibilities.LOCAL
-            ) {
-                transformedFunction.addToFileOrAbove(function)
-            }
-        }
-
-        val functionsToReplace = transformedFunctions
-            .filter { it.key != it.value }
-            .filter { it.key.visibility == Visibilities.LOCAL }
-
-        declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitFunction(declaration: IrFunction): IrStatement {
-                return when (transformOrder) {
-                    TransformOrder.BottomUp -> {
-                        replaceFunctionIfNeeded(super.visitFunction(declaration) as IrFunction)
-                    }
-                    TransformOrder.TopDown -> {
-                        super.visitFunction(replaceFunctionIfNeeded(declaration))
-                    }
-                }
-            }
-
-            private fun replaceFunctionIfNeeded(function: IrFunction): IrFunction =
-                functionsToReplace[function] ?: function
-        })
-
+        // todo check if this is needed
         declaration.rewriteTransformedFunctionRefs()
-
-        transformedFunctions.forEach { (original, transformed) ->
-            if (!original.isExternalDeclaration() && original != transformed) {
-                original.valueParameters
-                    .filter { it.defaultValue != null }
-                    .forEach {
-                        it.defaultValue =
-                            InjektDeclarationIrBuilder(pluginContext, original.symbol).run {
-                                builder.irExprBody(irInjektIntrinsicUnit())
-                            }
-                    }
-                original.body = InjektDeclarationIrBuilder(pluginContext, original.symbol).run {
-                    builder.irExprBody(irInjektIntrinsicUnit())
-                }
-            }
-        }
 
         return super.visitModuleFragment(declaration)
     }
@@ -194,8 +153,8 @@ abstract class AbstractFunctionTransformer(
             transformedFunctions[function] = it
         }
 
-        if (function.isExternalDeclaration())
-            transformExternal(function, callback) else transform(function, callback)
+        if (function.isExternalDeclaration()) transformExternal(function, callback)
+        else transform(function, callback)
 
         return transformedFunctions.getValue(function)
     }
@@ -237,8 +196,75 @@ abstract class AbstractFunctionTransformer(
         })
     }
 
-    enum class TransformOrder {
-        BottomUp, TopDown
+    private fun wrapDescriptor(descriptor: FunctionDescriptor): WrappedSimpleFunctionDescriptor {
+        return when (descriptor) {
+            is PropertyGetterDescriptor ->
+                WrappedPropertyGetterDescriptor(
+                    descriptor.annotations,
+                    descriptor.source
+                )
+            is PropertySetterDescriptor ->
+                WrappedPropertySetterDescriptor(
+                    descriptor.annotations,
+                    descriptor.source
+                )
+            is DescriptorWithContainerSource ->
+                WrappedFunctionDescriptorWithContainerSource(descriptor.containerSource)
+            else ->
+                WrappedSimpleFunctionDescriptor(sourceElement = descriptor.source)
+        }
+    }
+
+    fun IrFunction.copy(
+        isInline: Boolean = this.isInline,
+        modality: Modality = descriptor.modality
+    ): IrSimpleFunction {
+        val descriptor = descriptor
+        val newDescriptor = wrapDescriptor(descriptor)
+
+        return IrFunctionImpl(
+            startOffset,
+            endOffset,
+            origin,
+            IrSimpleFunctionSymbolImpl(newDescriptor),
+            name,
+            visibility,
+            modality,
+            returnType,
+            isInline,
+            isExternal,
+            descriptor.isTailrec,
+            descriptor.isSuspend,
+            descriptor.isOperator,
+            isExpect,
+            isFakeOverride
+        ).also { fn ->
+            newDescriptor.bind(fn)
+            if (this is IrSimpleFunction) {
+                fn.correspondingPropertySymbol = correspondingPropertySymbol
+            }
+            fn.parent = parent
+            fn.copyTypeParametersFrom(this)
+            fn.dispatchReceiverParameter = dispatchReceiverParameter?.copyTo(fn)
+            fn.extensionReceiverParameter = extensionReceiverParameter?.copyTo(fn)
+            fn.valueParameters = valueParameters.map { p ->
+                p.copyTo(fn, name = dexSafeName(p.name))
+            }
+            fn.annotations = annotations.map { a -> a }
+            fn.metadata = metadata
+            fn.body = copyBodyTo(fn)
+        }
+    }
+
+    private fun dexSafeName(name: Name): Name {
+        return if (name.isSpecial && name.asString().contains(' ')) {
+            val sanitized = name
+                .asString()
+                .replace(' ', '$')
+                .replace('<', '$')
+                .replace('>', '$')
+            Name.identifier(sanitized)
+        } else name
     }
 
 }

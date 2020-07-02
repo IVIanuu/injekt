@@ -134,7 +134,6 @@ class ChildFactoryBindingResolver(
                         lambda.valueParameters.forEach {
                             putValueArgument(it.index, irGet(it))
                         }
-                        putValueArgument(moduleFunction.valueParameters.lastIndex, irNull())
                     }
                 )
                 val expr: FactoryExpression = { irGet(moduleVariable) }

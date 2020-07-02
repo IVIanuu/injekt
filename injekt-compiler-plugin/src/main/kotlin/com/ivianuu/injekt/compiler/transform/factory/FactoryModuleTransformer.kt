@@ -20,11 +20,14 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.addToFileOrAbove
+import com.ivianuu.injekt.compiler.addToParentOrAbove
+import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.ir.copyBodyTo
+import org.jetbrains.kotlin.backend.common.ir.copyParameterDeclarationsFrom
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.copyValueParametersToStatic
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -81,29 +84,34 @@ class FactoryModuleTransformer(
                 returnType = irBuiltIns.unitType
                 visibility = factoryFunction.visibility
                 isInline = factoryFunction.isInline
+                origin = factoryFunction.origin
             }.apply {
+                parent = factoryFunction.parent
                 annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
                     .noArgSingleConstructorCall(symbols.module)
 
-                addMetadataIfNotLocal()
-
-                copyTypeParametersFrom(factoryFunction)
-                copyValueParametersToStatic(factoryFunction, IrDeclarationOrigin.DEFINED)
+                copyParameterDeclarationsFrom(factoryFunction)
 
                 body = factoryFunction.copyBodyTo(this)
-                (body as IrBlockBody).statements.removeAt(body!!.statements.lastIndex)
+                (body as? IrBlockBody)?.statements?.removeAt(body!!.statements.lastIndex)
             }
-            moduleFunction.addToFileOrAbove(factoryFunction)
-            factoryFunction.body = irBlockBody {
-                +irCall(moduleFunction).apply {
-                    factoryFunction.typeParameters.forEach {
-                        putTypeArgument(it.index, it.defaultType)
+            if (!factoryFunction.isExternalDeclaration()) {
+                moduleFunction.addToParentOrAbove(factoryFunction)
+                factoryFunction.body = irBlockBody {
+                    +irCall(moduleFunction).apply {
+                        factoryFunction.typeParameters.forEach {
+                            putTypeArgument(it.index, it.defaultType)
+                        }
+                        dispatchReceiver =
+                            factoryFunction.dispatchReceiverParameter?.let { irGet(it) }
+                        extensionReceiver =
+                            factoryFunction.extensionReceiverParameter?.let { irGet(it) }
+                        factoryFunction.valueParameters.forEachIndexed { index, valueParameter ->
+                            putValueArgument(index, irGet(valueParameter))
+                        }
                     }
-                    factoryFunction.allParameters.forEachIndexed { index, valueParameter ->
-                        putValueArgument(index, irGet(valueParameter))
-                    }
+                    +factoryFunction.body!!.statements.last()
                 }
-                +factoryFunction.body!!.statements.last()
             }
             modulesByFactories[factoryFunction] = moduleFunction
             moduleFunction

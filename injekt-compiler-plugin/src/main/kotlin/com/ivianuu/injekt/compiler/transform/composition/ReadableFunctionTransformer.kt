@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.remapTypeParameters
@@ -34,15 +35,14 @@ import com.ivianuu.injekt.compiler.typeWith
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.allParameters
-import org.jetbrains.kotlin.backend.common.ir.copyBodyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrElement
@@ -51,7 +51,6 @@ import org.jetbrains.kotlin.ir.builders.createTmpVariable
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
-import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -68,7 +67,6 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
-import org.jetbrains.kotlin.ir.descriptors.WrappedSimpleFunctionDescriptor
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
@@ -77,7 +75,6 @@ import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.IrValueSymbol
-import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
@@ -86,7 +83,6 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
-import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
@@ -98,6 +94,7 @@ import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
@@ -109,7 +106,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ReadableFunctionTransformer(
     pluginContext: IrPluginContext
-) : AbstractFunctionTransformer(pluginContext, TransformOrder.BottomUp) {
+) : AbstractFunctionTransformer(pluginContext) {
 
     fun getContextForFunction(readable: IrFunction): IrClass =
         transformFunctionIfNeeded(readable).valueParameters.last().type.classOrNull!!.owner
@@ -142,9 +139,10 @@ class ReadableFunctionTransformer(
         transformedFunctions
             .filterNot { it.key.isExternalDeclaration() }
             .forEach {
-                it.value.file.addChild(
-                    it.value.valueParameters.last().type.classOrNull!!.owner
-                )
+                val contextClass = it.value.valueParameters.last().type.classOrNull!!.owner
+                if (contextClass !in it.value.file.declarations) {
+                    it.value.file.addChild(contextClass)
+                }
             }
 
         return declaration
@@ -154,70 +152,36 @@ class ReadableFunctionTransformer(
         function.isReadable(pluginContext.bindingContext)
 
     override fun transform(function: IrFunction, callback: (IrFunction) -> Unit) {
-        val transformedFunction = IrFunctionImpl(
-            function.startOffset,
-            function.endOffset,
-            function.origin,
-            IrSimpleFunctionSymbolImpl(
-                WrappedSimpleFunctionDescriptor(
-                    function.descriptor.annotations,
-                    function.descriptor.source
-                )
-            ),
-            InjektNameConventions.getTransformedReadableFunctionNameForReadable(
-                function.getPackageFragment()!!.fqName,
-                function
-            ),
-            if (function.visibility == Visibilities.LOCAL) Visibilities.LOCAL
-            else Visibilities.PUBLIC,
-            function.descriptor.modality,
-            irBuiltIns.unitType,
-            function.isInline,
-            false,
-            function.descriptor.isTailrec,
-            function.isSuspend,
-            function.descriptor.isOperator,
-            function.isExpect,
-            false
-        ).apply {
-            (symbol.descriptor as WrappedSimpleFunctionDescriptor).bind(this)
-            if (function.visibility == Visibilities.LOCAL) parent = function.parent
-            else function.file
-            addMetadataIfNotLocal()
-
+        val transformedFunction = function.copy().apply {
+            callback(this)
             overriddenSymbols += (function as IrFunctionImpl).overriddenSymbols.map {
                 transformFunctionIfNeeded(it.owner).symbol as IrSimpleFunctionSymbol
             }
-
-            annotations = function.annotations.map { it.deepCopyWithSymbols() }
-            if (function.visibility != Visibilities.LOCAL) {
-                annotations += DeclarationIrBuilder(pluginContext, symbol).run {
-                    irCall(symbols.astName.constructors.single()).apply {
-                        putValueArgument(0, irString(function.descriptor.fqNameSafe.asString()))
-                    }
-                }
-            }
-
-            copyTypeParametersFrom(function)
-
-            valueParameters = function.allParameters.mapIndexed { index, valueParameter ->
-                val defaultExpr = valueParameter.defaultValue?.expression
-                val isGiven = defaultExpr is IrCall && defaultExpr.symbol.descriptor
-                    .fqNameSafe.asString() == "com.ivianuu.injekt.composition.given"
-                valueParameter.copyTo(
-                    this,
-                    index = index,
-                    type = if (isGiven) irBuiltIns.anyNType else valueParameter.type
-                        .remapTypeParameters(function, this)
-                )
-            }
-
-            body = function.copyBodyTo(this)
         }
 
-        transformedFunction.returnType = function.returnType
-            .remapTypeParameters(function, transformedFunction)
-        callback(transformedFunction)
+        if (function.valueParameters.any { it.name.asString() == "readable_context" }) {
+            return
+        }
+
+        val parametersMap = transformedFunction.valueParameters.associateWith { valueParameter ->
+            val defaultExpr = valueParameter.defaultValue?.expression
+            val isGiven = defaultExpr is IrCall && defaultExpr.symbol.descriptor
+                .fqNameSafe.asString() == "com.ivianuu.injekt.composition.given"
+            valueParameter.copyTo(
+                transformedFunction,
+                index = valueParameter.index,
+                type = if (isGiven) irBuiltIns.anyNType else valueParameter.type
+            )
+        }
+        transformedFunction.valueParameters = parametersMap.values.toList()
+
+        transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitGetValue(expression: IrGetValue): IrExpression {
+                return parametersMap[expression.symbol.owner]
+                    ?.let { DeclarationIrBuilder(pluginContext, it.symbol).irGet(it) }
+                    ?: super.visitGetValue(expression)
+            }
+        })
 
         val thisParameters = transformedFunction.valueParameters
             .filter { valueParameter ->
@@ -243,6 +207,14 @@ class ReadableFunctionTransformer(
             createImplicitParameterDeclarationWithWrappedDescriptor()
             addMetadataIfNotLocal()
             copyTypeParametersFrom(transformedFunction)
+            annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+                irCall(symbols.astName.constructors.single()).apply {
+                    putValueArgument(
+                        0,
+                        irString(transformedFunction.descriptor.fqNameSafe.asString())
+                    )
+                }
+            }
         }
 
         val originalTypeByValueParameter = thisParameters.associateWith {
@@ -347,7 +319,6 @@ class ReadableFunctionTransformer(
                 }
                 call.getReadableLambdas()
                     .forEach { expr ->
-                        expr as IrFunctionExpression
                         val transformedLambda = transformFunctionIfNeeded(expr.function)
                         val lambdaContext = getContextForFunction(transformedLambda)
                         handleSubcontext(lambdaContext, expr, emptyList())
@@ -581,12 +552,18 @@ class ReadableFunctionTransformer(
     }
 
     override fun transformExternal(function: IrFunction, callback: (IrFunction) -> Unit) {
-        callback(
+        val transformedFunction = function.copy()
+        callback(transformedFunction)
+
+        if (transformedFunction.valueParameters.any { it.name.asString() == "readable_context" }) {
+            return
+        }
+
+        val contextClass =
             moduleFragment.descriptor.getPackage(function.getPackageFragment()!!.fqName)
                 .memberScope
                 .getContributedDescriptors()
-                .filterIsInstance<FunctionDescriptor>()
-                .filter { it.hasAnnotation(InjektFqNames.Readable) }
+                .filterIsInstance<ClassDescriptor>()
                 .filter { it.hasAnnotation(InjektFqNames.AstName) }
                 .single {
                     it.annotations.findAnnotation(InjektFqNames.AstName)!!
@@ -594,12 +571,13 @@ class ReadableFunctionTransformer(
                         .let { it as StringValue }
                         .value == function.descriptor.fqNameSafe.asString()
                 }
-                .let {
-                    pluginContext.referenceFunctions(it.fqNameSafe)
-                        .single()
-                        .owner
-                }
+                .let { pluginContext.referenceClass(it.fqNameSafe)!!.owner }
+
+        transformedFunction.addValueParameter(
+            "readable_context",
+            contextClass.typeWith(transformedFunction.typeParameters.map { it.defaultType })
         )
     }
 
 }
+

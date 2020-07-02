@@ -47,30 +47,25 @@ fun factory(): TestCompositionComponent {
 }
 
 @Readable
-fun createFoo(foo: Foo = given()): Foo {
+fun func(foo: Foo = given()): Foo {
     return foo
 }
 
-fun <R> nonReadable(block: () -> R) = block()
+@Readable
+fun other() {
+}
 
 @Readable
-fun <R> readable(block: @Readable () -> R) = block()
+fun <R> withFoo(block: @Readable (Foo) -> R): R = block(func())
 
 fun invoke(): Foo {
     initializeCompositions()
     val component =
         compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
     return component.runReading {
-        nonReadable {
-            readable {
-                nonReadable {
-                    readable {
-                        nonReadable {
-                            createFoo()
-                        }
-                    }
-                }
-            }
+        withFoo {
+            other()
+            it
         }
     }
 }

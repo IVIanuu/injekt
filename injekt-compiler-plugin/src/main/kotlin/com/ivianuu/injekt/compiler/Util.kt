@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -468,6 +469,40 @@ fun IrDeclaration.addToFileOrAbove(other: IrDeclarationWithVisibility) {
     if (other.visibility != Visibilities.LOCAL) {
         parent = other.file
         other.file.addChild(this)
+    } else {
+        parent = other.parent
+        var block: IrStatementContainer? = null
+        other.file.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitBlockBody(body: IrBlockBody): IrBody {
+                if (body.statements.any { it === other }) {
+                    block = body
+                }
+                return super.visitBlockBody(body)
+            }
+
+            override fun visitBlock(expression: IrBlock): IrExpression {
+                if (expression.statements.any { it === other }) {
+                    block = expression
+                }
+                return super.visitBlock(expression)
+            }
+        })
+
+        if (block != null) {
+            val index = block!!.statements.indexOf(other)
+            block!!.statements.add(index, this)
+        } else {
+            error(
+                "${dumpSrc()} has a corrupt parent\n${other.dumpSrc()} ours is \n ${parent.dumpSrc()}"
+            )
+        }
+    }
+}
+
+fun IrDeclaration.addToParentOrAbove(other: IrDeclarationWithVisibility) {
+    if (other.visibility != Visibilities.LOCAL) {
+        parent = other.parent
+        (other.parent as IrDeclarationContainer).addChild(this)
     } else {
         parent = other.parent
         var block: IrStatementContainer? = null

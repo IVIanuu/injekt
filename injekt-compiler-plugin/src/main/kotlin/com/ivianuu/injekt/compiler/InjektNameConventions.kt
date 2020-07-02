@@ -35,20 +35,6 @@ object InjektNameConventions {
         moduleFqName: FqName
     ): Name = getJoinedName(packageFqName, moduleFqName.child("CompositionMetadata"))
 
-    fun getTransformedModuleFunctionNameForModule(
-        packageFqName: FqName,
-        moduleFqName: FqName
-    ): Name = getJoinedName(packageFqName, moduleFqName)
-
-    fun getTransformedReadableFunctionNameForReadable(
-        packageFqName: FqName,
-        readable: IrFunction
-    ): Name = getNameAtSourcePositionWithSuffix(
-        packageFqName,
-        readable,
-        "Impl"
-    )
-
     fun getContextClassNameForReadableFunction(
         packageFqName: FqName,
         readable: IrFunction
@@ -128,12 +114,7 @@ object InjektNameConventions {
 
     fun getModuleNameForFactoryFunction(
         factoryFunction: IrFunction
-    ): Name {
-        return getUniqueNameForFunctionWithSuffix(
-            factoryFunction,
-            "FactoryModule"
-        )
-    }
+    ): Name = (factoryFunction.name.asString() + "_Module").asNameId()
 
     fun nameWithoutIllegalChars(name: String): Name = name
         .replace(".", "")

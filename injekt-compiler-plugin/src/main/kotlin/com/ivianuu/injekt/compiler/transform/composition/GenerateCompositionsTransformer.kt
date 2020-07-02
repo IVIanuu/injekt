@@ -140,7 +140,7 @@ class GenerateCompositionsTransformer(
                         }
                 }
                 .filter {
-                    (it.hasAnnotation(InjektFqNames.Module) && it.valueParameters.lastOrNull()?.name?.asString() == "moduleMarker") ||
+                    it.hasAnnotation(InjektFqNames.Module) ||
                             it.hasAnnotation(InjektFqNames.CompositionFactory)
                 }
                 .flatMap { functionDescriptor ->
