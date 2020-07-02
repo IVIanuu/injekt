@@ -510,4 +510,36 @@ class ReadableTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
+    @Test
+    fun testMultiCompileReadableProperty() = multiCodegen(
+        listOf(
+            source(
+                """
+                @CompositionFactory 
+                fun factory(): TestCompositionComponent {
+                    transient { Foo() }
+                    return create() 
+                }
+        
+                @Readable
+                val foo: Foo get() = get()
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                fun invoke(): Foo { 
+                    initializeCompositions()
+                    val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+                    return component.runReading { foo }
+                }
+                """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        assertTrue(it.last().invokeSingleFile() is Foo)
+    }
+
 }
