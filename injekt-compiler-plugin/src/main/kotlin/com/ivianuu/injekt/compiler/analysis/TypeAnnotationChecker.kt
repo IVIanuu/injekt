@@ -150,6 +150,7 @@ class TypeAnnotationChecker : AdditionalTypeChecker {
         if (expression is KtLambdaExpression) {
             val expectedType = c.expectedType
             if (expectedType === TypeUtils.NO_EXPECTED_TYPE) return
+            if (expectedType === TypeUtils.UNIT_EXPECTED_TYPE) return
             val expectedTypeAnnotations =
                 expectedType.getAnnotatedAnnotations(
                     InjektFqNames.TypeAnnotation,
