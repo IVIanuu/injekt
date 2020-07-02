@@ -19,6 +19,7 @@ package com.ivianuu.injekt.android
 import androidx.compose.plugins.kotlin.ComposeComponentRegistrar
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.ui.test.createComposeRule
+import com.ivianuu.injekt.compiler.InjektComponentRegistrar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
@@ -75,8 +76,7 @@ interface TestCompositionComponent
         }
     """,
         config = {
-            val other = compilerPlugins.toList()
-            compilerPlugins = listOf(ComposeComponentRegistrar()) + other
+            compilerPlugins = listOf(InjektComponentRegistrar(), ComposeComponentRegistrar())
         }
     ) {
         assertOk()

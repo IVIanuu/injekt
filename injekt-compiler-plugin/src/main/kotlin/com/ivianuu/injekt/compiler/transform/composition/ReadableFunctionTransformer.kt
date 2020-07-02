@@ -67,6 +67,8 @@ import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrVariable
+import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
+import org.jetbrains.kotlin.ir.descriptors.WrappedSimpleFunctionDescriptor
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
@@ -74,6 +76,7 @@ import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrValueSymbol
+import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
@@ -150,17 +153,33 @@ class ReadableFunctionTransformer(
         function.isReadable(pluginContext.bindingContext)
 
     override fun transform(function: IrFunction, callback: (IrFunction) -> Unit) {
-        val transformedFunction = buildFun {
-            name = InjektNameConventions.getTransformedReadableFunctionNameForReadable(
+        val transformedFunction = IrFunctionImpl(
+            function.startOffset,
+            function.endOffset,
+            function.origin,
+            IrSimpleFunctionSymbolImpl(
+                WrappedSimpleFunctionDescriptor(
+                    function.descriptor.annotations,
+                    function.descriptor.source
+                )
+            ),
+            InjektNameConventions.getTransformedReadableFunctionNameForReadable(
                 function.getPackageFragment()!!.fqName,
                 function
-            )
-            isInline = function.isInline
-            isSuspend = function.isSuspend
-            if (function.visibility == Visibilities.LOCAL) visibility = Visibilities.LOCAL
-            else Visibilities.PUBLIC
-            origin = function.origin
-        }.apply {
+            ),
+            if (function.visibility == Visibilities.LOCAL) Visibilities.LOCAL
+            else Visibilities.PUBLIC,
+            function.descriptor.modality,
+            irBuiltIns.unitType,
+            function.isInline,
+            false,
+            function.descriptor.isTailrec,
+            function.isSuspend,
+            function.descriptor.isOperator,
+            function.isExpect,
+            false
+        ).apply {
+            (symbol.descriptor as WrappedSimpleFunctionDescriptor).bind(this)
             if (function.visibility == Visibilities.LOCAL) parent = function.parent
             else function.file
             addMetadataIfNotLocal()
@@ -190,6 +209,7 @@ class ReadableFunctionTransformer(
 
             body = function.copyBodyTo(this)
         }
+
         transformedFunction.returnType = function.returnType
             .remapTypeParameters(function, transformedFunction)
         callback(transformedFunction)

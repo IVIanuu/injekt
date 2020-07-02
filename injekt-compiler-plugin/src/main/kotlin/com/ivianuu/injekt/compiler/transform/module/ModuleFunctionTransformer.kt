@@ -54,10 +54,13 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrVariable
+import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
+import org.jetbrains.kotlin.ir.descriptors.WrappedSimpleFunctionDescriptor
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
+import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
@@ -67,6 +70,7 @@ import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -97,13 +101,32 @@ class ModuleFunctionTransformer(
         function.hasAnnotation(InjektFqNames.Module)
 
     override fun transform(function: IrFunction, callback: (IrFunction) -> Unit) {
-        val transformedFunction = buildFun {
-            name = InjektNameConventions.getTransformedModuleFunctionNameForModule(
+        val transformedFunction = IrFunctionImpl(
+            function.startOffset,
+            function.endOffset,
+            function.origin,
+            IrSimpleFunctionSymbolImpl(
+                WrappedSimpleFunctionDescriptor(
+                    annotations = function.descriptor.annotations,
+                    sourceElement = function.descriptor.source
+                )
+            ),
+            InjektNameConventions.getTransformedModuleFunctionNameForModule(
                 function.getPackageFragment()!!.fqName,
                 function.descriptor.fqNameSafe
-            )
-            isInline = function.isInline
-        }.apply {
+            ),
+            Visibilities.PUBLIC,
+            function.descriptor.modality,
+            irBuiltIns.unitType,
+            function.isInline,
+            function.isExternal,
+            function.descriptor.isTailrec,
+            function.isSuspend,
+            function.descriptor.isOperator,
+            function.isExpect,
+            false
+        ).apply {
+            (symbol.descriptor as WrappedSimpleFunctionDescriptor).bind(this)
             parent = function.file
             addMetadataIfNotLocal()
 
