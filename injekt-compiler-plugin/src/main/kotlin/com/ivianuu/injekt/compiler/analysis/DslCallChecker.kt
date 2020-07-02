@@ -34,7 +34,7 @@ class DslCallChecker : CallChecker {
     ) {
         val resulting = resolvedCall.resultingDescriptor
         if (resulting.fqNameSafe !in InjektFqNames.ModuleDslNames) return
-        val enclosingInjektDslFunction = findEnclosingFunctionContext(context) {
+        val enclosingInjektDslFunction = findDirectEnclosingFunctionContext(context) {
             it.hasAnnotation(InjektFqNames.Module) ||
                     it.hasAnnotation(InjektFqNames.Factory) ||
                     it.hasAnnotation(InjektFqNames.ChildFactory) ||

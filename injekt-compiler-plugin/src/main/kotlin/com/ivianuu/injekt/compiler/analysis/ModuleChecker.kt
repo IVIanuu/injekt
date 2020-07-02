@@ -113,7 +113,7 @@ class ModuleChecker : CallChecker, DeclarationChecker {
                 )
             }
 
-            val enclosingModule = findEnclosingFunctionContext(context) {
+            val enclosingModule = findDirectEnclosingFunctionContext(context) {
                 it.hasAnnotation(InjektFqNames.Module)
             }
 
@@ -147,7 +147,7 @@ class ModuleChecker : CallChecker, DeclarationChecker {
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
-        val enclosingInjektDslFunction = findEnclosingFunctionContext(context) {
+        val enclosingInjektDslFunction = findDirectEnclosingFunctionContext(context) {
             it.hasAnnotation(InjektFqNames.Module) ||
                     it.hasAnnotation(InjektFqNames.Factory) ||
                     it.hasAnnotation(InjektFqNames.ChildFactory) ||

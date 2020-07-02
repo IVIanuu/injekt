@@ -39,7 +39,7 @@ interface InjektErrors {
 
         @JvmField
         val FORBIDDEN_READABLE_INVOCATION = error(
-            "Only @Readable functions can invoke @Readable functions"
+            "@Readable functions can only be invoked inside a enclosing @Readable function"
         )
 
         @JvmField

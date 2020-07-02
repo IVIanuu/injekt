@@ -154,7 +154,7 @@ class FactoryChecker : CallChecker, DeclarationChecker {
                 )
             }
 
-            val enclosingCompositionFactory = findEnclosingFunctionContext(context) {
+            val enclosingCompositionFactory = findDirectEnclosingFunctionContext(context) {
                 it.hasAnnotation(InjektFqNames.CompositionFactory)
             }
 
@@ -184,7 +184,7 @@ class FactoryChecker : CallChecker, DeclarationChecker {
             }
             "com.ivianuu.injekt.create" -> {
                 checkCreateInvocation(resolvedCall, reportOn, context)
-                val enclosingFactory = findEnclosingFunctionContext(context) {
+                val enclosingFactory = findDirectEnclosingFunctionContext(context) {
                     it.hasAnnotation(InjektFqNames.Factory)
                 }
                 if (enclosingFactory != null) {
@@ -258,7 +258,7 @@ class FactoryChecker : CallChecker, DeclarationChecker {
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
-        val enclosingModuleFunction = findEnclosingFunctionContext(context) {
+        val enclosingModuleFunction = findDirectEnclosingFunctionContext(context) {
             it.hasAnnotation(InjektFqNames.Factory) ||
                     it.hasAnnotation(InjektFqNames.ChildFactory) ||
                     it.hasAnnotation(InjektFqNames.CompositionFactory) ||

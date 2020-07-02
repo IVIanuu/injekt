@@ -101,6 +101,22 @@ abstract class AbstractFunctionTransformer(
 
         declaration.rewriteTransformedFunctionRefs()
 
+        transformedFunctions.forEach { (original, transformed) ->
+            if (!original.isExternalDeclaration() && original != transformed) {
+                original.valueParameters
+                    .filter { it.defaultValue != null }
+                    .forEach {
+                        it.defaultValue =
+                            InjektDeclarationIrBuilder(pluginContext, original.symbol).run {
+                                builder.irExprBody(irInjektIntrinsicUnit())
+                            }
+                    }
+                original.body = InjektDeclarationIrBuilder(pluginContext, original.symbol).run {
+                    builder.irExprBody(irInjektIntrinsicUnit())
+                }
+            }
+        }
+
         return super.visitModuleFragment(declaration)
     }
 
@@ -172,13 +188,6 @@ abstract class AbstractFunctionTransformer(
 
         if (!needsTransform(function)) return function
 
-        return transformFunction(function)
-    }
-
-    protected fun transformFunction(function: IrFunction): IrFunction {
-        transformedFunctions[function]?.let { return it }
-        if (function in transformedFunctions.values) return function
-
         originalTransformedFunctions += function
 
         val callback: (IrFunction) -> Unit = {
@@ -188,23 +197,7 @@ abstract class AbstractFunctionTransformer(
         if (function.isExternalDeclaration())
             transformExternal(function, callback) else transform(function, callback)
 
-        val transformedFunction = transformedFunctions.getValue(function)
-
-        if (!function.isExternalDeclaration() && function != transformedFunction) {
-            function.valueParameters
-                .filter { it.defaultValue != null }
-                .forEach {
-                    it.defaultValue =
-                        InjektDeclarationIrBuilder(pluginContext, function.symbol).run {
-                            builder.irExprBody(irInjektIntrinsicUnit())
-                        }
-                }
-            function.body = InjektDeclarationIrBuilder(pluginContext, function.symbol).run {
-                builder.irExprBody(irInjektIntrinsicUnit())
-            }
-        }
-
-        return transformedFunction
+        return transformedFunctions.getValue(function)
     }
 
     protected open fun isTransformedFunction(function: IrFunction): Boolean =

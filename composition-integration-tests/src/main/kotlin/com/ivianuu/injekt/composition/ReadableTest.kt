@@ -62,6 +62,23 @@ class ReadableTest {
         }
 
     @Test
+    fun testNestedReadableInvocationInReadableAllowed() =
+        codegen(
+            """
+            @Readable fun a() {}
+            fun b(block: () -> Unit) = block()
+            @Readable
+            fun c() {
+                b {
+                    a()
+                }
+            }
+        """
+        ) {
+            assertOk()
+        }
+
+    @Test
     fun testOpenReadableFails() = codegen(
         """
         open class MyClass {
@@ -126,6 +143,45 @@ class ReadableTest {
                 withFoo {
                     other()
                     it
+                }
+            }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testNestedReadable() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            transient { Foo() }
+            return create() 
+        }
+        
+        @Readable
+        fun createFoo(foo: Foo = given()): Foo {
+            return foo
+        }
+        
+        fun <R> nonReadable(block: () -> R) = block()
+        
+        @Readable
+        fun <R> readable(block: @Readable () -> R) = block()
+        
+        fun invoke(): Foo {
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReading {
+                nonReadable { 
+                    readable { 
+                        nonReadable { 
+                            readable {
+                                createFoo()
+                            }
+                        }
+                    }
                 }
             }
         }

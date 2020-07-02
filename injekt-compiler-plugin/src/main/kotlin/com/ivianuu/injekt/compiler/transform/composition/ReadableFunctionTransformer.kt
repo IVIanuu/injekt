@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.remapTypeParameters
@@ -29,8 +28,6 @@ import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import com.ivianuu.injekt.compiler.transform.AbstractFunctionTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
-import com.ivianuu.injekt.compiler.transform.factory.BindingRequest
-import com.ivianuu.injekt.compiler.transform.factory.asKey
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.typeWith
@@ -42,11 +39,14 @@ import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.backend.common.pop
+import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrElement
+import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.createTmpVariable
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
@@ -66,7 +66,6 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -109,7 +108,7 @@ class ReadableFunctionTransformer(
 ) : AbstractFunctionTransformer(pluginContext, TransformOrder.BottomUp) {
 
     fun getContextForFunction(readable: IrFunction): IrClass =
-        transformFunction(readable).valueParameters.last().type.classOrNull!!.owner
+        transformFunctionIfNeeded(readable).valueParameters.last().type.classOrNull!!.owner
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         super.visitModuleFragment(declaration)
@@ -242,9 +241,20 @@ class ReadableFunctionTransformer(
         val readableCalls = mutableListOf<IrCall>()
 
         transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
+
+            private val functionStack = mutableListOf<IrFunction>(transformedFunction)
+
+            override fun visitFunction(declaration: IrFunction): IrStatement {
+                val isReadable = declaration.isReadable(pluginContext.bindingContext)
+                if (isReadable) functionStack.push(declaration)
+                return super.visitFunction(declaration)
+                    .also { if (isReadable) functionStack.pop() }
+            }
+
             override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol.owner.isReadable(pluginContext.bindingContext) ||
-                    expression.isReadableLambdaInvoke()
+                if (functionStack.last() == transformedFunction &&
+                    (expression.symbol.owner.isReadable(pluginContext.bindingContext) ||
+                            expression.isReadableLambdaInvoke())
                 ) {
                     readableCalls += expression
                 }
@@ -304,25 +314,16 @@ class ReadableFunctionTransformer(
             }
         }
 
-        val lambdasByReadableCall = readableCalls.associateWith { call ->
-            call.getArgumentsWithIr()
-                .filter { (valueParameter, expr) ->
-                    (valueParameter.type.isFunction() || valueParameter.type.isSuspendFunction()) &&
-                            valueParameter.type.hasAnnotation(InjektFqNames.Readable) &&
-                            expr is IrFunctionExpression
-                }
-        }
-
         readableCalls
             .forEach { call ->
                 if (!call.isReadableLambdaInvoke()) {
                     val callContext = getContextForFunction(call.symbol.owner)
                     handleSubcontext(callContext, call, call.typeArguments)
                 }
-                lambdasByReadableCall.getValue(call)
-                    .forEach { (_, expr) ->
+                call.getReadableLambdas()
+                    .forEach { expr ->
                         expr as IrFunctionExpression
-                        val transformedLambda = transformFunction(expr.function)
+                        val transformedLambda = transformFunctionIfNeeded(expr.function)
                         val lambdaContext = getContextForFunction(transformedLambda)
                         handleSubcontext(lambdaContext, expr, emptyList())
                     }
@@ -371,9 +372,40 @@ class ReadableFunctionTransformer(
                     ?.let { DeclarationIrBuilder(pluginContext, it.symbol).irGet(it) }
                     ?: super.visitGetValue(expression)
             }
+        })
+
+        rewriteReadableCalls(transformedFunction, genericFunctionMap)
+    }
+
+    private fun IrCall.getReadableLambdas(): List<IrFunctionExpression> {
+        return getArgumentsWithIr()
+            .filter { (valueParameter, expr) ->
+                (valueParameter.type.isFunction() || valueParameter.type.isSuspendFunction()) &&
+                        valueParameter.type.hasAnnotation(InjektFqNames.Readable) &&
+                        expr is IrFunctionExpression
+            }
+            .map { it.second as IrFunctionExpression }
+    }
+
+    private fun rewriteReadableCalls(
+        function: IrFunction,
+        genericFunctionMap: List<Pair<IrFunction, IrFunction>>
+    ) {
+        function.rewriteTransformedFunctionRefs()
+
+        function.transformChildrenVoid(object : IrElementTransformerVoid() {
+            private val functionStack = mutableListOf(function)
+
+            override fun visitFunction(declaration: IrFunction): IrStatement {
+                val isReadable = declaration.isReadable(pluginContext.bindingContext)
+                if (isReadable) functionStack.push(declaration)
+                return super.visitFunction(declaration)
+                    .also { if (isReadable) functionStack.pop() }
+            }
 
             override fun visitCall(expression: IrCall): IrExpression {
                 val result = super.visitCall(expression) as IrCall
+                if (functionStack.last() != function) return result
                 if (!result.symbol.owner.isReadable(pluginContext.bindingContext) &&
                     !result.isReadableLambdaInvoke()
                 ) return result
@@ -395,7 +427,10 @@ class ReadableFunctionTransformer(
                             }
                         ).apply {
                             copyTypeAndValueArgumentsFrom(result)
-                            putValueArgument(valueArgumentsCount - 1, irGet(contextValueParameter))
+                            putValueArgument(
+                                valueArgumentsCount - 1,
+                                irGet(function.valueParameters.last())
+                            )
                         }
                     }
                 }
@@ -413,16 +448,16 @@ class ReadableFunctionTransformer(
                                     name = Name.special("<context>")
                                     visibility = Visibilities.LOCAL
                                 }.apply clazz@{
-                                    parent = transformedFunction
+                                    parent = function
                                     createImplicitParameterDeclarationWithWrappedDescriptor()
 
                                     superTypes += calleeContext.defaultType
                                         .typeWith(*transformedCall.typeArguments.toTypedArray())
 
-                                    lambdasByReadableCall.getValue(expression)
-                                        .forEach { (_, expr) ->
-                                            expr as IrFunctionExpression
-                                            val transformedLambda = transformFunction(expr.function)
+                                    result.getReadableLambdas()
+                                        .forEach { expr ->
+                                            val transformedLambda =
+                                                transformFunctionIfNeeded(expr.function)
                                             superTypes += getContextForFunction(transformedLambda)
                                                 .defaultType
                                         }
@@ -439,10 +474,14 @@ class ReadableFunctionTransformer(
                                         }
                                     }
 
+                                    val implementedSuperTypes = mutableSetOf<IrType>()
+
                                     fun implementFunctions(
                                         superClass: IrClass,
                                         typeArguments: List<IrType>
                                     ) {
+                                        if (superClass.defaultType in implementedSuperTypes) return
+                                        implementedSuperTypes += superClass.defaultType
                                         for (declaration in superClass.declarations.toList()) {
                                             if (declaration !is IrFunction) continue
                                             if (declaration is IrConstructor) continue
@@ -477,7 +516,7 @@ class ReadableFunctionTransformer(
                                                         }?.second?.symbol ?: declaration.symbol
                                                     ).apply {
                                                         dispatchReceiver =
-                                                            irGet(contextValueParameter)
+                                                            irGet(function.valueParameters.last())
                                                     }
                                                 )
                                             }
@@ -503,7 +542,7 @@ class ReadableFunctionTransformer(
                                 +irCall(contextImpl.constructors.single())
                             }
                         } else {
-                            irGet(contextValueParameter)
+                            irGet(function.valueParameters.last())
                         }
                     }
 
