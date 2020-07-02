@@ -26,7 +26,7 @@ import com.ivianuu.injekt.android.work.BindWorker
 class TestWorker(
     context: @Assisted Context,
     workerParams: @Assisted WorkerParameters,
-    private val repo: Repo
+    repo: Repo
 ) : Worker(context, workerParams) {
     init {
         println("hello $context $workerParams $repo")

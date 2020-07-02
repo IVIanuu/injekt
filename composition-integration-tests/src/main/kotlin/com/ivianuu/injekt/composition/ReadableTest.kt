@@ -448,23 +448,37 @@ class ReadableTest {
         listOf(
             source(
                 """
-                @CompositionFactory 
-                fun factory(): TestCompositionComponent {
-                    transient { Foo() }
-                    return create() 
+                    @CompositionFactory 
+                    fun factory(): TestCompositionComponent {
+                        transient { Foo() }
+                        return create() 
+                    }
+        
+                    @Readable
+                    fun <R> withBar(block: @Readable (Bar) -> R): R = block(bar()) 
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                lateinit var component: TestCompositionComponent
+                
+                fun getFoo() = component.runReading {
+                    withBar {
+                        foo()
+                    }
                 }
-        
-                @Readable
-                fun <R> withBar(block: @Readable (Bar) -> R): R = block(bar())
-        
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
                 fun invoke(): Foo {
                     initializeCompositions()
-                    val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-                    return component.runReading {
-                        withBar {
-                            foo()
-                        }
-                    }
+                    component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+                    return getFoo()
                 }
                 """,
                 name = "File.kt"
