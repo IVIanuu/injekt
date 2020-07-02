@@ -45,6 +45,8 @@ dependencies {
 
     implementation(project(":injekt-android"))
 
+    implementation(Deps.AndroidX.Ui.test)
+
     implementation(project(":test-util"))
     kapt(project(":test-util"))
 }

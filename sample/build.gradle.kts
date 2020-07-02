@@ -33,4 +33,8 @@ dependencies {
     implementation(project(":injekt-core"))
     implementation(project(":injekt-common"))
     kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
+
+    implementation(Deps.AndroidX.Compose.runtime)
+    kotlinCompilerPluginClasspath(Deps.AndroidX.Compose.compiler)
+    implementation(Deps.AndroidX.Ui.material)
 }

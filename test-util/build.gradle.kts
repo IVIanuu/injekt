@@ -35,9 +35,6 @@ dependencies {
 
     api(Deps.Kotlin.compilerEmbeddable)
 
-    implementation(Deps.AndroidX.Compose.runtimeDesktop)
-    implementation(Deps.AndroidX.Compose.compiler)
-
     api(Deps.junit)
     api(Deps.AndroidX.Test.core)
     api(Deps.AndroidX.Test.junit)

@@ -17,13 +17,73 @@
 package com.ivianuu.injekt.android
 
 import androidx.compose.plugins.kotlin.ComposeComponentRegistrar
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.ui.test.createComposeRule
+import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
+import junit.framework.Assert
+import junit.framework.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 
 class ComposeTest {
+
+    @Test
+    fun testComposableReadableLambda() = codegen(
+        """
+            @CompositionComponent
+interface TestCompositionComponent
+
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            transient { Foo() }
+            return create() 
+        }
+        
+        @Readable 
+        @androidx.compose.Composable
+        fun func(foo: Foo = given()): Foo {
+            androidx.compose.currentComposer
+            return foo
+        }
+        
+        @Readable 
+        @androidx.compose.Composable
+        fun other() { 
+            androidx.compose.currentComposer
+        }
+        
+        @Readable
+        @androidx.compose.Composable
+        fun <R> withFoo(block: @Readable @androidx.compose.Composable (Foo) -> R): R = block(func())
+
+        @androidx.compose.Composable
+        fun cool(): Foo {
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReading {
+                    withFoo {
+                        other()
+                        it
+                    }
+                }
+        }
+    """,
+        config = {
+            val other = compilerPlugins.toList()
+            compilerPlugins = listOf(ComposeComponentRegistrar()) + other
+        }
+    ) {
+        assertOk()
+        /*composeTestRule.setContent {
+            assertTrue(invokeSingleFile() is Foo)
+        }*/
+    }
 
     @Test
     fun testGetInComposableWithCompilingAfterCompose() =
