@@ -20,6 +20,7 @@ import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import com.ivianuu.injekt.ApplicationComponent
+import com.ivianuu.injekt.ApplicationScoped
 import com.ivianuu.injekt.ChildFactory
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Scope
@@ -52,7 +53,7 @@ fun BroadcastReceiver.newReceiverComponent(
 
 @CompositionFactory
 fun createReceiverComponent(instance: BroadcastReceiver): ReceiverComponent {
-    parent<ApplicationComponent>()
+    parent<ApplicationScoped>()
     scope<ReceiverScoped>()
     instance(instance)
     return create()
