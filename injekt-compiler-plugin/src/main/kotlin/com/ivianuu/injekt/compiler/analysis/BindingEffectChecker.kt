@@ -125,7 +125,7 @@ class BindingEffectChecker : DeclarationChecker {
                     descriptor.module
                 ) &&
                 (descriptor.hasAnnotation(InjektFqNames.Transient) ||
-                        descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope, descriptor.module))
+                        descriptor.hasAnnotation(InjektFqNames.Scoped))
             ) {
                 context.trace.report(
                     InjektErrors.BINDING_ADAPTER_WITH_TRANSIENT_OR_SCOPED
@@ -142,7 +142,7 @@ class BindingEffectChecker : DeclarationChecker {
                     descriptor.module
                 ) &&
                 !descriptor.hasAnnotation(InjektFqNames.Transient) &&
-                !descriptor.hasAnnotatedAnnotations(InjektFqNames.Scope, descriptor.module)
+                !descriptor.hasAnnotation(InjektFqNames.Scoped)
             ) {
                 context.trace.report(
                     InjektErrors.BINDING_EFFECT_WITHOUT_TRANSIENT_OR_SCOPED

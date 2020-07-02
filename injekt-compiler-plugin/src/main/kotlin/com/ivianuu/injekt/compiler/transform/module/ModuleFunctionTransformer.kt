@@ -165,8 +165,7 @@ class ModuleFunctionTransformer(
             moduleClass,
             pluginContext,
             declarationStore,
-            nameProvider,
-            symbols
+            nameProvider
         )
         val variableByDeclaration = mutableMapOf<ModuleDeclaration, IrVariable>()
 

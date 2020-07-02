@@ -81,7 +81,7 @@ object InjektFqNames {
 
     val Qualifier = InjektPackage.child("Qualifier")
 
-    val Scope = InjektPackage.child("Scope")
+    val Scoped = InjektPackage.child("Scoped")
 
     val SetDsl = InjektPackage.child("SetDsl")
     val SetOfValueFactory = InternalPackage.child("SetOfValueFactory")
@@ -92,8 +92,6 @@ object InjektFqNames {
     val Transient = InjektPackage.child("Transient")
 
     val TypeAnnotation = InternalPackage.child("TypeAnnotation")
-
-    val Uninitialized = InternalPackage.child("Uninitialized")
 
     val ModuleDslNames = listOf(
         InjektPackage.child("map"),

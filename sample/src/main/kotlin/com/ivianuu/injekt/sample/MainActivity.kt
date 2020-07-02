@@ -26,6 +26,8 @@ import androidx.ui.core.setContent
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.ivianuu.injekt.Provider
+import com.ivianuu.injekt.Scoped
+import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.ActivityViewModel
 import com.ivianuu.injekt.android.ForActivity
 import com.ivianuu.injekt.android.activityComponent
@@ -41,6 +43,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             activityComponent.runReading {
+                get<ActivityScopedStuff>()
                 WithMainViewModel {
                     GlobalScope.launch {
                         enqueueWork()
@@ -50,6 +53,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
+
+@Scoped<ActivityComponent>
+class ActivityScopedStuff
 
 @Readable
 @Composable

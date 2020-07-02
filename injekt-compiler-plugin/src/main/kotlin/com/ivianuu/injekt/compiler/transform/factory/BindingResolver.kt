@@ -20,8 +20,8 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.MapKey
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.findPropertyGetter
-import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
+import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
 import com.ivianuu.injekt.compiler.getFunctionParameterTypes
 import com.ivianuu.injekt.compiler.getFunctionReturnType
 import com.ivianuu.injekt.compiler.getFunctionType
@@ -31,7 +31,6 @@ import com.ivianuu.injekt.compiler.isNoArgProvider
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
-import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.typeWith
@@ -53,6 +52,7 @@ import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.getClass
+import org.jetbrains.kotlin.ir.types.isNothing
 import org.jetbrains.kotlin.ir.types.superTypes
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
@@ -65,7 +65,6 @@ import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 typealias BindingResolver = (Key) -> List<BindingNode>
 
@@ -142,6 +141,11 @@ class ChildFactoryBindingResolver(
                 origin = fqName,
                 parent = parentFactory,
                 superType = superType,
+                scope = function.getClassFromSingleValueAnnotationOrNull(
+                    InjektFqNames.AstScope, parentFactory.pluginContext
+                )
+                    ?.defaultType
+                    ?: function.returnType,
                 factoryModuleAccessor = moduleAccessor,
                 moduleClass = moduleClass,
                 pluginContext = parentFactory.pluginContext,
@@ -374,7 +378,6 @@ class ModuleBindingResolver(
 
 class AnnotatedClassBindingResolver(
     private val pluginContext: IrPluginContext,
-    private val declarationStore: InjektDeclarationStore,
     private val factory: FactoryImpl
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): List<BindingNode> {
@@ -384,15 +387,9 @@ class AnnotatedClassBindingResolver(
 
             val constructor = clazz.getInjectConstructor()
 
-            val scopeAnnotation = clazz.descriptor.getAnnotatedAnnotations(
-                InjektFqNames.Scope,
-                clazz.descriptor.module
-            ).singleOrNull()
-                ?: constructor?.descriptor?.getAnnotatedAnnotations(
-                    InjektFqNames.Scope,
-                    clazz.descriptor.module
-                )
-                    ?.singleOrNull()
+            val scopeAnnotation =
+                clazz.descriptor.annotations.findAnnotation(InjektFqNames.Scoped)
+                    ?: constructor?.descriptor?.annotations?.findAnnotation(InjektFqNames.Scoped)
 
             if (scopeAnnotation == null &&
                 !clazz.hasAnnotation(InjektFqNames.Transient) &&
@@ -448,7 +445,8 @@ class AnnotatedClassBindingResolver(
                 AssistedProvisionBindingNode(
                     key = requestedKey,
                     dependencies = dependencies,
-                    targetScope = scopeAnnotation?.fqName,
+                    targetScope = if (scopeAnnotation != null) pluginContext.typeTranslator
+                        .translateType(scopeAnnotation.type.arguments.single().type) else null,
                     scoped = scoped,
                     module = null,
                     createExpression = newInstanceExpression(
@@ -469,16 +467,9 @@ class AnnotatedClassBindingResolver(
                     it.type.hasAnnotation(InjektFqNames.Assisted)
                 } == true) return emptyList()
 
-            val scopeAnnotation = clazz.descriptor.getAnnotatedAnnotations(
-                InjektFqNames.Scope,
-                clazz.descriptor.module
-            )
-                .singleOrNull()
-                ?: constructor?.descriptor?.getAnnotatedAnnotations(
-                    InjektFqNames.Scope,
-                    clazz.descriptor.module
-                )
-                    ?.singleOrNull()
+            val scopeAnnotation = clazz.descriptor.annotations.findAnnotation(
+                InjektFqNames.Scoped
+            ) ?: constructor?.descriptor?.annotations?.findAnnotation(InjektFqNames.Scoped)
 
             if (scopeAnnotation == null &&
                 !clazz.hasAnnotation(InjektFqNames.Transient) &&
@@ -523,7 +514,8 @@ class AnnotatedClassBindingResolver(
                 ProvisionBindingNode(
                     key = requestedKey,
                     dependencies = dependencies,
-                    targetScope = scopeAnnotation?.fqName,
+                    targetScope = if (scopeAnnotation != null) pluginContext.typeTranslator
+                        .translateType(scopeAnnotation.type.arguments.single().type) else null,
                     scoped = scoped,
                     module = null,
                     createExpression = newInstanceExpression(
@@ -657,7 +649,7 @@ class MapBindingResolver(
 
 class SetBindingResolver(
     private val pluginContext: IrPluginContext,
-    private val factoryImplementation: FactoryImpl,
+    private val factory: FactoryImpl,
     private val parent: SetBindingResolver?
 ) : BindingResolver {
 
@@ -696,7 +688,7 @@ class SetBindingResolver(
                 listOf(
                     SetBindingNode(
                         setKey,
-                        factoryImplementation,
+                        factory,
                         set.origin,
                         set.elements
                     ),
@@ -736,7 +728,7 @@ class SetBindingResolver(
             )
             .withAnnotations(setKey.type.annotations)
             .asKey(),
-        factoryImplementation,
+        factory,
         set.origin,
         set.elements
     )
@@ -762,19 +754,19 @@ class NoArgProviderBindingResolver(
 }
 
 class FactoryImplementationBindingResolver(
-    private val factoryImplementationNode: FactoryImplementationNode
+    private val factoryNode: FactoryNode
 ) : BindingResolver {
     private val factorySuperClassKey =
-        factoryImplementationNode.key.type.classOrNull!!.superTypes().single()
+        factoryNode.key.type.classOrNull!!.superTypes().single()
             .asKey()
 
     override fun invoke(requestedKey: Key): List<BindingNode> {
         if (requestedKey != factorySuperClassKey &&
-            requestedKey != factoryImplementationNode.key
+            requestedKey != factoryNode.key
         ) return emptyList()
         return listOf(
             FactoryImplementationBindingNode(
-                factoryImplementationNode
+                factoryNode
             )
         )
     }

@@ -236,7 +236,7 @@ class MapTest {
     fun testSingleEntryMap() = codegen(
         """
         @Factory
-        fun invoke(): TestComponent1<Map<KClass<out Command>, Command>> {
+        fun factory(): TestComponent1<Map<KClass<out Command>, Command>> {
             transient { CommandA() }
             map<KClass<out Command>, Command> {
                 put<CommandA>(CommandA::class)

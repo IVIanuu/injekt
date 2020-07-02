@@ -20,10 +20,8 @@ import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import com.ivianuu.injekt.ApplicationComponent
-import com.ivianuu.injekt.ApplicationScoped
 import com.ivianuu.injekt.ChildFactory
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.composition.CompositionComponent
 import com.ivianuu.injekt.composition.CompositionFactory
 import com.ivianuu.injekt.composition.get
@@ -31,10 +29,6 @@ import com.ivianuu.injekt.composition.parent
 import com.ivianuu.injekt.composition.runReading
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.instance
-import com.ivianuu.injekt.scope
-
-@Scope
-annotation class ReceiverScoped
 
 @Target(AnnotationTarget.TYPE)
 @Qualifier
@@ -54,7 +48,6 @@ fun BroadcastReceiver.newReceiverComponent(
 @CompositionFactory
 fun createReceiverComponent(instance: BroadcastReceiver): ReceiverComponent {
     parent<ApplicationComponent>()
-    scope<ReceiverScoped>()
     instance(instance)
     return create()
 }

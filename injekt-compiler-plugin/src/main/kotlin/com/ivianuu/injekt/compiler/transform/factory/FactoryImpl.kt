@@ -64,6 +64,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class FactoryImpl(
     val origin: FqName,
     val superType: IrType,
+    val scope: IrType,
     val parent: FactoryImpl?,
     val factoryFunction: IrFunction,
     val moduleClass: IrClass,
@@ -82,9 +83,9 @@ class FactoryImpl(
         superTypes += superType
     }
 
-    val factoryImplementationNode = FactoryImplementationNode(
+    val factoryNode = FactoryNode(
         key = clazz.defaultType.asKey(),
-        factoryImpl = this,
+        factory = this,
         accessor = { error("") }
     )
 
@@ -116,7 +117,6 @@ class FactoryImpl(
                         accessor = factoryModuleAccessor,
                         typeParametersMap = emptyMap()
                     ),
-                    declarationStore = declarationStore,
                     symbols = symbols
                 )
 

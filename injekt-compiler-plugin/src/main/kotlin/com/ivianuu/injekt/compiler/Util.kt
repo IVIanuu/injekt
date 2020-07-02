@@ -381,14 +381,6 @@ val IrMemberAccessExpression.typeArguments: List<IrType>
     get() =
         (0 until typeArgumentsCount).map { getTypeArgument(it)!! }
 
-fun <T> T.getClassFromSingleValueAnnotationOrNull(
-    fqName: FqName,
-    pluginContext: IrPluginContext
-): IrClass? where T : IrDeclaration, T : IrAnnotationContainer {
-    if (!hasAnnotation(fqName)) return null
-    return getClassFromSingleValueAnnotation(fqName, pluginContext)
-}
-
 fun <T> T.getClassesFromSingleArrayValueAnnotation(
     fqName: FqName,
     pluginContext: IrPluginContext
@@ -431,6 +423,23 @@ fun <T> T.getClassFromSingleValueAnnotation(
         ?: error("Cannot get class value for $fqName for ${dump()}")
 }
 
+fun <T> T.getClassFromSingleValueAnnotationOrNull(
+    fqName: FqName,
+    pluginContext: IrPluginContext
+): IrClass? where T : IrDeclaration, T : IrAnnotationContainer {
+    return getAnnotation(fqName)
+        ?.getValueArgument(0)
+        ?.let { it as IrClassReferenceImpl }
+        ?.classType
+        ?.getClass()
+        ?: descriptor.annotations.findAnnotation(fqName)
+            ?.allValueArguments
+            ?.values
+            ?.singleOrNull()
+            ?.let { it as KClassValue }
+            ?.getIrClass(pluginContext)
+}
+
 fun KClassValue.getIrClass(
     pluginContext: IrPluginContext
 ): IrClass {
@@ -451,7 +460,7 @@ fun IrClass.getInjectConstructor(): IrConstructor? {
     constructors
         .firstOrNull {
             it.hasAnnotation(InjektFqNames.Transient) ||
-                    it.hasAnnotatedAnnotations(InjektFqNames.Scope)
+                    it.hasAnnotation(InjektFqNames.Scoped)
         }?.let { return it }
     return constructors.singleOrNull()
 }

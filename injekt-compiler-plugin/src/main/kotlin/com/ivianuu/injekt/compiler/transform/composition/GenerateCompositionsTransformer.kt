@@ -72,6 +72,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
+import org.jetbrains.kotlin.ir.types.classifierOrFail
 
 class GenerateCompositionsTransformer(
     pluginContext: IrPluginContext,
@@ -315,8 +316,9 @@ class GenerateCompositionsTransformer(
         returnType = factoryType.owner.defaultType
     }.apply {
         annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
-            .noArgSingleConstructorCall(
-                if (childFactory) symbols.childFactory else symbols.factory
+            .singleClassArgConstructorCall(
+                if (childFactory) symbols.childFactory else symbols.factory,
+                compositionType.classifierOrFail
             )
 
         addMetadataIfNotLocal()

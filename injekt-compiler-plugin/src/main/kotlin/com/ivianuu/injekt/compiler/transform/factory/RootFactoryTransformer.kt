@@ -17,6 +17,8 @@
 package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
+import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
@@ -34,6 +36,8 @@ import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.types.isNothing
+import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -83,10 +87,17 @@ class RootFactoryTransformer(
                         expr
                     }
 
-                    val implFactory = FactoryImpl(
+                    val factory = FactoryImpl(
                         origin = function.descriptor.fqNameSafe,
                         parent = null,
                         superType = function.returnType,
+                        scope = function.getClassFromSingleValueAnnotationOrNull(
+                            InjektFqNames.Factory,
+                            pluginContext
+                        )
+                            ?.defaultType
+                            ?.takeUnless { it.isNothing() }
+                            ?: function.returnType,
                         moduleClass = moduleClass,
                         factoryFunction = function,
                         factoryModuleAccessor = moduleAccessor,
@@ -95,7 +106,7 @@ class RootFactoryTransformer(
                         declarationStore = declarationStore
                     )
 
-                    +irReturn(implFactory.getImplExpression())
+                    +irReturn(factory.getImplExpression())
                 }
             }
         }

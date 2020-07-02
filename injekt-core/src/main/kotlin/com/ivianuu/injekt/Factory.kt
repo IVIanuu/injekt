@@ -16,8 +16,10 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
 @Target(AnnotationTarget.FUNCTION)
-annotation class Factory
+annotation class Factory(val scope: KClass<*> = Nothing::class)
 
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.TYPE)
-annotation class ChildFactory
+annotation class ChildFactory(val scope: KClass<*> = Nothing::class)

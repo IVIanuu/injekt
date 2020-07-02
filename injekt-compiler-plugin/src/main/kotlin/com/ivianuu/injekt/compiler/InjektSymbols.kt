@@ -87,9 +87,4 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val singleInstanceFactory = pluginContext.referenceClass(InjektFqNames.SingleInstanceFactory)!!
 
     val transient = pluginContext.referenceClass(InjektFqNames.Transient)!!
-
-    val uninitialized = pluginContext.referenceClass(InjektFqNames.Uninitialized)!!
-
-    fun getPackage(fqName: FqName): PackageViewDescriptor =
-        pluginContext.moduleDescriptor.getPackage(fqName)
 }

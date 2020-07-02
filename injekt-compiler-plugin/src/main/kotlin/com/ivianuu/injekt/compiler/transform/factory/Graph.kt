@@ -38,6 +38,7 @@ import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -46,23 +47,22 @@ import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.constants.IntValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.constants.LongValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class Graph(
     val parent: Graph?,
     val factory: FactoryImpl,
     context: IrPluginContext,
     factoryModule: ModuleNode?,
-    declarationStore: InjektDeclarationStore,
     val symbols: InjektSymbols
 ) {
-
-    private val scopes = mutableSetOf<FqName>()
 
     private val explicitBindingResolvers = mutableListOf<BindingResolver>()
     private val implicitBindingResolvers = mutableListOf<BindingResolver>()
@@ -87,14 +87,11 @@ class Graph(
         implicitBindingResolvers += NoArgProviderBindingResolver(factory)
         implicitBindingResolvers += mapBindingResolver
         implicitBindingResolvers += setBindingResolver
-        if (factory is FactoryImpl) {
-            implicitBindingResolvers += FactoryImplementationBindingResolver(
-                factory.factoryImplementationNode
-            )
-        }
+        implicitBindingResolvers += FactoryImplementationBindingResolver(
+            factory.factoryNode
+        )
         implicitBindingResolvers += AnnotatedClassBindingResolver(
             context,
-            declarationStore,
             factory
         )
     }
@@ -119,11 +116,11 @@ class Graph(
         if (binding == null) {
             val implicitBindings = implicitBindingResolvers.flatMap { it(request.key) }
             binding = implicitBindings.singleOrNull()
-            if (binding?.targetScope != null && binding.targetScope !in scopes) {
+            if (binding?.targetScope != null && binding.targetScope != factory.scope) {
                 if (parent == null) {
                     error(
                         "Scope mismatch binding '${binding.key}' " +
-                                "with scope '${binding.targetScope}' is not compatible with this component '${factory.origin}' scopes [$scopes]"
+                                "with scope '${binding.targetScope?.render()}' is not compatible with this component ${factory.scope.render()} '${factory.origin}'"
                     )
                 } else {
                     binding = null
@@ -182,10 +179,6 @@ class Graph(
         } as IrClass
 
         val functions = descriptor.functions.toList()
-
-        functions
-            .filter { it.hasAnnotation(InjektFqNames.AstScope) }
-            .forEach { addScope(it.returnType.getClass()!!.fqNameForIrSerialization) }
 
         functions
             .filter { it.hasAnnotation(InjektFqNames.AstDependency) }
@@ -378,10 +371,6 @@ class Graph(
                 )
             )
         }
-    }
-
-    private fun addScope(scope: FqName) {
-        scopes += scope
     }
 
     private fun addExplicitBindingResolver(bindingResolver: BindingResolver) {

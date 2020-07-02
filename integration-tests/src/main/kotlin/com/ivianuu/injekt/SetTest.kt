@@ -165,7 +165,7 @@ class SetTest {
     fun testSetOfAssistedProviderProvider() = codegen(
         """
         @Factory
-        fun invoke(): TestComponent1<@Provider () -> Set<@Provider (String) -> Command>> {
+        fun factory(): TestComponent1<@Provider () -> Set<@Provider (String) -> Command>> {
             transient { arg: @Assisted String -> CommandA() }
             transient { arg: @Assisted String -> CommandB() }
             transient { arg: @Assisted String -> CommandC() }
@@ -176,6 +176,8 @@ class SetTest {
             }
             return create()
         }
+        
+        fun invoke() = factory().a
          """
     ) {
         val set =

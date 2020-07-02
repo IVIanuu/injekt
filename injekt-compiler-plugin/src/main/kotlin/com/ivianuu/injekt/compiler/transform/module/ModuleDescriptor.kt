@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.name.Name
@@ -63,7 +64,6 @@ class ModuleDescriptor(
     fun addDeclarations(moduleDeclarations: List<ModuleDeclaration>) {
         moduleDeclarations.forEach { declaration ->
             when (declaration) {
-                is ScopeDeclaration -> addScopeFunction(declaration)
                 is DependencyDeclaration -> addDependencyFunction(declaration)
                 is ChildFactoryDeclaration -> addChildFactoryFunction(declaration)
                 is AliasDeclaration -> addAliasFunction(declaration)
@@ -74,20 +74,6 @@ class ModuleDescriptor(
                 is SetDeclaration -> addSetFunction(declaration)
                 is SetElementDeclaration -> addSetElementFunction(declaration)
             }.let { }
-        }
-    }
-
-    private fun addScopeFunction(declaration: ScopeDeclaration) {
-        clazz.addFunction(
-            name = nameProvider.allocateForType(declaration.scopeType).asString(),
-            returnType = declaration.scopeType
-                .remapTypeParameters(originalModuleFunction, moduleFunction)
-                .remapTypeParameters(moduleFunction, clazz),
-            modality = Modality.ABSTRACT
-        ).apply {
-            addMetadataIfNotLocal()
-            annotations += InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
-                .noArgSingleConstructorCall(symbols.astScope)
         }
     }
 
@@ -129,6 +115,13 @@ class ModuleDescriptor(
                         irString(declaration.factoryRef.symbol.descriptor.fqNameSafe.asString())
                     )
                 }
+            }
+            if (declaration.scope != null) {
+                annotations += InjektDeclarationIrBuilder(pluginContext, clazz.symbol)
+                    .singleClassArgConstructorCall(
+                        symbols.astScope,
+                        declaration.scope.classOrNull!!
+                    )
             }
 
             declaration.factoryRef.symbol.owner.valueParameters.forEach { valueParameter ->

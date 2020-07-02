@@ -83,11 +83,6 @@ interface InjektErrors {
         )
 
         @JvmField
-        val NOT_A_SCOPE = error(
-            "Scopes must be itself annotated with @Scope"
-        )
-
-        @JvmField
         val NOT_A_CHILD_FACTORY = error(
             "Not a @ChildFactory function"
         )
@@ -225,11 +220,6 @@ interface InjektErrors {
         @JvmField
         val TRANSIENT_WITH_SCOPED = error(
             "@Transient cannot be combined with @Scope annotated annotations"
-        )
-
-        @JvmField
-        val MULTIPLE_SCOPES = error(
-            "A class may be only annotated with 1 @Scope class"
         )
 
         @JvmField

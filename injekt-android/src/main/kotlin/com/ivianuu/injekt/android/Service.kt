@@ -22,7 +22,6 @@ import android.content.res.Resources
 import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.ChildFactory
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.composition.CompositionComponent
 import com.ivianuu.injekt.composition.CompositionFactory
@@ -31,11 +30,7 @@ import com.ivianuu.injekt.composition.parent
 import com.ivianuu.injekt.composition.runReading
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.instance
-import com.ivianuu.injekt.scope
 import com.ivianuu.injekt.transient
-
-@Scope
-annotation class ServiceScoped
 
 @Target(AnnotationTarget.TYPE)
 @Qualifier
@@ -53,7 +48,6 @@ fun Service.newServiceComponent(): ServiceComponent {
 @CompositionFactory
 fun createServiceComponent(instance: Service): ServiceComponent {
     parent<ApplicationComponent>()
-    scope<ServiceScoped>()
     instance(instance)
     alias<Service, @ForService Context>()
     transient<@ForService Resources> { service: Service ->

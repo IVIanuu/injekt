@@ -23,14 +23,12 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.ivianuu.injekt.ApplicationComponent
-import com.ivianuu.injekt.ApplicationScoped
 import com.ivianuu.injekt.ForApplication
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.composition.CompositionFactory
 import com.ivianuu.injekt.composition.compositionFactoryOf
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.instance
-import com.ivianuu.injekt.scope
 import com.ivianuu.injekt.transient
 import kotlinx.coroutines.CoroutineScope
 
@@ -43,7 +41,6 @@ val Application.applicationComponent: ApplicationComponent
 
 @CompositionFactory
 fun createApplicationComponent(instance: Application): ApplicationComponent {
-    scope<ApplicationScoped>()
     instance(instance)
     alias<Application, @ForApplication Context>()
     transient<@ForApplication Resources> { app: Application ->

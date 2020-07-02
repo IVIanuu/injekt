@@ -73,15 +73,6 @@ class AnnotatedBindingTest {
     }
 
     @Test
-    fun testTransientWithScopesFails() = codegen(
-        """
-        @Transient @TestScope2 class Dep
-    """
-    ) {
-        assertCompileError("transient")
-    }
-
-    @Test
     fun testClassAndConstructorAnnotationFails() = codegen(
         """
          @Transient class Dep @Transient constructor()  

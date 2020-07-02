@@ -27,7 +27,7 @@ import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
-class ImplFactoryTest {
+class FactoryTest {
 
     @Test
     fun testTransient() = codegen(
@@ -435,6 +435,38 @@ class ImplFactoryTest {
                 return create()
             }
             return factory()
+        }
+    """
+    )
+
+    @Test
+    fun testChangedScopeNameForFactory() = codegen(
+        """
+        @Scoped<Any> class Dep
+
+        @Factory(Any::class)
+        fun factory(): TestComponent1<Foo> {
+            scoped { Foo() }
+            return create()
+        }
+    """
+    )
+
+    @Test
+    fun testChangedScopeNameForChildFactory() = codegen(
+        """
+        @Scoped<Any> class Dep
+
+        @ChildFactory(Any::class)
+        fun child(): TestComponent1<Dep> {
+            return create()
+        }
+        
+        @Factory
+        fun parent(): TestComponent1<Foo> {
+            transient<Foo>()
+            childFactory(::child)
+            return create()
         }
     """
     )

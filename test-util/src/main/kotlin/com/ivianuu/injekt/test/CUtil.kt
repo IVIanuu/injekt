@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.test
 
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.compiler.InjektComponentRegistrar
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
@@ -184,12 +183,6 @@ interface TestComponent3<A, B, C> {
     val b: B
     val c: C
 }
-
-@Scope
-annotation class TestScope
-
-@Scope
-annotation class TestScope2
 
 @Target(AnnotationTarget.TYPE)
 @Qualifier

@@ -77,8 +77,8 @@ class ModuleNode(
     }
 }
 
-class FactoryImplementationNode(
-    val factoryImpl: FactoryImpl,
+class FactoryNode(
+    val factory: FactoryImpl,
     override val key: Key,
     override val accessor: FactoryExpression
 ) : RequirementNode
@@ -137,7 +137,7 @@ enum class RequestType {
 sealed class BindingNode(
     val key: Key,
     val dependencies: List<BindingRequest>,
-    val targetScope: FqName?,
+    val targetScope: IrType?,
     val scoped: Boolean,
     val module: ModuleNode?,
     val owner: FactoryImpl,
@@ -147,7 +147,7 @@ sealed class BindingNode(
 class AssistedProvisionBindingNode(
     key: Key,
     dependencies: List<BindingRequest>,
-    targetScope: FqName?,
+    targetScope: IrType?,
     scoped: Boolean,
     module: ModuleNode?,
     owner: FactoryImpl,
@@ -194,15 +194,15 @@ class DependencyBindingNode(
 ) : BindingNode(key, emptyList(), null, false, null, owner, origin)
 
 class FactoryImplementationBindingNode(
-    val factoryImplementationNode: FactoryImplementationNode,
+    val factoryNode: FactoryNode,
 ) : BindingNode(
-    factoryImplementationNode.key,
+    factoryNode.key,
     emptyList(),
     null,
     false,
     null,
-    factoryImplementationNode.factoryImpl,
-    factoryImplementationNode.key.type.getClass()!!.fqNameForIrSerialization
+    factoryNode.factory,
+    factoryNode.key.type.getClass()!!.fqNameForIrSerialization
 )
 
 class InstanceBindingNode(
@@ -258,7 +258,7 @@ class ProviderBindingNode(
 class ProvisionBindingNode(
     key: Key,
     dependencies: List<BindingRequest>,
-    targetScope: FqName?,
+    targetScope: IrType?,
     scoped: Boolean,
     module: ModuleNode?,
     owner: FactoryImpl,

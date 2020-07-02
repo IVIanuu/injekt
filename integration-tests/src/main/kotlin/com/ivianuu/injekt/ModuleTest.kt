@@ -28,7 +28,6 @@ class ModuleTest {
         """
         @Module
         fun module(dependency: Any) {
-            scope<TestScope>()
             dependency(dependency)
             set<Any>()
             map<String, Any>()

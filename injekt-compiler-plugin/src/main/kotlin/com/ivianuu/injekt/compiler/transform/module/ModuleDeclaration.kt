@@ -27,8 +27,6 @@ sealed class ModuleDeclaration(
     val initializer: IrExpression?
 )
 
-class ScopeDeclaration(val scopeType: IrType) : ModuleDeclaration(null, null)
-
 class DependencyDeclaration(
     val dependencyType: IrType,
     path: Path,
@@ -37,7 +35,8 @@ class DependencyDeclaration(
 
 class ChildFactoryDeclaration(
     val factoryRef: IrFunctionReference,
-    val factoryModuleClass: IrClass?
+    val factoryModuleClass: IrClass?,
+    val scope: IrType?
 ) : ModuleDeclaration(null, null)
 
 class AliasDeclaration(

@@ -36,6 +36,8 @@ object InjektAst {
 
     annotation class Binding
 
+    annotation class Scope(val value: KClass<*>)
+
     annotation class Alias
 
     annotation class Instance
@@ -45,8 +47,6 @@ object InjektAst {
     annotation class Name(val name: String)
 
     annotation class Parents(val values: Array<KClass<*>>)
-
-    annotation class Scope
 
     annotation class Scoped
 

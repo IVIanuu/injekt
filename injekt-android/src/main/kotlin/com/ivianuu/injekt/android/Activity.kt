@@ -24,7 +24,6 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.ChildFactory
 import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.Scope
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.composition.CompositionComponent
 import com.ivianuu.injekt.composition.CompositionFactory
@@ -33,11 +32,7 @@ import com.ivianuu.injekt.composition.parent
 import com.ivianuu.injekt.composition.runReading
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.instance
-import com.ivianuu.injekt.scope
 import com.ivianuu.injekt.transient
-
-@Scope
-annotation class ActivityScoped
 
 @Target(AnnotationTarget.TYPE)
 @Qualifier
@@ -56,7 +51,6 @@ val ComponentActivity.activityComponent: ActivityComponent
 @CompositionFactory
 fun createActivityComponent(instance: ComponentActivity): ActivityComponent {
     parent<RetainedActivityComponent>()
-    scope<ActivityScoped>()
     instance(instance)
     alias<ComponentActivity, @ForActivity Context>()
     transient<@ForActivity Resources> { activity: ComponentActivity ->

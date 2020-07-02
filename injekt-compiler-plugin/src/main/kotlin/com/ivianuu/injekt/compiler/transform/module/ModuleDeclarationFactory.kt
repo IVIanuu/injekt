@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.Path
 import com.ivianuu.injekt.compiler.PropertyPath
 import com.ivianuu.injekt.compiler.TypeParameterPath
 import com.ivianuu.injekt.compiler.dumpSrc
+import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.remapTypeParameters
@@ -47,6 +48,7 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
@@ -63,8 +65,7 @@ class ModuleDeclarationFactory(
     private val moduleClass: IrClass,
     private val pluginContext: IrPluginContext,
     private val declarationStore: InjektDeclarationStore,
-    private val nameProvider: NameProvider,
-    private val symbols: InjektSymbols
+    private val nameProvider: NameProvider
 ) {
 
     fun createDeclarations(
@@ -74,8 +75,6 @@ class ModuleDeclarationFactory(
         val calleeFqName = callee.descriptor.fqNameSafe.asString()
 
         return when {
-            calleeFqName == "com.ivianuu.injekt.scope" ->
-                listOf(createScopeDeclaration(call))
             calleeFqName == "com.ivianuu.injekt.dependency" ->
                 listOf(createDependencyDeclaration(call))
             calleeFqName == "com.ivianuu.injekt.childFactory" ->
@@ -106,9 +105,6 @@ class ModuleDeclarationFactory(
         }
     }
 
-    private fun createScopeDeclaration(call: IrCall): ScopeDeclaration =
-        ScopeDeclaration(call.getTypeArgument(0)!!)
-
     private fun createDependencyDeclaration(call: IrCall): DependencyDeclaration {
         val dependencyType = call.getTypeArgument(0)!!
             .remapTypeParameters(moduleFunction, moduleClass)
@@ -130,7 +126,11 @@ class ModuleDeclarationFactory(
         val factoryModuleClass = declarationStore.getModuleClassForFunction(
             declarationStore.getModuleFunctionForFactory(factoryRef.symbol.owner)
         )
-        return ChildFactoryDeclaration(factoryRef, factoryModuleClass)
+        val scope = factoryRef.symbol.owner.getClassFromSingleValueAnnotationOrNull(
+            InjektFqNames.ChildFactory,
+            pluginContext
+        )?.defaultType
+        return ChildFactoryDeclaration(factoryRef, factoryModuleClass, scope)
     }
 
     private fun createAliasDeclaration(call: IrCall): AliasDeclaration =

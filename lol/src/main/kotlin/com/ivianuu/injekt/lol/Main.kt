@@ -15,7 +15,3 @@
  */
 
 package com.ivianuu.injekt.lol
-
-fun main() {
-    invoke()
-}

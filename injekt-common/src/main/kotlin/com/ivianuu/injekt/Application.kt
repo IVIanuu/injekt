@@ -18,9 +18,6 @@ package com.ivianuu.injekt
 
 import com.ivianuu.injekt.composition.CompositionComponent
 
-@Scope
-annotation class ApplicationScoped
-
 @Target(AnnotationTarget.TYPE)
 @Qualifier
 annotation class ForApplication

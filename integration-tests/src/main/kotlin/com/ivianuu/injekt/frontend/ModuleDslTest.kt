@@ -228,30 +228,6 @@ class ModuleDslTest {
         }
 
     @Test
-    fun testSupportedScope() = codegen(
-        """
-        @Module
-        fun test() { 
-            scope<TestScope>()
-        }
-    """
-    ) {
-        assertOk()
-    }
-
-    @Test
-    fun testUnsupportedScope() = codegen(
-        """
-        @Module
-        fun test() {
-            scope<Any>()
-        }
-    """
-    ) {
-        assertCompileError("@Scope")
-    }
-
-    @Test
     fun testModuleCannotBeSuspend() = codegen(
         """
         @Module

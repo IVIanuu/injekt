@@ -404,7 +404,7 @@ class BindingEffectTest {
             }
         }
         
-        @TestScope
+        @Scoped<TestCompositionComponent>
         @MyBindingEffect
         class MyClass
     """
