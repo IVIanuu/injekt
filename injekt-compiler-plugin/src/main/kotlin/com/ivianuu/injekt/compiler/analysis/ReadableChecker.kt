@@ -24,16 +24,13 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
-import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.resolve.calls.callUtil.isCallableReference
 import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
 import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 
 class ReadableChecker(
@@ -108,11 +105,10 @@ class ReadableChecker(
                 InjektFqNames.Readable
             )
         ) return
-        checkInvocations(resolvedCall, reportOn, context)
+        checkInvocations(reportOn, context)
     }
 
     private fun checkInvocations(
-        resolvedCall: ResolvedCall<*>,
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
@@ -120,29 +116,10 @@ class ReadableChecker(
             typeAnnotationChecker.hasTypeAnnotation(context.trace, it, InjektFqNames.Readable)
         }
 
-        when {
-            enclosingReadableFunction != null -> {
-                if (context.scope.parentsWithSelf.any {
-                        it.isScopeForDefaultParameterValuesOf(
-                            enclosingReadableFunction
-                        )
-                    }) {
-                    context.trace.report(
-                        Errors.UNSUPPORTED.on(
-                            reportOn,
-                            "@Readable function calls in a context of default parameter value"
-                        )
-                    )
-                }
-            }
-            resolvedCall.call.isCallableReference() -> {
-                // do nothing: we can get callable reference to suspend function outside suspend context
-            }
-            else -> {
-                context.trace.report(
-                    InjektErrors.FORBIDDEN_READABLE_INVOCATION.on(reportOn)
-                )
-            }
+        if (enclosingReadableFunction == null) {
+            context.trace.report(
+                InjektErrors.FORBIDDEN_READABLE_INVOCATION.on(reportOn)
+            )
         }
     }
 }
