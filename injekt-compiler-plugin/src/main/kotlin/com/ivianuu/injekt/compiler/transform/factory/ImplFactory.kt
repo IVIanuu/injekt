@@ -167,7 +167,6 @@ class ImplFactory(
                                 binding.key,
                                 requestingKey = null,
                                 request.requestOrigin,
-                                false, // todo add default support
                                 RequestType.Instance
                             )
                         )
@@ -192,8 +191,7 @@ class ImplFactory(
                             )
                             .asKey(),
                         requestingKey = null,
-                        declaration.descriptor.fqNameSafe,
-                        false // todo add default value support
+                        declaration.descriptor.fqNameSafe
                     )
                 }
 

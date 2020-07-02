@@ -259,8 +259,7 @@ class InjektDeclarationIrBuilder(
     data class FactoryParameter(
         val name: String,
         val type: IrType,
-        val assisted: Boolean,
-        val hasDefault: Boolean
+        val assisted: Boolean
     )
 
     class FieldWithGetter(
@@ -314,15 +313,14 @@ class InjektDeclarationIrBuilder(
             FactoryParameter(
                 name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
                 type = valueParameter.type,
-                assisted = valueParameter.type.hasAnnotation(InjektFqNames.Assisted),
-                hasDefault = valueParameter.hasDefaultValue()
+                assisted = valueParameter.type.hasAnnotation(InjektFqNames.Assisted)
             )
         } ?: emptyList()
 
         return factoryLambda(
             constructorParameters,
             clazz.defaultType
-        ) { lambda, parametersMap ->
+        ) { _, parametersMap ->
             if (clazz.kind == ClassKind.OBJECT) {
                 irGetObject(clazz.symbol)
             } else {

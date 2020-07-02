@@ -85,7 +85,6 @@ class FactoryExpressions(
                             binding.key,
                             request.requestingKey,
                             binding.origin,
-                            request.hasDefault,
                             RequestType.Provider
                         )
                     )
@@ -96,7 +95,6 @@ class FactoryExpressions(
                                 binding.key,
                                 request.requestingKey,
                                 binding.origin,
-                                request.hasDefault,
                                 RequestType.Provider
                             )
                         )
@@ -109,7 +107,6 @@ class FactoryExpressions(
                             binding
                         )
                         is ChildFactoryBindingNode -> instanceExpressionForChildFactory(binding)
-                        is DefaultValueBindingNode -> DefaultValueFactoryExpression
                         is DelegateBindingNode -> instanceExpressionForDelegate(binding)
                         is DependencyBindingNode -> instanceExpressionForDependency(binding)
                         is FactoryImplementationBindingNode -> instanceExpressionForFactoryImplementation(
@@ -121,11 +118,7 @@ class FactoryExpressions(
                         is ProviderBindingNode -> instanceExpressionForProvider(binding)
                         is ProvisionBindingNode -> instanceExpressionForProvision(binding)
                         is SetBindingNode -> instanceExpressionForSet(binding)
-                    }
-                        .let {
-                            if (it != DefaultValueFactoryExpression)
-                                it.wrapInFunction(binding.key) else it
-                        }
+                    }.wrapInFunction(binding.key)
                 }
             }
             RequestType.Provider -> {
@@ -134,7 +127,6 @@ class FactoryExpressions(
                         binding
                     )
                     is ChildFactoryBindingNode -> providerExpressionForChildFactory(binding)
-                    is DefaultValueBindingNode -> DefaultValueFactoryExpression
                     is DelegateBindingNode -> providerExpressionForDelegate(binding)
                     is DependencyBindingNode -> providerExpressionForDependency(binding)
                     is FactoryImplementationBindingNode -> providerExpressionForFactoryImplementation(
@@ -322,7 +314,6 @@ class FactoryExpressions(
                 key = binding.key.type.typeArguments.single().typeOrFail.asKey(),
                 requestingKey = binding.key,
                 requestOrigin = binding.origin,
-                hasDefault = false,
                 requestType = RequestType.Provider
             )
         )
@@ -418,7 +409,6 @@ class FactoryExpressions(
                         key = binding.key,
                         requestingKey = binding.key,
                         requestOrigin = binding.origin,
-                        hasDefault = false,
                         requestType = RequestType.Instance
                     )
                 )()!!
@@ -479,7 +469,6 @@ class FactoryExpressions(
                             key = entryValue.key,
                             requestingKey = binding.key,
                             requestOrigin = binding.origin,
-                            hasDefault = false,
                             requestType = RequestType.Provider
                         )
                     )
@@ -580,7 +569,6 @@ class FactoryExpressions(
                 key = binding.dependencies.single().key,
                 requestingKey = binding.key,
                 requestOrigin = binding.origin,
-                hasDefault = false,
                 requestType = RequestType.Provider
             )
         )
@@ -739,7 +727,6 @@ class FactoryExpressions(
                 key = binding.key,
                 requestingKey = binding.key,
                 requestOrigin = binding.origin,
-                hasDefault = false,
                 requestType = RequestType.Provider
             )
         )
@@ -757,5 +744,3 @@ class FactoryExpressions(
 }
 
 typealias FactoryExpression = IrBuilderWithScope.() -> IrExpression?
-
-val DefaultValueFactoryExpression: FactoryExpression = { null }

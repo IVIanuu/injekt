@@ -52,8 +52,7 @@ class InstanceFactory(
                     key = factoryFunction.returnType
                         .asKey(),
                     requestingKey = null,
-                    requestOrigin = factoryFunction.descriptor.fqNameSafe,
-                    hasDefault = false
+                    requestOrigin = factoryFunction.descriptor.fqNameSafe
                 )
 
                 init(null, listOf(instanceRequest))

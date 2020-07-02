@@ -93,7 +93,6 @@ class BindingRequest(
     val key: Key,
     val requestingKey: Key?,
     val requestOrigin: FqName?,
-    val hasDefault: Boolean,
     val requestType: RequestType = key.inferRequestType()
 ) {
 
@@ -101,10 +100,9 @@ class BindingRequest(
         key: Key = this.key,
         requestingKey: Key? = this.requestingKey,
         requestOrigin: FqName? = this.requestOrigin,
-        hasDefault: Boolean = this.hasDefault,
         requestType: RequestType = this.requestType
     ): BindingRequest = BindingRequest(
-        key, requestingKey, requestOrigin, hasDefault, requestType
+        key, requestingKey, requestOrigin, requestType
     )
 
     override fun equals(other: Any?): Boolean {
@@ -169,24 +167,10 @@ class ChildFactoryBindingNode(
         BindingRequest(
             parent.defaultType.asKey(),
             key,
-            null,
-            false
+            null
         )
     ),
     null, false, null, owner, origin
-)
-
-class DefaultValueBindingNode(
-    key: Key,
-    owner: AbstractFactory
-) : BindingNode(
-    key,
-    emptyList(),
-    null,
-    false,
-    null,
-    owner,
-    null
 )
 
 class DelegateBindingNode(
@@ -197,7 +181,7 @@ class DelegateBindingNode(
     val requestOrigin: FqName
 ) : BindingNode(
     key, listOf(
-        BindingRequest(originalKey, key, requestOrigin, false)
+        BindingRequest(originalKey, key, requestOrigin)
     ), null, false, null, owner, origin
 )
 
@@ -261,8 +245,7 @@ class ProviderBindingNode(
         BindingRequest(
             key.type.typeArguments.single().typeOrFail.asKey(),
             key,
-            origin,
-            false
+            origin
         )
     ),
     null,

@@ -257,8 +257,7 @@ class ModuleBindingResolver(
                             InjektDeclarationIrBuilder.FactoryParameter(
                                 name = "p$index",
                                 type = type,
-                                assisted = type.hasAnnotation(InjektFqNames.Assisted),
-                                hasDefault = false
+                                assisted = type.hasAnnotation(InjektFqNames.Assisted)
                             )
                         }
 
@@ -268,8 +267,7 @@ class ModuleBindingResolver(
                             BindingRequest(
                                 key = it.type.asKey(),
                                 requestingKey = bindingKey,
-                                requestOrigin = moduleRequestOrigin,
-                                hasDefault = it.hasDefault
+                                requestOrigin = moduleRequestOrigin
                             )
                         }
 
@@ -411,8 +409,7 @@ class AnnotatedClassBindingResolver(
                 InjektDeclarationIrBuilder.FactoryParameter(
                     name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
                     type = valueParameter.type,
-                    assisted = valueParameter.type.hasAnnotation(InjektFqNames.Assisted),
-                    hasDefault = valueParameter.hasDefaultValue()
+                    assisted = valueParameter.type.hasAnnotation(InjektFqNames.Assisted)
                 )
             } ?: emptyList()
 
@@ -434,8 +431,7 @@ class AnnotatedClassBindingResolver(
                             ?.descriptor
                             ?.fqNameSafe ?: clazz.properties
                             .singleOrNull { it.name.asString() == parameter.name }
-                            ?.descriptor?.fqNameSafe,
-                        hasDefault = parameter.hasDefault
+                            ?.descriptor?.fqNameSafe
                     )
                 }
 
@@ -504,8 +500,7 @@ class AnnotatedClassBindingResolver(
                 InjektDeclarationIrBuilder.FactoryParameter(
                     name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
                     type = valueParameter.type,
-                    assisted = valueParameter.type.hasAnnotation(InjektFqNames.Assisted),
-                    hasDefault = valueParameter.hasDefaultValue()
+                    assisted = valueParameter.type.hasAnnotation(InjektFqNames.Assisted)
                 )
             } ?: emptyList()
 
@@ -522,8 +517,7 @@ class AnnotatedClassBindingResolver(
                             ?.descriptor
                             ?.fqNameSafe ?: clazz.properties
                             .singleOrNull { it.name.asString() == parameter.name }
-                            ?.descriptor?.fqNameSafe,
-                        hasDefault = parameter.hasDefault
+                            ?.descriptor?.fqNameSafe
                     )
                 }
 

@@ -138,12 +138,6 @@ class Graph(
 
         parent?.getBinding(request)?.let { return it }
 
-        if (request.hasDefault) {
-            binding = DefaultValueBindingNode(request.key, factory)
-            resolvedBindings[request.key] = binding
-            return binding
-        }
-
         if (request.key.type.isMarkedNullable()) {
             binding = NullBindingNode(request.key, factory)
             resolvedBindings[request.key] = binding
@@ -406,7 +400,7 @@ class Graph(
     ) {
         mapBindingResolver.putMapEntry(
             mapKey, entryKey,
-            BindingRequest(entryValue, mapKey, origin, false)
+            BindingRequest(entryValue, mapKey, origin)
         )
     }
 
@@ -421,7 +415,7 @@ class Graph(
     ) {
         setBindingResolver.addSetElement(
             setKey,
-            BindingRequest(elementKey, setKey, origin, false)
+            BindingRequest(elementKey, setKey, origin)
         )
     }
 }
