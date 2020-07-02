@@ -22,9 +22,11 @@ import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getSuspendFunctionType
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.ir.copyBodyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
+import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
@@ -33,6 +35,7 @@ import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irExprBody
+import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
@@ -45,6 +48,7 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
+import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
@@ -253,6 +257,18 @@ abstract class AbstractFunctionTransformer(
             fn.annotations = annotations.map { a -> a }
             fn.metadata = metadata
             fn.body = copyBodyTo(fn)
+            fn.allParameters.forEach { valueParameter ->
+                valueParameter.transformChildrenVoid(object : IrElementTransformerVoid() {
+                    override fun visitGetValue(expression: IrGetValue): IrExpression {
+                        return allParameters
+                            .mapIndexed { index, valueParameter -> valueParameter to index }
+                            .singleOrNull { it.first.symbol == expression.symbol }
+                            ?.let { fn.allParameters[it.second] }
+                            ?.let { DeclarationIrBuilder(pluginContext, fn.symbol).irGet(it) }
+                            ?: super.visitGetValue(expression)
+                    }
+                })
+            }
         }
     }
 

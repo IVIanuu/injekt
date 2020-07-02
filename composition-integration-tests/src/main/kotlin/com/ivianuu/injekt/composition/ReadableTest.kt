@@ -359,6 +359,28 @@ class ReadableTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
+    @Test
+    fun testReadableCallInDefaultParameterWithCapture() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            transient { Foo() }
+            return create() 
+        }
+        
+        @Readable
+        fun withDefault(foo: Foo = get(), foo2: Foo = foo): Foo = foo
+        
+        fun invoke(): Foo { 
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReading { withDefault() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
     // todo @Test
     fun testAbstractReadableFunction() = codegen(
         """
