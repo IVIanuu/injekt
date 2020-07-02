@@ -74,7 +74,7 @@ class AssistedTest {
 
                     @Factory 
                     fun factory(): Component { 
-                        instance(Foo())
+                        transient { Foo() }
                         return create()
                     }
                     

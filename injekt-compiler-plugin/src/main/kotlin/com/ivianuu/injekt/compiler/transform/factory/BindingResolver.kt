@@ -231,126 +231,105 @@ class ModuleBindingResolver(
 
             val scoped = bindingFunction.hasAnnotation(InjektFqNames.AstScoped)
 
-            when {
-                bindingFunction.hasAnnotation(InjektFqNames.AstInstance) -> {
-                    InstanceBindingNode(
-                        key = bindingKey,
-                        requirementNode = InstanceNode(
-                            key = propertyGetter.returnType
-                                .substituteAndKeepQualifiers(moduleNode.typeParametersMap)
-                                .asKey(),
-                            accessor = {
-                                irCall(propertyGetter).apply {
-                                    dispatchReceiver = moduleNode.accessor(this@InstanceNode)
-                                }
-                            }
-                        ),
-                        owner = factory,
-                        origin = moduleNode.module.fqNameForIrSerialization
+            val providerType = propertyGetter.returnType
+                .substituteAndKeepQualifiers(moduleNode.typeParametersMap)
+
+            val parameters = providerType
+                .getFunctionParameterTypes()
+                .mapIndexed { index, type ->
+                    InjektDeclarationIrBuilder.FactoryParameter(
+                        name = "p$index",
+                        type = type,
+                        assisted = type.hasAnnotation(InjektFqNames.Assisted)
                     )
                 }
-                else -> {
-                    val providerType = propertyGetter.returnType
-                        .substituteAndKeepQualifiers(moduleNode.typeParametersMap)
 
-                    val parameters = providerType
-                        .getFunctionParameterTypes()
-                        .mapIndexed { index, type ->
-                            InjektDeclarationIrBuilder.FactoryParameter(
-                                name = "p$index",
-                                type = type,
-                                assisted = type.hasAnnotation(InjektFqNames.Assisted)
-                            )
-                        }
-
-                    val dependencies = parameters
-                        .filterNot { it.assisted }
-                        .map {
-                            BindingRequest(
-                                key = it.type.asKey(),
-                                requestingKey = bindingKey,
-                                requestOrigin = moduleRequestOrigin
-                            )
-                        }
-
-                    if (providerType.getFunctionParameterTypes()
-                            .any { it.hasAnnotation(InjektFqNames.Assisted) }
-                    ) {
-                        val assistedValueParameters = providerType
-                            .getFunctionParameterTypes()
-                            .filter { it.hasAnnotation(InjektFqNames.Assisted) }
-
-                        val assistedFactoryType =
-                            factory.pluginContext.tmpFunction(assistedValueParameters.size)
-                                .typeWith(
-                                    assistedValueParameters + providerType
-                                        .getFunctionReturnType()
-                                ).withNoArgAnnotations(
-                                    factory.pluginContext,
-                                    listOf(InjektFqNames.Provider)
-                                )
-
-                        AssistedProvisionBindingNode(
-                            key = assistedFactoryType.asKey(),
-                            dependencies = dependencies,
-                            targetScope = null,
-                            scoped = scoped,
-                            module = moduleNode,
-                            createExpression = { parametersMap ->
-                                irCall(propertyGetter.returnType
-                                    .classOrNull!!
-                                    .functions
-                                    .single { it.owner.name.asString() == "invoke" }
-                                ).apply {
-                                    dispatchReceiver = irCall(propertyGetter).apply {
-                                        dispatchReceiver =
-                                            moduleNode.accessor(this@AssistedProvisionBindingNode)
-                                    }
-
-                                    parametersMap.values.forEachIndexed { index, expression ->
-                                        putValueArgument(
-                                            index,
-                                            expression()
-                                        )
-                                    }
-                                }
-                            },
-                            parameters = parameters,
-                            owner = factory,
-                            origin = moduleNode.module.fqNameForIrSerialization
-                        )
-                    } else {
-                        ProvisionBindingNode(
-                            key = bindingKey,
-                            dependencies = dependencies,
-                            targetScope = null,
-                            scoped = scoped,
-                            module = moduleNode,
-                            createExpression = { parametersMap ->
-                                irCall(providerType
-                                    .classOrNull!!
-                                    .functions
-                                    .single { it.owner.name.asString() == "invoke" }
-                                ).apply {
-                                    dispatchReceiver = irCall(propertyGetter).apply {
-                                        dispatchReceiver =
-                                            moduleNode.accessor(this@ProvisionBindingNode)
-                                    }
-
-                                    parametersMap.values.forEachIndexed { index, expression ->
-                                        putValueArgument(
-                                            index,
-                                            expression()
-                                        )
-                                    }
-                                }
-                            },
-                            parameters = parameters,
-                            owner = factory,
-                            origin = moduleNode.module.fqNameForIrSerialization
-                        )
-                    }
+            val dependencies = parameters
+                .filterNot { it.assisted }
+                .map {
+                    BindingRequest(
+                        key = it.type.asKey(),
+                        requestingKey = bindingKey,
+                        requestOrigin = moduleRequestOrigin
+                    )
                 }
+
+            if (providerType.getFunctionParameterTypes()
+                    .any { it.hasAnnotation(InjektFqNames.Assisted) }
+            ) {
+                val assistedValueParameters = providerType
+                    .getFunctionParameterTypes()
+                    .filter { it.hasAnnotation(InjektFqNames.Assisted) }
+
+                val assistedFactoryType =
+                    factory.pluginContext.tmpFunction(assistedValueParameters.size)
+                        .typeWith(
+                            assistedValueParameters + providerType
+                                .getFunctionReturnType()
+                        ).withNoArgAnnotations(
+                            factory.pluginContext,
+                            listOf(InjektFqNames.Provider)
+                        )
+
+                AssistedProvisionBindingNode(
+                    key = assistedFactoryType.asKey(),
+                    dependencies = dependencies,
+                    targetScope = null,
+                    scoped = scoped,
+                    module = moduleNode,
+                    createExpression = { parametersMap ->
+                        irCall(propertyGetter.returnType
+                            .classOrNull!!
+                            .functions
+                            .single { it.owner.name.asString() == "invoke" }
+                        ).apply {
+                            dispatchReceiver = irCall(propertyGetter).apply {
+                                dispatchReceiver =
+                                    moduleNode.accessor(this@AssistedProvisionBindingNode)
+                            }
+
+                            parametersMap.values.forEachIndexed { index, expression ->
+                                putValueArgument(
+                                    index,
+                                    expression()
+                                )
+                            }
+                        }
+                    },
+                    parameters = parameters,
+                    owner = factory,
+                    origin = moduleNode.module.fqNameForIrSerialization
+                )
+            } else {
+                ProvisionBindingNode(
+                    key = bindingKey,
+                    dependencies = dependencies,
+                    targetScope = null,
+                    scoped = scoped,
+                    module = moduleNode,
+                    createExpression = { parametersMap ->
+                        irCall(providerType
+                            .classOrNull!!
+                            .functions
+                            .single { it.owner.name.asString() == "invoke" }
+                        ).apply {
+                            dispatchReceiver = irCall(propertyGetter).apply {
+                                dispatchReceiver =
+                                    moduleNode.accessor(this@ProvisionBindingNode)
+                            }
+
+                            parametersMap.values.forEachIndexed { index, expression ->
+                                putValueArgument(
+                                    index,
+                                    expression()
+                                )
+                            }
+                        }
+                    },
+                    parameters = parameters,
+                    owner = factory,
+                    origin = moduleNode.module.fqNameForIrSerialization
+                )
             }
         }
 

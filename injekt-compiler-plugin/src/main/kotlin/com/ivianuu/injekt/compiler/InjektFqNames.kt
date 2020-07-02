@@ -30,7 +30,6 @@ object InjektFqNames {
     val AstCompositionTypes = InjektAst.child("CompositionTypes")
     val AstDependency = InjektAst.child("Dependency")
     val AstEntryPoints = InjektAst.child("EntryPoints")
-    val AstInstance = InjektAst.child("Instance")
     val AstMap = InjektAst.child("Map")
     val AstMapEntry = AstMap.child("Entry")
     val AstMapClassKey = AstMap.child("ClassKey")
@@ -101,8 +100,7 @@ object InjektFqNames {
         InjektPackage.child("childFactory"),
         InjektPackage.child("alias"),
         InjektPackage.child("transient"),
-        InjektPackage.child("scoped"),
-        InjektPackage.child("instance")
+        InjektPackage.child("scoped")
     )
 
 }

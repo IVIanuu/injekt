@@ -82,15 +82,13 @@ class ModuleDeclarationFactory(
             calleeFqName == "com.ivianuu.injekt.alias" ->
                 listOf(createAliasDeclaration(call))
             calleeFqName == "com.ivianuu.injekt.transient" ||
-                    calleeFqName == "com.ivianuu.injekt.scoped" ||
-                    calleeFqName == "com.ivianuu.injekt.instance" -> {
+                    calleeFqName == "com.ivianuu.injekt.scoped" -> {
                 listOf(
                     createBindingDeclaration(
                         call.getTypeArgument(0)!!
                             .remapTypeParameters(originalModuleFunction, moduleFunction)
                             .remapTypeParameters(moduleFunction, moduleClass),
                         if (call.valueArgumentsCount != 0) call.getValueArgument(0) else null,
-                        call.symbol.owner.name.asString() == "instance",
                         call.symbol.owner.name.asString() == "scoped"
                     )
                 )
@@ -253,7 +251,6 @@ class ModuleDeclarationFactory(
                 createBindingDeclaration(
                     bindingType,
                     null,
-                    false,
                     bindingFunction.hasAnnotation(InjektFqNames.AstScoped)
                 )
             }
@@ -264,23 +261,11 @@ class ModuleDeclarationFactory(
     private fun createBindingDeclaration(
         bindingType: IrType,
         singleArgument: IrExpression?,
-        instance: Boolean,
         scoped: Boolean
     ): BindingDeclaration {
         val initializer: IrExpression?
         val path: Path
-
-        if (instance) {
-            path = PropertyPath(
-                InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
-                    .fieldBackedProperty(
-                        moduleClass,
-                        nameProvider.allocateForType(bindingType),
-                        bindingType
-                    )
-            )
-            initializer = singleArgument!!
-        } else if (singleArgument != null) {
+        if (singleArgument != null) {
             initializer = singleArgument
             path = PropertyPath(
                 InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
@@ -314,11 +299,9 @@ class ModuleDeclarationFactory(
                 )
             }
         }
-
         return BindingDeclaration(
             bindingType = bindingType,
             scoped = scoped,
-            instance = instance,
             path = path,
             initializer = initializer
         )

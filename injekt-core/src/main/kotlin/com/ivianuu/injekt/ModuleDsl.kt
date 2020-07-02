@@ -29,8 +29,6 @@ fun <T> transient(provider: Function<T> = injektIntrinsic()): Unit = injektIntri
 
 annotation class Transient
 
-fun <T> instance(instance: T): Unit = injektIntrinsic()
-
 fun <T> scoped(provider: Function<T> = injektIntrinsic()): Unit = injektIntrinsic()
 
 annotation class Scoped<T>

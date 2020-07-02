@@ -31,7 +31,7 @@ class CommonScenariosTest {
                 """
                     @Module
                     fun otherModule(instance: String) {
-                        instance(instance)
+                        transient { instance }
                         transient { Foo() }
                         transient { CommandA() }
                         set<Command> {

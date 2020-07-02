@@ -28,7 +28,6 @@ import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.composition.CompositionFactory
 import com.ivianuu.injekt.composition.compositionFactoryOf
 import com.ivianuu.injekt.create
-import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.transient
 import kotlinx.coroutines.CoroutineScope
 
@@ -41,7 +40,7 @@ val Application.applicationComponent: ApplicationComponent
 
 @CompositionFactory
 fun createApplicationComponent(instance: Application): ApplicationComponent {
-    instance(instance)
+    transient { instance }
     alias<Application, @ForApplication Context>()
     transient<@ForApplication Resources> { app: Application ->
         app.resources

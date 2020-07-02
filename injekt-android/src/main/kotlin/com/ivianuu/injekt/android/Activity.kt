@@ -31,7 +31,6 @@ import com.ivianuu.injekt.composition.get
 import com.ivianuu.injekt.composition.parent
 import com.ivianuu.injekt.composition.runReading
 import com.ivianuu.injekt.create
-import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.transient
 
 @Target(AnnotationTarget.TYPE)
@@ -51,7 +50,7 @@ val ComponentActivity.activityComponent: ActivityComponent
 @CompositionFactory
 fun createActivityComponent(instance: ComponentActivity): ActivityComponent {
     parent<RetainedActivityComponent>()
-    instance(instance)
+    transient { instance }
     alias<ComponentActivity, @ForActivity Context>()
     transient<@ForActivity Resources> { activity: ComponentActivity ->
         activity.resources

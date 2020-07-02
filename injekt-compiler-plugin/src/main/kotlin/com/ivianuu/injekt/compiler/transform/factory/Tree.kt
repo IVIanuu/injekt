@@ -205,13 +205,6 @@ class FactoryImplementationBindingNode(
     factoryNode.key.type.getClass()!!.fqNameForIrSerialization
 )
 
-class InstanceBindingNode(
-    key: Key,
-    owner: FactoryImpl,
-    origin: FqName?,
-    val requirementNode: InstanceNode,
-) : BindingNode(key, emptyList(), null, false, null, owner, origin)
-
 class MapBindingNode(
     key: Key,
     owner: FactoryImpl,

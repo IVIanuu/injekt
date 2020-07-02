@@ -171,9 +171,6 @@ class ModuleDescriptor(
             if (declaration.scoped) {
                 annotations += builder.noArgSingleConstructorCall(symbols.astScoped)
             }
-            if (declaration.instance) {
-                annotations += builder.noArgSingleConstructorCall(symbols.astInstance)
-            }
             declaration.path
                 ?.asAnnotation(DeclarationIrBuilder(pluginContext, symbol), symbols)
                 ?.let { annotations += it }

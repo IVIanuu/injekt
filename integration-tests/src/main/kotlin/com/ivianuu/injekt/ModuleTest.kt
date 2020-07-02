@@ -31,8 +31,8 @@ class ModuleTest {
             dependency(dependency)
             set<Any>()
             map<String, Any>()
-            instance("hello world")
             transient { foo: Foo -> Bar(foo) }
+            scoped { bar: Bar -> bar.toString() }
         }
     """
     )

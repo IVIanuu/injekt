@@ -31,7 +31,6 @@ import com.ivianuu.injekt.composition.get
 import com.ivianuu.injekt.composition.parent
 import com.ivianuu.injekt.composition.runReading
 import com.ivianuu.injekt.create
-import com.ivianuu.injekt.instance
 import com.ivianuu.injekt.transient
 
 @Target(AnnotationTarget.TYPE)
@@ -51,7 +50,7 @@ val Fragment.fragmentComponent: FragmentComponent
 @CompositionFactory
 fun createFragmentComponent(instance: Fragment): FragmentComponent {
     parent<ActivityComponent>()
-    instance(instance)
+    transient { instance }
     transient<@ForFragment Context> { fragment: Fragment ->
         fragment.context!!
     }

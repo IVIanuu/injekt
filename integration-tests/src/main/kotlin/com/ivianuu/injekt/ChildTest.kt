@@ -47,14 +47,14 @@ class ChildTest {
         
         @Factory
         fun createParent(parent: Parent): ParentComponent {
-            instance(parent)
+            transient { parent }
             childFactory(::createChild)
             return create()
         }
         
         @ChildFactory
         fun createChild(child: Child): ChildComponent {
-            instance(child)
+            transient { child }
             return create()
         }
         
@@ -103,21 +103,21 @@ class ChildTest {
         
         @Factory
         fun createParent(parent: Parent): ParentComponent {
-            instance(parent)
+            transient { parent }
             childFactory(::createChild)
             return create()
         }
         
         @ChildFactory
         fun createChild(child: Child): ChildComponent {
-            instance(child)
+            transient { child }
             childFactory(::createBaby)
             return create()
         }
         
         @ChildFactory
         fun createBaby(baby: Baby): BabyComponent {
-            instance(baby)
+            transient { baby }
             return create()
         }
         

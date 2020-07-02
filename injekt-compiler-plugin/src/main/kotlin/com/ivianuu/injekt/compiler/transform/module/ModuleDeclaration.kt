@@ -47,7 +47,6 @@ class AliasDeclaration(
 class BindingDeclaration(
     val bindingType: IrType,
     val scoped: Boolean,
-    val instance: Boolean,
     path: Path,
     initializer: IrExpression?
 ) : ModuleDeclaration(path, initializer)

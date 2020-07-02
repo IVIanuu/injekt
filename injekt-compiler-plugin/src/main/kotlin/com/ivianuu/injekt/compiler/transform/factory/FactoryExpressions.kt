@@ -112,7 +112,6 @@ class FactoryExpressions(
                         is FactoryImplementationBindingNode -> instanceExpressionForFactoryImplementation(
                             binding
                         )
-                        is InstanceBindingNode -> instanceExpressionForInstance(binding)
                         is MapBindingNode -> instanceExpressionForMap(binding)
                         is NullBindingNode -> instanceExpressionForNull(binding)
                         is ProviderBindingNode -> instanceExpressionForProvider(binding)
@@ -132,7 +131,6 @@ class FactoryExpressions(
                     is FactoryImplementationBindingNode -> providerExpressionForFactoryImplementation(
                         binding
                     )
-                    is InstanceBindingNode -> providerExpressionForInstance(binding)
                     is MapBindingNode -> providerExpressionForMap(binding)
                     is NullBindingNode -> providerExpressionForNull(binding)
                     is ProviderBindingNode -> providerExpressionForProvider(binding)
@@ -213,10 +211,6 @@ class FactoryExpressions(
         binding: FactoryImplementationBindingNode
     ): FactoryExpression {
         return invokeProviderInstanceExpression(binding)
-    }
-
-    private fun instanceExpressionForInstance(binding: InstanceBindingNode): FactoryExpression {
-        return getRequirementExpression(binding.requirementNode)
     }
 
     private fun instanceExpressionForMap(binding: MapBindingNode): FactoryExpression {
@@ -445,19 +439,11 @@ class FactoryExpressions(
     private fun providerExpressionForFactoryImplementation(
         binding: FactoryImplementationBindingNode
     ): FactoryExpression {
-        factory as FactoryImpl
-
         return cachedFactoryExpression(binding.key) {
             irCall(symbols.lateinitFactory.constructors.single()).apply {
                 putTypeArgument(0, factory.clazz.superTypes.single())
             }
         }.also { factory.factoryLateinitProvider = it }
-    }
-
-    private fun providerExpressionForInstance(binding: InstanceBindingNode): FactoryExpression {
-        return cachedFactoryExpression(binding.key) {
-            singleInstanceFactory(binding.requirementNode.accessor(this)!!)
-        }
     }
 
     private fun providerExpressionForMap(binding: MapBindingNode): FactoryExpression {

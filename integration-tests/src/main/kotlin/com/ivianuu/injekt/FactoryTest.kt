@@ -144,27 +144,11 @@ class FactoryTest {
     }
 
     @Test
-    fun testInstance() = codegen(
-        """
-        @Factory
-        fun factory(foo: Foo): TestComponent1<Foo> {
-            instance(foo)
-            return create()
-        }
-        
-        fun invoke(foo: Foo) = factory(foo).a
-         """
-    ) {
-        val foo = Foo()
-        assertSame(foo, invokeSingleFile(foo))
-    }
-
-    @Test
     fun testInclude() = codegen(
         """
         @Module
         fun module(foo: Foo) {
-            instance(foo)
+            transient { foo }
         }
         
         @Factory
@@ -261,8 +245,8 @@ class FactoryTest {
         
         @Factory
         fun factory(): TestComponent2<Dep<String>, Dep<Int>> {
-            instance("hello world")
-            instance(0)
+            transient { "hello world" }
+            transient { 0 }
             return create()
         }
     """
@@ -273,7 +257,7 @@ class FactoryTest {
         """
         @Module
         fun <T> generic(instance: T) {
-            instance(instance)
+            transient { instance }
         }
 
         @Factory
@@ -348,7 +332,7 @@ class FactoryTest {
         """
         @Factory
         fun factory(string: String = "default"): TestComponent1<String> {
-            instance(string)
+            transient { string }
             return create()
         }
         
@@ -376,7 +360,7 @@ class FactoryTest {
             
             @Module
             fun myModule() { 
-                instance(outerField)
+                transient { outerField }
                 myOtherModule()
             }
         }
@@ -409,7 +393,7 @@ class FactoryTest {
         
         @Module 
         fun MyClass.myModule() { 
-            instance(outerField)
+            transient { outerField }
             myOtherModule() 
         }
         

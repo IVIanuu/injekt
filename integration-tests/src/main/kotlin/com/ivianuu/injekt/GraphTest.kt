@@ -307,7 +307,7 @@ class GraphTest {
         """
         @Factory
         fun factory(): TestComponent1<List<*>> {
-            instance<List<*>>(listOf<Any?>())
+            transient<List<*>> { listOf<Any?>() }
             return create()
         }
     """
