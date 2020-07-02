@@ -21,7 +21,7 @@ import kotlin.reflect.KFunction
 
 fun <T> dependency(dependency: T): Unit = injektIntrinsic()
 
-fun <T : KFunction<*>> childFactory(factory: T): Unit = injektIntrinsic()
+fun <T : Function<*>> childFactory(factory: T): Unit = injektIntrinsic()
 
 fun <S : T, T> alias(): Unit = injektIntrinsic()
 
