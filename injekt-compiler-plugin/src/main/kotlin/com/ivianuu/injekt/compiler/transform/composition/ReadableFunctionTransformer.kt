@@ -42,6 +42,8 @@ import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
+import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
@@ -83,6 +85,7 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
+import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.getPackageFragment
@@ -97,7 +100,9 @@ import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.load.java.JvmAbi
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -154,6 +159,28 @@ class ReadableFunctionTransformer(
             callback(this)
             overriddenSymbols += (function as IrFunctionImpl).overriddenSymbols.map {
                 transformFunctionIfNeeded(it.owner).symbol as IrSimpleFunctionSymbol
+            }
+
+            val descriptor = descriptor
+            if (descriptor is PropertyGetterDescriptor &&
+                annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
+            ) {
+                val name = JvmAbi.getterName(descriptor.correspondingProperty.name.identifier)
+                annotations += InjektDeclarationIrBuilder(pluginContext, symbol).jvmNameAnnotation(
+                    name
+                )
+                correspondingPropertySymbol?.owner?.getter = this
+            }
+
+            // same thing for the setter
+            if (descriptor is PropertySetterDescriptor &&
+                annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
+            ) {
+                val name = JvmAbi.setterName(descriptor.correspondingProperty.name.identifier)
+                annotations += InjektDeclarationIrBuilder(pluginContext, symbol).jvmNameAnnotation(
+                    name
+                )
+                correspondingPropertySymbol?.owner?.setter = this
             }
         }
 

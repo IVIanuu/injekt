@@ -488,4 +488,26 @@ class ReadableTest {
         assertTrue(it.last().invokeSingleFile() is Foo)
     }
 
+    @Test
+    fun testReadableProperty() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            transient { Foo() }
+            return create() 
+        }
+        
+        @Readable
+        val foo: Foo get() = get()
+        
+        fun invoke(): Foo { 
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReading { foo }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
 }

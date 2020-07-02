@@ -361,6 +361,15 @@ class InjektDeclarationIrBuilder(
         }
     }
 
+    fun jvmNameAnnotation(name: String): IrConstructorCall {
+        val jvmName = pluginContext.referenceClass(DescriptorUtils.JVM_NAME)!!
+        return builder.run {
+            irCall(jvmName.constructors.single()).apply {
+                putValueArgument(0, irString(name))
+            }
+        }
+    }
+
     fun generateAnnotationConstructorCall(annotationDescriptor: AnnotationDescriptor): IrConstructorCall? {
         val annotationType = annotationDescriptor.type
         val annotationClassDescriptor = annotationType.constructor.declarationDescriptor
