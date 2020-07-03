@@ -24,8 +24,8 @@ import com.ivianuu.injekt.android.work.BindWorker
 
 @BindWorker
 class TestWorker(
-    context: @Assisted Context,
-    workerParams: @Assisted WorkerParameters,
+    @Assisted context: Context,
+    @Assisted workerParams: WorkerParameters,
     repo: Repo
 ) : Worker(context, workerParams) {
     init {

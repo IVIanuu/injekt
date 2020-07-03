@@ -154,6 +154,28 @@ class ReadableTest {
     }
 
     @Test
+    fun testSimpleReadableLambdaProperty() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            transient { Foo() }
+            return create() 
+        }
+        
+        @Readable
+        val foo: @Readable () -> Foo = { get() }
+
+        fun invoke(): Foo {
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReading { foo() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
     fun testNestedReadable() = codegen(
         """
         @CompositionFactory 

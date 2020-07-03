@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
@@ -57,6 +58,7 @@ import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.isFakeOverride
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -105,7 +107,6 @@ class FactoryImpl(
             irBlock {
                 factoryMembers.blockBuilder = this
 
-                collectDependencyRequests()
                 graph = Graph(
                     parent = parent?.graph,
                     factory = this@FactoryImpl,
@@ -128,6 +129,8 @@ class FactoryImpl(
                     parent = parent?.factoryExpressions,
                     factory = this@FactoryImpl
                 )
+                collectDependencyRequests()
+
                 dependencyRequests.forEach { graph.validate(it.value) }
 
                 DeclarationIrBuilder(pluginContext, clazz.symbol).run {
@@ -142,7 +145,7 @@ class FactoryImpl(
                     visibility = Visibilities.PUBLIC
                 }.apply {
                     body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
-                        val superType = clazz.superTypes.single()
+                        val superType = clazz.superTypes.first()
                         +irDelegatingConstructorCall(
                             if (superType.classOrNull!!.owner.kind == ClassKind.CLASS)
                                 superType.classOrNull!!.owner.constructors.single { it.valueParameters.isEmpty() }
@@ -194,12 +197,66 @@ class FactoryImpl(
                         bindingExpression(this@implementDependencyRequests)!!
                     }
             }
+
+        val implementedSuperTypes = mutableSetOf<IrType>()
+
+        while (true) {
+            val contexts = graph.resolvedBindings.values
+                .mapNotNull { it.context }
+                .filter { it.defaultType !in implementedSuperTypes }
+
+            println("found contexts ${contexts.map { it.defaultType.render() }}")
+
+            if (contexts.isEmpty()) {
+                break
+            }
+
+            fun implementFunctions(
+                superClass: IrClass,
+                typeArguments: List<IrType>
+            ) {
+                if (superClass.defaultType in implementedSuperTypes) return
+                implementedSuperTypes += superClass.defaultType
+                for (declaration in superClass.declarations.toList()) {
+                    if (declaration !is IrFunction) continue
+                    if (declaration is IrConstructor) continue
+                    if (declaration.isFakeOverride) continue
+                    if (declaration.dispatchReceiverParameter?.type == pluginContext.irBuiltIns.anyType) break
+                    addDependencyRequestImplementation(declaration) { function ->
+                        val bindingExpression = factoryExpressions.getBindingExpression(
+                            BindingRequest(
+                                function.returnType.asKey(),
+                                requestingKey = null,
+                                null,
+                                RequestType.Instance
+                            )
+                        )
+
+                        bindingExpression(this@implementDependencyRequests)!!
+                    }
+                }
+
+                superClass.superTypes
+                    .map { it to it.classOrNull?.owner }
+                    .forEach { (superType, clazz) ->
+                        if (clazz != null)
+                            implementFunctions(
+                                clazz,
+                                superType.typeArguments.map { it.typeOrFail })
+                    }
+            }
+
+            contexts.forEach { context ->
+                clazz.superTypes += context.defaultType
+                implementFunctions(
+                    context,
+                    context.defaultType.typeArguments.map { it.typeOrFail })
+            }
+        }
     }
 
     private fun collectDependencyRequests() {
-        fun IrClass.collectDependencyRequests(
-            typeArguments: List<IrType>
-        ) {
+        fun IrClass.collectDependencyRequests(typeArguments: List<IrType>) {
             for (declaration in declarations) {
                 fun reqisterRequest(type: IrType) {
                     dependencyRequests[declaration] = BindingRequest(

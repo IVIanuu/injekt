@@ -31,8 +31,8 @@ import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.ActivityViewModel
 import com.ivianuu.injekt.android.ForActivity
 import com.ivianuu.injekt.android.activityComponent
-import com.ivianuu.injekt.composition.Readable
-import com.ivianuu.injekt.composition.get
+import com.ivianuu.injekt.Readable
+import com.ivianuu.injekt.get
 import com.ivianuu.injekt.composition.runReading
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch

@@ -88,12 +88,8 @@ class MapTest {
     @Test
     fun testMapOfProviderInstance() = codegen(
         """
-        interface Component {
-            val value: Map<KClass<out Command>, @Provider () -> Command>
-        }
-        
         @Factory
-        fun factory(): Component {
+        fun factory(): TestComponent1<Map<KClass<out Command>, @Provider () -> Command>> {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
@@ -105,7 +101,7 @@ class MapTest {
             return create()
         }
         
-        fun invoke() = factory().value
+        fun invoke() = factory().a
     """
     ) {
         val map =
@@ -119,12 +115,8 @@ class MapTest {
     @Test
     fun testMapOfProviderProvider() = codegen(
         """
-        interface Component {
-            val value: @Provider () -> Map<KClass<out Command>, @Provider () -> Command>
-        }
-        
         @Factory
-        fun factory(): Component {
+        fun factory(): TestComponent1<@Provider () -> Map<KClass<out Command>, @Provider () -> Command>> {
             transient { CommandA() }
             transient { CommandB() }
             transient { CommandC() }
@@ -136,7 +128,7 @@ class MapTest {
             return create()
         }
         
-        fun invoke() = factory().value
+        fun invoke() = factory().a
     """
     ) {
         val map =
@@ -152,9 +144,9 @@ class MapTest {
         """
         @Factory
         fun factory(): TestComponent1<Map<KClass<out Command>, @Provider (String) -> Command>> {
-            transient { arg: @Assisted String -> CommandA() }
-            transient { arg: @Assisted String -> CommandB() }
-            transient { arg: @Assisted String -> CommandC() }
+            transient { arg: String -> CommandA() }
+            transient { arg: String -> CommandB() }
+            transient { arg: String -> CommandC() }
             map<KClass<out Command>, @Provider (String) -> Command> {
                 put<@Provider (String) -> CommandA>(CommandA::class)
                 put<@Provider (String) -> CommandB>(CommandB::class)
@@ -179,9 +171,9 @@ class MapTest {
         """
         @Factory
         fun factory(): TestComponent1<@Provider () -> Map<KClass<out Command>, @Provider (String) -> Command>> {
-            transient { arg: @Assisted String -> CommandA() }
-            transient { arg: @Assisted String -> CommandB() }
-            transient { arg: @Assisted String -> CommandC() }
+            transient { arg: String -> CommandA() }
+            transient { arg: String -> CommandB() }
+            transient { arg: String -> CommandC() }
             map<KClass<out Command>, @Provider (String) -> Command> {
                 put<@Provider (String) -> CommandA>(CommandA::class)
                 put<@Provider (String) -> CommandB>(CommandB::class)

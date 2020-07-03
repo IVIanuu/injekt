@@ -16,5 +16,5 @@
 
 package com.ivianuu.injekt
 
-@Target(AnnotationTarget.TYPE)
+@Target(AnnotationTarget.VALUE_PARAMETER)
 annotation class Assisted

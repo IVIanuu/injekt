@@ -117,6 +117,7 @@ class ModuleFunctionTransformer(
                 function.returnType.isUnit()
 
     override fun transform(function: IrFunction, callback: (IrFunction) -> Unit) {
+        println("transform module ${function.dumpSrc()}")
         val transformedFunction = function.copy()
         callback(transformedFunction)
 
@@ -286,6 +287,8 @@ class ModuleFunctionTransformer(
                     }
                 )
             }
+
+        println(moduleClass.dumpSrc())
     }
 
     override fun transformExternal(function: IrFunction, callback: (IrFunction) -> Unit) {

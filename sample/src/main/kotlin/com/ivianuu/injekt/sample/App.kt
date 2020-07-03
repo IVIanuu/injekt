@@ -20,7 +20,7 @@ import android.app.Application
 import androidx.work.Configuration
 import androidx.work.WorkManager
 import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.composition.get
+import com.ivianuu.injekt.get
 import com.ivianuu.injekt.composition.initializeCompositions
 import com.ivianuu.injekt.composition.runReading
 

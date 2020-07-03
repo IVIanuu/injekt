@@ -139,9 +139,9 @@ class SetTest {
         """
         @Factory
         fun factory(): TestComponent1<Set<@Provider (String) -> Command>> {
-            transient { arg: @Assisted String -> CommandA() }
-            transient { arg: @Assisted String -> CommandB() }
-            transient { arg: @Assisted String -> CommandC() }
+            transient { arg: String -> CommandA() }
+            transient { arg: String -> CommandB() }
+            transient { arg: String -> CommandC() }
             set<@Provider (String) -> Command> {
                 add<@Provider (String) -> CommandA>()
                 add<@Provider (String) -> CommandB>()
@@ -166,9 +166,9 @@ class SetTest {
         """
         @Factory
         fun factory(): TestComponent1<@Provider () -> Set<@Provider (String) -> Command>> {
-            transient { arg: @Assisted String -> CommandA() }
-            transient { arg: @Assisted String -> CommandB() }
-            transient { arg: @Assisted String -> CommandC() }
+            transient { arg: String -> CommandA() }
+            transient { arg: String -> CommandB() }
+            transient { arg: String -> CommandC() }
             set<@Provider (String) -> Command> {
                 add<@Provider (String) -> CommandA>()
                 add<@Provider (String) -> CommandB>()

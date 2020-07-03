@@ -42,8 +42,8 @@ class InlineTest {
         
                     @Module
                     inline fun <reified T : Any> systemService() {
-                        transient<T> { context: @TestQualifier1 Context ->
-                        ContextCompat.getSystemService( context, T::class.java)
+                        transient<T> {
+                        ContextCompat.getSystemService(get<@TestQualifier1 Context>(), T::class.java)
                     }
                 }
 
@@ -85,9 +85,9 @@ class InlineTest {
         
                     @Module
                     inline fun <reified T : Any> baseSystemService() {
-                        transient<T> { context: @TestQualifier1 Context ->
-                        ContextCompat.getSystemService( context, T::class.java)
-                    }
+                        transient<T> {
+                            ContextCompat.getSystemService(get<@TestQualifier1 Context>(), T::class.java)
+                        }
                 }
                 """
                 )
@@ -126,14 +126,14 @@ class InlineTest {
     fun testModuleWithGenericFunctionParameter() = codegen(
         """ 
         @Module 
-        fun <T, F : Function<T>> generic(provider: F) {
+        fun <T, @Readable F : Function<T>> generic(provider: @Readable F) {
             transient(provider)
         }
         
         @Factory
         fun factory(): TestComponent1<Bar> {
             generic { Foo() }
-            generic { foo: Foo -> Bar(foo) }
+            generic { Bar(get<Foo>()) }
             return create()
         }
         

@@ -25,10 +25,10 @@ fun <T : Function<*>> childFactory(factory: T): Unit = injektIntrinsic()
 
 fun <S : T, T> alias(): Unit = injektIntrinsic()
 
-fun <T> transient(provider: Function<T> = injektIntrinsic()): Unit = injektIntrinsic()
+fun <T> transient(provider: @Readable Function<T> = injektIntrinsic()): Unit = injektIntrinsic()
 
 annotation class Transient
 
-fun <T> scoped(provider: Function<T> = injektIntrinsic()): Unit = injektIntrinsic()
+fun <T> scoped(provider: @Readable Function<T> = injektIntrinsic()): Unit = injektIntrinsic()
 
 annotation class Scoped<T>

@@ -79,6 +79,8 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
 
     val provider = pluginContext.referenceClass(InjektFqNames.Provider)!!
 
+    val readable = pluginContext.referenceClass(InjektFqNames.Readable)!!
+
     val setDsl = pluginContext.referenceClass(InjektFqNames.SetDsl)!!
     val setOfValueFactory = pluginContext.referenceClass(InjektFqNames.SetOfValueFactory)!!
     val setOfProviderFactory = pluginContext.referenceClass(InjektFqNames.SetOfProviderFactory)!!

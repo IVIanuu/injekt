@@ -23,5 +23,4 @@ class CompositionSymbols(val pluginContext: IrPluginContext) {
     val compositionComposition = pluginContext.referenceClass(InjektFqNames.CompositionComponent)!!
     val compositionFactory = pluginContext.referenceClass(InjektFqNames.CompositionFactory)!!
     val compositionFactories = pluginContext.referenceClass(InjektFqNames.CompositionFactories)!!
-    val readable = pluginContext.referenceClass(InjektFqNames.Readable)!!
 }

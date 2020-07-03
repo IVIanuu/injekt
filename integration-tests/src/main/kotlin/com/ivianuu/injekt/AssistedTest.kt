@@ -29,22 +29,18 @@ class AssistedTest {
         """
         @Transient
         class Dep(
-            val assisted: @Assisted String,
+            @Assisted val assisted: String,
             val foo: Foo
         )
         
-        interface Component {
-            val value: @Provider (String) -> Dep
-        }
-        
         @Factory
-        fun factory(): Component {
+        fun factory(): TestComponent1<@Provider (String) -> Dep> {
             transient<Foo>()
             return create()
         }
         
         fun invoke() {
-            val depFactory = factory().value
+            val depFactory = factory().a
             val result: Dep = depFactory("hello world")
         }
     """
@@ -59,7 +55,7 @@ class AssistedTest {
                 """
                 @Transient 
                 class Dep(
-                    val assisted: @Assisted String,
+                    @Assisted val assisted: String,
                     val foo: Foo
                 )
                 """
@@ -68,20 +64,16 @@ class AssistedTest {
         listOf(
             source(
                 """
-                    interface Component {
-                        val value: @Provider (String) -> Dep
-                    }
-
-                    @Factory 
-                    fun factory(): Component { 
-                        transient { Foo() }
-                        return create()
-                    }
+                @Factory 
+                fun factory(): TestComponent1<@Provider (String) -> Dep> { 
+                    transient { Foo() }
+                    return create()
+                }
                     
-                    fun invoke() {
-                        val depFactory = factory().value
-                        val result = depFactory("hello world")
-                    }
+                fun invoke() {
+                    val depFactory = factory().a
+                    val result = depFactory("hello world")
+                }
                 """,
                 name = "File.kt"
             )
@@ -94,18 +86,14 @@ class AssistedTest {
     @Test
     fun testAssistedInDsl() = codegen(
         """
-        interface Component {
-            val value: @Provider (Foo) -> Bar
-        }
-        
         @Factory
-        fun factory(): Component {
-            transient { foo: @Assisted Foo -> Bar(foo) }
+        fun factory(): TestComponent1<@Provider (Foo) -> Bar> {
+            transient { foo: Foo -> Bar(foo) }
             return create()
         }
         
         fun invoke() {
-            val barFactory = factory().value
+            val barFactory = factory().a
             val bar: Bar = barFactory(Foo())
         }
     """
@@ -120,7 +108,7 @@ class AssistedTest {
                 """
                 @Module 
                 fun assistedModule() { 
-                    transient { foo: @Assisted Foo -> Bar(foo) }
+                    transient { foo: Foo -> Bar(foo) }
                 }
                 """
             )
@@ -128,17 +116,13 @@ class AssistedTest {
         listOf(
             source(
                 """
-                interface Component {
-                    val value: @Provider (Foo) -> Bar
-                }
-                
                 @Factory 
-                fun factory(): Component {
+                fun factory(): TestComponent1<@Provider (Foo) -> Bar> {
                     assistedModule()
                     return create()
                 }
                 
-                fun invoke() = factory().value
+                fun invoke() = factory().a
                 """,
                 name = "File.kt"
             )

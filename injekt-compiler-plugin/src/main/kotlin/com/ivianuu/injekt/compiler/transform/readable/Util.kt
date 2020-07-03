@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.composition
+package com.ivianuu.injekt.compiler.transform.readable
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.analysis.TypeAnnotationChecker

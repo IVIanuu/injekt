@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.transform.composition.CompositionModuleMetada
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
+import com.ivianuu.injekt.compiler.transform.readable.ReadableFunctionTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -52,6 +53,7 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
     lateinit var factoryTransformer: RootFactoryTransformer
     lateinit var factoryModuleTransformer: FactoryModuleTransformer
     lateinit var moduleFunctionTransformer: ModuleFunctionTransformer
+    lateinit var readableFunctionTransformer: ReadableFunctionTransformer
 
     fun getCompositionModuleMetadata(function: IrFunction): IrClass? {
         return if (!function.isExternalDeclaration()) {

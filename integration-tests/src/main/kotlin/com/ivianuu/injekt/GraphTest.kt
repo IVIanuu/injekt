@@ -42,7 +42,7 @@ class GraphTest {
     @Test
     fun testCannotResolveDirectBindingWithAssistedParameters() = codegen(
         """
-        @Transient class Dep(bar: @Assisted Bar)
+        @Transient class Dep(@Assisted bar: Bar)
         @Factory fun createDep(): TestComponent1<Dep> = create()
         """
     ) {
@@ -227,8 +227,8 @@ class GraphTest {
         fun factory(): TestComponent3<@TestQualifier1 String, @TestQualifier2 String, Pair<String, String>> {
             transient<@TestQualifier1 String> { "a" }
             transient<@TestQualifier2 String> { "b" }
-            transient { a: @TestQualifier1 String, b: @TestQualifier2 String ->
-                Pair<String, String>(a, b)
+            transient {
+                Pair<String, String>(get<@TestQualifier1 String>(), get<@TestQualifier2 String>())
             }
             return create()
         }
@@ -258,18 +258,17 @@ class GraphTest {
     }
 
     @Test
-    fun testReturnsInstanceForNullableBinding() =
-        codegen(
-            """
+    fun testReturnsInstanceForNullableBinding() = codegen(
+        """
         @Factory
         fun invoke(): TestComponent1<Foo?> {
             transient<Foo?>()
             return create()
         }
-    """
-        ) {
-            assertNotNull(invokeSingleFile())
-        }
+        """
+    ) {
+        assertNotNull(invokeSingleFile())
+    }
 
     @Test
     fun testReturnsNullOnMissingNullableBinding() = codegen(

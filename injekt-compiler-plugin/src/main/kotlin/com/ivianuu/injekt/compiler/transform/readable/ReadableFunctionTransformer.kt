@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.composition
+package com.ivianuu.injekt.compiler.transform.readable
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.remapTypeParameters
@@ -39,6 +40,7 @@ import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclaration
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
+import org.jetbrains.kotlin.backend.jvm.ir.propertyIfAccessor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
@@ -47,34 +49,28 @@ import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.builders.createTmpVariable
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irEqeqeq
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
-import org.jetbrains.kotlin.ir.builders.irGetObject
-import org.jetbrains.kotlin.ir.builders.irIfThenElse
-import org.jetbrains.kotlin.ir.builders.irImplicitCast
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.IrVariable
+import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
+import org.jetbrains.kotlin.ir.declarations.isPropertyAccessor
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
-import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
-import org.jetbrains.kotlin.ir.symbols.IrValueSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
@@ -84,19 +80,18 @@ import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.irCall
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
-import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -113,6 +108,9 @@ class ReadableFunctionTransformer(
 
     fun getContextForFunction(readable: IrFunction): IrClass =
         transformFunctionIfNeeded(readable).valueParameters.last().type.classOrNull!!.owner
+
+    fun getTransformedFunction(function: IrFunction): IrFunction =
+        transformFunctionIfNeeded(function)
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         super.visitModuleFragment(declaration)
@@ -139,6 +137,12 @@ class ReadableFunctionTransformer(
         // up.
         declaration.patchDeclarationParents()
 
+        addContextClassesToFiles()
+
+        return declaration
+    }
+
+    fun addContextClassesToFiles() {
         transformedFunctions
             .filterNot { it.key.isExternalDeclaration() }
             .forEach {
@@ -147,8 +151,6 @@ class ReadableFunctionTransformer(
                     it.value.file.addChild(contextClass)
                 }
             }
-
-        return declaration
     }
 
     override fun needsTransform(function: IrFunction): Boolean =
@@ -228,7 +230,7 @@ class ReadableFunctionTransformer(
                     (expression.symbol.owner.isReadable(pluginContext.bindingContext) ||
                             expression.isReadableLambdaInvoke())
                 ) {
-                    if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.composition.get") {
+                    if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get") {
                         getCalls += expression
                     } else {
                         readableCalls += expression
@@ -307,10 +309,24 @@ class ReadableFunctionTransformer(
                 if (!call.isReadableLambdaInvoke()) {
                     val callContext = getContextForFunction(call.symbol.owner)
                     handleSubcontext(callContext, call, call.typeArguments)
+                } else {
+                    val lambdaSource = call.dispatchReceiver!!
+
+                    if (lambdaSource is IrCall && lambdaSource.symbol.owner.isPropertyAccessor) {
+                        val property = lambdaSource.symbol.owner.propertyIfAccessor as IrProperty
+                        println("got source property ${property.dump()}")
+                    }
+
+                    val transformedLambda =
+                        transformFunctionIfNeeded(lambdaSource.getFunctionArgument())
+                    val lambdaContext = getContextForFunction(transformedLambda)
+                    handleSubcontext(lambdaContext, call, emptyList())
+
                 }
-                call.getReadableLambdas()
+                call.getReadableLambdaArguments()
                     .forEach { expr ->
-                        val transformedLambda = transformFunctionIfNeeded(expr.function)
+                        val transformedLambda =
+                            transformFunctionIfNeeded(expr.getFunctionArgument())
                         val lambdaContext = getContextForFunction(transformedLambda)
                         handleSubcontext(lambdaContext, expr, emptyList())
                     }
@@ -337,14 +353,18 @@ class ReadableFunctionTransformer(
         rewriteReadableCalls(transformedFunction, genericFunctionMap)
     }
 
-    private fun IrCall.getReadableLambdas(): List<IrFunctionExpression> {
+    private fun IrCall.getReadableLambdaArguments(): List<IrExpression> {
         return getArgumentsWithIr()
-            .filter { (valueParameter, expr) ->
+            .filter { (valueParameter, _) ->
                 (valueParameter.type.isFunction() || valueParameter.type.isSuspendFunction()) &&
-                        valueParameter.type.hasAnnotation(InjektFqNames.Readable) &&
-                        expr is IrFunctionExpression
+                        valueParameter.type.hasAnnotation(InjektFqNames.Readable)
             }
-            .map { it.second as IrFunctionExpression }
+            .map { it.second }
+    }
+
+    private fun IrExpression.getFunctionArgument() = when (this) {
+        is IrFunctionExpression -> function
+        else -> error("Cannot extract function from $this ${dumpSrc()}")
     }
 
     private fun rewriteReadableCalls(
@@ -414,10 +434,10 @@ class ReadableFunctionTransformer(
                                     superTypes += calleeContext.defaultType
                                         .typeWith(*transformedCall.typeArguments.toTypedArray())
 
-                                    result.getReadableLambdas()
+                                    result.getReadableLambdaArguments()
                                         .forEach { expr ->
                                             val transformedLambda =
-                                                transformFunctionIfNeeded(expr.function)
+                                                transformFunctionIfNeeded(expr.getFunctionArgument())
                                             superTypes += getContextForFunction(transformedLambda)
                                                 .defaultType
                                         }

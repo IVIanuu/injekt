@@ -29,7 +29,7 @@ class InlineClassTest {
         @Factory
         fun factory(): TestComponent1<InlineFoo> {
             transient<Foo>()
-            transient { foo: Foo -> InlineFoo(foo) }
+            transient { InlineFoo(get()) }
             return create()
         }
     """
