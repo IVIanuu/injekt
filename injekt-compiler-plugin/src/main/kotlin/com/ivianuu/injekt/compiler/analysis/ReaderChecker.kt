@@ -18,8 +18,10 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
@@ -105,18 +107,23 @@ class ReaderChecker(
                 InjektFqNames.Reader
             )
         ) return
-        checkInvocations(reportOn, context)
+        checkInvocations(reportOn, context, resolvedCall)
     }
 
     private fun checkInvocations(
         reportOn: PsiElement,
-        context: CallCheckerContext
+        context: CallCheckerContext,
+        resolvedCall: ResolvedCall<*>
     ) {
-        val enclosingReaderFunction = findEnclosingFunctionContext(context) {
-            typeAnnotationChecker.hasTypeAnnotation(context.trace, it, InjektFqNames.Reader)
+        val enclosingReaderContext = findEnclosingContext(context) {
+            typeAnnotationChecker.hasTypeAnnotation(context.trace, it, InjektFqNames.Reader) ||
+                    (it is ConstructorDescriptor &&
+                            it.constructedClass.hasAnnotation(InjektFqNames.Reader))
         }
 
-        if (enclosingReaderFunction == null) {
+        println("enclosing reader context $enclosingReaderContext for ${resolvedCall.resultingDescriptor}")
+
+        if (enclosingReaderContext == null) {
             context.trace.report(
                 InjektErrors.FORBIDDEN_READER_INVOCATION.on(reportOn)
             )

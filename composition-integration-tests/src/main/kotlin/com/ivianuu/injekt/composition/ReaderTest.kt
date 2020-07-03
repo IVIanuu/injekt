@@ -586,4 +586,20 @@ class ReaderTest {
         assertTrue(it.last().invokeSingleFile() is Foo)
     }
 
+    @Test
+    fun testReaderClass() = codegen(
+        """
+        @Reader
+        fun foo(): Foo = get()
+        
+        @Reader
+        @Transient
+        class ReaderClass {
+            init {
+                foo()
+            }
+        }
+    """
+    )
+
 }

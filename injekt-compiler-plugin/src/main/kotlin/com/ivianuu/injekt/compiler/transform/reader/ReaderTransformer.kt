@@ -101,7 +101,7 @@ import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ReaderFunctionTransformer(
+class ReaderTransformer(
     pluginContext: IrPluginContext,
     val symbolRemapper: DeepCopySymbolRemapper
 ) : AbstractFunctionTransformer(pluginContext) {
@@ -155,9 +155,6 @@ class ReaderFunctionTransformer(
     override fun transform(function: IrFunction, callback: (IrFunction) -> Unit) {
         val transformedFunction = function.copy().apply {
             callback(this)
-            overriddenSymbols += (function as IrFunctionImpl).overriddenSymbols.map {
-                transformFunctionIfNeeded(it.owner).symbol as IrSimpleFunctionSymbol
-            }
 
             val descriptor = descriptor
             if (descriptor is PropertyGetterDescriptor &&
