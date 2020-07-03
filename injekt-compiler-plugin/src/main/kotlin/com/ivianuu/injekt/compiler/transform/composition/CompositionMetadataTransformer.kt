@@ -19,8 +19,6 @@ package com.ivianuu.injekt.compiler.transform.composition
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.child
-import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -48,19 +46,40 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
-import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class CompositionModuleMetadataTransformer(pluginContext: IrPluginContext) :
-    AbstractInjektTransformer(pluginContext) {
+class CompositionMetadataTransformer(
+    pluginContext: IrPluginContext
+) : AbstractInjektTransformer(pluginContext) {
 
-    private val metadataByModule = mutableMapOf<IrFunction, IrClass>()
+    private val metadataByFunction = mutableMapOf<IrFunction, IrClass>()
 
-    fun getCompositionModuleMetadata(function: IrFunction): IrClass? {
-        metadataByModule[function]?.let { return it }
+    override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
+        val functions = mutableListOf<IrFunction>()
+
+        declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitFunction(declaration: IrFunction): IrStatement {
+                if (declaration.hasAnnotation(InjektFqNames.Module) ||
+                    declaration.hasAnnotation(InjektFqNames.CompositionFactory)
+                ) {
+                    functions += declaration
+                }
+                return super.visitFunction(declaration)
+            }
+        })
+
+        functions.forEach {
+            getCompositionMetadata(it)
+        }
+
+        return super.visitModuleFragment(declaration)
+    }
+
+    fun getCompositionMetadata(function: IrFunction): IrClass? {
+        metadataByFunction[function]?.let { return it }
 
         val compositionTypes = mutableListOf<IrType>()
         val entryPoints = mutableListOf<IrType>()
@@ -68,12 +87,14 @@ class CompositionModuleMetadataTransformer(pluginContext: IrPluginContext) :
         function.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
                 return when {
-                    expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.composition.installIn" -> {
+                    expression.symbol.descriptor.fqNameSafe.asString() ==
+                            "com.ivianuu.injekt.composition.installIn" -> {
                         compositionTypes += expression.getTypeArgument(0)!!
                         DeclarationIrBuilder(pluginContext, expression.symbol)
                             .irUnit()
                     }
-                    expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.composition.entryPoint" -> {
+                    expression.symbol.descriptor.fqNameSafe.asString() ==
+                            "com.ivianuu.injekt.composition.entryPoint" -> {
                         entryPoints += expression.getTypeArgument(0)!!
                         DeclarationIrBuilder(pluginContext, expression.symbol)
                             .irUnit()
@@ -83,10 +104,10 @@ class CompositionModuleMetadataTransformer(pluginContext: IrPluginContext) :
             }
         })
 
-        if (compositionTypes.isEmpty()) return null
+        if (compositionTypes.isEmpty() && entryPoints.isEmpty()) return null
 
         val metadata = buildClass {
-            this.name = getCompositionModuleMetadataName(function)
+            this.name = getCompositionMetadataName(function)
             visibility = Visibilities.PUBLIC
         }.apply clazz@{
             createImplicitParameterDeclarationWithWrappedDescriptor()
@@ -153,28 +174,9 @@ class CompositionModuleMetadataTransformer(pluginContext: IrPluginContext) :
 
         function.file.addChild(metadata)
 
-        metadataByModule[function] = metadata
+        metadataByFunction[function] = metadata
 
         return metadata
-    }
-
-    override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
-        val modules = mutableListOf<IrFunction>()
-
-        declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitFunction(declaration: IrFunction): IrStatement {
-                if (declaration.hasAnnotation(InjektFqNames.Module)) {
-                    modules += declaration
-                }
-                return super.visitFunction(declaration)
-            }
-        })
-
-        modules.forEach {
-            getCompositionModuleMetadata(it)
-        }
-
-        return super.visitModuleFragment(declaration)
     }
 
 }

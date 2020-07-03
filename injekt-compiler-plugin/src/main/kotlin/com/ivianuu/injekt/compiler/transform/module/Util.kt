@@ -22,4 +22,4 @@ import org.jetbrains.kotlin.name.Name
 
 fun getModuleNameForFactoryFunction(
     factoryFunction: IrFunction
-): Name = (factoryFunction.name.asString() + "Module").asNameId()
+): Name = (factoryFunction.name.asString() + "_Module").asNameId()

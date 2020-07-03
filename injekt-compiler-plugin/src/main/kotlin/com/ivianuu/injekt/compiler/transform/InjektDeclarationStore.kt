@@ -17,12 +17,10 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.child
-import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
-import com.ivianuu.injekt.compiler.transform.composition.CompositionModuleMetadataTransformer
-import com.ivianuu.injekt.compiler.transform.composition.getCompositionModuleMetadataName
+import com.ivianuu.injekt.compiler.transform.composition.CompositionMetadataTransformer
+import com.ivianuu.injekt.compiler.transform.composition.getCompositionMetadataName
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
@@ -51,19 +49,19 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
 
-    lateinit var compositionModuleMetadataTransformer: CompositionModuleMetadataTransformer
+    lateinit var compositionMetadataTransformer: CompositionMetadataTransformer
     lateinit var factoryTransformer: RootFactoryTransformer
     lateinit var factoryModuleTransformer: FactoryModuleTransformer
     lateinit var moduleFunctionTransformer: ModuleFunctionTransformer
     lateinit var readerFunctionTransformer: ReaderFunctionTransformer
 
-    fun getCompositionModuleMetadata(function: IrFunction): IrClass? {
+    fun getCompositionMetadata(function: IrFunction): IrClass? {
         return if (!function.isExternalDeclaration()) {
-            compositionModuleMetadataTransformer.getCompositionModuleMetadata(function)
+            compositionMetadataTransformer.getCompositionMetadata(function)
         } else {
             pluginContext.referenceClass(
                 function.getPackageFragment()!!.fqName
-                    .child(getCompositionModuleMetadataName(function))
+                    .child(getCompositionMetadataName(function))
             )?.owner
         }
     }

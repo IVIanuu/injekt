@@ -20,7 +20,7 @@ import com.ivianuu.injekt.compiler.compositionsEnabled
 import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.composition.BindingEffectTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionFactoryParentTransformer
-import com.ivianuu.injekt.compiler.transform.composition.CompositionModuleMetadataTransformer
+import com.ivianuu.injekt.compiler.transform.composition.CompositionMetadataTransformer
 import com.ivianuu.injekt.compiler.transform.composition.EntryPointOfTransformer
 import com.ivianuu.injekt.compiler.transform.composition.GenerateCompositionsTransformer
 import com.ivianuu.injekt.compiler.transform.reader.ReaderFunctionTransformer
@@ -95,8 +95,8 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             CompositionFactoryParentTransformer(pluginContext)
                 .lower(moduleFragment)
 
-            CompositionModuleMetadataTransformer(pluginContext)
-                .also { declarationStore.compositionModuleMetadataTransformer = it }
+            CompositionMetadataTransformer(pluginContext)
+                .also { declarationStore.compositionMetadataTransformer = it }
                 .lower(moduleFragment)
 
             // generate composition factories
@@ -113,13 +113,15 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         readerFunctionTransformer.addContextClassesToFiles()
 
+        println(moduleFragment.dumpSrc())
+
         // generate factory implementations
         factoryTransformer.lower(moduleFragment)
 
         // patch metadata
         TmpMetadataPatcher(pluginContext).lower(moduleFragment)
 
-        //println(moduleFragment.dumpSrc())
+        println(moduleFragment.dumpSrc())
     }
 
 }

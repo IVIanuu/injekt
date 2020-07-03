@@ -22,7 +22,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-fun getCompositionModuleMetadataName(function: IrFunction) = getJoinedName(
+fun getCompositionMetadataName(function: IrFunction) = getJoinedName(
     function.getPackageFragment()!!.fqName,
-    function.descriptor.fqNameSafe.child("_CompositionMetadata")
+    function.descriptor.fqNameSafe.child("CompositionMetadata")
 )

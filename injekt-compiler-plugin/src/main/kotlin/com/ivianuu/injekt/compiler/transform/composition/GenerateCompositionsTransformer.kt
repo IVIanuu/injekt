@@ -118,7 +118,7 @@ class GenerateCompositionsTransformer(
             if (function.hasAnnotation(InjektFqNames.CompositionFactory)) {
                 allFactories.getOrPut(function.returnType.classOrNull!!) { mutableListOf() } += function.symbol
             } else if (function.hasAnnotation(InjektFqNames.Module)) {
-                val metadata = declarationStore.getCompositionModuleMetadata(function)
+                val metadata = declarationStore.getCompositionMetadata(function)
                     ?: return
                 val compositionTypes = metadata.getClassesFromSingleArrayValueAnnotation(
                     InjektFqNames.AstCompositionTypes, pluginContext
@@ -200,9 +200,19 @@ class GenerateCompositionsTransformer(
                 factoriesToProcess.forEach { factory ->
                     val modules = factory.modules
 
-                    val entryPoints = modules
+                    val entryPoints = mutableListOf<IrType>()
+
+                    entryPoints += declarationStore.getCompositionMetadata(factory.factoryFunction.owner)
+                        ?.getClassesFromSingleArrayValueAnnotation(
+                            InjektFqNames.AstEntryPoints,
+                            pluginContext
+                        )
+                        ?.map { it.defaultType }
+                        ?: emptyList()
+
+                    entryPoints += modules
                         .flatMap {
-                            declarationStore.getCompositionModuleMetadata(it.owner)!!
+                            declarationStore.getCompositionMetadata(it.owner)!!
                                 .getClassesFromSingleArrayValueAnnotation(
                                     InjektFqNames.AstEntryPoints,
                                     pluginContext
@@ -240,7 +250,8 @@ class GenerateCompositionsTransformer(
                         factory.children.map {
                             it.compositionType to factoryImpls.getValue(it.compositionType)
                         },
-                        factory.modules
+                        factory.modules,
+                        entryPoints
                     )
 
                     processedFactories += factory
@@ -323,7 +334,8 @@ class GenerateCompositionsTransformer(
         compositionType: IrType,
         factory: IrFunctionSymbol,
         childFactories: List<Pair<IrClassSymbol, IrFunctionSymbol>>,
-        modules: Set<IrFunctionSymbol>
+        modules: Set<IrFunctionSymbol>,
+        entryPoints: List<IrType>
     ) = buildFun {
         this.name = name
         returnType = factoryType.owner.defaultType
@@ -356,14 +368,16 @@ class GenerateCompositionsTransformer(
                     }
                 }
 
-                +irCall(
-                    pluginContext.referenceFunctions(
-                        InjektFqNames.InjektPackage
-                            .child("alias")
-                    ).single()
-                ).apply {
-                    putTypeArgument(0, factoryType.defaultType)
-                    putTypeArgument(1, compositionType)
+                (entryPoints + compositionType).forEach { aliasType ->
+                    +irCall(
+                        pluginContext.referenceFunctions(
+                            InjektFqNames.InjektPackage
+                                .child("alias")
+                        ).single()
+                    ).apply {
+                        putTypeArgument(0, factoryType.defaultType)
+                        putTypeArgument(1, aliasType)
+                    }
                 }
 
                 childFactories.forEach { (compositionType, childFactory) ->
