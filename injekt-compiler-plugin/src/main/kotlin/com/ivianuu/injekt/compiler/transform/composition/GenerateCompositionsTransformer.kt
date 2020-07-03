@@ -18,13 +18,14 @@ package com.ivianuu.injekt.compiler.transform.composition
 
 import com.ivianuu.injekt.compiler.CompositionSymbols
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.getClassesFromSingleArrayValueAnnotation
 import com.ivianuu.injekt.compiler.getFunctionType
+import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
@@ -72,7 +73,9 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
+import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.ir.types.classifierOrFail
+import org.jetbrains.kotlin.js.translate.utils.AnnotationsUtils.hasAnnotation
 
 class GenerateCompositionsTransformer(
     pluginContext: IrPluginContext,
@@ -80,16 +83,27 @@ class GenerateCompositionsTransformer(
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val compositionSymbols = CompositionSymbols(pluginContext)
+    private val nameProvider = NameProvider()
+
+    private data class GenerateCompositionCall(
+        val call: IrCall,
+        val scope: ScopeWithIr,
+        val file: IrFile
+    )
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
-        val generateCompositionsCalls = mutableListOf<Pair<IrCall, IrFile>>()
+        val generateCompositionsCalls = mutableListOf<GenerateCompositionCall>()
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
                 if (expression.symbol.descriptor.fqNameSafe.asString() ==
                     "com.ivianuu.injekt.composition.initializeCompositions"
                 ) {
-                    generateCompositionsCalls += expression to currentFile
+                    generateCompositionsCalls += GenerateCompositionCall(
+                        expression,
+                        currentScope!!,
+                        currentFile
+                    )
                 }
                 return super.visitCall(expression)
             }
@@ -169,9 +183,7 @@ class GenerateCompositionsTransformer(
 
         val factoryImpls = mutableMapOf<IrClassSymbol, IrFunctionSymbol>()
 
-        generateCompositionsCalls.forEach { (call, file) ->
-            val nameProvider = NameProvider()
-
+        generateCompositionsCalls.forEach { (call, scope, file) ->
             val processedFactories = mutableSetOf<CompositionFactory>()
 
             while (true) {
@@ -200,10 +212,10 @@ class GenerateCompositionsTransformer(
 
                     val factoryType = compositionFactoryType(
                         nameProvider.allocateForGroup(
-                            InjektNameConventions.getCompositionFactoryTypeNameForCall(
-                                file,
-                                call,
-                                factory.factoryFunction
+                            getJoinedName(
+                                file.fqName,
+                                scope.scope.scopeOwner.fqNameSafe.parent()
+                                    .child(scope.scope.scopeOwner.name.asString() + "CompositionComponent")
                             )
                         ),
                         factory.compositionType.defaultType,
@@ -213,13 +225,14 @@ class GenerateCompositionsTransformer(
 
                     val factoryFunctionImpl = compositionFactoryImpl(
                         nameProvider.allocateForGroup(
-                            InjektNameConventions.getCompositionFactoryImplNameForCall(
-                                file,
-                                call,
-                                factory.factoryFunction,
-                                factory.parents.isNotEmpty()
+                            "create${
+                            getJoinedName(
+                                file.fqName,
+                                scope.scope.scopeOwner.fqNameSafe.parent()
+                                    .child(scope.scope.scopeOwner.name.asString() + "CompositionComponent")
                             )
-                        ),
+                            }"
+                        ).asNameId(),
                         factory.parents.isNotEmpty(),
                         factoryType.symbol,
                         factory.compositionType.defaultType,
@@ -241,7 +254,7 @@ class GenerateCompositionsTransformer(
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
-                if (generateCompositionsCalls.none { it.first == expression }) return super.visitCall(
+                if (generateCompositionsCalls.none { it.call == expression }) return super.visitCall(
                     expression
                 )
                 return DeclarationIrBuilder(pluginContext, expression.symbol).run {

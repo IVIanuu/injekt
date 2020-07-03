@@ -127,12 +127,12 @@ class CompositionDslTest {
         }
 
     @Test
-    fun testRunReadingWithoutCompositionComponent() =
+    fun testReaderWithoutCompositionComponent() =
         codegen(
             """
         val component = Any()
         fun inject() {
-            component.runReading {}
+            component.reader {}
         }
     """
         ) {

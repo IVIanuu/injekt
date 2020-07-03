@@ -17,14 +17,13 @@
 package com.ivianuu.injekt.compiler.transform.module
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.PropertyPath
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.addToFileOrAbove
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.dumpSrc
-import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.child
+import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.setClassKind
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
@@ -34,24 +33,17 @@ import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
-import org.jetbrains.kotlin.backend.common.ir.allParameters
-import org.jetbrains.kotlin.backend.common.ir.copyBodyTo
-import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
-import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
-import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
@@ -60,31 +52,21 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrVariable
-import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
-import org.jetbrains.kotlin.ir.descriptors.WrappedSimpleFunctionDescriptor
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
-import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrTypeOperatorCallImpl
-import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.isUnit
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
-import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.isSuspend
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.resolve.annotations.argumentValue
-import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ModuleFunctionTransformer(
@@ -113,12 +95,13 @@ class ModuleFunctionTransformer(
     }
 
     override fun needsTransform(function: IrFunction): Boolean =
-        function.hasAnnotation(InjektFqNames.Module) &&
-                function.returnType.isUnit()
+        function.hasAnnotation(InjektFqNames.Module)
 
     override fun transform(function: IrFunction, callback: (IrFunction) -> Unit) {
         val transformedFunction = function.copy()
         callback(transformedFunction)
+
+        if (!transformedFunction.returnType.isUnit()) return
 
         val moduleDescriptor = ModuleDescriptor(
             transformedFunction,
@@ -128,9 +111,11 @@ class ModuleFunctionTransformer(
         )
 
         val moduleClass = buildClass {
-            name = InjektNameConventions.getModuleClassNameForModuleFunction(
+            name = getJoinedName(
                 function.getPackageFragment()!!.fqName,
                 transformedFunction.descriptor.fqNameSafe
+                    .parent()
+                    .child("${function.name}_Declarations")
             )
             visibility = transformedFunction.visibility
         }.apply clazz@{
@@ -290,6 +275,9 @@ class ModuleFunctionTransformer(
 
     override fun transformExternal(function: IrFunction, callback: (IrFunction) -> Unit) {
         val transformedFunction = function.copy()
+        callback(transformedFunction)
+
+        if (!transformedFunction.returnType.isUnit()) return
 
         val moduleClass = declarationStore.getModuleClassForFunction(function)
 

@@ -123,7 +123,7 @@ class FactoryMembers(
         return buildFun {
             this.name = Name.identifier(
                 getFunctionsNameProvider.allocateForGroup(
-                    "get${key.type.classifierOrFail.descriptor.name.asString()}"
+                    key.type.classifierOrFail.descriptor.name.asString()
                 )
             )
             returnType = key.type

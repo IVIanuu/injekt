@@ -80,6 +80,7 @@ import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.ForApplication
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.composition.installIn
+import com.ivianuu.injekt.get
 import com.ivianuu.injekt.transient
 
 @Module
@@ -147,7 +148,7 @@ fun systemServiceModule() {
 
 @Module
 inline fun <reified T : Any> systemService() {
-    transient<T> { context: @ForApplication Context ->
-        ContextCompat.getSystemService(context, T::class.java)!!
+    transient<T> {
+        ContextCompat.getSystemService(get<@ForApplication Context>(), T::class.java)!!
     }
 }

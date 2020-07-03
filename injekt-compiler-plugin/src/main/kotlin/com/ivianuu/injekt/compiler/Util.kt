@@ -83,7 +83,6 @@ import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
-import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -198,6 +197,60 @@ fun IrType.remapTypeParameters(
                     when (it) {
                         is IrTypeProjection -> makeTypeProjection(
                             it.type.remapTypeParameters(source, target, srcToDstParameterMap),
+                            it.variance
+                        )
+                        else -> it
+                    }
+                }
+                IrSimpleTypeImpl(
+                    makeKotlinType(classifier.symbol, arguments, hasQuestionMark, annotations),
+                    classifier.symbol,
+                    hasQuestionMark,
+                    arguments,
+                    annotations
+                )
+            }
+
+            else -> this
+        }
+    }
+    else -> this
+}
+
+fun IrType.remapTypeParametersByName(
+    source: IrTypeParametersContainer,
+    target: IrTypeParametersContainer,
+    srcToDstParameterMap: Map<IrTypeParameter, IrTypeParameter>? = null
+): IrType = when (this) {
+    is IrSimpleType -> {
+        val classifier = classifier.owner
+        when {
+            classifier is IrTypeParameter -> {
+                val newClassifier =
+                    target.typeParameters.firstOrNull {
+                        it.descriptor.name == classifier.descriptor.name
+                    } ?: if (classifier.parent == source)
+                        target.typeParameters[classifier.index]
+                    else classifier
+                IrSimpleTypeImpl(
+                    makeKotlinType(
+                        newClassifier.symbol,
+                        arguments,
+                        hasQuestionMark,
+                        annotations
+                    ),
+                    newClassifier.symbol,
+                    hasQuestionMark,
+                    arguments,
+                    annotations
+                )
+            }
+
+            classifier is IrClass -> {
+                val arguments = arguments.map {
+                    when (it) {
+                        is IrTypeProjection -> makeTypeProjection(
+                            it.type.remapTypeParametersByName(source, target, srcToDstParameterMap),
                             it.variance
                         )
                         else -> it
@@ -409,17 +462,7 @@ fun <T> T.getClassFromSingleValueAnnotation(
     fqName: FqName,
     pluginContext: IrPluginContext
 ): IrClass where T : IrDeclaration, T : IrAnnotationContainer {
-    return getAnnotation(fqName)
-        ?.getValueArgument(0)
-        ?.let { it as IrClassReferenceImpl }
-        ?.classType
-        ?.getClass()
-        ?: descriptor.annotations.findAnnotation(fqName)
-            ?.allValueArguments
-            ?.values
-            ?.single()
-            ?.let { it as KClassValue }
-            ?.getIrClass(pluginContext)
+    return getClassFromSingleValueAnnotationOrNull(fqName, pluginContext)
         ?: error("Cannot get class value for $fqName for ${dump()}")
 }
 
@@ -589,3 +632,24 @@ inline fun <K, V> BindingTrace.getOrPut(
     record(slice, key, value)
     return value
 }
+
+fun getJoinedName(
+    packageFqName: FqName,
+    fqName: FqName
+): Name {
+    val joinedSegments = fqName.asString()
+        .removePrefix(packageFqName.asString() + ".")
+        .split(".")
+    return joinedSegments.joinToString("_").asNameId()
+}
+
+fun nameWithoutIllegalChars(name: String): Name = name
+    .replace(".", "")
+    .replace("<", "")
+    .replace(">", "")
+    .replace(" ", "")
+    .replace("[", "")
+    .replace("]", "")
+    .replace("@", "")
+    .replace(",", "")
+    .asNameId()

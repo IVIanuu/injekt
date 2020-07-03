@@ -17,9 +17,10 @@
 package com.ivianuu.injekt.compiler.transform.composition
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektNameConventions
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.child
+import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -85,10 +86,7 @@ class CompositionModuleMetadataTransformer(pluginContext: IrPluginContext) :
         if (compositionTypes.isEmpty()) return null
 
         val metadata = buildClass {
-            this.name = InjektNameConventions.getCompositionModuleMetadataForModule(
-                function.getPackageFragment()!!.fqName,
-                function.descriptor.fqNameSafe
-            )
+            this.name = getCompositionModuleMetadataName(function)
             visibility = Visibilities.PUBLIC
         }.apply clazz@{
             createImplicitParameterDeclarationWithWrappedDescriptor()

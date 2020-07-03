@@ -14,4 +14,19 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.lol
+package com.ivianuu.injekt
+
+import com.ivianuu.injekt.internal.TypeAnnotation
+import com.ivianuu.injekt.internal.injektIntrinsic
+
+@Target(
+    AnnotationTarget.TYPE,
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.TYPE_PARAMETER,
+    AnnotationTarget.PROPERTY
+)
+@TypeAnnotation
+annotation class Reader
+
+@Reader
+fun <T> get(): T = injektIntrinsic()

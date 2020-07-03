@@ -47,6 +47,7 @@ import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
+import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
@@ -88,6 +89,8 @@ class ModuleDeclarationFactory(
                         call.getTypeArgument(0)!!
                             .remapTypeParameters(originalModuleFunction, moduleFunction)
                             .remapTypeParameters(moduleFunction, moduleClass),
+                        call.startOffset,
+                        call.endOffset,
                         if (call.valueArgumentsCount != 0) call.getValueArgument(0) else null,
                         call.symbol.owner.name.asString() == "scoped"
                     )
@@ -234,7 +237,7 @@ class ModuleDeclarationFactory(
             .functions
             .filter { it.descriptor.hasAnnotation(InjektFqNames.AstBinding) }
             .filter { it.descriptor.hasAnnotation(InjektFqNames.AstTypeParameterPath) }
-            .map { bindingFunction ->
+            .mapIndexed { index, bindingFunction ->
                 val bindingType =
                     bindingFunction.getAnnotation(InjektFqNames.AstTypeParameterPath)!!
                         .getValueArgument(0)!!
@@ -250,6 +253,8 @@ class ModuleDeclarationFactory(
 
                 createBindingDeclaration(
                     bindingType,
+                    call.startOffset + index,
+                    call.endOffset + index,
                     null,
                     bindingFunction.hasAnnotation(InjektFqNames.AstScoped)
                 )
@@ -260,6 +265,8 @@ class ModuleDeclarationFactory(
 
     private fun createBindingDeclaration(
         bindingType: IrType,
+        startOffset: Int,
+        endOffset: Int,
         singleArgument: IrExpression?,
         scoped: Boolean
     ): BindingDeclaration {
@@ -267,6 +274,20 @@ class ModuleDeclarationFactory(
         val path: Path
         if (singleArgument != null) {
             initializer = singleArgument
+
+            /*// todo fix this hack
+            if (singleArgument is IrFunctionExpression) {
+                val context = singleArgument.type.getFunctionParameterTypes().last()
+                    .classOrNull!!
+                context
+                    .functions
+                    .map { it.owner }
+                    .forEach { function ->
+                        function.returnType = function.returnType
+                            .remapTypeParametersByName(moduleFunction, moduleClass)
+                    }
+            }*/
+
             path = PropertyPath(
                 InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
                     .fieldBackedProperty(
@@ -285,7 +306,12 @@ class ModuleDeclarationFactory(
                 val clazz = bindingType.classOrNull!!.owner
                 val providerExpression =
                     InjektDeclarationIrBuilder(pluginContext, moduleFunction.symbol)
-                        .classFactoryLambda(clazz)
+                        .classFactoryLambda(
+                            declarationStore.readerFunctionTransformer,
+                            clazz,
+                            startOffset,
+                            endOffset
+                        )
                 initializer = providerExpression
                 path = PropertyPath(
                     InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)

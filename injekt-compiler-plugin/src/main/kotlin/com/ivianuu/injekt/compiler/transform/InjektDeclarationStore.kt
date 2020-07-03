@@ -17,14 +17,17 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektNameConventions
-import com.ivianuu.injekt.compiler.dumpSrc
+import com.ivianuu.injekt.compiler.child
+import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.transform.composition.CompositionModuleMetadataTransformer
+import com.ivianuu.injekt.compiler.transform.composition.getCompositionModuleMetadataName
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
+import com.ivianuu.injekt.compiler.transform.module.getModuleNameForFactoryFunction
+import com.ivianuu.injekt.compiler.transform.reader.ReaderFunctionTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -52,6 +55,7 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
     lateinit var factoryTransformer: RootFactoryTransformer
     lateinit var factoryModuleTransformer: FactoryModuleTransformer
     lateinit var moduleFunctionTransformer: ModuleFunctionTransformer
+    lateinit var readerFunctionTransformer: ReaderFunctionTransformer
 
     fun getCompositionModuleMetadata(function: IrFunction): IrClass? {
         return if (!function.isExternalDeclaration()) {
@@ -59,12 +63,7 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
         } else {
             pluginContext.referenceClass(
                 function.getPackageFragment()!!.fqName
-                    .child(
-                        InjektNameConventions.getCompositionModuleMetadataForModule(
-                            function.getPackageFragment()!!.fqName,
-                            function.descriptor.fqNameSafe
-                        )
-                    )
+                    .child(getCompositionModuleMetadataName(function))
             )?.owner
         }
     }
@@ -77,7 +76,7 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
                     .declarations
                     .filterIsInstance<IrFunction>()
                     .firstOrNull {
-                        it.descriptor.name == InjektNameConventions.getModuleNameForFactoryFunction(
+                        it.descriptor.name == getModuleNameForFactoryFunction(
                             factoryFunction
                         )
                     }

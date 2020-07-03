@@ -25,15 +25,12 @@ import androidx.lifecycle.ViewModel
 import androidx.ui.core.setContent
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.Scoped
-import com.ivianuu.injekt.android.ActivityComponent
 import com.ivianuu.injekt.android.ActivityViewModel
 import com.ivianuu.injekt.android.ForActivity
 import com.ivianuu.injekt.android.activityComponent
-import com.ivianuu.injekt.composition.Readable
-import com.ivianuu.injekt.composition.get
-import com.ivianuu.injekt.composition.runReading
+import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.get
+import com.ivianuu.injekt.composition.reader
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
@@ -42,8 +39,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            activityComponent.runReading {
-                get<ActivityScopedStuff>()
+            activityComponent.reader {
                 WithMainViewModel {
                     GlobalScope.launch {
                         enqueueWork()
@@ -54,17 +50,14 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-@Scoped<ActivityComponent>
-class ActivityScopedStuff
-
-@Readable
+@Reader
 @Composable
 fun WithMainViewModel(children: @Composable (MainViewModel) -> Unit) {
     val viewModel = remember { get<MainViewModel>() }
     children(viewModel)
 }
 
-@Readable
+@Reader
 private fun enqueueWork() {
     WorkManager.getInstance(get<@ForActivity Context>())
         .enqueue(

@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.composition
+package com.ivianuu.injekt.compiler.transform.reader
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.child
+import com.ivianuu.injekt.compiler.dumpSrc
+import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.remapTypeParameters
@@ -45,38 +48,30 @@ import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.builders.createTmpVariable
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irEqeqeq
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
-import org.jetbrains.kotlin.ir.builders.irGetObject
-import org.jetbrains.kotlin.ir.builders.irIfThenElse
-import org.jetbrains.kotlin.ir.builders.irImplicitCast
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
-import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
-import org.jetbrains.kotlin.ir.symbols.IrValueSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.typeWith
@@ -90,13 +85,12 @@ import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.irCall
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
-import org.jetbrains.kotlin.ir.util.statements
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -107,38 +101,44 @@ import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ReadableFunctionTransformer(
-    pluginContext: IrPluginContext
+class ReaderFunctionTransformer(
+    pluginContext: IrPluginContext,
+    val symbolRemapper: DeepCopySymbolRemapper
 ) : AbstractFunctionTransformer(pluginContext) {
 
-    fun getContextForFunction(readable: IrFunction): IrClass =
-        transformFunctionIfNeeded(readable).valueParameters.last().type.classOrNull!!.owner
+    private val contextNameProvider = NameProvider()
+
+    fun getContextForFunction(reader: IrFunction): IrClass =
+        transformFunctionIfNeeded(reader).valueParameters.last().type.classOrNull!!.owner
+
+    fun getTransformedFunction(function: IrFunction): IrFunction =
+        transformFunctionIfNeeded(function)
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         super.visitModuleFragment(declaration)
 
-        val symbolRemapper = DeepCopySymbolRemapper()
         declaration.acceptVoid(symbolRemapper)
 
-        val typeRemapper = ReadableTypeRemapper(pluginContext, symbolRemapper)
-        // for each declaration, we create a deepCopy transformer It is important here that we
-        // use the "preserving metadata" variant since we are using this copy to *replace* the
-        // originals, or else the module we would produce wouldn't have any metadata in it.
+        val typeRemapper = ReaderTypeRemapper(pluginContext, symbolRemapper)
         val transformer = DeepCopyIrTreeWithSymbolsPreservingMetadata(
             pluginContext,
             symbolRemapper,
             typeRemapper
-        ).also { typeRemapper.deepCopy = it }
+        )
         declaration.files.forEach {
             it.transformChildren(
                 transformer,
                 null
             )
         }
-        // just go through and patch all of the parents to make sure things are properly wired
-        // up.
         declaration.patchDeclarationParents()
 
+        addContextClassesToFiles()
+
+        return declaration
+    }
+
+    fun addContextClassesToFiles() {
         transformedFunctions
             .filterNot { it.key.isExternalDeclaration() }
             .forEach {
@@ -147,12 +147,10 @@ class ReadableFunctionTransformer(
                     it.value.file.addChild(contextClass)
                 }
             }
-
-        return declaration
     }
 
     override fun needsTransform(function: IrFunction): Boolean =
-        function.isReadable(pluginContext.bindingContext)
+        function.isReader(pluginContext.bindingContext)
 
     override fun transform(function: IrFunction, callback: (IrFunction) -> Unit) {
         val transformedFunction = function.copy().apply {
@@ -184,21 +182,28 @@ class ReadableFunctionTransformer(
             }
         }
 
-        if (function.valueParameters.any { it.name.asString() == "readable_context" }) {
+        if (function.valueParameters.any { it.name.asString() == "_context" }) {
             return
         }
 
+        val contextClassFunctionNameProvider = NameProvider()
+
+        val parentFunction = if (transformedFunction.visibility == Visibilities.LOCAL &&
+            transformedFunction.parent is IrFunction
+        ) {
+            transformedFunction.parent as IrFunction
+        } else null
+
         val contextClass = buildClass {
             kind = ClassKind.INTERFACE
-            name = InjektNameConventions.getContextClassNameForReadableFunction(
-                function.getPackageFragment()!!.fqName,
-                function
-            )
+            name = contextNameProvider.getContextClassNameForReaderFunction(function)
         }.apply {
             parent = function.file
             createImplicitParameterDeclarationWithWrappedDescriptor()
             addMetadataIfNotLocal()
             copyTypeParametersFrom(transformedFunction)
+            parentFunction?.let { copyTypeParametersFrom(it) }
+
             annotations += DeclarationIrBuilder(pluginContext, symbol).run {
                 irCall(symbols.astName.constructors.single()).apply {
                     putValueArgument(
@@ -210,28 +215,28 @@ class ReadableFunctionTransformer(
         }
 
         val getCalls = mutableListOf<IrCall>()
-        val readableCalls = mutableListOf<IrCall>()
+        val readerCalls = mutableListOf<IrCall>()
 
         transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
 
             private val functionStack = mutableListOf<IrFunction>(transformedFunction)
 
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                val isReadable = declaration.isReadable(pluginContext.bindingContext)
-                if (isReadable) functionStack.push(declaration)
+                val isReader = declaration.isReader(pluginContext.bindingContext)
+                if (isReader) functionStack.push(declaration)
                 return super.visitFunction(declaration)
-                    .also { if (isReadable) functionStack.pop() }
+                    .also { if (isReader) functionStack.pop() }
             }
 
             override fun visitCall(expression: IrCall): IrExpression {
                 if (functionStack.last() == transformedFunction &&
-                    (expression.symbol.owner.isReadable(pluginContext.bindingContext) ||
-                            expression.isReadableLambdaInvoke())
+                    (expression.symbol.owner.isReader(pluginContext.bindingContext) ||
+                            expression.isReaderLambdaInvoke())
                 ) {
-                    if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.composition.get") {
+                    if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get") {
                         getCalls += expression
                     } else {
-                        readableCalls += expression
+                        readerCalls += expression
                     }
                 }
                 return super.visitCall(expression)
@@ -240,13 +245,27 @@ class ReadableFunctionTransformer(
 
         val providerFunctionByGetCall = getCalls.associateWith { getCall ->
             contextClass.addFunction {
-                name =
-                    InjektNameConventions.getProvideFunctionNameForGetCall(function.file, getCall)
+                name = contextClassFunctionNameProvider.getProvideFunctionNameForGetCall(
+                    transformedFunction,
+                    getCall.type
+                        .remapTypeParameters(transformedFunction, contextClass)
+                        .let {
+                            if (parentFunction != null) {
+                                it.remapTypeParameters(parentFunction, contextClass)
+                            } else it
+                        }
+                )
                 returnType = getCall.type
                     .remapTypeParameters(transformedFunction, contextClass)
+                    .let {
+                        if (parentFunction != null) {
+                            it.remapTypeParameters(parentFunction, contextClass)
+                        } else it
+                    }
                 modality = Modality.ABSTRACT
             }.apply {
                 dispatchReceiverParameter = contextClass.thisReceiver?.copyTo(this)
+                addMetadataIfNotLocal()
             }
         }
 
@@ -254,7 +273,6 @@ class ReadableFunctionTransformer(
 
         fun addFunctionsFromGenericContext(
             genericContext: IrClass,
-            element: IrElement,
             typeArguments: List<IrType>
         ) {
             contextClass.superTypes += genericContext.superTypes
@@ -264,19 +282,25 @@ class ReadableFunctionTransformer(
                 .filterNot { it is IrConstructor }
                 .forEach { genericContextFunction ->
                     genericFunctionMap += genericContextFunction to contextClass.addFunction {
-                        name = InjektNameConventions
-                            .getReadableContextParamNameForContext(
-                                genericContextFunction.getPackageFragment()!!.fqName,
-                                element,
-                                genericContextFunction
-                            )
+                        name = contextClassFunctionNameProvider.getProvideFunctionNameForGetCall(
+                            transformedFunction,
+                            genericContextFunction.returnType
+                        )
                         returnType = genericContextFunction.returnType
                             .substituteAndKeepQualifiers(genericContext.typeParameters
                                 .map { it.symbol }
-                                .zip(typeArguments).toMap())
+                                .zip(typeArguments).toMap()
+                            )
+                            .remapTypeParameters(transformedFunction, contextClass)
+                            .let {
+                                if (parentFunction != null) {
+                                    it.remapTypeParameters(parentFunction, contextClass)
+                                } else it
+                            }
                         modality = Modality.ABSTRACT
                     }.apply {
                         dispatchReceiverParameter = contextClass.thisReceiver?.copyTo(this)
+                        addMetadataIfNotLocal()
                     }
                 }
         }
@@ -290,34 +314,38 @@ class ReadableFunctionTransformer(
 
         fun handleSubcontext(
             subcontext: IrClass,
-            element: IrElement,
             typeArguments: List<IrType>
         ) {
             if (subcontext.typeParameters.isNotEmpty()) {
-                addFunctionsFromGenericContext(
-                    subcontext, element, typeArguments
-                )
+                addFunctionsFromGenericContext(subcontext, typeArguments)
             } else {
                 addSubcontext(subcontext, typeArguments)
             }
         }
 
-        readableCalls
+        readerCalls
             .forEach { call ->
-                if (!call.isReadableLambdaInvoke()) {
+                if (!call.isReaderLambdaInvoke()) {
                     val callContext = getContextForFunction(call.symbol.owner)
-                    handleSubcontext(callContext, call, call.typeArguments)
+                    handleSubcontext(callContext, call.typeArguments)
+                } else {
+                    /*val transformedLambda =
+                        transformFunctionIfNeeded(lambdaSource.getFunctionArgument())
+                    val lambdaContext = getContextForFunction(transformedLambda)
+                    handleSubcontext(lambdaContext, call, emptyList())*/
+
                 }
-                call.getReadableLambdas()
+                call.getReaderLambdaArguments()
                     .forEach { expr ->
-                        val transformedLambda = transformFunctionIfNeeded(expr.function)
+                        val transformedLambda =
+                            transformFunctionIfNeeded(expr.getFunctionFromArgument())
                         val lambdaContext = getContextForFunction(transformedLambda)
-                        handleSubcontext(lambdaContext, expr, emptyList())
+                        handleSubcontext(lambdaContext, emptyList())
                     }
             }
 
         val contextValueParameter = transformedFunction.addValueParameter(
-            "readable_context",
+            "_context",
             contextClass.typeWith(transformedFunction.typeParameters.map { it.defaultType })
         )
 
@@ -334,20 +362,24 @@ class ReadableFunctionTransformer(
             }
         })
 
-        rewriteReadableCalls(transformedFunction, genericFunctionMap)
+        rewriteReaderCalls(transformedFunction, genericFunctionMap)
     }
 
-    private fun IrCall.getReadableLambdas(): List<IrFunctionExpression> {
+    private fun IrCall.getReaderLambdaArguments(): List<IrExpression> {
         return getArgumentsWithIr()
-            .filter { (valueParameter, expr) ->
+            .filter { (valueParameter, _) ->
                 (valueParameter.type.isFunction() || valueParameter.type.isSuspendFunction()) &&
-                        valueParameter.type.hasAnnotation(InjektFqNames.Readable) &&
-                        expr is IrFunctionExpression
+                        valueParameter.type.hasAnnotation(InjektFqNames.Reader)
             }
-            .map { it.second as IrFunctionExpression }
+            .map { it.second }
     }
 
-    private fun rewriteReadableCalls(
+    private fun IrExpression.getFunctionFromArgument() = when (this) {
+        is IrFunctionExpression -> function
+        else -> error("Cannot extract function from $this ${dumpSrc()}")
+    }
+
+    private fun rewriteReaderCalls(
         function: IrFunction,
         genericFunctionMap: List<Pair<IrFunction, IrFunction>>
     ) {
@@ -357,20 +389,20 @@ class ReadableFunctionTransformer(
             private val functionStack = mutableListOf(function)
 
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                val isReadable = declaration.isReadable(pluginContext.bindingContext)
-                if (isReadable) functionStack.push(declaration)
+                val isReader = declaration.isReader(pluginContext.bindingContext)
+                if (isReader) functionStack.push(declaration)
                 return super.visitFunction(declaration)
-                    .also { if (isReadable) functionStack.pop() }
+                    .also { if (isReader) functionStack.pop() }
             }
 
             override fun visitCall(expression: IrCall): IrExpression {
                 val result = super.visitCall(expression) as IrCall
                 if (functionStack.last() != function) return result
-                if (!result.symbol.owner.isReadable(pluginContext.bindingContext) &&
-                    !result.isReadableLambdaInvoke()
+                if (!result.symbol.owner.isReader(pluginContext.bindingContext) &&
+                    !result.isReaderLambdaInvoke()
                 ) return result
 
-                if (result.isReadableLambdaInvoke()) {
+                if (result.isReaderLambdaInvoke()) {
                     return DeclarationIrBuilder(pluginContext, result.symbol).run {
                         IrCallImpl(
                             result.startOffset,
@@ -400,7 +432,7 @@ class ReadableFunctionTransformer(
 
                 val contextArgument =
                     DeclarationIrBuilder(pluginContext, transformedCall.symbol).run {
-                        if (transformedCallee.typeParameters.isNotEmpty() && !transformedCall.isReadableLambdaInvoke()) {
+                        if (transformedCallee.typeParameters.isNotEmpty() && !transformedCall.isReaderLambdaInvoke()) {
                             val calleeContext = getContextForFunction(transformedCallee)
 
                             irBlock(origin = IrStatementOrigin.OBJECT_LITERAL) {
@@ -414,10 +446,10 @@ class ReadableFunctionTransformer(
                                     superTypes += calleeContext.defaultType
                                         .typeWith(*transformedCall.typeArguments.toTypedArray())
 
-                                    result.getReadableLambdas()
+                                    result.getReaderLambdaArguments()
                                         .forEach { expr ->
                                             val transformedLambda =
-                                                transformFunctionIfNeeded(expr.function)
+                                                transformFunctionIfNeeded(expr.getFunctionFromArgument())
                                             superTypes += getContextForFunction(transformedLambda)
                                                 .defaultType
                                         }
@@ -450,16 +482,17 @@ class ReadableFunctionTransformer(
                                             addFunction {
                                                 name = declaration.name
                                                 returnType = declaration.returnType
-                                                // todo this would be correct but codegen fails
-                                                /*.substituteAndKeepQualifiers(
-                                                    superClass.typeParameters.map { it.symbol }.associateWith {
-                                                        typeArguments[it.owner.index]
-                                                    }
-                                                )*/
+                                                    .substituteAndKeepQualifiers(
+                                                        superClass.typeParameters.map { it.symbol }
+                                                            .associateWith {
+                                                                typeArguments[it.owner.index]
+                                                            }
+                                                    )
                                                 visibility = declaration.visibility
                                             }.apply {
                                                 dispatchReceiverParameter =
                                                     thisReceiver!!.copyTo(this)
+                                                addMetadataIfNotLocal()
                                                 body = DeclarationIrBuilder(
                                                     pluginContext,
                                                     symbol
@@ -517,7 +550,7 @@ class ReadableFunctionTransformer(
         val transformedFunction = function.copy()
         callback(transformedFunction)
 
-        if (transformedFunction.valueParameters.any { it.name.asString() == "readable_context" }) {
+        if (transformedFunction.valueParameters.any { it.name.asString() == "_context" }) {
             return
         }
 
@@ -536,8 +569,40 @@ class ReadableFunctionTransformer(
                 .let { pluginContext.referenceClass(it.fqNameSafe)!!.owner }
 
         transformedFunction.addValueParameter(
-            "readable_context",
+            "_context",
             contextClass.typeWith(transformedFunction.typeParameters.map { it.defaultType })
+        )
+    }
+
+    private fun NameProvider.getContextClassNameForReaderFunction(function: IrFunction): Name {
+        return allocateForGroup(
+            getJoinedName(
+                function.getPackageFragment()!!.fqName,
+                function.descriptor.fqNameSafe
+                    .parent()
+                    .let {
+                        if (function.name.isSpecial) {
+                            it.child(allocateForGroup("Lambda") + "_Context")
+                        } else {
+                            it.child(function.name.asString() + "_Context")
+                        }
+                    }
+
+            )
+        )
+    }
+
+    private fun NameProvider.getProvideFunctionNameForGetCall(
+        function: IrFunction,
+        type: IrType
+    ): Name {
+        return allocateForGroup(
+            getJoinedName(
+                function.getPackageFragment()!!.fqName,
+                function.descriptor.fqNameSafe
+                    .parent()
+                    .child(type.classifierOrFail.descriptor.name)
+            )
         )
     }
 

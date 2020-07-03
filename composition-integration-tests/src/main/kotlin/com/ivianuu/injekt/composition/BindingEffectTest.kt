@@ -39,7 +39,7 @@ class BindingEffectTest {
             companion object {
                 @Module 
                 fun <T> bind1() { 
-                    transient { t: T -> t.toString() }
+                    transient { get<T>().toString() }
                 }
             }
         }
@@ -62,7 +62,7 @@ class BindingEffectTest {
         fun invoke() {
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            component.runReading { 
+            component.reader { 
                 get<Dep>() 
                 get<String>()
                 get<Any>()
@@ -87,7 +87,7 @@ class BindingEffectTest {
         annotation class BindAppService {
             companion object {
                 @Module 
-                inline fun <reified T : AppService> bindAppService() { 
+                inline operator fun <reified T : AppService> invoke() { 
                     scoped<T>()
                     map<KClass<out AppService>, AppService> { 
                         put<T>(T::class)
@@ -105,7 +105,7 @@ class BindingEffectTest {
         fun invoke() {
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            val appServices = component.runReading { get<Map<KClass<AppService>, AppService>>() }
+            val appServices = component.reader { get<Map<KClass<AppService>, AppService>>() }
             println("app services " + appServices)
         }
     """
@@ -130,7 +130,7 @@ class BindingEffectTest {
                 annotation class BindAppService {
                     companion object {
                         @Module 
-                        inline fun <reified T : AppService> bind() { 
+                        inline operator fun <reified T : AppService> invoke() { 
                             scoped<T>()
                             map<KClass<out AppService>, AppService> { 
                                 put<T>(T::class) 
@@ -151,7 +151,7 @@ class BindingEffectTest {
                 fun invoke() { 
                     initializeCompositions() 
                     val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()() 
-                    val appServices = component.runReading {
+                    val appServices = component.reader {
                         get<Map<KClass<AppService>, AppService>>()
                     }
                     println("app services " + appServices) 
@@ -202,7 +202,7 @@ class BindingEffectTest {
                 annotation class ActivityViewModel {
                     companion object { 
                         @Module 
-                        inline fun <reified T : ViewModel> bind() {
+                        inline operator fun <reified T : ViewModel> invoke() {
                             activityViewModel<T>()
                         }
                     }
@@ -216,9 +216,10 @@ class BindingEffectTest {
                 @Module
                 inline fun <reified T : ViewModel, S : ViewModelStoreOwner> baseViewModel() { 
                     transient<@UnscopedViewModel T>() 
-                    transient { viewModelStoreOwner: S, viewModelProvider: @Provider () -> @UnscopedViewModel T ->
+                    transient {
+                        val viewModelProvider = get<@Provider () -> @UnscopedViewModel T>()
                         ViewModelProvider(
-                            viewModelStoreOwner,
+                            get<S>(),
                             object : ViewModelProvider.Factory {
                                 override fun <T : ViewModel> create(modelClass: Class<T>): T =
                                     viewModelProvider() as T
@@ -242,7 +243,7 @@ class BindingEffectTest {
                 fun run() {
                     initializeCompositions()
                     val component = compositionFactoryOf<ActivityComponent, () -> ActivityComponent>()()
-                    component.runReading { get<MainViewModel>() }
+                    component.reader { get<MainViewModel>() }
                 }
             """
             )
@@ -257,7 +258,7 @@ class BindingEffectTest {
         annotation class MyBindingAdapter {
             companion object {
                 @Module 
-                fun <T> func() {
+                operator fun <T> invoke() {
                 }
             }
         }
@@ -273,7 +274,7 @@ class BindingEffectTest {
         annotation class MyBindingAdapter {
             companion object {
                 @Module
-                inline fun <T> bind() {
+                inline operator fun <T> invoke() {
                 }
             }
         }
@@ -309,7 +310,7 @@ class BindingEffectTest {
         annotation class MyBindingAdapter {
             companion object {
                 @Module
-                fun bind() {
+                operator fun invoke() {
                 }
             }
         }
@@ -325,7 +326,7 @@ class BindingEffectTest {
         annotation class MyBindingAdapter {
             companion object {
                 @Module
-                fun <A, B> bind() {
+                operator fun <A, B> invoke() {
                 }
             }
         }
@@ -360,7 +361,7 @@ class BindingEffectTest {
         annotation class MyBindingEffect {
             companion object {
                 @Module
-                fun <T> bind() {
+                operator fun <T> invoke() {
                 }
             }
         }
@@ -399,7 +400,7 @@ class BindingEffectTest {
         annotation class MyBindingEffect {
             companion object { 
                 @Module
-                fun <T> bind() {
+                operator fun <T> invoke() {
                 }
             }
         }

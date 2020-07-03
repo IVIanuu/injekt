@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.composition
+package com.ivianuu.injekt.compiler.transform.reader
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.makeKotlinType
@@ -52,7 +52,6 @@ import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
-import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
@@ -60,33 +59,26 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeAbbreviation
 import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.ir.types.IrTypeProjection
-import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.IrTypeAbbreviationImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
-import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.util.DeepCopyIrTreeWithSymbols
 import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.SymbolRemapper
 import org.jetbrains.kotlin.ir.util.SymbolRenamer
 import org.jetbrains.kotlin.ir.util.TypeRemapper
-import org.jetbrains.kotlin.ir.util.TypeTranslator
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
-import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
-import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.Variance
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
 class DeepCopyIrTreeWithSymbolsPreservingMetadata(
     private val context: IrPluginContext,
     private val symbolRemapper: DeepCopySymbolRemapper,
-    private val typeRemapper: TypeRemapper,
+    typeRemapper: TypeRemapper,
     symbolRenamer: SymbolRenamer = SymbolRenamer.DEFAULT
 ) : DeepCopyIrTreeWithSymbols(symbolRemapper, typeRemapper, symbolRenamer) {
 
@@ -188,7 +180,7 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
             ownerFn.origin == IrDeclarationOrigin.FAKE_OVERRIDE &&
             containingClass != null &&
             containingClass.defaultType.isFunctionType &&
-            expression.dispatchReceiver?.type?.isReadable() == true
+            expression.dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Reader) == true
         ) {
             val typeArguments = containingClass.defaultType.arguments
             val newFnClass = context.tmpFunction(typeArguments.size)
@@ -302,34 +294,24 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
         }
     }
 
-    private fun IrType.isReadable(): Boolean {
-        return annotations.hasAnnotation(InjektFqNames.Readable)
-    }
-
 }
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
-class ReadableTypeRemapper(
+class ReaderTypeRemapper(
     private val context: IrPluginContext,
     private val symbolRemapper: SymbolRemapper
 ) : TypeRemapper {
 
-    lateinit var deepCopy: IrElementTransformerVoid
-
-    private val scopeStack = mutableListOf<IrTypeParametersContainer>()
-
     override fun enterScope(irTypeParametersContainer: IrTypeParametersContainer) {
-        scopeStack.add(irTypeParametersContainer)
     }
 
     override fun leaveScope() {
-        scopeStack.pop()
     }
 
     override fun remapType(type: IrType): IrType {
         if (type !is IrSimpleType) return type
         if (!type.isFunction() && !type.isSuspendFunction()) return underlyingRemapType(type)
-        if (!type.hasAnnotation(InjektFqNames.Readable)) return underlyingRemapType(type)
+        if (!type.hasAnnotation(InjektFqNames.Reader)) return underlyingRemapType(type)
         val oldIrArguments = type.arguments
         val extraArgs = listOf(
             makeTypeProjection(

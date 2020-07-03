@@ -17,8 +17,19 @@
 package com.ivianuu.injekt.comparison.injekt
 
 import com.ivianuu.injekt.ApplicationComponent
+import com.ivianuu.injekt.Module
+import com.ivianuu.injekt.comparison.fibonacci.Fib1
+import com.ivianuu.injekt.comparison.fibonacci.Fib2
+import com.ivianuu.injekt.comparison.fibonacci.Fib3
+import com.ivianuu.injekt.comparison.fibonacci.Fib4
+import com.ivianuu.injekt.comparison.fibonacci.Fib5
+import com.ivianuu.injekt.comparison.fibonacci.Fib6
+import com.ivianuu.injekt.comparison.fibonacci.Fib7
+import com.ivianuu.injekt.comparison.fibonacci.Fib8
 import com.ivianuu.injekt.composition.CompositionFactory
 import com.ivianuu.injekt.create
+import com.ivianuu.injekt.get
+import com.ivianuu.injekt.transient
 
 @CompositionFactory
 fun createApplicationComponent(): ApplicationComponent = create()

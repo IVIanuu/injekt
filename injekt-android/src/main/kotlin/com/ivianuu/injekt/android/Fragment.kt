@@ -27,9 +27,9 @@ import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.composition.CompositionComponent
 import com.ivianuu.injekt.composition.CompositionFactory
-import com.ivianuu.injekt.composition.get
+import com.ivianuu.injekt.get
 import com.ivianuu.injekt.composition.parent
-import com.ivianuu.injekt.composition.runReading
+import com.ivianuu.injekt.composition.reader
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.transient
 
@@ -42,7 +42,7 @@ interface FragmentComponent
 
 val Fragment.fragmentComponent: FragmentComponent
     get() = lifecycle.singleton {
-        activity!!.activityComponent.runReading {
+        activity!!.activityComponent.reader {
             get<@ChildFactory (Fragment) -> FragmentComponent>()(this)
         }
     }
@@ -51,12 +51,8 @@ val Fragment.fragmentComponent: FragmentComponent
 fun createFragmentComponent(instance: Fragment): FragmentComponent {
     parent<ActivityComponent>()
     transient { instance }
-    transient<@ForFragment Context> { fragment: Fragment ->
-        fragment.context!!
-    }
-    transient<@ForFragment Resources> { fragment: Fragment ->
-        fragment.resources
-    }
+    transient<@ForFragment Context> { get<Fragment>().context!! }
+    transient<@ForFragment Resources> { get<Fragment>().resources }
     alias<Fragment, @ForFragment LifecycleOwner>()
     alias<Fragment, @ForFragment SavedStateRegistryOwner>()
     alias<Fragment, @ForFragment ViewModelStoreOwner>()

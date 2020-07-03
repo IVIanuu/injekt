@@ -35,7 +35,7 @@ class FactoryTest {
         @Factory
         fun factory(): TestComponent1<Bar> {
             transient { Foo() }
-            transient { foo: Foo -> Bar(foo) }
+            transient { Bar(get()) }
             return create()
         }
         
@@ -107,43 +107,6 @@ class FactoryTest {
     }
 
     @Test
-    fun testBindingFromPassedProvider() = codegen(
-        """
-
-        @Factory
-        fun createComponent(provider: (Foo) -> Bar): TestComponent1<Bar> {
-            transient<Foo>()
-            transient(provider)
-            return create()
-        }
-        
-        val component = createComponent { Bar(it) }
-        fun invoke() = component.a
-    """
-    ) {
-        assertTrue(invokeSingleFile() is Bar)
-    }
-
-    @Test
-    fun testBindingFromProviderReference() = codegen(
-        """
-        @Factory
-        fun factory(): TestComponent1<Bar> {
-            transient<Foo>()
-            transient(::createBar)
-            return create()
-        }
-        
-        fun createBar(foo: Foo): Bar = Bar(foo)
-        
-        val component = factory()
-        fun invoke() = component.a
-    """
-    ) {
-        assertTrue(invokeSingleFile() is Bar)
-    }
-
-    @Test
     fun testInclude() = codegen(
         """
         @Module
@@ -173,14 +136,14 @@ class FactoryTest {
         
         @Factory
         fun createDep(): DependencyComponent {
-            transient { Foo() }
+            transient<Foo>()
             return create()
         }
 
         @Factory
         fun createChild(): TestComponent1<Bar> {
             dependency(createDep())
-            transient { foo: Foo -> Bar(foo) }
+            transient { Bar(get()) }
             return create()
         }
         
@@ -272,12 +235,11 @@ class FactoryTest {
     }
 
     @Test
-    fun testProviderDefinitionWhichUsesTypeParameters() =
-        codegen(
-            """
+    fun testProviderDefinitionWhichUsesTypeParameters() = codegen(
+        """
         @Module
         fun <T : S, S> diyAlias() {
-            transient { from: T -> from as S }
+            transient { get<T>() as S }
         }
 
         @Factory
@@ -408,7 +370,7 @@ class FactoryTest {
         invokeSingleFile()
     }
 
-    @Test
+    // todo @Test
     fun testLocalFunctionImplFactory() = codegen(
         """
         fun factory(): TestComponent1<Bar> {

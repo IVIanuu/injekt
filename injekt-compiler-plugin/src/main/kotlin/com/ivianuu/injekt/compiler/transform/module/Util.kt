@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.composition
+package com.ivianuu.injekt.compiler.transform.module
 
-import com.ivianuu.injekt.compiler.child
-import com.ivianuu.injekt.compiler.getJoinedName
+import com.ivianuu.injekt.compiler.asNameId
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.util.getPackageFragment
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.name.Name
 
-fun getCompositionModuleMetadataName(function: IrFunction) = getJoinedName(
-    function.getPackageFragment()!!.fqName,
-    function.descriptor.fqNameSafe.child("_CompositionMetadata")
-)
+fun getModuleNameForFactoryFunction(
+    factoryFunction: IrFunction
+): Name = (factoryFunction.name.asString() + "Module").asNameId()

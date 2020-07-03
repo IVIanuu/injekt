@@ -37,6 +37,7 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.expressions.IrConst
+import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.getClass
@@ -78,7 +79,7 @@ class Graph(
             factory,
             parent?.setBindingResolver
         )
-    private val resolvedBindings = mutableMapOf<Key, BindingNode>()
+    val resolvedBindings = mutableMapOf<Key, BindingNode>()
 
     private val chain = mutableSetOf<Key>()
 

@@ -26,6 +26,7 @@ import com.ivianuu.injekt.compiler.getFunctionParameterTypes
 import com.ivianuu.injekt.compiler.getFunctionReturnType
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getInjectConstructor
+import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isAssistedProvider
 import com.ivianuu.injekt.compiler.isNoArgProvider
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
@@ -50,9 +51,10 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
+import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.getClass
-import org.jetbrains.kotlin.ir.types.isNothing
 import org.jetbrains.kotlin.ir.types.superTypes
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
@@ -63,6 +65,7 @@ import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.properties
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -234,32 +237,92 @@ class ModuleBindingResolver(
             val providerType = propertyGetter.returnType
                 .substituteAndKeepQualifiers(moduleNode.typeParametersMap)
 
-            val parameters = providerType
+            val readerContext = propertyGetter.returnType.getFunctionParameterTypes()
+                .last().classOrNull!!.owner
+
+            val dependencies = mutableListOf<BindingRequest>()
+
+            dependencies += BindingRequest(factory.factoryNode.key, null, null)
+
+            val processedSuperTypes = mutableSetOf<IrType>()
+
+            fun collectDependencies(
+                superClass: IrClass,
+                typeArguments: List<IrType>,
+                typeParametersMap: Map<IrTypeParameterSymbol, IrType>
+            ) {
+                if (superClass.defaultType in processedSuperTypes) return
+                processedSuperTypes += superClass.defaultType
+                for (declaration in superClass.declarations.toList()) {
+                    if (declaration !is IrFunction) continue
+                    if (declaration is IrConstructor) continue
+                    if (declaration.isFakeOverride) continue
+                    if (declaration.dispatchReceiverParameter?.type == factory.pluginContext.irBuiltIns.anyType) break
+                    dependencies += BindingRequest(
+                        key = declaration.returnType
+                            .substituteAndKeepQualifiers(
+                                superClass.typeParameters
+                                    .map { it.symbol }
+                                    .zip(typeArguments)
+                                    .toMap()
+                            )
+                            .substituteAndKeepQualifiers(
+                                superClass.typeParameters
+                                    .map { it.symbol }
+                                    .zip(typeParametersMap.values)
+                                    .toMap()
+                            )
+                            .asKey(),
+                        requestingKey = null, // todo
+                        requestOrigin = null // todo
+                    )
+                }
+
+                superClass.superTypes
+                    .map { it to it.classOrNull?.owner }
+                    .forEach { (superType, clazz) ->
+                        if (clazz != null)
+                            collectDependencies(
+                                clazz,
+                                superType.typeArguments.map { it.typeOrFail },
+                                emptyMap()
+                            )
+                    }
+            }
+
+            readerContext.superTypes.forEach { superType ->
+                collectDependencies(
+                    superType.getClass()!!,
+                    superType.typeArguments.map { it.typeOrFail },
+                    moduleNode.typeParametersMap
+                )
+            }
+
+            val parameters = mutableListOf<InjektDeclarationIrBuilder.FactoryParameter>()
+
+            parameters += providerType
                 .getFunctionParameterTypes()
+                .dropLast(1)
                 .mapIndexed { index, type ->
                     InjektDeclarationIrBuilder.FactoryParameter(
                         name = "p$index",
                         type = type,
-                        assisted = type.hasAnnotation(InjektFqNames.Assisted)
+                        assisted = true
                     )
                 }
 
-            val dependencies = parameters
-                .filterNot { it.assisted }
-                .map {
-                    BindingRequest(
-                        key = it.type.asKey(),
-                        requestingKey = bindingKey,
-                        requestOrigin = moduleRequestOrigin
-                    )
-                }
+            parameters += InjektDeclarationIrBuilder.FactoryParameter(
+                name = "_context",
+                type = readerContext.defaultType,
+                assisted = false
+            )
 
-            if (providerType.getFunctionParameterTypes()
-                    .any { it.hasAnnotation(InjektFqNames.Assisted) }
-            ) {
+            val assistedParameters = parameters.filter { it.assisted }
+
+            if (assistedParameters.isNotEmpty()) {
                 val assistedValueParameters = providerType
                     .getFunctionParameterTypes()
-                    .filter { it.hasAnnotation(InjektFqNames.Assisted) }
+                    .dropLast(1)
 
                 val assistedFactoryType =
                     factory.pluginContext.tmpFunction(assistedValueParameters.size)
@@ -273,6 +336,7 @@ class ModuleBindingResolver(
 
                 AssistedProvisionBindingNode(
                     key = assistedFactoryType.asKey(),
+                    context = readerContext,
                     dependencies = dependencies,
                     targetScope = null,
                     scoped = scoped,
@@ -303,6 +367,7 @@ class ModuleBindingResolver(
             } else {
                 ProvisionBindingNode(
                     key = bindingKey,
+                    context = readerContext,
                     dependencies = dependencies,
                     targetScope = null,
                     scoped = scoped,
@@ -383,7 +448,7 @@ class AnnotatedClassBindingResolver(
                 InjektDeclarationIrBuilder.FactoryParameter(
                     name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
                     type = valueParameter.type,
-                    assisted = valueParameter.type.hasAnnotation(InjektFqNames.Assisted)
+                    assisted = valueParameter.descriptor.hasAnnotation(InjektFqNames.Assisted)
                 )
             } ?: emptyList()
 
@@ -423,6 +488,7 @@ class AnnotatedClassBindingResolver(
             listOf(
                 AssistedProvisionBindingNode(
                     key = requestedKey,
+                    context = null,
                     dependencies = dependencies,
                     targetScope = if (scopeAnnotation != null) pluginContext.typeTranslator
                         .translateType(scopeAnnotation.type.arguments.single().type) else null,
@@ -443,7 +509,7 @@ class AnnotatedClassBindingResolver(
             val constructor = clazz.getInjectConstructor()
 
             if (constructor?.valueParameters?.any {
-                    it.type.hasAnnotation(InjektFqNames.Assisted)
+                    it.descriptor.hasAnnotation(InjektFqNames.Assisted)
                 } == true) return emptyList()
 
             val scopeAnnotation = clazz.descriptor.annotations.findAnnotation(
@@ -468,7 +534,7 @@ class AnnotatedClassBindingResolver(
                 InjektDeclarationIrBuilder.FactoryParameter(
                     name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
                     type = valueParameter.type,
-                    assisted = valueParameter.type.hasAnnotation(InjektFqNames.Assisted)
+                    assisted = valueParameter.descriptor.hasAnnotation(InjektFqNames.Assisted)
                 )
             } ?: emptyList()
 
@@ -492,6 +558,7 @@ class AnnotatedClassBindingResolver(
             listOf(
                 ProvisionBindingNode(
                     key = requestedKey,
+                    context = null,
                     dependencies = dependencies,
                     targetScope = if (scopeAnnotation != null) pluginContext.typeTranslator
                         .translateType(scopeAnnotation.type.arguments.single().type) else null,

@@ -16,27 +16,14 @@
 
 package com.ivianuu.injekt.composition
 
-import com.ivianuu.injekt.internal.TypeAnnotation
-import com.ivianuu.injekt.internal.injektIntrinsic
+import com.ivianuu.injekt.Reader
 
-@Target(
-    AnnotationTarget.TYPE,
-    AnnotationTarget.FUNCTION,
-    AnnotationTarget.TYPE_PARAMETER,
-    AnnotationTarget.PROPERTY
-)
-@TypeAnnotation
-annotation class Readable
-
-inline fun <R> Any.runReading(
-    block: @Readable () -> R
+inline fun <R> Any.reader(
+    block: @Reader () -> R
 ): R = block()
 
-@JvmName("actualRunReading")
-inline fun <R> runReading(
+@JvmName("actualReader")
+inline fun <R> reader(
     context: Any,
     block: (Any) -> R
 ): R = block(context)
-
-@Readable
-fun <T> get(): T = injektIntrinsic()

@@ -17,15 +17,20 @@
 package com.ivianuu.injekt.sample
 
 import android.content.Context
+import androidx.work.Configuration
+import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Assisted
+import com.ivianuu.injekt.ForApplication
+import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.android.work.BindWorker
+import com.ivianuu.injekt.get
 
 @BindWorker
 class TestWorker(
-    context: @Assisted Context,
-    workerParams: @Assisted WorkerParameters,
+    @Assisted context: Context,
+    @Assisted workerParams: WorkerParameters,
     repo: Repo
 ) : Worker(context, workerParams) {
     init {
@@ -33,4 +38,12 @@ class TestWorker(
     }
 
     override fun doWork(): Result = Result.success()
+}
+
+@Reader
+fun initializeWorkers() {
+    WorkManager.initialize(
+        get<@ForApplication Context>(), Configuration.Builder()
+            .setWorkerFactory(get()).build()
+    )
 }

@@ -117,6 +117,11 @@ class BindingRequest(
         result = 31 * result + requestType.hashCode()
         return result
     }
+
+    override fun toString(): String {
+        return "BindingRequest(key=$key, requestingKey=$requestingKey, requestOrigin=$requestOrigin, requestType=$requestType)"
+    }
+
 }
 
 fun Key.inferRequestType() = when {
@@ -131,6 +136,7 @@ enum class RequestType {
 
 sealed class BindingNode(
     val key: Key,
+    val context: IrClass?,
     val dependencies: List<BindingRequest>,
     val targetScope: IrType?,
     val scoped: Boolean,
@@ -141,6 +147,7 @@ sealed class BindingNode(
 
 class AssistedProvisionBindingNode(
     key: Key,
+    context: IrClass?,
     dependencies: List<BindingRequest>,
     targetScope: IrType?,
     scoped: Boolean,
@@ -149,7 +156,7 @@ class AssistedProvisionBindingNode(
     origin: FqName?,
     val createExpression: IrBuilderWithScope.(Map<InjektDeclarationIrBuilder.FactoryParameter, () -> IrExpression?>) -> IrExpression,
     val parameters: List<InjektDeclarationIrBuilder.FactoryParameter>
-) : BindingNode(key, dependencies, targetScope, scoped, module, owner, origin)
+) : BindingNode(key, context, dependencies, targetScope, scoped, module, owner, origin)
 
 class ChildFactoryBindingNode(
     key: Key,
@@ -158,7 +165,7 @@ class ChildFactoryBindingNode(
     val parent: IrClass,
     val childFactoryExpression: FactoryExpression
 ) : BindingNode(
-    key, listOf(
+    key, null, listOf(
         BindingRequest(
             parent.defaultType.asKey(),
             key,
@@ -175,7 +182,7 @@ class DelegateBindingNode(
     val originalKey: Key,
     val requestOrigin: FqName
 ) : BindingNode(
-    key, listOf(
+    key, null, listOf(
         BindingRequest(originalKey, key, requestOrigin)
     ), null, false, null, owner, origin
 )
@@ -186,12 +193,13 @@ class DependencyBindingNode(
     origin: FqName?,
     val function: IrFunction,
     val requirementNode: DependencyNode
-) : BindingNode(key, emptyList(), null, false, null, owner, origin)
+) : BindingNode(key, null, emptyList(), null, false, null, owner, origin)
 
 class FactoryImplementationBindingNode(
     val factoryNode: FactoryNode,
 ) : BindingNode(
     factoryNode.key,
+    null,
     emptyList(),
     null,
     false,
@@ -205,7 +213,7 @@ class MapBindingNode(
     owner: FactoryImpl,
     origin: FqName?,
     val entries: Map<MapKey, BindingRequest>
-) : BindingNode(key, entries.values.toList(), null, false, null, owner, origin) {
+) : BindingNode(key, null, entries.values.toList(), null, false, null, owner, origin) {
     val keyKey = key.type.typeArguments[0].typeOrFail.asKey()
     val valueKey = key.type.typeArguments[1].typeOrFail.asKey()
 }
@@ -215,6 +223,7 @@ class NullBindingNode(
     owner: FactoryImpl
 ) : BindingNode(
     key,
+    null,
     emptyList(),
     null,
     false,
@@ -229,6 +238,7 @@ class ProviderBindingNode(
     origin: FqName?
 ) : BindingNode(
     key,
+    null,
     listOf(
         BindingRequest(
             key.type.typeArguments.single().typeOrFail.asKey(),
@@ -245,6 +255,7 @@ class ProviderBindingNode(
 
 class ProvisionBindingNode(
     key: Key,
+    context: IrClass?,
     dependencies: List<BindingRequest>,
     targetScope: IrType?,
     scoped: Boolean,
@@ -253,14 +264,14 @@ class ProvisionBindingNode(
     origin: FqName?,
     val createExpression: IrBuilderWithScope.(Map<InjektDeclarationIrBuilder.FactoryParameter, () -> IrExpression?>) -> IrExpression,
     val parameters: List<InjektDeclarationIrBuilder.FactoryParameter>
-) : BindingNode(key, dependencies, targetScope, scoped, module, owner, origin)
+) : BindingNode(key, context, dependencies, targetScope, scoped, module, owner, origin)
 
 class SetBindingNode(
     key: Key,
     owner: FactoryImpl,
     origin: FqName?,
     val elements: Set<BindingRequest>
-) : BindingNode(key, elements.toList(), null, false, null, owner, origin) {
+) : BindingNode(key, null, elements.toList(), null, false, null, owner, origin) {
     val elementKey = key.type.typeArguments.single().typeOrFail.asKey()
 }
 

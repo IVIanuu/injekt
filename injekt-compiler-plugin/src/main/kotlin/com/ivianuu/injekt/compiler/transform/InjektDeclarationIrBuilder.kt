@@ -21,9 +21,11 @@ import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.child
+import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getInjectConstructor
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.tmpFunction
+import com.ivianuu.injekt.compiler.transform.reader.ReaderFunctionTransformer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
@@ -65,6 +67,7 @@ import org.jetbrains.kotlin.ir.expressions.IrConstKind
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
+import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
@@ -85,8 +88,8 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.hasDefaultValue
 import org.jetbrains.kotlin.ir.util.referenceClassifier
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
@@ -304,58 +307,137 @@ class InjektDeclarationIrBuilder(
         return FieldWithGetter(field, getter)
     }
 
-    fun classFactoryLambda(clazz: IrClass): IrExpression {
+    fun classFactoryLambda(
+        readerFunctionTransformer: ReaderFunctionTransformer,
+        clazz: IrClass,
+        startOffset: Int,
+        endOffset: Int
+    ): IrExpression {
         val parametersNameProvider = NameProvider()
 
         val constructor = clazz.getInjectConstructor()
 
-        val constructorParameters = constructor?.valueParameters?.map { valueParameter ->
-            FactoryParameter(
-                name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
-                type = valueParameter.type,
-                assisted = valueParameter.type.hasAnnotation(InjektFqNames.Assisted)
-            )
-        } ?: emptyList()
+        val assistedParameters = constructor?.valueParameters
+            ?.filter { it.hasAnnotation(InjektFqNames.Assisted) }
+            ?.map { valueParameter ->
+                FactoryParameter(
+                    name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
+                    type = valueParameter.type,
+                    assisted = true
+                )
+            } ?: emptyList()
 
         return factoryLambda(
-            constructorParameters,
-            clazz.defaultType
-        ) { _, parametersMap ->
+            readerFunctionTransformer,
+            assistedParameters,
+            clazz.defaultType,
+            startOffset,
+            endOffset
+        ) { _, assistedParametersMap ->
             if (clazz.kind == ClassKind.OBJECT) {
                 irGetObject(clazz.symbol)
             } else {
                 irCall(constructor!!).apply {
-                    constructorParameters
-                        .map { parametersMap.getValue(it) }
-                        .forEach { putValueArgument(it.index, irGet(it)) }
+                    var assistedIndex = 0
+                    constructor.valueParameters.forEachIndexed { index, valueParameter ->
+                        putValueArgument(
+                            index,
+                            if (valueParameter.hasAnnotation(InjektFqNames.Assisted)) {
+                                irGet(
+                                    assistedParametersMap.getValue(assistedParameters[assistedIndex])
+                                        .also { assistedIndex++ }
+                                )
+                            } else {
+                                IrCallImpl(
+                                    startOffset + index,
+                                    -1,
+                                    valueParameter.type,
+                                    pluginContext.referenceFunctions(FqName("com.ivianuu.injekt.get"))
+                                        .single()
+                                ).apply {
+                                    putTypeArgument(0, valueParameter.type)
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }
     }
 
     fun factoryLambda(
-        parameters: List<FactoryParameter>,
+        readerFunctionTransformer: ReaderFunctionTransformer,
+        assistedParameters: List<FactoryParameter>,
         returnType: IrType,
+        startOffset: Int,
+        endOffset: Int,
         createExpr: IrBuilderWithScope.(
             IrFunction,
             Map<FactoryParameter, IrValueParameter>
         ) -> IrExpression
     ): IrExpression {
-        val lambdaType = pluginContext.tmpFunction(parameters.size)
-            .typeWith(
-                parameters.map { parameter ->
-                    if (parameter.assisted) parameter.type.withNoArgAnnotations(
-                        pluginContext, listOf(InjektFqNames.Assisted)
-                    ) else parameter.type
-                } + returnType)
+        val lambdaType = pluginContext.tmpFunction(assistedParameters.size)
+            .typeWith(assistedParameters.map { it.type } + returnType)
+            .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Reader))
 
-        return irLambda(lambdaType) { lambda ->
+        return irReaderLambda(
+            readerFunctionTransformer,
+            lambdaType,
+            startOffset,
+            endOffset
+        ) { lambda ->
             var parameterIndex = 0
-            val parametersMap = parameters.associateWith {
+            val parametersMap = assistedParameters.associateWith {
                 lambda.valueParameters[parameterIndex++]
             }
 
             +irReturn(createExpr(this, lambda, parametersMap))
+        }
+    }
+
+    fun irReaderLambda(
+        readerFunctionTransformer: ReaderFunctionTransformer,
+        type: IrType,
+        startOffset: Int,
+        endOffset: Int,
+        body: IrBlockBodyBuilder.(IrFunction) -> Unit
+    ): IrExpression {
+        val returnType = type.typeArguments.last().typeOrNull!!
+
+        val lambda = buildFun {
+            origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
+            name = Name.special("<anonymous>")
+            this.returnType = returnType
+            visibility = Visibilities.LOCAL
+            this.startOffset = startOffset
+            this.endOffset = endOffset
+        }.apply {
+            annotations += noArgSingleConstructorCall(symbols.reader)
+            type.typeArguments.dropLast(1).forEachIndexed { index, typeArgument ->
+                addValueParameter(
+                    "p$index",
+                    typeArgument.typeOrNull!!
+                )
+            }
+            parent = builder.scope.getLocalDeclarationParent()
+            this.body =
+                DeclarationIrBuilder(pluginContext, symbol).irBlockBody { body(this, this@apply) }
+        }.let { readerFunctionTransformer.getTransformedFunction(it) }
+
+        return builder.irBlock(
+            origin = IrStatementOrigin.LAMBDA,
+            resultType = lambda.getFunctionType(pluginContext)
+        ) {
+            +lambda
+            +IrFunctionReferenceImpl(
+                startOffset = startOffset,
+                endOffset = endOffset,
+                type = lambda.getFunctionType(pluginContext),
+                symbol = lambda.symbol,
+                typeArgumentsCount = lambda.typeParameters.size,
+                reflectionTarget = null,
+                origin = IrStatementOrigin.LAMBDA
+            )
         }
     }
 

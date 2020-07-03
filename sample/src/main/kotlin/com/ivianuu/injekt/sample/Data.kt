@@ -21,17 +21,19 @@ import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.ForApplication
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.Scoped
+import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.composition.installIn
+import com.ivianuu.injekt.composition.reader
+import com.ivianuu.injekt.get
 import com.ivianuu.injekt.transient
 import java.io.File
 
 @Module
 fun dataModule() {
     installIn<ApplicationComponent>()
-    transient<@DatabaseFile File> { context: @ForApplication Context ->
-        context.cacheDir
-    }
+    transient<@DatabaseFile File> { get<@ForApplication Context>().cacheDir }
 }
 
 @Target(AnnotationTarget.TYPE)
@@ -45,6 +47,11 @@ class Database(private val file: @DatabaseFile File)
 class Repo(private val database: Database, private val api: Api) {
     fun refresh() {
     }
+}
+
+@Reader
+fun refreshRepo() {
+    get<Repo>().refresh()
 }
 
 @Scoped<ApplicationComponent>

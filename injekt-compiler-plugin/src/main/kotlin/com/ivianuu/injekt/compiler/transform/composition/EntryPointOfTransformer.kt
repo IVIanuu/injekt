@@ -16,12 +16,15 @@
 
 package com.ivianuu.injekt.compiler.transform.composition
 
-import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
+import com.ivianuu.injekt.compiler.child
+import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektOrigin
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
+import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -42,8 +45,16 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class EntryPointOfTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
+    private val nameProvider = NameProvider()
+
+    private data class EntryPointOfCall(
+        val call: IrCall,
+        val scope: ScopeWithIr,
+        val file: IrFile
+    )
+
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
-        val entryPointOfCalls = mutableListOf<Pair<IrCall, IrFile>>()
+        val entryPointOfCalls = mutableListOf<EntryPointOfCall>()
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
@@ -51,7 +62,11 @@ class EntryPointOfTransformer(pluginContext: IrPluginContext) :
                     "com.ivianuu.injekt.composition.entryPointOf"
                 )
                     return super.visitCall(expression)
-                entryPointOfCalls += expression to currentFile
+                entryPointOfCalls += EntryPointOfCall(
+                    expression,
+                    currentScope!!,
+                    currentFile
+                )
                 return DeclarationIrBuilder(pluginContext, expression.symbol)
                     .irImplicitCast(
                         expression.getValueArgument(0)!!,
@@ -60,10 +75,16 @@ class EntryPointOfTransformer(pluginContext: IrPluginContext) :
             }
         })
 
-        entryPointOfCalls.forEach { (call, file) ->
+        entryPointOfCalls.forEach { (call, scope, file) ->
             file.addChild(
                 entryPointModule(
-                    InjektNameConventions.getEntryPointModuleNameForCall(file.fqName, call),
+                    nameProvider.allocateForGroup(
+                        getJoinedName(
+                            file.fqName,
+                            scope.scope.scopeOwner.fqNameSafe.parent()
+                                .child(scope.scope.scopeOwner.name.asString() + "EntryPointModule")
+                        )
+                    ),
                     call.getValueArgument(0)!!.type,
                     call.getTypeArgument(0)!!
                 )

@@ -16,14 +16,16 @@
 
 package com.ivianuu.injekt.compiler.transform.composition
 
-import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.tmpFunction
+import com.ivianuu.injekt.compiler.child
+import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
+import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
@@ -38,26 +40,37 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class RunReadingTransformer(
+class CompositionComponentReaderCallTransformer(
     pluginContext: IrPluginContext
 ) : AbstractInjektTransformer(pluginContext) {
 
+    private val nameProvider = NameProvider()
+
+    private data class ReaderCall(
+        val call: IrCall,
+        val scope: ScopeWithIr,
+        val file: IrFile
+    )
+
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
-        val runReadingCalls = mutableListOf<Pair<IrCall, IrFile>>()
+        val readerCalls = mutableListOf<ReaderCall>()
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
                 if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.composition.runReading"
+                    "com.ivianuu.injekt.composition.reader"
                 ) {
-                    runReadingCalls += expression to currentFile
+                    readerCalls += ReaderCall(
+                        expression,
+                        currentScope!!,
+                        currentFile
+                    )
                 }
                 return super.visitCall(expression)
             }
@@ -65,10 +78,16 @@ class RunReadingTransformer(
 
         val newExpressionsByCall = mutableMapOf<IrCall, IrExpression>()
 
-        runReadingCalls.forEach { (call, file) ->
+        readerCalls.forEach { (call, scope, file) ->
             val entryPoint = try {
                 entryPointForReader(
-                    InjektNameConventions.getObjectGraphGetNameForCall(file, call),
+                    nameProvider.allocateForGroup(
+                        getJoinedName(
+                            file.fqName,
+                            scope.scope.scopeOwner.fqNameSafe.parent()
+                                .child(scope.scope.scopeOwner.name.asString() + "Reader")
+                        )
+                    ),
                     call.getValueArgument(0)!!.type.typeArguments.first().typeOrFail
                 )
             } catch (e: Exception) {
@@ -81,7 +100,7 @@ class RunReadingTransformer(
                 DeclarationIrBuilder(pluginContext, call.symbol).run {
                     irCall(
                         pluginContext.referenceFunctions(
-                            FqName("com.ivianuu.injekt.composition.runReading")
+                            FqName("com.ivianuu.injekt.composition.reader")
                         ).single { it.owner.extensionReceiverParameter == null }
                     ).apply {
                         putValueArgument(

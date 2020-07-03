@@ -33,7 +33,7 @@ import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 
-class ReadableChecker(
+class ReaderChecker(
     private val typeAnnotationChecker: TypeAnnotationChecker
 ) : CallChecker, DeclarationChecker {
 
@@ -45,7 +45,7 @@ class ReadableChecker(
         if (descriptor !is FunctionDescriptor || !typeAnnotationChecker.hasTypeAnnotation(
                 context.trace,
                 descriptor,
-                InjektFqNames.Readable
+                InjektFqNames.Reader
             )
         ) return
 
@@ -87,7 +87,7 @@ class ReadableChecker(
     ) {
         val resulting = resolvedCall.resultingDescriptor
 
-        if (resulting.fqNameSafe.asString() == "com.ivianuu.injekt.composition.runReading") {
+        if (resulting.fqNameSafe.asString() == "com.ivianuu.injekt.composition.reader") {
             val receiver = resolvedCall.extensionReceiver!!.type
             if (receiver.constructor.declarationDescriptor?.annotations?.hasAnnotation(InjektFqNames.CompositionComponent) != true &&
                 !receiver.isTypeParameter()
@@ -102,7 +102,7 @@ class ReadableChecker(
         if (resulting !is FunctionDescriptor || !typeAnnotationChecker.hasTypeAnnotation(
                 context.trace,
                 resulting,
-                InjektFqNames.Readable
+                InjektFqNames.Reader
             )
         ) return
         checkInvocations(reportOn, context)
@@ -112,13 +112,13 @@ class ReadableChecker(
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
-        val enclosingReadableFunction = findEnclosingFunctionContext(context) {
-            typeAnnotationChecker.hasTypeAnnotation(context.trace, it, InjektFqNames.Readable)
+        val enclosingReaderFunction = findEnclosingFunctionContext(context) {
+            typeAnnotationChecker.hasTypeAnnotation(context.trace, it, InjektFqNames.Reader)
         }
 
-        if (enclosingReadableFunction == null) {
+        if (enclosingReaderFunction == null) {
             context.trace.report(
-                InjektErrors.FORBIDDEN_READABLE_INVOCATION.on(reportOn)
+                InjektErrors.FORBIDDEN_READER_INVOCATION.on(reportOn)
             )
         }
     }
