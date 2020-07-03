@@ -24,7 +24,7 @@ import com.ivianuu.injekt.compiler.transform.composition.CompositionModuleMetada
 import com.ivianuu.injekt.compiler.transform.composition.EntryPointOfTransformer
 import com.ivianuu.injekt.compiler.transform.composition.GenerateCompositionsTransformer
 import com.ivianuu.injekt.compiler.transform.reader.ReaderFunctionTransformer
-import com.ivianuu.injekt.compiler.transform.reader.CompositionComponentReaderCallTransformer
+import com.ivianuu.injekt.compiler.transform.composition.CompositionComponentReaderCallTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer

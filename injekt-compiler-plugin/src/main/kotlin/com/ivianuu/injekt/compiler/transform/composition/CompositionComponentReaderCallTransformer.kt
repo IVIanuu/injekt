@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.reader
+package com.ivianuu.injekt.compiler.transform.composition
 
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
@@ -66,7 +66,11 @@ class CompositionComponentReaderCallTransformer(
                 if (expression.symbol.descriptor.fqNameSafe.asString() ==
                     "com.ivianuu.injekt.composition.reader"
                 ) {
-                    readerCalls += ReaderCall(expression, currentScope!!, currentFile)
+                    readerCalls += ReaderCall(
+                        expression,
+                        currentScope!!,
+                        currentFile
+                    )
                 }
                 return super.visitCall(expression)
             }
