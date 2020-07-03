@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.child
+import com.ivianuu.injekt.compiler.copy
 import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.hasAnnotation
@@ -153,7 +154,7 @@ class ReaderTransformer(
         function.isReader(pluginContext.bindingContext)
 
     override fun transform(function: IrFunction, callback: (IrFunction) -> Unit) {
-        val transformedFunction = function.copy().apply {
+        val transformedFunction = function.copy(pluginContext).apply {
             callback(this)
 
             val descriptor = descriptor
@@ -544,7 +545,7 @@ class ReaderTransformer(
     }
 
     override fun transformExternal(function: IrFunction, callback: (IrFunction) -> Unit) {
-        val transformedFunction = function.copy()
+        val transformedFunction = function.copy(pluginContext)
         callback(transformedFunction)
 
         if (transformedFunction.valueParameters.any { it.name.asString() == "_context" }) {
