@@ -293,7 +293,7 @@ class ModuleBindingResolver(
                 }
 
             parameters += InjektDeclarationIrBuilder.FactoryParameter(
-                name = "reader_context",
+                name = "_context",
                 type = readerContext.defaultType,
                 assisted = false
             )

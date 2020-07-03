@@ -185,7 +185,7 @@ class ReaderFunctionTransformer(
             }
         }
 
-        if (function.valueParameters.any { it.name.asString() == "Reader_context" }) {
+        if (function.valueParameters.any { it.name.asString() == "_context" }) {
             return
         }
 
@@ -320,7 +320,7 @@ class ReaderFunctionTransformer(
             }
 
         val contextValueParameter = transformedFunction.addValueParameter(
-            "Reader_context",
+            "_context",
             contextClass.typeWith(transformedFunction.typeParameters.map { it.defaultType })
         )
 
@@ -524,7 +524,7 @@ class ReaderFunctionTransformer(
         val transformedFunction = function.copy()
         callback(transformedFunction)
 
-        if (transformedFunction.valueParameters.any { it.name.asString() == "Reader_context" }) {
+        if (transformedFunction.valueParameters.any { it.name.asString() == "_context" }) {
             return
         }
 
@@ -543,7 +543,7 @@ class ReaderFunctionTransformer(
                 .let { pluginContext.referenceClass(it.fqNameSafe)!!.owner }
 
         transformedFunction.addValueParameter(
-            "Reader_context",
+            "_context",
             contextClass.typeWith(transformedFunction.typeParameters.map { it.defaultType })
         )
     }
