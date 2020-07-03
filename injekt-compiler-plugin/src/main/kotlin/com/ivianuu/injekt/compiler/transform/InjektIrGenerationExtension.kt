@@ -23,8 +23,8 @@ import com.ivianuu.injekt.compiler.transform.composition.CompositionFactoryParen
 import com.ivianuu.injekt.compiler.transform.composition.CompositionModuleMetadataTransformer
 import com.ivianuu.injekt.compiler.transform.composition.EntryPointOfTransformer
 import com.ivianuu.injekt.compiler.transform.composition.GenerateCompositionsTransformer
-import com.ivianuu.injekt.compiler.transform.readable.ReadableFunctionTransformer
-import com.ivianuu.injekt.compiler.transform.readable.RunReadingTransformer
+import com.ivianuu.injekt.compiler.transform.reader.ReaderFunctionTransformer
+import com.ivianuu.injekt.compiler.transform.reader.CompositionComponentReaderCallTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
@@ -48,14 +48,14 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             declarationStore
         ).also { declarationStore.factoryTransformer = it }
 
-        val readableFunctionTransformer = ReadableFunctionTransformer(pluginContext)
-            .also { declarationStore.readableFunctionTransformer = it }
-        readableFunctionTransformer.lower(moduleFragment)
+        val readerFunctionTransformer = ReaderFunctionTransformer(pluginContext)
+            .also { declarationStore.readerFunctionTransformer = it }
+        readerFunctionTransformer.lower(moduleFragment)
 
         if (pluginContext.compositionsEnabled) {
             BindingEffectTransformer(pluginContext).lower(moduleFragment)
 
-            RunReadingTransformer(
+            CompositionComponentReaderCallTransformer(
                 pluginContext
             ).lower(moduleFragment)
 
@@ -82,7 +82,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         // transform @Module functions
         moduleFunctionTransformer.lower(moduleFragment)
 
-        readableFunctionTransformer.addContextClassesToFiles()
+        readerFunctionTransformer.addContextClassesToFiles()
 
         // generate factory implementations
         factoryTransformer.lower(moduleFragment)

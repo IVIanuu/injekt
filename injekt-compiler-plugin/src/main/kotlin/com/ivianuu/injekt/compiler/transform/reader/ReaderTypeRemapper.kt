@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.readable
+package com.ivianuu.injekt.compiler.transform.reader
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.makeKotlinType
@@ -180,7 +180,7 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
             ownerFn.origin == IrDeclarationOrigin.FAKE_OVERRIDE &&
             containingClass != null &&
             containingClass.defaultType.isFunctionType &&
-            expression.dispatchReceiver?.type?.isReadable() == true
+            expression.dispatchReceiver?.type?.isReader() == true
         ) {
             val typeArguments = containingClass.defaultType.arguments
             val newFnClass = context.tmpFunction(typeArguments.size)
@@ -294,14 +294,14 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
         }
     }
 
-    private fun IrType.isReadable(): Boolean {
-        return annotations.hasAnnotation(InjektFqNames.Readable)
+    private fun IrType.isReader(): Boolean {
+        return annotations.hasAnnotation(InjektFqNames.Reader)
     }
 
 }
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
-class ReadableTypeRemapper(
+class ReaderTypeRemapper(
     private val context: IrPluginContext,
     private val symbolRemapper: SymbolRemapper
 ) : TypeRemapper {
@@ -315,7 +315,7 @@ class ReadableTypeRemapper(
     override fun remapType(type: IrType): IrType {
         if (type !is IrSimpleType) return type
         if (!type.isFunction() && !type.isSuspendFunction()) return underlyingRemapType(type)
-        if (!type.hasAnnotation(InjektFqNames.Readable)) return underlyingRemapType(type)
+        if (!type.hasAnnotation(InjektFqNames.Reader)) return underlyingRemapType(type)
         val oldIrArguments = type.arguments
         val extraArgs = listOf(
             makeTypeProjection(

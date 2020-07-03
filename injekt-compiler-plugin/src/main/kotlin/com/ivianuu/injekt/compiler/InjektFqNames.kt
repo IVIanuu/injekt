@@ -76,7 +76,7 @@ object InjektFqNames {
 
     val Provider = InjektPackage.child("Provider")
 
-    val Readable = InjektPackage.child("Readable")
+    val Reader = InjektPackage.child("Reader")
 
     val Qualifier = InjektPackage.child("Qualifier")
 

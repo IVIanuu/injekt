@@ -16,20 +16,17 @@
 
 package com.ivianuu.injekt.lol
 
-import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.Readable
 import com.ivianuu.injekt.composition.BindingAdapter
 import com.ivianuu.injekt.composition.CompositionComponent
 import com.ivianuu.injekt.composition.CompositionFactory
 import com.ivianuu.injekt.composition.compositionFactoryOf
 import com.ivianuu.injekt.composition.initializeCompositions
-import com.ivianuu.injekt.composition.runReading
+import com.ivianuu.injekt.composition.reader
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.map
 import com.ivianuu.injekt.scoped
-import com.ivianuu.injekt.transient
 import kotlin.reflect.KClass
 
 @CompositionComponent
@@ -66,6 +63,6 @@ fun invoke() {
     initializeCompositions()
     val component =
         compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-    val appServices = component.runReading { get<Map<KClass<out AppService>, AppService>>() }
+    val appServices = component.reader { get<Map<KClass<out AppService>, AppService>>() }
     println("app services " + appServices)
 }

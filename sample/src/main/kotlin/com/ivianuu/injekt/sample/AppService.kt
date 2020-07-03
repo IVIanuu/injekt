@@ -19,8 +19,7 @@ package com.ivianuu.injekt.sample
 import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.Readable
-import com.ivianuu.injekt.Scoped
+import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.composition.BindingAdapter
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.map
@@ -42,7 +41,7 @@ annotation class BindAppService {
     }
 }
 
-@Readable
+@Reader
 fun startAppServices() {
     println("app service init")
     get<Map<KClass<out AppService>, @Provider () -> AppService>>().forEach { (key, service) ->

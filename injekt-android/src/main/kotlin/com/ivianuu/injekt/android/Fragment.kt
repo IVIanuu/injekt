@@ -29,7 +29,7 @@ import com.ivianuu.injekt.composition.CompositionComponent
 import com.ivianuu.injekt.composition.CompositionFactory
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.composition.parent
-import com.ivianuu.injekt.composition.runReading
+import com.ivianuu.injekt.composition.reader
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.transient
 
@@ -42,7 +42,7 @@ interface FragmentComponent
 
 val Fragment.fragmentComponent: FragmentComponent
     get() = lifecycle.singleton {
-        activity!!.activityComponent.runReading {
+        activity!!.activityComponent.reader {
             get<@ChildFactory (Fragment) -> FragmentComponent>()(this)
         }
     }

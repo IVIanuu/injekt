@@ -26,7 +26,7 @@ import com.ivianuu.injekt.internal.injektIntrinsic
     AnnotationTarget.PROPERTY
 )
 @TypeAnnotation
-annotation class Readable
+annotation class Reader
 
-@Readable
+@Reader
 fun <T> get(): T = injektIntrinsic()

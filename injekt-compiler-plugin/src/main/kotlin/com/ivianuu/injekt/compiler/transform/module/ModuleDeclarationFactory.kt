@@ -292,7 +292,7 @@ class ModuleDeclarationFactory(
                 val providerExpression =
                     InjektDeclarationIrBuilder(pluginContext, moduleFunction.symbol)
                         .classFactoryLambda(
-                            declarationStore.readableFunctionTransformer,
+                            declarationStore.readerFunctionTransformer,
                             clazz,
                             startOffset,
                             endOffset

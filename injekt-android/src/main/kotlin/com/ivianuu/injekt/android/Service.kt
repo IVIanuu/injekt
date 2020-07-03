@@ -27,7 +27,7 @@ import com.ivianuu.injekt.composition.CompositionComponent
 import com.ivianuu.injekt.composition.CompositionFactory
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.composition.parent
-import com.ivianuu.injekt.composition.runReading
+import com.ivianuu.injekt.composition.reader
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.transient
 
@@ -39,7 +39,7 @@ annotation class ForService
 interface ServiceComponent
 
 fun Service.newServiceComponent(): ServiceComponent {
-    return application.applicationComponent.runReading {
+    return application.applicationComponent.reader {
         get<@ChildFactory (Service) -> ServiceComponent>()(this)
     }
 }

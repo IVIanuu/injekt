@@ -25,7 +25,7 @@ import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getInjectConstructor
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.tmpFunction
-import com.ivianuu.injekt.compiler.transform.readable.ReadableFunctionTransformer
+import com.ivianuu.injekt.compiler.transform.reader.ReaderFunctionTransformer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
@@ -308,7 +308,7 @@ class InjektDeclarationIrBuilder(
     }
 
     fun classFactoryLambda(
-        readableFunctionTransformer: ReadableFunctionTransformer,
+        readerFunctionTransformer: ReaderFunctionTransformer,
         clazz: IrClass,
         startOffset: Int,
         endOffset: Int
@@ -328,7 +328,7 @@ class InjektDeclarationIrBuilder(
             } ?: emptyList()
 
         return factoryLambda(
-            readableFunctionTransformer,
+            readerFunctionTransformer,
             assistedParameters,
             clazz.defaultType,
             startOffset,
@@ -366,7 +366,7 @@ class InjektDeclarationIrBuilder(
     }
 
     fun factoryLambda(
-        readableFunctionTransformer: ReadableFunctionTransformer,
+        readerFunctionTransformer: ReaderFunctionTransformer,
         assistedParameters: List<FactoryParameter>,
         returnType: IrType,
         startOffset: Int,
@@ -378,10 +378,10 @@ class InjektDeclarationIrBuilder(
     ): IrExpression {
         val lambdaType = pluginContext.tmpFunction(assistedParameters.size)
             .typeWith(assistedParameters.map { it.type } + returnType)
-            .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Readable))
+            .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Reader))
 
-        return irReadableLambda(
-            readableFunctionTransformer,
+        return irReaderLambda(
+            ReaderFunctionTransformer,
             lambdaType,
             startOffset,
             endOffset
@@ -395,8 +395,8 @@ class InjektDeclarationIrBuilder(
         }
     }
 
-    fun irReadableLambda(
-        readableFunctionTransformer: ReadableFunctionTransformer,
+    fun irReaderLambda(
+        ReaderFunctionTransformer: ReaderFunctionTransformer,
         type: IrType,
         startOffset: Int,
         endOffset: Int,
@@ -412,7 +412,7 @@ class InjektDeclarationIrBuilder(
             this.startOffset = startOffset
             this.endOffset = endOffset
         }.apply {
-            annotations += noArgSingleConstructorCall(symbols.readable)
+            annotations += noArgSingleConstructorCall(symbols.Reader)
             type.typeArguments.dropLast(1).forEachIndexed { index, typeArgument ->
                 addValueParameter(
                     "p$index",
@@ -422,7 +422,7 @@ class InjektDeclarationIrBuilder(
             parent = builder.scope.getLocalDeclarationParent()
             this.body =
                 DeclarationIrBuilder(pluginContext, symbol).irBlockBody { body(this, this@apply) }
-        }.let { readableFunctionTransformer.getTransformedFunction(it) }
+        }.let { ReaderFunctionTransformer.getTransformedFunction(it) }
 
         return builder.irBlock(
             origin = IrStatementOrigin.LAMBDA,

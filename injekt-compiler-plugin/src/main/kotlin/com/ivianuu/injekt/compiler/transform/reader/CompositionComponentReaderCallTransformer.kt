@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.readable
+package com.ivianuu.injekt.compiler.transform.reader
 
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
@@ -46,27 +46,27 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class RunReadingTransformer(
+class CompositionComponentReaderCallTransformer(
     pluginContext: IrPluginContext
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val nameProvider = NameProvider()
 
-    private data class RunReadingCall(
+    private data class ReaderCall(
         val call: IrCall,
         val scope: ScopeWithIr,
         val file: IrFile
     )
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
-        val runReadingCalls = mutableListOf<RunReadingCall>()
+        val readerCalls = mutableListOf<ReaderCall>()
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
                 if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.composition.runReading"
+                    "com.ivianuu.injekt.composition.reader"
                 ) {
-                    runReadingCalls += RunReadingCall(expression, currentScope!!, currentFile)
+                    readerCalls += ReaderCall(expression, currentScope!!, currentFile)
                 }
                 return super.visitCall(expression)
             }
@@ -74,7 +74,7 @@ class RunReadingTransformer(
 
         val newExpressionsByCall = mutableMapOf<IrCall, IrExpression>()
 
-        runReadingCalls.forEach { (call, scope, file) ->
+        readerCalls.forEach { (call, scope, file) ->
             val entryPoint = try {
                 entryPointForReader(
                     nameProvider.allocateForGroup(
@@ -96,7 +96,7 @@ class RunReadingTransformer(
                 DeclarationIrBuilder(pluginContext, call.symbol).run {
                     irCall(
                         pluginContext.referenceFunctions(
-                            FqName("com.ivianuu.injekt.composition.runReading")
+                            FqName("com.ivianuu.injekt.composition.reader")
                         ).single { it.owner.extensionReceiverParameter == null }
                     ).apply {
                         putValueArgument(

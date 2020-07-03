@@ -16,15 +16,14 @@
 
 package com.ivianuu.injekt.composition
 
-import com.ivianuu.injekt.Readable
-import com.ivianuu.injekt.internal.injektIntrinsic
+import com.ivianuu.injekt.Reader
 
-inline fun <R> Any.runReading(
-    block: @Readable () -> R
+inline fun <R> Any.reader(
+    block: @Reader () -> R
 ): R = block()
 
-@JvmName("actualRunReading")
-inline fun <R> runReading(
+@JvmName("actualReader")
+inline fun <R> reader(
     context: Any,
     block: (Any) -> R
 ): R = block(context)

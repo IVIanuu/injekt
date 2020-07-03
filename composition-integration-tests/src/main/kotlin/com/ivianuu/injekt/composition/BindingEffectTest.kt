@@ -62,7 +62,7 @@ class BindingEffectTest {
         fun invoke() {
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            component.runReading { 
+            component.reader { 
                 get<Dep>() 
                 get<String>()
                 get<Any>()
@@ -105,7 +105,7 @@ class BindingEffectTest {
         fun invoke() {
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            val appServices = component.runReading { get<Map<KClass<AppService>, AppService>>() }
+            val appServices = component.reader { get<Map<KClass<AppService>, AppService>>() }
             println("app services " + appServices)
         }
     """
@@ -151,7 +151,7 @@ class BindingEffectTest {
                 fun invoke() { 
                     initializeCompositions() 
                     val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()() 
-                    val appServices = component.runReading {
+                    val appServices = component.reader {
                         get<Map<KClass<AppService>, AppService>>()
                     }
                     println("app services " + appServices) 
@@ -242,7 +242,7 @@ class BindingEffectTest {
                 fun run() {
                     initializeCompositions()
                     val component = compositionFactoryOf<ActivityComponent, () -> ActivityComponent>()()
-                    component.runReading { get<MainViewModel>() }
+                    component.reader { get<MainViewModel>() }
                 }
             """
             )

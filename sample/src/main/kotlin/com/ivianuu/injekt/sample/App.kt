@@ -22,7 +22,7 @@ import androidx.work.WorkManager
 import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.composition.initializeCompositions
-import com.ivianuu.injekt.composition.runReading
+import com.ivianuu.injekt.composition.reader
 
 class App : Application() {
 
@@ -30,7 +30,7 @@ class App : Application() {
         initializeCompositions()
         super.onCreate()
 
-        applicationComponent.runReading {
+        applicationComponent.reader {
             startAppServices()
             WorkManager.initialize(
                 this, Configuration.Builder()
@@ -38,7 +38,7 @@ class App : Application() {
             )
         }
 
-        val repo: Repo = applicationComponent.runReading { get() }
+        val repo: Repo = applicationComponent.reader { get() }
         repo.refresh()
 
         println("injected app $repo")

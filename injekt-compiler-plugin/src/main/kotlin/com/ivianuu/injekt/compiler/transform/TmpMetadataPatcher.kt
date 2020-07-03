@@ -34,7 +34,7 @@ class TmpMetadataPatcher(pluginContext: IrPluginContext) :
                     .filter {
                         it.origin == InjektOrigin ||
                                 (!it.hasAnnotation(InjektFqNames.Module) &&
-                                        !it.hasAnnotation(InjektFqNames.Readable))
+                                        !it.hasAnnotation(InjektFqNames.Reader))
                     })
                     .map { it.descriptor })
                     .distinct()

@@ -236,7 +236,7 @@ class ModuleBindingResolver(
             val providerType = propertyGetter.returnType
                 .substituteAndKeepQualifiers(moduleNode.typeParametersMap)
 
-            val readableContext = propertyGetter.returnType.getFunctionParameterTypes()
+            val readerContext = propertyGetter.returnType.getFunctionParameterTypes()
                 .last().classOrNull!!.owner
 
             val dependencies = mutableListOf<BindingRequest>()
@@ -273,7 +273,7 @@ class ModuleBindingResolver(
                     }
             }
 
-            readableContext.superTypes.forEach { superType ->
+            readerContext.superTypes.forEach { superType ->
                 collectDependencies(
                     superType.getClass()!!,
                     superType.typeArguments.map { it.typeOrFail })
@@ -293,8 +293,8 @@ class ModuleBindingResolver(
                 }
 
             parameters += InjektDeclarationIrBuilder.FactoryParameter(
-                name = "readable_context",
-                type = readableContext.defaultType,
+                name = "reader_context",
+                type = readerContext.defaultType,
                 assisted = false
             )
 
@@ -317,7 +317,7 @@ class ModuleBindingResolver(
 
                 AssistedProvisionBindingNode(
                     key = assistedFactoryType.asKey(),
-                    context = readableContext,
+                    context = readerContext,
                     dependencies = dependencies,
                     targetScope = null,
                     scoped = scoped,
@@ -348,7 +348,7 @@ class ModuleBindingResolver(
             } else {
                 ProvisionBindingNode(
                     key = bindingKey,
-                    context = readableContext,
+                    context = readerContext,
                     dependencies = dependencies,
                     targetScope = null,
                     scoped = scoped,

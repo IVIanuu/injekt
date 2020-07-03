@@ -17,7 +17,6 @@
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.internal.injektIntrinsic
-import kotlin.reflect.KFunction
 
 fun <T> dependency(dependency: T): Unit = injektIntrinsic()
 
@@ -25,10 +24,10 @@ fun <T : Function<*>> childFactory(factory: T): Unit = injektIntrinsic()
 
 fun <S : T, T> alias(): Unit = injektIntrinsic()
 
-fun <T> transient(provider: @Readable Function<T> = injektIntrinsic()): Unit = injektIntrinsic()
+fun <T> transient(provider: @Reader Function<T> = injektIntrinsic()): Unit = injektIntrinsic()
 
 annotation class Transient
 
-fun <T> scoped(provider: @Readable Function<T> = injektIntrinsic()): Unit = injektIntrinsic()
+fun <T> scoped(provider: @Reader Function<T> = injektIntrinsic()): Unit = injektIntrinsic()
 
 annotation class Scoped<T>

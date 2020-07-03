@@ -20,7 +20,7 @@ import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.comparison.base.InjectionTest
 import com.ivianuu.injekt.comparison.fibonacci.Fib8
 import com.ivianuu.injekt.composition.compositionFactoryOf
-import com.ivianuu.injekt.composition.runReading
+import com.ivianuu.injekt.composition.reader
 import com.ivianuu.injekt.get
 
 object InjektTest : InjectionTest {
@@ -34,7 +34,7 @@ object InjektTest : InjectionTest {
     }
 
     override fun inject() {
-        component!!.runReading { get<Fib8>() }
+        component!!.reader { get<Fib8>() }
     }
 
     override fun shutdown() {

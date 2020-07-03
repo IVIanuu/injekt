@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.readable
+package com.ivianuu.injekt.compiler.transform.reader
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.analysis.TypeAnnotationChecker
@@ -24,21 +24,21 @@ import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 
-fun IrFunction.isReadable(bindingContext: BindingContext): Boolean {
-    if (hasAnnotation(InjektFqNames.Readable)) return true
+fun IrFunction.isReader(bindingContext: BindingContext): Boolean {
+    if (hasAnnotation(InjektFqNames.Reader)) return true
     val typeAnnotationChecker = TypeAnnotationChecker()
     val bindingTrace = DelegatingBindingTrace(bindingContext, "Injekt IR")
     return try {
         typeAnnotationChecker.hasTypeAnnotation(
             bindingTrace, descriptor,
-            InjektFqNames.Readable
+            InjektFqNames.Reader
         )
     } catch (e: Exception) {
         false
     }
 }
 
-fun IrCall.isReadableLambdaInvoke(): Boolean {
+fun IrCall.isReaderLambdaInvoke(): Boolean {
     return symbol.owner.name.asString() == "invoke" &&
-            dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Readable) == true
+            dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Reader) == true
 }

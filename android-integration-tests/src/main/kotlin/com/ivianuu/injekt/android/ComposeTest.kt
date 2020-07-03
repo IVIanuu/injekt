@@ -35,7 +35,7 @@ import org.robolectric.annotation.Config
 class ComposeTest {
 
     @Test
-    fun testComposableReadableLambda() = codegen(
+    fun testComposableReaderLambda() = codegen(
         """
         @CompositionComponent 
         interface TestCompositionComponent
@@ -46,28 +46,28 @@ class ComposeTest {
             return create() 
         }
         
-        @Readable 
+        @Reader 
         @androidx.compose.Composable
         fun func(foo: Foo = given()): Foo {
             androidx.compose.currentComposer
             return foo
         }
         
-        @Readable 
+        @Reader 
         @androidx.compose.Composable
         fun other() { 
             androidx.compose.currentComposer
         }
         
-        @Readable
+        @Reader
         @androidx.compose.Composable
-        fun <R> withFoo(block: @Readable @androidx.compose.Composable (Foo) -> R): R = block(func())
+        fun <R> withFoo(block: @Reader @androidx.compose.Composable (Foo) -> R): R = block(func())
 
         @androidx.compose.Composable
         fun cool(): Foo {
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            return component.runReading {
+            return component.reader {
                     withFoo {
                         other()
                         it

@@ -126,7 +126,7 @@ class InlineTest {
     fun testModuleWithGenericFunctionParameter() = codegen(
         """ 
         @Module 
-        fun <T, @Readable F : Function<T>> generic(provider: @Readable F) {
+        fun <T, @Reader F : Function<T>> generic(provider: @Reader F) {
             transient(provider)
         }
         
