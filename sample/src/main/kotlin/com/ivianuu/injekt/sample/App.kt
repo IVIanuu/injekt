@@ -31,17 +31,10 @@ class App : Application() {
         super.onCreate()
 
         applicationComponent.reader {
+            initializeWorkers()
             startAppServices()
-            WorkManager.initialize(
-                this, Configuration.Builder()
-                    .setWorkerFactory(get()).build()
-            )
+            refreshRepo()
         }
-
-        val repo: Repo = applicationComponent.reader { get() }
-        repo.refresh()
-
-        println("injected app $repo")
     }
 
 }
