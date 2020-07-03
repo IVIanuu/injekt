@@ -107,21 +107,18 @@ class ReaderChecker(
                 InjektFqNames.Reader
             )
         ) return
-        checkInvocations(reportOn, context, resolvedCall)
+        checkInvocations(reportOn, context)
     }
 
     private fun checkInvocations(
         reportOn: PsiElement,
-        context: CallCheckerContext,
-        resolvedCall: ResolvedCall<*>
+        context: CallCheckerContext
     ) {
         val enclosingReaderContext = findEnclosingContext(context) {
             typeAnnotationChecker.hasTypeAnnotation(context.trace, it, InjektFqNames.Reader) ||
                     (it is ConstructorDescriptor &&
                             it.constructedClass.hasAnnotation(InjektFqNames.Reader))
         }
-
-        println("enclosing reader context $enclosingReaderContext for ${resolvedCall.resultingDescriptor}")
 
         if (enclosingReaderContext == null) {
             context.trace.report(

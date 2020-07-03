@@ -102,8 +102,6 @@ class ModuleFunctionTransformer(
         val transformedFunction = function.copy(pluginContext)
         callback(transformedFunction)
 
-        if (!transformedFunction.returnType.isUnit()) return
-
         val moduleDescriptor = ModuleDescriptor(
             transformedFunction,
             function,
@@ -277,8 +275,6 @@ class ModuleFunctionTransformer(
     override fun transformExternal(function: IrFunction, callback: (IrFunction) -> Unit) {
         val transformedFunction = function.copy(pluginContext)
         callback(transformedFunction)
-
-        if (!transformedFunction.returnType.isUnit()) return
 
         val moduleClass = declarationStore.getModuleClassForFunction(function)
 

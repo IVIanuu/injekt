@@ -113,8 +113,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         readerFunctionTransformer.addContextClassesToFiles()
 
-        println(moduleFragment.dumpSrc())
-
         // generate factory implementations
         factoryTransformer.lower(moduleFragment)
 

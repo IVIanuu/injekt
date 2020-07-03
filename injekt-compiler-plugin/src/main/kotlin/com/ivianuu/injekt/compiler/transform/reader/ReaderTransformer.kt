@@ -23,14 +23,16 @@ import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.copy
 import com.ivianuu.injekt.compiler.dumpSrc
+import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getJoinedName
+import com.ivianuu.injekt.compiler.getSuspendFunctionType
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
-import com.ivianuu.injekt.compiler.transform.AbstractFunctionTransformer
+import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
@@ -49,6 +51,7 @@ import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
@@ -63,12 +66,16 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
+import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
@@ -105,7 +112,9 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class ReaderTransformer(
     pluginContext: IrPluginContext,
     val symbolRemapper: DeepCopySymbolRemapper
-) : AbstractFunctionTransformer(pluginContext) {
+) : AbstractInjektTransformer(pluginContext) {
+
+    private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
 
     private val contextNameProvider = NameProvider()
 
@@ -116,7 +125,15 @@ class ReaderTransformer(
         transformFunctionIfNeeded(function)
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
-        super.visitModuleFragment(declaration)
+        declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitFunction(declaration: IrFunction): IrStatement =
+                transformFunctionIfNeeded(super.visitFunction(declaration) as IrFunction)
+        })
+
+        addContextClassesToFiles()
+
+        // todo check if this is needed
+        declaration.rewriteTransformedFunctionRefs()
 
         declaration.acceptVoid(symbolRemapper)
 
@@ -134,9 +151,7 @@ class ReaderTransformer(
         }
         declaration.patchDeclarationParents()
 
-        addContextClassesToFiles()
-
-        return declaration
+        return super.visitModuleFragment(declaration)
     }
 
     fun addContextClassesToFiles() {
@@ -150,12 +165,57 @@ class ReaderTransformer(
             }
     }
 
-    override fun needsTransform(function: IrFunction): Boolean =
-        function.isReader(pluginContext.bindingContext)
+    private fun IrCall.getReaderLambdaArguments(): List<IrExpression> {
+        return getArgumentsWithIr()
+            .filter { (valueParameter, _) ->
+                (valueParameter.type.isFunction() || valueParameter.type.isSuspendFunction()) &&
+                        valueParameter.type.hasAnnotation(InjektFqNames.Reader)
+            }
+            .map { it.second }
+    }
 
-    override fun transform(function: IrFunction, callback: (IrFunction) -> Unit) {
+    private fun IrExpression.getFunctionFromArgument() = when (this) {
+        is IrFunctionExpression -> function
+        else -> error("Cannot extract function from $this ${dumpSrc()}")
+    }
+
+    private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
+        transformedFunctions[function]?.let { return it }
+        if (function in transformedFunctions.values) return function
+
+        if (!function.isReader(pluginContext.bindingContext)) return function
+
+        if (function.isExternalDeclaration()) {
+            val transformedFunction = function.copy(pluginContext)
+            transformedFunctions[function] = transformedFunction
+
+            if (transformedFunction.valueParameters.any { it.name.asString() == "_context" }) {
+                return transformedFunction
+            }
+
+            val contextClass =
+                moduleFragment.descriptor.getPackage(function.getPackageFragment()!!.fqName)
+                    .memberScope
+                    .getContributedDescriptors()
+                    .filterIsInstance<ClassDescriptor>()
+                    .filter { it.hasAnnotation(InjektFqNames.AstName) }
+                    .single {
+                        it.annotations.findAnnotation(InjektFqNames.AstName)!!
+                            .argumentValue("name")
+                            .let { it as StringValue }
+                            .value == function.descriptor.fqNameSafe.asString()
+                    }
+                    .let { pluginContext.referenceClass(it.fqNameSafe)!!.owner }
+
+            transformedFunction.addValueParameter(
+                "_context",
+                contextClass.typeWith(transformedFunction.typeParameters.map { it.defaultType })
+            )
+            return transformedFunction
+        }
+
         val transformedFunction = function.copy(pluginContext).apply {
-            callback(this)
+            transformedFunctions[function] = this
 
             val descriptor = descriptor
             if (descriptor is PropertyGetterDescriptor &&
@@ -168,7 +228,6 @@ class ReaderTransformer(
                 correspondingPropertySymbol?.owner?.getter = this
             }
 
-            // same thing for the setter
             if (descriptor is PropertySetterDescriptor &&
                 annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
             ) {
@@ -180,8 +239,8 @@ class ReaderTransformer(
             }
         }
 
-        if (function.valueParameters.any { it.name.asString() == "_context" }) {
-            return
+        if (transformedFunction.valueParameters.any { it.name.asString() == "_context" }) {
+            return transformedFunction
         }
 
         val contextClassFunctionNameProvider = NameProvider()
@@ -361,20 +420,8 @@ class ReaderTransformer(
         })
 
         rewriteReaderCalls(transformedFunction, genericFunctionMap)
-    }
 
-    private fun IrCall.getReaderLambdaArguments(): List<IrExpression> {
-        return getArgumentsWithIr()
-            .filter { (valueParameter, _) ->
-                (valueParameter.type.isFunction() || valueParameter.type.isSuspendFunction()) &&
-                        valueParameter.type.hasAnnotation(InjektFqNames.Reader)
-            }
-            .map { it.second }
-    }
-
-    private fun IrExpression.getFunctionFromArgument() = when (this) {
-        is IrFunctionExpression -> function
-        else -> error("Cannot extract function from $this ${dumpSrc()}")
+        return transformedFunction
     }
 
     private fun rewriteReaderCalls(
@@ -544,34 +591,6 @@ class ReaderTransformer(
         })
     }
 
-    override fun transformExternal(function: IrFunction, callback: (IrFunction) -> Unit) {
-        val transformedFunction = function.copy(pluginContext)
-        callback(transformedFunction)
-
-        if (transformedFunction.valueParameters.any { it.name.asString() == "_context" }) {
-            return
-        }
-
-        val contextClass =
-            moduleFragment.descriptor.getPackage(function.getPackageFragment()!!.fqName)
-                .memberScope
-                .getContributedDescriptors()
-                .filterIsInstance<ClassDescriptor>()
-                .filter { it.hasAnnotation(InjektFqNames.AstName) }
-                .single {
-                    it.annotations.findAnnotation(InjektFqNames.AstName)!!
-                        .argumentValue("name")
-                        .let { it as StringValue }
-                        .value == function.descriptor.fqNameSafe.asString()
-                }
-                .let { pluginContext.referenceClass(it.fqNameSafe)!!.owner }
-
-        transformedFunction.addValueParameter(
-            "_context",
-            contextClass.typeWith(transformedFunction.typeParameters.map { it.defaultType })
-        )
-    }
-
     private fun NameProvider.getContextClassNameForReaderFunction(function: IrFunction): Name {
         return allocateForGroup(
             getJoinedName(
@@ -602,6 +621,90 @@ class ReaderTransformer(
                     .child(type.classifierOrFail.descriptor.name)
             )
         )
+    }
+
+    private fun transformFunctionExpression(
+        transformedCallee: IrFunction,
+        expression: IrFunctionExpression
+    ): IrFunctionExpression {
+        return IrFunctionExpressionImpl(
+            expression.startOffset,
+            expression.endOffset,
+            if (transformedCallee.isSuspend) transformedCallee.getSuspendFunctionType(pluginContext)
+            else transformedCallee.getFunctionType(pluginContext),
+            transformedCallee as IrSimpleFunction,
+            expression.origin
+        )
+    }
+
+    private fun transformFunctionReference(
+        transformedCallee: IrFunction,
+        expression: IrFunctionReference
+    ): IrFunctionReference {
+        return IrFunctionReferenceImpl(
+            expression.startOffset,
+            expression.endOffset,
+            if (transformedCallee.isSuspend) transformedCallee.getSuspendFunctionType(pluginContext)
+            else transformedCallee.getFunctionType(pluginContext),
+            transformedCallee.symbol,
+            expression.typeArgumentsCount,
+            null,
+            expression.origin
+        )
+    }
+
+    private fun transformCall(
+        transformedCallee: IrFunction,
+        expression: IrCall
+    ): IrCall {
+        return IrCallImpl(
+            expression.startOffset,
+            expression.endOffset,
+            transformedCallee.returnType,
+            transformedCallee.symbol,
+            expression.origin,
+            expression.superQualifierSymbol
+        ).apply {
+            try {
+                copyTypeAndValueArgumentsFrom(expression)
+            } catch (e: Throwable) {
+                error("Couldn't transform ${expression.dumpSrc()} to ${transformedCallee.render()}")
+            }
+        }
+    }
+
+    private fun IrElement.rewriteTransformedFunctionRefs() {
+        transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitFunctionExpression(expression: IrFunctionExpression): IrExpression {
+                val result = super.visitFunctionExpression(expression) as IrFunctionExpression
+                val transformed = transformFunctionIfNeeded(result.function)
+                return if (transformed in transformedFunctions.values) transformFunctionExpression(
+                    transformed,
+                    result
+                )
+                else result
+            }
+
+            override fun visitFunctionReference(expression: IrFunctionReference): IrExpression {
+                val result = super.visitFunctionReference(expression) as IrFunctionReference
+                val transformed = transformFunctionIfNeeded(result.symbol.owner)
+                return if (transformed in transformedFunctions.values) transformFunctionReference(
+                    transformed,
+                    result
+                )
+                else result
+            }
+
+            override fun visitCall(expression: IrCall): IrExpression {
+                val result = super.visitCall(expression) as IrCall
+                val transformed = transformFunctionIfNeeded(result.symbol.owner)
+                return if (transformed in transformedFunctions.values) transformCall(
+                    transformed,
+                    result
+                )
+                else result
+            }
+        })
     }
 
 }
