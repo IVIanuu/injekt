@@ -556,9 +556,9 @@ class ReadableFunctionTransformer(
                     .parent()
                     .let {
                         if (readable.name.isSpecial) {
-                            it.child(allocateForGroup("Lambda") + "Context")
+                            it.child(allocateForGroup("Lambda") + "_Context")
                         } else {
-                            it.child(readable.name.asString() + "Context")
+                            it.child(readable.name.asString() + "_Context")
                         }
                     }
 
@@ -575,14 +575,7 @@ class ReadableFunctionTransformer(
                 function.getPackageFragment()!!.fqName,
                 function.descriptor.fqNameSafe
                     .parent()
-                    .let {
-                        if (function.name.isSpecial) {
-                            it.child(type.classifierOrFail.descriptor.name)
-                        } else {
-                            it.child(type.classifierOrFail.descriptor.name)
-                        }
-                    }
-
+                    .child(type.classifierOrFail.descriptor.name)
             )
         )
     }

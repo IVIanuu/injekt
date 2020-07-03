@@ -114,7 +114,7 @@ class ModuleFunctionTransformer(
                 function.getPackageFragment()!!.fqName,
                 transformedFunction.descriptor.fqNameSafe
                     .parent()
-                    .child("${function.name}Declarations")
+                    .child("${function.name}_Declarations")
             )
             visibility = transformedFunction.visibility
         }.apply clazz@{

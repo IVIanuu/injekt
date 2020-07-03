@@ -86,10 +86,7 @@ class CompositionModuleMetadataTransformer(pluginContext: IrPluginContext) :
         if (compositionTypes.isEmpty()) return null
 
         val metadata = buildClass {
-            this.name = getJoinedName(
-                function.getPackageFragment()!!.fqName,
-                function.descriptor.fqNameSafe.child("CompositionMetadata")
-            )
+            this.name = getCompositionModuleMetadataName(function)
             visibility = Visibilities.PUBLIC
         }.apply clazz@{
             createImplicitParameterDeclarationWithWrappedDescriptor()

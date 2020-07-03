@@ -17,34 +17,55 @@
 package com.ivianuu.injekt.lol
 
 import com.ivianuu.injekt.Factory
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Readable
+import com.ivianuu.injekt.composition.BindingAdapter
+import com.ivianuu.injekt.composition.CompositionComponent
+import com.ivianuu.injekt.composition.CompositionFactory
+import com.ivianuu.injekt.composition.compositionFactoryOf
+import com.ivianuu.injekt.composition.initializeCompositions
+import com.ivianuu.injekt.composition.runReading
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.get
+import com.ivianuu.injekt.map
 import com.ivianuu.injekt.scoped
 import com.ivianuu.injekt.transient
+import kotlin.reflect.KClass
 
-class Foo
-class Bar(foo: Foo)
-class Store {
-    fun <T> remember(init: () -> T) = init()
-}
+@CompositionComponent
+interface TestCompositionComponent
 
-@Readable
-fun <T> remember(init: () -> T) = get<Store>().remember(init)
-
-interface BarComponent {
-    val bar: Bar
-}
-
-@Factory
-fun myFactory(): BarComponent {
-    transient { Foo() }
-    transient { remember { Bar(get()) } }
-    scoped { Store() }
+@CompositionFactory
+fun factory(): TestCompositionComponent {
+    map<KClass<out AppService>, AppService>()
     return create()
 }
 
-fun main() {
-    val barComponent = myFactory()
-    println("${barComponent.bar} ${barComponent.bar}")
+interface AppService
+
+@BindingAdapter(TestCompositionComponent::class)
+annotation class BindAppService {
+    companion object {
+        @Module
+        inline operator fun <reified T : AppService> invoke() {
+            scoped<T>()
+            map<KClass<out AppService>, AppService> {
+                put<T>(T::class)
+            }
+        }
+    }
+}
+
+@BindAppService
+class MyAppServiceA : AppService
+
+@BindAppService
+class MyAppServiceB : AppService
+
+fun invoke() {
+    initializeCompositions()
+    val component =
+        compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+    val appServices = component.runReading { get<Map<KClass<out AppService>, AppService>>() }
+    println("app services " + appServices)
 }
