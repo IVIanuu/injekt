@@ -314,7 +314,6 @@ class ReadableFunctionTransformer(
 
                     if (lambdaSource is IrCall && lambdaSource.symbol.owner.isPropertyAccessor) {
                         val property = lambdaSource.symbol.owner.propertyIfAccessor as IrProperty
-                        println("got source property ${property.dump()}")
                     }
 
                     val transformedLambda =

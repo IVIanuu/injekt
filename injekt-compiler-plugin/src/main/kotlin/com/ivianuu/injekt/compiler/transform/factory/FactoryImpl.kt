@@ -205,8 +205,6 @@ class FactoryImpl(
                 .mapNotNull { it.context }
                 .filter { it.defaultType !in implementedSuperTypes }
 
-            println("found contexts ${contexts.map { it.defaultType.render() }}")
-
             if (contexts.isEmpty()) {
                 break
             }

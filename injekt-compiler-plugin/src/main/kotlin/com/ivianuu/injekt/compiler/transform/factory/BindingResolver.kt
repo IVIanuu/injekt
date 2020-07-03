@@ -280,8 +280,6 @@ class ModuleBindingResolver(
 
             val parameters = mutableListOf<InjektDeclarationIrBuilder.FactoryParameter>()
 
-            println("provider type ${providerType.render()}")
-
             parameters += providerType
                 .getFunctionParameterTypes()
                 .dropLast(1)
@@ -300,8 +298,6 @@ class ModuleBindingResolver(
             )
 
             val assistedParameters = parameters.filter { it.assisted }
-
-            println("parameters $parameters")
 
             if (assistedParameters.isNotEmpty()) {
                 val assistedValueParameters = providerType

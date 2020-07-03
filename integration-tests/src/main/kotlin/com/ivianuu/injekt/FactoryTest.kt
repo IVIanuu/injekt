@@ -235,9 +235,8 @@ class FactoryTest {
     }
 
     @Test
-    fun testProviderDefinitionWhichUsesTypeParameters() =
-        codegen(
-            """
+    fun testProviderDefinitionWhichUsesTypeParameters() = codegen(
+        """
         @Module
         fun <T : S, S> diyAlias() {
             transient { get<T>() as S }

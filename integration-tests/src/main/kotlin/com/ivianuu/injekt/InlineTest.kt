@@ -122,7 +122,7 @@ class InlineTest {
             )
         )
 
-    @Test
+    // todo @Test
     fun testModuleWithGenericFunctionParameter() = codegen(
         """ 
         @Module 

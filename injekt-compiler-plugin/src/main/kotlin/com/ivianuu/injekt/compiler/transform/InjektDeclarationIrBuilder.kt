@@ -438,7 +438,7 @@ class InjektDeclarationIrBuilder(
                 reflectionTarget = null,
                 origin = IrStatementOrigin.LAMBDA
             )
-        }.also { println("readable lambda ${it.dump()}") }
+        }
     }
 
     fun jvmNameAnnotation(name: String): IrConstructorCall {
