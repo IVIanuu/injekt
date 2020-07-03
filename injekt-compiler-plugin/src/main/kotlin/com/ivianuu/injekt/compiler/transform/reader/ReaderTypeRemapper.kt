@@ -180,7 +180,7 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
             ownerFn.origin == IrDeclarationOrigin.FAKE_OVERRIDE &&
             containingClass != null &&
             containingClass.defaultType.isFunctionType &&
-            expression.dispatchReceiver?.type?.isReader() == true
+            expression.dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Reader) == true
         ) {
             val typeArguments = containingClass.defaultType.arguments
             val newFnClass = context.tmpFunction(typeArguments.size)
@@ -292,10 +292,6 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
             is IrFunctionBase<*> -> metadata = owner.metadata
             is IrClassImpl -> metadata = owner.metadata
         }
-    }
-
-    private fun IrType.isReader(): Boolean {
-        return annotations.hasAnnotation(InjektFqNames.Reader)
     }
 
 }

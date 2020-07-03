@@ -785,7 +785,6 @@ class NoArgProviderBindingResolver(
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): List<BindingNode> {
         val requestedType = requestedKey.type
-        println("provider request $requestedKey")
         return when {
             requestedType.isNoArgProvider() ->
                 listOf(

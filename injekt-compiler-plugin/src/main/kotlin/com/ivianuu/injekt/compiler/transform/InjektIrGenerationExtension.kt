@@ -90,7 +90,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         // patch metadata
         TmpMetadataPatcher(pluginContext).lower(moduleFragment)
 
-        println(moduleFragment.dumpSrc())
+        //println(moduleFragment.dumpSrc())
     }
 
 }
