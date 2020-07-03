@@ -556,7 +556,7 @@ class ReadableFunctionTransformer(
                     .parent()
                     .let {
                         if (readable.name.isSpecial) {
-                            it.child("Lambda_Context")
+                            it.child(allocateForGroup("Lambda") + "Context")
                         } else {
                             it.child(readable.name.asString() + "Context")
                         }
