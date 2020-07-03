@@ -83,7 +83,6 @@ import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
-import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -409,17 +408,7 @@ fun <T> T.getClassFromSingleValueAnnotation(
     fqName: FqName,
     pluginContext: IrPluginContext
 ): IrClass where T : IrDeclaration, T : IrAnnotationContainer {
-    return getAnnotation(fqName)
-        ?.getValueArgument(0)
-        ?.let { it as IrClassReferenceImpl }
-        ?.classType
-        ?.getClass()
-        ?: descriptor.annotations.findAnnotation(fqName)
-            ?.allValueArguments
-            ?.values
-            ?.single()
-            ?.let { it as KClassValue }
-            ?.getIrClass(pluginContext)
+    return getClassFromSingleValueAnnotationOrNull(fqName, pluginContext)
         ?: error("Cannot get class value for $fqName for ${dump()}")
 }
 
