@@ -273,7 +273,7 @@ class ReaderTest {
     }
 
     @Test
-    fun testSuspendingReaderLambda() = codegen(
+    fun testSuspendReaderLambda() = codegen(
         """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {

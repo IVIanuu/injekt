@@ -381,7 +381,7 @@ class InjektDeclarationIrBuilder(
             .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Reader))
 
         return irReaderLambda(
-            ReaderFunctionTransformer,
+            readerFunctionTransformer,
             lambdaType,
             startOffset,
             endOffset
@@ -396,7 +396,7 @@ class InjektDeclarationIrBuilder(
     }
 
     fun irReaderLambda(
-        ReaderFunctionTransformer: ReaderFunctionTransformer,
+        readerFunctionTransformer: ReaderFunctionTransformer,
         type: IrType,
         startOffset: Int,
         endOffset: Int,
@@ -412,7 +412,7 @@ class InjektDeclarationIrBuilder(
             this.startOffset = startOffset
             this.endOffset = endOffset
         }.apply {
-            annotations += noArgSingleConstructorCall(symbols.Reader)
+            annotations += noArgSingleConstructorCall(symbols.reader)
             type.typeArguments.dropLast(1).forEachIndexed { index, typeArgument ->
                 addValueParameter(
                     "p$index",
@@ -422,7 +422,7 @@ class InjektDeclarationIrBuilder(
             parent = builder.scope.getLocalDeclarationParent()
             this.body =
                 DeclarationIrBuilder(pluginContext, symbol).irBlockBody { body(this, this@apply) }
-        }.let { ReaderFunctionTransformer.getTransformedFunction(it) }
+        }.let { readerFunctionTransformer.getTransformedFunction(it) }
 
         return builder.irBlock(
             origin = IrStatementOrigin.LAMBDA,
