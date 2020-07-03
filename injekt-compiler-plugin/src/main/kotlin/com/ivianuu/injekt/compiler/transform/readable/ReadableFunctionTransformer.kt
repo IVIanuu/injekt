@@ -40,7 +40,6 @@ import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclaration
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
-import org.jetbrains.kotlin.backend.jvm.ir.propertyIfAccessor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
@@ -62,9 +61,7 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
-import org.jetbrains.kotlin.ir.declarations.isPropertyAccessor
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
@@ -80,7 +77,6 @@ import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
@@ -310,22 +306,16 @@ class ReadableFunctionTransformer(
                     val callContext = getContextForFunction(call.symbol.owner)
                     handleSubcontext(callContext, call, call.typeArguments)
                 } else {
-                    val lambdaSource = call.dispatchReceiver!!
-
-                    if (lambdaSource is IrCall && lambdaSource.symbol.owner.isPropertyAccessor) {
-                        val property = lambdaSource.symbol.owner.propertyIfAccessor as IrProperty
-                    }
-
-                    val transformedLambda =
+                    /*val transformedLambda =
                         transformFunctionIfNeeded(lambdaSource.getFunctionArgument())
                     val lambdaContext = getContextForFunction(transformedLambda)
-                    handleSubcontext(lambdaContext, call, emptyList())
+                    handleSubcontext(lambdaContext, call, emptyList())*/
 
                 }
                 call.getReadableLambdaArguments()
                     .forEach { expr ->
                         val transformedLambda =
-                            transformFunctionIfNeeded(expr.getFunctionArgument())
+                            transformFunctionIfNeeded(expr.getFunctionFromArgument())
                         val lambdaContext = getContextForFunction(transformedLambda)
                         handleSubcontext(lambdaContext, expr, emptyList())
                     }
@@ -361,7 +351,7 @@ class ReadableFunctionTransformer(
             .map { it.second }
     }
 
-    private fun IrExpression.getFunctionArgument() = when (this) {
+    private fun IrExpression.getFunctionFromArgument() = when (this) {
         is IrFunctionExpression -> function
         else -> error("Cannot extract function from $this ${dumpSrc()}")
     }
@@ -436,7 +426,7 @@ class ReadableFunctionTransformer(
                                     result.getReadableLambdaArguments()
                                         .forEach { expr ->
                                             val transformedLambda =
-                                                transformFunctionIfNeeded(expr.getFunctionArgument())
+                                                transformFunctionIfNeeded(expr.getFunctionFromArgument())
                                             superTypes += getContextForFunction(transformedLambda)
                                                 .defaultType
                                         }
