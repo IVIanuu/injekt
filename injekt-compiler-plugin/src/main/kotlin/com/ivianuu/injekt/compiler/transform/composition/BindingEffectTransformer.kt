@@ -36,6 +36,7 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -81,7 +82,9 @@ class BindingEffectTransformer(pluginContext: IrPluginContext) :
                             clazz.descriptor.fqNameSafe
                         )
                     ),
-                    effect.type.classOrNull!!.descriptor.fqNameSafe
+                    effect.type.classOrNull!!.descriptor.fqNameSafe,
+                    effect.startOffset,
+                    effect.endOffset
                 )
 
                 clazz.file.addChild(effectModule)
@@ -94,7 +97,9 @@ class BindingEffectTransformer(pluginContext: IrPluginContext) :
     private fun bindingEffectModule(
         clazz: IrClass,
         name: Name,
-        effectFqName: FqName
+        effectFqName: FqName,
+        startOffset: Int,
+        endOffset: Int
     ) = buildFun {
         this.name = name
         visibility = clazz.visibility
@@ -134,7 +139,12 @@ class BindingEffectTransformer(pluginContext: IrPluginContext) :
                     .functions
                     .first { it.hasAnnotation(InjektFqNames.Module) }
 
-                +irCall(effectModule).apply {
+                +IrCallImpl(
+                    startOffset,
+                    endOffset,
+                    irBuiltIns.unitType,
+                    effectModule.symbol
+                ).apply {
                     dispatchReceiver = irGetObject(effectCompanion.symbol)
                     putTypeArgument(0, clazz.defaultType)
                 }
