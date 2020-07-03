@@ -77,7 +77,7 @@ class EntryPointOfTransformer(pluginContext: IrPluginContext) :
 
         entryPointOfCalls.forEach { (call, scope, file) ->
             file.addChild(
-                entryPointModule(
+                InjektDeclarationIrBuilder(pluginContext, file.symbol).entryPointModule(
                     nameProvider.allocateForGroup(
                         getJoinedName(
                             file.fqName,
@@ -86,47 +86,12 @@ class EntryPointOfTransformer(pluginContext: IrPluginContext) :
                         )
                     ),
                     call.getValueArgument(0)!!.type,
-                    call.getTypeArgument(0)!!
+                    listOf(call.getTypeArgument(0)!!)
                 )
             )
         }
 
         return super.visitModuleFragment(declaration)
-    }
-
-    private fun entryPointModule(
-        name: Name,
-        compositionType: IrType,
-        entryPoint: IrType
-    ) = buildFun {
-        this.name = name
-        returnType = irBuiltIns.unitType
-        origin = InjektOrigin
-    }.apply {
-        annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
-            .noArgSingleConstructorCall(symbols.module)
-
-        addMetadataIfNotLocal()
-
-        body = DeclarationIrBuilder(pluginContext, symbol).run {
-            irBlockBody {
-                +irCall(
-                    pluginContext.referenceFunctions(
-                        FqName("com.ivianuu.injekt.composition.installIn")
-                    ).single()
-                ).apply {
-                    putTypeArgument(0, compositionType)
-                }
-
-                +irCall(
-                    pluginContext.referenceFunctions(
-                        FqName("com.ivianuu.injekt.composition.entryPoint")
-                    ).single()
-                ).apply {
-                    putTypeArgument(0, entryPoint)
-                }
-            }
-        }
     }
 
 }

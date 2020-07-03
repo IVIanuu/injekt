@@ -18,32 +18,38 @@ package com.ivianuu.injekt.compiler.transform.composition
 
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
-import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.getJoinedName
+import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
+import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
-import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irExprBody
+import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFile
+import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.getClass
+import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class CompositionComponentReaderCallTransformer(
@@ -79,22 +85,45 @@ class CompositionComponentReaderCallTransformer(
         val newExpressionsByCall = mutableMapOf<IrCall, IrExpression>()
 
         readerCalls.forEach { (call, scope, file) ->
-            val entryPoint = try {
-                entryPointForReader(
-                    nameProvider.allocateForGroup(
-                        getJoinedName(
-                            file.fqName,
-                            scope.scope.scopeOwner.fqNameSafe.parent()
-                                .child(scope.scope.scopeOwner.name.asString() + "Reader")
-                        )
-                    ),
-                    call.getValueArgument(0)!!.type.typeArguments.first().typeOrFail
-                )
-            } catch (e: Exception) {
-                error("Not working ${call.dump()}")
+            val compositionType = call.extensionReceiver!!.type
+
+            val contextTypes = mutableSetOf<IrType>()
+
+            fun collectContextTypes(
+                superClass: IrClass,
+                typeArguments: List<IrType>
+            ) {
+                if (superClass.defaultType in contextTypes) return
+                contextTypes += superClass.typeWith(typeArguments)
+                superClass.superTypes
+                    .map { it to it.classOrNull?.owner }
+                    .forEach { (superType, clazz) ->
+                        if (clazz != null)
+                            collectContextTypes(
+                                clazz,
+                                superType.typeArguments.map { it.typeOrFail })
+                    }
             }
 
-            file.addChild(entryPoint)
+            val contextType =
+                call.getValueArgument(0)!!.type.typeArguments.first().typeOrFail
+
+            collectContextTypes(contextType.classOrNull!!.owner, emptyList())
+
+            file.addChild(
+                InjektDeclarationIrBuilder(pluginContext, file.symbol)
+                    .entryPointModule(
+                        nameProvider.allocateForGroup(
+                            getJoinedName(
+                                file.fqName,
+                                scope.scope.scopeOwner.fqNameSafe.parent()
+                                    .child(scope.scope.scopeOwner.name.asString() + "Reader")
+                            )
+                        ),
+                        compositionType,
+                        contextTypes.toList()
+                    )
+            )
 
             newExpressionsByCall[call] =
                 DeclarationIrBuilder(pluginContext, call.symbol).run {
@@ -105,17 +134,7 @@ class CompositionComponentReaderCallTransformer(
                     ).apply {
                         putValueArgument(
                             0,
-                            IrCallImpl(
-                                call.startOffset,
-                                call.endOffset,
-                                entryPoint.defaultType,
-                                pluginContext.referenceFunctions(
-                                    FqName("com.ivianuu.injekt.composition.entryPointOf")
-                                ).single()
-                            ).apply {
-                                putTypeArgument(0, entryPoint.defaultType)
-                                putValueArgument(0, call.extensionReceiver)
-                            }
+                            call.extensionReceiver
                         )
                         putValueArgument(
                             1,
@@ -132,18 +151,6 @@ class CompositionComponentReaderCallTransformer(
         })
 
         return super.visitModuleFragment(declaration)
-    }
-
-    private fun entryPointForReader(
-        name: Name,
-        superType: IrType
-    ) = buildClass {
-        this.name = name
-        kind = ClassKind.INTERFACE
-    }.apply {
-        createImplicitParameterDeclarationWithWrappedDescriptor()
-        addMetadataIfNotLocal()
-        superTypes += superType
     }
 
 }

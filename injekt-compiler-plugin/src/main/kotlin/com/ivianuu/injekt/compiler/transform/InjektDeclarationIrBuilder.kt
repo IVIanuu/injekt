@@ -654,4 +654,41 @@ class InjektDeclarationIrBuilder(
         }
     }
 
+    fun entryPointModule(
+        name: Name,
+        compositionType: IrType,
+        entryPoints: List<IrType>
+    ) = buildFun {
+        this.name = name
+        returnType = irBuiltIns.unitType
+        origin = InjektOrigin
+    }.apply {
+        annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
+            .noArgSingleConstructorCall(symbols.module)
+
+        addMetadataIfNotLocal()
+
+        body = DeclarationIrBuilder(pluginContext, symbol).run {
+            irBlockBody {
+                +irCall(
+                    pluginContext.referenceFunctions(
+                        FqName("com.ivianuu.injekt.composition.installIn")
+                    ).single()
+                ).apply {
+                    putTypeArgument(0, compositionType)
+                }
+
+                entryPoints.forEach { entryPoint ->
+                    +irCall(
+                        pluginContext.referenceFunctions(
+                            FqName("com.ivianuu.injekt.composition.entryPoint")
+                        ).single()
+                    ).apply {
+                        putTypeArgument(0, entryPoint)
+                    }
+                }
+            }
+        }
+    }
+
 }
