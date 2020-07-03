@@ -39,7 +39,7 @@ class BindingEffectTest {
             companion object {
                 @Module 
                 fun <T> bind1() { 
-                    transient { t: T -> t.toString() }
+                    transient { get<T>().toString() }
                 }
             }
         }
@@ -216,12 +216,12 @@ class BindingEffectTest {
                 @Module
                 inline fun <reified T : ViewModel, S : ViewModelStoreOwner> baseViewModel() { 
                     transient<@UnscopedViewModel T>() 
-                    transient { viewModelStoreOwner: S, viewModelProvider: @Provider () -> @UnscopedViewModel T ->
+                    transient {
                         ViewModelProvider(
-                            viewModelStoreOwner,
+                            get<S>(),
                             object : ViewModelProvider.Factory {
                                 override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                                    viewModelProvider() as T
+                                    get<@Provider () -> @UnscopedViewModel T>()() as T
                             }
                         ).get(T::class.java) 
                     } 

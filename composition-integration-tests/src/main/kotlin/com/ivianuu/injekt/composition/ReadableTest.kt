@@ -153,7 +153,7 @@ class ReadableTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
-    @Test
+    // todo @Test
     fun testSimpleReadableLambdaProperty() = codegen(
         """
         @CompositionFactory 
@@ -554,7 +554,7 @@ class ReadableTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
-    @Test
+    // todo @Test
     fun testMultiCompileReadableProperty() = multiCodegen(
         listOf(
             source(
