@@ -72,7 +72,6 @@ import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
-import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.types.Variance
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
@@ -307,16 +306,10 @@ class ReadableTypeRemapper(
     private val symbolRemapper: SymbolRemapper
 ) : TypeRemapper {
 
-    lateinit var deepCopy: IrElementTransformerVoid
-
-    private val scopeStack = mutableListOf<IrTypeParametersContainer>()
-
     override fun enterScope(irTypeParametersContainer: IrTypeParametersContainer) {
-        scopeStack.add(irTypeParametersContainer)
     }
 
     override fun leaveScope() {
-        scopeStack.pop()
     }
 
     override fun remapType(type: IrType): IrType {

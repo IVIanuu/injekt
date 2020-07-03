@@ -115,22 +115,17 @@ class ReadableFunctionTransformer(
         declaration.acceptVoid(symbolRemapper)
 
         val typeRemapper = ReadableTypeRemapper(pluginContext, symbolRemapper)
-        // for each declaration, we create a deepCopy transformer It is important here that we
-        // use the "preserving metadata" variant since we are using this copy to *replace* the
-        // originals, or else the module we would produce wouldn't have any metadata in it.
         val transformer = DeepCopyIrTreeWithSymbolsPreservingMetadata(
             pluginContext,
             symbolRemapper,
             typeRemapper
-        ).also { typeRemapper.deepCopy = it }
+        )
         declaration.files.forEach {
             it.transformChildren(
                 transformer,
                 null
             )
         }
-        // just go through and patch all of the parents to make sure things are properly wired
-        // up.
         declaration.patchDeclarationParents()
 
         addContextClassesToFiles()
