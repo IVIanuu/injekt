@@ -26,6 +26,7 @@ import com.ivianuu.injekt.compiler.getFunctionParameterTypes
 import com.ivianuu.injekt.compiler.getFunctionReturnType
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getInjectConstructor
+import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isAssistedProvider
 import com.ivianuu.injekt.compiler.isNoArgProvider
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
@@ -428,7 +429,7 @@ class AnnotatedClassBindingResolver(
                 InjektDeclarationIrBuilder.FactoryParameter(
                     name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
                     type = valueParameter.type,
-                    assisted = valueParameter.hasAnnotation(InjektFqNames.Assisted)
+                    assisted = valueParameter.descriptor.hasAnnotation(InjektFqNames.Assisted)
                 )
             } ?: emptyList()
 
@@ -489,7 +490,7 @@ class AnnotatedClassBindingResolver(
             val constructor = clazz.getInjectConstructor()
 
             if (constructor?.valueParameters?.any {
-                    it.hasAnnotation(InjektFqNames.Assisted)
+                    it.descriptor.hasAnnotation(InjektFqNames.Assisted)
                 } == true) return emptyList()
 
             val scopeAnnotation = clazz.descriptor.annotations.findAnnotation(
@@ -514,7 +515,7 @@ class AnnotatedClassBindingResolver(
                 InjektDeclarationIrBuilder.FactoryParameter(
                     name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
                     type = valueParameter.type,
-                    assisted = valueParameter.hasAnnotation(InjektFqNames.Assisted)
+                    assisted = valueParameter.descriptor.hasAnnotation(InjektFqNames.Assisted)
                 )
             } ?: emptyList()
 

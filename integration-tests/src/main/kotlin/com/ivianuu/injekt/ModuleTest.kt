@@ -54,23 +54,6 @@ class ModuleTest {
     )
 
     @Test
-    fun testTypeParameterCapturingModule() = codegen(
-        """
-        @Module
-        fun <T> capturingModule() {
-            transient<@TestQualifier1 T> { get<T>() }
-        }
-        
-        @Factory
-        fun createInstance(): TestComponent1<@TestQualifier1 String> {
-            transient { "hello world" }
-            capturingModule<String>()
-            return create()
-        }
-    """
-    )
-
-    @Test
     fun testLocalDeclarationCapturing() = codegen(
         """
         @Module
