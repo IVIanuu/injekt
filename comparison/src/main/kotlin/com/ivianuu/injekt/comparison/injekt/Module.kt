@@ -32,20 +32,4 @@ import com.ivianuu.injekt.get
 import com.ivianuu.injekt.transient
 
 @CompositionFactory
-fun createApplicationComponent(): ApplicationComponent {
-    fibModule()
-    return create()
-}
-
-@Module
-fun fibModule() {
-    transient { Fib1() }
-    transient { Fib2() }
-    transient { Fib3(get(), get()) }
-    transient { Fib4(get(), get()) }
-    transient { Fib5(get(), get()) }
-    transient { Fib6(get(), get()) }
-    transient { Fib7(get(), get()) }
-    transient { Fib8(get(), get()) }
-
-}
+fun createApplicationComponent(): ApplicationComponent = create()

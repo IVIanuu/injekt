@@ -51,12 +51,8 @@ val Fragment.fragmentComponent: FragmentComponent
 fun createFragmentComponent(instance: Fragment): FragmentComponent {
     parent<ActivityComponent>()
     transient { instance }
-    transient<@ForFragment Context> { fragment: Fragment ->
-        fragment.context!!
-    }
-    transient<@ForFragment Resources> { fragment: Fragment ->
-        fragment.resources
-    }
+    transient<@ForFragment Context> { get<Fragment>().context!! }
+    transient<@ForFragment Resources> { get<Fragment>().resources }
     alias<Fragment, @ForFragment LifecycleOwner>()
     alias<Fragment, @ForFragment SavedStateRegistryOwner>()
     alias<Fragment, @ForFragment ViewModelStoreOwner>()

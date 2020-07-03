@@ -52,9 +52,7 @@ fun createActivityComponent(instance: ComponentActivity): ActivityComponent {
     parent<RetainedActivityComponent>()
     transient { instance }
     alias<ComponentActivity, @ForActivity Context>()
-    transient<@ForActivity Resources> { activity: ComponentActivity ->
-        activity.resources
-    }
+    transient<@ForActivity Resources> { get<ComponentActivity>().resources }
     alias<ComponentActivity, @ForActivity LifecycleOwner>()
     alias<ComponentActivity, @ForActivity SavedStateRegistryOwner>()
     alias<ComponentActivity, @ForActivity ViewModelStoreOwner>()

@@ -49,8 +49,6 @@ fun createServiceComponent(instance: Service): ServiceComponent {
     parent<ApplicationComponent>()
     transient { instance }
     alias<Service, @ForService Context>()
-    transient<@ForService Resources> { service: Service ->
-        service.resources
-    }
+    transient<@ForService Resources> { get<Service>().resources }
     return create()
 }
