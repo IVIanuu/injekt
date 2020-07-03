@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.allParameters
@@ -52,6 +53,7 @@ import org.jetbrains.kotlin.ir.declarations.IrMetadataSourceOwner
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
@@ -543,6 +545,17 @@ fun <T> T.addMetadataIfNotLocal() where T : IrMetadataSourceOwner, T : IrDeclara
         is IrFunctionImpl -> metadata = MetadataSource.Function(descriptor)
         is IrPropertyImpl -> metadata = MetadataSource.Property(descriptor)
     }
+}
+
+fun List<ScopeWithIr>.thisOfClass(declaration: IrClass): IrValueParameter? {
+    for (scope in reversed()) {
+        when (val element = scope.irElement) {
+            is IrFunction ->
+                element.dispatchReceiverParameter?.let { if (it.type.classOrNull == declaration.symbol) return it }
+            is IrClass -> if (element == declaration) return element.thisReceiver
+        }
+    }
+    return null
 }
 
 fun IrDeclaration.addToFileOrAbove(other: IrDeclarationWithVisibility) {

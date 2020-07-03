@@ -32,6 +32,7 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
+import com.ivianuu.injekt.compiler.thisOfClass
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
@@ -254,7 +255,8 @@ class ReaderTransformer(
             override fun visitCall(expression: IrCall): IrExpression {
                 if (functionStack.isNotEmpty()) return super.visitCall(expression)
                 if ((expression.symbol.owner.isReader(pluginContext.bindingContext) ||
-                            expression.isReaderLambdaInvoke())
+                            expression.isReaderLambdaInvoke() ||
+                            expression.isReaderConstructorCall())
                 ) {
                     if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get") {
                         getCalls += expression
@@ -390,24 +392,24 @@ class ReaderTransformer(
             }
         }
 
-        clazz.transformChildrenVoid(object : IrElementTransformerVoid() {
+        clazz.transform(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
                 return if (expression in getCalls) {
                     val providerFunction = providerFunctionByGetCall.getValue(expression)
                     DeclarationIrBuilder(pluginContext, expression.symbol).run {
                         irCall(providerFunction).apply {
                             dispatchReceiver = irGetField(
-                                irGet(clazz.thisReceiver!!),
+                                irGet(allScopes.thisOfClass(clazz)!!),
                                 contextField
                             )
                         }
                     }
                 } else super.visitCall(expression)
             }
-        })
+        }, null)
 
         rewriteReaderCalls(clazz, genericFunctionMap) {
-            irGet(clazz.thisReceiver!!)
+            irGet(it.thisOfClass(clazz)!!)
         }
 
         return clazz
@@ -522,7 +524,8 @@ class ReaderTransformer(
             override fun visitCall(expression: IrCall): IrExpression {
                 if (functionStack.last() == transformedFunction &&
                     (expression.symbol.owner.isReader(pluginContext.bindingContext) ||
-                            expression.isReaderLambdaInvoke())
+                            expression.isReaderLambdaInvoke() ||
+                            expression.isReaderConstructorCall())
                 ) {
                     if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get") {
                         getCalls += expression
@@ -663,11 +666,11 @@ class ReaderTransformer(
     private fun <T> rewriteReaderCalls(
         owner: T,
         genericFunctionMap: List<Pair<IrFunction, IrFunction>>,
-        getContext: IrBuilderWithScope.(ScopeWithIr) -> IrExpression
+        getContext: IrBuilderWithScope.(List<ScopeWithIr>) -> IrExpression
     ) where T : IrDeclaration, T : IrDeclarationParent {
         owner.rewriteTransformedFunctionRefs()
 
-        owner.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
+        owner.transform(object : IrElementTransformerVoidWithContext() {
             private val functionStack = mutableListOf<IrFunction>()
 
             override fun visitFunctionNew(declaration: IrFunction): IrStatement {
@@ -683,7 +686,8 @@ class ReaderTransformer(
                     functionStack.lastOrNull() != null
                 ) return result
                 if (!result.symbol.owner.isReader(pluginContext.bindingContext) &&
-                    !result.isReaderLambdaInvoke()
+                    !result.isReaderLambdaInvoke() &&
+                    !result.isReaderConstructorCall()
                 ) return result
 
                 if (result.isReaderLambdaInvoke()) {
@@ -705,7 +709,7 @@ class ReaderTransformer(
                             copyTypeAndValueArgumentsFrom(result)
                             putValueArgument(
                                 valueArgumentsCount - 1,
-                                getContext(currentScope!!)
+                                getContext(allScopes)
                             )
                         }
                     }
@@ -819,7 +823,7 @@ class ReaderTransformer(
                                 +irCall(contextImpl.constructors.single())
                             }
                         } else {
-                            getContext(currentScope!!)
+                            getContext(allScopes)
                         }
                     }
 
@@ -827,7 +831,7 @@ class ReaderTransformer(
                     putValueArgument(valueArgumentsCount - 1, contextArgument)
                 }
             }
-        })
+        }, null)
     }
 
     private fun NameProvider.getContextClassName(declaration: IrDeclarationWithName): Name {

@@ -91,7 +91,8 @@ class ReaderChecker(
 
         if (resulting.fqNameSafe.asString() == "com.ivianuu.injekt.composition.reader") {
             val receiver = resolvedCall.extensionReceiver!!.type
-            if (receiver.constructor.declarationDescriptor?.annotations?.hasAnnotation(InjektFqNames.CompositionComponent) != true &&
+            if (receiver.constructor.declarationDescriptor?.annotations
+                    ?.hasAnnotation(InjektFqNames.CompositionComponent) != true &&
                 !receiver.isTypeParameter()
             ) {
                 context.trace.report(
@@ -101,13 +102,22 @@ class ReaderChecker(
             }
         }
 
-        if (resulting !is FunctionDescriptor || !typeAnnotationChecker.hasTypeAnnotation(
+        if (resulting !is FunctionDescriptor) return
+
+        if (typeAnnotationChecker.hasTypeAnnotation(
                 context.trace,
                 resulting,
                 InjektFqNames.Reader
             )
-        ) return
-        checkInvocations(reportOn, context)
+        ) {
+            checkInvocations(reportOn, context)
+        }
+
+        if (resulting is ConstructorDescriptor &&
+            (resulting.constructedClass.hasAnnotation(InjektFqNames.Reader))
+        ) {
+            checkInvocations(reportOn, context)
+        }
     }
 
     private fun checkInvocations(
@@ -116,6 +126,7 @@ class ReaderChecker(
     ) {
         val enclosingReaderContext = findEnclosingContext(context) {
             typeAnnotationChecker.hasTypeAnnotation(context.trace, it, InjektFqNames.Reader) ||
+                    (it is ClassDescriptor && it.hasAnnotation(InjektFqNames.Reader)) ||
                     (it is ConstructorDescriptor &&
                             it.constructedClass.hasAnnotation(InjektFqNames.Reader))
         }

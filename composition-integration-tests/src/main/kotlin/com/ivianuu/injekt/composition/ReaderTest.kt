@@ -81,6 +81,28 @@ class ReaderTest {
         }
 
     @Test
+    fun testReaderClassConstructionInReaderAllowed() =
+        codegen(
+            """
+            @Reader class ReaderClass
+            @Reader fun b() { ReaderClass() }
+        """
+        ) {
+            assertOk()
+        }
+
+    @Test
+    fun testReaderClassConstructionInReaderNotAllowed() =
+        codegen(
+            """
+            @Reader class ReaderClass
+            fun b() { ReaderClass() }
+        """
+        ) {
+            assertCompileError()
+        }
+
+    @Test
     fun testOpenReaderFails() = codegen(
         """
         open class MyClass {
@@ -590,14 +612,15 @@ class ReaderTest {
     fun testReaderClass() = codegen(
         """
         @Reader
-        fun foo(): Foo = get()
-        
-        @Reader
         @Transient
         class ReaderClass {
             init {
                 get<Foo>()
                 //foo()
+            }
+            
+            fun lol() {
+                get<Bar>()
             }
         }
     """

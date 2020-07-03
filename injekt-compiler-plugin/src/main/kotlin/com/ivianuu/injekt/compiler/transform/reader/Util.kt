@@ -42,3 +42,8 @@ fun IrCall.isReaderLambdaInvoke(): Boolean {
     return symbol.owner.name.asString() == "invoke" &&
             dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Reader) == true
 }
+
+fun IrCall.isReaderConstructorCall(): Boolean {
+    return symbol.owner.hasAnnotation(InjektFqNames.Reader) ||
+            symbol.owner.returnType.hasAnnotation(InjektFqNames.Reader)
+}
