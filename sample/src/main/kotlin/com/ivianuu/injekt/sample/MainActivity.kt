@@ -43,7 +43,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             activityComponent.runReading {
-                get<ActivityScopedStuff>()
                 WithMainViewModel {
                     GlobalScope.launch {
                         enqueueWork()
@@ -53,9 +52,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
-
-@Scoped<ActivityComponent>
-class ActivityScopedStuff
 
 @Readable
 @Composable

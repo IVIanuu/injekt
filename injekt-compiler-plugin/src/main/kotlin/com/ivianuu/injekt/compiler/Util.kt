@@ -589,3 +589,24 @@ inline fun <K, V> BindingTrace.getOrPut(
     record(slice, key, value)
     return value
 }
+
+fun getJoinedName(
+    packageFqName: FqName,
+    fqName: FqName
+): Name {
+    val joinedSegments = fqName.asString()
+        .removePrefix(packageFqName.asString() + ".")
+        .split(".")
+    return joinedSegments.joinToString("_").asNameId()
+}
+
+fun nameWithoutIllegalChars(name: String): Name = name
+    .replace(".", "")
+    .replace("<", "")
+    .replace(">", "")
+    .replace(" ", "")
+    .replace("[", "")
+    .replace("]", "")
+    .replace("@", "")
+    .replace(",", "")
+    .asNameId()

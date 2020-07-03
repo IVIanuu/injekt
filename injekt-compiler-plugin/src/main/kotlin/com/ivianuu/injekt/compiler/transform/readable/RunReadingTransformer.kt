@@ -16,13 +16,16 @@
 
 package com.ivianuu.injekt.compiler.transform.readable
 
-import com.ivianuu.injekt.compiler.InjektNameConventions
+import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.child
+import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
+import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
@@ -47,15 +50,23 @@ class RunReadingTransformer(
     pluginContext: IrPluginContext
 ) : AbstractInjektTransformer(pluginContext) {
 
+    private val nameProvider = NameProvider()
+
+    private data class RunReadingCall(
+        val call: IrCall,
+        val scope: ScopeWithIr,
+        val file: IrFile
+    )
+
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
-        val runReadingCalls = mutableListOf<Pair<IrCall, IrFile>>()
+        val runReadingCalls = mutableListOf<RunReadingCall>()
 
         declaration.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
                 if (expression.symbol.descriptor.fqNameSafe.asString() ==
                     "com.ivianuu.injekt.composition.runReading"
                 ) {
-                    runReadingCalls += expression to currentFile
+                    runReadingCalls += RunReadingCall(expression, currentScope!!, currentFile)
                 }
                 return super.visitCall(expression)
             }
@@ -63,10 +74,16 @@ class RunReadingTransformer(
 
         val newExpressionsByCall = mutableMapOf<IrCall, IrExpression>()
 
-        runReadingCalls.forEach { (call, file) ->
+        runReadingCalls.forEach { (call, scope, file) ->
             val entryPoint = try {
                 entryPointForReader(
-                    InjektNameConventions.getObjectGraphGetNameForCall(file, call),
+                    nameProvider.allocateForGroup(
+                        getJoinedName(
+                            file.fqName,
+                            scope.scope.scopeOwner.fqNameSafe.parent()
+                                .child(scope.scope.scopeOwner.name.asString() + "Reader")
+                        )
+                    ),
                     call.getValueArgument(0)!!.type.typeArguments.first().typeOrFail
                 )
             } catch (e: Exception) {

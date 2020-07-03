@@ -41,7 +41,7 @@ class NameProvider {
     fun allocateForGroup(group: String): String {
         val index = indicesByName[group]
         indicesByName[group] = (index ?: 0) + 1
-        return InjektNameConventions.nameWithoutIllegalChars(
+        return nameWithoutIllegalChars(
             "${group}${index?.toString().orEmpty()}"
         ).asString()
     }

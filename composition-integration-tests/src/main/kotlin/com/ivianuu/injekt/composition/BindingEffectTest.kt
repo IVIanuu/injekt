@@ -87,7 +87,7 @@ class BindingEffectTest {
         annotation class BindAppService {
             companion object {
                 @Module 
-                inline fun <reified T : AppService> bindAppService() { 
+                inline operator fun <reified T : AppService> invoke() { 
                     scoped<T>()
                     map<KClass<out AppService>, AppService> { 
                         put<T>(T::class)
@@ -130,7 +130,7 @@ class BindingEffectTest {
                 annotation class BindAppService {
                     companion object {
                         @Module 
-                        inline fun <reified T : AppService> bind() { 
+                        inline operator fun <reified T : AppService> invoke() { 
                             scoped<T>()
                             map<KClass<out AppService>, AppService> { 
                                 put<T>(T::class) 
@@ -202,7 +202,7 @@ class BindingEffectTest {
                 annotation class ActivityViewModel {
                     companion object { 
                         @Module 
-                        inline fun <reified T : ViewModel> bind() {
+                        inline operator fun <reified T : ViewModel> invoke() {
                             activityViewModel<T>()
                         }
                     }
@@ -257,7 +257,7 @@ class BindingEffectTest {
         annotation class MyBindingAdapter {
             companion object {
                 @Module 
-                fun <T> func() {
+                operator fun <T> invoke() {
                 }
             }
         }
@@ -273,7 +273,7 @@ class BindingEffectTest {
         annotation class MyBindingAdapter {
             companion object {
                 @Module
-                inline fun <T> bind() {
+                inline operator fun <T> invoke() {
                 }
             }
         }
@@ -309,7 +309,7 @@ class BindingEffectTest {
         annotation class MyBindingAdapter {
             companion object {
                 @Module
-                fun bind() {
+                operator fun invoke() {
                 }
             }
         }
@@ -325,7 +325,7 @@ class BindingEffectTest {
         annotation class MyBindingAdapter {
             companion object {
                 @Module
-                fun <A, B> bind() {
+                operator fun <A, B> invoke() {
                 }
             }
         }
@@ -360,7 +360,7 @@ class BindingEffectTest {
         annotation class MyBindingEffect {
             companion object {
                 @Module
-                fun <T> bind() {
+                operator fun <T> invoke() {
                 }
             }
         }
@@ -399,7 +399,7 @@ class BindingEffectTest {
         annotation class MyBindingEffect {
             companion object { 
                 @Module
-                fun <T> bind() {
+                operator fun <T> invoke() {
                 }
             }
         }

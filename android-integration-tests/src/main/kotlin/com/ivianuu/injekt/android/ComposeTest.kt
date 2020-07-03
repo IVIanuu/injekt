@@ -37,8 +37,8 @@ class ComposeTest {
     @Test
     fun testComposableReadableLambda() = codegen(
         """
-            @CompositionComponent
-interface TestCompositionComponent
+        @CompositionComponent 
+        interface TestCompositionComponent
 
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
