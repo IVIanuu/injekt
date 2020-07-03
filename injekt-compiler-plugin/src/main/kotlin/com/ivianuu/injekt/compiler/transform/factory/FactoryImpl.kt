@@ -50,6 +50,7 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
+import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.getClass
@@ -59,6 +60,7 @@ import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.render
+import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -202,8 +204,9 @@ class FactoryImpl(
 
         while (true) {
             val contexts = graph.resolvedBindings.values
-                .mapNotNull { it.context }
-                .filter { it.defaultType !in implementedSuperTypes }
+                .filter { it.context != null }
+                .map { it.context!! to it.module }
+                .filter { it.first.defaultType !in implementedSuperTypes }
 
             if (contexts.isEmpty()) {
                 break
@@ -211,7 +214,8 @@ class FactoryImpl(
 
             fun implementFunctions(
                 superClass: IrClass,
-                typeArguments: List<IrType>
+                typeArguments: List<IrType>,
+                typeParametersMap: Map<IrTypeParameterSymbol, IrType>
             ) {
                 if (superClass.defaultType in implementedSuperTypes) return
                 implementedSuperTypes += superClass.defaultType
@@ -223,8 +227,15 @@ class FactoryImpl(
                     addDependencyRequestImplementation(declaration) { function ->
                         val bindingExpression = factoryExpressions.getBindingExpression(
                             BindingRequest(
-                                function.returnType.asKey(),
-                                requestingKey = null,
+                                function.returnType
+                                    .substituteAndKeepQualifiers(
+                                        superClass.typeParameters
+                                            .map { it.symbol }
+                                            .zip(typeArguments)
+                                            .toMap()
+                                    )
+                                    .asKey(),
+                                null,
                                 null,
                                 RequestType.Instance
                             )
@@ -240,15 +251,19 @@ class FactoryImpl(
                         if (clazz != null)
                             implementFunctions(
                                 clazz,
-                                superType.typeArguments.map { it.typeOrFail })
+                                superType.typeArguments.map { it.typeOrFail },
+                                typeParametersMap
+                            )
                     }
             }
 
-            contexts.forEach { context ->
+            contexts.forEach { (context, module) ->
                 clazz.superTypes += context.defaultType
                 implementFunctions(
                     context,
-                    context.defaultType.typeArguments.map { it.typeOrFail })
+                    context.defaultType.typeArguments.map { it.typeOrFail },
+                    module?.typeParametersMap ?: emptyMap()
+                )
             }
         }
     }

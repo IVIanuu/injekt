@@ -257,7 +257,14 @@ class ModuleBindingResolver(
                     if (declaration.isFakeOverride) continue
                     if (declaration.dispatchReceiverParameter?.type == factory.pluginContext.irBuiltIns.anyType) break
                     dependencies += BindingRequest(
-                        key = declaration.returnType.asKey(),
+                        key = declaration.returnType
+                            .substituteAndKeepQualifiers(
+                                superClass.typeParameters
+                                    .map { it.symbol }
+                                    .zip(typeArguments)
+                                    .toMap()
+                            )
+                            .asKey(),
                         requestingKey = null, // todo
                         requestOrigin = null // todo
                     )
