@@ -206,7 +206,7 @@ class ReaderFunctionTransformer(
         }
 
         val getCalls = mutableListOf<IrCall>()
-        val ReaderCalls = mutableListOf<IrCall>()
+        val readerCalls = mutableListOf<IrCall>()
 
         transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
 
@@ -227,7 +227,7 @@ class ReaderFunctionTransformer(
                     if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get") {
                         getCalls += expression
                     } else {
-                        ReaderCalls += expression
+                        readerCalls += expression
                     }
                 }
                 return super.visitCall(expression)
@@ -294,7 +294,7 @@ class ReaderFunctionTransformer(
             }
         }
 
-        ReaderCalls
+        readerCalls
             .forEach { call ->
                 if (!call.isReaderLambdaInvoke()) {
                     val callContext = getContextForFunction(call.symbol.owner)
