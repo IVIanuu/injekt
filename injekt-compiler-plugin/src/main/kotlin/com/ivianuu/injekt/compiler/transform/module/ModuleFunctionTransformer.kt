@@ -95,12 +95,13 @@ class ModuleFunctionTransformer(
     }
 
     override fun needsTransform(function: IrFunction): Boolean =
-        function.hasAnnotation(InjektFqNames.Module) &&
-                function.returnType.isUnit()
+        function.hasAnnotation(InjektFqNames.Module)
 
     override fun transform(function: IrFunction, callback: (IrFunction) -> Unit) {
         val transformedFunction = function.copy()
         callback(transformedFunction)
+
+        if (!transformedFunction.returnType.isUnit()) return
 
         val moduleDescriptor = ModuleDescriptor(
             transformedFunction,
@@ -274,6 +275,9 @@ class ModuleFunctionTransformer(
 
     override fun transformExternal(function: IrFunction, callback: (IrFunction) -> Unit) {
         val transformedFunction = function.copy()
+        callback(transformedFunction)
+
+        if (!transformedFunction.returnType.isUnit()) return
 
         val moduleClass = declarationStore.getModuleClassForFunction(function)
 
