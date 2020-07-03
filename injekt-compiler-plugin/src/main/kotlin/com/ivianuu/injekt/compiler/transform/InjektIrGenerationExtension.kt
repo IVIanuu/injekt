@@ -31,15 +31,48 @@ import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
+import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
+import org.jetbrains.kotlin.ir.symbols.IrPropertySymbol
+import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
+import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
+import org.jetbrains.kotlin.name.FqName
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+        val symbolRemapper = DeepCopySymbolRemapper()
+
+        val pluginContext = object : IrPluginContext by pluginContext {
+            override fun referenceClass(fqName: FqName): IrClassSymbol? {
+                return pluginContext.referenceClass(fqName)
+                    ?.let { symbolRemapper.getReferencedClass(it) }
+            }
+
+            override fun referenceConstructors(classFqn: FqName): Collection<IrConstructorSymbol> {
+                return pluginContext.referenceConstructors(classFqn)
+                    .map { symbolRemapper.getReferencedConstructor(it) }
+            }
+
+            override fun referenceFunctions(fqName: FqName): Collection<IrSimpleFunctionSymbol> {
+                return pluginContext.referenceFunctions(fqName)
+                    .map { symbolRemapper.getReferencedSimpleFunction(it) }
+            }
+
+            override fun referenceProperties(fqName: FqName): Collection<IrPropertySymbol> {
+                return pluginContext.referenceProperties(fqName)
+                    .map { symbolRemapper.getReferencedProperty(it) }
+            }
+        }
+
         val declarationStore = InjektDeclarationStore(pluginContext)
+
+        val readerFunctionTransformer = ReaderFunctionTransformer(pluginContext, symbolRemapper)
+            .also { declarationStore.readerFunctionTransformer = it }
+        readerFunctionTransformer.lower(moduleFragment)
 
         val moduleFunctionTransformer = ModuleFunctionTransformer(pluginContext, declarationStore)
             .also { declarationStore.moduleFunctionTransformer = it }
-
         val factoryModuleTransformer = FactoryModuleTransformer(
             pluginContext
         ).also { declarationStore.factoryModuleTransformer = it }
@@ -47,10 +80,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             pluginContext,
             declarationStore
         ).also { declarationStore.factoryTransformer = it }
-
-        val readerFunctionTransformer = ReaderFunctionTransformer(pluginContext)
-            .also { declarationStore.readerFunctionTransformer = it }
-        readerFunctionTransformer.lower(moduleFragment)
 
         if (pluginContext.compositionsEnabled) {
             BindingEffectTransformer(pluginContext).lower(moduleFragment)

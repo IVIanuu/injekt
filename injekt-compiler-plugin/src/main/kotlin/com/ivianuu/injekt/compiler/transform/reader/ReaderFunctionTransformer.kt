@@ -102,7 +102,8 @@ import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ReaderFunctionTransformer(
-    pluginContext: IrPluginContext
+    pluginContext: IrPluginContext,
+    val symbolRemapper: DeepCopySymbolRemapper
 ) : AbstractFunctionTransformer(pluginContext) {
 
     private val contextNameProvider = NameProvider()
@@ -116,7 +117,6 @@ class ReaderFunctionTransformer(
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         super.visitModuleFragment(declaration)
 
-        val symbolRemapper = DeepCopySymbolRemapper()
         declaration.acceptVoid(symbolRemapper)
 
         val typeRemapper = ReaderTypeRemapper(pluginContext, symbolRemapper)
