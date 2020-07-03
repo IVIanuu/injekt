@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.transform.factory
 
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.typeArguments
@@ -234,6 +233,12 @@ class FactoryImpl(
                                             .zip(typeArguments)
                                             .toMap()
                                     )
+                                    .substituteAndKeepQualifiers(
+                                        superClass.typeParameters
+                                            .map { it.symbol }
+                                            .zip(typeParametersMap.values)
+                                            .toMap()
+                                    )
                                     .asKey(),
                                 null,
                                 null,
@@ -252,7 +257,7 @@ class FactoryImpl(
                             implementFunctions(
                                 clazz,
                                 superType.typeArguments.map { it.typeOrFail },
-                                typeParametersMap
+                                emptyMap()
                             )
                     }
             }

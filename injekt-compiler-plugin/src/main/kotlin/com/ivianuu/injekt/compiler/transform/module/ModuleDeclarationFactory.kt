@@ -47,6 +47,7 @@ import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
+import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
@@ -273,6 +274,20 @@ class ModuleDeclarationFactory(
         val path: Path
         if (singleArgument != null) {
             initializer = singleArgument
+
+            /*// todo fix this hack
+            if (singleArgument is IrFunctionExpression) {
+                val context = singleArgument.type.getFunctionParameterTypes().last()
+                    .classOrNull!!
+                context
+                    .functions
+                    .map { it.owner }
+                    .forEach { function ->
+                        function.returnType = function.returnType
+                            .remapTypeParametersByName(moduleFunction, moduleClass)
+                    }
+            }*/
+
             path = PropertyPath(
                 InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
                     .fieldBackedProperty(

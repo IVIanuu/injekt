@@ -50,11 +50,12 @@ annotation class FragmentViewModel {
 inline fun <reified T : ViewModel, S : ViewModelStoreOwner> baseViewModel() {
     transient<@UnscopedViewModel T>()
     transient {
+        val viewModelProvider = get<@Provider () -> @UnscopedViewModel T>()
         ViewModelProvider(
             get<S>(),
             object : ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                    get<@Provider () -> @UnscopedViewModel T>() as T
+                    viewModelProvider() as T
             }
         ).get(T::class.java)
     }

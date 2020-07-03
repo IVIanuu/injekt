@@ -217,6 +217,60 @@ fun IrType.remapTypeParameters(
     else -> this
 }
 
+fun IrType.remapTypeParametersByName(
+    source: IrTypeParametersContainer,
+    target: IrTypeParametersContainer,
+    srcToDstParameterMap: Map<IrTypeParameter, IrTypeParameter>? = null
+): IrType = when (this) {
+    is IrSimpleType -> {
+        val classifier = classifier.owner
+        when {
+            classifier is IrTypeParameter -> {
+                val newClassifier =
+                    target.typeParameters.firstOrNull {
+                        it.descriptor.name == classifier.descriptor.name
+                    } ?: if (classifier.parent == source)
+                        target.typeParameters[classifier.index]
+                    else classifier
+                IrSimpleTypeImpl(
+                    makeKotlinType(
+                        newClassifier.symbol,
+                        arguments,
+                        hasQuestionMark,
+                        annotations
+                    ),
+                    newClassifier.symbol,
+                    hasQuestionMark,
+                    arguments,
+                    annotations
+                )
+            }
+
+            classifier is IrClass -> {
+                val arguments = arguments.map {
+                    when (it) {
+                        is IrTypeProjection -> makeTypeProjection(
+                            it.type.remapTypeParametersByName(source, target, srcToDstParameterMap),
+                            it.variance
+                        )
+                        else -> it
+                    }
+                }
+                IrSimpleTypeImpl(
+                    makeKotlinType(classifier.symbol, arguments, hasQuestionMark, annotations),
+                    classifier.symbol,
+                    hasQuestionMark,
+                    arguments,
+                    annotations
+                )
+            }
+
+            else -> this
+        }
+    }
+    else -> this
+}
+
 
 fun IrType.substituteAndKeepQualifiers(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {
     if (this !is IrSimpleType) return this

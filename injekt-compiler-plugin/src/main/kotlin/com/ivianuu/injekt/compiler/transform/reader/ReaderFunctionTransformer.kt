@@ -90,6 +90,7 @@ import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -187,6 +188,12 @@ class ReaderFunctionTransformer(
 
         val contextClassFunctionNameProvider = NameProvider()
 
+        val parentFunction = if (transformedFunction.visibility == Visibilities.LOCAL &&
+            transformedFunction.parent is IrFunction
+        ) {
+            transformedFunction.parent as IrFunction
+        } else null
+
         val contextClass = buildClass {
             kind = ClassKind.INTERFACE
             name = contextNameProvider.getContextClassNameForReaderFunction(function)
@@ -195,6 +202,8 @@ class ReaderFunctionTransformer(
             createImplicitParameterDeclarationWithWrappedDescriptor()
             addMetadataIfNotLocal()
             copyTypeParametersFrom(transformedFunction)
+            parentFunction?.let { copyTypeParametersFrom(it) }
+
             annotations += DeclarationIrBuilder(pluginContext, symbol).run {
                 irCall(symbols.astName.constructors.single()).apply {
                     putValueArgument(
@@ -238,13 +247,25 @@ class ReaderFunctionTransformer(
             contextClass.addFunction {
                 name = contextClassFunctionNameProvider.getProvideFunctionNameForGetCall(
                     transformedFunction,
-                    getCall.type.remapTypeParameters(transformedFunction, contextClass)
+                    getCall.type
+                        .remapTypeParameters(transformedFunction, contextClass)
+                        .let {
+                            if (parentFunction != null) {
+                                it.remapTypeParameters(parentFunction, contextClass)
+                            } else it
+                        }
                 )
                 returnType = getCall.type
                     .remapTypeParameters(transformedFunction, contextClass)
+                    .let {
+                        if (parentFunction != null) {
+                            it.remapTypeParameters(parentFunction, contextClass)
+                        } else it
+                    }
                 modality = Modality.ABSTRACT
             }.apply {
                 dispatchReceiverParameter = contextClass.thisReceiver?.copyTo(this)
+                addMetadataIfNotLocal()
             }
         }
 
@@ -268,10 +289,18 @@ class ReaderFunctionTransformer(
                         returnType = genericContextFunction.returnType
                             .substituteAndKeepQualifiers(genericContext.typeParameters
                                 .map { it.symbol }
-                                .zip(typeArguments).toMap())
+                                .zip(typeArguments).toMap()
+                            )
+                            .remapTypeParameters(transformedFunction, contextClass)
+                            .let {
+                                if (parentFunction != null) {
+                                    it.remapTypeParameters(parentFunction, contextClass)
+                                } else it
+                            }
                         modality = Modality.ABSTRACT
                     }.apply {
                         dispatchReceiverParameter = contextClass.thisReceiver?.copyTo(this)
+                        addMetadataIfNotLocal()
                     }
                 }
         }
@@ -453,16 +482,17 @@ class ReaderFunctionTransformer(
                                             addFunction {
                                                 name = declaration.name
                                                 returnType = declaration.returnType
-                                                // todo this would be correct but codegen fails
-                                                /*.substituteAndKeepQualifiers(
-                                                    superClass.typeParameters.map { it.symbol }.associateWith {
-                                                        typeArguments[it.owner.index]
-                                                    }
-                                                )*/
+                                                    .substituteAndKeepQualifiers(
+                                                        superClass.typeParameters.map { it.symbol }
+                                                            .associateWith {
+                                                                typeArguments[it.owner.index]
+                                                            }
+                                                    )
                                                 visibility = declaration.visibility
                                             }.apply {
                                                 dispatchReceiverParameter =
                                                     thisReceiver!!.copyTo(this)
+                                                addMetadataIfNotLocal()
                                                 body = DeclarationIrBuilder(
                                                     pluginContext,
                                                     symbol

@@ -51,6 +51,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.getClass
@@ -247,7 +248,8 @@ class ModuleBindingResolver(
 
             fun collectDependencies(
                 superClass: IrClass,
-                typeArguments: List<IrType>
+                typeArguments: List<IrType>,
+                typeParametersMap: Map<IrTypeParameterSymbol, IrType>
             ) {
                 if (superClass.defaultType in processedSuperTypes) return
                 processedSuperTypes += superClass.defaultType
@@ -264,6 +266,12 @@ class ModuleBindingResolver(
                                     .zip(typeArguments)
                                     .toMap()
                             )
+                            .substituteAndKeepQualifiers(
+                                superClass.typeParameters
+                                    .map { it.symbol }
+                                    .zip(typeParametersMap.values)
+                                    .toMap()
+                            )
                             .asKey(),
                         requestingKey = null, // todo
                         requestOrigin = null // todo
@@ -276,14 +284,18 @@ class ModuleBindingResolver(
                         if (clazz != null)
                             collectDependencies(
                                 clazz,
-                                superType.typeArguments.map { it.typeOrFail })
+                                superType.typeArguments.map { it.typeOrFail },
+                                emptyMap()
+                            )
                     }
             }
 
             readerContext.superTypes.forEach { superType ->
                 collectDependencies(
                     superType.getClass()!!,
-                    superType.typeArguments.map { it.typeOrFail })
+                    superType.typeArguments.map { it.typeOrFail },
+                    moduleNode.typeParametersMap
+                )
             }
 
             val parameters = mutableListOf<InjektDeclarationIrBuilder.FactoryParameter>()
@@ -773,6 +785,7 @@ class NoArgProviderBindingResolver(
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): List<BindingNode> {
         val requestedType = requestedKey.type
+        println("provider request $requestedKey")
         return when {
             requestedType.isNoArgProvider() ->
                 listOf(
