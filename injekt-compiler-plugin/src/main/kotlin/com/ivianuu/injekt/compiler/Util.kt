@@ -527,6 +527,15 @@ fun IrClass.getInjectConstructor(): IrConstructor? {
     return constructors.singleOrNull()
 }
 
+fun IrClass.getReaderConstructor(): IrConstructor? {
+    if (!hasAnnotation(InjektFqNames.Reader)) return null
+    constructors
+        .firstOrNull {
+            it.hasAnnotation(InjektFqNames.Reader)
+        }?.let { return it }
+    return constructors.singleOrNull()
+}
+
 fun <T> T.addMetadataIfNotLocal() where T : IrMetadataSourceOwner, T : IrDeclarationWithVisibility {
     if (visibility == Visibilities.LOCAL) return
     when (this) {

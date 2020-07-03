@@ -19,12 +19,14 @@ package com.ivianuu.injekt.compiler.transform.reader
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.copy
 import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getJoinedName
+import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.getSuspendFunctionType
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
@@ -37,6 +39,8 @@ import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.typeWith
+import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
+import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -53,7 +57,9 @@ import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
+import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlock
@@ -61,13 +67,17 @@ import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irGetField
+import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
-import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
@@ -76,7 +86,6 @@ import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
-import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
@@ -86,6 +95,7 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
+import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
@@ -99,6 +109,7 @@ import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.util.render
+import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -115,6 +126,7 @@ class ReaderTransformer(
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
+    private val transformedClasses = mutableSetOf<IrClass>()
 
     private val contextNameProvider = NameProvider()
 
@@ -126,6 +138,9 @@ class ReaderTransformer(
 
     override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitClass(declaration: IrClass): IrStatement =
+                transformClassIfNeeded(super.visitClass(declaration) as IrClass)
+
             override fun visitFunction(declaration: IrFunction): IrStatement =
                 transformFunctionIfNeeded(super.visitFunction(declaration) as IrFunction)
         })
@@ -177,6 +192,225 @@ class ReaderTransformer(
     private fun IrExpression.getFunctionFromArgument() = when (this) {
         is IrFunctionExpression -> function
         else -> error("Cannot extract function from $this ${dumpSrc()}")
+    }
+
+    private fun transformClassIfNeeded(clazz: IrClass): IrClass {
+        if (clazz in transformedClasses) return clazz
+
+        val readerConstructor = clazz.getReaderConstructor()
+
+        if (!clazz.hasAnnotation(InjektFqNames.Reader) &&
+            readerConstructor == null
+        ) return clazz
+
+        if (readerConstructor == null) return clazz
+
+        if (readerConstructor.valueParameters.any { it.name.asString() == "_context" }) {
+            return clazz
+        }
+
+        val parentFunction = if (clazz.visibility == Visibilities.LOCAL &&
+            clazz.parent is IrFunction
+        ) {
+            clazz.parent as IrFunction
+        } else null
+
+        val contextClassFunctionNameProvider = NameProvider()
+
+        val contextClass = buildClass {
+            kind = ClassKind.INTERFACE
+            name = contextNameProvider.getContextClassName(clazz)
+        }.apply {
+            parent = clazz.file
+            createImplicitParameterDeclarationWithWrappedDescriptor()
+            addMetadataIfNotLocal()
+            copyTypeParametersFrom(clazz)
+            parentFunction?.let { copyTypeParametersFrom(it) }
+
+            annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+                irCall(symbols.astName.constructors.single()).apply {
+                    putValueArgument(
+                        0,
+                        irString(clazz.descriptor.fqNameSafe.asString())
+                    )
+                }
+            }
+        }
+
+        val getCalls = mutableListOf<IrCall>()
+        val readerCalls = mutableListOf<IrCall>()
+
+        clazz.transformChildrenVoid(object : IrElementTransformerVoid() {
+
+            private val functionStack = mutableListOf<IrFunction>()
+
+            override fun visitFunction(declaration: IrFunction): IrStatement {
+                val isReader = declaration.isReader(pluginContext.bindingContext)
+                if (isReader) functionStack.push(declaration)
+                return super.visitFunction(declaration)
+                    .also { if (isReader) functionStack.pop() }
+            }
+
+            override fun visitCall(expression: IrCall): IrExpression {
+                if (functionStack.isNotEmpty()) return super.visitCall(expression)
+                if ((expression.symbol.owner.isReader(pluginContext.bindingContext) ||
+                            expression.isReaderLambdaInvoke())
+                ) {
+                    if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get") {
+                        getCalls += expression
+                    } else {
+                        readerCalls += expression
+                    }
+                }
+                return super.visitCall(expression)
+            }
+        })
+
+        val providerFunctionByGetCall = getCalls.associateWith { getCall ->
+            contextClass.addFunction {
+                name = contextClassFunctionNameProvider.getProvideFunctionNameForGetCall(
+                    clazz,
+                    getCall.type
+                        .remapTypeParameters(clazz, contextClass)
+                        .let {
+                            if (parentFunction != null) {
+                                it.remapTypeParameters(parentFunction, contextClass)
+                            } else it
+                        }
+                )
+                returnType = getCall.type
+                    .remapTypeParameters(clazz, contextClass)
+                    .let {
+                        if (parentFunction != null) {
+                            it.remapTypeParameters(parentFunction, contextClass)
+                        } else it
+                    }
+                modality = Modality.ABSTRACT
+            }.apply {
+                dispatchReceiverParameter = contextClass.thisReceiver?.copyTo(this)
+                addMetadataIfNotLocal()
+            }
+        }
+
+        val genericFunctionMap = mutableListOf<Pair<IrFunction, IrFunction>>()
+
+        fun addFunctionsFromGenericContext(
+            genericContext: IrClass,
+            typeArguments: List<IrType>
+        ) {
+            contextClass.superTypes += genericContext.superTypes
+            genericContext.functions
+                .filterNot { it.isFakeOverride }
+                .filterNot { it.dispatchReceiverParameter?.type == irBuiltIns.anyType }
+                .filterNot { it is IrConstructor }
+                .forEach { genericContextFunction ->
+                    genericFunctionMap += genericContextFunction to contextClass.addFunction {
+                        name = contextClassFunctionNameProvider.getProvideFunctionNameForGetCall(
+                            clazz,
+                            genericContextFunction.returnType
+                        )
+                        returnType = genericContextFunction.returnType
+                            .substituteAndKeepQualifiers(genericContext.typeParameters
+                                .map { it.symbol }
+                                .zip(typeArguments).toMap()
+                            )
+                            .remapTypeParameters(clazz, contextClass)
+                            .let {
+                                if (parentFunction != null) {
+                                    it.remapTypeParameters(parentFunction, contextClass)
+                                } else it
+                            }
+                        modality = Modality.ABSTRACT
+                    }.apply {
+                        dispatchReceiverParameter = contextClass.thisReceiver?.copyTo(this)
+                        addMetadataIfNotLocal()
+                    }
+                }
+        }
+
+        fun addSubcontext(
+            subcontext: IrClass,
+            typeArguments: List<IrType>
+        ) {
+            contextClass.superTypes += subcontext.defaultType.typeWith(*typeArguments.toTypedArray())
+        }
+
+        fun handleSubcontext(
+            subcontext: IrClass,
+            typeArguments: List<IrType>
+        ) {
+            if (subcontext.typeParameters.isNotEmpty()) {
+                addFunctionsFromGenericContext(subcontext, typeArguments)
+            } else {
+                addSubcontext(subcontext, typeArguments)
+            }
+        }
+
+        readerCalls
+            .forEach { call ->
+                if (!call.isReaderLambdaInvoke()) {
+                    val callContext = getContextForFunction(call.symbol.owner)
+                    handleSubcontext(callContext, call.typeArguments)
+                } else {
+                    /*val transformedLambda =
+                        transformFunctionIfNeeded(lambdaSource.getFunctionArgument())
+                    val lambdaContext = getContextForFunction(transformedLambda)
+                    handleSubcontext(lambdaContext, call, emptyList())*/
+
+                }
+                call.getReaderLambdaArguments()
+                    .forEach { expr ->
+                        val transformedLambda =
+                            transformFunctionIfNeeded(expr.getFunctionFromArgument())
+                        val lambdaContext = getContextForFunction(transformedLambda)
+                        handleSubcontext(lambdaContext, emptyList())
+                    }
+            }
+
+        val contextField = clazz.addField(
+            "_context".asNameId(),
+            contextClass.typeWith(clazz.typeParameters.map { it.defaultType }),
+            Visibilities.PRIVATE
+        )
+
+        readerConstructor.body = DeclarationIrBuilder(pluginContext, clazz.symbol).run {
+            irBlockBody {
+                val contextValueParameter = readerConstructor.addValueParameter(
+                    "_context",
+                    contextClass.typeWith(clazz.typeParameters.map { it.defaultType })
+                )
+                readerConstructor.body?.statements?.forEach {
+                    +it.deepCopyWithSymbols()
+                }
+                +irSetField(
+                    irGet(clazz.thisReceiver!!),
+                    contextField,
+                    irGet(contextValueParameter)
+                )
+            }
+        }
+
+        clazz.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitCall(expression: IrCall): IrExpression {
+                return if (expression in getCalls) {
+                    val providerFunction = providerFunctionByGetCall.getValue(expression)
+                    DeclarationIrBuilder(pluginContext, expression.symbol).run {
+                        irCall(providerFunction).apply {
+                            dispatchReceiver = irGetField(
+                                irGet(clazz.thisReceiver!!),
+                                contextField
+                            )
+                        }
+                    }
+                } else super.visitCall(expression)
+            }
+        })
+
+        rewriteReaderCalls(clazz, genericFunctionMap) {
+            irGet(clazz.thisReceiver!!)
+        }
+
+        return clazz
     }
 
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
@@ -253,7 +487,7 @@ class ReaderTransformer(
 
         val contextClass = buildClass {
             kind = ClassKind.INTERFACE
-            name = contextNameProvider.getContextClassNameForReaderFunction(function)
+            name = contextNameProvider.getContextClassName(function)
         }.apply {
             parent = function.file
             createImplicitParameterDeclarationWithWrappedDescriptor()
@@ -419,30 +653,35 @@ class ReaderTransformer(
             }
         })
 
-        rewriteReaderCalls(transformedFunction, genericFunctionMap)
+        rewriteReaderCalls(transformedFunction, genericFunctionMap) {
+            irGet(transformedFunction.valueParameters.last())
+        }
 
         return transformedFunction
     }
 
-    private fun rewriteReaderCalls(
-        function: IrFunction,
-        genericFunctionMap: List<Pair<IrFunction, IrFunction>>
-    ) {
-        function.rewriteTransformedFunctionRefs()
+    private fun <T> rewriteReaderCalls(
+        owner: T,
+        genericFunctionMap: List<Pair<IrFunction, IrFunction>>,
+        getContext: IrBuilderWithScope.(ScopeWithIr) -> IrExpression
+    ) where T : IrDeclaration, T : IrDeclarationParent {
+        owner.rewriteTransformedFunctionRefs()
 
-        function.transformChildrenVoid(object : IrElementTransformerVoid() {
-            private val functionStack = mutableListOf(function)
+        owner.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
+            private val functionStack = mutableListOf<IrFunction>()
 
-            override fun visitFunction(declaration: IrFunction): IrStatement {
+            override fun visitFunctionNew(declaration: IrFunction): IrStatement {
                 val isReader = declaration.isReader(pluginContext.bindingContext)
                 if (isReader) functionStack.push(declaration)
-                return super.visitFunction(declaration)
+                return super.visitFunctionNew(declaration)
                     .also { if (isReader) functionStack.pop() }
             }
 
             override fun visitCall(expression: IrCall): IrExpression {
                 val result = super.visitCall(expression) as IrCall
-                if (functionStack.last() != function) return result
+                if (functionStack.lastOrNull() != owner &&
+                    functionStack.lastOrNull() != null
+                ) return result
                 if (!result.symbol.owner.isReader(pluginContext.bindingContext) &&
                     !result.isReaderLambdaInvoke()
                 ) return result
@@ -466,7 +705,7 @@ class ReaderTransformer(
                             copyTypeAndValueArgumentsFrom(result)
                             putValueArgument(
                                 valueArgumentsCount - 1,
-                                irGet(function.valueParameters.last())
+                                getContext(currentScope!!)
                             )
                         }
                     }
@@ -485,7 +724,7 @@ class ReaderTransformer(
                                     name = Name.special("<context>")
                                     visibility = Visibilities.LOCAL
                                 }.apply clazz@{
-                                    parent = function
+                                    parent = owner
                                     createImplicitParameterDeclarationWithWrappedDescriptor()
 
                                     superTypes += calleeContext.defaultType
@@ -554,7 +793,7 @@ class ReaderTransformer(
                                                         }?.second?.symbol ?: declaration.symbol
                                                     ).apply {
                                                         dispatchReceiver =
-                                                            irGet(function.valueParameters.last())
+                                                            irGet(declaration.valueParameters.last())
                                                     }
                                                 )
                                             }
@@ -580,7 +819,7 @@ class ReaderTransformer(
                                 +irCall(contextImpl.constructors.single())
                             }
                         } else {
-                            irGet(function.valueParameters.last())
+                            getContext(currentScope!!)
                         }
                     }
 
@@ -591,17 +830,17 @@ class ReaderTransformer(
         })
     }
 
-    private fun NameProvider.getContextClassNameForReaderFunction(function: IrFunction): Name {
+    private fun NameProvider.getContextClassName(declaration: IrDeclarationWithName): Name {
         return allocateForGroup(
             getJoinedName(
-                function.getPackageFragment()!!.fqName,
-                function.descriptor.fqNameSafe
+                declaration.getPackageFragment()!!.fqName,
+                declaration.descriptor.fqNameSafe
                     .parent()
                     .let {
-                        if (function.name.isSpecial) {
+                        if (declaration.name.isSpecial) {
                             it.child(allocateForGroup("Lambda") + "_Context")
                         } else {
-                            it.child(function.name.asString() + "_Context")
+                            it.child(declaration.name.asString() + "_Context")
                         }
                     }
 
@@ -610,13 +849,13 @@ class ReaderTransformer(
     }
 
     private fun NameProvider.getProvideFunctionNameForGetCall(
-        function: IrFunction,
+        declaration: IrDeclarationWithName,
         type: IrType
     ): Name {
         return allocateForGroup(
             getJoinedName(
-                function.getPackageFragment()!!.fqName,
-                function.descriptor.fqNameSafe
+                declaration.getPackageFragment()!!.fqName,
+                declaration.descriptor.fqNameSafe
                     .parent()
                     .child(type.classifierOrFail.descriptor.name)
             )

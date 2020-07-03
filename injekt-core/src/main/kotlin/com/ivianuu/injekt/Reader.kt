@@ -24,7 +24,8 @@ import com.ivianuu.injekt.internal.injektIntrinsic
     AnnotationTarget.FUNCTION,
     AnnotationTarget.TYPE_PARAMETER,
     AnnotationTarget.PROPERTY,
-    AnnotationTarget.CLASS
+    AnnotationTarget.CLASS,
+    AnnotationTarget.CONSTRUCTOR
 )
 @TypeAnnotation
 annotation class Reader

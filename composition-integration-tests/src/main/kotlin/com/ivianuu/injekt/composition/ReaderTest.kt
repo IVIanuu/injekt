@@ -596,7 +596,8 @@ class ReaderTest {
         @Transient
         class ReaderClass {
             init {
-                foo()
+                get<Foo>()
+                //foo()
             }
         }
     """
