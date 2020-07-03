@@ -78,7 +78,7 @@ import org.jetbrains.kotlin.types.Variance
 class DeepCopyIrTreeWithSymbolsPreservingMetadata(
     private val context: IrPluginContext,
     private val symbolRemapper: DeepCopySymbolRemapper,
-    private val typeRemapper: TypeRemapper,
+    typeRemapper: TypeRemapper,
     symbolRenamer: SymbolRenamer = SymbolRenamer.DEFAULT
 ) : DeepCopyIrTreeWithSymbols(symbolRemapper, typeRemapper, symbolRenamer) {
 

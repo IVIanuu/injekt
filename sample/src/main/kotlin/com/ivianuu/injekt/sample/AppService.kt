@@ -19,8 +19,10 @@ package com.ivianuu.injekt.sample
 import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Provider
+import com.ivianuu.injekt.Readable
 import com.ivianuu.injekt.Scoped
 import com.ivianuu.injekt.composition.BindingAdapter
+import com.ivianuu.injekt.get
 import com.ivianuu.injekt.map
 import com.ivianuu.injekt.scoped
 import kotlin.reflect.KClass
@@ -40,15 +42,11 @@ annotation class BindAppService {
     }
 }
 
-@Scoped<ApplicationComponent>
-class AppServiceRunner(
-    services: Map<KClass<out AppService>, @Provider () -> AppService>
-) {
-    init {
-        println("app service init")
-        services.forEach { (key, service) ->
-            println("init $key")
-            service()
-        }
+@Readable
+fun startAppServices() {
+    println("app service init")
+    get<Map<KClass<out AppService>, @Provider () -> AppService>>().forEach { (key, service) ->
+        println("init $key")
+        service()
     }
 }

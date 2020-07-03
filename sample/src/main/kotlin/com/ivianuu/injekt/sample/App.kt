@@ -29,15 +29,17 @@ class App : Application() {
     override fun onCreate() {
         initializeCompositions()
         super.onCreate()
-        val repo: Repo = applicationComponent.runReading { get() }
-        repo.refresh()
 
         applicationComponent.runReading {
+            startAppServices()
             WorkManager.initialize(
                 this, Configuration.Builder()
                     .setWorkerFactory(get()).build()
             )
         }
+
+        val repo: Repo = applicationComponent.runReading { get() }
+        repo.refresh()
 
         println("injected app $repo")
     }
