@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler.transform.reader
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
-import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.dumpSrc
@@ -49,7 +48,6 @@ import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
@@ -92,12 +90,10 @@ import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.load.java.JvmAbi
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
@@ -548,17 +544,17 @@ class ReaderFunctionTransformer(
         )
     }
 
-    private fun NameProvider.getContextClassNameForReaderFunction(Reader: IrFunction): Name {
+    private fun NameProvider.getContextClassNameForReaderFunction(function: IrFunction): Name {
         return allocateForGroup(
             getJoinedName(
-                Reader.getPackageFragment()!!.fqName,
-                Reader.descriptor.fqNameSafe
+                function.getPackageFragment()!!.fqName,
+                function.descriptor.fqNameSafe
                     .parent()
                     .let {
-                        if (Reader.name.isSpecial) {
+                        if (function.name.isSpecial) {
                             it.child(allocateForGroup("Lambda") + "_Context")
                         } else {
-                            it.child(Reader.name.asString() + "_Context")
+                            it.child(function.name.asString() + "_Context")
                         }
                     }
 
