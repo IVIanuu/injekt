@@ -184,6 +184,16 @@ class ReaderTransformer(
                     it.value.file.addChild(contextClass)
                 }
             }
+
+        transformedClasses
+            .filterNot { it.isExternalDeclaration() }
+            .forEach {
+                val contextClass =
+                    it.getReaderConstructor()!!.valueParameters.last().type.classOrNull!!.owner
+                if (contextClass !in it.file.declarations) {
+                    it.file.addChild(contextClass)
+                }
+            }
     }
 
     private fun IrFunctionAccessExpression.getReaderLambdaArguments(): List<IrExpression> {
@@ -215,7 +225,13 @@ class ReaderTransformer(
 
         if (readerConstructor == null) return clazz
 
-        if (readerConstructor.valueParameters.any { it.name.asString() == "_context" }) {
+        if (readerConstructor.valueParameters.any { it.name.asString() == "_context" })
+            return clazz
+
+        transformedClasses += clazz
+
+        if (clazz.isExternalDeclaration()) {
+            TODO()
             return clazz
         }
 
@@ -262,23 +278,22 @@ class ReaderTransformer(
             }
 
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
-                if (functionStack.isNotEmpty()) return super.visitFunctionAccess(expression)
-                if (expression !is IrCall && expression !is IrConstructorCall) return super.visitFunctionAccess(
-                    expression
-                )
-                if ((expression.symbol.owner.isReader(pluginContext.bindingContext) ||
-                            expression.isReaderLambdaInvoke() ||
-                            expression.isReaderConstructorCall())
+                val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
+                if (functionStack.isNotEmpty()) return result
+                if (result !is IrCall && result !is IrConstructorCall) return result
+                if (expression.symbol.owner.isReader(pluginContext.bindingContext) ||
+                    expression.isReaderLambdaInvoke() ||
+                    expression.isReaderConstructorCall()
                 ) {
-                    if (expression is IrCall &&
-                        expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get"
+                    if (result is IrCall &&
+                        result.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get"
                     ) {
-                        getCalls += expression
+                        getCalls += result
                     } else {
-                        readerCalls += expression
+                        readerCalls += result
                     }
                 }
-                return super.visitFunctionAccess(expression)
+                return result
             }
         })
 
@@ -314,6 +329,7 @@ class ReaderTransformer(
             genericContext: IrClass,
             typeArguments: List<IrType>
         ) {
+            println("${clazz.render()} add functions from generic context ${genericContext.dumpSrc()}")
             contextClass.superTypes += genericContext.superTypes
             genericContext.functions
                 .filterNot { it.isFakeOverride }
@@ -430,6 +446,8 @@ class ReaderTransformer(
     }
 
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
+        if (function is IrConstructor) return function
+
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
 
@@ -443,24 +461,28 @@ class ReaderTransformer(
                 return transformedFunction
             }
 
-            val contextClass =
-                moduleFragment.descriptor.getPackage(function.getPackageFragment()!!.fqName)
-                    .memberScope
-                    .getContributedDescriptors()
-                    .filterIsInstance<ClassDescriptor>()
-                    .filter { it.hasAnnotation(InjektFqNames.AstName) }
-                    .single {
-                        it.annotations.findAnnotation(InjektFqNames.AstName)!!
-                            .argumentValue("name")
-                            .let { it as StringValue }
-                            .value == function.descriptor.fqNameSafe.asString()
-                    }
-                    .let { pluginContext.referenceClass(it.fqNameSafe)!!.owner }
+            try {
+                val contextClass =
+                    moduleFragment.descriptor.getPackage(function.getPackageFragment()!!.fqName)
+                        .memberScope
+                        .getContributedDescriptors()
+                        .filterIsInstance<ClassDescriptor>()
+                        .filter { it.hasAnnotation(InjektFqNames.AstName) }
+                        .single {
+                            it.annotations.findAnnotation(InjektFqNames.AstName)!!
+                                .argumentValue("name")
+                                .let { it as StringValue }
+                                .value == function.descriptor.fqNameSafe.asString()
+                        }
+                        .let { pluginContext.referenceClass(it.fqNameSafe)!!.owner }
 
-            transformedFunction.addValueParameter(
-                "_context",
-                contextClass.typeWith(transformedFunction.typeParameters.map { it.defaultType })
-            )
+                transformedFunction.addValueParameter(
+                    "_context",
+                    contextClass.typeWith(transformedFunction.typeParameters.map { it.defaultType })
+                )
+            } catch (e: Exception) {
+                error("Couldn't find context fo r ${transformedFunction.dump()}")
+            }
 
             return transformedFunction
         }
@@ -539,17 +561,17 @@ class ReaderTransformer(
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
                 val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
                 if (result !is IrCall && result !is IrConstructorCall) return result
-                if (functionStack.last() != transformedFunction) return result
+                if (functionStack.lastOrNull() != transformedFunction) return result
                 if (expression.symbol.owner.isReader(pluginContext.bindingContext) ||
                     expression.isReaderLambdaInvoke() ||
                     expression.isReaderConstructorCall()
                 ) {
-                    if (expression is IrCall &&
+                    if (result is IrCall &&
                         expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get"
                     ) {
-                        getCalls += expression
+                        getCalls += result
                     } else {
-                        readerCalls += expression
+                        readerCalls += result
                     }
                 }
                 return result
@@ -588,6 +610,7 @@ class ReaderTransformer(
             genericContext: IrClass,
             typeArguments: List<IrType>
         ) {
+            println("${transformedFunction.render()} add functions from generic context ${genericContext.dumpSrc()}")
             contextClass.superTypes += genericContext.superTypes
             genericContext.functions
                 .filterNot { it.isFakeOverride }
@@ -737,7 +760,8 @@ class ReaderTransformer(
                 }
 
                 val transformedCallee = transformFunctionIfNeeded(result.symbol.owner)
-                val transformedCall = transformCall(transformedCallee, result)
+                val transformedCall = if (transformedCallee != transformedFunctions.values)
+                    transformCall(transformedCallee, result) else result
 
                 val contextArgument =
                     DeclarationIrBuilder(pluginContext, transformedCall.symbol).run {
@@ -930,7 +954,13 @@ class ReaderTransformer(
                 transformedCallee.typeParameters.size,
                 transformedCallee.valueParameters.size,
                 expression.origin
-            )
+            ).apply {
+                try {
+                    copyTypeAndValueArgumentsFrom(expression)
+                } catch (e: Throwable) {
+                    error("Couldn't transform ${expression.dumpSrc()} to ${transformedCallee.render()}")
+                }
+            }
         } else {
             expression as IrCall
             IrCallImpl(

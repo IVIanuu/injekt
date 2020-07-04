@@ -611,19 +611,25 @@ class ReaderTest {
     @Test
     fun testReaderClass() = codegen(
         """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            transient { Foo() }
+            return create() 
+        }
+        
         @Reader
-        @Transient
-        class ReaderClass {
-            init {
-                get<Foo>()
-                //foo()
-            }
-            
-            fun lol() {
-                get<Bar>()
-            }
+        class FooFactory {
+            fun getFoo() = get<Foo>()
+        }
+        
+        fun invoke(): Foo { 
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReader { FooFactory().getFoo() }
         }
     """
-    )
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
 
 }

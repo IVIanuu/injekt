@@ -48,6 +48,6 @@ fun IrFunctionAccessExpression.isReaderLambdaInvoke(): Boolean {
 }
 
 fun IrFunctionAccessExpression.isReaderConstructorCall(): Boolean {
-    return symbol.owner.hasAnnotation(InjektFqNames.Reader) ||
-            symbol.owner.returnType.classOrNull?.owner?.hasAnnotation(InjektFqNames.Reader) == true
+    return this is IrConstructorCall && (symbol.owner.hasAnnotation(InjektFqNames.Reader) ||
+            symbol.owner.returnType.classOrNull?.owner?.hasAnnotation(InjektFqNames.Reader) == true)
 }

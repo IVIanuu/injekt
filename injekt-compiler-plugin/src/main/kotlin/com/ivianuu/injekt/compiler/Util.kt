@@ -109,6 +109,7 @@ import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.parentAsClass
+import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -530,12 +531,12 @@ fun IrClass.getInjectConstructor(): IrConstructor? {
 }
 
 fun IrClass.getReaderConstructor(): IrConstructor? {
-    if (!hasAnnotation(InjektFqNames.Reader)) return null
     constructors
         .firstOrNull {
             it.hasAnnotation(InjektFqNames.Reader)
         }?.let { return it }
-    return constructors.singleOrNull()
+    if (!hasAnnotation(InjektFqNames.Reader)) return null
+    return primaryConstructor
 }
 
 fun <T> T.addMetadataIfNotLocal() where T : IrMetadataSourceOwner, T : IrDeclarationWithVisibility {

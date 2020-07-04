@@ -110,16 +110,15 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         // transform @Module functions
         moduleFunctionTransformer.lower(moduleFragment)
-
         readerFunctionTransformer.addContextClassesToFiles()
+
+        println(moduleFragment.dumpSrc())
 
         // generate factory implementations
         factoryTransformer.lower(moduleFragment)
 
         // patch metadata
         TmpMetadataPatcher(pluginContext).lower(moduleFragment)
-
-        println(moduleFragment.dumpSrc())
     }
 
 }
