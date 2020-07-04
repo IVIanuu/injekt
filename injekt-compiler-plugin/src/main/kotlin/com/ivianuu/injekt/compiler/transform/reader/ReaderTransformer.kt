@@ -796,8 +796,7 @@ class ReaderTransformer(
                                                                     ) == b.returnType
                                                         }?.second?.symbol ?: declaration.symbol
                                                     ).apply {
-                                                        dispatchReceiver =
-                                                            irGet(declaration.valueParameters.last())
+                                                        dispatchReceiver = getContext(allScopes)
                                                     }
                                                 )
                                             }
