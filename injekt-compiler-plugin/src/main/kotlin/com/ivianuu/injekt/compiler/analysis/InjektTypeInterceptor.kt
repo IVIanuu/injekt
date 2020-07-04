@@ -50,6 +50,7 @@ class InjektTypeAnnotationResolutionInterceptorExtension(
         descriptor: AnonymousFunctionDescriptor
     ): AnonymousFunctionDescriptor {
         if (context.expectedType !== TypeUtils.NO_EXPECTED_TYPE &&
+            context.expectedType !== TypeUtils.UNIT_EXPECTED_TYPE &&
             context.expectedType.hasAnnotatedAnnotations(
                 InjektFqNames.TypeAnnotation,
                 descriptor.module
