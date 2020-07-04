@@ -20,6 +20,10 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.analysis.TypeAnnotationChecker
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
+import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
+import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
@@ -38,12 +42,12 @@ fun IrFunction.isReader(bindingContext: BindingContext): Boolean {
     }
 }
 
-fun IrCall.isReaderLambdaInvoke(): Boolean {
+fun IrFunctionAccessExpression.isReaderLambdaInvoke(): Boolean {
     return symbol.owner.name.asString() == "invoke" &&
             dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Reader) == true
 }
 
-fun IrCall.isReaderConstructorCall(): Boolean {
+fun IrFunctionAccessExpression.isReaderConstructorCall(): Boolean {
     return symbol.owner.hasAnnotation(InjektFqNames.Reader) ||
-            symbol.owner.returnType.hasAnnotation(InjektFqNames.Reader)
+            symbol.owner.returnType.classOrNull?.owner?.hasAnnotation(InjektFqNames.Reader) == true
 }

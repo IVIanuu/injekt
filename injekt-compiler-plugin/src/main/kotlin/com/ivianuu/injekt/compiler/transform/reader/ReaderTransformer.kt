@@ -80,13 +80,17 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
+import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
@@ -98,6 +102,7 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
@@ -181,13 +186,17 @@ class ReaderTransformer(
             }
     }
 
-    private fun IrCall.getReaderLambdaArguments(): List<IrExpression> {
-        return getArgumentsWithIr()
-            .filter { (valueParameter, _) ->
-                (valueParameter.type.isFunction() || valueParameter.type.isSuspendFunction()) &&
-                        valueParameter.type.hasAnnotation(InjektFqNames.Reader)
-            }
-            .map { it.second }
+    private fun IrFunctionAccessExpression.getReaderLambdaArguments(): List<IrExpression> {
+        return try {
+            getArgumentsWithIr()
+                .filter { (valueParameter, _) ->
+                    (valueParameter.type.isFunction() || valueParameter.type.isSuspendFunction()) &&
+                            valueParameter.type.hasAnnotation(InjektFqNames.Reader)
+                }
+                .map { it.second }
+        } catch (t: Throwable) {
+            emptyList()
+        }
     }
 
     private fun IrExpression.getFunctionFromArgument() = when (this) {
@@ -239,7 +248,7 @@ class ReaderTransformer(
         }
 
         val getCalls = mutableListOf<IrCall>()
-        val readerCalls = mutableListOf<IrCall>()
+        val readerCalls = mutableListOf<IrFunctionAccessExpression>()
 
         clazz.transformChildrenVoid(object : IrElementTransformerVoid() {
 
@@ -252,19 +261,24 @@ class ReaderTransformer(
                     .also { if (isReader) functionStack.pop() }
             }
 
-            override fun visitCall(expression: IrCall): IrExpression {
-                if (functionStack.isNotEmpty()) return super.visitCall(expression)
+            override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
+                if (functionStack.isNotEmpty()) return super.visitFunctionAccess(expression)
+                if (expression !is IrCall && expression !is IrConstructorCall) return super.visitFunctionAccess(
+                    expression
+                )
                 if ((expression.symbol.owner.isReader(pluginContext.bindingContext) ||
                             expression.isReaderLambdaInvoke() ||
                             expression.isReaderConstructorCall())
                 ) {
-                    if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get") {
+                    if (expression is IrCall &&
+                        expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get"
+                    ) {
                         getCalls += expression
                     } else {
                         readerCalls += expression
                     }
                 }
-                return super.visitCall(expression)
+                return super.visitFunctionAccess(expression)
             }
         })
 
@@ -447,6 +461,7 @@ class ReaderTransformer(
                 "_context",
                 contextClass.typeWith(transformedFunction.typeParameters.map { it.defaultType })
             )
+
             return transformedFunction
         }
 
@@ -508,11 +523,11 @@ class ReaderTransformer(
         }
 
         val getCalls = mutableListOf<IrCall>()
-        val readerCalls = mutableListOf<IrCall>()
+        val readerCalls = mutableListOf<IrFunctionAccessExpression>()
 
-        transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
+        transformedFunction.transform(object : IrElementTransformerVoid() {
 
-            private val functionStack = mutableListOf<IrFunction>(transformedFunction)
+            private val functionStack = mutableListOf<IrFunction>()
 
             override fun visitFunction(declaration: IrFunction): IrStatement {
                 val isReader = declaration.isReader(pluginContext.bindingContext)
@@ -521,21 +536,25 @@ class ReaderTransformer(
                     .also { if (isReader) functionStack.pop() }
             }
 
-            override fun visitCall(expression: IrCall): IrExpression {
-                if (functionStack.last() == transformedFunction &&
-                    (expression.symbol.owner.isReader(pluginContext.bindingContext) ||
-                            expression.isReaderLambdaInvoke() ||
-                            expression.isReaderConstructorCall())
+            override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
+                val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
+                if (result !is IrCall && result !is IrConstructorCall) return result
+                if (functionStack.last() != transformedFunction) return result
+                if (expression.symbol.owner.isReader(pluginContext.bindingContext) ||
+                    expression.isReaderLambdaInvoke() ||
+                    expression.isReaderConstructorCall()
                 ) {
-                    if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get") {
+                    if (expression is IrCall &&
+                        expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get"
+                    ) {
                         getCalls += expression
                     } else {
                         readerCalls += expression
                     }
                 }
-                return super.visitCall(expression)
+                return result
             }
-        })
+        }, null)
 
         val providerFunctionByGetCall = getCalls.associateWith { getCall ->
             contextClass.addFunction {
@@ -680,8 +699,10 @@ class ReaderTransformer(
                     .also { if (isReader) functionStack.pop() }
             }
 
-            override fun visitCall(expression: IrCall): IrExpression {
-                val result = super.visitCall(expression) as IrCall
+            override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
+                val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
+                if (result !is IrCall && result !is IrConstructorCall)
+                    return result
                 if (functionStack.lastOrNull() != owner &&
                     functionStack.lastOrNull() != null
                 ) return result
@@ -897,20 +918,34 @@ class ReaderTransformer(
 
     private fun transformCall(
         transformedCallee: IrFunction,
-        expression: IrCall
-    ): IrCall {
-        return IrCallImpl(
-            expression.startOffset,
-            expression.endOffset,
-            transformedCallee.returnType,
-            transformedCallee.symbol,
-            expression.origin,
-            expression.superQualifierSymbol
-        ).apply {
-            try {
-                copyTypeAndValueArgumentsFrom(expression)
-            } catch (e: Throwable) {
-                error("Couldn't transform ${expression.dumpSrc()} to ${transformedCallee.render()}")
+        expression: IrFunctionAccessExpression
+    ): IrFunctionAccessExpression {
+        return if (expression is IrConstructorCall) {
+            IrConstructorCallImpl(
+                expression.startOffset,
+                expression.endOffset,
+                transformedCallee.returnType,
+                transformedCallee.symbol as IrConstructorSymbol,
+                expression.typeArgumentsCount,
+                transformedCallee.typeParameters.size,
+                transformedCallee.valueParameters.size,
+                expression.origin
+            )
+        } else {
+            expression as IrCall
+            IrCallImpl(
+                expression.startOffset,
+                expression.endOffset,
+                transformedCallee.returnType,
+                transformedCallee.symbol,
+                expression.origin,
+                expression.superQualifierSymbol
+            ).apply {
+                try {
+                    copyTypeAndValueArgumentsFrom(expression)
+                } catch (e: Throwable) {
+                    error("Couldn't transform ${expression.dumpSrc()} to ${transformedCallee.render()}")
+                }
             }
         }
     }
@@ -937,8 +972,11 @@ class ReaderTransformer(
                 else result
             }
 
-            override fun visitCall(expression: IrCall): IrExpression {
-                val result = super.visitCall(expression) as IrCall
+            override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
+                val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
+                if (result !is IrCall &&
+                    result !is IrConstructorCall
+                ) return result
                 val transformed = transformFunctionIfNeeded(result.symbol.owner)
                 return if (transformed in transformedFunctions.values) transformCall(
                     transformed,
