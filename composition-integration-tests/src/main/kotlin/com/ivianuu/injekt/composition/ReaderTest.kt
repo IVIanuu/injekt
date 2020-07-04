@@ -632,4 +632,29 @@ class ReaderTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
+    @Test
+    fun testInjectReaderClass() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            unscoped { Foo() }
+            return create() 
+        }
+        
+        @Reader
+        @Scoped(TestCompositionComponent::class)
+        class FooFactory {
+            fun getFoo() = get<Foo>()
+        }
+        
+        fun invoke(): Foo { 
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReader { get<FooFactory>().getFoo() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
 }

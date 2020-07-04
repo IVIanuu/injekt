@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.transform.composition.EntryPointOfTransformer
 import com.ivianuu.injekt.compiler.transform.composition.GenerateCompositionsTransformer
 import com.ivianuu.injekt.compiler.transform.reader.ReaderTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionComponentReaderCallTransformer
+import com.ivianuu.injekt.compiler.transform.composition.ReadableCompositionClassTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
@@ -84,6 +85,8 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         if (pluginContext.compositionsEnabled) {
             BindingEffectTransformer(pluginContext).lower(moduleFragment)
 
+            ReadableCompositionClassTransformer(pluginContext).lower(moduleFragment)
+
             CompositionComponentReaderCallTransformer(
                 pluginContext
             ).lower(moduleFragment)
@@ -117,6 +120,8 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         // patch metadata
         TmpMetadataPatcher(pluginContext).lower(moduleFragment)
+
+        println(moduleFragment.dumpSrc())
     }
 
 }

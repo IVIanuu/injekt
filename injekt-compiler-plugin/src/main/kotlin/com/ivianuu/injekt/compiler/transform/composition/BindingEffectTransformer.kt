@@ -77,9 +77,11 @@ class BindingEffectTransformer(pluginContext: IrPluginContext) :
             bindingEffects.forEach { effect ->
                 val effectModule = bindingEffectModule(
                     clazz,
-                    nameProvider.getBindingEffectModuleName(
-                        clazz.getPackageFragment()!!.fqName,
-                        clazz.descriptor.fqNameSafe
+                    nameProvider.allocateForGroup(
+                        getJoinedName(
+                            clazz.getPackageFragment()!!.fqName,
+                            clazz.descriptor.fqNameSafe.child("BindingEffect")
+                        )
                     ),
                     effect.type.classOrNull!!.descriptor.fqNameSafe,
                     effect.startOffset,
@@ -150,15 +152,5 @@ class BindingEffectTransformer(pluginContext: IrPluginContext) :
             }
         }
     }
-
-    private fun NameProvider.getBindingEffectModuleName(
-        packageFqName: FqName,
-        classFqName: FqName
-    ) = allocateForGroup(
-        getJoinedName(
-            packageFqName,
-            classFqName.child("BindingEffect")
-        )
-    )
 
 }
