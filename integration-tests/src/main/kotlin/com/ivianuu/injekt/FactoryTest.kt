@@ -388,7 +388,7 @@ class FactoryTest {
     @Test
     fun testChangedScopeNameForFactory() = codegen(
         """
-        @Scoped<Any> class Dep
+        @Scoped(Any::class) class Dep
 
         @Factory(Any::class)
         fun factory(): TestComponent1<Foo> {
@@ -401,7 +401,7 @@ class FactoryTest {
     @Test
     fun testChangedScopeNameForChildFactory() = codegen(
         """
-        @Scoped<Any> class Dep
+        @Scoped(Any::class) class Dep
 
         @ChildFactory(Any::class)
         fun child(): TestComponent1<Dep> {

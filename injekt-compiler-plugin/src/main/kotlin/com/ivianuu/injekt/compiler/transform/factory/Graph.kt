@@ -117,7 +117,9 @@ class Graph(
         if (binding == null) {
             val implicitBindings = implicitBindingResolvers.flatMap { it(request.key) }
             binding = implicitBindings.singleOrNull()
-            if (binding?.targetScope != null && binding.targetScope != factory.scope) {
+            if (binding?.targetScope != null &&
+                binding.targetScope?.classifierOrFail != factory.scope.classifierOrFail
+            ) {
                 if (parent == null) {
                     error(
                         "Scope mismatch binding '${binding.key}' " +

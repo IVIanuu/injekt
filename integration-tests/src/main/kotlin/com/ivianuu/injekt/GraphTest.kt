@@ -77,7 +77,7 @@ class GraphTest {
     @Test
     fun testCircularDependencyWithProvider() = codegen(
         """
-        @Scoped<TestComponent1<A>> class A(b: B)
+        @Scoped(TestComponent1::class) class A(b: B)
         @Unscoped class B(a: @Provider () -> A)
         @Factory fun invoke(): TestComponent1<A> {
             return create()
@@ -90,7 +90,7 @@ class GraphTest {
     @Test
     fun testCircularDependencyWithProvider2() = codegen(
         """
-        @Scoped<TestComponent1<B>> class A(b: B)
+        @Scoped(TestComponent1::class) class A(b: B)
         @Unscoped class B(a: @Provider () -> A)
         @Factory fun invoke(): TestComponent1<B> {
             return create()
@@ -103,7 +103,7 @@ class GraphTest {
     @Test
     fun testCircularDependencyWithIrrelevantProvider() = codegen(
         """
-        @Scoped<TestComponent1<B>> class A(b: B)
+        @Scoped(TestComponent::class) class A(b: B)
         @Unscoped class B(a: A)
         @Unscoped class C(b: @Provider () -> B)
         @Factory fun invoke(): TestComponent1<B> {
@@ -117,7 +117,7 @@ class GraphTest {
     @Test
     fun testScopeMismatch() = codegen(
         """
-        @Scoped<Any> class Dep
+        @Scoped(Any::class) class Dep
 
         @Factory
         fun createDep(): TestComponent1<Dep> {

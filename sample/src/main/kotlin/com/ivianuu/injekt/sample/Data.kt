@@ -38,10 +38,10 @@ fun dataModule() {
 @Qualifier
 annotation class DatabaseFile
 
-@Scoped<ApplicationComponent>
+@Scoped(ApplicationComponent::class)
 class Database(private val file: @DatabaseFile File)
 
-@Scoped<ApplicationComponent>
+@Scoped(ApplicationComponent::class)
 class Repo(private val database: Database, private val api: Api) {
     fun refresh() {
     }
@@ -52,5 +52,5 @@ fun refreshRepo() {
     get<Repo>().refresh()
 }
 
-@Scoped<ApplicationComponent>
+@Scoped(ApplicationComponent::class)
 class Api

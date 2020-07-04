@@ -16,6 +16,12 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
+@Target(AnnotationTarget.TYPE)
+@Qualifier
+annotation class ClassKey(val value: KClass<*>)
+
 @Target(AnnotationTarget.TYPE)
 @Qualifier
 annotation class DoubleKey(val value: Int)
@@ -31,10 +37,6 @@ annotation class IntKey(val value: Int)
 @Target(AnnotationTarget.TYPE)
 @Qualifier
 annotation class LongKey(val value: Long)
-
-@Target(AnnotationTarget.TYPE)
-@Qualifier
-annotation class TypeKey<T>
 
 @Target(AnnotationTarget.TYPE)
 @Qualifier

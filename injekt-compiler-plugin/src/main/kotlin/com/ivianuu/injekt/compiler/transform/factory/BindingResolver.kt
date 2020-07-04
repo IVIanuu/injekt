@@ -431,16 +431,14 @@ class AnnotatedClassBindingResolver(
 
             val constructor = clazz.getInjectConstructor()
 
-            val scopeAnnotation =
-                clazz.descriptor.annotations.findAnnotation(InjektFqNames.Scoped)
-                    ?: constructor?.descriptor?.annotations?.findAnnotation(InjektFqNames.Scoped)
+            val scope = clazz.getClassFromSingleValueAnnotationOrNull(
+                InjektFqNames.Scoped, pluginContext
+            )
 
-            if (scopeAnnotation == null &&
+            if (scope == null &&
                 !clazz.hasAnnotation(InjektFqNames.Unscoped) &&
                 constructor?.hasAnnotation(InjektFqNames.Unscoped) != true
             ) return emptyList()
-
-            val scoped = scopeAnnotation != null
 
             val parametersNameProvider = NameProvider()
 
@@ -490,9 +488,8 @@ class AnnotatedClassBindingResolver(
                     key = requestedKey,
                     context = null,
                     dependencies = dependencies,
-                    targetScope = if (scopeAnnotation != null) pluginContext.typeTranslator
-                        .translateType(scopeAnnotation.type.arguments.single().type) else null,
-                    scoped = scoped,
+                    targetScope = scope?.defaultType,
+                    scoped = scope != null,
                     module = null,
                     createExpression = newInstanceExpression(
                         clazz,
@@ -512,16 +509,14 @@ class AnnotatedClassBindingResolver(
                     it.descriptor.hasAnnotation(InjektFqNames.Assisted)
                 } == true) return emptyList()
 
-            val scopeAnnotation = clazz.descriptor.annotations.findAnnotation(
-                InjektFqNames.Scoped
-            ) ?: constructor?.descriptor?.annotations?.findAnnotation(InjektFqNames.Scoped)
+            val scope = clazz.getClassFromSingleValueAnnotationOrNull(
+                InjektFqNames.Scoped, pluginContext
+            )
 
-            if (scopeAnnotation == null &&
+            if (scope == null &&
                 !clazz.hasAnnotation(InjektFqNames.Unscoped) &&
                 constructor?.hasAnnotation(InjektFqNames.Unscoped) != true
             ) return emptyList()
-
-            val scoped = scopeAnnotation != null
 
             val typeParametersMap = clazz
                 .typeParameters
@@ -560,9 +555,8 @@ class AnnotatedClassBindingResolver(
                     key = requestedKey,
                     context = null,
                     dependencies = dependencies,
-                    targetScope = if (scopeAnnotation != null) pluginContext.typeTranslator
-                        .translateType(scopeAnnotation.type.arguments.single().type) else null,
-                    scoped = scoped,
+                    targetScope = scope?.defaultType,
+                    scoped = scope != null,
                     module = null,
                     createExpression = newInstanceExpression(
                         clazz,

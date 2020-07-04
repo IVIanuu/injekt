@@ -17,6 +17,7 @@
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.internal.injektIntrinsic
+import kotlin.reflect.KClass
 
 fun <T> dependency(dependency: T): Unit = injektIntrinsic()
 
@@ -30,4 +31,4 @@ annotation class Unscoped
 
 fun <T> scoped(provider: @Reader Function<T> = injektIntrinsic()): Unit = injektIntrinsic()
 
-annotation class Scoped<T>
+annotation class Scoped(val component: KClass<*>)
