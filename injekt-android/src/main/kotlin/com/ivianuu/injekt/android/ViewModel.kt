@@ -24,7 +24,7 @@ import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.composition.BindingAdapter
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.transient
+import com.ivianuu.injekt.unscoped
 
 @BindingAdapter(ActivityComponent::class)
 annotation class ActivityViewModel {
@@ -48,8 +48,8 @@ annotation class FragmentViewModel {
 
 @Module
 inline fun <reified T : ViewModel, S : ViewModelStoreOwner> baseViewModel() {
-    transient<@UnscopedViewModel T>()
-    transient {
+    unscoped<@UnscopedViewModel T>()
+    unscoped {
         val viewModelProvider = get<@Provider () -> @UnscopedViewModel T>()
         ViewModelProvider(
             get<S>(),

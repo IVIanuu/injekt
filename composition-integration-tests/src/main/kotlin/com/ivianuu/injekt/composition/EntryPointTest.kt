@@ -34,7 +34,7 @@ class EntryPointTest {
         
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
-            transient<Foo>()
+            unscoped<Foo>()
             entryPoint<GetFoo>()
             return create() 
         }
@@ -62,7 +62,7 @@ class EntryPointTest {
         
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
-            transient<Foo>()
+            unscoped<Foo>()
             entryPoint<GetFoo>()
             return create() 
         }

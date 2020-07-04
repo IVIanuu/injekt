@@ -31,7 +31,7 @@ class GraphTest {
     @Test
     fun testMissingBindingFails() = codegen(
         """
-        @Transient class Dep(bar: Bar)
+        @Unscoped class Dep(bar: Bar)
         @Factory fun createDep(): TestComponent1<Dep> = create()
         """
     ) {
@@ -42,7 +42,7 @@ class GraphTest {
     @Test
     fun testCannotResolveDirectBindingWithAssistedParameters() = codegen(
         """
-        @Transient class Dep(@Assisted bar: Bar)
+        @Unscoped class Dep(@Assisted bar: Bar)
         @Factory fun createDep(): TestComponent1<Dep> = create()
         """
     ) {
@@ -54,8 +54,8 @@ class GraphTest {
         """
         @Factory
         fun createFoo(): TestComponent1<Foo> {
-            transient { Foo() }
-            transient { Foo() }
+            unscoped { Foo() }
+            unscoped { Foo() }
             return create()
         }
         """
@@ -66,8 +66,8 @@ class GraphTest {
     @Test
     fun testCircularDependency() = codegen(
         """
-        @Transient class A(b: B)
-        @Transient class B(a: A)
+        @Unscoped class A(b: B)
+        @Unscoped class B(a: A)
         @Factory fun createA(): TestComponent1<A> = create()
     """
     ) {
@@ -78,7 +78,7 @@ class GraphTest {
     fun testCircularDependencyWithProvider() = codegen(
         """
         @Scoped<TestComponent1<A>> class A(b: B)
-        @Transient class B(a: @Provider () -> A)
+        @Unscoped class B(a: @Provider () -> A)
         @Factory fun invoke(): TestComponent1<A> {
             return create()
         }
@@ -91,7 +91,7 @@ class GraphTest {
     fun testCircularDependencyWithProvider2() = codegen(
         """
         @Scoped<TestComponent1<B>> class A(b: B)
-        @Transient class B(a: @Provider () -> A)
+        @Unscoped class B(a: @Provider () -> A)
         @Factory fun invoke(): TestComponent1<B> {
             return create()
         }
@@ -104,8 +104,8 @@ class GraphTest {
     fun testCircularDependencyWithIrrelevantProvider() = codegen(
         """
         @Scoped<TestComponent1<B>> class A(b: B)
-        @Transient class B(a: A)
-        @Transient class C(b: @Provider () -> B)
+        @Unscoped class B(a: A)
+        @Unscoped class C(b: @Provider () -> B)
         @Factory fun invoke(): TestComponent1<B> {
             return create()
         }
@@ -225,9 +225,9 @@ class GraphTest {
         """
         @Factory
         fun factory(): TestComponent3<@TestQualifier1 String, @TestQualifier2 String, Pair<String, String>> {
-            transient<@TestQualifier1 String> { "a" }
-            transient<@TestQualifier2 String> { "b" }
-            transient {
+            unscoped<@TestQualifier1 String> { "a" }
+            unscoped<@TestQualifier2 String> { "b" }
+            unscoped {
                 Pair<String, String>(get<@TestQualifier1 String>(), get<@TestQualifier2 String>())
             }
             return create()
@@ -248,8 +248,8 @@ class GraphTest {
         """
         @Factory
         fun createFoo(): TestComponent1<Foo> {
-            transient<Foo> { Foo() }
-            transient<Foo?> { null }
+            unscoped<Foo> { Foo() }
+            unscoped<Foo?> { null }
             return create()
         }
     """
@@ -262,7 +262,7 @@ class GraphTest {
         """
         @Factory
         fun invoke(): TestComponent1<Foo?> {
-            transient<Foo?>()
+            unscoped<Foo?>()
             return create()
         }
         """
@@ -294,7 +294,7 @@ class GraphTest {
         
         @Factory
         fun createFooAsAny(): TestComponent1<Any> {
-            transient<Foo>()
+            unscoped<Foo>()
             fakeAlias<Foo, Any>()
             return create()
         }
@@ -306,7 +306,7 @@ class GraphTest {
         """
         @Factory
         fun factory(): TestComponent1<List<*>> {
-            transient<List<*>> { listOf<Any?>() }
+            unscoped<List<*>> { listOf<Any?>() }
             return create()
         }
     """
@@ -315,7 +315,7 @@ class GraphTest {
     @Test
     fun testGenericAnnotatedClass() = codegen(
         """
-        @Transient
+        @Unscoped
         class Wrapper<T>(val value: T)
         
         interface WrappedComponent {
@@ -325,8 +325,8 @@ class GraphTest {
         
         @Factory
         fun createWrapperComponent(): WrappedComponent {
-            transient<Foo>()
-            transient<Bar>()
+            unscoped<Foo>()
+            unscoped<Bar>()
             return create()
         }
     """
@@ -343,9 +343,9 @@ class GraphTest {
         
         @Factory
         fun createWrapperComponent(): WrappedComponent {
-            transient<Foo>()
-            transient<Bar>()
-            transient(::createWrapper)
+            unscoped<Foo>()
+            unscoped<Bar>()
+            unscoped(::createWrapper)
             return create()
         }
         

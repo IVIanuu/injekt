@@ -28,8 +28,8 @@ class InlineClassTest {
         
         @Factory
         fun factory(): TestComponent1<InlineFoo> {
-            transient<Foo>()
-            transient { InlineFoo(get()) }
+            unscoped<Foo>()
+            unscoped { InlineFoo(get()) }
             return create()
         }
     """
@@ -38,12 +38,12 @@ class InlineClassTest {
     @Test
     fun testAnnotatedInlineClass() = codegen(
         """
-        @Transient
+        @Unscoped
         inline class InlineFoo(val foo: Foo)
  
         @Factory
         fun factory(): TestComponent1<InlineFoo> {
-            transient<Foo>()
+            unscoped<Foo>()
             return create()
         }
     """

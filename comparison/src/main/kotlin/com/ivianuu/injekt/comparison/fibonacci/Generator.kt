@@ -25,7 +25,7 @@ fun main() {
                 if (index == 1 || index == 2) {
                     appendLine(
                         """
-                        @Transient
+                        @Unscoped
                         class Fib$index @Inject constructor()
                         """.trimIndent()
                     )

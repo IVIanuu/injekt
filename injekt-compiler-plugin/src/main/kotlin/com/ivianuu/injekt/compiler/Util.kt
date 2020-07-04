@@ -524,7 +524,7 @@ fun IrClass.getInjectConstructor(): IrConstructor? {
     if (kind == ClassKind.OBJECT) return null
     constructors
         .firstOrNull {
-            it.hasAnnotation(InjektFqNames.Transient) ||
+            it.hasAnnotation(InjektFqNames.Unscoped) ||
                     it.hasAnnotation(InjektFqNames.Scoped)
         }?.let { return it }
     return constructors.singleOrNull()

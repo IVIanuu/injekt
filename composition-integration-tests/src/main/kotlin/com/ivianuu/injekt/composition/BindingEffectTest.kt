@@ -39,7 +39,7 @@ class BindingEffectTest {
             companion object {
                 @Module 
                 fun <T> bind1() { 
-                    transient { get<T>().toString() }
+                    unscoped { get<T>().toString() }
                 }
             }
         }
@@ -56,7 +56,7 @@ class BindingEffectTest {
 
         @Effect1
         @Effect2
-        @Transient
+        @Unscoped
         class Dep
         
         fun invoke() {
@@ -190,7 +190,7 @@ class BindingEffectTest {
                 
                 @CompositionFactory
                 fun createActivityComponent(): ActivityComponent { 
-                    transient<@ForActivity ViewModelStoreOwner> { Any() as ViewModelStoreOwner }
+                    unscoped<@ForActivity ViewModelStoreOwner> { Any() as ViewModelStoreOwner }
                     return create()
                 }
                 
@@ -215,8 +215,8 @@ class BindingEffectTest {
                 
                 @Module
                 inline fun <reified T : ViewModel, S : ViewModelStoreOwner> baseViewModel() { 
-                    transient<@UnscopedViewModel T>() 
-                    transient {
+                    unscoped<@UnscopedViewModel T>() 
+                    unscoped {
                         val viewModelProvider = get<@Provider () -> @UnscopedViewModel T>()
                         ViewModelProvider(
                             get<S>(),
@@ -336,7 +336,7 @@ class BindingEffectTest {
     }
 
     @Test
-    fun testBindingAdapterWithTransient() = codegen(
+    fun testBindingAdapterWithUnscoped() = codegen(
         """
         @BindingAdapter(TestComponent::class)
         annotation class MyBindingAdapter
@@ -347,15 +347,15 @@ class BindingEffectTest {
         }
         
         @MyBindingAdapter
-        @Transient
+        @Unscoped
         class MyClass
     """
     ) {
-        assertCompileError("transient")
+        assertCompileError("unscoped")
     }
 
     @Test
-    fun testBindingEffectWithTransient() = codegen(
+    fun testBindingEffectWithUnscoped() = codegen(
         """
         @BindingEffect(TestCompositionComponent::class)
         annotation class MyBindingEffect {
@@ -367,7 +367,7 @@ class BindingEffectTest {
         }
         
         @MyBindingEffect
-        @Transient
+        @Unscoped
         class MyClass
     """
     ) {

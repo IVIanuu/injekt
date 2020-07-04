@@ -25,13 +25,13 @@ import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.Scoped
 import com.ivianuu.injekt.composition.installIn
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.transient
+import com.ivianuu.injekt.unscoped
 import java.io.File
 
 @Module
 fun dataModule() {
     installIn<ApplicationComponent>()
-    transient<@DatabaseFile File> { get<@ForApplication Context>().cacheDir }
+    unscoped<@DatabaseFile File> { get<@ForApplication Context>().cacheDir }
 }
 
 @Target(AnnotationTarget.TYPE)

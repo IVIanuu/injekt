@@ -203,13 +203,13 @@ interface InjektErrors {
         )
 
         @JvmField
-        val BINDING_ADAPTER_WITH_TRANSIENT_OR_SCOPED = error(
-            "@BindingAdapter cannot be combined with @Transient or @Scope annotations"
+        val BINDING_ADAPTER_WITH_UNSCOPED_OR_SCOPED = error(
+            "@BindingAdapter cannot be combined with @Unscoped or @Scope annotations"
         )
 
         @JvmField
-        val BINDING_EFFECT_WITHOUT_TRANSIENT_OR_SCOPED = error(
-            "@BindingEffect must be combined with @Transient, @Scope or @BindingAdapter annotations"
+        val BINDING_EFFECT_WITHOUT_UNSCOPED_OR_SCOPED = error(
+            "@BindingEffect must be combined with @Unscoped, @Scope or @BindingAdapter annotations"
         )
 
         @JvmField
@@ -218,8 +218,8 @@ interface InjektErrors {
         )
 
         @JvmField
-        val TRANSIENT_WITH_SCOPED = error(
-            "@Transient cannot be combined with @Scope annotated annotations"
+        val UNSCOPED_WITH_SCOPED = error(
+            "@Unscoped cannot be combined with @Scope annotated annotations"
         )
 
         @JvmField

@@ -38,12 +38,12 @@ class AnnotatedBindingChecker : DeclarationChecker {
     ) {
         if (descriptor !is ClassDescriptor) return
 
-        val classHasAnnotation = descriptor.hasAnnotation(InjektFqNames.Transient) ||
+        val classHasAnnotation = descriptor.hasAnnotation(InjektFqNames.Unscoped) ||
                 descriptor.hasAnnotation(InjektFqNames.Scoped)
 
         val annotatedConstructors = descriptor.constructors
             .filter {
-                it.hasAnnotation(InjektFqNames.Transient) ||
+                it.hasAnnotation(InjektFqNames.Unscoped) ||
                         it.hasAnnotation(InjektFqNames.Scoped)
             }
 
@@ -87,15 +87,15 @@ class AnnotatedBindingChecker : DeclarationChecker {
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (!descriptor.hasAnnotation(InjektFqNames.Transient) &&
+        if (!descriptor.hasAnnotation(InjektFqNames.Unscoped) &&
             !descriptor.hasAnnotation(InjektFqNames.Scoped)
         ) return
 
-        if (descriptor.hasAnnotation(InjektFqNames.Transient) &&
+        if (descriptor.hasAnnotation(InjektFqNames.Unscoped) &&
             descriptor.hasAnnotation(InjektFqNames.Scoped)
         ) {
             context.trace.report(
-                InjektErrors.TRANSIENT_WITH_SCOPED
+                InjektErrors.UNSCOPED_WITH_SCOPED
                     .on(declaration)
             )
         }

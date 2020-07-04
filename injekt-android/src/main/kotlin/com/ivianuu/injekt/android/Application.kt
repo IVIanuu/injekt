@@ -21,7 +21,6 @@ import android.content.Context
 import android.content.res.Resources
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import androidx.lifecycle.lifecycleScope
 import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.ForApplication
 import com.ivianuu.injekt.alias
@@ -29,8 +28,7 @@ import com.ivianuu.injekt.composition.CompositionFactory
 import com.ivianuu.injekt.composition.compositionFactoryOf
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.transient
-import kotlinx.coroutines.CoroutineScope
+import com.ivianuu.injekt.unscoped
 
 val Application.applicationComponent: ApplicationComponent
     get() = ProcessLifecycleOwner.get().lifecycle.singleton {
@@ -41,9 +39,9 @@ val Application.applicationComponent: ApplicationComponent
 
 @CompositionFactory
 fun createApplicationComponent(instance: Application): ApplicationComponent {
-    transient { instance }
+    unscoped { instance }
     alias<Application, @ForApplication Context>()
-    transient<@ForApplication Resources> { get<Application>().resources }
-    transient<@ForApplication LifecycleOwner> { ProcessLifecycleOwner.get() }
+    unscoped<@ForApplication Resources> { get<Application>().resources }
+    unscoped<@ForApplication LifecycleOwner> { ProcessLifecycleOwner.get() }
     return create()
 }

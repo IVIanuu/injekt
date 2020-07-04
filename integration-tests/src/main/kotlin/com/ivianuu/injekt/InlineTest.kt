@@ -42,7 +42,7 @@ class InlineTest {
         
                     @Module
                     inline fun <reified T : Any> systemService() {
-                        transient<T> {
+                        unscoped<T> {
                         ContextCompat.getSystemService(get<@TestQualifier1 Context>(), T::class.java)
                     }
                 }
@@ -60,7 +60,7 @@ class InlineTest {
                     """
                     @Factory
                     fun factory(): TestComponent1<Bar> {
-                        transient<@TestQualifier1 Context> { Context() }
+                        unscoped<@TestQualifier1 Context> { Context() }
                         systemServices()
                         return create()
                     }
@@ -85,7 +85,7 @@ class InlineTest {
         
                     @Module
                     inline fun <reified T : Any> baseSystemService() {
-                        transient<T> {
+                        unscoped<T> {
                             ContextCompat.getSystemService(get<@TestQualifier1 Context>(), T::class.java)
                         }
                 }
@@ -113,7 +113,7 @@ class InlineTest {
                     
                     @Factory
                     fun factory(): TestComponent1<Bar> {
-                        transient<@TestQualifier1 Context> { Context() }
+                        unscoped<@TestQualifier1 Context> { Context() }
                         systemServices()
                         return create()
                     }
@@ -127,7 +127,7 @@ class InlineTest {
         """ 
         @Module 
         fun <T, @Reader F : Function<T>> generic(provider: @Reader F) {
-            transient(provider)
+            unscoped(provider)
         }
         
         @Factory

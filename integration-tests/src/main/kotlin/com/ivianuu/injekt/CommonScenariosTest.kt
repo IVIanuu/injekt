@@ -31,9 +31,9 @@ class CommonScenariosTest {
                 """
                     @Module
                     fun otherModule(instance: String) {
-                        transient { instance }
-                        transient { Foo() }
-                        transient { CommandA() }
+                        unscoped { instance }
+                        unscoped { Foo() }
+                        unscoped { CommandA() }
                         set<Command> {
                             add<CommandA>()
                         }
@@ -47,10 +47,10 @@ class CommonScenariosTest {
                         return create()
                     }
                     
-                    @Transient
+                    @Unscoped
                     class OtherAnnotatedClass(foo: Foo)
                     
-                    @Transient
+                    @Unscoped
                     class OtherAssistedClass(
                         @Assisted assisted: String,
                         foo: Foo
@@ -68,7 +68,7 @@ class CommonScenariosTest {
                     @Module
                     fun thisModule() {
                         childFactory(::otherChildFactory)
-                        transient { CommandB() }
+                        unscoped { CommandB() }
                         set<Command> {
                             add<CommandB>()
                         }
@@ -100,10 +100,10 @@ class CommonScenariosTest {
         """
         abstract class Worker(context: Context)
         
-        @Transient class Context
+        @Unscoped class Context
         
-        @Transient class WorkerA(@Assisted context: Context, foo: Foo) : Worker(context)
-        @Transient class WorkerB(@Assisted context: Context) : Worker(context)
+        @Unscoped class WorkerA(@Assisted context: Context, foo: Foo) : Worker(context)
+        @Unscoped class WorkerB(@Assisted context: Context) : Worker(context)
         
         @Module 
         inline fun <reified T : Worker> bindWorkerIntoMap() {
@@ -112,7 +112,7 @@ class CommonScenariosTest {
             }
         }
         
-        @Transient
+        @Unscoped
         class WorkerFactory(
             private val workers: Map<KClass<out Worker>, @Provider (Context) -> Worker>,
             private val context: Context
@@ -124,7 +124,7 @@ class CommonScenariosTest {
         
         @Factory
         fun createAppComponent(): AppComponent {
-            transient { Foo() }
+            unscoped { Foo() }
             bindWorkerIntoMap<WorkerA>()
             bindWorkerIntoMap<WorkerB>()
             return create()

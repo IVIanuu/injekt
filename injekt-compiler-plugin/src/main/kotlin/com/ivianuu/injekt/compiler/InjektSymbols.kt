@@ -127,6 +127,6 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
     val singleInstanceFactory: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.SingleInstanceFactory)!!
 
-    val transient: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.Transient)!!
+    val unscoped: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.Unscoped)!!
 }

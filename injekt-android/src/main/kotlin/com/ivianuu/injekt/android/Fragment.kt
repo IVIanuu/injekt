@@ -31,7 +31,7 @@ import com.ivianuu.injekt.get
 import com.ivianuu.injekt.composition.parent
 import com.ivianuu.injekt.composition.runReader
 import com.ivianuu.injekt.create
-import com.ivianuu.injekt.transient
+import com.ivianuu.injekt.unscoped
 
 @Target(AnnotationTarget.TYPE)
 @Qualifier
@@ -50,9 +50,9 @@ val Fragment.fragmentComponent: FragmentComponent
 @CompositionFactory
 fun createFragmentComponent(instance: Fragment): FragmentComponent {
     parent<ActivityComponent>()
-    transient { instance }
-    transient<@ForFragment Context> { get<Fragment>().context!! }
-    transient<@ForFragment Resources> { get<Fragment>().resources }
+    unscoped { instance }
+    unscoped<@ForFragment Context> { get<Fragment>().context!! }
+    unscoped<@ForFragment Resources> { get<Fragment>().resources }
     alias<Fragment, @ForFragment LifecycleOwner>()
     alias<Fragment, @ForFragment SavedStateRegistryOwner>()
     alias<Fragment, @ForFragment ViewModelStoreOwner>()

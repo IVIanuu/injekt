@@ -31,7 +31,7 @@ class ModuleTest {
             dependency(dependency)
             set<Any>()
             map<String, Any>()
-            transient { foo: Foo -> Bar(foo) }
+            unscoped { foo: Foo -> Bar(foo) }
             scoped { bar: Bar -> bar.toString() }
         }
     """
@@ -42,7 +42,7 @@ class ModuleTest {
         """
         @Module
         fun capturingModule(capture: String) {
-            transient { capture }
+            unscoped { capture }
         }
         
         @Factory
@@ -59,7 +59,7 @@ class ModuleTest {
         @Module
         fun capturingModule(greeting: String) {
             val local = greeting + " world"
-            transient { local }
+            unscoped { local }
         }
 
         @Factory
@@ -76,7 +76,7 @@ class ModuleTest {
             """ 
         @Module 
         fun <T> module() {
-            transient<T>()
+            unscoped<T>()
         }
     """
         )
@@ -118,7 +118,7 @@ class ModuleTest {
                         companion object {
                             @Module
                             fun <T> module() {
-                                transient<T>()
+                                unscoped<T>()
                             }
                         }
                     }

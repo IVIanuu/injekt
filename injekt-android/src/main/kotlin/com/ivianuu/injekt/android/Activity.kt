@@ -31,7 +31,7 @@ import com.ivianuu.injekt.get
 import com.ivianuu.injekt.composition.parent
 import com.ivianuu.injekt.composition.runReader
 import com.ivianuu.injekt.create
-import com.ivianuu.injekt.transient
+import com.ivianuu.injekt.unscoped
 
 @Target(AnnotationTarget.TYPE)
 @Qualifier
@@ -50,9 +50,9 @@ val ComponentActivity.activityComponent: ActivityComponent
 @CompositionFactory
 fun createActivityComponent(instance: ComponentActivity): ActivityComponent {
     parent<RetainedActivityComponent>()
-    transient { instance }
+    unscoped { instance }
     alias<ComponentActivity, @ForActivity Context>()
-    transient<@ForActivity Resources> { get<ComponentActivity>().resources }
+    unscoped<@ForActivity Resources> { get<ComponentActivity>().resources }
     alias<ComponentActivity, @ForActivity LifecycleOwner>()
     alias<ComponentActivity, @ForActivity SavedStateRegistryOwner>()
     alias<ComponentActivity, @ForActivity ViewModelStoreOwner>()

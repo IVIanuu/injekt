@@ -78,7 +78,7 @@ class ModuleDeclarationFactory(
                 listOf(createChildFactoryDeclaration(call))
             calleeFqName == "com.ivianuu.injekt.alias" ->
                 listOf(createAliasDeclaration(call))
-            calleeFqName == "com.ivianuu.injekt.transient" ||
+            calleeFqName == "com.ivianuu.injekt.unscoped" ||
                     calleeFqName == "com.ivianuu.injekt.scoped" -> {
                 listOf(
                     createBindingDeclaration(

@@ -42,7 +42,7 @@ class ComposeTest {
 
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
-            transient { Foo() }
+            unscoped { Foo() }
             return create() 
         }
         
@@ -94,7 +94,7 @@ class ComposeTest {
             @Module
             fun module() {
                 installIn<TestCompositionComponent>()
-                transient<Foo>()
+                unscoped<Foo>()
             }
             
             @androidx.compose.Composable
@@ -126,7 +126,7 @@ class ComposeTest {
             @Module
             fun module() {
                 installIn<TestCompositionComponent>()
-                transient<Foo>()
+                unscoped<Foo>()
             }
             
             @androidx.compose.Composable
@@ -159,7 +159,7 @@ class ComposeTest {
                 @Module 
                 fun module() {
                     installIn<TestCompositionComponent>()
-                    transient<Foo>()
+                    unscoped<Foo>()
                 }
                 
                 @androidx.compose.Composable 
@@ -200,7 +200,7 @@ class ComposeTest {
                 @Module 
                 fun module() {
                     installIn<TestCompositionComponent>()
-                    transient<Foo>()
+                    unscoped<Foo>()
                 }
                 
                 @androidx.compose.Composable 

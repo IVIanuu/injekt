@@ -28,7 +28,7 @@ import com.ivianuu.injekt.composition.parent
 import com.ivianuu.injekt.composition.runReader
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.transient
+import com.ivianuu.injekt.unscoped
 
 @Target(AnnotationTarget.TYPE)
 @Qualifier
@@ -48,6 +48,6 @@ fun BroadcastReceiver.newReceiverComponent(
 @CompositionFactory
 fun createReceiverComponent(instance: BroadcastReceiver): ReceiverComponent {
     parent<ApplicationComponent>()
-    transient { instance }
+    unscoped { instance }
     return create()
 }

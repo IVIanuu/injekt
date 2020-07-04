@@ -52,8 +52,8 @@ class CompositionTest {
                 @Module
                 fun fooBarModule() {
                     installIn<TestCompositionComponent>()
-                    transient<Foo>()
-                    transient<Bar>()
+                    unscoped<Foo>()
+                    unscoped<Bar>()
                 }
                 
                 class BarEntryPointConsumer(private val testComponent: TestCompositionComponent) { 

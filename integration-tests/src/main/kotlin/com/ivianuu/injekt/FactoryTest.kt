@@ -30,12 +30,12 @@ import org.junit.Test
 class FactoryTest {
 
     @Test
-    fun testTransient() = codegen(
+    fun testUnscoped() = codegen(
         """
         @Factory
         fun factory(): TestComponent1<Bar> {
-            transient { Foo() }
-            transient { Bar(get()) }
+            unscoped { Foo() }
+            unscoped { Bar(get()) }
             return create()
         }
         
@@ -71,11 +71,11 @@ class FactoryTest {
     @Test
     fun testAnnotatedClass() = codegen(
         """
-        @Transient class AnnotatedBar(foo: Foo)
+        @Unscoped class AnnotatedBar(foo: Foo)
         
         @Factory
         fun factory(): TestComponent1<AnnotatedBar> {
-            transient<Foo>()
+            unscoped<Foo>()
             return create()
         }
         
@@ -94,8 +94,8 @@ class FactoryTest {
         """
         @Factory
         fun factory(): TestComponent1<Bar> {
-            transient<Foo>()
-            transient<Bar>()
+            unscoped<Foo>()
+            unscoped<Bar>()
             return create()
         }
         
@@ -111,7 +111,7 @@ class FactoryTest {
         """
         @Module
         fun module(foo: Foo) {
-            transient { foo }
+            unscoped { foo }
         }
         
         @Factory
@@ -136,14 +136,14 @@ class FactoryTest {
         
         @Factory
         fun createDep(): DependencyComponent {
-            transient<Foo>()
+            unscoped<Foo>()
             return create()
         }
 
         @Factory
         fun createChild(): TestComponent1<Bar> {
             dependency(createDep())
-            transient { Bar(get()) }
+            unscoped { Bar(get()) }
             return create()
         }
         
@@ -187,7 +187,7 @@ class FactoryTest {
     @Test
     fun testFactoryImplementationBinding() = codegen(
         """
-        @Transient class Dep(val testComponent: TestComponent1<Dep>)
+        @Unscoped class Dep(val testComponent: TestComponent1<Dep>)
         
         @Factory
         fun factory(): TestComponent1<Dep> = create()
@@ -204,12 +204,12 @@ class FactoryTest {
     @Test
     fun testGenericAnnotatedClass() = codegen(
         """
-        @Transient class Dep<T>(val value: T)
+        @Unscoped class Dep<T>(val value: T)
         
         @Factory
         fun factory(): TestComponent2<Dep<String>, Dep<Int>> {
-            transient { "hello world" }
-            transient { 0 }
+            unscoped { "hello world" }
+            unscoped { 0 }
             return create()
         }
     """
@@ -220,7 +220,7 @@ class FactoryTest {
         """
         @Module
         fun <T> generic(instance: T) {
-            transient { instance }
+            unscoped { instance }
         }
 
         @Factory
@@ -239,13 +239,13 @@ class FactoryTest {
         """
         @Module
         fun <T : S, S> diyAlias() {
-            transient { get<T>() as S }
+            unscoped { get<T>() as S }
         }
 
         @Factory
         fun factory(): TestComponent1<Any> {
-            transient<Foo>()
-            transient<Bar>()
+            unscoped<Foo>()
+            unscoped<Bar>()
             diyAlias<Bar, Any>()
             return create()
         }
@@ -268,7 +268,7 @@ class FactoryTest {
         
         @Factory
         fun createImplComponent(): ImplComponent {
-            transient { Foo() }
+            unscoped { Foo() }
             return create()
         }
     """
@@ -283,7 +283,7 @@ class FactoryTest {
 
         @Factory
         fun createImplComponent(): TypedComponent<Foo> {
-            transient { Foo() }
+            unscoped { Foo() }
             return create()
         }
     """
@@ -294,7 +294,7 @@ class FactoryTest {
         """
         @Factory
         fun factory(string: String = "default"): TestComponent1<String> {
-            transient { string }
+            unscoped { string }
             return create()
         }
         
@@ -312,24 +312,24 @@ class FactoryTest {
         class MyClass {
             val outerField = ""
             
-            @Transient class Dep(myClass: MyClass, foo: Foo)
+            @Unscoped class Dep(myClass: MyClass, foo: Foo)
             @Factory
             fun createComponent(userId: String): TestComponent1<Dep> {
-                transient<Foo>()
+                unscoped<Foo>()
                 myModule()
                 return create()
             }
             
             @Module
             fun myModule() { 
-                transient { outerField }
+                unscoped { outerField }
                 myOtherModule()
             }
         }
         
         @Module 
         fun MyClass.myOtherModule() { 
-            transient { this@myOtherModule } 
+            unscoped { this@myOtherModule } 
         }
         
         fun invoke() = MyClass().createComponent("")
@@ -343,25 +343,25 @@ class FactoryTest {
         """
         class MyClass {
             val outerField = ""
-            @Transient class Dep(myClass: MyClass, foo: Foo)
+            @Unscoped class Dep(myClass: MyClass, foo: Foo)
         }
 
         @Factory 
         fun MyClass.createComponent(userId: String): TestComponent1<MyClass.Dep> { 
-            transient<Foo>()
+            unscoped<Foo>()
             myModule()
             return create()
         }
         
         @Module 
         fun MyClass.myModule() { 
-            transient { outerField }
+            unscoped { outerField }
             myOtherModule() 
         }
         
         @Module 
         fun MyClass.myOtherModule() { 
-            transient { this@myOtherModule } 
+            unscoped { this@myOtherModule } 
         }
         
         fun invoke() = MyClass().createComponent("")
@@ -376,8 +376,8 @@ class FactoryTest {
         fun factory(): TestComponent1<Bar> {
             @Factory
             fun factory(): TestComponent1<Bar> {
-                transient<Foo>()
-                transient<Bar>()
+                unscoped<Foo>()
+                unscoped<Bar>()
                 return create()
             }
             return factory()
@@ -410,7 +410,7 @@ class FactoryTest {
         
         @Factory
         fun parent(): TestComponent1<Foo> {
-            transient<Foo>()
+            unscoped<Foo>()
             childFactory(::child)
             return create()
         }

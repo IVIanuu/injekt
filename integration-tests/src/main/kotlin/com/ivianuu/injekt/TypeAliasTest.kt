@@ -32,7 +32,7 @@ class TypeAliasTest {
         
         @Factory
         fun factory(): Component {
-            transient<Foo>()
+            unscoped<Foo>()
             return create()
         }
     """

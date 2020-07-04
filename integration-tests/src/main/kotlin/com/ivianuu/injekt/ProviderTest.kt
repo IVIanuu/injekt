@@ -27,11 +27,11 @@ import org.junit.Test
 class ProviderTest {
 
     @Test
-    fun testProviderOfTransient() = codegen(
+    fun testProviderOfUnscoped() = codegen(
         """
         @Factory
         fun factory(): TestComponent1<@Provider () -> Foo> { 
-            transient { Foo() }
+            unscoped { Foo() }
             return create()
         }
         
@@ -65,7 +65,7 @@ class ProviderTest {
         """
         @Factory
         fun invoke(): @Provider () -> @TestQualifier1 Foo { 
-            transient<@TestQualifier1 Foo> { Foo() }
+            unscoped<@TestQualifier1 Foo> { Foo() }
             return create()
         }
          """

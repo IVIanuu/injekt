@@ -25,21 +25,21 @@ class AnnotatedBindingTest {
     @Test
     fun testAnnotatedClassOk() = codegen(
         """ 
-        @Transient class Dep
+        @Unscoped class Dep
     """
     )
 
     @Test
     fun testAnnotatedObjectOk() = codegen(
         """ 
-        @Transient object Dep
+        @Unscoped object Dep
     """
     )
 
     @Test
     fun testAnnotatedAbstractClassFails() = codegen(
         """ 
-        @Transient abstract class Dep
+        @Unscoped abstract class Dep
     """
     ) {
         assertCompileError("abstract")
@@ -48,7 +48,7 @@ class AnnotatedBindingTest {
     @Test
     fun testAnnotatedInterfaceFails() = codegen(
         """ 
-        @Transient interface Dep
+        @Unscoped interface Dep
     """
     ) {
         assertCompileError("abstract")
@@ -57,7 +57,7 @@ class AnnotatedBindingTest {
     @Test
     fun testAnnotatedAnnotationClassFails() = codegen(
         """ 
-        @Transient interface Dep
+        @Unscoped interface Dep
     """
     ) {
         assertCompileError("abstract")
@@ -75,7 +75,7 @@ class AnnotatedBindingTest {
     @Test
     fun testClassAndConstructorAnnotationFails() = codegen(
         """
-         @Transient class Dep @Transient constructor()  
+         @Unscoped class Dep @Unscoped constructor()  
         """
     ) {
         assertCompileError("either")
@@ -85,8 +85,8 @@ class AnnotatedBindingTest {
     fun testMultipleConstructorsWithAnnotationsFails() = codegen(
         """
             class Dep {
-                @Transient constructor(foo: Foo)
-                @Transient constructor(bar: Bar)
+                @Unscoped constructor(foo: Foo)
+                @Unscoped constructor(bar: Bar)
             }
         """
     ) {
@@ -96,7 +96,7 @@ class AnnotatedBindingTest {
     @Test
     fun testMultipleConstructorsWithoutAnnotationsFails() = codegen(
         """
-            @Transient
+            @Unscoped
             class Dep { 
                 constructor(foo: Foo)
                 constructor(bar: Bar)

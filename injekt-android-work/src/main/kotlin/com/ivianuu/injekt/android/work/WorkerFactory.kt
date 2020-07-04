@@ -23,12 +23,12 @@ import androidx.work.WorkerParameters
 import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.Transient
+import com.ivianuu.injekt.Unscoped
 import com.ivianuu.injekt.alias
 import com.ivianuu.injekt.composition.BindingAdapter
 import com.ivianuu.injekt.composition.installIn
 import com.ivianuu.injekt.map
-import com.ivianuu.injekt.transient
+import com.ivianuu.injekt.unscoped
 import kotlin.reflect.KClass
 
 @BindingAdapter(ApplicationComponent::class)
@@ -36,7 +36,7 @@ annotation class BindWorker {
     companion object {
         @Module
         inline operator fun <reified T : ListenableWorker> invoke() {
-            transient<T>()
+            unscoped<T>()
             map<KClass<out ListenableWorker>, @Provider (Context, WorkerParameters) -> ListenableWorker> {
                 put<@Provider (Context, WorkerParameters) -> T>(T::class)
             }
@@ -44,7 +44,7 @@ annotation class BindWorker {
     }
 }
 
-@Transient
+@Unscoped
 internal class InjektWorkerFactory(
     private val workers: Map<KClass<out ListenableWorker>, @Provider (Context, WorkerParameters) -> ListenableWorker>
 ) : WorkerFactory() {

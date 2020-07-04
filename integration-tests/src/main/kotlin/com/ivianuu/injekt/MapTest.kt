@@ -36,9 +36,9 @@ class MapTest {
         """
         @Factory
         fun factory(): TestComponent1<Map<KClass<out Command>, Command>> {
-            transient { CommandA() }
-            transient { CommandB() }
-            transient { CommandC() }
+            unscoped { CommandA() }
+            unscoped { CommandB() }
+            unscoped { CommandC() }
             map<KClass<out Command>, Command> {
                 put<CommandA>(CommandA::class)
                 put<CommandB>(CommandB::class)
@@ -63,9 +63,9 @@ class MapTest {
         """
         @Factory
         fun factory(): TestComponent1<@Provider () -> Map<KClass<out Command>, Command>> {
-            transient { CommandA() }
-            transient { CommandB() }
-            transient { CommandC() }
+            unscoped { CommandA() }
+            unscoped { CommandB() }
+            unscoped { CommandC() }
             map<KClass<out Command>, Command> {
                 put<CommandA>(CommandA::class)
                 put<CommandB>(CommandB::class)
@@ -90,9 +90,9 @@ class MapTest {
         """
         @Factory
         fun factory(): TestComponent1<Map<KClass<out Command>, @Provider () -> Command>> {
-            transient { CommandA() }
-            transient { CommandB() }
-            transient { CommandC() }
+            unscoped { CommandA() }
+            unscoped { CommandB() }
+            unscoped { CommandC() }
             map<KClass<out Command>, Command> {
                 put<CommandA>(CommandA::class)
                 put<CommandB>(CommandB::class)
@@ -117,9 +117,9 @@ class MapTest {
         """
         @Factory
         fun factory(): TestComponent1<@Provider () -> Map<KClass<out Command>, @Provider () -> Command>> {
-            transient { CommandA() }
-            transient { CommandB() }
-            transient { CommandC() }
+            unscoped { CommandA() }
+            unscoped { CommandB() }
+            unscoped { CommandC() }
             map<KClass<out Command>, Command> {
                 put<CommandA>(CommandA::class)
                 put<CommandB>(CommandB::class)
@@ -144,9 +144,9 @@ class MapTest {
         """
         @Factory
         fun factory(): TestComponent1<Map<KClass<out Command>, @Provider (String) -> Command>> {
-            transient { arg: String -> CommandA() }
-            transient { arg: String -> CommandB() }
-            transient { arg: String -> CommandC() }
+            unscoped { arg: String -> CommandA() }
+            unscoped { arg: String -> CommandB() }
+            unscoped { arg: String -> CommandC() }
             map<KClass<out Command>, @Provider (String) -> Command> {
                 put<@Provider (String) -> CommandA>(CommandA::class)
                 put<@Provider (String) -> CommandB>(CommandB::class)
@@ -171,9 +171,9 @@ class MapTest {
         """
         @Factory
         fun factory(): TestComponent1<@Provider () -> Map<KClass<out Command>, @Provider (String) -> Command>> {
-            transient { arg: String -> CommandA() }
-            transient { arg: String -> CommandB() }
-            transient { arg: String -> CommandC() }
+            unscoped { arg: String -> CommandA() }
+            unscoped { arg: String -> CommandB() }
+            unscoped { arg: String -> CommandC() }
             map<KClass<out Command>, @Provider (String) -> Command> {
                 put<@Provider (String) -> CommandA>(CommandA::class)
                 put<@Provider (String) -> CommandB>(CommandB::class)
@@ -229,7 +229,7 @@ class MapTest {
         """
         @Factory
         fun factory(): TestComponent1<Map<KClass<out Command>, Command>> {
-            transient { CommandA() }
+            unscoped { CommandA() }
             map<KClass<out Command>, Command> {
                 put<CommandA>(CommandA::class)
             }
@@ -250,8 +250,8 @@ class MapTest {
         """
         @Factory
         fun factory(): TestComponent1<Map<String, Command>> {
-            transient { CommandA() }
-            transient { CommandB() }
+            unscoped { CommandA() }
+            unscoped { CommandB() }
             map<String, Command> {
                 put<CommandA>("a")
                 put<CommandB>("a")
@@ -279,7 +279,7 @@ class MapTest {
         
         @Factory
         fun createParent(): ParentComponent {
-            transient { CommandA() }
+            unscoped { CommandA() }
             map<KClass<out Command>, Command> {
                 put<CommandA>(CommandA::class)
             }
@@ -289,7 +289,7 @@ class MapTest {
         
         @ChildFactory
         fun createChild(): ChildComponent {
-            transient { CommandB() }
+            unscoped { CommandB() }
             map<KClass<out Command>, Command> {
                 put<CommandB>(CommandB::class)
             }
@@ -320,7 +320,7 @@ class MapTest {
         
         @Factory
         fun createParent(): ParentComponent {
-            transient { CommandA() }
+            unscoped { CommandA() }
             map<KClass<out Command>, Command> {
                 put<CommandA>(CommandA::class)
             }
@@ -330,7 +330,7 @@ class MapTest {
         
         @ChildFactory
         fun createChild(): ChildComponent {
-            transient { CommandB() }
+            unscoped { CommandB() }
             map<KClass<out Command>, Command> {
                 put<CommandB>(CommandA::class)
             }
@@ -353,11 +353,11 @@ class MapTest {
         
         @Factory
         fun factory(): TestComponent1<Map<KClass<out Command>, Command>> {
-            transient { CommandA() }
+            unscoped { CommandA() }
             intoMap<CommandA>()
-            transient { CommandB() }
+            unscoped { CommandB() }
             intoMap<CommandB>()
-            transient { CommandC() }
+            unscoped { CommandC() }
             intoMap<CommandC>()
             return create()
         }

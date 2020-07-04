@@ -27,7 +27,7 @@ class DslTest {
         """
         @Module
         fun module() {
-            transient { 42 }
+            unscoped { 42 }
         }
     """
     )
@@ -37,7 +37,7 @@ class DslTest {
         """
         @Factory
         fun module(): TestComponent1<Int> {
-            transient { 42 }
+            unscoped { 42 }
             return create()
         }
     """

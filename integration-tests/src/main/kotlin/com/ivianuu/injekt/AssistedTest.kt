@@ -27,7 +27,7 @@ class AssistedTest {
     @Test
     fun testAssistedWithAnnotations() = codegen(
         """
-        @Transient
+        @Unscoped
         class Dep(
             @Assisted val assisted: String,
             val foo: Foo
@@ -35,7 +35,7 @@ class AssistedTest {
         
         @Factory
         fun factory(): TestComponent1<@Provider (String) -> Dep> {
-            transient<Foo>()
+            unscoped<Foo>()
             return create()
         }
         
@@ -53,7 +53,7 @@ class AssistedTest {
         listOf(
             source(
                 """
-                @Transient 
+                @Unscoped 
                 class Dep(
                     @Assisted val assisted: String,
                     val foo: Foo
@@ -66,7 +66,7 @@ class AssistedTest {
                 """
                 @Factory 
                 fun factory(): TestComponent1<@Provider (String) -> Dep> { 
-                    transient { Foo() }
+                    unscoped { Foo() }
                     return create()
                 }
                     
@@ -88,7 +88,7 @@ class AssistedTest {
         """
         @Factory
         fun factory(): TestComponent1<@Provider (Foo) -> Bar> {
-            transient { foo: Foo -> Bar(foo) }
+            unscoped { foo: Foo -> Bar(foo) }
             return create()
         }
         
@@ -108,7 +108,7 @@ class AssistedTest {
                 """
                 @Module 
                 fun assistedModule() { 
-                    transient { foo: Foo -> Bar(foo) }
+                    unscoped { foo: Foo -> Bar(foo) }
                 }
                 """
             )

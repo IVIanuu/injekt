@@ -436,8 +436,8 @@ class AnnotatedClassBindingResolver(
                     ?: constructor?.descriptor?.annotations?.findAnnotation(InjektFqNames.Scoped)
 
             if (scopeAnnotation == null &&
-                !clazz.hasAnnotation(InjektFqNames.Transient) &&
-                constructor?.hasAnnotation(InjektFqNames.Transient) != true
+                !clazz.hasAnnotation(InjektFqNames.Unscoped) &&
+                constructor?.hasAnnotation(InjektFqNames.Unscoped) != true
             ) return emptyList()
 
             val scoped = scopeAnnotation != null
@@ -517,8 +517,8 @@ class AnnotatedClassBindingResolver(
             ) ?: constructor?.descriptor?.annotations?.findAnnotation(InjektFqNames.Scoped)
 
             if (scopeAnnotation == null &&
-                !clazz.hasAnnotation(InjektFqNames.Transient) &&
-                constructor?.hasAnnotation(InjektFqNames.Transient) != true
+                !clazz.hasAnnotation(InjektFqNames.Unscoped) &&
+                constructor?.hasAnnotation(InjektFqNames.Unscoped) != true
             ) return emptyList()
 
             val scoped = scopeAnnotation != null

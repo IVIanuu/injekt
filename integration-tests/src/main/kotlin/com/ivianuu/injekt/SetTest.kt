@@ -35,9 +35,9 @@ class SetTest {
         """
         @Factory
         fun factory(): TestComponent1<Set<Command>> {
-            transient { CommandA() }
-            transient { CommandB() }
-            transient { CommandC() }
+            unscoped { CommandA() }
+            unscoped { CommandB() }
+            unscoped { CommandC() }
             set<Command> {
                 add<CommandA>()
                 add<CommandB>()
@@ -62,9 +62,9 @@ class SetTest {
         """
         @Factory
         fun invoke(): @Provider () -> Set<Command> {
-            transient { CommandA() }
-            transient { CommandB() }
-            transient { CommandC() }
+            unscoped { CommandA() }
+            unscoped { CommandB() }
+            unscoped { CommandC() }
             set<Command> {
                 add<CommandA>()
                 add<CommandB>()
@@ -87,9 +87,9 @@ class SetTest {
         """
         @Factory
         fun factory(): TestComponent1<Set<@Provider () -> Command>> {
-            transient { CommandA() }
-            transient { CommandB() }
-            transient { CommandC() }
+            unscoped { CommandA() }
+            unscoped { CommandB() }
+            unscoped { CommandC() }
             set<Command> {
                 add<CommandA>()
                 add<CommandB>()
@@ -114,9 +114,9 @@ class SetTest {
         """
         @Factory
         fun invoke(): @Provider () -> Set<@Provider () -> Command> {
-            transient { CommandA() }
-            transient { CommandB() }
-            transient { CommandC() }
+            unscoped { CommandA() }
+            unscoped { CommandB() }
+            unscoped { CommandC() }
             set<Command> {
                 add<CommandA>()
                 add<CommandB>()
@@ -139,9 +139,9 @@ class SetTest {
         """
         @Factory
         fun factory(): TestComponent1<Set<@Provider (String) -> Command>> {
-            transient { arg: String -> CommandA() }
-            transient { arg: String -> CommandB() }
-            transient { arg: String -> CommandC() }
+            unscoped { arg: String -> CommandA() }
+            unscoped { arg: String -> CommandB() }
+            unscoped { arg: String -> CommandC() }
             set<@Provider (String) -> Command> {
                 add<@Provider (String) -> CommandA>()
                 add<@Provider (String) -> CommandB>()
@@ -166,9 +166,9 @@ class SetTest {
         """
         @Factory
         fun factory(): TestComponent1<@Provider () -> Set<@Provider (String) -> Command>> {
-            transient { arg: String -> CommandA() }
-            transient { arg: String -> CommandB() }
-            transient { arg: String -> CommandC() }
+            unscoped { arg: String -> CommandA() }
+            unscoped { arg: String -> CommandB() }
+            unscoped { arg: String -> CommandC() }
             set<@Provider (String) -> Command> {
                 add<@Provider (String) -> CommandA>()
                 add<@Provider (String) -> CommandB>()
@@ -222,7 +222,7 @@ class SetTest {
         """
         @Factory
         fun factory(): TestComponent1<Set<Command>> {
-            transient { CommandA() }
+            unscoped { CommandA() }
             set<Command> {
                 add<CommandA>()
             }
@@ -242,8 +242,8 @@ class SetTest {
         """
         @Factory
         fun factory(): TestComponent1<Set<Command>> {
-            transient { CommandA() }
-            transient { CommandB() }
+            unscoped { CommandA() }
+            unscoped { CommandB() }
             set<Command> {
                 add<CommandA>()
                 add<CommandA>()
@@ -269,7 +269,7 @@ class SetTest {
         
         @Factory
         fun createParent(): ParentComponent {
-            transient { CommandA() }
+            unscoped { CommandA() }
             set<Command> {
                 add<CommandA>()
             }
@@ -279,7 +279,7 @@ class SetTest {
         
         @ChildFactory
         fun createChild(): ChildComponent {
-            transient { CommandB() }
+            unscoped { CommandB() }
             set<Command> {
                 add<CommandB>()
             }
@@ -310,7 +310,7 @@ class SetTest {
         
         @Factory
         fun createParent(): ParentComponent {
-            transient { CommandA() }
+            unscoped { CommandA() }
             set<Command> {
                 add<CommandA>()
             }
@@ -320,7 +320,7 @@ class SetTest {
         
         @ChildFactory
         fun createChild(): ChildComponent {
-            transient { CommandB() }
+            unscoped { CommandB() }
             set<Command> {
                 add<CommandA>()
             }
@@ -341,11 +341,11 @@ class SetTest {
         
         @Factory
         fun factory(): TestComponent1<Set<Command>> {
-            transient { CommandA() }
+            unscoped { CommandA() }
             intoSet<CommandA>()
-            transient { CommandB() }
+            unscoped { CommandB() }
             intoSet<CommandB>()
-            transient { CommandC() }
+            unscoped { CommandC() }
             intoSet<CommandC>()
             return create()
         }

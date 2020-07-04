@@ -88,7 +88,7 @@ object InjektFqNames {
 
     val SingleInstanceFactory = InternalPackage.child("SingleInstanceFactory")
 
-    val Transient = InjektPackage.child("Transient")
+    val Unscoped = InjektPackage.child("Unscoped")
 
     val TypeAnnotation = InternalPackage.child("TypeAnnotation")
 
@@ -99,7 +99,7 @@ object InjektFqNames {
         InjektPackage.child("dependency"),
         InjektPackage.child("childFactory"),
         InjektPackage.child("alias"),
-        InjektPackage.child("transient"),
+        InjektPackage.child("unscoped"),
         InjektPackage.child("scoped")
     )
 

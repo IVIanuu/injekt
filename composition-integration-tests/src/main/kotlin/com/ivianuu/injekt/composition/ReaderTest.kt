@@ -120,7 +120,7 @@ class ReaderTest {
         """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
-            transient { Foo() }
+            unscoped { Foo() }
             return create() 
         }
         
@@ -144,7 +144,7 @@ class ReaderTest {
         """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
-            transient { Foo() }
+            unscoped { Foo() }
             return create() 
         }
         
@@ -180,7 +180,7 @@ class ReaderTest {
         """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
-            transient { Foo() }
+            unscoped { Foo() }
             return create() 
         }
         
@@ -202,7 +202,7 @@ class ReaderTest {
         """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
-            transient { Foo() }
+            unscoped { Foo() }
             return create() 
         }
         
@@ -241,7 +241,7 @@ class ReaderTest {
         """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
-            transient { Foo() }
+            unscoped { Foo() }
             return create() 
         }
         
@@ -270,7 +270,7 @@ class ReaderTest {
         """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
-            transient { Foo() }
+            unscoped { Foo() }
             return create() 
         }
         
@@ -299,7 +299,7 @@ class ReaderTest {
         """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
-            transient { Foo() }
+            unscoped { Foo() }
             return create() 
         }
         
@@ -339,7 +339,7 @@ class ReaderTest {
         """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
-            transient { Foo() }
+            unscoped { Foo() }
             return create() 
         }
         
@@ -381,7 +381,7 @@ class ReaderTest {
         """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
-            transient { Foo() }
+            unscoped { Foo() }
             return create() 
         }
         
@@ -408,7 +408,7 @@ class ReaderTest {
         """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
-            transient { Foo() }
+            unscoped { Foo() }
             return create() 
         }
         
@@ -430,7 +430,7 @@ class ReaderTest {
         """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
-            transient { Foo() }
+            unscoped { Foo() }
             return create() 
         }
         
@@ -461,7 +461,7 @@ class ReaderTest {
         """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
-            transient { Foo() }
+            unscoped { Foo() }
             return create() 
         }
         
@@ -516,7 +516,7 @@ class ReaderTest {
                 """
                     @CompositionFactory 
                     fun factory(): TestCompositionComponent {
-                        transient { Foo() }
+                        unscoped { Foo() }
                         return create() 
                     }
         
@@ -559,7 +559,7 @@ class ReaderTest {
         """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
-            transient { Foo() }
+            unscoped { Foo() }
             return create() 
         }
         
@@ -583,7 +583,7 @@ class ReaderTest {
                 """
                 @CompositionFactory 
                 fun factory(): TestCompositionComponent {
-                    transient { Foo() }
+                    unscoped { Foo() }
                     return create() 
                 }
         
@@ -613,7 +613,7 @@ class ReaderTest {
         """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
-            transient { Foo() }
+            unscoped { Foo() }
             return create() 
         }
         

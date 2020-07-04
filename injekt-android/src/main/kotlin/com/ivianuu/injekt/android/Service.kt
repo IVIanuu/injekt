@@ -29,7 +29,7 @@ import com.ivianuu.injekt.get
 import com.ivianuu.injekt.composition.parent
 import com.ivianuu.injekt.composition.runReader
 import com.ivianuu.injekt.create
-import com.ivianuu.injekt.transient
+import com.ivianuu.injekt.unscoped
 
 @Target(AnnotationTarget.TYPE)
 @Qualifier
@@ -47,8 +47,8 @@ fun Service.newServiceComponent(): ServiceComponent {
 @CompositionFactory
 fun createServiceComponent(instance: Service): ServiceComponent {
     parent<ApplicationComponent>()
-    transient { instance }
+    unscoped { instance }
     alias<Service, @ForService Context>()
-    transient<@ForService Resources> { get<Service>().resources }
+    unscoped<@ForService Resources> { get<Service>().resources }
     return create()
 }

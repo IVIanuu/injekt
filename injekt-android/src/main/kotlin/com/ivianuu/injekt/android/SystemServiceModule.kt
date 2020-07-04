@@ -81,7 +81,7 @@ import com.ivianuu.injekt.ForApplication
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.composition.installIn
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.transient
+import com.ivianuu.injekt.unscoped
 
 @Module
 fun systemServiceModule() {
@@ -148,7 +148,7 @@ fun systemServiceModule() {
 
 @Module
 inline fun <reified T : Any> systemService() {
-    transient<T> {
+    unscoped<T> {
         ContextCompat.getSystemService(get<@ForApplication Context>(), T::class.java)!!
     }
 }
