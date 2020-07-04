@@ -132,7 +132,7 @@ class CompositionDslTest {
             """
         val component = Any()
         fun inject() {
-            component.reader {}
+            component.runReader {}
         }
     """
         ) {

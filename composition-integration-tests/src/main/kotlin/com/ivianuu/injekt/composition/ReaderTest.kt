@@ -132,7 +132,7 @@ class ReaderTest {
         fun invoke(): Foo { 
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            return component.reader { func() }
+            return component.runReader { func() }
         }
     """
     ) {
@@ -163,7 +163,7 @@ class ReaderTest {
         fun invoke(): Foo {
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            return component.reader {
+            return component.runReader {
                 withFoo {
                     other()
                     it
@@ -190,7 +190,7 @@ class ReaderTest {
         fun invoke(): Foo {
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            return component.reader { foo() }
+            return component.runReader { foo() }
         }
     """
     ) {
@@ -219,7 +219,7 @@ class ReaderTest {
         fun invoke(): Foo {
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            return component.reader {
+            return component.runReader {
                 nonReader { 
                     reader { 
                         nonReader { 
@@ -254,7 +254,7 @@ class ReaderTest {
         fun invoke(): Foo { 
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            return component.reader {
+            return component.runReader {
                 runBlocking { 
                     func()
                 }
@@ -284,7 +284,7 @@ class ReaderTest {
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             return runBlocking {
-                component.reader {
+                component.runReader {
                     func()
                 }
             }
@@ -321,7 +321,7 @@ class ReaderTest {
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             return runBlocking {
-                component.reader {
+                component.runReader {
                     withFoo {
                         other()
                         it
@@ -357,7 +357,7 @@ class ReaderTest {
         fun invoke() {
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            component.reader {
+            component.runReader {
                 nonReader { 
                     Reader { 
                         nonReader { 
@@ -396,7 +396,7 @@ class ReaderTest {
         fun invoke(): Foo { 
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            return component.reader { withDefault() }
+            return component.runReader { withDefault() }
         }
     """
     ) {
@@ -418,7 +418,7 @@ class ReaderTest {
         fun invoke(): Foo { 
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            return component.reader { withDefault() }
+            return component.runReader { withDefault() }
         }
     """
     ) {
@@ -449,7 +449,7 @@ class ReaderTest {
         fun invoke(): Foo { 
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            return component.reader { Impl().func() }
+            return component.runReader { Impl().func() }
         }
     """
     ) {
@@ -481,7 +481,7 @@ class ReaderTest {
         fun invoke(): Foo { 
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            return component.reader { Impl().func() }
+            return component.runReader { Impl().func() }
         }
     """
     ) {
@@ -530,7 +530,7 @@ class ReaderTest {
                 """
                 lateinit var component: TestCompositionComponent
                 
-                fun getFoo() = component.reader {
+                fun getFoo() = component.runReader {
                     withBar {
                         foo()
                     }
@@ -569,7 +569,7 @@ class ReaderTest {
         fun invoke(): Foo { 
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            return component.reader { foo }
+            return component.runReader { foo }
         }
     """
     ) {
@@ -598,7 +598,7 @@ class ReaderTest {
                 fun invoke(): Foo { 
                     initializeCompositions()
                     val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-                    return component.reader { foo }
+                    return component.runReader { foo }
                 }
                 """,
                 name = "File.kt"

@@ -89,7 +89,7 @@ class ReaderChecker(
     ) {
         val resulting = resolvedCall.resultingDescriptor
 
-        if (resulting.fqNameSafe.asString() == "com.ivianuu.injekt.composition.reader") {
+        if (resulting.fqNameSafe.asString() == "com.ivianuu.injekt.composition.runReader") {
             val receiver = resolvedCall.extensionReceiver!!.type
             if (receiver.constructor.declarationDescriptor?.annotations
                     ?.hasAnnotation(InjektFqNames.CompositionComponent) != true &&

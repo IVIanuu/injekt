@@ -18,12 +18,12 @@ package com.ivianuu.injekt.composition
 
 import com.ivianuu.injekt.Reader
 
-inline fun <R> Any.reader(
+inline fun <R> Any.runReader(
     block: @Reader () -> R
 ): R = block()
 
 @JvmName("actualReader")
-inline fun <R> reader(
+inline fun <R> runReader(
     context: Any,
     block: (Any) -> R
 ): R = block(context)
