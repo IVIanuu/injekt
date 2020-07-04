@@ -17,12 +17,9 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
-import androidx.work.Configuration
-import androidx.work.WorkManager
 import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.get
 import com.ivianuu.injekt.composition.initializeCompositions
-import com.ivianuu.injekt.composition.reader
+import com.ivianuu.injekt.composition.runReader
 
 class App : Application() {
 
@@ -30,7 +27,7 @@ class App : Application() {
         initializeCompositions()
         super.onCreate()
 
-        applicationComponent.reader {
+        applicationComponent.runReader {
             initializeWorkers()
             startAppServices()
             refreshRepo()

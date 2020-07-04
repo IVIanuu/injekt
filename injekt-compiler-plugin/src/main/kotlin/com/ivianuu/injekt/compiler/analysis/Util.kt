@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.analysis
 
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.scopes.HierarchicalScope
@@ -43,12 +44,10 @@ fun findDirectEnclosingFunctionContext(
                     ?.let { predicate(it) } == true
     }?.cast<LexicalScope>()?.ownerDescriptor?.cast()
 
-fun findEnclosingFunctionContext(
+fun findEnclosingContext(
     context: CallCheckerContext,
-    predicate: (FunctionDescriptor) -> Boolean
-): FunctionDescriptor? = context.scope
+    predicate: (DeclarationDescriptor) -> Boolean
+): DeclarationDescriptor? = context.scope
     .parentsWithSelf.firstOrNull {
-        it is LexicalScope &&
-                it.ownerDescriptor.safeAs<FunctionDescriptor>()
-                    ?.let { predicate(it) } == true
-    }?.cast<LexicalScope>()?.ownerDescriptor?.cast()
+        it is LexicalScope && predicate(it.ownerDescriptor)
+    }?.cast<LexicalScope>()?.ownerDescriptor

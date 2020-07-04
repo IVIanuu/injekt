@@ -24,7 +24,6 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mvn-publish.gradle")
 
 dependencies {
-    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
     api(Deps.Kotlin.stdlib)
     testImplementation(Deps.junit)
 }

@@ -30,7 +30,7 @@ import com.ivianuu.injekt.android.ForActivity
 import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.composition.reader
+import com.ivianuu.injekt.composition.runReader
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            activityComponent.reader {
+            activityComponent.runReader {
                 WithMainViewModel {
                     GlobalScope.launch {
                         enqueueWork()

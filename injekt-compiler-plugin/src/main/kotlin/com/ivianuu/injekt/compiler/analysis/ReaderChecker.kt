@@ -18,8 +18,10 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
@@ -87,9 +89,10 @@ class ReaderChecker(
     ) {
         val resulting = resolvedCall.resultingDescriptor
 
-        if (resulting.fqNameSafe.asString() == "com.ivianuu.injekt.composition.reader") {
+        if (resulting.fqNameSafe.asString() == "com.ivianuu.injekt.composition.runReader") {
             val receiver = resolvedCall.extensionReceiver!!.type
-            if (receiver.constructor.declarationDescriptor?.annotations?.hasAnnotation(InjektFqNames.CompositionComponent) != true &&
+            if (receiver.constructor.declarationDescriptor?.annotations
+                    ?.hasAnnotation(InjektFqNames.CompositionComponent) != true &&
                 !receiver.isTypeParameter()
             ) {
                 context.trace.report(
@@ -99,24 +102,36 @@ class ReaderChecker(
             }
         }
 
-        if (resulting !is FunctionDescriptor || !typeAnnotationChecker.hasTypeAnnotation(
+        if (resulting !is FunctionDescriptor) return
+
+        if (typeAnnotationChecker.hasTypeAnnotation(
                 context.trace,
                 resulting,
                 InjektFqNames.Reader
             )
-        ) return
-        checkInvocations(reportOn, context)
+        ) {
+            checkInvocations(reportOn, context)
+        }
+
+        if (resulting is ConstructorDescriptor &&
+            (resulting.constructedClass.hasAnnotation(InjektFqNames.Reader))
+        ) {
+            checkInvocations(reportOn, context)
+        }
     }
 
     private fun checkInvocations(
         reportOn: PsiElement,
         context: CallCheckerContext
     ) {
-        val enclosingReaderFunction = findEnclosingFunctionContext(context) {
-            typeAnnotationChecker.hasTypeAnnotation(context.trace, it, InjektFqNames.Reader)
+        val enclosingReaderContext = findEnclosingContext(context) {
+            typeAnnotationChecker.hasTypeAnnotation(context.trace, it, InjektFqNames.Reader) ||
+                    (it is ClassDescriptor && it.hasAnnotation(InjektFqNames.Reader)) ||
+                    (it is ConstructorDescriptor &&
+                            it.constructedClass.hasAnnotation(InjektFqNames.Reader))
         }
 
-        if (enclosingReaderFunction == null) {
+        if (enclosingReaderContext == null) {
             context.trace.report(
                 InjektErrors.FORBIDDEN_READER_INVOCATION.on(reportOn)
             )

@@ -23,9 +23,7 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.Scoped
-import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.composition.installIn
-import com.ivianuu.injekt.composition.reader
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.transient
 import java.io.File

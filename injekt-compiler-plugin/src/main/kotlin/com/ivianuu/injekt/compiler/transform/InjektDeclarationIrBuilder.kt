@@ -25,7 +25,7 @@ import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getInjectConstructor
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.tmpFunction
-import com.ivianuu.injekt.compiler.transform.reader.ReaderFunctionTransformer
+import com.ivianuu.injekt.compiler.transform.reader.ReaderTransformer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
@@ -308,7 +308,7 @@ class InjektDeclarationIrBuilder(
     }
 
     fun classFactoryLambda(
-        readerFunctionTransformer: ReaderFunctionTransformer,
+        readerTransformer: ReaderTransformer,
         clazz: IrClass,
         startOffset: Int,
         endOffset: Int
@@ -328,7 +328,7 @@ class InjektDeclarationIrBuilder(
             } ?: emptyList()
 
         return factoryLambda(
-            readerFunctionTransformer,
+            readerTransformer,
             assistedParameters,
             clazz.defaultType,
             startOffset,
@@ -366,7 +366,7 @@ class InjektDeclarationIrBuilder(
     }
 
     fun factoryLambda(
-        readerFunctionTransformer: ReaderFunctionTransformer,
+        readerTransformer: ReaderTransformer,
         assistedParameters: List<FactoryParameter>,
         returnType: IrType,
         startOffset: Int,
@@ -381,7 +381,7 @@ class InjektDeclarationIrBuilder(
             .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Reader))
 
         return irReaderLambda(
-            readerFunctionTransformer,
+            readerTransformer,
             lambdaType,
             startOffset,
             endOffset
@@ -396,7 +396,7 @@ class InjektDeclarationIrBuilder(
     }
 
     fun irReaderLambda(
-        readerFunctionTransformer: ReaderFunctionTransformer,
+        readerTransformer: ReaderTransformer,
         type: IrType,
         startOffset: Int,
         endOffset: Int,
@@ -422,7 +422,7 @@ class InjektDeclarationIrBuilder(
             parent = builder.scope.getLocalDeclarationParent()
             this.body =
                 DeclarationIrBuilder(pluginContext, symbol).irBlockBody { body(this, this@apply) }
-        }.let { readerFunctionTransformer.getTransformedFunction(it) }
+        }.let { readerTransformer.getTransformedFunction(it) }
 
         return builder.irBlock(
             origin = IrStatementOrigin.LAMBDA,

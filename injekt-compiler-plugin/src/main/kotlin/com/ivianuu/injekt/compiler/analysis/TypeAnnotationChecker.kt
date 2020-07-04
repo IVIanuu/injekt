@@ -20,7 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getOrPut
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors
@@ -49,13 +49,13 @@ class TypeAnnotationChecker : AdditionalTypeChecker {
 
     fun hasTypeAnnotation(
         trace: BindingTrace,
-        descriptor: FunctionDescriptor,
+        descriptor: DeclarationDescriptor,
         fqName: FqName
     ): Boolean = fqName in getTypeAnnotations(trace, descriptor)
 
     fun getTypeAnnotations(
         trace: BindingTrace,
-        descriptor: FunctionDescriptor
+        descriptor: DeclarationDescriptor
     ): Set<FqName> {
         val psi = descriptor.findPsi() as? KtElement
 

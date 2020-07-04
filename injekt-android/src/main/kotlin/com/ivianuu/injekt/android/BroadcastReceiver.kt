@@ -25,7 +25,7 @@ import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.composition.CompositionComponent
 import com.ivianuu.injekt.composition.CompositionFactory
 import com.ivianuu.injekt.composition.parent
-import com.ivianuu.injekt.composition.reader
+import com.ivianuu.injekt.composition.runReader
 import com.ivianuu.injekt.create
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.transient
@@ -40,7 +40,7 @@ interface ReceiverComponent
 fun BroadcastReceiver.newReceiverComponent(
     context: Context
 ): ReceiverComponent {
-    return (context.applicationContext as Application).applicationComponent.reader {
+    return (context.applicationContext as Application).applicationComponent.runReader {
         get<@ChildFactory (BroadcastReceiver) -> ReceiverComponent>()(this)
     }
 }

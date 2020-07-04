@@ -67,7 +67,7 @@ class ComposeTest {
         fun cool(): Foo {
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            return component.reader {
+            return component.runReader {
                     withFoo {
                         other()
                         it

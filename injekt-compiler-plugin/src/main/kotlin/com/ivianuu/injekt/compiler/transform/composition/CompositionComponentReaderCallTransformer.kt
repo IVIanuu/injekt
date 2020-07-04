@@ -70,7 +70,7 @@ class CompositionComponentReaderCallTransformer(
         declaration.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
                 if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.composition.reader"
+                    "com.ivianuu.injekt.composition.runReader"
                 ) {
                     readerCalls += ReaderCall(
                         expression,
@@ -129,7 +129,7 @@ class CompositionComponentReaderCallTransformer(
                 DeclarationIrBuilder(pluginContext, call.symbol).run {
                     irCall(
                         pluginContext.referenceFunctions(
-                            FqName("com.ivianuu.injekt.composition.reader")
+                            FqName("com.ivianuu.injekt.composition.runReader")
                         ).single { it.owner.extensionReceiverParameter == null }
                     ).apply {
                         putValueArgument(

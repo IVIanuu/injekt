@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.addToFileOrAbove
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.child
+import com.ivianuu.injekt.compiler.copy
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.setClassKind
@@ -98,10 +99,8 @@ class ModuleFunctionTransformer(
         function.hasAnnotation(InjektFqNames.Module)
 
     override fun transform(function: IrFunction, callback: (IrFunction) -> Unit) {
-        val transformedFunction = function.copy()
+        val transformedFunction = function.copy(pluginContext)
         callback(transformedFunction)
-
-        if (!transformedFunction.returnType.isUnit()) return
 
         val moduleDescriptor = ModuleDescriptor(
             transformedFunction,
@@ -274,10 +273,8 @@ class ModuleFunctionTransformer(
     }
 
     override fun transformExternal(function: IrFunction, callback: (IrFunction) -> Unit) {
-        val transformedFunction = function.copy()
+        val transformedFunction = function.copy(pluginContext)
         callback(transformedFunction)
-
-        if (!transformedFunction.returnType.isUnit()) return
 
         val moduleClass = declarationStore.getModuleClassForFunction(function)
 

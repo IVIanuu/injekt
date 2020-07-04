@@ -23,7 +23,7 @@ import com.ivianuu.injekt.compiler.transform.composition.CompositionFactoryParen
 import com.ivianuu.injekt.compiler.transform.composition.CompositionMetadataTransformer
 import com.ivianuu.injekt.compiler.transform.composition.EntryPointOfTransformer
 import com.ivianuu.injekt.compiler.transform.composition.GenerateCompositionsTransformer
-import com.ivianuu.injekt.compiler.transform.reader.ReaderFunctionTransformer
+import com.ivianuu.injekt.compiler.transform.reader.ReaderTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionComponentReaderCallTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
@@ -67,8 +67,8 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         val declarationStore = InjektDeclarationStore(pluginContext)
 
-        val readerFunctionTransformer = ReaderFunctionTransformer(pluginContext, symbolRemapper)
-            .also { declarationStore.readerFunctionTransformer = it }
+        val readerFunctionTransformer = ReaderTransformer(pluginContext, symbolRemapper)
+            .also { declarationStore.readerTransformer = it }
         readerFunctionTransformer.lower(moduleFragment)
 
         val moduleFunctionTransformer = ModuleFunctionTransformer(pluginContext, declarationStore)
@@ -110,7 +110,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         // transform @Module functions
         moduleFunctionTransformer.lower(moduleFragment)
-
         readerFunctionTransformer.addContextClassesToFiles()
 
         println(moduleFragment.dumpSrc())
@@ -120,8 +119,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         // patch metadata
         TmpMetadataPatcher(pluginContext).lower(moduleFragment)
-
-        println(moduleFragment.dumpSrc())
     }
 
 }
