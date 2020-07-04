@@ -439,7 +439,10 @@ class ReaderTransformer(
         }, null)
 
         rewriteReaderCalls(clazz, genericFunctionMap) {
-            irGet(it.thisOfClass(clazz)!!)
+            irGetField(
+                irGet(it.thisOfClass(clazz)!!),
+                contextField
+            )
         }
 
         return clazz
