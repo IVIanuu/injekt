@@ -273,8 +273,12 @@ class ModuleBindingResolver(
                                     .toMap()
                             )
                             .asKey(),
-                        requestingKey = null, // todo
-                        requestOrigin = null // todo
+                        requestingKey = bindingKey,
+                        requestOrigin = superClass.getAnnotation(InjektFqNames.AstName)
+                            ?.getValueArgument(0)
+                            ?.let { it as IrConst<String> }
+                            ?.value
+                            ?.let { FqName(it) },
                     )
                 }
 

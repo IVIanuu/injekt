@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform.factory
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
@@ -46,6 +47,7 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
+import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
@@ -57,6 +59,7 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.substitute
@@ -241,7 +244,11 @@ class FactoryImpl(
                                     )
                                     .asKey(),
                                 null,
-                                null,
+                                superClass.getAnnotation(InjektFqNames.AstName)
+                                    ?.getValueArgument(0)
+                                    ?.let { it as IrConst<String> }
+                                    ?.value
+                                    ?.let { FqName(it) },
                                 RequestType.Instance
                             )
                         )
