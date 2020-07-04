@@ -134,7 +134,7 @@ class ReaderTransformer(
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
     private val transformedClasses = mutableSetOf<IrClass>()
 
-    private val contextNameProvider = NameProvider()
+    private val globalNameProvider = NameProvider()
 
     fun getContextForFunction(reader: IrFunction): IrClass =
         transformFunctionIfNeeded(reader).valueParameters.last().type.classOrNull!!.owner
@@ -245,7 +245,7 @@ class ReaderTransformer(
 
         val contextClass = buildClass {
             kind = ClassKind.INTERFACE
-            name = contextNameProvider.getContextClassName(clazz)
+            name = globalNameProvider.getContextClassName(clazz)
         }.apply {
             parent = clazz.file
             createImplicitParameterDeclarationWithWrappedDescriptor()
@@ -526,7 +526,7 @@ class ReaderTransformer(
 
         val contextClass = buildClass {
             kind = ClassKind.INTERFACE
-            name = contextNameProvider.getContextClassName(function)
+            name = globalNameProvider.getContextClassName(function)
         }.apply {
             parent = function.file
             createImplicitParameterDeclarationWithWrappedDescriptor()
@@ -879,36 +879,31 @@ class ReaderTransformer(
     }
 
     private fun NameProvider.getContextClassName(declaration: IrDeclarationWithName): Name {
-        return allocateForGroup(
-            getJoinedName(
-                declaration.getPackageFragment()!!.fqName,
-                declaration.descriptor.fqNameSafe
-                    .parent()
-                    .let {
-                        if (declaration.name.isSpecial) {
-                            it.child(allocateForGroup("Lambda") + "_Context")
-                        } else {
-                            it.child(declaration.name.asString() + "_Context")
-                        }
-                    }
-
-            )
-        )
+        return getBaseName(declaration, "Context")
     }
+
+    private fun NameProvider.getBaseName(
+        declaration: IrDeclarationWithName,
+        suffix: String
+    ): Name = allocateForGroup(
+        getJoinedName(
+            declaration.getPackageFragment()!!.fqName,
+            declaration.descriptor.fqNameSafe
+                .parent()
+                .let {
+                    if (declaration.name.isSpecial) {
+                        it.child(allocateForGroup("Lambda"))
+                    } else {
+                        it.child(declaration.name.asString())
+                    }
+                }
+        ).asString() + "_$suffix"
+    ).asNameId()
 
     private fun NameProvider.getProvideFunctionNameForGetCall(
         declaration: IrDeclarationWithName,
         type: IrType
-    ): Name {
-        return allocateForGroup(
-            getJoinedName(
-                declaration.getPackageFragment()!!.fqName,
-                declaration.descriptor.fqNameSafe
-                    .parent()
-                    .child(type.classifierOrFail.descriptor.name)
-            )
-        )
-    }
+    ): Name = getBaseName(declaration, type.classifierOrFail.descriptor.name.asString())
 
     private fun transformFunctionExpression(
         transformedCallee: IrFunction,

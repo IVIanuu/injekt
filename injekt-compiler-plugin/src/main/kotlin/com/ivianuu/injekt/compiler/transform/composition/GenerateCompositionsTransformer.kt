@@ -225,7 +225,7 @@ class GenerateCompositionsTransformer(
                             getJoinedName(
                                 file.fqName,
                                 scope.scope.scopeOwner.fqNameSafe.parent()
-                                    .child(scope.scope.scopeOwner.name.asString() + "CompositionComponent")
+                                    .child(scope.scope.scopeOwner.name.asString() + "${factory.compositionType.descriptor.name}")
                             )
                         ),
                         factory.compositionType.defaultType,
