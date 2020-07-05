@@ -645,6 +645,31 @@ class ReaderTest {
     }
 
     @Test
+    fun testReaderClassWithAssistedParameters() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            unscoped { Foo() }
+            return create() 
+        }
+        
+        @Reader
+        @Unscoped
+        class FooFactory(@Assisted val assisted: String) {
+            fun getFoo() = get<Foo>()
+        }
+        
+        fun invoke(): Foo { 
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReader { get<@Provider (String) -> FooFactory>()("hello").getFoo() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
     fun testReaderWithSameName() = codegen(
         """
         @Reader
