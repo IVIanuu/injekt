@@ -56,7 +56,8 @@ class ReadableCompositionClassTransformer(pluginContext: IrPluginContext) :
         declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitClass(declaration: IrClass): IrStatement {
                 if (declaration.hasAnnotation(InjektFqNames.Reader) &&
-                    (declaration.hasAnnotation(InjektFqNames.Scoped) ||
+                    (declaration.hasAnnotation(InjektFqNames.Unscoped) ||
+                            declaration.hasAnnotation(InjektFqNames.Scoped) ||
                             declaration.hasAnnotatedAnnotations(InjektFqNames.BindingAdapter))
                 ) {
                     check(declaration.typeParameters.isEmpty()) {
@@ -77,7 +78,13 @@ class ReadableCompositionClassTransformer(pluginContext: IrPluginContext) :
                 .type
                 .classOrNull!!
                 .owner
-                .getClassFromSingleValueAnnotation(InjektFqNames.BindingAdapter, pluginContext)
+                .getClassFromSingleValueAnnotationOrNull(
+                    InjektFqNames.BindingAdapter,
+                    pluginContext
+                )
+            ?: pluginContext.referenceClass(FqName("com.ivianuu.injekt.ApplicationComponent"))
+                ?.owner
+            ?: error("Cannot resolve target component")
 
             val contextType = clazz.getReaderConstructor()!!
                 .valueParameters.last().type
