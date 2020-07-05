@@ -143,6 +143,9 @@ class ReaderTransformer(
     fun getContextForFunction(reader: IrFunction): IrClass =
         transformFunctionIfNeeded(reader).valueParameters.last().type.classOrNull!!.owner
 
+    fun getTransformedClass(clazz: IrClass): IrClass =
+        transformClassIfNeeded(clazz)
+
     fun getTransformedFunction(function: IrFunction): IrFunction =
         transformFunctionIfNeeded(function)
 

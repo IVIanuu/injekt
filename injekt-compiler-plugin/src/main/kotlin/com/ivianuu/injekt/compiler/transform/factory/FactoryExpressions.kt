@@ -441,7 +441,7 @@ class FactoryExpressions(
     ): FactoryExpression {
         return cachedFactoryExpression(binding.key) {
             irCall(symbols.lateinitFactory.constructors.single()).apply {
-                putTypeArgument(0, factory.clazz.superTypes.single())
+                putTypeArgument(0, factory.scope)
             }
         }.also { factory.factoryLateinitProvider = it }
     }

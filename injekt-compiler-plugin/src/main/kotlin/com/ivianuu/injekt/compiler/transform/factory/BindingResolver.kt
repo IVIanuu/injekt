@@ -60,6 +60,7 @@ import org.jetbrains.kotlin.ir.types.superTypes
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
@@ -451,8 +452,9 @@ class AnnotatedClassBindingResolver(
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): List<BindingNode> {
         return if (requestedKey.type.isAssistedProvider()) {
-            val clazz =
-                requestedKey.type.typeArguments.last().typeOrNull?.getClass() ?: return emptyList()
+            val clazz = requestedKey.type.typeArguments.last().typeOrNull?.getClass()
+                ?.let { factory.declarationStore.readerTransformer.getTransformedClass(it) }
+                ?: return emptyList()
 
             val constructor = clazz.getInjectConstructor()
 
@@ -508,8 +510,8 @@ class AnnotatedClassBindingResolver(
 
             if (factoryKey != requestedKey) return emptyList()
 
-            val readerContext =
-                clazz.getReaderConstructor()?.valueParameters?.last()?.type?.classOrNull?.owner
+            val readerContext = clazz
+                .getReaderConstructor()?.valueParameters?.last()?.type?.classOrNull?.owner
 
             listOf(
                 AssistedProvisionBindingNode(
@@ -530,7 +532,9 @@ class AnnotatedClassBindingResolver(
                 )
             )
         } else {
-            val clazz = requestedKey.type.classOrNull?.owner ?: return emptyList()
+            val clazz = requestedKey.type.classOrNull?.owner
+                ?.let { factory.declarationStore.readerTransformer.getTransformedClass(it) }
+                ?: return emptyList()
             val constructor = clazz.getInjectConstructor()
 
             if (constructor?.valueParameters?.any {
@@ -578,8 +582,8 @@ class AnnotatedClassBindingResolver(
                     )
                 }
 
-            val readerContext =
-                clazz.getReaderConstructor()?.valueParameters?.last()?.type?.classOrNull?.owner
+            val readerContext = clazz.getReaderConstructor()
+                ?.valueParameters?.last()?.type?.classOrNull?.owner
 
             listOf(
                 ProvisionBindingNode(

@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getInjectConstructor
+import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.reader.ReaderTransformer
@@ -318,7 +319,7 @@ class InjektDeclarationIrBuilder(
         val constructor = clazz.getInjectConstructor()
 
         val assistedParameters = constructor?.valueParameters
-            ?.filter { it.hasAnnotation(InjektFqNames.Assisted) }
+            ?.filter { it.descriptor.hasAnnotation(InjektFqNames.Assisted) }
             ?.map { valueParameter ->
                 FactoryParameter(
                     name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
@@ -342,7 +343,7 @@ class InjektDeclarationIrBuilder(
                     constructor.valueParameters.forEachIndexed { index, valueParameter ->
                         putValueArgument(
                             index,
-                            if (valueParameter.hasAnnotation(InjektFqNames.Assisted)) {
+                            if (valueParameter.descriptor.hasAnnotation(InjektFqNames.Assisted)) {
                                 irGet(
                                     assistedParametersMap.getValue(assistedParameters[assistedIndex])
                                         .also { assistedIndex++ }

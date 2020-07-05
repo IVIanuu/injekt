@@ -97,6 +97,10 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
         }
     }
 
+    override fun visitConstructor(declaration: IrConstructor): IrConstructor {
+        return super.visitConstructor(declaration).also { it.copyMetadataFrom(declaration) }
+    }
+
     override fun visitField(declaration: IrField): IrField {
         return super.visitField(declaration).also {
             (it as IrFieldImpl).metadata = declaration.metadata
