@@ -106,6 +106,7 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
@@ -481,6 +482,31 @@ class ReaderTransformer(
         return clazz
     }
 
+    private fun IrFunction.copyAsReader(): IrFunction {
+        return copy(pluginContext).apply {
+            val descriptor = descriptor
+            if (descriptor is PropertyGetterDescriptor &&
+                annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
+            ) {
+                val name = JvmAbi.getterName(descriptor.correspondingProperty.name.identifier)
+                annotations += InjektDeclarationIrBuilder(pluginContext, symbol).jvmNameAnnotation(
+                    name
+                )
+                correspondingPropertySymbol?.owner?.getter = this
+            }
+
+            if (descriptor is PropertySetterDescriptor &&
+                annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
+            ) {
+                val name = JvmAbi.setterName(descriptor.correspondingProperty.name.identifier)
+                annotations += InjektDeclarationIrBuilder(pluginContext, symbol).jvmNameAnnotation(
+                    name
+                )
+                correspondingPropertySymbol?.owner?.setter = this
+            }
+        }
+    }
+
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
         if (function is IrConstructor) {
             return if (function.hasAnnotation(InjektFqNames.Reader) ||
@@ -497,7 +523,7 @@ class ReaderTransformer(
         if (!function.isReader(pluginContext.bindingContext)) return function
 
         if (function.isExternalDeclaration()) {
-            val transformedFunction = function.copy(pluginContext)
+            val transformedFunction = function.copyAsReader()
             transformedFunctions[function] = transformedFunction
 
             if (transformedFunction.valueParameters.any { it.name.asString() == "_context" }) {
@@ -526,30 +552,8 @@ class ReaderTransformer(
             return transformedFunction
         }
 
-        val transformedFunction = function.copy(pluginContext).apply {
-            transformedFunctions[function] = this
-
-            val descriptor = descriptor
-            if (descriptor is PropertyGetterDescriptor &&
-                annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
-            ) {
-                val name = JvmAbi.getterName(descriptor.correspondingProperty.name.identifier)
-                annotations += InjektDeclarationIrBuilder(pluginContext, symbol).jvmNameAnnotation(
-                    name
-                )
-                correspondingPropertySymbol?.owner?.getter = this
-            }
-
-            if (descriptor is PropertySetterDescriptor &&
-                annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
-            ) {
-                val name = JvmAbi.setterName(descriptor.correspondingProperty.name.identifier)
-                annotations += InjektDeclarationIrBuilder(pluginContext, symbol).jvmNameAnnotation(
-                    name
-                )
-                correspondingPropertySymbol?.owner?.setter = this
-            }
-        }
+        val transformedFunction = function.copyAsReader()
+        transformedFunctions[function] = transformedFunction
 
         if (transformedFunction.valueParameters.any { it.name.asString() == "_context" }) {
             return transformedFunction

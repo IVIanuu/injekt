@@ -489,7 +489,7 @@ class ReaderTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
-    // todo @Test
+    @Test
     fun testMultiCompileReaderProperty() = multiCodegen(
         listOf(
             source(
