@@ -319,7 +319,7 @@ class InjektDeclarationIrBuilder(
         val constructor = clazz.getInjectConstructor()
 
         val assistedParameters = constructor?.valueParameters
-            ?.filter { it.descriptor.hasAnnotation(InjektFqNames.Assisted) }
+            ?.filter { it.type.hasAnnotation(InjektFqNames.Assisted) }
             ?.map { valueParameter ->
                 FactoryParameter(
                     name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
@@ -343,7 +343,7 @@ class InjektDeclarationIrBuilder(
                     constructor.valueParameters.forEachIndexed { index, valueParameter ->
                         putValueArgument(
                             index,
-                            if (valueParameter.descriptor.hasAnnotation(InjektFqNames.Assisted)) {
+                            if (valueParameter.type.hasAnnotation(InjektFqNames.Assisted)) {
                                 irGet(
                                     assistedParametersMap.getValue(assistedParameters[assistedIndex])
                                         .also { assistedIndex++ }

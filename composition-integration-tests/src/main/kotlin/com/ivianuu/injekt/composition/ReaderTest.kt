@@ -655,7 +655,7 @@ class ReaderTest {
         
         @Reader
         @Unscoped
-        class FooFactory(@Assisted val assisted: String) {
+        class FooFactory(val assisted: @Assisted String) {
             fun getFoo() = get<Foo>()
         }
         
@@ -677,12 +677,12 @@ class ReaderTest {
                 @CompositionFactory 
                 fun factory(): TestCompositionComponent {
                     unscoped { Foo() }
-                    return create() 
+                    return create()
                 }
         
                 @Reader
                 @Unscoped
-                class FooFactory(@Assisted val assisted: String) {
+                class FooFactory(val assisted: @Assisted String) {
                     fun getFoo() = get<Foo>()
                 }
             """

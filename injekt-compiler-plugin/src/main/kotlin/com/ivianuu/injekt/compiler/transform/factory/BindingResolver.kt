@@ -474,9 +474,11 @@ class AnnotatedClassBindingResolver(
                 InjektDeclarationIrBuilder.FactoryParameter(
                     name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
                     type = valueParameter.type,
-                    assisted = valueParameter.descriptor.hasAnnotation(InjektFqNames.Assisted)
+                    assisted = valueParameter.type.hasAnnotation(InjektFqNames.Assisted)
                 )
             } ?: emptyList()
+
+            println("constructor parameters $constructorParameters")
 
             val typeParametersMap = clazz
                 .typeParameters
@@ -539,7 +541,7 @@ class AnnotatedClassBindingResolver(
             val constructor = clazz.getInjectConstructor()
 
             if (constructor?.valueParameters?.any {
-                    it.descriptor.hasAnnotation(InjektFqNames.Assisted)
+                    it.type.hasAnnotation(InjektFqNames.Assisted)
                 } == true) return emptyList()
 
             val scope = clazz.getClassFromSingleValueAnnotationOrNull(
@@ -562,7 +564,7 @@ class AnnotatedClassBindingResolver(
                 InjektDeclarationIrBuilder.FactoryParameter(
                     name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
                     type = valueParameter.type,
-                    assisted = valueParameter.descriptor.hasAnnotation(InjektFqNames.Assisted)
+                    assisted = valueParameter.type.hasAnnotation(InjektFqNames.Assisted)
                 )
             } ?: emptyList()
 

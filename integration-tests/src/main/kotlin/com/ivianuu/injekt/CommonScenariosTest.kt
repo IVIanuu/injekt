@@ -52,7 +52,7 @@ class CommonScenariosTest {
                     
                     @Unscoped
                     class OtherAssistedClass(
-                        @Assisted assisted: String,
+                        assisted: @Assisted String,
                         foo: Foo
                     )
                     
@@ -102,8 +102,8 @@ class CommonScenariosTest {
         
         @Unscoped class Context
         
-        @Unscoped class WorkerA(@Assisted context: Context, foo: Foo) : Worker(context)
-        @Unscoped class WorkerB(@Assisted context: Context) : Worker(context)
+        @Unscoped class WorkerA(context: @Assisted Context, foo: Foo) : Worker(context)
+        @Unscoped class WorkerB(context: @Assisted Context) : Worker(context)
         
         @Module 
         inline fun <reified T : Worker> bindWorkerIntoMap() {
