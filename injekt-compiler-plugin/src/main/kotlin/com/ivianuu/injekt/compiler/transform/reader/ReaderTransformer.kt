@@ -442,16 +442,18 @@ class ReaderTransformer(
             irBlockBody {
                 readerConstructor.body?.statements?.forEach {
                     +it.deepCopyWithSymbols()
+                    if (it is IrDelegatingConstructorCall) {
+                        val contextValueParameter = readerConstructor.addValueParameter(
+                            "_context",
+                            contextClass.typeWith(clazz.typeParameters.map { it.defaultType })
+                        )
+                        +irSetField(
+                            irGet(clazz.thisReceiver!!),
+                            contextField,
+                            irGet(contextValueParameter)
+                        )
+                    }
                 }
-                val contextValueParameter = readerConstructor.addValueParameter(
-                    "_context",
-                    contextClass.typeWith(clazz.typeParameters.map { it.defaultType })
-                )
-                +irSetField(
-                    irGet(clazz.thisReceiver!!),
-                    contextField,
-                    irGet(contextValueParameter)
-                )
             }
         }
 

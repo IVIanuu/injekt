@@ -670,6 +670,31 @@ class ReaderTest {
     }
 
     @Test
+    fun testReaderClassAccessesReaderFunctionInInit() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            unscoped { Foo() }
+            return create() 
+        }
+        
+        @Reader
+        @Unscoped
+        class FooFactory {
+            val foo: Foo = get()
+        }
+        
+        fun invoke(): Foo {
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReader { get<FooFactory>().foo }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
     fun testReaderClassWithAssistedParametersMulti() = multiCodegen(
         listOf(
             source(
