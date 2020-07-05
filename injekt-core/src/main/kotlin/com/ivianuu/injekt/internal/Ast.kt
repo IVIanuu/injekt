@@ -28,6 +28,8 @@ object InjektAst {
 
     annotation class ChildFactory
 
+    annotation class Context
+
     annotation class Dependency
 
     // todo move to composition

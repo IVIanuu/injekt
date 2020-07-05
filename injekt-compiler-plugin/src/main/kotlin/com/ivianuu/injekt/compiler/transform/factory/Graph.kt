@@ -85,6 +85,7 @@ class Graph(
 
     init {
         if (factoryModule != null) addModule(factoryModule)
+        implicitBindingResolvers += ContextBindingResolver(factory)
         implicitBindingResolvers += NoArgProviderBindingResolver(factory)
         implicitBindingResolvers += mapBindingResolver
         implicitBindingResolvers += setBindingResolver
@@ -116,6 +117,16 @@ class Graph(
 
         if (binding == null) {
             val implicitBindings = implicitBindingResolvers.flatMap { it(request.key) }
+            if (implicitBindings.size > 1) {
+                error(
+                    "Multiple bindings found for '${request.key}' at:\n${implicitBindings.joinToString(
+                        "\n"
+                    ) {
+                        "'${it.origin.orUnknown()}'"
+                    }} in '${factory.origin}'"
+                )
+            }
+
             binding = implicitBindings.singleOrNull()
             if (binding?.targetScope != null &&
                 binding.targetScope?.classifierOrFail != factory.scope.classifierOrFail

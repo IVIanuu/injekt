@@ -42,6 +42,8 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
         get() = injektAst.childClass(InjektFqNames.AstChildFactory.shortName())
     val astCompositionTypes: IrClassSymbol
         get() = injektAst.childClass(InjektFqNames.AstCompositionTypes.shortName())
+    val astContext: IrClassSymbol
+        get() = injektAst.childClass(InjektFqNames.AstContext.shortName())
     val astDependency: IrClassSymbol
         get() = injektAst.childClass(InjektFqNames.AstDependency.shortName())
     val astEntryPoints: IrClassSymbol

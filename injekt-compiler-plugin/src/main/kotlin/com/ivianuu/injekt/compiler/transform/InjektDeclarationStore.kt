@@ -156,8 +156,7 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
                     it.annotations.findAnnotation(InjektFqNames.AstName)!!
                         .argumentValue("name")
                         .let { it as StringValue }
-                        .value
-                        .also { println("found value $it") } == moduleFunction.uniqueName()
+                        .value == moduleFunction.uniqueName()
                 }
                 .let { pluginContext.referenceClass(it.fqNameSafe)!!.owner }
         }

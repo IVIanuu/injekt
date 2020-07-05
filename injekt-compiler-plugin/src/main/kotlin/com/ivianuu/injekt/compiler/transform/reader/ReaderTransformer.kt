@@ -278,6 +278,9 @@ class ReaderTransformer(
             copyTypeParametersFrom(clazz)
             parentFunction?.let { copyTypeParametersFrom(it) }
 
+            annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
+                .noArgSingleConstructorCall(symbols.astContext)
+
             annotations += DeclarationIrBuilder(pluginContext, symbol).run {
                 irCall(symbols.astName.constructors.single()).apply {
                     putValueArgument(

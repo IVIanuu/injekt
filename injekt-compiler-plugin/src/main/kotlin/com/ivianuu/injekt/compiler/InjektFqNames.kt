@@ -28,6 +28,7 @@ object InjektFqNames {
     val AstBinding = InjektAst.child("Binding")
     val AstChildFactory = InjektAst.child("ChildFactory")
     val AstCompositionTypes = InjektAst.child("CompositionTypes")
+    val AstContext = InjektAst.child("Context")
     val AstDependency = InjektAst.child("Dependency")
     val AstEntryPoints = InjektAst.child("EntryPoints")
     val AstMap = InjektAst.child("Map")

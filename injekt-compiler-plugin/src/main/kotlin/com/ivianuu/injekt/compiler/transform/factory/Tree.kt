@@ -177,12 +177,13 @@ class ChildFactoryBindingNode(
 
 class DelegateBindingNode(
     key: Key,
+    context: IrClass?,
     owner: FactoryImpl,
     origin: FqName?,
     val originalKey: Key,
     val requestOrigin: FqName
 ) : BindingNode(
-    key, null, listOf(
+    key, context, listOf(
         BindingRequest(originalKey, key, requestOrigin)
     ), null, false, null, owner, origin
 )

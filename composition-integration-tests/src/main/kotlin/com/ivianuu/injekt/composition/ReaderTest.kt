@@ -611,7 +611,7 @@ class ReaderTest {
         }
         
         @Reader
-        @Scoped(TestCompositionComponent::class)
+        @Unscoped
         class FooFactory {
             fun getFoo() = get<Foo>()
         }

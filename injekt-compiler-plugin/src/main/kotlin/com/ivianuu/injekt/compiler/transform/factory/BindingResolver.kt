@@ -26,6 +26,7 @@ import com.ivianuu.injekt.compiler.getFunctionParameterTypes
 import com.ivianuu.injekt.compiler.getFunctionReturnType
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getInjectConstructor
+import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isAssistedProvider
 import com.ivianuu.injekt.compiler.isNoArgProvider
@@ -165,6 +166,25 @@ class ChildFactoryBindingResolver(
             origin = moduleClass.fqNameForIrSerialization,
             parent = parentFactory.clazz,
             childFactoryExpression = { childFactoryExpression }
+        )
+    }
+}
+
+class ContextBindingResolver(
+    private val factory: FactoryImpl
+) : BindingResolver {
+    override fun invoke(requestedKey: Key): List<BindingNode> {
+        val clazz = requestedKey.type.classOrNull!!.owner
+        if (!clazz.hasAnnotation(InjektFqNames.AstContext)) return emptyList()
+        return listOf(
+            DelegateBindingNode(
+                key = requestedKey,
+                context = clazz,
+                owner = factory,
+                origin = null,
+                originalKey = factory.factoryNode.key,
+                requestOrigin = clazz.descriptor.fqNameSafe
+            )
         )
     }
 }
@@ -409,6 +429,7 @@ class ModuleBindingResolver(
                 key = delegateFunction.returnType
                     .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap)
                     .asKey(),
+                context = null,
                 originalKey = delegateFunction.valueParameters.single().type
                     .substituteAndKeepQualifiers(moduleNode.descriptorTypeParametersMap)
                     .asKey(),
@@ -487,10 +508,13 @@ class AnnotatedClassBindingResolver(
 
             if (factoryKey != requestedKey) return emptyList()
 
+            val readerContext =
+                clazz.getReaderConstructor()?.valueParameters?.last()?.type?.classOrNull?.owner
+
             listOf(
                 AssistedProvisionBindingNode(
                     key = requestedKey,
-                    context = null,
+                    context = readerContext,
                     dependencies = dependencies,
                     targetScope = scope?.defaultType,
                     scoped = scope != null,
@@ -554,10 +578,13 @@ class AnnotatedClassBindingResolver(
                     )
                 }
 
+            val readerContext =
+                clazz.getReaderConstructor()?.valueParameters?.last()?.type?.classOrNull?.owner
+
             listOf(
                 ProvisionBindingNode(
                     key = requestedKey,
-                    context = null,
+                    context = readerContext,
                     dependencies = dependencies,
                     targetScope = scope?.defaultType,
                     scoped = scope != null,
