@@ -139,6 +139,7 @@ class ReaderTransformer(
     private val transformedClasses = mutableSetOf<IrClass>()
 
     private val globalNameProvider = NameProvider()
+    private val contextClassFunctionNameProvider = NameProvider()
 
     fun getContextForFunction(reader: IrFunction): IrClass =
         transformFunctionIfNeeded(reader).valueParameters.last().type.classOrNull!!.owner
@@ -269,8 +270,6 @@ class ReaderTransformer(
         ) {
             clazz.parent as IrFunction
         } else null
-
-        val contextClassFunctionNameProvider = NameProvider()
 
         val contextClass = buildClass {
             kind = ClassKind.INTERFACE
@@ -563,8 +562,6 @@ class ReaderTransformer(
         if (transformedFunction.valueParameters.any { it.name.asString() == "_context" }) {
             return transformedFunction
         }
-
-        val contextClassFunctionNameProvider = NameProvider()
 
         val parentFunction = if (transformedFunction.visibility == Visibilities.LOCAL &&
             transformedFunction.parent is IrFunction
