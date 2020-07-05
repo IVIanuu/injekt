@@ -27,14 +27,14 @@ object InjektTest : InjectionTest {
 
     override val name = "Injekt"
 
-    private var component: ApplicationComponent? = null
+    private var component: FibComponent? = null
 
     override fun setup() {
-        component = compositionFactoryOf<ApplicationComponent, () -> ApplicationComponent>()()
+        component = createFibComponent()
     }
 
     override fun inject() {
-        component!!.runReader { get<Fib8>() }
+        component!!.fib8
     }
 
     override fun shutdown() {

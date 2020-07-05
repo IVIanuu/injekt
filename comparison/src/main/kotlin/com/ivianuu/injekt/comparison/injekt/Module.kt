@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.comparison.injekt
 
 import com.ivianuu.injekt.ApplicationComponent
+import com.ivianuu.injekt.Factory
 import com.ivianuu.injekt.comparison.fibonacci.Fib1
 import com.ivianuu.injekt.comparison.fibonacci.Fib2
 import com.ivianuu.injekt.comparison.fibonacci.Fib3
@@ -30,15 +31,11 @@ import com.ivianuu.injekt.create
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.unscoped
 
-@CompositionFactory
-fun createApplicationComponent(): ApplicationComponent {
-    unscoped { Fib1() }
-    unscoped { Fib2() }
-    unscoped { Fib3(get(), get()) }
-    unscoped { Fib4(get(), get()) }
-    unscoped { Fib5(get(), get()) }
-    unscoped { Fib6(get(), get()) }
-    unscoped { Fib7(get(), get()) }
-    unscoped { Fib8(get(), get()) }
+interface FibComponent {
+    val fib8: Fib8
+}
+
+@Factory
+fun createFibComponent(): FibComponent {
     return create()
 }
