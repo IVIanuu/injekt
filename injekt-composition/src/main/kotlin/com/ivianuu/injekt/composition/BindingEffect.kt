@@ -19,4 +19,4 @@ package com.ivianuu.injekt.composition
 import kotlin.reflect.KClass
 
 @Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class BindingEffect(val installIn: KClass<*>)
+annotation class BindingEffect(val component: KClass<*>)

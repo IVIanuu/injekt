@@ -29,7 +29,7 @@ import com.ivianuu.injekt.unscoped
 import java.io.File
 
 @Module
-fun dataModule() {
+fun DataModule() {
     installIn<ApplicationComponent>()
     unscoped<@DatabaseFile File> { get<@ForApplication Context>().cacheDir }
 }

@@ -84,7 +84,7 @@ import com.ivianuu.injekt.get
 import com.ivianuu.injekt.unscoped
 
 @Module
-fun systemServiceModule() {
+fun SystemServiceModule() {
     installIn<ApplicationComponent>()
     systemService<AccessibilityManager>()
     systemService<AccountManager>()

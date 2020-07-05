@@ -19,4 +19,4 @@ package com.ivianuu.injekt.composition
 import kotlin.reflect.KClass
 
 @Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class BindingAdapter(val installIn: KClass<*>)
+annotation class BindingAdapter(val component: KClass<*>)

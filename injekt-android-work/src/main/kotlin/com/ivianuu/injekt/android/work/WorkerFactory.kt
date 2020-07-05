@@ -60,7 +60,7 @@ internal class InjektWorkerFactory(
 }
 
 @Module
-fun workerInjectionModule() {
+fun WorkerInjectionModule() {
     installIn<ApplicationComponent>()
     map<KClass<out ListenableWorker>, ListenableWorker>()
     alias<InjektWorkerFactory, WorkerFactory>()
