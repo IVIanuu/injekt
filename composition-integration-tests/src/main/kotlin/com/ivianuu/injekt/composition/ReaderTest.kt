@@ -546,6 +546,39 @@ class ReaderTest {
     }
 
     @Test
+    fun testReaderClassMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                @CompositionFactory 
+                fun factory(): TestCompositionComponent {
+                    unscoped { Foo() }
+                return create() 
+            }
+        
+            @Reader
+            class FooFactory {
+                fun getFoo() = get<Foo>()
+            } 
+            """
+            )
+        ),
+        listOf(
+            source(
+                """ 
+                fun invoke(): Foo { 
+                    initializeCompositions()
+                    val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+                    return component.runReader { FooFactory().getFoo() }
+                }
+            """, name = "File.kt"
+            )
+        )
+    ) {
+        assertTrue(it.last().invokeSingleFile() is Foo)
+    }
+
+    @Test
     fun testReaderClassWithAnnotatedConstructor() = codegen(
         """
         @CompositionFactory 
@@ -594,7 +627,7 @@ class ReaderTest {
     }
 
     @Test
-    fun testReaderSubClass() = codegen(
+    fun testReaderOpenSubclass() = codegen(
         """
         @CompositionFactory 
         fun factory(): TestCompositionComponent {
@@ -604,6 +637,33 @@ class ReaderTest {
         
         @Reader
         open class SuperClass {
+            fun getFoo() = get<Foo>()
+        }
+        
+        @Reader
+        class FooFactory : SuperClass()
+        
+        fun invoke(): Foo { 
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReader { FooFactory().getFoo() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testReaderAbstractSubclass() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            unscoped { Foo() }
+            return create() 
+        }
+        
+        @Reader
+        abstract class SuperClass {
             fun getFoo() = get<Foo>()
         }
         
