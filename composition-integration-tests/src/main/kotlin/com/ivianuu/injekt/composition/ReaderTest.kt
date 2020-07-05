@@ -29,93 +29,6 @@ import org.junit.Test
 class ReaderTest {
 
     @Test
-    fun testReaderInvocationInReaderAllowed() =
-        codegen(
-            """
-            @Reader fun a() {}
-            @Reader fun b() { a() }
-        """
-        ) {
-            assertOk()
-        }
-
-    @Test
-    fun testReaderInvocationInNonReaderNotAllowed() =
-        codegen(
-            """
-            @Reader fun a() {}
-            fun b() { a() }
-        """
-        ) {
-            assertCompileError()
-        }
-
-    @Test
-    fun testReaderInvocationInNonReaderLambdaIsNotAllowed() =
-        codegen(
-            """
-            val lambda: () -> Unit = {
-                func()
-            }
-            @Reader fun func() {}
-        """
-        ) {
-            assertCompileError()
-        }
-
-    @Test
-    fun testNestedReaderInvocationInReaderAllowed() =
-        codegen(
-            """
-            @Reader fun a() {}
-            fun b(block: () -> Unit) = block()
-            @Reader
-            fun c() {
-                b {
-                    a()
-                }
-            }
-        """
-        ) {
-            assertOk()
-        }
-
-    @Test
-    fun testReaderClassConstructionInReaderAllowed() =
-        codegen(
-            """
-            @Reader class ReaderClass
-            @Reader fun b() { ReaderClass() }
-        """
-        ) {
-            assertOk()
-        }
-
-    @Test
-    fun testReaderClassConstructionInReaderNotAllowed() =
-        codegen(
-            """
-            @Reader class ReaderClass
-            fun b() { ReaderClass() }
-        """
-        ) {
-            assertCompileError()
-        }
-
-    @Test
-    fun testOpenReaderFails() = codegen(
-        """
-        open class MyClass {
-            @Reader 
-            open fun func() {
-            }
-        }
-        """
-    ) {
-        assertCompileError("final")
-    }
-
-    @Test
     fun testSimpleReader() = codegen(
         """
         @CompositionFactory 
@@ -674,6 +587,33 @@ class ReaderTest {
             initializeCompositions()
             val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
             return component.runReader { get<FooFactory>().getFoo() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testReaderSubClass() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            unscoped { Foo() }
+            return create() 
+        }
+        
+        @Reader
+        open class SuperClass {
+            fun getFoo() = get<Foo>()
+        }
+        
+        @Reader
+        class FooFactory : SuperClass()
+        
+        fun invoke(): Foo { 
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReader { FooFactory().getFoo() }
         }
     """
     ) {

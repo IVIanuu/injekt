@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -44,7 +45,42 @@ class ReaderChecker(
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (descriptor !is FunctionDescriptor || !typeAnnotationChecker.hasTypeAnnotation(
+        when (descriptor) {
+            is ClassDescriptor -> checkClass(declaration, descriptor, context)
+            is FunctionDescriptor -> checkFunction(declaration, descriptor, context)
+        }
+    }
+
+    private fun checkClass(
+        declaration: KtDeclaration,
+        descriptor: ClassDescriptor,
+        context: DeclarationCheckerContext
+    ) {
+        if (!descriptor.hasAnnotation(InjektFqNames.Reader) &&
+            descriptor.constructors.none { it.hasAnnotation(InjektFqNames.Reader) }
+        ) return
+
+        if (descriptor.kind == ClassKind.INTERFACE) {
+            context.trace.report(
+                InjektErrors.READER_CLASS_CANNOT_BE_INTERFACE
+                    .on(declaration)
+            )
+        }
+
+        if (descriptor.kind == ClassKind.OBJECT) {
+            context.trace.report(
+                InjektErrors.READER_CLASS_CANNOT_BE_OBJECT
+                    .on(declaration)
+            )
+        }
+    }
+
+    private fun checkFunction(
+        declaration: KtDeclaration,
+        descriptor: FunctionDescriptor,
+        context: DeclarationCheckerContext
+    ) {
+        if (!typeAnnotationChecker.hasTypeAnnotation(
                 context.trace,
                 descriptor,
                 InjektFqNames.Reader

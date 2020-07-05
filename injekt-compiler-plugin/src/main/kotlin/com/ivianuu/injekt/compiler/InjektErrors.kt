@@ -272,6 +272,16 @@ interface InjektErrors {
             "Must be of type kotlin.collections.Set"
         )
 
+        @JvmField
+        val READER_CLASS_CANNOT_BE_INTERFACE = error(
+            "@Reader class cannot be an interface"
+        )
+
+        @JvmField
+        val READER_CLASS_CANNOT_BE_OBJECT = error(
+            "@Reader class cannot be an object"
+        )
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,
