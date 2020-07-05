@@ -128,7 +128,10 @@ class ReaderChecker(
             typeAnnotationChecker.hasTypeAnnotation(context.trace, it, InjektFqNames.Reader) ||
                     (it is ClassDescriptor && it.hasAnnotation(InjektFqNames.Reader)) ||
                     (it is ConstructorDescriptor &&
-                            it.constructedClass.hasAnnotation(InjektFqNames.Reader))
+                            it.constructedClass.hasAnnotation(InjektFqNames.Reader) ||
+                            (it is ClassDescriptor && it.constructors.any {
+                                it.hasAnnotation(InjektFqNames.Reader)
+                            }))
         }
 
         if (enclosingReaderContext == null) {

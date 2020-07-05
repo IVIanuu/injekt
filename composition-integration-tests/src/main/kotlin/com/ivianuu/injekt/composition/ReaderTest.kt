@@ -633,6 +633,29 @@ class ReaderTest {
     }
 
     @Test
+    fun testReaderClassWithAnnotatedConstructor() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            unscoped { Foo() }
+            return create() 
+        }
+        
+        class FooFactory @Reader constructor() {
+            fun getFoo() = get<Foo>()
+        }
+        
+        fun invoke(): Foo { 
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReader { FooFactory().getFoo() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
     fun testInjectReaderClass() = codegen(
         """
         @CompositionFactory 
