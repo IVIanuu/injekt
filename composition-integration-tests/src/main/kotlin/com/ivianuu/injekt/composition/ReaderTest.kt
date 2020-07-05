@@ -680,4 +680,17 @@ class ReaderTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
+    @Test
+    fun testReaderWithSameName() = codegen(
+        """
+        @Reader
+        fun func(foo: Foo) {
+        }
+        
+        @Reader
+        fun func(foo: Foo, bar: Bar) {
+        }
+    """
+    )
+
 }

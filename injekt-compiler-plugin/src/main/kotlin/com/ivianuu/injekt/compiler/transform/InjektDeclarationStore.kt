@@ -17,15 +17,17 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.transform.composition.CompositionMetadataTransformer
 import com.ivianuu.injekt.compiler.transform.composition.getCompositionMetadataName
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
-import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
+import com.ivianuu.injekt.compiler.transform.module.ModuleTransformer
 import com.ivianuu.injekt.compiler.transform.module.getModuleNameForFactoryFunction
 import com.ivianuu.injekt.compiler.transform.reader.ReaderTransformer
+import com.ivianuu.injekt.compiler.uniqueName
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -52,7 +54,7 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
     lateinit var compositionMetadataTransformer: CompositionMetadataTransformer
     lateinit var factoryTransformer: RootFactoryTransformer
     lateinit var factoryModuleTransformer: FactoryModuleTransformer
-    lateinit var moduleFunctionTransformer: ModuleFunctionTransformer
+    lateinit var moduleFunctionTransformer: ModuleTransformer
     lateinit var readerTransformer: ReaderTransformer
 
     fun getCompositionMetadata(function: IrFunction): IrClass? {
@@ -115,14 +117,21 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
         return if (!moduleClass.isExternalDeclaration()) {
             moduleFunctionTransformer.getModuleFunctionForClass(moduleClass)
         } else {
-            val moduleFunctionFqName =
+            val moduleName =
                 moduleClass.descriptor.annotations.findAnnotation(InjektFqNames.AstName)!!
                     .argumentValue("name")
                     .let { it as StringValue }
                     .value
-                    .let { FqName(it) }
+
+            val moduleFqName = moduleName
+                .removePrefix("f_")
+                .replaceAfterLast("_", "")
+                .let { FqName(it) }
+
             moduleFunctionTransformer.getTransformedModuleFunction(
-                pluginContext.referenceFunctions(moduleFunctionFqName).single().owner
+                pluginContext.referenceFunctions(moduleFqName)
+                    .single { it.owner.uniqueName() == moduleName }
+                    .owner
             )
         }
     }
@@ -147,7 +156,8 @@ class InjektDeclarationStore(private val pluginContext: IrPluginContext) {
                     it.annotations.findAnnotation(InjektFqNames.AstName)!!
                         .argumentValue("name")
                         .let { it as StringValue }
-                        .value == moduleFunction.descriptor.fqNameSafe.asString()
+                        .value
+                        .also { println("found value $it") } == moduleFunction.uniqueName()
                 }
                 .let { pluginContext.referenceClass(it.fqNameSafe)!!.owner }
         }

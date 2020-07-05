@@ -40,6 +40,7 @@ import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.typeWith
+import com.ivianuu.injekt.compiler.uniqueName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -105,7 +106,6 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
@@ -248,7 +248,7 @@ class ReaderTransformer(
                         it.annotations.findAnnotation(InjektFqNames.AstName)!!
                             .argumentValue("name")
                             .let { it as StringValue }
-                            .value == clazz.descriptor.fqNameSafe.asString()
+                            .value == clazz.uniqueName()
                     }
                     .let { pluginContext.referenceClass(it.fqNameSafe)!!.owner }
 
@@ -282,7 +282,7 @@ class ReaderTransformer(
                 irCall(symbols.astName.constructors.single()).apply {
                     putValueArgument(
                         0,
-                        irString(clazz.descriptor.fqNameSafe.asString())
+                        irString(clazz.uniqueName())
                     )
                 }
             }
@@ -511,7 +511,7 @@ class ReaderTransformer(
                         it.annotations.findAnnotation(InjektFqNames.AstName)!!
                             .argumentValue("name")
                             .let { it as StringValue }
-                            .value == function.descriptor.fqNameSafe.asString()
+                            .value == transformedFunction.uniqueName()
                     }
                     .let { pluginContext.referenceClass(it.fqNameSafe)!!.owner }
 
@@ -574,7 +574,7 @@ class ReaderTransformer(
                 irCall(symbols.astName.constructors.single()).apply {
                     putValueArgument(
                         0,
-                        irString(transformedFunction.descriptor.fqNameSafe.asString())
+                        irString(transformedFunction.uniqueName())
                     )
                 }
             }

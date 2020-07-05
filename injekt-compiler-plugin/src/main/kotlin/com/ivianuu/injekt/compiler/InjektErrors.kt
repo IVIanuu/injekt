@@ -103,11 +103,6 @@ interface InjektErrors {
         )
 
         @JvmField
-        val MULTIPLE_DECLARATIONS_WITH_SAME_NAME = error(
-            "Cannot have multiple functions with the same name"
-        )
-
-        @JvmField
         val IMPL_SUPER_TYPE_MUST_HAVE_EMPTY_CONSTRUCTOR = error(
             "Implementation super class must have an empty constructor"
         )

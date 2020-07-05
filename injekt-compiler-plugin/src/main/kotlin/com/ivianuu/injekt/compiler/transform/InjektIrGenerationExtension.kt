@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.compositionsEnabled
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.composition.BindingEffectTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionFactoryParentTransformer
 import com.ivianuu.injekt.compiler.transform.composition.CompositionMetadataTransformer
@@ -28,7 +27,7 @@ import com.ivianuu.injekt.compiler.transform.composition.CompositionComponentRea
 import com.ivianuu.injekt.compiler.transform.composition.ReadableCompositionClassTransformer
 import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
 import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
-import com.ivianuu.injekt.compiler.transform.module.ModuleFunctionTransformer
+import com.ivianuu.injekt.compiler.transform.module.ModuleTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -72,7 +71,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             .also { declarationStore.readerTransformer = it }
         readerFunctionTransformer.lower(moduleFragment)
 
-        val moduleFunctionTransformer = ModuleFunctionTransformer(pluginContext, declarationStore)
+        val moduleFunctionTransformer = ModuleTransformer(pluginContext, declarationStore)
             .also { declarationStore.moduleFunctionTransformer = it }
         val factoryModuleTransformer = FactoryModuleTransformer(
             pluginContext
@@ -121,7 +120,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         // patch metadata
         TmpMetadataPatcher(pluginContext).lower(moduleFragment)
 
-        println(moduleFragment.dumpSrc())
+        //println(moduleFragment.dumpSrc())
     }
 
 }

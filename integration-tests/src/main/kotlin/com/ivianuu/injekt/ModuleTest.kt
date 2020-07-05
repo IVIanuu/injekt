@@ -151,4 +151,16 @@ class ModuleTest {
         )
     )
 
+    @Test
+    fun testModuleWithSameName() = codegen(
+        """
+        @Module
+        fun module(foo: Foo) {
+        }
+        
+        @Module
+        fun module(foo: Foo, bar: Bar) {
+        }
+    """
+    )
 }

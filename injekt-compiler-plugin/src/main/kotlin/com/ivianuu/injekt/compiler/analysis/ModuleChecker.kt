@@ -52,22 +52,6 @@ class ModuleChecker : CallChecker, DeclarationChecker {
     ) {
         if (descriptor !is FunctionDescriptor || !descriptor.hasAnnotation(InjektFqNames.Module)) return
 
-        val parentMemberScope = (descriptor.containingDeclaration as? ClassDescriptor)
-            ?.unsubstitutedMemberScope
-            ?: (descriptor.containingDeclaration as? PackageFragmentDescriptor)
-                ?.getMemberScope()
-
-        if ((parentMemberScope?.getContributedDescriptors()
-                ?.filterIsInstance<FunctionDescriptor>()
-                ?.filter { it.name == descriptor.name }
-                ?.size ?: 0) > 1
-        ) {
-            context.trace.report(
-                InjektErrors.MULTIPLE_DECLARATIONS_WITH_SAME_NAME
-                    .on(declaration)
-            )
-        }
-
         if (descriptor.modality != Modality.FINAL) {
             context.trace.report(
                 InjektErrors.MUST_BE_FINAL

@@ -141,6 +141,7 @@ import org.jetbrains.kotlin.types.TypeProjectionImpl
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
+import kotlin.math.absoluteValue
 
 fun Annotated.hasAnnotation(fqName: FqName): Boolean {
     return annotations.hasAnnotation(fqName)
@@ -775,3 +776,11 @@ fun dexSafeName(name: Name): Name {
         Name.identifier(sanitized)
     } else name
 }
+
+fun IrClass.uniqueName(): String = "c_${descriptor.fqNameSafe}"
+
+fun IrFunction.uniqueName(): String = "f_${descriptor.fqNameSafe}_${
+valueParameters.map { it.type }.map {
+    it.classifierOrFail.descriptor.fqNameSafe
+}.hashCode().absoluteValue
+}"

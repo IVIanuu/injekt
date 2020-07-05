@@ -31,6 +31,7 @@ import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.transform.AbstractFunctionTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
+import com.ivianuu.injekt.compiler.uniqueName
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -70,7 +71,7 @@ import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ModuleFunctionTransformer(
+class ModuleTransformer(
     pluginContext: IrPluginContext,
     private val declarationStore: InjektDeclarationStore
 ) : AbstractFunctionTransformer(pluginContext) {
@@ -126,7 +127,7 @@ class ModuleFunctionTransformer(
                 irCall(symbols.astName.constructors.single()).apply {
                     putValueArgument(
                         0,
-                        irString(transformedFunction.descriptor.fqNameSafe.asString())
+                        irString(transformedFunction.uniqueName())
                     )
                 }
             }
