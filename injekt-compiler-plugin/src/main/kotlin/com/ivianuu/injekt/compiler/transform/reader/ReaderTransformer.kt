@@ -464,28 +464,24 @@ class ReaderTransformer(
                 return transformedFunction
             }
 
-            try {
-                val contextClass =
-                    moduleFragment.descriptor.getPackage(function.getPackageFragment()!!.fqName)
-                        .memberScope
-                        .getContributedDescriptors()
-                        .filterIsInstance<ClassDescriptor>()
-                        .filter { it.hasAnnotation(InjektFqNames.AstName) }
-                        .single {
-                            it.annotations.findAnnotation(InjektFqNames.AstName)!!
-                                .argumentValue("name")
-                                .let { it as StringValue }
-                                .value == function.descriptor.fqNameSafe.asString()
-                        }
-                        .let { pluginContext.referenceClass(it.fqNameSafe)!!.owner }
+            val contextClass =
+                moduleFragment.descriptor.getPackage(function.getPackageFragment()!!.fqName)
+                    .memberScope
+                    .getContributedDescriptors()
+                    .filterIsInstance<ClassDescriptor>()
+                    .filter { it.hasAnnotation(InjektFqNames.AstName) }
+                    .single {
+                        it.annotations.findAnnotation(InjektFqNames.AstName)!!
+                            .argumentValue("name")
+                            .let { it as StringValue }
+                            .value == function.descriptor.fqNameSafe.asString()
+                    }
+                    .let { pluginContext.referenceClass(it.fqNameSafe)!!.owner }
 
-                transformedFunction.addValueParameter(
-                    "_context",
-                    contextClass.typeWith(transformedFunction.typeParameters.map { it.defaultType })
-                )
-            } catch (e: Exception) {
-                error("Couldn't find context fo r ${transformedFunction.dump()}")
-            }
+            transformedFunction.addValueParameter(
+                "_context",
+                contextClass.typeWith(transformedFunction.typeParameters.map { it.defaultType })
+            )
 
             return transformedFunction
         }
