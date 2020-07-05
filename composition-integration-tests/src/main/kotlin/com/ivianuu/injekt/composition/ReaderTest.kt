@@ -338,69 +338,6 @@ class ReaderTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
-    // todo @Test
-    fun testAbstractReaderFunction() = codegen(
-        """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
-        
-        interface Super {
-            @Reader
-            fun func(): Foo
-        }
-        
-        class Impl : Super {
-            @Reader
-            override fun func(): Foo {
-                return get()
-            }
-        }
-
-        fun invoke(): Foo { 
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            return component.runReader { Impl().func() }
-        }
-    """
-    ) {
-        assertTrue(invokeSingleFile() is Foo)
-    }
-
-    // todo @Test
-    fun testOpenReaderFunction() = codegen(
-        """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
-        
-        open class Super {
-            @Reader
-            open fun func(): Foo = get()
-        }
-        
-        class Impl : Super() {
-            @Reader
-            override fun func(): Foo {
-                super.func()
-                return get()
-            }
-        }
-
-        fun invoke(): Foo { 
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
-            return component.runReader { Impl().func() }
-        }
-    """
-    ) {
-        assertTrue(invokeSingleFile() is Foo)
-    }
-
     @Test
     fun multiCompileReader() = multiCodegen(
         listOf(
@@ -669,6 +606,33 @@ class ReaderTest {
         
         @Reader
         class FooFactory : SuperClass()
+        
+        fun invoke(): Foo { 
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReader { FooFactory().getFoo() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testGenericSuperClass() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            unscoped { Foo() }
+            return create() 
+        }
+        
+        @Reader
+        open class SuperClass<T>(val value: T) {
+            fun getFoo() = get<Foo>()
+        }
+        
+        @Reader
+        class FooFactory : SuperClass<String>("hello")
         
         fun invoke(): Foo { 
             initializeCompositions()

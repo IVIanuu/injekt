@@ -814,7 +814,7 @@ class ReaderTransformer(
 
                 val contextArgument =
                     DeclarationIrBuilder(pluginContext, transformedCall.symbol).run {
-                        if (transformedCallee.typeParameters.isNotEmpty() && !transformedCall.isReaderLambdaInvoke()) {
+                        if (!transformedCall.isReaderLambdaInvoke() && transformedCall.typeArgumentsCount != 0) {
                             val calleeContext = getContextForFunction(transformedCallee)
 
                             irBlock(origin = IrStatementOrigin.OBJECT_LITERAL) {
@@ -1000,11 +1000,7 @@ class ReaderTransformer(
                     transformedCallee.valueParameters.size,
                     expression.origin
                 ).apply {
-                    try {
-                        copyTypeAndValueArgumentsFrom(expression)
-                    } catch (e: Throwable) {
-                        error("Couldn't transform ${expression.dumpSrc()} to ${transformedCallee.render()}")
-                    }
+                    copyTypeAndValueArgumentsFrom(expression)
                 }
             }
             is IrDelegatingConstructorCall -> {
@@ -1013,14 +1009,10 @@ class ReaderTransformer(
                     expression.endOffset,
                     expression.type,
                     transformedCallee.symbol as IrConstructorSymbol,
-                    transformedCallee.typeParameters.size,
+                    expression.typeArgumentsCount,
                     transformedCallee.valueParameters.size
                 ).apply {
-                    try {
-                        copyTypeAndValueArgumentsFrom(expression)
-                    } catch (e: Throwable) {
-                        error("Couldn't transform ${expression.dumpSrc()} to ${transformedCallee.render()}")
-                    }
+                    copyTypeAndValueArgumentsFrom(expression)
                 }
             }
             else -> {
@@ -1033,11 +1025,7 @@ class ReaderTransformer(
                     expression.origin,
                     expression.superQualifierSymbol
                 ).apply {
-                    try {
-                        copyTypeAndValueArgumentsFrom(expression)
-                    } catch (e: Throwable) {
-                        error("Couldn't transform ${expression.dumpSrc()} to ${transformedCallee.render()}")
-                    }
+                    copyTypeAndValueArgumentsFrom(expression)
                 }
             }
         }
