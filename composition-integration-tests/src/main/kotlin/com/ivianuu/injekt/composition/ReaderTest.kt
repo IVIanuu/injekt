@@ -741,4 +741,57 @@ class ReaderTest {
     """
     )
 
+    @Test
+    fun testGenericReader() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            unscoped { Foo() }
+            return create() 
+        }
+        
+        @Reader
+        fun <T> provide() = get<T>()
+        
+        fun invoke(): Foo { 
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReader { provide() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testGenericReaderMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                @CompositionFactory 
+                fun factory(): TestCompositionComponent {
+                    unscoped { Foo() }
+                    return create() 
+                }
+
+                @Reader 
+                fun <T> provide() = get<T>()
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                fun invoke(): Foo { 
+                    initializeCompositions()
+                    val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+                    return component.runReader { provide() }
+                }
+            """, name = "File.kt"
+            )
+        )
+    ) {
+        assertTrue(it.last().invokeSingleFile() is Foo)
+    }
+
 }

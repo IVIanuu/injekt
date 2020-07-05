@@ -478,8 +478,6 @@ class AnnotatedClassBindingResolver(
                 )
             } ?: emptyList()
 
-            println("constructor parameters $constructorParameters")
-
             val typeParametersMap = clazz
                 .typeParameters
                 .map { it.symbol }

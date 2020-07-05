@@ -634,6 +634,7 @@ class ReaderTransformer(
                 name = contextClassFunctionNameProvider.getProvideFunctionNameForGetCall(
                     transformedFunction,
                     getCall.type
+                        .remapTypeParameters(function, transformedFunction)
                         .remapTypeParameters(transformedFunction, contextClass)
                         .let {
                             if (parentFunction != null) {
@@ -642,6 +643,7 @@ class ReaderTransformer(
                         }
                 )
                 returnType = getCall.type
+                    .remapTypeParameters(function, transformedFunction)
                     .remapTypeParameters(transformedFunction, contextClass)
                     .let {
                         if (parentFunction != null) {
@@ -677,6 +679,7 @@ class ReaderTransformer(
                                 .map { it.symbol }
                                 .zip(typeArguments).toMap()
                             )
+                            .remapTypeParameters(function, transformedFunction)
                             .remapTypeParameters(transformedFunction, contextClass)
                             .let {
                                 if (parentFunction != null) {
@@ -869,12 +872,12 @@ class ReaderTransformer(
                                             addFunction {
                                                 name = declaration.name
                                                 returnType = declaration.returnType
-                                                    .substituteAndKeepQualifiers(
-                                                        superClass.typeParameters.map { it.symbol }
-                                                            .associateWith {
-                                                                typeArguments[it.owner.index]
-                                                            }
-                                                    )
+                                                /*.substituteAndKeepQualifiers(
+                                                    superClass.typeParameters.map { it.symbol }
+                                                        .associateWith {
+                                                            typeArguments[it.owner.index]
+                                                        }
+                                                )*/
                                                 visibility = declaration.visibility
                                             }.apply {
                                                 dispatchReceiverParameter =
