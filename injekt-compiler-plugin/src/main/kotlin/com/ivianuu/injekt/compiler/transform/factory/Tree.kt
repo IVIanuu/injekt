@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrErrorType
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.typeOrNull
@@ -206,7 +207,7 @@ class FactoryImplementationBindingNode(
     false,
     null,
     factoryNode.factory,
-    factoryNode.key.type.getClass()!!.fqNameForIrSerialization
+    factoryNode.key.type.classOrNull!!.owner!!.fqNameForIrSerialization
 )
 
 class MapBindingNode(

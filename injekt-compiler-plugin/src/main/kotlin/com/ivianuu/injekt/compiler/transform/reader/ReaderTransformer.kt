@@ -911,7 +911,7 @@ class ReaderTransformer(
 
                                     superTypes.forEach { superType ->
                                         implementFunctions(
-                                            superType.getClass()!!,
+                                            superType.classOrNull!!.owner,
                                             superType.typeArguments.map { it.typeOrFail })
                                     }
                                 }

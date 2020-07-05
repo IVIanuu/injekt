@@ -321,7 +321,7 @@ class FactoryImpl(
         }
 
         val superType = clazz.superTypes.single()
-        val superTypeClass = superType.getClass()!!
+        val superTypeClass = superType.classOrNull!!.owner
         superTypeClass.collectDependencyRequests(superType.typeArguments.map { it.typeOrFail })
     }
 

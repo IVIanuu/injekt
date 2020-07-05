@@ -357,7 +357,7 @@ fun IrType.withNoArgAnnotations(pluginContext: IrPluginContext, qualifiers: List
 fun IrType.getQualifiers(): List<IrConstructorCall> {
     return annotations
         .filter {
-            it.type.getClass()!!
+            it.type.classOrNull!!
                 .descriptor
                 .annotations
                 .hasAnnotation(InjektFqNames.Qualifier)
@@ -497,7 +497,8 @@ fun <T> T.getClassFromSingleValueAnnotationOrNull(
         ?.getValueArgument(0)
         ?.let { it as IrClassReferenceImpl }
         ?.classType
-        ?.getClass()
+        ?.classOrNull
+        ?.owner
         ?: descriptor.annotations.findAnnotation(fqName)
             ?.allValueArguments
             ?.values

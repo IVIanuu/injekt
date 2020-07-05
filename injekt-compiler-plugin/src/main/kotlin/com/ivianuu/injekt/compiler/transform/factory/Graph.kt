@@ -207,7 +207,7 @@ class Graph(
                     DependencyBindingResolver(
                         moduleNode = moduleNode,
                         dependencyNode = DependencyNode(
-                            dependency = function.returnType.getClass()!!,
+                            dependency = function.returnType.classOrNull!!.owner,
                             key = dependencyType.asKey(),
                             accessor = {
                                 irCall(moduleNode.module.findPropertyGetter(dependencyName)).apply {

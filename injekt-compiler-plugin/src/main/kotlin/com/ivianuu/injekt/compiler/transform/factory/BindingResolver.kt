@@ -317,7 +317,7 @@ class ModuleBindingResolver(
 
             readerContext.superTypes.forEach { superType ->
                 collectDependencies(
-                    superType.getClass()!!,
+                    superType.classOrNull!!.owner,
                     superType.typeArguments.map { it.typeOrFail },
                     moduleNode.typeParametersMap
                 )
@@ -452,7 +452,8 @@ class AnnotatedClassBindingResolver(
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): List<BindingNode> {
         return if (requestedKey.type.isAssistedProvider()) {
-            val clazz = requestedKey.type.typeArguments.last().typeOrNull?.getClass()
+            val clazz = requestedKey.type.typeArguments.last().typeOrNull?.classOrNull
+                ?.owner
                 ?.let { factory.declarationStore.readerTransformer.getTransformedClass(it) }
                 ?: return emptyList()
 
