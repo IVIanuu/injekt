@@ -329,7 +329,6 @@ class ReaderTransformer(
             genericContext: IrClass,
             typeArguments: List<IrType>
         ) {
-            println("${clazz.render()} add functions from generic context ${genericContext.dumpSrc()}")
             contextClass.superTypes += genericContext.superTypes
             genericContext.functions
                 .filterNot { it.isFakeOverride }
@@ -546,9 +545,9 @@ class ReaderTransformer(
         val getCalls = mutableListOf<IrCall>()
         val readerCalls = mutableListOf<IrFunctionAccessExpression>()
 
-        transformedFunction.transform(object : IrElementTransformerVoid() {
+        transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
 
-            private val functionStack = mutableListOf<IrFunction>()
+            private val functionStack = mutableListOf<IrFunction>(transformedFunction)
 
             override fun visitFunction(declaration: IrFunction): IrStatement {
                 val isReader = declaration.isReader(pluginContext.bindingContext)
@@ -575,7 +574,7 @@ class ReaderTransformer(
                 }
                 return result
             }
-        }, null)
+        })
 
         val providerFunctionByGetCall = getCalls.associateWith { getCall ->
             contextClass.addFunction {
@@ -609,7 +608,6 @@ class ReaderTransformer(
             genericContext: IrClass,
             typeArguments: List<IrType>
         ) {
-            println("${transformedFunction.render()} add functions from generic context ${genericContext.dumpSrc()}")
             contextClass.superTypes += genericContext.superTypes
             genericContext.functions
                 .filterNot { it.isFakeOverride }
@@ -711,8 +709,14 @@ class ReaderTransformer(
     ) where T : IrDeclaration, T : IrDeclarationParent {
         owner.rewriteTransformedFunctionRefs()
 
-        owner.transform(object : IrElementTransformerVoidWithContext() {
+        owner.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             private val functionStack = mutableListOf<IrFunction>()
+
+            init {
+                if (owner is IrFunction) {
+                    functionStack += owner
+                }
+            }
 
             override fun visitFunctionNew(declaration: IrFunction): IrStatement {
                 val isReader = declaration.isReader(pluginContext.bindingContext)
@@ -874,7 +878,7 @@ class ReaderTransformer(
                     putValueArgument(valueArgumentsCount - 1, contextArgument)
                 }
             }
-        }, null)
+        })
     }
 
     private fun NameProvider.getContextClassName(declaration: IrDeclarationWithName): Name {
