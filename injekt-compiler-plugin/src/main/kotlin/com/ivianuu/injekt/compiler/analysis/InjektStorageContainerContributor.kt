@@ -32,6 +32,7 @@ class InjektStorageContainerContributor(
     ) {
         container.useInstance(AnnotatedBindingChecker())
         container.useInstance(BindingEffectChecker())
+        container.useInstance(CompositionComponentChecker())
         container.useInstance(DslCallChecker())
         container.useInstance(FactoryChecker())
         container.useInstance(MapChecker())

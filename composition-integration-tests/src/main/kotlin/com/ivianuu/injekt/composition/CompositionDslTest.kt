@@ -139,4 +139,14 @@ class CompositionDslTest {
             assertCompileError("@CompositionComponent")
         }
 
+    @Test
+    fun testCompositionComponentWithTypeParameters() = codegen(
+        """
+        @CompositionComponent
+        interface MyCompositionComponent<T>
+    """
+    ) {
+        assertCompileError("type parameter")
+    }
+
 }

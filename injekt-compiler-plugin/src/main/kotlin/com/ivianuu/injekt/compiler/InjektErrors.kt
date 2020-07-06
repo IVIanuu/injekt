@@ -64,12 +64,17 @@ interface InjektErrors {
 
         @JvmField
         val FACTORY_WITH_TYPE_PARAMETERS = error(
-            "Cannot contain type parameters"
+            "@Factory, @ChildFactory or @CompositionFactory Cannot contain type parameters"
         )
 
         @JvmField
         val NOT_A_COMPOSITION_COMPONENT = error(
             "Type must be annotated with @CompositionComponent"
+        )
+
+        @JvmField
+        val COMPOSITION_COMPONENT_WITH_TYPE_PARAMETERS = error(
+            "@CompositionComponent cannot have type parameters"
         )
 
         @JvmField
