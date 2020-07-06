@@ -88,7 +88,7 @@ class ReaderTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
-    // todo @Test
+    @Test
     fun testSimpleReaderLambdaProperty() = codegen(
         """
         @CompositionFactory 
@@ -97,7 +97,6 @@ class ReaderTest {
             return create() 
         }
         
-        @Reader
         val foo: @Reader () -> Foo = { get() }
 
         fun invoke(): Foo {
