@@ -86,6 +86,7 @@ import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -233,13 +234,16 @@ class InjektDeclarationIrBuilder(
             visibility = Visibilities.LOCAL
             isSuspend = type.isSuspendFunction()
         }.apply {
+            parent = builder.scope.getLocalDeclarationParent()
             type.typeArguments.dropLast(1).forEachIndexed { index, typeArgument ->
                 addValueParameter(
                     "p$index",
                     typeArgument.typeOrNull!!
                 )
             }
-            parent = builder.scope.getLocalDeclarationParent()
+            annotations += type.annotations.map {
+                it.deepCopyWithSymbols()
+            }
             this.body =
                 DeclarationIrBuilder(pluginContext, symbol).irBlockBody { body(this, this@apply) }
         }

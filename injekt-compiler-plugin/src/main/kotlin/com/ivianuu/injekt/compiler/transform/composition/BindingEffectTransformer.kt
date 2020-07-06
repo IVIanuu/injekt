@@ -44,19 +44,16 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irReturn
-import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.types.defaultType
+import org.jetbrains.kotlin.ir.types.isUnit
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.companionObject
-import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
@@ -251,16 +248,20 @@ class BindingEffectTransformer(
                                     .take(parametersSize)
                                     .map { it.type } + function.returnType
                             )
-                            .withAnnotations(
-                                listOf(
-                                    irCall(symbols.astName.constructors.single()).apply {
-                                        putValueArgument(
-                                            0,
-                                            irString(function.uniqueName())
+                            .let {
+                                if (function.hasAnnotation(FqName("androidx.compose.Composable"))) {
+                                    it.withAnnotations(
+                                        listOf(
+                                            irCall(
+                                                pluginContext.referenceConstructors(FqName("androidx.compose.Composable"))
+                                                    .single()
+                                            )
                                         )
-                                    }
-                                )
-                            )
+                                    )
+                                } else {
+                                    it
+                                }
+                            }
 
                     +irCall(
                         pluginContext.referenceFunctions(
@@ -293,7 +294,7 @@ class BindingEffectTransformer(
                                         pluginContext,
                                         factoryLambda.symbol
                                     ).irLambda(functionType) { lambda ->
-                                        +irReturn(
+                                        if (function.returnType.isUnit()) {
                                             IrCallImpl(
                                                 startOffset + 3,
                                                 startOffset + 4,
@@ -304,7 +305,20 @@ class BindingEffectTransformer(
                                                     putValueArgument(index, irGet(param))
                                                 }
                                             }
-                                        )
+                                        } else {
+                                            +irReturn(
+                                                IrCallImpl(
+                                                    startOffset + 3,
+                                                    startOffset + 4,
+                                                    function.returnType,
+                                                    function.symbol
+                                                ).apply {
+                                                    lambda.valueParameters.forEachIndexed { index, param ->
+                                                        putValueArgument(index, irGet(param))
+                                                    }
+                                                }
+                                            )
+                                        }
                                     }
                                 }
                         )

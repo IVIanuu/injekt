@@ -32,7 +32,6 @@ import com.ivianuu.injekt.compiler.transform.AbstractFunctionTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationStore
 import com.ivianuu.injekt.compiler.uniqueName
-import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
@@ -246,7 +245,6 @@ class ModuleTransformer(
                                             irGet(moduleClass.thisReceiver!!),
                                             path.property.field,
                                             declaration.initializer!!
-                                                .deepCopyWithVariables()
                                         )
                                     }
                             }
