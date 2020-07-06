@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.makeKotlinType
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.ir.IrElement
@@ -313,24 +312,22 @@ class ReaderTypeRemapper(
         if (!type.isFunction() && !type.isSuspendFunction()) return underlyingRemapType(type)
         if (!type.hasAnnotation(InjektFqNames.Reader)) return underlyingRemapType(type)
         val oldIrArguments = type.arguments
-        val extraArgs = listOf(
-            makeTypeProjection(
-                context.irBuiltIns.anyType,
-                Variance.INVARIANT
-            )
+        val extraArg = makeTypeProjection(
+            context.irBuiltIns.anyType,
+            Variance.INVARIANT
         )
         val newIrArguments =
             oldIrArguments.subList(0, oldIrArguments.size - 1) +
-                    extraArgs +
+                    extraArg +
                     oldIrArguments.last()
 
         val classifier = symbolRemapper.getReferencedClassifier(
             if (type.isSuspendFunction()) {
                 context
-                    .tmpSuspendFunction(oldIrArguments.size - 1 + extraArgs.size)
+                    .tmpSuspendFunction(oldIrArguments.size)
             } else {
                 context
-                    .tmpFunction(oldIrArguments.size - 1 + extraArgs.size)
+                    .tmpFunction(oldIrArguments.size - 1)
             }
         )
         val newArguments = newIrArguments.map { remapTypeArgument(it) }
