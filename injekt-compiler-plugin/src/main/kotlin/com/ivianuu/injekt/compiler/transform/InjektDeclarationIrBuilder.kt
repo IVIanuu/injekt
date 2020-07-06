@@ -226,8 +226,6 @@ class InjektDeclarationIrBuilder(
     ): IrExpression {
         val returnType = type.typeArguments.last().typeOrNull!!
 
-        println("type ${type.render()}")
-
         val lambda = buildFun {
             origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
             name = Name.special("<anonymous>")

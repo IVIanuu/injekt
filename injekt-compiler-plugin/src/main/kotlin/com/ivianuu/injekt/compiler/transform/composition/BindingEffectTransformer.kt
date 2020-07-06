@@ -138,8 +138,6 @@ class BindingEffectTransformer(
                     effect.endOffset
                 )
 
-                //println(effectModule.dump())
-
                 function.file.addChild(effectModule)
             }
         }
