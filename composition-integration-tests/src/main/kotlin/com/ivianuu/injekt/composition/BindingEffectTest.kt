@@ -536,6 +536,56 @@ class BindingEffectTest {
     }
 
     @Test
+    fun testFunctionBindingEffectMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                @CompositionFactory 
+                fun factory(): TestCompositionComponent {
+                    return create() 
+                }
+        
+                typealias FooFactory = () -> Foo
+        
+                @BindingEffect(TestCompositionComponent::class)
+                annotation class BindFooFactory {
+                    companion object {
+                        @Module
+                        operator fun <T : FooFactory> invoke() {
+                            alias<T, FooFactory>()
+                        }
+                    }
+                }
+            """
+            ),
+        ),
+        listOf(
+            source(
+                """
+                @BindFooFactory
+                @Reader
+                fun fooFactory(): Foo {
+                    return Foo()
+                }
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                fun invoke(): Foo { 
+                    initializeCompositions()
+                    val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+                    return component.runReader { get<FooFactory>()() }
+                }
+            """, name = "File.kt"
+            )
+        )
+    ) {
+        assertTrue(it.last().invokeSingleFile() is Foo)
+    }
+
+    @Test
     fun testSuspendFunctionBindingEffect() = codegen(
         """
         @CompositionFactory 
