@@ -327,7 +327,7 @@ class ReaderTypeRemapper(
                     .tmpSuspendFunction(oldIrArguments.size)
             } else {
                 context
-                    .tmpFunction(oldIrArguments.size - 1)
+                    .tmpFunction(oldIrArguments.size)
             }
         )
         val newArguments = newIrArguments.map { remapTypeArgument(it) }
