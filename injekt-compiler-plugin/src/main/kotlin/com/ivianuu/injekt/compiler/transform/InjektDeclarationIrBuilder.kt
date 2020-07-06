@@ -61,6 +61,7 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrConst
@@ -72,6 +73,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrGetEnumValueImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
@@ -248,23 +250,13 @@ class InjektDeclarationIrBuilder(
                 DeclarationIrBuilder(pluginContext, symbol).irBlockBody { body(this, this@apply) }
         }
 
-        return builder.irBlock(
+        return IrFunctionExpressionImpl(
             startOffset = startOffset,
             endOffset = endOffset,
-            origin = IrStatementOrigin.LAMBDA,
-            resultType = type
-        ) {
-            +lambda
-            +IrFunctionReferenceImpl(
-                startOffset = startOffset,
-                endOffset = endOffset,
-                type = type,
-                symbol = lambda.symbol,
-                typeArgumentsCount = lambda.typeParameters.size,
-                reflectionTarget = null,
-                origin = IrStatementOrigin.LAMBDA
-            )
-        }
+            type = type,
+            function = lambda,
+            origin = IrStatementOrigin.LAMBDA
+        )
     }
 
     data class FactoryParameter(
@@ -430,23 +422,15 @@ class InjektDeclarationIrBuilder(
             parent = builder.scope.getLocalDeclarationParent()
             this.body =
                 DeclarationIrBuilder(pluginContext, symbol).irBlockBody { body(this, this@apply) }
-        }.let { readerTransformer.getTransformedFunction(it) }
+        }.let { readerTransformer.getTransformedFunction(it) } as IrSimpleFunction
 
-        return builder.irBlock(
-            origin = IrStatementOrigin.LAMBDA,
-            resultType = lambda.getFunctionType(pluginContext)
-        ) {
-            +lambda
-            +IrFunctionReferenceImpl(
-                startOffset = startOffset,
-                endOffset = endOffset,
-                type = lambda.getFunctionType(pluginContext),
-                symbol = lambda.symbol,
-                typeArgumentsCount = lambda.typeParameters.size,
-                reflectionTarget = null,
-                origin = IrStatementOrigin.LAMBDA
-            )
-        }
+        return IrFunctionExpressionImpl(
+            startOffset = startOffset,
+            endOffset = endOffset,
+            type = lambda.getFunctionType(pluginContext),
+            function = lambda,
+            origin = IrStatementOrigin.LAMBDA
+        )
     }
 
     fun jvmNameAnnotation(name: String): IrConstructorCall {

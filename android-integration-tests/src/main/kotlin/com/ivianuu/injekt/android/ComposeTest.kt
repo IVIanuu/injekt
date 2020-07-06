@@ -66,6 +66,47 @@ class ComposeTest {
     )
 
     @Test
+    fun testComposableBindingEffectMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                @CompositionComponent 
+                interface TestCompositionComponent
+        
+                @Target(AnnotationTarget.TYPE)
+                @Qualifier
+                annotation class AppUi
+
+                @BindingEffect(TestCompositionComponent::class)
+                annotation class BindAppUi {
+                    companion object {
+                        @Module
+                        operator fun <T : @androidx.compose.Composable () -> Unit> invoke() {
+                            alias<T, @AppUi @androidx.compose.Composable () -> Unit>()
+                        }
+                    }
+                }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                @BindAppUi
+                @Reader
+                @androidx.compose.Composable
+                fun SampleUi() {
+                    androidx.compose.remember {  }
+                }
+                """
+            )
+        ),
+        config = {
+            compilerPlugins = listOf(InjektComponentRegistrar(), ComposeComponentRegistrar())
+        }
+    )
+
+    @Test
     fun testComposableReaderLambda() = codegen(
         """
         @CompositionComponent 
