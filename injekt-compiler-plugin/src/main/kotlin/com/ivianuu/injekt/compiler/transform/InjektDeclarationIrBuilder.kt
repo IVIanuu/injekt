@@ -89,7 +89,9 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.referenceClassifier
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
@@ -224,11 +226,14 @@ class InjektDeclarationIrBuilder(
     ): IrExpression {
         val returnType = type.typeArguments.last().typeOrNull!!
 
+        println("type ${type.render()}")
+
         val lambda = buildFun {
             origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
             name = Name.special("<anonymous>")
             this.returnType = returnType
             visibility = Visibilities.LOCAL
+            isSuspend = type.isSuspendFunction()
         }.apply {
             type.typeArguments.dropLast(1).forEachIndexed { index, typeArgument ->
                 addValueParameter(

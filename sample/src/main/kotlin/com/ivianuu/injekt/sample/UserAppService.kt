@@ -16,5 +16,10 @@
 
 package com.ivianuu.injekt.sample
 
+import com.ivianuu.injekt.Reader
+
 @BindAppService
-class UserAppService : AppService
+@Reader
+suspend fun runUserAppService() {
+    println("run")
+}

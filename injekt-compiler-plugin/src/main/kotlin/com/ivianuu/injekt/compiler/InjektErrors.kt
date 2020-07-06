@@ -203,8 +203,18 @@ interface InjektErrors {
         )
 
         @JvmField
+        val BINDING_ADAPTER_WITH_FUNCTION = error(
+            "@BindingAdapter cannot be used with functions"
+        )
+
+        @JvmField
         val BINDING_EFFECT_WITHOUT_UNSCOPED_OR_SCOPED = error(
             "@BindingEffect must be combined with @Unscoped, @Scope or @BindingAdapter annotations"
+        )
+
+        @JvmField
+        val BINDING_EFFECT_WITH_TYPE_PARAMETERS = error(
+            "@BindingEffect and @BindingAdapter annotated declaration cannot have type parameters"
         )
 
         @JvmField

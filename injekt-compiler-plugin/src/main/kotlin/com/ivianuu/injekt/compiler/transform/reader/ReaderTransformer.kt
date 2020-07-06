@@ -27,7 +27,6 @@ import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.getReaderConstructor
-import com.ivianuu.injekt.compiler.getSuspendFunctionType
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.remapTypeParameters
@@ -136,6 +135,7 @@ class ReaderTransformer(
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
+    private val remappedTransformedFunctions = mutableMapOf<IrFunction, IrFunction>()
     private val transformedClasses = mutableSetOf<IrClass>()
 
     private val globalNameProvider = NameProvider()
@@ -183,6 +183,12 @@ class ReaderTransformer(
             )
         }
         declaration.patchDeclarationParents()
+
+        transformedFunctions.forEach { (original, transformed) ->
+            val remapped = symbolRemapper.getReferencedFunction(transformed.symbol).owner
+            remappedTransformedFunctions[original] = remapped
+            remappedTransformedFunctions[transformed] = remapped
+        }
 
         return declaration
     }
@@ -523,6 +529,8 @@ class ReaderTransformer(
 
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
+        remappedTransformedFunctions[function]?.let { return it }
+        if (function in remappedTransformedFunctions.values) return function
 
         if (!function.isReader(pluginContext.bindingContext)) return function
 
@@ -966,8 +974,7 @@ class ReaderTransformer(
         return IrFunctionExpressionImpl(
             expression.startOffset,
             expression.endOffset,
-            if (transformedCallee.isSuspend) transformedCallee.getSuspendFunctionType(pluginContext)
-            else transformedCallee.getFunctionType(pluginContext),
+            transformedCallee.getFunctionType(pluginContext),
             transformedCallee as IrSimpleFunction,
             expression.origin
         )
@@ -980,8 +987,7 @@ class ReaderTransformer(
         return IrFunctionReferenceImpl(
             expression.startOffset,
             expression.endOffset,
-            if (transformedCallee.isSuspend) transformedCallee.getSuspendFunctionType(pluginContext)
-            else transformedCallee.getFunctionType(pluginContext),
+            transformedCallee.getFunctionType(pluginContext),
             transformedCallee.symbol,
             expression.typeArgumentsCount,
             null,

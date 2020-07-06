@@ -21,21 +21,24 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.composition.BindingAdapter
+import com.ivianuu.injekt.composition.BindingEffect
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.map
 import com.ivianuu.injekt.scoped
+import com.ivianuu.injekt.set
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import kotlin.reflect.KClass
 
-interface AppService
+typealias AppService = suspend () -> Unit
 
-@BindingAdapter(ApplicationComponent::class)
+@BindingEffect(ApplicationComponent::class)
 annotation class BindAppService {
     companion object {
         @Module
         inline operator fun <reified T : AppService> invoke() {
-            scoped<T>()
-            map<KClass<out AppService>, AppService> {
-                put<T>(T::class)
+            set<AppService> {
+                add<T>()
             }
         }
     }
@@ -44,8 +47,7 @@ annotation class BindAppService {
 @Reader
 fun startAppServices() {
     println("app service init")
-    get<Map<KClass<out AppService>, @Provider () -> AppService>>().forEach { (key, service) ->
-        println("init $key")
-        service()
+    get<Set<AppService>>().forEach { service ->
+        GlobalScope.launch { service() }
     }
 }

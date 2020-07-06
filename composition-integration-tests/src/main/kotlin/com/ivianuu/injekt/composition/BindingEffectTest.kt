@@ -16,12 +16,15 @@
 
 package com.ivianuu.injekt.composition
 
+import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.assertCompileError
 import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
+import junit.framework.Assert
+import junit.framework.Assert.assertTrue
 import org.junit.Test
 
 class BindingEffectTest {
@@ -281,7 +284,7 @@ class BindingEffectTest {
     """
     )
 
-    // todo @Test
+    @Test
     fun testBindingAdapterWithoutCompanion() = codegen(
         """
         @BindingAdapter(TestComponent::class)
@@ -291,7 +294,7 @@ class BindingEffectTest {
         assertCompileError("companion")
     }
 
-    // todo @Test
+    @Test
     fun testBindingAdapterWithoutModule() = codegen(
         """
         @BindingAdapter(TestComponent::class)
@@ -355,6 +358,27 @@ class BindingEffectTest {
     }
 
     @Test
+    fun testBindingAdapterWithFunction() = codegen(
+        """
+        @BindingAdapter(TestComponent::class)
+        annotation class MyBindingAdapter {
+            companion object {
+                @BindingAdapterFunction(MyBindingAdapter::class)
+                @Module
+                fun <T> bind() {
+                }
+            }
+        }
+        
+        @MyBindingAdapter
+        fun myFun() {
+        }
+    """
+    ) {
+        assertCompileError("function")
+    }
+
+    @Test
     fun testBindingEffectWithUnscoped() = codegen(
         """
         @BindingEffect(TestCompositionComponent::class)
@@ -413,15 +437,16 @@ class BindingEffectTest {
         assertOk()
     }
 
-    // todo @Test
+    @Test
     fun testBindingEffectNotInBounds() = codegen(
         """
         @BindingAdapter(TestCompositionComponent::class)
-        annotation class MyBindingAdapter
-        
-        @BindingAdapterFunction(MyBindingAdapter::class)
-        @Module 
-        fun <T : UpperBound> bind() {
+        annotation class MyBindingAdapter {
+            companion object { 
+                @Module 
+                fun <T : UpperBound> bind() {
+                }
+            }
         }
         
         interface UpperBound
@@ -431,6 +456,119 @@ class BindingEffectTest {
     """
     ) {
         assertCompileError("bound")
+    }
+
+    @Test
+    fun testFunctionBindingEffectNotInBounds() = codegen(
+        """
+        @BindingAdapter(TestCompositionComponent::class)
+        annotation class MyBindingAdapter {
+            companion object {
+                @BindingAdapterFunction(MyBindingAdapter::class)
+                @Module 
+                fun <T : () -> Unit> bind() {
+                }
+            }
+        }
+
+        @MyBindingAdapter
+        fun myFun(p0: String) {
+        }
+    """
+    ) {
+        assertCompileError("bound")
+    }
+
+
+    @Test
+    fun testBindingEffectWithTypeParameters() = codegen(
+        """
+        @BindingAdapter(TestCompositionComponent::class)
+        annotation class MyBindingAdapter {
+            companion object { 
+                @Module 
+                fun <T> bind() {
+                }
+            }
+        }
+
+        @MyBindingAdapter
+        class MyClass<T>
+    """
+    ) {
+        assertCompileError("type parameter")
+    }
+
+    @Test
+    fun testFunctionBindingEffect() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            return create() 
+        }
+        
+        typealias FooFactory = () -> Foo
+        
+        @BindingEffect(TestCompositionComponent::class)
+        annotation class BindFooFactory {
+            companion object {
+                @Module
+                operator fun <T : FooFactory> invoke() {
+                    alias<T, FooFactory>()
+                }
+            }
+        }
+        
+        @BindFooFactory
+        @Reader
+        fun fooFactory(): Foo {
+            return Foo()
+        }
+        
+        fun invoke(): Foo { 
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReader { get<FooFactory>()() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testSuspendFunctionBindingEffect() = codegen(
+        """
+        @CompositionFactory 
+        fun factory(): TestCompositionComponent {
+            return create() 
+        }
+        
+        typealias FooFactory = suspend () -> Foo
+        
+        @BindingEffect(TestCompositionComponent::class)
+        annotation class BindFooFactory {
+            companion object {
+                @Module
+                operator fun <T : FooFactory> invoke() {
+                    alias<T, FooFactory>()
+                }
+            }
+        }
+        
+        @BindFooFactory
+        @Reader
+        suspend fun fooFactory(): Foo {
+            return Foo()
+        }
+        
+        fun invoke(): Foo { 
+            initializeCompositions()
+            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            return component.runReader { runBlocking { get<FooFactory>()() } }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
     }
 
 }

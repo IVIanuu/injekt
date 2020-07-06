@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.addToFileOrAbove
 import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.getFunctionType
-import com.ivianuu.injekt.compiler.getSuspendFunctionType
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.allParameters
@@ -102,8 +101,7 @@ abstract class AbstractFunctionTransformer(
         return IrFunctionExpressionImpl(
             expression.startOffset,
             expression.endOffset,
-            if (transformedCallee.isSuspend) transformedCallee.getSuspendFunctionType(pluginContext)
-            else transformedCallee.getFunctionType(pluginContext),
+            transformedCallee.getFunctionType(pluginContext),
             transformedCallee as IrSimpleFunction,
             expression.origin
         )
@@ -116,8 +114,7 @@ abstract class AbstractFunctionTransformer(
         return IrFunctionReferenceImpl(
             expression.startOffset,
             expression.endOffset,
-            if (transformedCallee.isSuspend) transformedCallee.getSuspendFunctionType(pluginContext)
-            else transformedCallee.getFunctionType(pluginContext),
+            transformedCallee.getFunctionType(pluginContext),
             transformedCallee.symbol,
             expression.typeArgumentsCount,
             null,

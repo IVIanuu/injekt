@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.internal
 
+import com.ivianuu.injekt.Qualifier
 import kotlin.reflect.KClass
 
 object InjektAst {
@@ -46,6 +47,7 @@ object InjektAst {
 
     annotation class Module
 
+    @Qualifier
     annotation class Name(val name: String)
 
     annotation class Parents(val values: Array<KClass<*>>)

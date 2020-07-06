@@ -132,13 +132,17 @@ import org.jetbrains.kotlin.resolve.constants.LongValue
 import org.jetbrains.kotlin.resolve.constants.NullValue
 import org.jetbrains.kotlin.resolve.constants.ShortValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
+import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DescriptorWithContainerSource
+import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjectionImpl
 import org.jetbrains.kotlin.types.replace
+import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 import kotlin.math.absoluteValue
@@ -645,13 +649,16 @@ fun IrDeclaration.isExternalDeclaration() = origin ==
         origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
 
 fun IrFunction.getFunctionType(pluginContext: IrPluginContext): IrType {
-    return pluginContext.tmpFunction(valueParameters.size)
+    return (if (isSuspend) pluginContext.tmpSuspendFunction(valueParameters.size)
+    else pluginContext.tmpFunction(valueParameters.size))
         .typeWith(valueParameters.map { it.type } + returnType)
 }
 
-fun IrFunction.getSuspendFunctionType(pluginContext: IrPluginContext): IrType {
-    return pluginContext.tmpSuspendFunction(valueParameters.size)
-        .typeWith(valueParameters.map { it.type } + returnType)
+fun FunctionDescriptor.getFunctionType(): KotlinType {
+    return (if (isSuspend) builtIns.getSuspendFunction(valueParameters.size)
+    else builtIns.getFunction(valueParameters.size))
+        .defaultType
+        .replace(newArguments = valueParameters.map { it.type.asTypeProjection() } + returnType!!.asTypeProjection())
 }
 
 fun IrPluginContext.tmpFunction(n: Int): IrClassSymbol =

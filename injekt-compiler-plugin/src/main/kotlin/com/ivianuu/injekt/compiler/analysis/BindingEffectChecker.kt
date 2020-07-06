@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -38,148 +39,187 @@ class BindingEffectChecker : DeclarationChecker {
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (descriptor !is ClassDescriptor) return
+        if (descriptor is ClassDescriptor) checkBindingEffect(descriptor, declaration, context)
+        if (descriptor is ClassDescriptor || descriptor is FunctionDescriptor)
+            checkBindingEffectUsage(descriptor, declaration, context)
+    }
 
-        if (descriptor.hasAnnotation(InjektFqNames.BindingAdapter) ||
+    private fun checkBindingEffect(
+        descriptor: ClassDescriptor,
+        declaration: KtDeclaration,
+        context: DeclarationCheckerContext
+    ) {
+        if (!descriptor.hasAnnotation(InjektFqNames.BindingAdapter) &&
+            !descriptor.hasAnnotation(InjektFqNames.BindingEffect)
+        ) return
+
+        if (descriptor.hasAnnotation(InjektFqNames.BindingAdapter) &&
             descriptor.hasAnnotation(InjektFqNames.BindingEffect)
         ) {
-            if (descriptor.hasAnnotation(InjektFqNames.BindingAdapter) &&
-                descriptor.hasAnnotation(InjektFqNames.BindingEffect)
-            ) {
-                context.trace.report(
-                    InjektErrors.EITHER_BINDING_ADAPTER_OR_BINDING_EFFECT
-                        .on(declaration)
-                )
-            }
-
-            val companion = descriptor.companionObjectDescriptor
-            if (companion == null) {
-                context.trace.report(
-                    InjektErrors.BINDING_ADAPTER_WITHOUT_COMPANION
-                        .on(declaration)
-                )
-                return
-            }
-
-            val moduleFunction = companion.unsubstitutedMemberScope
-                .getContributedDescriptors()
-                .filterIsInstance<FunctionDescriptor>()
-                .singleOrNull { it.hasAnnotation(InjektFqNames.Module) }
-
-            if (moduleFunction == null) {
-                context.trace.report(
-                    InjektErrors.BINDING_EFFECT_COMPANION_WITHOUT_MODULE
-                        .on(declaration)
-                )
-                return
-            }
-
-            if (moduleFunction.typeParameters.size != 1) {
-                context.trace.report(
-                    InjektErrors.BINDING_EFFECT_MODULE_NEEDS_1_TYPE_PARAMETER
-                        .on(declaration)
-                )
-                return
-            }
-
-            if (moduleFunction.valueParameters.isNotEmpty()) {
-                context.trace.report(
-                    InjektErrors.BINDING_EFFECT_MODULE_CANNOT_HAVE_VALUE_PARAMETERS
-                        .on(declaration)
-                )
-                return
-            }
-
-            val installInComponent = (descriptor.annotations
-                .findAnnotation(InjektFqNames.BindingAdapter)
-                ?: descriptor.annotations.findAnnotation(InjektFqNames.BindingEffect)!!)
-                .allValueArguments
-                .values
-                .single()
-                .let { it as KClassValue }
-                .getArgumentType(descriptor.module)
-                .constructor.declarationDescriptor
-
-            if (installInComponent?.annotations
-                    ?.hasAnnotation(InjektFqNames.CompositionComponent) != true
-            ) {
-                context.trace.report(
-                    InjektErrors.NOT_A_COMPOSITION_COMPONENT
-                        .on(declaration)
-                )
-            }
+            context.trace.report(
+                InjektErrors.EITHER_BINDING_ADAPTER_OR_BINDING_EFFECT
+                    .on(declaration)
+            )
         }
 
-        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingAdapter, descriptor.module) ||
-            descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingEffect, descriptor.module)
+        val companion = descriptor.companionObjectDescriptor
+        if (companion == null) {
+            context.trace.report(
+                InjektErrors.BINDING_ADAPTER_WITHOUT_COMPANION
+                    .on(declaration)
+            )
+            return
+        }
+
+        val moduleFunction = companion.unsubstitutedMemberScope
+            .getContributedDescriptors()
+            .filterIsInstance<FunctionDescriptor>()
+            .singleOrNull { it.hasAnnotation(InjektFqNames.Module) }
+
+        if (moduleFunction == null) {
+            context.trace.report(
+                InjektErrors.BINDING_EFFECT_COMPANION_WITHOUT_MODULE
+                    .on(declaration)
+            )
+            return
+        }
+
+        if (moduleFunction.typeParameters.size != 1) {
+            context.trace.report(
+                InjektErrors.BINDING_EFFECT_MODULE_NEEDS_1_TYPE_PARAMETER
+                    .on(declaration)
+            )
+            return
+        }
+
+        if (moduleFunction.valueParameters.isNotEmpty()) {
+            context.trace.report(
+                InjektErrors.BINDING_EFFECT_MODULE_CANNOT_HAVE_VALUE_PARAMETERS
+                    .on(declaration)
+            )
+            return
+        }
+
+        val installInComponent = (descriptor.annotations
+            .findAnnotation(InjektFqNames.BindingAdapter)
+            ?: descriptor.annotations.findAnnotation(InjektFqNames.BindingEffect)!!)
+            .allValueArguments
+            .values
+            .single()
+            .let { it as KClassValue }
+            .getArgumentType(descriptor.module)
+            .constructor.declarationDescriptor
+
+        if (installInComponent?.annotations
+                ?.hasAnnotation(InjektFqNames.CompositionComponent) != true
         ) {
-            if (descriptor.getAnnotatedAnnotations(
-                    InjektFqNames.BindingAdapter,
-                    descriptor.module
-                ).size > 1
-            ) {
-                context.trace.report(InjektErrors.MULTIPLE_BINDING_ADAPTER.on(declaration))
-            }
-            if (descriptor.hasAnnotatedAnnotations(
-                    InjektFqNames.BindingAdapter,
-                    descriptor.module
-                ) &&
-                (descriptor.hasAnnotation(InjektFqNames.Unscoped) ||
-                        descriptor.hasAnnotation(InjektFqNames.Scoped))
-            ) {
-                context.trace.report(
-                    InjektErrors.BINDING_ADAPTER_WITH_UNSCOPED_OR_SCOPED
-                        .on(declaration)
-                )
-            }
+            context.trace.report(
+                InjektErrors.NOT_A_COMPOSITION_COMPONENT
+                    .on(declaration)
+            )
+        }
+    }
 
-            if (descriptor.hasAnnotatedAnnotations(
-                    InjektFqNames.BindingEffect,
-                    descriptor.module
-                ) &&
-                !descriptor.hasAnnotatedAnnotations(
-                    InjektFqNames.BindingAdapter,
-                    descriptor.module
-                ) &&
-                !descriptor.hasAnnotation(InjektFqNames.Unscoped) &&
-                !descriptor.hasAnnotation(InjektFqNames.Scoped)
-            ) {
-                context.trace.report(
-                    InjektErrors.BINDING_EFFECT_WITHOUT_UNSCOPED_OR_SCOPED
-                        .on(declaration)
-                )
-            }
+    private fun checkBindingEffectUsage(
+        descriptor: DeclarationDescriptor,
+        declaration: KtDeclaration,
+        context: DeclarationCheckerContext
+    ) {
+        if (!descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingAdapter, descriptor.module) &&
+            !descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingEffect, descriptor.module)
+        ) return
 
-            val effectAnnotations = listOfNotNull(
-                descriptor.getAnnotatedAnnotations(InjektFqNames.BindingAdapter, descriptor.module)
-                    .singleOrNull()
-            ) + descriptor.getAnnotatedAnnotations(InjektFqNames.BindingEffect, descriptor.module)
+        if (descriptor.getAnnotatedAnnotations(
+                InjektFqNames.BindingAdapter,
+                descriptor.module
+            ).size > 1
+        ) {
+            context.trace.report(InjektErrors.MULTIPLE_BINDING_ADAPTER.on(declaration))
+        }
 
-            val upperBounds = effectAnnotations
-                .mapNotNull {
-                    it.type
-                        .constructor
-                        .declarationDescriptor
-                        .let { it as ClassDescriptor }
-                        .companionObjectDescriptor
+        if (descriptor.hasAnnotatedAnnotations(
+                InjektFqNames.BindingAdapter,
+                descriptor.module
+            ) &&
+            (descriptor.hasAnnotation(InjektFqNames.Unscoped) ||
+                    descriptor.hasAnnotation(InjektFqNames.Scoped))
+        ) {
+            context.trace.report(
+                InjektErrors.BINDING_ADAPTER_WITH_UNSCOPED_OR_SCOPED
+                    .on(declaration)
+            )
+        }
+
+        if (descriptor is ClassDescriptor &&
+            descriptor.hasAnnotatedAnnotations(
+                InjektFqNames.BindingEffect,
+                descriptor.module
+            ) &&
+            !descriptor.hasAnnotatedAnnotations(
+                InjektFqNames.BindingAdapter,
+                descriptor.module
+            ) &&
+            !descriptor.hasAnnotation(InjektFqNames.Unscoped) &&
+            !descriptor.hasAnnotation(InjektFqNames.Scoped)
+        ) {
+            context.trace.report(
+                InjektErrors.BINDING_EFFECT_WITHOUT_UNSCOPED_OR_SCOPED
+                    .on(declaration)
+            )
+        }
+
+        if ((descriptor is ClassDescriptor && descriptor.declaredTypeParameters.isNotEmpty()) ||
+            (descriptor is FunctionDescriptor && descriptor.typeParameters.isNotEmpty())
+        ) {
+            context.trace.report(
+                InjektErrors.BINDING_EFFECT_WITH_TYPE_PARAMETERS
+                    .on(declaration)
+            )
+        }
+
+        if (descriptor is FunctionDescriptor &&
+            descriptor.hasAnnotatedAnnotations(InjektFqNames.BindingAdapter, descriptor.module)
+        ) {
+            context.trace.report(
+                InjektErrors.BINDING_ADAPTER_WITH_FUNCTION
+                    .on(declaration)
+            )
+        }
+
+        val effectAnnotations = listOfNotNull(
+            descriptor.getAnnotatedAnnotations(InjektFqNames.BindingAdapter, descriptor.module)
+                .singleOrNull()
+        ) + descriptor.getAnnotatedAnnotations(InjektFqNames.BindingEffect, descriptor.module)
+
+        val upperBounds = effectAnnotations
+            .mapNotNull {
+                it.type
+                    .constructor
+                    .declarationDescriptor
+                    .let { it as ClassDescriptor }
+                    .companionObjectDescriptor
                     ?.unsubstitutedMemberScope
                     ?.getContributedDescriptors()
                     ?.filterIsInstance<FunctionDescriptor>()
-                        ?.singleOrNull { it.hasAnnotation(InjektFqNames.Module) }
+                    ?.singleOrNull { it.hasAnnotation(InjektFqNames.Module) }
                     ?.typeParameters
                     ?.singleOrNull()
                     ?.upperBounds
                     ?.singleOrNull()
-                }
+            }
 
+        val declarationType = when (descriptor) {
+            is ClassDescriptor -> descriptor.defaultType
+            is FunctionDescriptor -> descriptor.getFunctionType()
+            else -> error("Unexpected descriptor $descriptor")
+        }
 
-            upperBounds.forEach { upperBound ->
-                if (!descriptor.defaultType.isSubtypeOf(upperBound)) {
-                    context.trace.report(
-                        InjektErrors.NOT_IN_BINDING_EFFECT_BOUNDS
-                            .on(declaration)
-                    )
-                }
+        upperBounds.forEach { upperBound ->
+            if (!declarationType.isSubtypeOf(upperBound)) {
+                context.trace.report(
+                    InjektErrors.NOT_IN_BINDING_EFFECT_BOUNDS
+                        .on(declaration)
+                )
             }
         }
     }

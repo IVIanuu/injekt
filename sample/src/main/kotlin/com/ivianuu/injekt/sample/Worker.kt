@@ -29,8 +29,8 @@ import com.ivianuu.injekt.get
 
 @BindWorker
 class TestWorker(
-    @Assisted context: Context,
-    @Assisted workerParams: WorkerParameters,
+    context: @Assisted Context,
+    workerParams: @Assisted WorkerParameters,
     repo: Repo
 ) : Worker(context, workerParams) {
     init {
