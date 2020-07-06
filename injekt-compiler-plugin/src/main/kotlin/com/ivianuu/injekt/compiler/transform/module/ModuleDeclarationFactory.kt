@@ -270,20 +270,6 @@ class ModuleDeclarationFactory(
         val path: Path
         if (singleArgument != null) {
             initializer = singleArgument
-
-            /*// todo fix this hack
-            if (singleArgument is IrFunctionExpression) {
-                val context = singleArgument.type.getFunctionParameterTypes().last()
-                    .classOrNull!!
-                context
-                    .functions
-                    .map { it.owner }
-                    .forEach { function ->
-                        function.returnType = function.returnType
-                            .remapTypeParametersByName(moduleFunction, moduleClass)
-                    }
-            }*/
-
             path = PropertyPath(
                 InjektDeclarationIrBuilder(pluginContext, moduleClass.symbol)
                     .fieldBackedProperty(
