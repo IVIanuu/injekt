@@ -27,18 +27,6 @@ inline fun <R> runReader(
     block: @Reader () -> R
 ): R = injektIntrinsic()
 
-@Reader
-inline fun <R> withInstances(
-    vararg instances: Any?,
-    block: @Reader () -> R
-): R = injektIntrinsic()
-
-@Reader
-inline fun <R> withProviders(
-    vararg instances: () -> Any?,
-    block: @Reader () -> R
-): R = injektIntrinsic()
-
 annotation class Given
 
 fun <T> given(): T = injektIntrinsic()

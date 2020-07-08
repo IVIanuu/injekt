@@ -23,6 +23,10 @@ import com.ivianuu.injekt.sample.Repo
 
 private val _applicationStorage: ApplicationStorage = Storage()
 
+@Given
+@Reader
+fun provideApplicationStorage(): ApplicationStorage = _applicationStorage
+
 @DistinctType
 typealias ApplicationStorage = Storage
 
@@ -47,41 +51,8 @@ interface ApplicationStorageContext {
     val applicationStorage: ApplicationStorage
 }
 
-interface StorageContext {
-    val storage: Storage
-}
-
 interface ApplicationContext {
     val application: Application
-}
-
-@Reader
-fun <R> Application.withApplicationContext(
-    block: @Reader () -> R
-): R {
-    return withInstances(
-        this,
-        _applicationStorage,
-        _applicationStorage as Storage,
-        block = block
-    )
-}
-
-fun <R> Application.withApplicationContext(
-    block: @Reader (Any) -> R,
-    context: withApplicationContextContext<R>
-): R {
-    return block(
-        object : withApplicationContextContext<R> by context, ApplicationContext,
-            ApplicationStorageContext, StorageContext {
-            override val application: Application
-                get() = this@withApplicationContext
-            override val applicationStorage: ApplicationStorage
-                get() = _applicationStorage
-            override val storage: Storage
-                get() = _applicationStorage
-        }
-    )
 }
 
 interface withApplicationContextContext<R>
@@ -91,22 +62,15 @@ class MyApp : Application() {
     override fun onCreate() {
         super.onCreate()
         runReader {
-            withApplicationContext {
-                val repo: Repo = given()
-                repo.refresh()
-            }
+            val repo: Repo = given()
+            repo.refresh()
         }
         runReader {
-            withApplicationContext({ context ->
-                context as MyApp_onCreate_1Context
-                val repo: Repo = context.repo
-                repo.refresh()
-            }, object : MyApp_onCreate_1Context, withApplicationContextContext<Unit> {
-                override val repo: Repo
-                    get() = provideRepo()
+            val repo: Repo = provideRepo(object : provideRepoContext {
                 override val applicationStorage: ApplicationStorage
-                    get() = TODO("Not yet implemented")
+                    get() = provideApplicationStorage()
             })
+            repo.refresh()
         }
     }
 

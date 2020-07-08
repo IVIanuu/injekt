@@ -24,6 +24,3 @@ class Storage {
     inline fun <T> scope(key: Any = sourceLocation(), init: () -> T): T =
         instances.getOrPut(key, init) as T
 }
-
-fun <T> scope(key: Any = sourceLocation(), init: () -> T): T =
-    given<Storage>().scope(key, init)
