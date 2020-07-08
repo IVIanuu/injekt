@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.ComponentFactories
 import com.ivianuu.injekt.internal.injektIntrinsic
 import kotlin.reflect.KClass
 
@@ -27,19 +28,4 @@ annotation class Component(val parent: KClass<*> = Nothing::class) {
 
 fun buildComponents(): Unit = injektIntrinsic()
 
-object ComponentFactories {
-
-    private val factories = mutableMapOf<KClass<*>, Any>()
-
-    fun register(component: KClass<*>, factory: Any) {
-        factories[component] = factory
-    }
-
-    fun <T> get(component: KClass<*>): T {
-        return factories[component] as? T
-            ?: error("Couldn't get factory for component ${component.java.name}")
-    }
-}
-
 inline fun <reified T> componentFactory(): T = ComponentFactories.get(T::class)
-

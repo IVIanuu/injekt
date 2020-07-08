@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.internal.TypeAnnotation
 import com.ivianuu.injekt.internal.injektIntrinsic
 
 @Target(
@@ -27,7 +26,6 @@ import com.ivianuu.injekt.internal.injektIntrinsic
     AnnotationTarget.CLASS,
     AnnotationTarget.CONSTRUCTOR
 )
-@TypeAnnotation
 annotation class Reader
 
 @Reader

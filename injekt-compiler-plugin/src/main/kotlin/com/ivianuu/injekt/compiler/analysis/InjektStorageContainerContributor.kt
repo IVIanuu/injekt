@@ -23,7 +23,7 @@ import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.platform.TargetPlatform
 
 class InjektStorageContainerContributor(
-    private val typeAnnotationChecker: TypeAnnotationChecker
+    private val readerChecker: ReaderChecker
 ) : StorageComponentContainerContributor {
     override fun registerModuleComponents(
         container: StorageComponentContainer,
@@ -32,7 +32,6 @@ class InjektStorageContainerContributor(
     ) {
         container.useInstance(ProvideChecker())
         container.useInstance(ComponentChecker())
-        container.useInstance(ReaderChecker(typeAnnotationChecker))
-        container.useInstance(typeAnnotationChecker)
+        container.useInstance(readerChecker)
     }
 }

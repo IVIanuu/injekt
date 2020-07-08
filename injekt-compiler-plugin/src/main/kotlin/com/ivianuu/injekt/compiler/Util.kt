@@ -88,7 +88,6 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -97,7 +96,6 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
-import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 import kotlin.math.absoluteValue
 
 fun Annotated.hasAnnotation(fqName: FqName): Boolean {
@@ -334,17 +332,6 @@ fun IrPluginContext.tmpFunction(n: Int): IrClassSymbol =
 
 fun IrPluginContext.tmpSuspendFunction(n: Int): IrClassSymbol =
     referenceClass(builtIns.getSuspendFunction(n).fqNameSafe)!!
-
-inline fun <K, V> BindingTrace.getOrPut(
-    slice: WritableSlice<K, V>,
-    key: K,
-    defaultValue: () -> V
-): V {
-    get(slice, key)?.let { return it }
-    val value = defaultValue()
-    record(slice, key, value)
-    return value
-}
 
 fun getJoinedName(
     packageFqName: FqName,

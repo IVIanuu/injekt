@@ -18,9 +18,7 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.getOrPut
-import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
@@ -29,7 +27,6 @@ import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptorExtension
 import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
@@ -41,7 +38,7 @@ import org.jetbrains.kotlin.types.typeUtil.replaceAnnotations
 @OptIn(org.jetbrains.kotlin.extensions.internal.InternalNonStableExtensionPoints::class)
 @Suppress("INVISIBLE_REFERENCE", "EXPERIMENTAL_IS_NOT_ENABLED")
 class InjektTypeAnnotationResolutionInterceptorExtension(
-    private val typeAnnotationChecker: TypeAnnotationChecker
+    private val readerChecker: ReaderChecker
 ) : TypeResolutionInterceptorExtension {
 
     override fun interceptFunctionLiteralDescriptor(
@@ -51,20 +48,9 @@ class InjektTypeAnnotationResolutionInterceptorExtension(
     ): AnonymousFunctionDescriptor {
         if (context.expectedType !== TypeUtils.NO_EXPECTED_TYPE &&
             context.expectedType !== TypeUtils.UNIT_EXPECTED_TYPE &&
-            context.expectedType.hasAnnotatedAnnotations(
-                InjektFqNames.TypeAnnotation,
-                descriptor.module
-            )
+            context.expectedType.hasAnnotation(InjektFqNames.Reader)
         ) {
-            context.trace.getOrPut(
-                InjektWritableSlices.TYPE_ANNOTATIONS,
-                descriptor
-            ) { mutableSetOf() } +=
-                context.expectedType.getAnnotatedAnnotations(
-                    InjektFqNames.TypeAnnotation,
-                    descriptor.module
-                )
-                    .mapNotNull { it.fqName }
+            context.trace.record(InjektWritableSlices.IS_READER, descriptor, true)
         }
         return descriptor
     }
@@ -77,33 +63,23 @@ class InjektTypeAnnotationResolutionInterceptorExtension(
         if (resultType === TypeUtils.NO_EXPECTED_TYPE) return resultType
         if (element !is KtLambdaExpression) return resultType
         val module = context.scope.ownerDescriptor.module
-        val typeAnnotations = typeAnnotationChecker.getTypeAnnotations(
-            context.trace,
-            element,
-            module,
-            resultType
-        )
-        return if (typeAnnotations.isNotEmpty()) {
-            resultType.withTypeAnnotations(typeAnnotations, module)
-        } else resultType
+        val isReader = readerChecker.isReader(context.trace, element, resultType)
+        return if (isReader) resultType.withReaderAnnotation(module) else resultType
     }
 
-
-    private fun KotlinType.withTypeAnnotations(
-        typeAnnotations: Set<FqName>,
+    private fun KotlinType.withReaderAnnotation(
         module: ModuleDescriptor
     ): KotlinType {
-        val additionalAnnotations = typeAnnotations
-            .filter { it !in annotations.map { it.fqName!! } }
-            .map {
-                AnnotationDescriptorImpl(
+        return replaceAnnotations(
+            Annotations.create(
+                annotations + AnnotationDescriptorImpl(
                     module.findClassAcrossModuleDependencies(
-                        ClassId.topLevel(it)
+                        ClassId.topLevel(InjektFqNames.Reader)
                     )!!.defaultType,
                     emptyMap(),
                     SourceElement.NO_SOURCE
                 )
-            }
-        return replaceAnnotations(Annotations.create(annotations + additionalAnnotations))
+            )
+        )
     }
 }

@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform.component
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
+import com.ivianuu.injekt.compiler.typeWith
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -26,9 +27,10 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.properties
+import org.jetbrains.kotlin.name.FqName
 
 class ComponentExpressions(
     private val graph: Graph,
@@ -44,6 +46,8 @@ class ComponentExpressions(
 
     fun getBindingExpression(request: BindingRequest): ComponentExpression {
         val binding = graph.getBinding(request)
+
+        lazy { }
 
         if (binding.owner != component) {
             return parent?.getBindingExpression(request)!!
@@ -103,14 +107,14 @@ class ComponentExpressions(
 
         if (!binding.scoped) return instanceExpression
 
-        val providerExpression = members.cachedValue(
-            pluginContext.tmpFunction(0).typeWith(binding.key.type).asKey()
+        val lazy = pluginContext.referenceFunctions(FqName("kotlin.lazy"))
+            .single { it.owner.valueParameters.size == 1 }
+            .owner
+
+        val lazyExpression = members.cachedValue(
+            lazy.returnType.typeWith(binding.key.type).asKey()
         ) { c ->
-            irCall(
-                symbols.doubleCheck
-                    .constructors
-                    .single()
-            ).apply {
+            irCall(lazy).apply {
                 putValueArgument(
                     0,
                     InjektDeclarationIrBuilder(pluginContext, symbol)
@@ -126,11 +130,14 @@ class ComponentExpressions(
 
         return bindingExpression@{ c ->
             irCall(
-                pluginContext.tmpFunction(0)
-                    .functions
-                    .single { it.owner.name.asString() == "invoke" }
+                lazy.returnType
+                    .classOrNull!!
+                    .owner
+                    .properties
+                    .single { it.name.asString() == "value" }
+                    .getter!!
             ).apply {
-                dispatchReceiver = providerExpression(c)
+                dispatchReceiver = lazyExpression(c)
             }
         }
     }

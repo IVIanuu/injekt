@@ -20,22 +20,21 @@ import org.jetbrains.kotlin.name.FqName
 
 object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
-    val InternalPackage = InjektPackage.child("internal")
-    val InfoPackage = InternalPackage.child("info")
-
     val Component = InjektPackage.child("Component")
     val ComponentFactory = Component.child("Factory")
-    val ComponentFactories = InjektPackage.child("ComponentFactories")
-    val ContextMarker = InternalPackage.child("ContextMarker")
     val DistinctType = InjektPackage.child("DistinctType")
-    val DoubleCheck = InternalPackage.child("DoubleCheck")
-    val EntryPoint = InternalPackage.child("EntryPoint")
-    val InjektInfo = InternalPackage.child("InjektInfo")
     val MapEntries = InjektPackage.child("MapEntries")
-    val Name = InternalPackage.child("Name")
     val Reader = InjektPackage.child("Reader")
     val Scoped = InjektPackage.child("Scoped")
     val SetElements = InjektPackage.child("SetElements")
     val Unscoped = InjektPackage.child("Unscoped")
-    val TypeAnnotation = InternalPackage.child("TypeAnnotation")
+
+    val InternalPackage = InjektPackage.child("internal")
+    val ComponentFactories = InternalPackage.child("ComponentFactories")
+    val ContextMarker = InternalPackage.child("ContextMarker")
+    val EntryPoint = InternalPackage.child("EntryPoint")
+    val InjektInfo = InternalPackage.child("InjektInfo")
+    val Name = InternalPackage.child("Name")
+
+    val InfoPackage = InternalPackage.child("info")
 }

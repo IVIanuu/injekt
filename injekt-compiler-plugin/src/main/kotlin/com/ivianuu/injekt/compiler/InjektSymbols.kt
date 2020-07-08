@@ -24,26 +24,27 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
         get() = pluginContext.referenceClass(InjektFqNames.Component)!!
     val componentFactory: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.ComponentFactory)!!
-    val componentFactories: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.ComponentFactories)!!
-    val contextMarker: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.ContextMarker)!!
     val distinctType: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.DistinctType)!!
-    val doubleCheck: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.DoubleCheck)!!
-    val entryPoint: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.EntryPoint)!!
-    val injektInfo: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.InjektInfo)!!
     val mapEntries: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.MapEntries)!!
-    val name: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.Name)!!
     val reader: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.Reader)!!
     val setElements: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.SetElements)!!
     val unscoped: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.Unscoped)!!
+
+    val componentFactories: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.ComponentFactories)!!
+    val contextMarker: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.ContextMarker)!!
+    val entryPoint: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.EntryPoint)!!
+    val injektInfo: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.InjektInfo)!!
+    val name: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.Name)!!
+
+
 }

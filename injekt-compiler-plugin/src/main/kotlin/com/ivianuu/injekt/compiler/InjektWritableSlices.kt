@@ -16,12 +16,11 @@
 
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.util.slicedMap.BasicWritableSlice
 import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 
 object InjektWritableSlices {
-    val TYPE_ANNOTATIONS: WritableSlice<Any, MutableSet<FqName>> =
+    val IS_READER: WritableSlice<Any, Boolean> =
         BasicWritableSlice(RewritePolicy.DO_NOTHING)
 }
