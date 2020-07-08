@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.getJoinedName
+import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
@@ -25,16 +25,15 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.irBlock
+import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
-import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
-import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
-import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -68,14 +67,10 @@ class ComponentTransformer(pluginContext: IrPluginContext) :
             }
         })
 
-        println("build component call $buildComponentCalls")
-
         if (buildComponentCalls.isEmpty()) return
 
         val declarationGraph = DeclarationGraph(module, pluginContext)
             .also { it.initialize() }
-
-        println("factories ${declarationGraph.componentFactories}")
 
         if (declarationGraph.componentFactories.isEmpty()) return
 
@@ -93,64 +88,63 @@ class ComponentTransformer(pluginContext: IrPluginContext) :
     private fun transformBuildComponentCall(
         declarationGraph: DeclarationGraph,
         call: BuildComponentCall
-    ): IrCall {
-        println("process call ${declarationGraph.componentFactories
-            .map { it.factory.render() }}"
-        )
-
+    ): IrExpression {
         val componentTree = ComponentTree(
             pluginContext, declarationGraph.componentFactories.groupBy {
                 it.factory.functions
+                    .filterNot { it.isFakeOverride }
                     .single()
                     .returnType
-            })
+            }, declarationGraph.entryPoints.groupBy {
+                it.entryPoint.getClassFromSingleValueAnnotation(
+                    InjektFqNames.EntryPoint,
+                    pluginContext
+                ).defaultType
+            }
+        )
 
-        val components = mutableMapOf<IrClassSymbol, IrClass>()
-
-        componentTree.nodes.forEach { node ->
-        }
-
-        /*
-        return DeclarationIrBuilder(pluginContext, expression.symbol).run {
+        return DeclarationIrBuilder(pluginContext, call.call.symbol).run {
             irBlock {
-                components.forEach { (compositionType, factoryFunctionImpl) ->
-                    if (factoryFunctionImpl.owner.hasAnnotation(InjektFqNames.ChildFactory)) return@forEach
+                componentTree.nodes.forEach { node ->
+                    val componentFactoryImpl = ComponentFactoryImpl(
+                        scope.getLocalDeclarationParent(),
+                        node,
+                        null,
+                        pluginContext,
+                        declarationGraph,
+                        symbols
+                    )
+                    +componentFactoryImpl.getClass()
                     +irCall(
-                        compositionSymbols.compositionFactories
+                        symbols.componentFactories
                             .functions
                             .single { it.owner.name.asString() == "register" }
                     ).apply {
                         dispatchReceiver =
-                            irGetObject(compositionSymbols.compositionFactories)
+                            irGetObject(symbols.componentFactories)
 
                         putValueArgument(
                             0,
                             IrClassReferenceImpl(
                                 UNDEFINED_OFFSET,
                                 UNDEFINED_OFFSET,
-                                irBuiltIns.kClassClass.typeWith(compositionType.defaultType),
-                                compositionType,
-                                compositionType.defaultType
+                                irBuiltIns.kClassClass.typeWith(node.factory.factory.defaultType),
+                                node.factory.factory.symbol,
+                                node.factory.factory.defaultType
                             )
                         )
 
                         putValueArgument(
                             1,
-                            IrFunctionReferenceImpl(
-                                UNDEFINED_OFFSET,
-                                UNDEFINED_OFFSET,
-                                factoryFunctionImpl.owner.getFunctionType(pluginContext),
-                                factoryFunctionImpl,
-                                0,
-                                null
+                            irCall(
+                                componentFactoryImpl.factoryClass.constructors
+                                    .single()
                             )
                         )
                     }
                 }
             }
-        }*/
-
-        return call.call
+        }
     }
 
 }

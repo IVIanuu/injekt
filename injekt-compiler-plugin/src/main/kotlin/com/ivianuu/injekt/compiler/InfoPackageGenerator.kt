@@ -51,7 +51,7 @@ class InfoPackageGenerator : AnalysisHandlerExtension {
                 PsiManager.getInstance(project),
                 CoreLocalVirtualFile(
                     CoreLocalFileSystem(),
-                    File.createTempFile("", "File.kt").apply {
+                    File.createTempFile("tmp", "File.kt").apply {
                         writeText("package ${InjektFqNames.InfoPackage}")
                     })
             ) {},

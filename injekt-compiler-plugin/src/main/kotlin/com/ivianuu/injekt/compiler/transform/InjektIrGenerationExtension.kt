@@ -22,24 +22,8 @@ import com.ivianuu.injekt.compiler.transform.component.ComponentTransformer
 import com.ivianuu.injekt.compiler.transform.reader.ReaderTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrConstructor
-import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.IrProperty
-import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
-import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
-import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
-import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
-import org.jetbrains.kotlin.ir.symbols.IrPropertySymbol
-import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
-import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
@@ -50,8 +34,13 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         ReaderTransformer(pluginContext, symbolRemapper).doLower(moduleFragment)
 
         InfoPackageDeclarationTransformer(pluginContext).doLower(moduleFragment)
+
         ComponentReaderTransformer(pluginContext).doLower(moduleFragment)
+
+        println(moduleFragment.dumpSrc())
+
         ComponentTransformer(pluginContext).doLower(moduleFragment)
+
         TmpMetadataPatcher(pluginContext).doLower(moduleFragment)
 
         println(moduleFragment.dumpSrc())

@@ -17,9 +17,8 @@
 package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
+import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
@@ -30,7 +29,8 @@ import org.jetbrains.kotlin.ir.util.render
 
 class ComponentTree(
     private val pluginContext: IrPluginContext,
-    private val allFactories: Map<IrType, List<ComponentFactory>>
+    private val allFactories: Map<IrType, List<ComponentFactory>>,
+    private val allEntryPoints: Map<IrType, List<EntryPoint>>
 ) {
 
     val nodes = mutableListOf<ComponentNode>()
@@ -41,6 +41,10 @@ class ComponentTree(
         allFactories.forEach { (_, factories) ->
             factories.forEach { getOrCreateNode(it) }
         }
+
+        println("all entry points ${allEntryPoints.mapKeys {
+            it.key.render()
+        }.mapValues { it.value.map { it.entryPoint.render() } }}")
     }
 
     private fun getNodesForComponent(component: IrType): List<ComponentNode> {
@@ -51,7 +55,7 @@ class ComponentTree(
     private fun getOrCreateNode(
         factory: ComponentFactory
     ): ComponentNode {
-        check(factory !in chain) {
+        check(factory.factory.defaultType !in chain) {
             "Circular dependency for ${factory.factory.defaultType.render()} " +
                     "${chain.map { it.render() }}"
         }
@@ -71,6 +75,10 @@ class ComponentTree(
             }
         }
 
+        allEntryPoints[node.component.defaultType]?.forEach {
+            node.entryPoints += it
+        }
+
         nodes += node
 
         chain -= factory.factory.defaultType
@@ -83,13 +91,26 @@ class ComponentNode(
     val factory: ComponentFactory,
     pluginContext: IrPluginContext
 ) {
-    val parentComponent = factory.factory.functions.single()
+
+    val component = factory.factory.functions
+        .filterNot { it.isFakeOverride }
+        .single()
         .returnType
         .classOrNull!!
-        .owner.getClassFromSingleValueAnnotation(
+        .owner
+
+    val parentComponent = factory.factory.functions
+        .filterNot { it.isFakeOverride }
+        .single()
+        .returnType
+        .classOrNull!!
+        .owner.getClassFromSingleValueAnnotationOrNull(
             InjektFqNames.Component, pluginContext
-        ).takeUnless { it.defaultType.isNothing() }?.symbol?.defaultType
+        ).takeUnless { it?.defaultType?.isNothing() == true }?.symbol?.defaultType
 
     val parents = mutableSetOf<ComponentNode>()
     val children = mutableSetOf<ComponentNode>()
+
+    val entryPoints = mutableSetOf<EntryPoint>()
+
 }

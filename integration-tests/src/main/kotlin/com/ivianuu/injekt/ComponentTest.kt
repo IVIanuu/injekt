@@ -40,11 +40,20 @@ class ComponentTest {
             }
         }
         
-        fun invoke() {
+        @Unscoped @Reader
+        fun foo() = Foo()
+        @Unscoped @Reader
+        fun bar() = Bar(get())
+        
+        fun invoke(): Bar {
             buildComponents()
+            val component = componentFactory<MyComponent.Factory>().create()
+            return component.runReader { get<Bar>() }
         }
     """
-    )
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
+    }
 
     @Test
     fun testUnscoped() = codegen(

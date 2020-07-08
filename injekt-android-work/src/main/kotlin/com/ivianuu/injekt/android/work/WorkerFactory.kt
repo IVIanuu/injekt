@@ -26,8 +26,6 @@ import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Provider
 import com.ivianuu.injekt.Unscoped
 import com.ivianuu.injekt.alias
-import com.ivianuu.injekt.composition.BindingAdapter
-import com.ivianuu.injekt.composition.installIn
 import com.ivianuu.injekt.map
 import com.ivianuu.injekt.unscoped
 import kotlin.reflect.KClass

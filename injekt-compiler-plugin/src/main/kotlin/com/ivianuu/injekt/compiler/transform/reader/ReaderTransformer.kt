@@ -103,6 +103,7 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
@@ -286,6 +287,8 @@ class ReaderTransformer(
                     )
                 }
             }
+
+            println("lol ${dump()}")
         }
 
         val getCalls = mutableListOf<IrCall>()
@@ -574,6 +577,9 @@ class ReaderTransformer(
             addMetadataIfNotLocal()
             copyTypeParametersFrom(transformedFunction)
             parentFunction?.let { copyTypeParametersFrom(it) }
+
+            annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
+                .noArgSingleConstructorCall(symbols.contextMarker)
 
             annotations += DeclarationIrBuilder(pluginContext, symbol).run {
                 irCall(symbols.name.constructors.single()).apply {

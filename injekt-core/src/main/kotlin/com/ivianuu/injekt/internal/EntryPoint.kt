@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.sample
+package com.ivianuu.injekt.internal
 
-import com.ivianuu.injekt.internal.injektIntrinsic
+import kotlin.reflect.KClass
 
-annotation class Given
-
-fun <T> given(): T = injektIntrinsic()
+@Target(AnnotationTarget.CLASS)
+annotation class EntryPoint(val component: KClass<*>)

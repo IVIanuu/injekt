@@ -16,7 +16,12 @@
 
 package com.ivianuu.injekt.android
 
-import com.ivianuu.injekt.composition.CompositionComponent
+import com.ivianuu.injekt.Component
 
-@CompositionComponent
-interface TestCompositionComponent
+@Component
+interface TestCompositionComponent {
+    @Component.Factory
+    interface Factory {
+        fun create(): TestCompositionComponent
+    }
+}

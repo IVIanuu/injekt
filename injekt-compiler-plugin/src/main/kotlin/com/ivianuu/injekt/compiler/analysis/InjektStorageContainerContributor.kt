@@ -30,7 +30,7 @@ class InjektStorageContainerContributor(
         platform: TargetPlatform,
         moduleDescriptor: ModuleDescriptor
     ) {
-        container.useInstance(AnnotatedBindingChecker())
+        container.useInstance(ProvideChecker())
         container.useInstance(ComponentChecker())
         container.useInstance(ReaderChecker(typeAnnotationChecker))
         container.useInstance(typeAnnotationChecker)

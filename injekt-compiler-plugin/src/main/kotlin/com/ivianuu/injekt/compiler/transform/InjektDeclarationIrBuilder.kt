@@ -71,14 +71,6 @@ class InjektDeclarationIrBuilder(
 
     val irBuiltIns = pluginContext.irBuiltIns
 
-    fun irInjektIntrinsicUnit(): IrExpression {
-        return builder.irCall(
-            pluginContext.referenceFunctions(
-                InjektFqNames.InternalPackage.child("injektIntrinsic")
-            ).single()
-        )
-    }
-
     fun noArgSingleConstructorCall(clazz: IrClassSymbol): IrConstructorCall =
         builder.irCall(clazz.constructors.single())
 
