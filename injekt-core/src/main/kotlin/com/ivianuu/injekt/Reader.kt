@@ -32,3 +32,13 @@ annotation class Reader
 
 @Reader
 fun <T> get(): T = injektIntrinsic()
+
+inline fun <R> Any.runReader(
+    block: @Reader () -> R
+): R = block()
+
+@JvmName("actualReader")
+inline fun <R> runReader(
+    context: Any,
+    block: (Any) -> R
+): R = block(context)

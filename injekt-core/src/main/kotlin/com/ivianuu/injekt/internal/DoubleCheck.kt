@@ -16,9 +16,7 @@
 
 package com.ivianuu.injekt.internal
 
-import com.ivianuu.injekt.Provider
-
-class DoubleCheck<T>(private var delegate: (@Provider () -> T)?) : @Provider () -> T {
+class DoubleCheck<T>(private var delegate: (() -> T)?) : () -> T {
     private var value: Any? = this
     override fun invoke(): T {
         var value = this.value

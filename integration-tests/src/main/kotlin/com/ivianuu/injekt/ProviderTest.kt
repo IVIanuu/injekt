@@ -38,9 +38,10 @@ class ProviderTest {
         fun invoke() = factory().a
     """
     ) {
-        val provider =
+        /*val provider =
             invokeSingleFile<@Provider () -> Foo>()
-        assertNotSame(provider(), provider())
+        assertNotSame(provider(), provider())*/
+        TODO()
     }
 
     @Test
@@ -55,9 +56,10 @@ class ProviderTest {
         fun invoke() = factory().a
     """
     ) {
-        val provider =
+        /*val provider =
             invokeSingleFile<@Provider () -> Foo>()
-        assertSame(provider(), provider())
+        assertSame(provider(), provider())*/
+        TODO()
     }
 
     @Test

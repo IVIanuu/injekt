@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.test
 
-import com.ivianuu.injekt.Qualifier
 import com.ivianuu.injekt.compiler.InjektComponentRegistrar
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
@@ -29,20 +28,6 @@ import kotlin.reflect.KClass
 
 var fileIndex = 0
 
-private val isAndroid = try {
-    Class.forName("com.ivianuu.injekt.android.AndroidEntryPoint")
-    true
-} catch (e: Exception) {
-    false
-}
-
-private val isComposition = try {
-    Class.forName("com.ivianuu.injekt.composition.CompositionComponent")
-    true
-} catch (e: Exception) {
-    false
-}
-
 fun source(
     @Language("kotlin") source: String,
     name: String = "File${fileIndex++}.kt",
@@ -52,8 +37,6 @@ fun source(
     contents = buildString {
         if (injektImports) {
             appendLine("import com.ivianuu.injekt.*")
-            if (isAndroid) appendLine("import com.ivianuu.injekt.android.*")
-            if (isComposition) appendLine("import com.ivianuu.injekt.composition.*")
             appendLine("import com.ivianuu.injekt.internal.*")
             appendLine("import com.ivianuu.injekt.test.*")
             appendLine("import kotlin.reflect.*")
@@ -161,41 +144,3 @@ fun KotlinCompilation.Result.assertCompileError(
     message?.let { assertTrue(messages.toLowerCase().contains(it.toLowerCase())) }
 }
 
-class Foo
-
-class Bar(foo: Foo)
-
-class Baz(foo: Foo, bar: Bar)
-
-interface TestComponent
-
-interface TestComponent1<A> {
-    val a: A
-}
-
-interface TestComponent2<A, B> {
-    val a: A
-    val b: B
-}
-
-interface TestComponent3<A, B, C> {
-    val a: A
-    val b: B
-    val c: C
-}
-
-@Target(AnnotationTarget.TYPE)
-@Qualifier
-annotation class TestQualifier1
-
-@Target(AnnotationTarget.TYPE)
-@Qualifier
-annotation class TestQualifier2
-
-interface Command
-
-class CommandA : Command
-
-class CommandB : Command
-
-class CommandC : Command

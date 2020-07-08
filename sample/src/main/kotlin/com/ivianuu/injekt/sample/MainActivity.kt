@@ -16,8 +16,8 @@
 
 package com.ivianuu.injekt.sample
 
-import android.content.Context
 import android.os.Bundle
+import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.Composable
 import androidx.compose.remember
@@ -25,12 +25,12 @@ import androidx.lifecycle.ViewModel
 import androidx.ui.core.setContent
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import com.ivianuu.injekt.android.ActivityViewModel
-import com.ivianuu.injekt.android.ForActivity
-import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.android.ActivityContext
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.composition.runReader
+import com.ivianuu.injekt.sample.proof.Provide
+import com.ivianuu.injekt.sample.proof.retainedActivityScoped
+import com.ivianuu.injekt.sample.proof.runReader
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            activityComponent.runReader {
+            runReader(this as ComponentActivity) {
                 WithMainViewModel {
                     GlobalScope.launch {
                         enqueueWork()
@@ -48,6 +48,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
 }
 
 @Reader
@@ -59,15 +60,28 @@ fun WithMainViewModel(children: @Composable (MainViewModel) -> Unit) {
 
 @Reader
 private fun enqueueWork() {
-    WorkManager.getInstance(get<@ForActivity Context>())
+    WorkManager.getInstance(get<ActivityContext>())
         .enqueue(
             OneTimeWorkRequestBuilder<TestWorker>()
                 .build()
         )
 }
 
-@ActivityViewModel
-class MainViewModel(private val repo: Repo) : ViewModel() {
+annotation class BindingAdapter
+
+@BindingAdapter
+annotation class ActivityViewModel {
+    companion object {
+        @Reader
+        operator fun <T> invoke(
+            init: () -> T
+        ) = retainedActivityScoped(init = init)
+    }
+}
+
+@Reader
+@Provide
+class MainViewModel : ViewModel() {
     init {
         println("init ")
     }

@@ -77,12 +77,13 @@ class MapTest {
         fun invoke() = factory().a
         """
     ) {
-        val map =
+        /*val map =
             invokeSingleFile<@Provider () -> Map<KClass<out Command>, Command>>()()
         assertEquals(3, map.size)
         assertTrue(map[CommandA::class] is CommandA)
         assertTrue(map[CommandB::class] is CommandB)
-        assertTrue(map[CommandC::class] is CommandC)
+        assertTrue(map[CommandC::class] is CommandC)*/
+        TODO()
     }
 
     @Test
@@ -104,12 +105,13 @@ class MapTest {
         fun invoke() = factory().a
     """
     ) {
-        val map =
+        /*val map =
             invokeSingleFile<Map<KClass<out Command>, @Provider () -> Command>>()
         assertEquals(3, map.size)
         assertTrue(map[CommandA::class]!!() is CommandA)
         assertTrue(map[CommandB::class]!!() is CommandB)
-        assertTrue(map[CommandC::class]!!() is CommandC)
+        assertTrue(map[CommandC::class]!!() is CommandC)*/
+        TODO()
     }
 
     @Test
@@ -131,12 +133,13 @@ class MapTest {
         fun invoke() = factory().a
     """
     ) {
-        val map =
+        /*val map =
             invokeSingleFile<@Provider () -> Map<KClass<out Command>, @Provider () -> Command>>()()
         assertEquals(3, map.size)
         assertTrue(map[CommandA::class]!!() is CommandA)
         assertTrue(map[CommandB::class]!!() is CommandB)
-        assertTrue(map[CommandC::class]!!() is CommandC)
+        assertTrue(map[CommandC::class]!!() is CommandC)*/
+        TODO()
     }
 
     @Test
@@ -158,12 +161,13 @@ class MapTest {
         fun invoke() = factory().a
         """
     ) {
-        val map =
+        /*val map =
             invokeSingleFile<Map<KClass<out Command>, @Provider (String) -> Command>>()
         assertEquals(3, map.size)
         assertTrue(map[CommandA::class]!!("a") is CommandA)
         assertTrue(map[CommandB::class]!!("b") is CommandB)
-        assertTrue(map[CommandC::class]!!("c") is CommandC)
+        assertTrue(map[CommandC::class]!!("c") is CommandC)*/
+        TODO()
     }
 
     @Test
@@ -185,12 +189,13 @@ class MapTest {
         fun invoke() = factory().a
         """
     ) {
-        val map =
+        /*val map =
             invokeSingleFile<@Provider () -> Map<KClass<out Command>, @Provider (String) -> Command>>()()
         assertEquals(3, map.size)
         assertTrue(map[CommandA::class]!!("a") is CommandA)
         assertTrue(map[CommandB::class]!!("b") is CommandB)
-        assertTrue(map[CommandC::class]!!("c") is CommandC)
+        assertTrue(map[CommandC::class]!!("c") is CommandC)*/
+        TODO()
     }
 
     @Test

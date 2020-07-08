@@ -16,30 +16,25 @@
 
 package com.ivianuu.injekt.sample
 
-import android.content.Context
 import com.ivianuu.injekt.ApplicationComponent
-import com.ivianuu.injekt.ForApplication
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.DistinctType
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.Scoped
-import com.ivianuu.injekt.composition.installIn
+import com.ivianuu.injekt.Unscoped
+import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.unscoped
+import com.ivianuu.injekt.sample.proof.Provide
 import java.io.File
 
-@Module
-fun DataModule() {
-    installIn<ApplicationComponent>()
-    unscoped<@DatabaseFile File> { get<@ForApplication Context>().cacheDir }
-}
+@Provide
+@Reader
+fun databaseFile(): DatabaseFile = get<ApplicationContext>().cacheDir
 
-@Target(AnnotationTarget.TYPE)
-@Qualifier
-annotation class DatabaseFile
+@DistinctType
+typealias DatabaseFile = File
 
 @Scoped(ApplicationComponent::class)
-class Database(private val file: @DatabaseFile File)
+class Database(private val file: DatabaseFile)
 
 @Scoped(ApplicationComponent::class)
 class Repo(private val database: Database, private val api: Api) {

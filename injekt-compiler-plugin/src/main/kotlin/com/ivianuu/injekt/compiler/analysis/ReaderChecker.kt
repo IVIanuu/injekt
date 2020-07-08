@@ -26,7 +26,6 @@ import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
-import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
 import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
@@ -34,7 +33,10 @@ import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.scopes.LexicalScope
+import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 class ReaderChecker(
     private val typeAnnotationChecker: TypeAnnotationChecker
@@ -89,14 +91,7 @@ class ReaderChecker(
 
         if (descriptor.modality != Modality.FINAL) {
             context.trace.report(
-                InjektErrors.MUST_BE_FINAL
-                    .on(declaration)
-            )
-        }
-
-        if (descriptor.isTailrec) {
-            context.trace.report(
-                InjektErrors.CANNOT_HAVE_TAILREC_MODIFIER
+                InjektErrors.READER_MUST_BE_FINAL
                     .on(declaration)
             )
         }
@@ -109,14 +104,14 @@ class ReaderChecker(
     ) {
         val resulting = resolvedCall.resultingDescriptor
 
-        if (resulting.fqNameSafe.asString() == "com.ivianuu.injekt.composition.runReader") {
+        if (resulting.fqNameSafe.asString() == "com.ivianuu.injekt.runReader") {
             val receiver = resolvedCall.extensionReceiver!!.type
             if (receiver.constructor.declarationDescriptor?.annotations
-                    ?.hasAnnotation(InjektFqNames.CompositionComponent) != true &&
+                    ?.hasAnnotation(InjektFqNames.Component) != true &&
                 !receiver.isTypeParameter()
             ) {
                 context.trace.report(
-                    InjektErrors.NOT_A_COMPOSITION_COMPONENT
+                    InjektErrors.NOT_A_COMPONENT
                         .on(reportOn)
                 )
             }
@@ -160,4 +155,13 @@ class ReaderChecker(
             )
         }
     }
+
+    private inline fun findEnclosingContext(
+        context: CallCheckerContext,
+        predicate: (DeclarationDescriptor) -> Boolean
+    ): DeclarationDescriptor? = context.scope
+        .parentsWithSelf.firstOrNull {
+            it is LexicalScope && predicate(it.ownerDescriptor)
+        }?.cast<LexicalScope>()?.ownerDescriptor
+
 }

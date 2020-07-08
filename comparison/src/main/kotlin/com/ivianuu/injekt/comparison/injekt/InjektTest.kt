@@ -16,12 +16,7 @@
 
 package com.ivianuu.injekt.comparison.injekt
 
-import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.comparison.base.InjectionTest
-import com.ivianuu.injekt.comparison.fibonacci.Fib8
-import com.ivianuu.injekt.composition.compositionFactoryOf
-import com.ivianuu.injekt.composition.runReader
-import com.ivianuu.injekt.get
 
 object InjektTest : InjectionTest {
 

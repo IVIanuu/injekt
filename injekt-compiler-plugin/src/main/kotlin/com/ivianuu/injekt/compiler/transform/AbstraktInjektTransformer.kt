@@ -20,22 +20,20 @@ import com.ivianuu.injekt.compiler.InjektSymbols
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
-import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 
-abstract class AbstractInjektTransformer(
-    val pluginContext: IrPluginContext
-) : IrElementTransformerVoid(), ModuleLoweringPass {
+abstract class AbstractInjektTransformer(val pluginContext: IrPluginContext) {
 
     val symbols = InjektSymbols(pluginContext)
 
-    protected val symbolTable = pluginContext.symbolTable
     val irBuiltIns = pluginContext.irBuiltIns
 
-    lateinit var moduleFragment: IrModuleFragment
+    lateinit var module: IrModuleFragment
 
-    override fun lower(module: IrModuleFragment) {
-        moduleFragment = module
-        visitModuleFragment(module, null)
+    protected abstract fun lower()
+
+    fun doLower(module: IrModuleFragment) {
+        this.module = module
+        lower()
         module.patchDeclarationParents()
     }
 

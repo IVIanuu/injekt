@@ -24,7 +24,6 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
 
 dependencies {
-    implementation(project(":injekt-composition"))
     implementation(project(":test-util"))
     kapt(project(":test-util"))
 }

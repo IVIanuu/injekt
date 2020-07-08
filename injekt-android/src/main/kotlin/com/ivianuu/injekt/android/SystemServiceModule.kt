@@ -77,78 +77,245 @@ import android.view.inputmethod.InputMethodManager
 import android.view.textservice.TextServicesManager
 import androidx.core.content.ContextCompat
 import com.ivianuu.injekt.ApplicationComponent
-import com.ivianuu.injekt.ForApplication
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.composition.installIn
+import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.Unscoped
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.unscoped
 
-@Module
-fun SystemServiceModule() {
-    installIn<ApplicationComponent>()
-    systemService<AccessibilityManager>()
-    systemService<AccountManager>()
-    systemService<ActivityManager>()
-    systemService<AlarmManager>()
-    systemService<AudioManager>()
-    systemService<ClipboardManager>()
-    systemService<ConnectivityManager>()
-    systemService<DevicePolicyManager>()
-    systemService<DownloadManager>()
-    systemService<DropBoxManager>()
-    systemService<InputMethodManager>()
-    systemService<KeyguardManager>()
-    systemService<LayoutInflater>()
-    systemService<LocationManager>()
-    systemService<NfcManager>()
-    systemService<NotificationManager>()
-    systemService<PowerManager>()
-    systemService<SearchManager>()
-    systemService<SensorManager>()
-    systemService<StorageManager>()
-    systemService<TelephonyManager>()
-    systemService<TextServicesManager>()
-    systemService<UiModeManager>()
-    systemService<UsbManager>()
-    systemService<Vibrator>()
-    systemService<WallpaperManager>()
-    systemService<WifiP2pManager>()
-    systemService<WifiManager>()
-    systemService<WindowManager>()
-    systemService<InputManager>()
-    systemService<MediaRouter>()
-    systemService<NsdManager>()
-    systemService<DisplayManager>()
-    systemService<UserManager>()
-    systemService<BluetoothManager>()
-    systemService<AppOpsManager>()
-    systemService<CaptioningManager>()
-    systemService<ConsumerIrManager>()
-    systemService<PrintManager>()
-    systemService<AppWidgetManager>()
-    systemService<BatteryManager>()
-    systemService<CameraManager>()
-    systemService<JobScheduler>()
-    systemService<LauncherApps>()
-    systemService<MediaProjectionManager>()
-    systemService<MediaSessionManager>()
-    systemService<RestrictionsManager>()
-    systemService<TelecomManager>()
-    systemService<TvInputManager>()
-    systemService<SubscriptionManager>()
-    systemService<UsageStatsManager>()
-    systemService<CarrierConfigManager>()
-    systemService<FingerprintManager>()
-    systemService<MidiManager>()
-    systemService<NetworkStatsManager>()
-    systemService<HardwarePropertiesManager>()
-    systemService<SystemHealthManager>()
-    systemService<ShortcutManager>()
-}
+object SystemServiceModule {
+    @Unscoped
+    @Reader
+    fun accessibilityManager() = systemService<AccessibilityManager>()
 
-@Module
-inline fun <reified T : Any> systemService() {
-    unscoped<T> {
-        ContextCompat.getSystemService(get<@ForApplication Context>(), T::class.java)!!
-    }
+    @Unscoped
+    @Reader
+    fun accountManager() = systemService<AccountManager>()
+
+    @Unscoped
+    @Reader
+    fun activityManager() = systemService<ActivityManager>()
+
+    @Unscoped
+    @Reader
+    fun alarmManager() = systemService<AlarmManager>()
+
+    @Unscoped
+    @Reader
+    fun audioManager() = systemService<AudioManager>()
+
+    @Unscoped
+    @Reader
+    fun clipboardManager() = systemService<ClipboardManager>()
+
+    @Unscoped
+    @Reader
+    fun connectivityManager() = systemService<ConnectivityManager>()
+
+    @Unscoped
+    @Reader
+    fun devicePolicyManager() = systemService<DevicePolicyManager>()
+
+    @Unscoped
+    @Reader
+    fun downloadManager() = systemService<DownloadManager>()
+
+    @Unscoped
+    @Reader
+    fun dropBoxManager() = systemService<DropBoxManager>()
+
+    @Unscoped
+    @Reader
+    fun inputMethodManager() = systemService<InputMethodManager>()
+
+    @Unscoped
+    @Reader
+    fun keyguardManager() = systemService<KeyguardManager>()
+
+    @Unscoped
+    @Reader
+    fun layoutInflater() = systemService<LayoutInflater>()
+
+    @Unscoped
+    @Reader
+    fun locationManager() = systemService<LocationManager>()
+
+    @Unscoped
+    @Reader
+    fun nfcManager() = systemService<NfcManager>()
+
+    @Unscoped
+    @Reader
+    fun notificationManager() = systemService<NotificationManager>()
+
+    @Unscoped
+    @Reader
+    fun powerManager() = systemService<PowerManager>()
+
+    @Unscoped
+    @Reader
+    fun searchManager() = systemService<SearchManager>()
+
+    @Unscoped
+    @Reader
+    fun sensorManager() = systemService<SensorManager>()
+
+    @Unscoped
+    @Reader
+    fun storageManager() = systemService<StorageManager>()
+
+    @Unscoped
+    @Reader
+    fun telephonyManager() = systemService<TelephonyManager>()
+
+    @Unscoped
+    @Reader
+    fun textServicesManager() = systemService<TextServicesManager>()
+
+    @Unscoped
+    @Reader
+    fun uiModeManager() = systemService<UiModeManager>()
+
+    @Unscoped
+    @Reader
+    fun usbManager() = systemService<UsbManager>()
+
+    @Unscoped
+    @Reader
+    fun vibrator() = systemService<Vibrator>()
+
+    @Unscoped
+    @Reader
+    fun wallpaperManager() = systemService<WallpaperManager>()
+
+    @Unscoped
+    @Reader
+    fun wifiP2pManager() = systemService<WifiP2pManager>()
+
+    @Unscoped
+    @Reader
+    fun wifiManager() = systemService<WifiManager>()
+
+    @Unscoped
+    @Reader
+    fun windowManager() = systemService<WindowManager>()
+
+    @Unscoped
+    @Reader
+    fun inputManager() = systemService<InputManager>()
+
+    @Unscoped
+    @Reader
+    fun mediaRouter() = systemService<MediaRouter>()
+
+    @Unscoped
+    @Reader
+    fun nsdManager() = systemService<NsdManager>()
+
+    @Unscoped
+    @Reader
+    fun displayManager() = systemService<DisplayManager>()
+
+    @Unscoped
+    @Reader
+    fun userManager() = systemService<UserManager>()
+
+    @Unscoped
+    @Reader
+    fun bluetoothManager() = systemService<BluetoothManager>()
+
+    @Unscoped
+    @Reader
+    fun appOpsManager() = systemService<AppOpsManager>()
+
+    @Unscoped
+    @Reader
+    fun captioningManager() = systemService<CaptioningManager>()
+
+    @Unscoped
+    @Reader
+    fun consumerIrManager() = systemService<ConsumerIrManager>()
+
+    @Unscoped
+    @Reader
+    fun printManager() = systemService<PrintManager>()
+
+    @Unscoped
+    @Reader
+    fun appWidgetManager() = systemService<AppWidgetManager>()
+
+    @Unscoped
+    @Reader
+    fun batteryManager() = systemService<BatteryManager>()
+
+    @Unscoped
+    @Reader
+    fun cameraManager() = systemService<CameraManager>()
+
+    @Unscoped
+    @Reader
+    fun jobScheduler() = systemService<JobScheduler>()
+
+    @Unscoped
+    @Reader
+    fun launcherApps() = systemService<LauncherApps>()
+
+    @Unscoped
+    @Reader
+    fun mediaProjectionManager() = systemService<MediaProjectionManager>()
+
+    @Unscoped
+    @Reader
+    fun mediaSessionManager() = systemService<MediaSessionManager>()
+
+    @Unscoped
+    @Reader
+    fun restrictionsManager() = systemService<RestrictionsManager>()
+
+    @Unscoped
+    @Reader
+    fun telecomManager() = systemService<TelecomManager>()
+
+    @Unscoped
+    @Reader
+    fun tvInputManager() = systemService<TvInputManager>()
+
+    @Unscoped
+    @Reader
+    fun subscriptionManager() = systemService<SubscriptionManager>()
+
+    @Unscoped
+    @Reader
+    fun usageStatsManager() = systemService<UsageStatsManager>()
+
+    @Unscoped
+    @Reader
+    fun carrierConfigManager() = systemService<CarrierConfigManager>()
+
+    @Unscoped
+    @Reader
+    fun fingerprintManager() = systemService<FingerprintManager>()
+
+    @Unscoped
+    @Reader
+    fun midiManager() = systemService<MidiManager>()
+
+    @Unscoped
+    @Reader
+    fun networkStatsManager() = systemService<NetworkStatsManager>()
+
+    @Unscoped
+    @Reader
+    fun hardwarePropertiesManager() = systemService<HardwarePropertiesManager>()
+
+    @Unscoped
+    @Reader
+    fun systemHealthManager() = systemService<SystemHealthManager>()
+
+    @Unscoped
+    @Reader
+    fun shortcutManager() = systemService<ShortcutManager>()
+
+    @Reader
+    private inline fun <reified T : Any> systemService() =
+        ContextCompat.getSystemService(get<ApplicationContext>(), T::class.java)!!
+
 }

@@ -18,113 +18,47 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.NameProvider
-import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.getFunctionType
-import com.ivianuu.injekt.compiler.getInjectConstructor
-import com.ivianuu.injekt.compiler.hasAnnotation
-import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.reader.ReaderTransformer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.withNoArgAnnotations
-import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.ir.addChild
-import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.NotFoundClasses
-import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
-import org.jetbrains.kotlin.ir.builders.declarations.buildField
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
-import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
-import org.jetbrains.kotlin.ir.builders.irExprBody
-import org.jetbrains.kotlin.ir.builders.irGet
-import org.jetbrains.kotlin.ir.builders.irGetField
-import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irString
-import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
-import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
-import org.jetbrains.kotlin.ir.expressions.IrClassReference
-import org.jetbrains.kotlin.ir.expressions.IrConst
-import org.jetbrains.kotlin.ir.expressions.IrConstKind
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
-import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrConstImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrGetEnumValueImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.defaultType
-import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
-import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
-import org.jetbrains.kotlin.ir.util.referenceClassifier
-import org.jetbrains.kotlin.ir.util.render
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi.psiUtil.endOffset
-import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.DescriptorUtils
-import org.jetbrains.kotlin.resolve.constants.AnnotationValue
-import org.jetbrains.kotlin.resolve.constants.ArrayValue
-import org.jetbrains.kotlin.resolve.constants.BooleanValue
-import org.jetbrains.kotlin.resolve.constants.ByteValue
-import org.jetbrains.kotlin.resolve.constants.CharValue
-import org.jetbrains.kotlin.resolve.constants.ConstantValue
-import org.jetbrains.kotlin.resolve.constants.DoubleValue
-import org.jetbrains.kotlin.resolve.constants.EnumValue
-import org.jetbrains.kotlin.resolve.constants.ErrorValue
-import org.jetbrains.kotlin.resolve.constants.FloatValue
-import org.jetbrains.kotlin.resolve.constants.IntValue
-import org.jetbrains.kotlin.resolve.constants.KClassValue
-import org.jetbrains.kotlin.resolve.constants.LongValue
-import org.jetbrains.kotlin.resolve.constants.NullValue
-import org.jetbrains.kotlin.resolve.constants.ShortValue
-import org.jetbrains.kotlin.resolve.constants.StringValue
-import org.jetbrains.kotlin.resolve.constants.UByteValue
-import org.jetbrains.kotlin.resolve.constants.UIntValue
-import org.jetbrains.kotlin.resolve.constants.ULongValue
-import org.jetbrains.kotlin.resolve.constants.UShortValue
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.source.PsiSourceElement
-import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.isError
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class InjektDeclarationIrBuilder(
     val pluginContext: IrPluginContext,
@@ -135,10 +69,7 @@ class InjektDeclarationIrBuilder(
 
     val symbols = InjektSymbols(pluginContext)
 
-    val symbolTable = pluginContext.symbolTable
     val irBuiltIns = pluginContext.irBuiltIns
-    val typeTranslator = pluginContext.typeTranslator
-    fun KotlinType.toIrType() = typeTranslator.translateType(this)
 
     fun irInjektIntrinsicUnit(): IrExpression {
         return builder.irCall(
@@ -175,50 +106,6 @@ class InjektDeclarationIrBuilder(
             symbol,
             irBuiltIns.unitType
         )
-    }
-
-    fun irMapKeyConstructorForKey(expression: IrExpression): IrConstructorCall {
-        return when {
-            expression is IrClassReference -> irClassKey(expression.classType)
-            expression is IrConst<*> -> {
-                when (expression.kind) {
-                    is IrConstKind.Int -> builder.irCall(symbols.astMapIntKey.constructors.single())
-                        .apply {
-                            putValueArgument(0, expression.deepCopyWithVariables())
-                        }
-                    is IrConstKind.Long -> builder.irCall(symbols.astMapLongKey.constructors.single())
-                        .apply {
-                            putValueArgument(0, expression.deepCopyWithVariables())
-                        }
-                    is IrConstKind.String -> builder.irCall(symbols.astMapStringKey.constructors.single())
-                        .apply {
-                            putValueArgument(0, expression.deepCopyWithVariables())
-                        }
-                    else -> error("Unexpected expression ${expression.dump()}")
-                }
-            }
-            else -> error("Unexpected expression ${expression.dump()}")
-        }
-    }
-
-    private fun irClassKey(type: IrType): IrConstructorCall {
-        return if (type.isTypeParameter()) {
-            builder.irCall(symbols.astMapTypeParameterClassKey.constructors.single())
-                .apply {
-                    putValueArgument(
-                        0,
-                        builder.irString(
-                            (type.toKotlinType().constructor.declarationDescriptor as TypeParameterDescriptor)
-                                .name.asString()
-                        )
-                    )
-                }
-        } else {
-            singleClassArgConstructorCall(
-                symbols.astMapClassKey,
-                type.classifierOrFail
-            )
-        }
     }
 
     fun irLambda(
@@ -264,106 +151,6 @@ class InjektDeclarationIrBuilder(
         val type: IrType,
         val assisted: Boolean
     )
-
-    class FieldWithGetter(
-        val field: IrField,
-        val getter: IrFunction
-    )
-
-    fun fieldBackedProperty(
-        clazz: IrClass,
-        name: Name,
-        type: IrType
-    ): FieldWithGetter {
-        val field = buildField {
-            this.name = name
-            this.type = type
-            visibility = Visibilities.PRIVATE
-        }.apply {
-            parent = clazz
-        }
-        clazz.addChild(field)
-
-        val getter = buildFun {
-            this.name =
-                Name.identifier("get${name.asString().capitalize()}") // todo remove once fixed
-            returnType = type
-        }.apply {
-            addMetadataIfNotLocal()
-            parent = clazz
-            dispatchReceiverParameter = clazz.thisReceiver!!.copyTo(this)
-            body = DeclarationIrBuilder(pluginContext, symbol).run {
-                irExprBody(
-                    irGetField(
-                        irGet(dispatchReceiverParameter!!),
-                        field
-                    )
-                )
-            }
-        }
-
-        clazz.addChild(getter)
-
-        return FieldWithGetter(field, getter)
-    }
-
-    fun classFactoryLambda(
-        readerTransformer: ReaderTransformer,
-        clazz: IrClass,
-        startOffset: Int,
-        endOffset: Int
-    ): IrExpression {
-        val parametersNameProvider = NameProvider()
-
-        val constructor = clazz.getInjectConstructor()
-
-        val assistedParameters = constructor?.valueParameters
-            ?.filter { it.type.hasAnnotation(InjektFqNames.Assisted) }
-            ?.map { valueParameter ->
-                FactoryParameter(
-                    name = parametersNameProvider.allocateForGroup(valueParameter.name).asString(),
-                    type = valueParameter.type,
-                    assisted = true
-                )
-            } ?: emptyList()
-
-        return factoryLambda(
-            readerTransformer,
-            assistedParameters,
-            clazz.defaultType,
-            startOffset,
-            endOffset
-        ) { _, assistedParametersMap ->
-            if (clazz.kind == ClassKind.OBJECT) {
-                irGetObject(clazz.symbol)
-            } else {
-                irCall(constructor!!).apply {
-                    var assistedIndex = 0
-                    constructor.valueParameters.forEachIndexed { index, valueParameter ->
-                        putValueArgument(
-                            index,
-                            if (valueParameter.type.hasAnnotation(InjektFqNames.Assisted)) {
-                                irGet(
-                                    assistedParametersMap.getValue(assistedParameters[assistedIndex])
-                                        .also { assistedIndex++ }
-                                )
-                            } else {
-                                IrCallImpl(
-                                    startOffset + index,
-                                    -1,
-                                    valueParameter.type,
-                                    pluginContext.referenceFunctions(FqName("com.ivianuu.injekt.get"))
-                                        .single()
-                                ).apply {
-                                    putTypeArgument(0, valueParameter.type)
-                                }
-                            }
-                        )
-                    }
-                }
-            }
-        }
-    }
 
     fun factoryLambda(
         readerTransformer: ReaderTransformer,
@@ -438,247 +225,6 @@ class InjektDeclarationIrBuilder(
         return builder.run {
             irCall(jvmName.constructors.single()).apply {
                 putValueArgument(0, irString(name))
-            }
-        }
-    }
-
-    fun generateAnnotationConstructorCall(annotationDescriptor: AnnotationDescriptor): IrConstructorCall? {
-        val annotationType = annotationDescriptor.type
-        val annotationClassDescriptor = annotationType.constructor.declarationDescriptor
-        if (annotationClassDescriptor !is ClassDescriptor) return null
-        if (annotationClassDescriptor is NotFoundClasses.MockClassDescriptor) return null
-
-        assert(DescriptorUtils.isAnnotationClass(annotationClassDescriptor)) {
-            "Annotation class expected: $annotationClassDescriptor"
-        }
-
-        val primaryConstructorDescriptor = annotationClassDescriptor.unsubstitutedPrimaryConstructor
-            ?: annotationClassDescriptor.constructors.singleOrNull()
-            ?: throw AssertionError("No constructor for annotation class $annotationClassDescriptor")
-        val primaryConstructorSymbol =
-            pluginContext.referenceConstructors(annotationClassDescriptor.fqNameSafe)
-                .single()
-
-        val psi = annotationDescriptor.source.safeAs<PsiSourceElement>()?.psi
-        val startOffset =
-            psi?.takeUnless { it.containingFile.fileType.isBinary }?.startOffset ?: UNDEFINED_OFFSET
-        val endOffset =
-            psi?.takeUnless { it.containingFile.fileType.isBinary }?.endOffset ?: UNDEFINED_OFFSET
-
-        val irCall = IrConstructorCallImpl.fromSymbolDescriptor(
-            startOffset, endOffset,
-            annotationType.toIrType(),
-            primaryConstructorSymbol
-        )
-
-        for (valueParameter in primaryConstructorDescriptor.valueParameters) {
-            val argumentIndex = valueParameter.index
-            val argumentValue =
-                annotationDescriptor.allValueArguments[valueParameter.name] ?: continue
-            val irArgument = generateConstantOrAnnotationValueAsExpression(
-                UNDEFINED_OFFSET,
-                UNDEFINED_OFFSET,
-                argumentValue,
-                valueParameter.varargElementType
-            )
-            if (irArgument != null) {
-                irCall.putValueArgument(argumentIndex, irArgument)
-            }
-        }
-
-        return irCall
-    }
-
-    private fun generateConstantOrAnnotationValueAsExpression(
-        startOffset: Int,
-        endOffset: Int,
-        constantValue: ConstantValue<*>,
-        varargElementType: KotlinType? = null
-    ): IrExpression? {
-        val constantKtType = constantValue.getType(pluginContext.moduleDescriptor)
-        val constantType = constantKtType.toIrType()
-
-        return when (constantValue) {
-            is StringValue -> IrConstImpl.string(
-                startOffset,
-                endOffset,
-                constantType,
-                constantValue.value
-            )
-            is IntValue -> IrConstImpl.int(
-                startOffset,
-                endOffset,
-                constantType,
-                constantValue.value
-            )
-            is UIntValue -> IrConstImpl.int(
-                startOffset,
-                endOffset,
-                constantType,
-                constantValue.value
-            )
-            is NullValue -> IrConstImpl.constNull(startOffset, endOffset, constantType)
-            is BooleanValue -> IrConstImpl.boolean(
-                startOffset,
-                endOffset,
-                constantType,
-                constantValue.value
-            )
-            is LongValue -> IrConstImpl.long(
-                startOffset,
-                endOffset,
-                constantType,
-                constantValue.value
-            )
-            is ULongValue -> IrConstImpl.long(
-                startOffset,
-                endOffset,
-                constantType,
-                constantValue.value
-            )
-            is DoubleValue -> IrConstImpl.double(
-                startOffset,
-                endOffset,
-                constantType,
-                constantValue.value
-            )
-            is FloatValue -> IrConstImpl.float(
-                startOffset,
-                endOffset,
-                constantType,
-                constantValue.value
-            )
-            is CharValue -> IrConstImpl.char(
-                startOffset,
-                endOffset,
-                constantType,
-                constantValue.value
-            )
-            is ByteValue -> IrConstImpl.byte(
-                startOffset,
-                endOffset,
-                constantType,
-                constantValue.value
-            )
-            is UByteValue -> IrConstImpl.byte(
-                startOffset,
-                endOffset,
-                constantType,
-                constantValue.value
-            )
-            is ShortValue -> IrConstImpl.short(
-                startOffset,
-                endOffset,
-                constantType,
-                constantValue.value
-            )
-            is UShortValue -> IrConstImpl.short(
-                startOffset,
-                endOffset,
-                constantType,
-                constantValue.value
-            )
-
-            is ArrayValue -> {
-                val arrayElementType =
-                    varargElementType ?: pluginContext.builtIns.getArrayElementType(constantKtType)
-                IrVarargImpl(
-                    startOffset, endOffset,
-                    constantType,
-                    arrayElementType.toIrType(),
-                    constantValue.value.mapNotNull {
-                        generateConstantOrAnnotationValueAsExpression(
-                            startOffset,
-                            endOffset,
-                            it,
-                            null
-                        )
-                    }
-                )
-            }
-
-            is EnumValue -> {
-                val enumEntryDescriptor =
-                    constantKtType.memberScope.getContributedClassifier(
-                        constantValue.enumEntryName,
-                        NoLookupLocation.FROM_BACKEND
-                    )
-                        ?: throw AssertionError("No such enum entry ${constantValue.enumEntryName} in $constantType")
-                if (enumEntryDescriptor !is ClassDescriptor) {
-                    throw AssertionError("Enum entry $enumEntryDescriptor should be a ClassDescriptor")
-                }
-                if (!DescriptorUtils.isEnumEntry(enumEntryDescriptor)) {
-                    // Error class descriptor for an unresolved entry.
-                    // TODO this `null` may actually reach codegen if the annotation is on an interface member's default implementation,
-                    //      as any bridge generated in an implementation of that interface will have a copy of the annotation. See
-                    //      `missingEnumReferencedInAnnotationArgumentIr` in `testData/compileKotlinAgainstCustomBinaries`: replace
-                    //      `open class B` with `interface B` and watch things break. (`KClassValue` below likely has a similar problem.)
-                    return null
-                }
-                IrGetEnumValueImpl(
-                    startOffset, endOffset,
-                    constantType,
-                    symbolTable.referenceEnumEntry(enumEntryDescriptor)
-                )
-            }
-
-            is AnnotationValue -> generateAnnotationConstructorCall(constantValue.value)
-
-            is KClassValue -> {
-                val classifierKtType = constantValue.getArgumentType(pluginContext.moduleDescriptor)
-                if (classifierKtType.isError) null
-                else {
-                    val classifierDescriptor = classifierKtType.constructor.declarationDescriptor
-                        ?: throw AssertionError("Unexpected KClassValue: $classifierKtType")
-
-                    IrClassReferenceImpl(
-                        startOffset, endOffset,
-                        constantValue.getType(pluginContext.moduleDescriptor).toIrType(),
-                        symbolTable.referenceClassifier(classifierDescriptor),
-                        classifierKtType.toIrType()
-                    )
-                }
-            }
-
-            is ErrorValue -> null
-
-            else -> TODO("Unexpected constant value: ${constantValue.javaClass.simpleName} $constantValue")
-        }
-    }
-
-    fun entryPointModule(
-        name: Name,
-        compositionType: IrType,
-        entryPoints: List<IrType>
-    ) = buildFun {
-        this.name = name
-        returnType = irBuiltIns.unitType
-        origin = InjektOrigin
-    }.apply {
-        annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
-            .noArgSingleConstructorCall(symbols.module)
-
-        addMetadataIfNotLocal()
-
-        body = DeclarationIrBuilder(pluginContext, symbol).run {
-            irBlockBody {
-                +irCall(
-                    pluginContext.referenceFunctions(
-                        FqName("com.ivianuu.injekt.composition.installIn")
-                    ).single()
-                ).apply {
-                    putTypeArgument(0, compositionType)
-                }
-
-                entryPoints.forEach { entryPoint ->
-                    +irCall(
-                        pluginContext.referenceFunctions(
-                            FqName("com.ivianuu.injekt.composition.entryPoint")
-                        ).single()
-                    ).apply {
-                        putTypeArgument(0, entryPoint)
-                    }
-                }
             }
         }
     }

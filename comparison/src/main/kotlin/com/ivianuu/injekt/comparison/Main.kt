@@ -16,10 +16,10 @@
 
 package com.ivianuu.injekt.comparison
 
+import com.ivianuu.injekt.buildComponents
 import com.ivianuu.injekt.comparison.base.runAllInjectionTests
-import com.ivianuu.injekt.composition.initializeCompositions
 
 fun main() {
-    initializeCompositions()
+    buildComponents()
     runAllInjectionTests()
 }

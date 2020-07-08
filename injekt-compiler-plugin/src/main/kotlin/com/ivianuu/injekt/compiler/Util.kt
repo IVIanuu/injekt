@@ -48,8 +48,10 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrMetadataSourceOwner
+import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
@@ -358,15 +360,9 @@ fun IrType.withNoArgAnnotations(pluginContext: IrPluginContext, qualifiers: List
     )
 }
 
-fun IrType.getQualifiers(): List<IrConstructorCall> {
-    return annotations
-        .filter {
-            it.type.classOrNull!!
-                .descriptor
-                .annotations
-                .hasAnnotation(InjektFqNames.Qualifier)
-        }
-}
+inline fun <T, R> Iterable<T>.flatMapFix(
+    block: (T) -> Iterable<R>
+): Iterable<R> = flatMap { block(it) }
 
 private fun IrType.copy(
     arguments: List<IrTypeArgument>,
@@ -519,9 +515,6 @@ fun KClassValue.getIrClass(
         .let { pluginContext.referenceClass(it)!!.owner }
 }
 
-val IrPluginContext.compositionsEnabled: Boolean
-    get() = referenceClass(InjektFqNames.CompositionFactory) != null
-
 fun String.asNameId(): Name = Name.identifier(this)
 
 fun FqName.child(name: String) = child(name.asNameId())
@@ -633,17 +626,6 @@ fun IrDeclaration.addToParentOrAbove(other: IrDeclarationWithVisibility) {
     }
 }
 
-private val kindField by lazy {
-    IrClassImpl::class.java
-        .declaredFields
-        .single { it.name == "kind" }
-        .also { it.isAccessible = true }!!
-}
-
-fun IrClass.setClassKind(kind: ClassKind) {
-    kindField.set(this as IrClassImpl, kind)
-}
-
 fun IrDeclaration.isExternalDeclaration() = origin ==
         IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
         origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
@@ -667,7 +649,7 @@ fun IrPluginContext.tmpFunction(n: Int): IrClassSymbol =
 fun IrPluginContext.tmpSuspendFunction(n: Int): IrClassSymbol =
     referenceClass(builtIns.getSuspendFunction(n).fqNameSafe)!!
 
-fun IrType.isProvider() = isFunction() && hasAnnotation(InjektFqNames.Provider)
+fun IrType.isProvider() = isFunction() //&& hasAnnotation(InjektFqNames.Provider)
 
 fun IrType.isNoArgProvider() = isProvider() && typeArguments.size == 1
 
@@ -792,3 +774,6 @@ valueParameters.map { it.type }.map {
     it.classifierOrFail.descriptor.fqNameSafe
 }.hashCode().absoluteValue
 }"
+
+val IrModuleFragment.infoPackageFile: IrFile
+    get() = files.single { it.fqName == InjektFqNames.InfoPackage }

@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
+import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
@@ -50,6 +51,10 @@ class InjektComponentRegistrar : ComponentRegistrar {
         TypeResolutionInterceptor.registerExtension(
             project,
             InjektTypeAnnotationResolutionInterceptorExtension(typeAnnotationChecker)
+        )
+        AnalysisHandlerExtension.registerExtension(
+            project,
+            InfoPackageGenerator()
         )
     }
 

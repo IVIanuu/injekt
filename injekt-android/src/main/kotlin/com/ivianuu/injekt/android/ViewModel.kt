@@ -19,48 +19,26 @@ package com.ivianuu.injekt.android
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.composition.BindingAdapter
+import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.unscoped
+import kotlin.reflect.KClass
 
-@BindingAdapter(ActivityComponent::class)
-annotation class ActivityViewModel {
-    companion object {
-        @Module
-        inline operator fun <reified T : ViewModel> invoke() {
-            baseViewModel<T, @ForActivity ViewModelStoreOwner>()
+@Reader
+inline fun <reified T : ViewModel> viewModel(
+    owner: ViewModelStoreOwner = get<ActivityViewModelStoreOwner>(),
+    noinline init: () -> T = { get() }
+) = _viewModel(T::class, owner, init)
+
+@PublishedApi
+internal fun <T : ViewModel> _viewModel(
+    clazz: KClass<T>,
+    owner: ViewModelStoreOwner,
+    init: () -> T
+): T {
+    return ViewModelProvider(
+        owner,
+        object : ViewModelProvider.Factory {
+            override fun <T : ViewModel?> create(modelClass: Class<T>): T = init() as T
         }
-    }
+    )[clazz.java]
 }
-
-@BindingAdapter(FragmentComponent::class)
-annotation class FragmentViewModel {
-    companion object {
-        @Module
-        inline operator fun <reified T : ViewModel> invoke() {
-            baseViewModel<T, @ForFragment ViewModelStoreOwner>()
-        }
-    }
-}
-
-@Module
-inline fun <reified T : ViewModel, S : ViewModelStoreOwner> baseViewModel() {
-    unscoped<@UnscopedViewModel T>()
-    unscoped {
-        val viewModelProvider = get<@Provider () -> @UnscopedViewModel T>()
-        ViewModelProvider(
-            get<S>(),
-            object : ViewModelProvider.Factory {
-                override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                    viewModelProvider() as T
-            }
-        ).get(T::class.java)
-    }
-}
-
-@Target(AnnotationTarget.TYPE)
-@Qualifier
-private annotation class UnscopedViewModel

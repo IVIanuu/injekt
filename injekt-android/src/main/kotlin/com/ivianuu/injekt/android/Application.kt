@@ -19,29 +19,37 @@ package com.ivianuu.injekt.android
 import android.app.Application
 import android.content.Context
 import android.content.res.Resources
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.ApplicationComponent
-import com.ivianuu.injekt.ForApplication
-import com.ivianuu.injekt.alias
-import com.ivianuu.injekt.composition.CompositionFactory
-import com.ivianuu.injekt.composition.compositionFactoryOf
-import com.ivianuu.injekt.create
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.DistinctType
+import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.Unscoped
+import com.ivianuu.injekt.componentFactory
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.unscoped
 
 val Application.applicationComponent: ApplicationComponent
     get() = ProcessLifecycleOwner.get().lifecycle.singleton {
-        compositionFactoryOf<ApplicationComponent,
-                @CompositionFactory (Application) -> ApplicationComponent>()
-            .invoke(this)
+        componentFactory<ApplicationComponentFactory>()
+            .create(this)
     }
 
-@CompositionFactory
-fun createApplicationComponent(instance: Application): ApplicationComponent {
-    unscoped { instance }
-    alias<Application, @ForApplication Context>()
-    unscoped<@ForApplication Resources> { get<Application>().resources }
-    unscoped<@ForApplication LifecycleOwner> { ProcessLifecycleOwner.get() }
-    return create()
+@Component.Factory
+interface ApplicationComponentFactory {
+    fun create(instance: Application): ApplicationComponent
+}
+
+@DistinctType
+typealias ApplicationContext = Context
+@DistinctType
+typealias ApplicationResources = Resources
+
+object ApplicationModule {
+    @Unscoped
+    @Reader
+    fun context(): ApplicationContext = get<Application>()
+
+    @Unscoped
+    @Reader
+    fun resources(): ApplicationResources = get<Application>().resources
 }

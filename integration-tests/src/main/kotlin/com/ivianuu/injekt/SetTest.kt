@@ -74,12 +74,13 @@ class SetTest {
         }
          """
     ) {
-        val set =
+        /*val set =
             invokeSingleFile<@Provider () -> Set<Command>>()().toList()
         assertEquals(3, set.size)
         assertTrue(set[0] is CommandA)
         assertTrue(set[1] is CommandB)
-        assertTrue(set[2] is CommandC)
+        assertTrue(set[2] is CommandC)*/
+        TODO()
     }
 
     @Test
@@ -101,12 +102,13 @@ class SetTest {
         fun invoke() = factory().a
          """
     ) {
-        val set =
+        /*val set =
             invokeSingleFile<Set<@Provider () -> Command>>().toList()
         assertEquals(3, set.size)
         assertTrue(set[0]() is CommandA)
         assertTrue(set[1]() is CommandB)
-        assertTrue(set[2]() is CommandC)
+        assertTrue(set[2]() is CommandC)*/
+        TODO()
     }
 
     @Test
@@ -126,12 +128,13 @@ class SetTest {
         }
          """
     ) {
-        val set =
+        /*val set =
             invokeSingleFile<@Provider () -> Set<@Provider () -> Command>>()().toList()
         assertEquals(3, set.size)
         assertTrue(set[0]() is CommandA)
         assertTrue(set[1]() is CommandB)
-        assertTrue(set[2]() is CommandC)
+        assertTrue(set[2]() is CommandC)*/
+        TODO()
     }
 
     @Test
@@ -153,12 +156,13 @@ class SetTest {
         fun invoke() = factory().a
          """
     ) {
-        val set =
+        /*val set =
             invokeSingleFile<Set<@Provider (String) -> Command>>().toList()
         assertEquals(3, set.size)
         assertTrue(set[0]("a") is CommandA)
         assertTrue(set[1]("b") is CommandB)
-        assertTrue(set[2]("c") is CommandC)
+        assertTrue(set[2]("c") is CommandC)*/
+        TODO()
     }
 
     @Test
@@ -180,12 +184,13 @@ class SetTest {
         fun invoke() = factory().a
          """
     ) {
-        val set =
+        /*val set =
             invokeSingleFile<@Provider () -> Set<@Provider (String) -> Command>>()().toList()
         assertEquals(3, set.size)
         assertTrue(set[0]("a") is CommandA)
         assertTrue(set[1]("b") is CommandB)
-        assertTrue(set[2]("c") is CommandC)
+        assertTrue(set[2]("c") is CommandC)*/
+        TODO()
     }
 
     @Test

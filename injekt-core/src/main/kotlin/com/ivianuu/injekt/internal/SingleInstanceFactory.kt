@@ -16,9 +16,7 @@
 
 package com.ivianuu.injekt.internal
 
-import com.ivianuu.injekt.Provider
-
-class SingleInstanceFactory<T>(private val instance: T) : @Provider () -> T {
+class SingleInstanceFactory<T>(private val instance: T) : () -> T {
 
     override fun invoke() = instance
 

@@ -16,9 +16,7 @@
 
 package com.ivianuu.injekt.internal
 
-import com.ivianuu.injekt.Provider
-
-class DelegateFactory<T> : @Provider () -> T {
-    lateinit var delegate: @Provider () -> T
+class DelegateFactory<T> : () -> T {
+    lateinit var delegate: () -> T
     override fun invoke(): T = delegate()
 }

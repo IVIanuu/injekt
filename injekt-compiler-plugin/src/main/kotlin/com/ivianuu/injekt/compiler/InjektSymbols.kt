@@ -17,118 +17,33 @@
 package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
-import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
-import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 
 class InjektSymbols(val pluginContext: IrPluginContext) {
-
-    val injektAst: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.InjektAst)!!
-
-    private fun IrClassSymbol.childClass(name: Name) = owner.declarations
-        .filterIsInstance<IrClass>()
-        .singleOrNull { it.name == name }
-        ?.symbol ?: error("Couldn't find $name in ${owner.dump()}")
-
-    val astAlias: IrClassSymbol
-        get() = injektAst.childClass(InjektFqNames.AstAlias.shortName())
-    val astBinding: IrClassSymbol
-        get() = injektAst.childClass(InjektFqNames.AstBinding.shortName())
-    val astChildFactory: IrClassSymbol
-        get() = injektAst.childClass(InjektFqNames.AstChildFactory.shortName())
-    val astCompositionTypes: IrClassSymbol
-        get() = injektAst.childClass(InjektFqNames.AstCompositionTypes.shortName())
-    val astContext: IrClassSymbol
-        get() = injektAst.childClass(InjektFqNames.AstContext.shortName())
-    val astDependency: IrClassSymbol
-        get() = injektAst.childClass(InjektFqNames.AstDependency.shortName())
-    val astEntryPoints: IrClassSymbol
-        get() = injektAst.childClass(InjektFqNames.AstEntryPoints.shortName())
-    val astMap: IrClassSymbol
-        get() = injektAst.childClass(InjektFqNames.AstMap.shortName())
-    val astMapEntry: IrClassSymbol
-        get() = astMap.childClass(InjektFqNames.AstMapEntry.shortName())
-    val astMapClassKey: IrClassSymbol
-        get() = astMap.childClass(InjektFqNames.AstMapClassKey.shortName())
-    val astMapTypeParameterClassKey: IrClassSymbol
-        get() = astMap.childClass(InjektFqNames.AstMapTypeParameterClassKey.shortName())
-    val astMapIntKey: IrClassSymbol
-        get() = astMap.childClass(InjektFqNames.AstMapIntKey.shortName())
-    val astMapLongKey: IrClassSymbol
-        get() = astMap.childClass(InjektFqNames.AstMapLongKey.shortName())
-    val astMapStringKey: IrClassSymbol
-        get() = astMap.childClass(InjektFqNames.AstMapStringKey.shortName())
-    val astModule: IrClassSymbol
-        get() = injektAst.childClass(InjektFqNames.AstModule.shortName())
-    val astName: IrClassSymbol
-        get() = injektAst.childClass(InjektFqNames.AstName.shortName())
-    val astPath: IrClassSymbol
-        get() = injektAst.childClass(InjektFqNames.AstPath.shortName())
-    val astClassPath: IrClassSymbol
-        get() = astPath.childClass(InjektFqNames.AstClassPath.shortName())
-    val astPropertyPath: IrClassSymbol
-        get() = astPath.childClass(InjektFqNames.AstPropertyPath.shortName())
-    val astTypeParameterPath: IrClassSymbol
-        get() = astPath.childClass(InjektFqNames.AstTypeParameterPath.shortName())
-    val astParents: IrClassSymbol
-        get() = injektAst.childClass(InjektFqNames.AstParents.shortName())
-    val astScope: IrClassSymbol
-        get() = injektAst.childClass(InjektFqNames.AstScope.shortName())
-    val astScoped: IrClassSymbol
-        get() = injektAst.childClass(InjektFqNames.AstScoped.shortName())
-    val astSet: IrClassSymbol
-        get() = injektAst.childClass(InjektFqNames.AstSet.shortName())
-    val astSetElement: IrClassSymbol
-        get() = astSet.childClass(InjektFqNames.AstSetElement.shortName())
-
-    val assisted: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.Assisted)!!
-
-    val childFactory: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.ChildFactory)!!
-
+    val component: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.Component)!!
+    val componentFactory: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.ComponentFactory)!!
+    val contextMarker: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.ContextMarker)!!
     val delegateFactory: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.DelegateFactory)!!
-
+    val distinctType: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.DistinctType)!!
     val doubleCheck: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.DoubleCheck)!!
-
-    val factory: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.Factory)!!
-
+    val injektInfo: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.InjektInfo)!!
     val lateinitFactory: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.LateinitFactory)!!
-
-    val mapDsl: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.MapDsl)!!
-    val mapOfValueFactory: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.MapOfValueFactory)!!
-    val mapOfProviderFactory: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.MapOfProviderFactory)!!
-
-    val module: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.Module)!!
-
-    val provider: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.Provider)!!
-
+    val mapEntries: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.MapEntries)!!
+    val name: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.Name)!!
     val reader: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.Reader)!!
-
-    val setDsl: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.SetDsl)!!
-    val setOfValueFactory: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.SetOfValueFactory)!!
-    val setOfProviderFactory: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.SetOfProviderFactory)!!
-
-    val singleInstanceFactory: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.SingleInstanceFactory)!!
-
+    val setElements: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.SetElements)!!
     val unscoped: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.Unscoped)!!
 }

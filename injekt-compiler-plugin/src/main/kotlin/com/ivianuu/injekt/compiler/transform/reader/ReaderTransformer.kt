@@ -77,7 +77,6 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
@@ -97,7 +96,6 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.defaultType
-import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.constructedClass
@@ -105,7 +103,6 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
@@ -117,7 +114,6 @@ import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
@@ -150,50 +146,17 @@ class ReaderTransformer(
     fun getTransformedFunction(function: IrFunction): IrFunction =
         transformFunctionIfNeeded(function)
 
-    override fun visitModuleFragment(declaration: IrModuleFragment): IrModuleFragment {
-        super.visitModuleFragment(declaration)
-
-        declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
+    override fun lower() {
+        module.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitClass(declaration: IrClass): IrStatement =
                 transformClassIfNeeded(super.visitClass(declaration) as IrClass)
         })
 
-        declaration.transformChildrenVoid(object : IrElementTransformerVoid() {
+        module.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFunction(declaration: IrFunction): IrStatement =
                 transformFunctionIfNeeded(super.visitFunction(declaration) as IrFunction)
         })
 
-        addContextClassesToFiles()
-
-        // todo check if this is needed
-        declaration.rewriteTransformedFunctionRefs()
-
-        declaration.acceptVoid(symbolRemapper)
-
-        val typeRemapper = ReaderTypeRemapper(pluginContext, symbolRemapper)
-        val transformer = DeepCopyIrTreeWithSymbolsPreservingMetadata(
-            pluginContext,
-            symbolRemapper,
-            typeRemapper
-        )
-        declaration.files.forEach {
-            it.transformChildren(
-                transformer,
-                null
-            )
-        }
-        declaration.patchDeclarationParents()
-
-        transformedFunctions.forEach { (original, transformed) ->
-            val remapped = symbolRemapper.getReferencedFunction(transformed.symbol).owner
-            remappedTransformedFunctions[original] = remapped
-            remappedTransformedFunctions[transformed] = remapped
-        }
-
-        return declaration
-    }
-
-    fun addContextClassesToFiles() {
         transformedFunctions
             .filterNot { it.key.isExternalDeclaration() }
             .forEach {
@@ -212,6 +175,31 @@ class ReaderTransformer(
                     it.file.addChild(contextClass)
                 }
             }
+
+        // todo check if this is needed
+        module.rewriteTransformedFunctionRefs()
+
+        module.acceptVoid(symbolRemapper)
+
+        val typeRemapper = ReaderTypeRemapper(pluginContext, symbolRemapper)
+        val transformer = DeepCopyIrTreeWithSymbolsPreservingMetadata(
+            pluginContext,
+            symbolRemapper,
+            typeRemapper
+        )
+        module.files.forEach {
+            it.transformChildren(
+                transformer,
+                null
+            )
+        }
+        module.patchDeclarationParents()
+
+        transformedFunctions.forEach { (original, transformed) ->
+            val remapped = symbolRemapper.getReferencedFunction(transformed.symbol).owner
+            remappedTransformedFunctions[original] = remapped
+            remappedTransformedFunctions[transformed] = remapped
+        }
     }
 
     private fun IrFunctionAccessExpression.getReaderLambdaArguments(): List<IrExpression> {
@@ -250,13 +238,13 @@ class ReaderTransformer(
 
         if (clazz.isExternalDeclaration()) {
             val contextClass =
-                moduleFragment.descriptor.getPackage(clazz.getPackageFragment()!!.fqName)
+                module.descriptor.getPackage(clazz.getPackageFragment()!!.fqName)
                     .memberScope
                     .getContributedDescriptors()
                     .filterIsInstance<ClassDescriptor>()
-                    .filter { it.hasAnnotation(InjektFqNames.AstName) }
+                    .filter { it.hasAnnotation(InjektFqNames.Name) }
                     .single {
-                        it.annotations.findAnnotation(InjektFqNames.AstName)!!
+                        it.annotations.findAnnotation(InjektFqNames.Name)!!
                             .argumentValue("name")
                             .let { it as StringValue }
                             .value == clazz.uniqueName()
@@ -288,10 +276,10 @@ class ReaderTransformer(
             parentFunction?.let { copyTypeParametersFrom(it) }
 
             annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
-                .noArgSingleConstructorCall(symbols.astContext)
+                .noArgSingleConstructorCall(symbols.contextMarker)
 
             annotations += DeclarationIrBuilder(pluginContext, symbol).run {
-                irCall(symbols.astName.constructors.single()).apply {
+                irCall(symbols.name.constructors.single()).apply {
                     putValueArgument(
                         0,
                         irString(clazz.uniqueName())
@@ -543,13 +531,13 @@ class ReaderTransformer(
             }
 
             val contextClass =
-                moduleFragment.descriptor.getPackage(function.getPackageFragment()!!.fqName)
+                module.descriptor.getPackage(function.getPackageFragment()!!.fqName)
                     .memberScope
                     .getContributedDescriptors()
                     .filterIsInstance<ClassDescriptor>()
-                    .filter { it.hasAnnotation(InjektFqNames.AstName) }
+                    .filter { it.hasAnnotation(InjektFqNames.Name) }
                     .single {
-                        it.annotations.findAnnotation(InjektFqNames.AstName)!!
+                        it.annotations.findAnnotation(InjektFqNames.Name)!!
                             .argumentValue("name")
                             .let { it as StringValue }
                             .value == transformedFunction.uniqueName()
@@ -588,7 +576,7 @@ class ReaderTransformer(
             parentFunction?.let { copyTypeParametersFrom(it) }
 
             annotations += DeclarationIrBuilder(pluginContext, symbol).run {
-                irCall(symbols.astName.constructors.single()).apply {
+                irCall(symbols.name.constructors.single()).apply {
                     putValueArgument(
                         0,
                         irString(transformedFunction.uniqueName())

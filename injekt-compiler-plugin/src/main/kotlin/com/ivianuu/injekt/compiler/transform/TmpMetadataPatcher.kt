@@ -22,24 +22,28 @@ import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
 // todo once we can use FIR
 class TmpMetadataPatcher(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
-    override fun visitFile(declaration: IrFile): IrFile {
-        (declaration as IrFileImpl).metadata =
-            MetadataSource.File(
-                (declaration.metadata!!.descriptors + (declaration.declarations
-                    .filter {
-                        it.origin == InjektOrigin ||
-                                (!it.hasAnnotation(InjektFqNames.Module) &&
-                                        !it.hasAnnotation(InjektFqNames.Reader))
-                    })
-                    .map { it.descriptor })
-                    .distinct()
-            )
-        return super.visitFile(declaration)
+    override fun lower() {
+        module.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitFile(declaration: IrFile): IrFile {
+                (declaration as IrFileImpl).metadata =
+                    MetadataSource.File(
+                        (declaration.metadata!!.descriptors + (declaration.declarations
+                            .filter {
+                                it.origin == InjektOrigin || !it.hasAnnotation(InjektFqNames.Reader)
+                            })
+                            .map { it.descriptor })
+                            .distinct()
+                    )
+                return declaration
+            }
+        })
     }
 
 }
