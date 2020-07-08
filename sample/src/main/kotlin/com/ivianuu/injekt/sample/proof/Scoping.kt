@@ -14,7 +14,16 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.sample.proof
 
-@Component
-interface ApplicationComponent
+import java.util.concurrent.ConcurrentHashMap
+
+class Storage {
+    @PublishedApi
+    internal val instances = ConcurrentHashMap<Any, Any?>()
+    inline fun <T> scope(key: Any = sourceLocation(), init: () -> T): T =
+        instances.getOrPut(key, init) as T
+}
+
+fun <T> scope(key: Any = sourceLocation(), init: () -> T): T =
+    given<Storage>().scope(key, init)

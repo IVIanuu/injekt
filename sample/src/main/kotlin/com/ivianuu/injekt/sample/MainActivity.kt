@@ -28,8 +28,6 @@ import androidx.work.WorkManager
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.android.ActivityContext
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.sample.proof.Provide
-import com.ivianuu.injekt.sample.proof.retainedActivityScoped
 import com.ivianuu.injekt.sample.proof.runReader
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch

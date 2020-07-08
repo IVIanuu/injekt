@@ -4,7 +4,6 @@ include(
     ":composition-integration-tests",
     ":injekt-android",
     ":injekt-android-work",
-    ":injekt-common",
     ":injekt-compiler-plugin",
     ":injekt-core",
     ":injekt-gradle-plugin",

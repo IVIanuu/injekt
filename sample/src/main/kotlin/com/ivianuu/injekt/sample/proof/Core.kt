@@ -14,9 +14,30 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.sample
+package com.ivianuu.injekt.sample.proof
 
+import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.internal.injektIntrinsic
+
+fun buildContexts(): Unit = injektIntrinsic()
+
+fun sourceLocation(): Any = injektIntrinsic()
+
+inline fun <R> runReader(
+    block: @Reader () -> R
+): R = injektIntrinsic()
+
+@Reader
+inline fun <R> withInstances(
+    vararg instances: Any?,
+    block: @Reader () -> R
+): R = injektIntrinsic()
+
+@Reader
+inline fun <R> withProviders(
+    vararg instances: () -> Any?,
+    block: @Reader () -> R
+): R = injektIntrinsic()
 
 annotation class Given
 

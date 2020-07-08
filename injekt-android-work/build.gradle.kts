@@ -32,7 +32,6 @@ android {
 }
 
 dependencies {
-    api(project(":injekt-common"))
     kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
     api(Deps.AndroidX.work)
     testImplementation(Deps.AndroidX.Test.core)

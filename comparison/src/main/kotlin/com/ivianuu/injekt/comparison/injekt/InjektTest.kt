@@ -22,18 +22,14 @@ object InjektTest : InjectionTest {
 
     override val name = "Injekt"
 
-    private var component: FibComponent? = null
-
     override fun setup() {
-        component = createFibComponent()
     }
 
     override fun inject() {
-        component!!.fib8
+
     }
 
     override fun shutdown() {
-        component = null
     }
 
 }

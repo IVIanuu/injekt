@@ -16,14 +16,11 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.DistinctType
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.Scoped
-import com.ivianuu.injekt.Unscoped
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.sample.proof.Provide
 import java.io.File
 
 @Provide

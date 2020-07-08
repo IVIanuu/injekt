@@ -52,10 +52,9 @@ dependencies {
 
     implementation(Deps.guice)
 
-    implementation(project(":injekt-core"))
-    implementation(project(":injekt-common"))
-    implementation(project(":injekt-android"))
-    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
+    //implementation(project(":injekt-core"))
+    //implementation(project(":injekt-android"))
+    //kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
 
     implementation(Deps.katana)
 
