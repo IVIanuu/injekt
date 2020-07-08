@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -49,6 +48,7 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
+import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -183,7 +183,7 @@ class ComponentImpl(
                         val bindingExpression = componentExpressions.getBindingExpression(
                             BindingRequest(
                                 function.returnType
-                                    .substituteAndKeepQualifiers(
+                                    .substitute(
                                         superClass.typeParameters
                                             .map { it.symbol }
                                             .zip(typeArguments)
@@ -233,7 +233,7 @@ class ComponentImpl(
                     dependencyRequests[declaration] =
                         BindingRequest(
                             type
-                                .substituteAndKeepQualifiers(
+                                .substitute(
                                     typeParameters.map { it.symbol }.associateWith {
                                         typeArguments[it.owner.index]
                                     }

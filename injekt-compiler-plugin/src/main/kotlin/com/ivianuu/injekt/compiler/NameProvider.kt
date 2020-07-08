@@ -24,16 +24,6 @@ class NameProvider {
 
     private val indicesByName = mutableMapOf<String, Int>()
 
-    fun allocate(name: String) {
-        check(name !in indicesByName) {
-            "Name already exists $name"
-        }
-    }
-
-    fun allocate(name: Name) {
-        allocate(name.asString())
-    }
-
     fun allocateForGroup(group: Name): Name {
         return allocateForGroup(group.asString()).asNameId()
     }

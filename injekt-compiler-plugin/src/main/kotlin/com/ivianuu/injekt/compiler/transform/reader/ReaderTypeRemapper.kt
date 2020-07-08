@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.transform.reader
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.makeKotlinType
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -333,7 +332,7 @@ class ReaderTypeRemapper(
         val newArguments = newIrArguments.map { remapTypeArgument(it) }
 
         return IrSimpleTypeImpl(
-            makeKotlinType(classifier, newArguments, type.hasQuestionMark, type.annotations),
+            null,
             classifier,
             type.hasQuestionMark,
             newArguments,
@@ -346,7 +345,7 @@ class ReaderTypeRemapper(
         val classifier = symbolRemapper.getReferencedClassifier(type.classifier)
         val arguments = type.arguments.map { remapTypeArgument(it) }
         return IrSimpleTypeImpl(
-            makeKotlinType(classifier, arguments, type.hasQuestionMark, type.annotations),
+            null,
             classifier,
             type.hasQuestionMark,
             arguments,
