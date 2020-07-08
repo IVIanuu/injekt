@@ -74,9 +74,7 @@ class ComponentFactoryImpl(
         }
     }
 
-    val componentImpl = ComponentImpl(this).also {
-
-    }
+    val componentImpl = ComponentImpl(this)
 
     fun getClass(): IrClass {
         factoryClass.addFunction {

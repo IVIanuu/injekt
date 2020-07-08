@@ -153,7 +153,7 @@ class NullBindingNode(
 class ProviderBindingNode(
     key: Key,
     owner: ComponentImpl,
-    origin: FqName?
+    origin: FqName?,
 ) : BindingNode(
     key,
     null,
@@ -174,13 +174,13 @@ class ProvisionBindingNode(
     key: Key,
     context: IrClass?,
     dependencies: List<BindingRequest>,
-    targetScope: IrType?,
+    targetComponent: IrType?,
     scoped: Boolean,
     owner: ComponentImpl,
     origin: FqName?,
     val createExpression: IrBuilderWithScope.(Map<InjektDeclarationIrBuilder.FactoryParameter, () -> IrExpression?>) -> IrExpression,
     val parameters: List<InjektDeclarationIrBuilder.FactoryParameter>
-) : BindingNode(key, context, dependencies, targetScope, scoped, owner, origin)
+) : BindingNode(key, context, dependencies, targetComponent, scoped, owner, origin)
 
 fun IrType.asKey(): Key {
     return Key(this)

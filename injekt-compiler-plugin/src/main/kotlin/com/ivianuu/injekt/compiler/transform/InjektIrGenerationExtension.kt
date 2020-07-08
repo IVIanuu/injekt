@@ -37,7 +37,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         ComponentTransformer(pluginContext).doLower(moduleFragment)
         TmpMetadataPatcher(pluginContext).doLower(moduleFragment)
 
-        //println(moduleFragment.dumpSrc())
+        println(moduleFragment.dumpSrc())
     }
 
 }

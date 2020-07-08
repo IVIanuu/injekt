@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.composition
+package com.ivianuu.injekt
 
 import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.assertCompileError
-import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen

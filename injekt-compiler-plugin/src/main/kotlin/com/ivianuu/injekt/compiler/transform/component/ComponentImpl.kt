@@ -154,8 +154,6 @@ class ComponentImpl(
 
                 +irCall(constructor)
             }
-        }.also {
-            println(clazz.dumpSrc())
         }
     }
 
@@ -252,7 +250,6 @@ class ComponentImpl(
     private fun collectDependencyRequests() {
         fun IrClass.collectDependencyRequests(typeArguments: List<IrType>) {
             for (declaration in declarations.filterIsInstance<IrFunction>()) {
-                println("check decl ${declaration.render()}")
                 fun reqisterRequest(type: IrType) {
                     dependencyRequests[declaration] =
                         BindingRequest(
@@ -282,8 +279,6 @@ class ComponentImpl(
                     )
                 }
         }
-
-        println("entry points ${factoryImpl.node.entryPoints.map { it.entryPoint.defaultType.render() }}")
 
         factoryImpl.node.entryPoints.forEach {
             it.entryPoint.collectDependencyRequests(emptyList())

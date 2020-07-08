@@ -41,10 +41,6 @@ class ComponentTree(
         allFactories.forEach { (_, factories) ->
             factories.forEach { getOrCreateNode(it) }
         }
-
-        println("all entry points ${allEntryPoints.mapKeys {
-            it.key.render()
-        }.mapValues { it.value.map { it.entryPoint.render() } }}")
     }
 
     private fun getNodesForComponent(component: IrType): List<ComponentNode> {

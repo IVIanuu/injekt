@@ -25,9 +25,9 @@ import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
-import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -36,8 +36,10 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -67,34 +69,29 @@ class ChildComponentFactoryBindingResolver(
         key: Key,
         node: ComponentNode
     ) = lazy {
-        val childComponentExpression = InjektDeclarationIrBuilder(
-            parentComponent.factoryImpl.pluginContext,
-            node.factory.factory.symbol
-        ).irLambda(key.type) { lambda ->
-            val childComponentFactoryImpl = ComponentFactoryImpl(
-                parentComponent.clazz,
-                node,
-                parentComponent.factoryImpl,
-                parentComponent.factoryImpl.pluginContext,
-                parentComponent.factoryImpl.declarationGraph,
-                parentComponent.factoryImpl.symbols,
-            )
-
-            +childComponentFactoryImpl.getClass()
-            +irReturn(
-                irCall(
-                    childComponentFactoryImpl.factoryClass.constructors
-                        .single()
-                )
-            )
-        }
-
         return@lazy ChildComponentFactoryBindingNode(
             key = key,
             owner = parentComponent,
             origin = node.factory.factory.descriptor.fqNameSafe,
             parent = parentComponent.clazz,
-            childComponentExpression = { childComponentExpression }
+            childComponentExpression = {
+                irBlock {
+                    val childComponentFactoryImpl = ComponentFactoryImpl(
+                        parentComponent.clazz,
+                        node,
+                        parentComponent.factoryImpl,
+                        parentComponent.factoryImpl.pluginContext,
+                        parentComponent.factoryImpl.declarationGraph,
+                        parentComponent.factoryImpl.symbols,
+                    )
+
+                    +childComponentFactoryImpl.getClass()
+                    +irCall(
+                        childComponentFactoryImpl.factoryClass.constructors
+                            .single()
+                    )
+                }
+            }
         )
     }
 }
@@ -192,7 +189,7 @@ class ProvideBindingResolver(
                 .filter { it.function.returnType.asKey() == requestedKey }
                 .map { binding ->
                     val function = binding.function
-                    val scope = function.getClassFromSingleValueAnnotationOrNull(
+                    val targetComponent = function.getClassFromSingleValueAnnotationOrNull(
                         InjektFqNames.Scoped, pluginContext
                     )
 
@@ -279,8 +276,8 @@ class ProvideBindingResolver(
                         key = requestedKey,
                         context = readerContext,
                         dependencies = dependencies,
-                        targetScope = scope?.defaultType,
-                        scoped = scope != null,
+                        targetComponent = targetComponent?.defaultType,
+                        scoped = targetComponent != null,
                         createExpression = { parametersMap ->
                             irCall(function).apply {
                                 if (function.dispatchReceiverParameter != null) {

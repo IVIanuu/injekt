@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.composition
+package com.ivianuu.injekt
 
 import com.ivianuu.injekt.test.assertCompileError
 import com.ivianuu.injekt.test.assertOk

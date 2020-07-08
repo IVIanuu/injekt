@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.isProvider
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.types.classifierOrFail
+import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.render
@@ -59,21 +60,22 @@ class Graph(
                 }} in '${component.origin}'"
             )
         }
+
+        binding = bindings.singleOrNull()
+
         if (binding?.targetComponent != null &&
-            binding.targetComponent?.classifierOrFail != component.factoryImpl.node.component.symbol
+            binding.targetComponent != component.factoryImpl.node.component.defaultType
         ) {
             if (parent == null) {
                 error(
-                    "Scope mismatch binding '${binding.key}' " +
-                            "with scope '${binding.targetComponent?.render()}' is not compatible with this component " +
+                    "Component mismatch binding '${binding.key}' " +
+                            "requires component '${binding.targetComponent?.render()}' but component is " +
                             "${component.factoryImpl.node.component.render()} '${component.origin}'"
                 )
             } else {
                 binding = null
             }
         }
-
-        binding = bindings.singleOrNull()
 
         binding?.let {
             resolvedBindings[request.key] = it

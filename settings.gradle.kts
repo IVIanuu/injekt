@@ -1,7 +1,6 @@
 include(
     ":android-integration-tests",
     ":comparison",
-    ":composition-integration-tests",
     ":injekt-android",
     ":injekt-android-work",
     ":injekt-common",

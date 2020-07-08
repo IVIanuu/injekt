@@ -56,6 +56,42 @@ class ComponentTest {
     }
 
     @Test
+    fun testSimpleWithChild() = codegen(
+        """
+        @Component
+        interface ParentComponent {
+            @Component.Factory
+            interface Factory {
+                fun create(): ParentComponent
+            }
+        }
+        
+        @Component(parent = ParentComponent::class)
+        interface ChildComponent {
+            @Component.Factory
+            interface Factory {
+                fun create(): ChildComponent
+            }
+        }
+        
+        @Scoped(ParentComponent::class) @Reader
+        fun foo() = Foo()
+        @Unscoped @Reader
+        fun bar() = Bar(get())
+        
+        fun invoke(): Bar {
+            buildComponents()
+            val childComponent = componentFactory<ParentComponent.Factory>().create().runReader {
+                get<ChildComponent.Factory>().create()
+            }
+            return childComponent.runReader { get<Bar>() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
+    }
+
+    @Test
     fun testUnscoped() = codegen(
         """
         @Factory
@@ -92,6 +128,42 @@ class ComponentTest {
             invokeSingleFile(),
             invokeSingleFile()
         )
+    }
+
+    @Test
+    fun testUnscopedProvider() = codegen(
+        """
+        @Factory
+        fun factory(): TestComponent1<@Provider () -> Foo> { 
+            unscoped { Foo() }
+            return create()
+        }
+        
+        fun invoke() = factory().a
+    """
+    ) {
+        /*val provider =
+            invokeSingleFile<@Provider () -> Foo>()
+        assertNotSame(provider(), provider())*/
+        TODO()
+    }
+
+    @Test
+    fun testScopedProvider() = codegen(
+        """
+        @Factory
+        fun factory(): TestComponent1<@Provider () -> Foo> { 
+            scoped { Foo() }
+            return create()
+        }
+        
+        fun invoke() = factory().a
+    """
+    ) {
+        /*val provider =
+            invokeSingleFile<@Provider () -> Foo>()
+        assertSame(provider(), provider())*/
+        TODO()
     }
 
     @Test

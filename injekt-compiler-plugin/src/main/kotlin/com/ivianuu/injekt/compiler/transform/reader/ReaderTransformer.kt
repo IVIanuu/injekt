@@ -287,8 +287,6 @@ class ReaderTransformer(
                     )
                 }
             }
-
-            println("lol ${dump()}")
         }
 
         val getCalls = mutableListOf<IrCall>()

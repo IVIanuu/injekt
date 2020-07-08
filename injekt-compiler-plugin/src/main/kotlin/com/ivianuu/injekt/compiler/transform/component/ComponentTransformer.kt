@@ -105,44 +105,46 @@ class ComponentTransformer(pluginContext: IrPluginContext) :
 
         return DeclarationIrBuilder(pluginContext, call.call.symbol).run {
             irBlock {
-                componentTree.nodes.forEach { node ->
-                    val componentFactoryImpl = ComponentFactoryImpl(
-                        scope.getLocalDeclarationParent(),
-                        node,
-                        null,
-                        pluginContext,
-                        declarationGraph,
-                        symbols
-                    )
-                    +componentFactoryImpl.getClass()
-                    +irCall(
-                        symbols.componentFactories
-                            .functions
-                            .single { it.owner.name.asString() == "register" }
-                    ).apply {
-                        dispatchReceiver =
-                            irGetObject(symbols.componentFactories)
-
-                        putValueArgument(
-                            0,
-                            IrClassReferenceImpl(
-                                UNDEFINED_OFFSET,
-                                UNDEFINED_OFFSET,
-                                irBuiltIns.kClassClass.typeWith(node.factory.factory.defaultType),
-                                node.factory.factory.symbol,
-                                node.factory.factory.defaultType
-                            )
+                componentTree.nodes
+                    .filter { it.parentComponent == null }
+                    .forEach { node ->
+                        val componentFactoryImpl = ComponentFactoryImpl(
+                            scope.getLocalDeclarationParent(),
+                            node,
+                            null,
+                            pluginContext,
+                            declarationGraph,
+                            symbols
                         )
+                        +componentFactoryImpl.getClass()
+                        +irCall(
+                            symbols.componentFactories
+                                .functions
+                                .single { it.owner.name.asString() == "register" }
+                        ).apply {
+                            dispatchReceiver =
+                                irGetObject(symbols.componentFactories)
 
-                        putValueArgument(
-                            1,
-                            irCall(
-                                componentFactoryImpl.factoryClass.constructors
-                                    .single()
+                            putValueArgument(
+                                0,
+                                IrClassReferenceImpl(
+                                    UNDEFINED_OFFSET,
+                                    UNDEFINED_OFFSET,
+                                    irBuiltIns.kClassClass.typeWith(node.factory.factory.defaultType),
+                                    node.factory.factory.symbol,
+                                    node.factory.factory.defaultType
+                                )
                             )
-                        )
+
+                            putValueArgument(
+                                1,
+                                irCall(
+                                    componentFactoryImpl.factoryClass.constructors
+                                        .single()
+                                )
+                            )
+                        }
                     }
-                }
             }
         }
     }
