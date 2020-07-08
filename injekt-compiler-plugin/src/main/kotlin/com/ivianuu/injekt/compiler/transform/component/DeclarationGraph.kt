@@ -60,11 +60,11 @@ class DeclarationGraph(
 
         (module.infoPackageFile.declarations
             .filterIsInstance<IrClass>() +
-                (memberScope.getClassifierNames() ?: emptySet()).map {
+                (memberScope.getClassifierNames() ?: emptySet()).mapNotNull {
                     memberScope.getContributedClassifier(
                         it,
                         NoLookupLocation.FROM_BACKEND
-                    )!!
+                    )
                 }.map { pluginContext.referenceClass(it.fqNameSafe)!!.owner })
             .mapNotNull {
                 val infoAnnotation = it.getAnnotation(InjektFqNames.InjektInfo)!!
@@ -88,11 +88,11 @@ class DeclarationGraph(
 
         (module.infoPackageFile.declarations
             .filterIsInstance<IrClass>() +
-                (memberScope.getClassifierNames() ?: emptySet()).map {
+                (memberScope.getClassifierNames() ?: emptySet()).mapNotNull {
                     memberScope.getContributedClassifier(
                         it,
                         NoLookupLocation.FROM_BACKEND
-                    )!!
+                    )
                 }.map { pluginContext.referenceClass(it.fqNameSafe)!!.owner })
             .mapNotNull {
                 val infoAnnotation = it.getAnnotation(InjektFqNames.InjektInfo)!!
@@ -116,11 +116,11 @@ class DeclarationGraph(
 
         (module.infoPackageFile.declarations
             .filterIsInstance<IrClass>() +
-                (memberScope.getClassifierNames() ?: emptySet()).map {
+                (memberScope.getClassifierNames() ?: emptySet()).mapNotNull {
                     memberScope.getContributedClassifier(
                         it,
                         NoLookupLocation.FROM_BACKEND
-                    )!!
+                    )
                 }.map { pluginContext.referenceClass(it.fqNameSafe)!!.owner })
             .flatMapFix {
                 val infoAnnotation = it.getAnnotation(InjektFqNames.InjektInfo)!!

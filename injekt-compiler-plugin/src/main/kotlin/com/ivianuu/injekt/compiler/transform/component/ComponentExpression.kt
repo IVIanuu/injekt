@@ -92,7 +92,9 @@ class ComponentExpressions(
                     }
                 } else {
                     when (binding) {
-                        is ChildComponentBindingNode -> instanceExpressionForChildComponent(binding)
+                        is ChildComponentFactoryBindingNode -> instanceExpressionForChildComponent(
+                            binding
+                        )
                         is ComponentImplBindingNode -> instanceExpressionForComponentImpl(
                             binding
                         )
@@ -105,7 +107,9 @@ class ComponentExpressions(
             }
             RequestType.Provider -> {
                 when (binding) {
-                    is ChildComponentBindingNode -> providerExpressionForChildComponent(binding)
+                    is ChildComponentFactoryBindingNode -> providerExpressionForChildComponent(
+                        binding
+                    )
                     is ComponentImplBindingNode -> providerExpressionForComponentImpl(
                         binding
                     )
@@ -168,7 +172,7 @@ class ComponentExpressions(
         }
     }*/
 
-    private fun instanceExpressionForChildComponent(binding: ChildComponentBindingNode): ComponentExpression {
+    private fun instanceExpressionForChildComponent(binding: ChildComponentFactoryBindingNode): ComponentExpression {
         return { binding.childComponentExpression(this) }
     }
 
@@ -232,7 +236,7 @@ class ComponentExpressions(
         }
     }*/
 
-    private fun providerExpressionForChildComponent(binding: ChildComponentBindingNode): ComponentExpression {
+    private fun providerExpressionForChildComponent(binding: ChildComponentFactoryBindingNode): ComponentExpression {
         return cachedExpression(binding.key) {
             singleInstanceFactory(binding.childComponentExpression(this)!!)
         }

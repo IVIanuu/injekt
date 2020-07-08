@@ -38,6 +38,7 @@ class Graph(
         ComponentImplBindingResolver(
             ComponentRequirementNode(component, component.clazz.defaultType.asKey(), { error("") })
         ),
+        ChildComponentFactoryBindingResolver(component),
         ProvideBindingResolver(context, declarationGraph, component)
     )
     val resolvedBindings = mutableMapOf<Key, BindingNode>()

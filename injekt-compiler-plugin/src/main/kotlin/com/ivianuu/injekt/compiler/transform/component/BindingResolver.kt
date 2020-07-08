@@ -25,20 +25,17 @@ import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrConst
-import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.name.FqName
@@ -46,102 +43,60 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 typealias BindingResolver = (Key) -> List<BindingNode>
 
-class ChildComponentBindingResolver(
-    private val parentFactory: ComponentImpl,
-    descriptor: IrClass
+class ChildComponentFactoryBindingResolver(
+    private val parentComponent: ComponentImpl
 ) : BindingResolver {
 
     private val childComponents =
-        mutableMapOf<Key, MutableList<Lazy<ChildComponentBindingNode>>>()
+        mutableMapOf<Key, MutableList<Lazy<ChildComponentFactoryBindingNode>>>()
 
     init {
-        /*descriptor
-            .functions
-            .filter { it.hasAnnotation(InjektFqNames.AstChildFactory) }
-            .forEach { function ->
-                val key = function.getFunctionType(parentFactory.pluginContext)
-                    .withNoArgAnnotations(
-                        parentFactory.pluginContext,
-                        listOf(InjektFqNames.ChildFactory)
-                    )
-                    .asKey()
-
-                childComponents.getOrPut(key) { mutableListOf() } += childFactoryBindingNode(
-                    key, function
+        parentComponent.factoryImpl.node.children
+            .forEach { childNode ->
+                val key = childNode.factory.factory.defaultType.asKey()
+                childComponents.getOrPut(key) { mutableListOf() } += childComponentFactoryBindingNode(
+                    key, childNode
                 )
-            }*/
+            }
     }
 
     override fun invoke(requestedKey: Key): List<BindingNode> =
         childComponents[requestedKey]?.map { it.value } ?: emptyList()
 
-    /*private fun childFactoryBindingNode(
+    private fun childComponentFactoryBindingNode(
         key: Key,
-        function: IrFunction
+        node: ComponentNode
     ) = lazy {
-        val superType = function.returnType
-
-        val moduleClass =
-            function.getClassFromSingleValueAnnotation(
-                InjektFqNames.AstClassPath,
-                parentFactory.pluginContext
-            )
-
-        val fqName = FqName(
-            function.getAnnotation(InjektFqNames.AstName)!!
-                .getValueArgument(0)
-                .let { it as IrConst<String> }
-                .value
-        )
-
-        val childFactoryExpression = InjektDeclarationIrBuilder(
-            parentFactory.pluginContext,
-            moduleClass.symbol
+        val childComponentExpression = InjektDeclarationIrBuilder(
+            parentComponent.factoryImpl.pluginContext,
+            node.factory.factory.symbol
         ).irLambda(key.type) { lambda ->
-            val moduleAccessor = if (moduleClass.kind == ClassKind.OBJECT) {
-                val expr: FactoryExpression = { irGetObject(moduleClass.symbol) }
-                expr
-            } else {
-                val moduleFunction = parentFactory.declarationStore
-                    .getModuleFunctionForClass(moduleClass)
-                val moduleVariable = irTemporary(
-                    irCall(moduleFunction).apply {
-                        lambda.valueParameters.forEach {
-                            putValueArgument(it.index, irGet(it))
-                        }
-                    }
-                )
-                val expr: FactoryExpression = { irGet(moduleVariable) }
-                expr
-            }
-            val childFactoryImpl = FactoryImpl(
-                factoryFunction = lambda,
-                origin = fqName,
-                parent = parentFactory,
-                superType = superType,
-                scope = function.getClassFromSingleValueAnnotationOrNull(
-                    InjektFqNames.AstScope, parentFactory.pluginContext
-                )
-                    ?.defaultType
-                    ?: function.returnType,
-                factoryModuleAccessor = moduleAccessor,
-                moduleClass = moduleClass,
-                pluginContext = parentFactory.pluginContext,
-                symbols = parentFactory.symbols,
-                declarationStore = parentFactory.declarationStore
+            val childComponentFactoryImpl = ComponentFactoryImpl(
+                parentComponent.clazz,
+                node,
+                parentComponent.factoryImpl,
+                parentComponent.factoryImpl.pluginContext,
+                parentComponent.factoryImpl.declarationGraph,
+                parentComponent.factoryImpl.symbols,
             )
 
-            +irReturn(childFactoryImpl.getImplExpression())
+            +childComponentFactoryImpl.getClass()
+            +irReturn(
+                irCall(
+                    childComponentFactoryImpl.factoryClass.constructors
+                        .single()
+                )
+            )
         }
 
-        return@lazy ChildComponentBindingNode(
+        return@lazy ChildComponentFactoryBindingNode(
             key = key,
-            owner = parentFactory,
-            origin = moduleClass.fqNameForIrSerialization,
-            parent = parentFactory.clazz,
-            childFactoryExpression = { childFactoryExpression }
+            owner = parentComponent,
+            origin = node.factory.factory.descriptor.fqNameSafe,
+            parent = parentComponent.clazz,
+            childComponentExpression = { childComponentExpression }
         )
-    }*/
+    }
 }
 
 class ProvideBindingResolver(
@@ -347,28 +302,6 @@ class ProvideBindingResolver(
                         origin = function.descriptor.fqNameSafe
                     )
                 }
-        }
-    }
-
-    private fun newInstanceExpression(
-        clazz: IrClass,
-        constructor: IrConstructor?,
-        constructorParameters: List<InjektDeclarationIrBuilder.FactoryParameter>
-    ): IrBuilderWithScope.(Map<InjektDeclarationIrBuilder.FactoryParameter, () -> IrExpression?>) -> IrExpression {
-        return { parametersMap ->
-            if (clazz.kind == ClassKind.OBJECT) {
-                irGetObject(clazz.symbol)
-            } else {
-                irCall(constructor!!).apply {
-                    constructorParameters
-                        .forEachIndexed { index, parameter ->
-                            putValueArgument(
-                                index,
-                                parametersMap.getValue(parameter)()
-                            )
-                        }
-                }
-            }
         }
     }
 }

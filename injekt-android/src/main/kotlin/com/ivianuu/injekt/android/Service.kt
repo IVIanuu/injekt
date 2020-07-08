@@ -19,6 +19,7 @@ package com.ivianuu.injekt.android
 import android.app.Service
 import android.content.Context
 import android.content.res.Resources
+import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.DistinctType
 import com.ivianuu.injekt.Reader
@@ -26,7 +27,7 @@ import com.ivianuu.injekt.Unscoped
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.runReader
 
-@Component(parent = ServiceComponent::class)
+@Component(parent = ApplicationComponent::class)
 interface ServiceComponent {
     @Component.Factory
     interface Factory {

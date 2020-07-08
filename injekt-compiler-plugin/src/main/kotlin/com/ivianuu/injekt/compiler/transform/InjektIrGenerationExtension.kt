@@ -32,18 +32,12 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         val pluginContext = InjektPluginContext(moduleFragment, pluginContext, symbolRemapper)
 
         ReaderTransformer(pluginContext, symbolRemapper).doLower(moduleFragment)
-
         InfoPackageDeclarationTransformer(pluginContext).doLower(moduleFragment)
-
         ComponentReaderTransformer(pluginContext).doLower(moduleFragment)
-
-        println(moduleFragment.dumpSrc())
-
         ComponentTransformer(pluginContext).doLower(moduleFragment)
-
         TmpMetadataPatcher(pluginContext).doLower(moduleFragment)
 
-        println(moduleFragment.dumpSrc())
+        //println(moduleFragment.dumpSrc())
     }
 
 }

@@ -16,14 +16,24 @@
 
 package com.ivianuu.injekt.comparison.fibonacci
 
+import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.Unscoped
+import com.ivianuu.injekt.get
 import javax.inject.Inject
 
 @Unscoped
 class Fib1 @Inject constructor()
 
 @Unscoped
+@Reader
+fun fib1() = Fib1()
+
+@Unscoped
 class Fib2 @Inject constructor()
+
+@Unscoped
+@Reader
+fun fib2() = Fib2()
 
 @Unscoped
 class Fib3 @Inject constructor(
@@ -32,10 +42,18 @@ class Fib3 @Inject constructor(
 )
 
 @Unscoped
+@Reader
+fun fib3() = Fib3(get(), get())
+
+@Unscoped
 class Fib4 @Inject constructor(
     val fibM1: Fib3,
     val fibM2: Fib2
 )
+
+@Unscoped
+@Reader
+fun fib4() = Fib4(get(), get())
 
 @Unscoped
 class Fib5 @Inject constructor(
@@ -44,10 +62,18 @@ class Fib5 @Inject constructor(
 )
 
 @Unscoped
+@Reader
+fun fib5() = Fib5(get(), get())
+
+@Unscoped
 class Fib6 @Inject constructor(
     val fibM1: Fib5,
     val fibM2: Fib4
 )
+
+@Unscoped
+@Reader
+fun fib6() = Fib6(get(), get())
 
 @Unscoped
 class Fib7 @Inject constructor(
@@ -56,10 +82,18 @@ class Fib7 @Inject constructor(
 )
 
 @Unscoped
+@Reader
+fun fib7() = Fib7(get(), get())
+
+@Unscoped
 class Fib8 @Inject constructor(
     val fibM1: Fib7,
     val fibM2: Fib6
 )
+
+@Unscoped
+@Reader
+fun fib8() = Fib8(get(), get())
 
 @Unscoped
 class Fib9 @Inject constructor(

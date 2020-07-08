@@ -108,7 +108,7 @@ sealed class BindingNode(
     val origin: FqName?
 ) : Node
 
-class ChildComponentBindingNode(
+class ChildComponentFactoryBindingNode(
     key: Key,
     owner: ComponentImpl,
     origin: FqName?,

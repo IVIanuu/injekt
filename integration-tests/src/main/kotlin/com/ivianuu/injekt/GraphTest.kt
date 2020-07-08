@@ -115,7 +115,7 @@ class GraphTest {
     }
 
     @Test
-    fun testScopeMismatch() = codegen(
+    fun testComponentMismatch() = codegen(
         """
         @Scoped(Any::class) class Dep
 
@@ -125,7 +125,7 @@ class GraphTest {
         }
         """
     ) {
-        assertInternalError("scope mismatch")
+        assertInternalError("component mismatch")
     }
 
     @Test
@@ -135,78 +135,6 @@ class GraphTest {
         fun factory(): TestComponent2<@TestQualifier1 Foo, @TestQualifier2 Foo> { 
             scoped<@TestQualifier1 Foo> { Foo() }
             scoped<@TestQualifier2 Foo> { Foo() }
-            return create()
-        }
-        
-        fun invoke(): Pair<Foo, Foo> { 
-            val component = factory()
-            return component.a to component.b
-        }
-    """
-    ) {
-        val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
-        assertNotSame(foo1, foo2)
-    }
-
-    @Test
-    fun testQualifiedWithValues() = codegen(
-        """
-        @Target(AnnotationTarget.TYPE) 
-        @Qualifier 
-        annotation class QualifierWithValue(val value: String)
-
-        @Factory
-        fun factory(): TestComponent2<@QualifierWithValue("A") Foo, @QualifierWithValue("B") Foo> { 
-            scoped<@QualifierWithValue("A") Foo> { Foo() }
-            scoped<@QualifierWithValue("B") Foo> { Foo() }
-            return create()
-        }
-        
-        fun invoke(): Pair<Foo, Foo> { 
-            val component = factory()
-            return component.a to component.b
-        }
-    """
-    ) {
-        val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
-        assertNotSame(foo1, foo2)
-    }
-
-    @Test
-    fun testQualifiedWithTypeParameters() = codegen(
-        """
-        @Target(AnnotationTarget.TYPE) 
-        @Qualifier 
-        annotation class QualifierWithType<T>
-        
-        @Factory
-        fun factory(): TestComponent2<@QualifierWithType<String> Foo, @QualifierWithType<Int> Foo> { 
-            scoped<@QualifierWithType<String> Foo> { Foo() }
-            scoped<@QualifierWithType<Int> Foo> { Foo() }
-            return create()
-        }
-        
-        fun invoke(): Pair<Foo, Foo> { 
-            val component = factory()
-            return component.a to component.b
-        }
-    """
-    ) {
-        val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
-        assertNotSame(foo1, foo2)
-    }
-
-    @Test
-    fun testQualifiedWithTypeParametersMultiCompile() = codegen(
-        """
-        @Target(AnnotationTarget.TYPE) 
-        @Qualifier 
-        annotation class QualifierWithType<T>
-        
-        @Factory
-        fun factory(): TestComponent2<@QualifierWithType<String> Foo, @QualifierWithType<Int> Foo> { 
-            scoped<@QualifierWithType<String> Foo> { Foo() }
-            scoped<@QualifierWithType<Int> Foo> { Foo() }
             return create()
         }
         
@@ -285,23 +213,6 @@ class GraphTest {
     }
 
     @Test
-    fun testAliasWithTypeParameters() = codegen(
-        """
-        @Module
-        inline fun <A : B, B> fakeAlias() {
-            alias<A, B>()
-        }
-        
-        @Factory
-        fun createFooAsAny(): TestComponent1<Any> {
-            unscoped<Foo>()
-            fakeAlias<Foo, Any>()
-            return create()
-        }
-    """
-    )
-
-    @Test
     fun testTypeWithStarProjectedArg() = codegen(
         """
         @Factory
@@ -331,25 +242,5 @@ class GraphTest {
         }
     """
     )
-
-    /*@Test
-    fun testGenericDslProvider() = codegen("""
-        class Wrapper<T>(val value: T)
-        
-        interface WrappedComponent {
-            val fooWrapper: Wrapper<Foo>
-            val barWrapper: Wrapper<Bar>
-        }
-        
-        @Factory
-        fun createWrapperComponent(): WrappedComponent {
-            unscoped<Foo>()
-            unscoped<Bar>()
-            unscoped(::createWrapper)
-            return create()
-        }
-        
-        private fun <T> createWrapper(value: T): Wrapper<T> = Wrapper(value)
-    """)*/
 
 }
