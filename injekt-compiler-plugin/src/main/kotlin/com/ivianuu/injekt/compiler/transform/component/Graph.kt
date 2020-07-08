@@ -46,7 +46,9 @@ class Graph(
         var binding = resolvedBindings[request.key]
         if (binding != null) return binding
 
+
         val bindings = bindingsResolvers.flatMapFix { it(request.key) }
+
         if (bindings.size > 1) {
             error(
                 "Multiple bindings found for '${request.key}' at:\n${bindings.joinToString(

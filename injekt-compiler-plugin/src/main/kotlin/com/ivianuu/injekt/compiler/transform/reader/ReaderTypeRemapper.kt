@@ -337,7 +337,7 @@ class ReaderTypeRemapper(
             type.hasQuestionMark,
             newArguments,
             type.annotations,
-            null
+            type.abbreviation
         )
     }
 

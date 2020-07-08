@@ -18,10 +18,8 @@ package com.ivianuu.injekt
 
 import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
-import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
-import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
@@ -117,12 +115,8 @@ class ComponentTest {
         @Scoped(TestComponent::class) @Reader
         fun foo() = Foo()
         
-        fun init() {
-            buildComponents()
-        }
-        
         val component by lazy {
-            init()
+            buildComponents()
             componentFactory<TestComponent.Factory>().create()
         }
         
@@ -146,7 +140,7 @@ class ComponentTest {
             componentFactory<TestComponent.Factory>().create()
         }
         
-        fun invoke() = component.runReader { get<Foo>() }
+        fun invoke() = component.runReader { get<() -> Foo>() }
     """
     ) {
         val provider = invokeSingleFile<() -> Foo>()

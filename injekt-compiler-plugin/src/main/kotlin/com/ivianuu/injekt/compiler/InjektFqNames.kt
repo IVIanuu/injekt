@@ -27,7 +27,7 @@ object InjektFqNames {
     val ComponentFactory = Component.child("Factory")
     val ComponentFactories = InjektPackage.child("ComponentFactories")
     val ContextMarker = InternalPackage.child("ContextMarker")
-    val DistinctType = InternalPackage.child("DistinctType")
+    val DistinctType = InjektPackage.child("DistinctType")
     val DoubleCheck = InternalPackage.child("DoubleCheck")
     val EntryPoint = InternalPackage.child("EntryPoint")
     val InjektInfo = InternalPackage.child("InjektInfo")

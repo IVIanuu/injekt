@@ -44,6 +44,8 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrMetadataSourceOwner
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
+import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
@@ -59,16 +61,21 @@ import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
+import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeArgument
+import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
+import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
+import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -153,6 +160,80 @@ fun IrType.getFunctionParameterTypes(): List<IrType> = typeArguments.dropLast(1)
 val IrMemberAccessExpression.typeArguments: List<IrType>
     get() =
         (0 until typeArgumentsCount).map { getTypeArgument(it)!! }
+
+fun IrType.remapTypeParameters(
+    source: IrTypeParametersContainer,
+    target: IrTypeParametersContainer,
+    srcToDstParameterMap: Map<IrTypeParameter, IrTypeParameter>? = null
+): IrType =
+    when (this) {
+        is IrSimpleType -> {
+            val classifier = classifier.owner
+            when {
+                classifier is IrTypeParameter -> {
+                    val newClassifier =
+                        srcToDstParameterMap?.get(classifier) ?: if (classifier.parent == source)
+                            target.typeParameters[classifier.index]
+                        else
+                            classifier
+                    IrSimpleTypeImpl(
+                        newClassifier.symbol,
+                        hasQuestionMark,
+                        arguments,
+                        annotations,
+                        abbreviation
+                    )
+                }
+
+                classifier is IrClass ->
+                    IrSimpleTypeImpl(
+                        classifier.symbol,
+                        hasQuestionMark,
+                        arguments.map {
+                            when (it) {
+                                is IrTypeProjection -> makeTypeProjection(
+                                    it.type.remapTypeParameters(
+                                        source,
+                                        target,
+                                        srcToDstParameterMap
+                                    ),
+                                    it.variance
+                                )
+                                else -> it
+                            }
+                        },
+                        annotations,
+                        abbreviation
+                    )
+
+                else -> this
+            }
+        }
+        else -> this
+    }
+
+fun IrType.substitute(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {
+    if (this !is IrSimpleType) return this
+
+    substitutionMap[classifier]?.let { return it }
+
+    val newArguments = arguments.map {
+        if (it is IrTypeProjection) {
+            makeTypeProjection(it.type.substitute(substitutionMap), it.variance)
+        } else {
+            it
+        }
+    }
+
+    val newAnnotations = annotations.map { it.deepCopyWithSymbols() }
+    return IrSimpleTypeImpl(
+        classifier,
+        hasQuestionMark,
+        newArguments,
+        newAnnotations,
+        abbreviation
+    )
+}
 
 fun <T> T.getClassFromSingleValueAnnotation(
     fqName: FqName,

@@ -18,8 +18,6 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.typeArguments
-import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -48,14 +46,11 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
-import org.jetbrains.kotlin.ir.util.substitute
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ComponentImpl(
-    val factoryImpl: ComponentFactoryImpl
-) {
+class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
     val origin: FqName? = null // todo
 
     val clazz = buildClass {
@@ -168,10 +163,7 @@ class ComponentImpl(
                 break
             }
 
-            fun implementFunctions(
-                superClass: IrClass,
-                typeArguments: List<IrType>
-            ) {
+            fun implementFunctions(superClass: IrClass) {
                 if (superClass.defaultType in implementedSuperTypes) return
                 implementedSuperTypes += superClass.defaultType
                 for (declaration in superClass.declarations.toList()) {
@@ -182,14 +174,7 @@ class ComponentImpl(
                     addDependencyRequestImplementation(declaration) { function ->
                         val bindingExpression = componentExpressions.getBindingExpression(
                             BindingRequest(
-                                function.returnType
-                                    .substitute(
-                                        superClass.typeParameters
-                                            .map { it.symbol }
-                                            .zip(typeArguments)
-                                            .toMap()
-                                    )
-                                    .asKey(),
+                                function.returnType.asKey(),
                                 null,
                                 superClass.getAnnotation(InjektFqNames.Name)
                                     ?.getValueArgument(0)
@@ -206,39 +191,24 @@ class ComponentImpl(
                 }
 
                 superClass.superTypes
-                    .map { it to it.classOrNull?.owner }
-                    .forEach { (superType, clazz) ->
-                        if (clazz != null)
-                            implementFunctions(
-                                clazz,
-                                superType.typeArguments.map { it.typeOrFail }
-                            )
-                    }
+                    .map { it.classOrNull!!.owner }
+                    .forEach { implementFunctions(it) }
             }
 
             contexts.forEach { context ->
                 clazz.superTypes += context.defaultType
-                implementFunctions(
-                    context,
-                    context.defaultType.typeArguments.map { it.typeOrFail }
-                )
+                implementFunctions(context)
             }
         }
     }
 
     private fun collectDependencyRequests() {
-        fun IrClass.collectDependencyRequests(typeArguments: List<IrType>) {
+        fun IrClass.collectDependencyRequests() {
             for (declaration in declarations.filterIsInstance<IrFunction>()) {
                 fun reqisterRequest(type: IrType) {
                     dependencyRequests[declaration] =
                         BindingRequest(
-                            type
-                                .substitute(
-                                    typeParameters.map { it.symbol }.associateWith {
-                                        typeArguments[it.owner.index]
-                                    }
-                                )
-                                .asKey(),
+                            type.asKey(),
                             requestingKey = null,
                             declaration.descriptor.fqNameSafe
                         )
@@ -253,14 +223,12 @@ class ComponentImpl(
             superTypes
                 .map { it to it.classOrNull?.owner }
                 .forEach { (superType, clazz) ->
-                    clazz?.collectDependencyRequests(
-                        superType.typeArguments.map { it.typeOrFail }
-                    )
+                    clazz?.collectDependencyRequests()
                 }
         }
 
         factoryImpl.node.entryPoints.forEach {
-            it.entryPoint.collectDependencyRequests(emptyList())
+            it.entryPoint.collectDependencyRequests()
         }
     }
 

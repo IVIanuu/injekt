@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
 import org.jetbrains.kotlin.ir.types.IrErrorType
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
@@ -173,11 +174,17 @@ class Key(val type: IrType) {
     override fun hashCode(): Int = type.distinctedType
         .hashCode()
 
-    override fun toString(): String = type.render()
+    override fun toString(): String {
+        return when (val distinctedType = type.distinctedType) {
+            is IrTypeAliasSymbol -> distinctedType
+            else -> type.render()
+        }.toString()
+    }
 
-    private val IrType.distinctedType: Any?
-        get() = (type as? IrSimpleType)?.abbreviation
-            ?.takeIf { it.typeAlias.owner.hasAnnotation(InjektFqNames.DistinctType) }
+    private val IrType.distinctedType: Any
+        get() = (this as? IrSimpleType)?.abbreviation
+            ?.typeAlias?.owner?.symbol
+            ?.takeIf { it.owner.hasAnnotation(InjektFqNames.DistinctType) }
             ?: this
 
 }

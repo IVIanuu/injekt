@@ -52,12 +52,8 @@ class ComponentExpressions(
         bindingExpressions[request]?.let { return it }
 
         val expression = when (binding) {
-            is ChildComponentFactoryBindingNode -> childComponentFactoryExpression(
-                binding
-            )
-            is ComponentImplBindingNode -> componentExpression(
-                binding
-            )
+            is ChildComponentFactoryBindingNode -> childComponentFactoryExpression(binding)
+            is ComponentImplBindingNode -> componentExpression(binding)
             is NullBindingNode -> nullExpression(binding)
             is ProviderBindingNode -> providerExpression(binding)
             is ProvisionBindingNode -> provisionExpression(binding)
@@ -78,20 +74,20 @@ class ComponentExpressions(
         { irNull() }
 
     private fun providerExpression(binding: ProviderBindingNode): ComponentExpression {
-        return /*getBindingExpression(
-            BindingRequest(
-                key = binding.key.type.typeArguments.single().typeOrFail.asKey(),
-                requestingKey = binding.key,
-                requestOrigin = binding.origin
-            )
-        )*/ error("todo")
+        val dependency = getBindingExpression(binding.dependencies.single())
+        return { c ->
+            InjektDeclarationIrBuilder(pluginContext, scope.scopeOwnerSymbol)
+                .irLambda(binding.key.type) {
+                    +irReturn(dependency(this, c))
+                }
+        }
     }
 
     private fun provisionExpression(binding: ProvisionBindingNode): ComponentExpression {
-        val instanceExpression: ComponentExpression = bindingExpression@{ c ->
-            val dependencies = binding.dependencies
-                .map { getBindingExpression(it) }
+        val dependencies = binding.dependencies
+            .map { getBindingExpression(it) }
 
+        val instanceExpression: ComponentExpression = bindingExpression@{ c ->
             binding.createExpression(
                 this,
                 binding.parameters

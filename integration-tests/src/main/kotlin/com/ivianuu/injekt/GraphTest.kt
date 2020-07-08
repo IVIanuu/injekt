@@ -20,7 +20,6 @@ import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
-import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertNull
@@ -129,46 +128,23 @@ class GraphTest {
     }
 
     @Test
-    fun testQualified() = codegen(
+    fun testDistinctTypeDistinction() = codegen(
         """
-        @Factory
-        fun factory(): TestComponent2<@TestQualifier1 Foo, @TestQualifier2 Foo> { 
-            scoped<@TestQualifier1 Foo> { Foo() }
-            scoped<@TestQualifier2 Foo> { Foo() }
-            return create()
-        }
+        @DistinctType typealias Foo1 = Foo
+        @DistinctType typealias Foo2 = Foo
         
-        fun invoke(): Pair<Foo, Foo> { 
-            val component = factory()
-            return component.a to component.b
+        @Unscoped @Reader fun foo1(): Foo1 = Foo()
+        @Unscoped @Reader fun foo2(): Foo2 = Foo()
+        
+        fun invoke(): Pair<Foo, Foo> {
+            buildComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            return component.runReader { get<Foo1>() to get<Foo2>() }
         }
     """
     ) {
         val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
         assertNotSame(foo1, foo2)
-    }
-
-    @Test
-    fun testQualifiedGet() = codegen(
-        """
-        @Factory
-        fun factory(): TestComponent3<@TestQualifier1 String, @TestQualifier2 String, Pair<String, String>> {
-            unscoped<@TestQualifier1 String> { "a" }
-            unscoped<@TestQualifier2 String> { "b" }
-            unscoped {
-                Pair<String, String>(get<@TestQualifier1 String>(), get<@TestQualifier2 String>())
-            }
-            return create()
-        }
-
-        fun invoke(): Pair<Pair<String, String>, Pair<String, String>> { 
-            val component = factory()
-            return component.a to component.b to component.c
-        }
-    """
-    ) {
-        val pairs = invokeSingleFile<Pair<Pair<String, String>, Pair<String, String>>>()
-        assertEquals(pairs.first, pairs.second)
     }
 
     @Test
