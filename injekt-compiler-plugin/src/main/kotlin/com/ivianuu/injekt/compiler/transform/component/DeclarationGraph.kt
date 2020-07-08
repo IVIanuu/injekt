@@ -26,11 +26,8 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -147,10 +144,6 @@ class DeclarationGraph(
 
 }
 
-class Component(
-    val clazz: IrClass
-)
-
 class ComponentFactory(
     val factory: IrClass
 )
@@ -161,12 +154,4 @@ class Binding(
 
 class EntryPoint(
     val entryPoint: IrClass
-)
-
-class MapElementsBinding(
-    val function: IrFunction
-)
-
-class SetElementsBinding(
-    val function: IrFunction
 )

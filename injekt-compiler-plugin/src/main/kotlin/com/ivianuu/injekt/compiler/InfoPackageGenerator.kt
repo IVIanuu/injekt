@@ -32,7 +32,7 @@ import java.io.File
 
 class InfoPackageGenerator : AnalysisHandlerExtension {
 
-    private var spawned = false
+    private var generated = false
 
     override fun doAnalysis(
         project: Project,
@@ -42,8 +42,8 @@ class InfoPackageGenerator : AnalysisHandlerExtension {
         bindingTrace: BindingTrace,
         componentProvider: ComponentProvider
     ): AnalysisResult? {
-        if (spawned) return null
-        spawned = true
+        if (generated) return null
+        generated = true
         files as ArrayList<KtFile>
 
         files += KtFile(

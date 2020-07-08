@@ -18,12 +18,10 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.flatMapFix
-import com.ivianuu.injekt.compiler.isProvider
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.ir.types.classifierOrFail
-import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.render
 
 class Graph(
@@ -36,9 +34,7 @@ class Graph(
 
     private val bindingsResolvers = listOf(
         NoArgProviderBindingResolver(component),
-        ComponentImplBindingResolver(
-            ComponentRequirementNode(component, component.clazz.defaultType.asKey(), { error("") })
-        ),
+        ComponentImplBindingResolver(component),
         ChildComponentFactoryBindingResolver(component),
         ProvideBindingResolver(context, declarationGraph, component)
     )
@@ -101,7 +97,7 @@ class Graph(
         check(request.key !in chain || chain
             .toList()
             .let { it.subList(it.indexOf(request.key), it.size) }
-            .any { it.type.isProvider() }
+            .any { it.type.isFunction() }
         ) {
             val chain = (chain.toList() + request.key)
                 .let { it.subList(it.indexOf(request.key), it.size) }
@@ -115,8 +111,7 @@ class Graph(
 
         chain += request.key
         val binding = getBinding(request)
-        binding.dependencies
-            .forEach { validate(it) }
+        binding.dependencies.forEach { validate(it) }
         chain -= request.key
     }
 

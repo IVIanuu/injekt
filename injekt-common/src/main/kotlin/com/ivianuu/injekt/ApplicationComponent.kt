@@ -17,9 +17,4 @@
 package com.ivianuu.injekt
 
 @Component
-interface ApplicationComponent {
-    @Component.Factory
-    interface Factory {
-        fun create(): ApplicationComponent
-    }
-}
+interface ApplicationComponent

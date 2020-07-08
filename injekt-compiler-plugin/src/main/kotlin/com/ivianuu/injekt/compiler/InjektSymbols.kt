@@ -28,8 +28,6 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
         get() = pluginContext.referenceClass(InjektFqNames.ComponentFactories)!!
     val contextMarker: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.ContextMarker)!!
-    val delegateFactory: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.DelegateFactory)!!
     val distinctType: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.DistinctType)!!
     val doubleCheck: IrClassSymbol
@@ -38,8 +36,6 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
         get() = pluginContext.referenceClass(InjektFqNames.EntryPoint)!!
     val injektInfo: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.InjektInfo)!!
-    val lateinitFactory: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.LateinitFactory)!!
     val mapEntries: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.MapEntries)!!
     val name: IrClassSymbol
@@ -48,8 +44,6 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
         get() = pluginContext.referenceClass(InjektFqNames.Reader)!!
     val setElements: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.SetElements)!!
-    val singleInstanceFactory: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.SingleInstanceFactory)!!
     val unscoped: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.Unscoped)!!
 }

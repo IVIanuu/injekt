@@ -1,3 +1,12 @@
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.Scoped
+import com.ivianuu.injekt.Unscoped
+import com.ivianuu.injekt.buildComponents
+import com.ivianuu.injekt.componentFactory
+import com.ivianuu.injekt.get
+import com.ivianuu.injekt.runReader
+
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -14,14 +23,28 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.android
-
-import com.ivianuu.injekt.Component
+class Foo
+class Bar(foo: Foo)
 
 @Component
-interface TestCompositionComponent {
+interface TestComponent {
     @Component.Factory
     interface Factory {
-        fun create(): TestCompositionComponent
+        fun create(): TestComponent
     }
 }
+
+@Scoped(TestComponent::class)
+@Reader
+fun foo() = Foo()
+
+fun init() {
+    buildComponents()
+}
+
+val component by lazy {
+    init()
+    componentFactory<TestComponent.Factory>().create()
+}
+
+fun invoke() = component.runReader { get<Foo>() }

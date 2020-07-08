@@ -17,7 +17,9 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
+import com.ivianuu.injekt.Scoped
 import com.ivianuu.injekt.android.applicationComponent
+import com.ivianuu.injekt.internal.DoubleCheck
 import com.ivianuu.injekt.runReader
 
 class App : Application() {
@@ -31,4 +33,29 @@ class App : Application() {
         }
     }
 
+}
+
+class Foo
+
+@Scoped(MyComponent::class)
+fun foo(context: fooContext): Foo = Foo()
+interface fooContext
+
+class Bar(foo: Foo)
+
+@Scoped(MyComponent::class)
+fun bar(context: barContext): Bar = Bar(context.foo())
+interface barContext {
+    fun foo(): Foo
+}
+
+class MyComponent : fooContext, barContext, ReaderContext {
+    private val foo = DoubleCheck { foo(this) }
+    override fun foo() = foo.invoke()
+    private val bar = DoubleCheck { bar(this) }
+    override fun bar() = bar.invoke()
+}
+
+interface ReaderContext {
+    fun bar(): Bar
 }

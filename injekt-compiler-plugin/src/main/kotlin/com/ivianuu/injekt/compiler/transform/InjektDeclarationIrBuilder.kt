@@ -16,37 +16,25 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.child
-import com.ivianuu.injekt.compiler.getFunctionType
-import com.ivianuu.injekt.compiler.tmpFunction
-import com.ivianuu.injekt.compiler.transform.reader.ReaderTransformer
 import com.ivianuu.injekt.compiler.typeArguments
-import com.ivianuu.injekt.compiler.withNoArgAnnotations
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
-import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
-import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
-import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
@@ -66,13 +54,8 @@ class InjektDeclarationIrBuilder(
 ) {
 
     val builder = DeclarationIrBuilder(pluginContext, symbol)
-
     val symbols = InjektSymbols(pluginContext)
-
     val irBuiltIns = pluginContext.irBuiltIns
-
-    fun noArgSingleConstructorCall(clazz: IrClassSymbol): IrConstructorCall =
-        builder.irCall(clazz.constructors.single())
 
     fun singleClassArgConstructorCall(
         clazz: IrClassSymbol,
@@ -89,16 +72,6 @@ class InjektDeclarationIrBuilder(
                 )
             )
         }
-
-    fun IrBlockBodyBuilder.initializeClassWithAnySuperClass(symbol: IrClassSymbol) {
-        +irDelegatingConstructorCall(context.irBuiltIns.anyClass.owner.constructors.single())
-        +IrInstanceInitializerCallImpl(
-            UNDEFINED_OFFSET,
-            UNDEFINED_OFFSET,
-            symbol,
-            irBuiltIns.unitType
-        )
-    }
 
     fun irLambda(
         type: IrType,
@@ -143,74 +116,6 @@ class InjektDeclarationIrBuilder(
         val type: IrType,
         val assisted: Boolean
     )
-
-    fun factoryLambda(
-        readerTransformer: ReaderTransformer,
-        assistedParameters: List<FactoryParameter>,
-        returnType: IrType,
-        startOffset: Int,
-        endOffset: Int,
-        createExpr: IrBuilderWithScope.(
-            IrFunction,
-            Map<FactoryParameter, IrValueParameter>
-        ) -> IrExpression
-    ): IrExpression {
-        val lambdaType = pluginContext.tmpFunction(assistedParameters.size)
-            .typeWith(assistedParameters.map { it.type } + returnType)
-            .withNoArgAnnotations(pluginContext, listOf(InjektFqNames.Reader))
-
-        return irReaderLambda(
-            readerTransformer,
-            lambdaType,
-            startOffset,
-            endOffset
-        ) { lambda ->
-            var parameterIndex = 0
-            val parametersMap = assistedParameters.associateWith {
-                lambda.valueParameters[parameterIndex++]
-            }
-
-            +irReturn(createExpr(this, lambda, parametersMap))
-        }
-    }
-
-    fun irReaderLambda(
-        readerTransformer: ReaderTransformer,
-        type: IrType,
-        startOffset: Int,
-        endOffset: Int,
-        body: IrBlockBodyBuilder.(IrFunction) -> Unit
-    ): IrExpression {
-        val returnType = type.typeArguments.last().typeOrNull!!
-
-        val lambda = buildFun {
-            origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
-            name = Name.special("<anonymous>")
-            this.returnType = returnType
-            visibility = Visibilities.LOCAL
-            this.startOffset = startOffset
-            this.endOffset = endOffset
-        }.apply {
-            annotations += noArgSingleConstructorCall(symbols.reader)
-            type.typeArguments.dropLast(1).forEachIndexed { index, typeArgument ->
-                addValueParameter(
-                    "p$index",
-                    typeArgument.typeOrNull!!
-                )
-            }
-            parent = builder.scope.getLocalDeclarationParent()
-            this.body =
-                DeclarationIrBuilder(pluginContext, symbol).irBlockBody { body(this, this@apply) }
-        }.let { readerTransformer.getTransformedFunction(it) } as IrSimpleFunction
-
-        return IrFunctionExpressionImpl(
-            startOffset = startOffset,
-            endOffset = endOffset,
-            type = lambda.getFunctionType(pluginContext),
-            function = lambda,
-            origin = IrStatementOrigin.LAMBDA
-        )
-    }
 
     fun jvmNameAnnotation(name: String): IrConstructorCall {
         val jvmName = pluginContext.referenceClass(DescriptorUtils.JVM_NAME)!!

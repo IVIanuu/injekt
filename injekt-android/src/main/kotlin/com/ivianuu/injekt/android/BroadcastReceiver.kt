@@ -27,6 +27,7 @@ import com.ivianuu.injekt.runReader
 
 @Component(parent = ApplicationComponent::class)
 interface ReceiverComponent {
+    @Component.Factory
     interface Factory {
         fun create(instance: BroadcastReceiver): ReceiverComponent
     }

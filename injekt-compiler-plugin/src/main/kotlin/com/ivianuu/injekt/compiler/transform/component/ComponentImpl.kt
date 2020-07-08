@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.substituteAndKeepQualifiers
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
@@ -40,7 +39,6 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
@@ -49,10 +47,8 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -76,12 +72,7 @@ class ComponentImpl(
         mutableMapOf<IrFunction, BindingRequest>()
     private val implementedRequests = mutableMapOf<IrFunction, IrFunction>()
 
-    var componentLateinitProvider: ComponentExpression? = null
-
-    private val componentMembers = ComponentMembers(
-        factoryImpl.pluginContext,
-        factoryImpl.symbols
-    )
+    private val componentMembers = ComponentMembers(this, factoryImpl.pluginContext)
 
     private lateinit var graph: Graph
     private lateinit var componentExpressions: ComponentExpressions
@@ -92,8 +83,6 @@ class ComponentImpl(
             factoryImpl.factoryClass.symbol
         ).run {
             irBlock {
-                componentMembers.blockBuilder = this
-
                 graph = Graph(
                     parent = factoryImpl.parent?.componentImpl?.graph,
                     component = this@ComponentImpl,
@@ -110,15 +99,6 @@ class ComponentImpl(
                     parent = factoryImpl.parent?.componentImpl?.componentExpressions,
                     component = this@ComponentImpl
                 )
-                collectDependencyRequests()
-
-                dependencyRequests.forEach { graph.validate(it.value) }
-
-                DeclarationIrBuilder(factoryImpl.pluginContext, clazz.symbol).run {
-                    implementDependencyRequests()
-                }
-
-                +clazz
 
                 val constructor = clazz.addConstructor {
                     returnType = clazz.defaultType
@@ -126,6 +106,7 @@ class ComponentImpl(
                     visibility = Visibilities.PUBLIC
                 }.apply {
                     body = DeclarationIrBuilder(factoryImpl.pluginContext, symbol).irBlockBody {
+                        componentMembers.blockBuilder = this
                         val superType = clazz.superTypes.first()
                         +irDelegatingConstructorCall(
                             if (superType.classOrNull!!.owner.kind == ClassKind.CLASS)
@@ -138,26 +119,22 @@ class ComponentImpl(
                             clazz.symbol,
                             context.irBuiltIns.unitType
                         )
-
-                        componentLateinitProvider?.let { factoryLateinitProvider ->
-                            +irCall(
-                                factoryImpl.symbols.lateinitFactory
-                                    .functions
-                                    .single { it.owner.name.asString() == "init" }
-                            ).apply {
-                                dispatchReceiver = factoryLateinitProvider()
-                                putValueArgument(0, irGet(clazz.thisReceiver!!))
-                            }
-                        }
                     }
                 }
 
+                collectDependencyRequests()
+
+                dependencyRequests.forEach { graph.validate(it.value) }
+
+                implementDependencyRequests()
+
+                +clazz
                 +irCall(constructor)
             }
         }
     }
 
-    private fun IrBuilderWithScope.implementDependencyRequests(): Unit = clazz.run clazz@{
+    private fun implementDependencyRequests(): Unit = clazz.run clazz@{
         dependencyRequests.forEach { componentExpressions.getBindingExpression(it.value) }
 
         dependencyRequests
@@ -170,12 +147,13 @@ class ComponentImpl(
                             BindingRequest(
                                 binding.key,
                                 requestingKey = null,
-                                request.requestOrigin,
-                                RequestType.Instance
+                                request.requestOrigin
                             )
                         )
 
-                        bindingExpression(this@implementDependencyRequests)!!
+                        bindingExpression(ComponentExpressionContext(this@ComponentImpl) {
+                            irGet(function.dispatchReceiverParameter!!)
+                        })
                     }
             }
 
@@ -217,12 +195,13 @@ class ComponentImpl(
                                     ?.getValueArgument(0)
                                     ?.let { it as IrConst<String> }
                                     ?.value
-                                    ?.let { FqName(it) },
-                                RequestType.Instance
+                                    ?.let { FqName(it) }
                             )
                         )
 
-                        bindingExpression(this@implementDependencyRequests)!!
+                        bindingExpression(ComponentExpressionContext(this@ComponentImpl) {
+                            irGet(function.dispatchReceiverParameter!!)
+                        })
                     }
                 }
 

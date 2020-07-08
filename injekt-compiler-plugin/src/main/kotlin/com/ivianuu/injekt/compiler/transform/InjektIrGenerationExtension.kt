@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.component.ComponentReaderTransformer
 import com.ivianuu.injekt.compiler.transform.component.ComponentTransformer
 import com.ivianuu.injekt.compiler.transform.reader.ReaderTransformer
@@ -37,7 +36,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         ComponentTransformer(pluginContext).doLower(moduleFragment)
         TmpMetadataPatcher(pluginContext).doLower(moduleFragment)
 
-        println(moduleFragment.dumpSrc())
+        //println(moduleFragment.dumpSrc())
     }
 
 }

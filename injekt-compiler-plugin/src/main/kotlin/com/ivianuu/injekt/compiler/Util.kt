@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.ir.copyBodyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -44,7 +43,6 @@ import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
 import org.jetbrains.kotlin.ir.declarations.IrFile
@@ -63,9 +61,6 @@ import org.jetbrains.kotlin.ir.descriptors.WrappedFunctionDescriptorWithContaine
 import org.jetbrains.kotlin.ir.descriptors.WrappedPropertyGetterDescriptor
 import org.jetbrains.kotlin.ir.descriptors.WrappedPropertySetterDescriptor
 import org.jetbrains.kotlin.ir.descriptors.WrappedSimpleFunctionDescriptor
-import org.jetbrains.kotlin.ir.expressions.IrBlock
-import org.jetbrains.kotlin.ir.expressions.IrBlockBody
-import org.jetbrains.kotlin.ir.expressions.IrBody
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstKind
@@ -75,10 +70,8 @@ import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrSpreadElement
-import org.jetbrains.kotlin.ir.expressions.IrStatementContainer
 import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
@@ -100,8 +93,6 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.file
-import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isAnnotationClass
@@ -243,61 +234,6 @@ fun IrType.remapTypeParameters(
     else -> this
 }
 
-fun IrType.remapTypeParametersByName(
-    source: IrTypeParametersContainer,
-    target: IrTypeParametersContainer,
-    srcToDstParameterMap: Map<IrTypeParameter, IrTypeParameter>? = null
-): IrType = when (this) {
-    is IrSimpleType -> {
-        val classifier = classifier.owner
-        when {
-            classifier is IrTypeParameter -> {
-                val newClassifier =
-                    target.typeParameters.firstOrNull {
-                        it.descriptor.name == classifier.descriptor.name
-                    } ?: if (classifier.parent == source)
-                        target.typeParameters[classifier.index]
-                    else classifier
-                IrSimpleTypeImpl(
-                    makeKotlinType(
-                        newClassifier.symbol,
-                        arguments,
-                        hasQuestionMark,
-                        annotations
-                    ),
-                    newClassifier.symbol,
-                    hasQuestionMark,
-                    arguments,
-                    annotations
-                )
-            }
-
-            classifier is IrClass -> {
-                val arguments = arguments.map {
-                    when (it) {
-                        is IrTypeProjection -> makeTypeProjection(
-                            it.type.remapTypeParametersByName(source, target, srcToDstParameterMap),
-                            it.variance
-                        )
-                        else -> it
-                    }
-                }
-                IrSimpleTypeImpl(
-                    makeKotlinType(classifier.symbol, arguments, hasQuestionMark, annotations),
-                    classifier.symbol,
-                    hasQuestionMark,
-                    arguments,
-                    annotations
-                )
-            }
-
-            else -> this
-        }
-    }
-    else -> this
-}
-
-
 fun IrType.substituteAndKeepQualifiers(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {
     if (this !is IrSimpleType) return this
 
@@ -344,19 +280,6 @@ fun makeKotlinType(
         .makeNullableAsSpecified(hasQuestionMark)
 }
 
-fun IrType.withNoArgAnnotations(pluginContext: IrPluginContext, qualifiers: List<FqName>): IrType {
-    this as IrSimpleType
-    return copy(
-        arguments = arguments,
-        annotations = annotations + qualifiers
-            .map { pluginContext.referenceClass(it)!! }
-            .map {
-                DeclarationIrBuilder(pluginContext, it)
-                    .irCall(it.constructors.single())
-            }
-    )
-}
-
 inline fun <T, R> Iterable<T>.flatMapFix(
     block: (T) -> Iterable<R>
 ): List<R> = flatMap { block(it) }.toList()
@@ -381,15 +304,6 @@ val IrTypeArgument.typeOrFail: IrType
     get() = typeOrNull ?: error("Type is null for ${render()}")
 
 fun IrType.typeWith(vararg arguments: IrType): IrType = classifierOrFail.typeWith(*arguments)
-
-fun IrClass.findPropertyGetter(
-    name: String
-): IrFunction {
-    return functions
-        .singleOrNull { function ->
-            function.name.asString() == "get${name.capitalize()}" // todo fix
-        } ?: error("Couldn't find property '$name' in ${dump()}")
-}
 
 fun IrConstructorCall.toAnnotationDescriptor(): AnnotationDescriptor {
     assert(symbol.owner.parentAsClass.isAnnotationClass) {
@@ -453,30 +367,6 @@ fun IrType.getFunctionParameterTypes(): List<IrType> = typeArguments.dropLast(1)
 val IrMemberAccessExpression.typeArguments: List<IrType>
     get() =
         (0 until typeArgumentsCount).map { getTypeArgument(it)!! }
-
-fun <T> T.getClassesFromSingleArrayValueAnnotation(
-    fqName: FqName,
-    pluginContext: IrPluginContext
-): List<IrClass> where T : IrDeclaration, T : IrAnnotationContainer {
-    return getAnnotation(fqName)
-        ?.getValueArgument(0)
-        ?.let { it as IrVarargImpl }
-        ?.elements
-        ?.map { it as IrClassReference }
-        ?.map { it.classType.classOrNull!! }
-        ?.map { it.owner }
-        ?: descriptor
-            .annotations
-            .findAnnotation(fqName)
-            ?.allValueArguments
-            ?.values
-            ?.single()
-            ?.let { it as ArrayValue }
-            ?.value
-            ?.filterIsInstance<KClassValue>()
-            ?.map { it.getIrClass(pluginContext).symbol.owner }
-            .let { it ?: emptyList() }
-}
 
 fun <T> T.getClassFromSingleValueAnnotation(
     fqName: FqName,
@@ -555,74 +445,6 @@ fun List<ScopeWithIr>.thisOfClass(declaration: IrClass): IrValueParameter? {
     return null
 }
 
-fun IrDeclaration.addToFileOrAbove(other: IrDeclarationWithVisibility) {
-    if (other.visibility != Visibilities.LOCAL) {
-        parent = other.file
-        other.file.addChild(this)
-    } else {
-        parent = other.parent
-        var block: IrStatementContainer? = null
-        other.file.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitBlockBody(body: IrBlockBody): IrBody {
-                if (body.statements.any { it === other }) {
-                    block = body
-                }
-                return super.visitBlockBody(body)
-            }
-
-            override fun visitBlock(expression: IrBlock): IrExpression {
-                if (expression.statements.any { it === other }) {
-                    block = expression
-                }
-                return super.visitBlock(expression)
-            }
-        })
-
-        if (block != null) {
-            val index = block!!.statements.indexOf(other)
-            block!!.statements.add(index, this)
-        } else {
-            error(
-                "${dumpSrc()} has a corrupt parent\n${other.dumpSrc()} ours is \n ${parent.dumpSrc()}"
-            )
-        }
-    }
-}
-
-fun IrDeclaration.addToParentOrAbove(other: IrDeclarationWithVisibility) {
-    if (other.visibility != Visibilities.LOCAL) {
-        parent = other.parent
-        (other.parent as IrDeclarationContainer).addChild(this)
-    } else {
-        parent = other.parent
-        var block: IrStatementContainer? = null
-        other.file.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitBlockBody(body: IrBlockBody): IrBody {
-                if (body.statements.any { it === other }) {
-                    block = body
-                }
-                return super.visitBlockBody(body)
-            }
-
-            override fun visitBlock(expression: IrBlock): IrExpression {
-                if (expression.statements.any { it === other }) {
-                    block = expression
-                }
-                return super.visitBlock(expression)
-            }
-        })
-
-        if (block != null) {
-            val index = block!!.statements.indexOf(other)
-            block!!.statements.add(index, this)
-        } else {
-            error(
-                "${dumpSrc()} has a corrupt parent\n${other.dumpSrc()} ours is \n ${parent.dumpSrc()}"
-            )
-        }
-    }
-}
-
 fun IrDeclaration.isExternalDeclaration() = origin ==
         IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
         origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
@@ -645,12 +467,6 @@ fun IrPluginContext.tmpFunction(n: Int): IrClassSymbol =
 
 fun IrPluginContext.tmpSuspendFunction(n: Int): IrClassSymbol =
     referenceClass(builtIns.getSuspendFunction(n).fqNameSafe)!!
-
-fun IrType.isProvider() = isFunction() //&& hasAnnotation(InjektFqNames.Provider)
-
-fun IrType.isNoArgProvider() = isProvider() && typeArguments.size == 1
-
-fun IrType.isAssistedProvider() = isProvider() && typeArguments.size > 1
 
 inline fun <K, V> BindingTrace.getOrPut(
     slice: WritableSlice<K, V>,

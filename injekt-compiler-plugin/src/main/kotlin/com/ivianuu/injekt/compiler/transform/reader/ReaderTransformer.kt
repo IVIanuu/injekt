@@ -58,6 +58,7 @@ import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
@@ -66,6 +67,7 @@ import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
@@ -91,6 +93,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
@@ -103,7 +106,6 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
@@ -140,12 +142,6 @@ class ReaderTransformer(
 
     fun getContextForFunction(reader: IrFunction): IrClass =
         transformFunctionIfNeeded(reader).valueParameters.last().type.classOrNull!!.owner
-
-    fun getTransformedClass(clazz: IrClass): IrClass =
-        transformClassIfNeeded(clazz)
-
-    fun getTransformedFunction(function: IrFunction): IrFunction =
-        transformFunctionIfNeeded(function)
 
     override fun lower() {
         module.transformChildrenVoid(object : IrElementTransformerVoid() {
@@ -276,8 +272,8 @@ class ReaderTransformer(
             copyTypeParametersFrom(clazz)
             parentFunction?.let { copyTypeParametersFrom(it) }
 
-            annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
-                .noArgSingleConstructorCall(symbols.contextMarker)
+            annotations += DeclarationIrBuilder(pluginContext, symbol)
+                .irCall(symbols.contextMarker.constructors.single())
 
             annotations += DeclarationIrBuilder(pluginContext, symbol).run {
                 irCall(symbols.name.constructors.single()).apply {
@@ -576,8 +572,8 @@ class ReaderTransformer(
             copyTypeParametersFrom(transformedFunction)
             parentFunction?.let { copyTypeParametersFrom(it) }
 
-            annotations += InjektDeclarationIrBuilder(pluginContext, symbol)
-                .noArgSingleConstructorCall(symbols.contextMarker)
+            annotations += DeclarationIrBuilder(pluginContext, symbol)
+                .irCall(symbols.contextMarker.constructors.single())
 
             annotations += DeclarationIrBuilder(pluginContext, symbol).run {
                 irCall(symbols.name.constructors.single()).apply {
@@ -594,7 +590,7 @@ class ReaderTransformer(
 
         transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
 
-            private val functionStack = mutableListOf<IrFunction>(transformedFunction)
+            private val functionStack = mutableListOf(transformedFunction)
 
             override fun visitFunction(declaration: IrFunction): IrStatement {
                 val isReader = declaration.isReader(pluginContext.bindingContext)
@@ -848,7 +844,13 @@ class ReaderTransformer(
                                     }.apply {
                                         InjektDeclarationIrBuilder(pluginContext, symbol).run {
                                             body = builder.irBlockBody {
-                                                initializeClassWithAnySuperClass(this@clazz.symbol)
+                                                +irDelegatingConstructorCall(context.irBuiltIns.anyClass.owner.constructors.single())
+                                                +IrInstanceInitializerCallImpl(
+                                                    UNDEFINED_OFFSET,
+                                                    UNDEFINED_OFFSET,
+                                                    this@clazz.symbol,
+                                                    irBuiltIns.unitType
+                                                )
                                             }
                                         }
                                     }
@@ -869,12 +871,6 @@ class ReaderTransformer(
                                             addFunction {
                                                 name = declaration.name
                                                 returnType = declaration.returnType
-                                                /*.substituteAndKeepQualifiers(
-                                                    superClass.typeParameters.map { it.symbol }
-                                                        .associateWith {
-                                                            typeArguments[it.owner.index]
-                                                        }
-                                                )*/
                                                 visibility = declaration.visibility
                                             }.apply {
                                                 dispatchReceiverParameter =

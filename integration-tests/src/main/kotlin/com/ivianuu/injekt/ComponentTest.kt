@@ -94,15 +94,15 @@ class ComponentTest {
     @Test
     fun testUnscoped() = codegen(
         """
-        @Factory
-        fun factory(): TestComponent1<Bar> {
-            unscoped { Foo() }
-            unscoped { Bar(get()) }
-            return create()
+        @Unscoped @Reader
+        fun foo() = Foo()
+        
+        val component by lazy {
+            buildComponents()
+            componentFactory<TestComponent.Factory>().create()
         }
         
-        val component = factory()
-        fun invoke() = component.a
+        fun invoke() = component.runReader { get<Foo>() }
     """
     ) {
         assertNotSame(
@@ -114,14 +114,19 @@ class ComponentTest {
     @Test
     fun testScoped() = codegen(
         """
-        @Factory
-        fun factory(): TestComponent1<Foo> {
-            scoped { Foo() }
-            return create()
+        @Scoped(TestComponent::class) @Reader
+        fun foo() = Foo()
+        
+        fun init() {
+            buildComponents()
         }
         
-        val component = factory()
-        fun invoke() = component.a
+        val component by lazy {
+            init()
+            componentFactory<TestComponent.Factory>().create()
+        }
+        
+        fun invoke() = component.runReader { get<Foo>() }
     """
     ) {
         assertSame(
@@ -133,37 +138,37 @@ class ComponentTest {
     @Test
     fun testUnscopedProvider() = codegen(
         """
-        @Factory
-        fun factory(): TestComponent1<@Provider () -> Foo> { 
-            unscoped { Foo() }
-            return create()
+        @Unscoped @Reader
+        fun foo() = Foo()
+        
+        val component by lazy {
+            buildComponents()
+            componentFactory<TestComponent.Factory>().create()
         }
         
-        fun invoke() = factory().a
+        fun invoke() = component.runReader { get<Foo>() }
     """
     ) {
-        /*val provider =
-            invokeSingleFile<@Provider () -> Foo>()
-        assertNotSame(provider(), provider())*/
-        TODO()
+        val provider = invokeSingleFile<() -> Foo>()
+        assertNotSame(provider(), provider())
     }
 
     @Test
     fun testScopedProvider() = codegen(
         """
-        @Factory
-        fun factory(): TestComponent1<@Provider () -> Foo> { 
-            scoped { Foo() }
-            return create()
+        @Scoped(TestComponent::class) @Reader
+        fun foo() = Foo()
+        
+        val component by lazy {
+            buildComponents()
+            componentFactory<TestComponent.Factory>().create()
         }
         
-        fun invoke() = factory().a
+        fun invoke() = component.runReader { get<() -> Foo>() }
     """
     ) {
-        /*val provider =
-            invokeSingleFile<@Provider () -> Foo>()
-        assertSame(provider(), provider())*/
-        TODO()
+        val provider = invokeSingleFile<() -> Foo>()
+        assertSame(provider(), provider())
     }
 
     @Test
