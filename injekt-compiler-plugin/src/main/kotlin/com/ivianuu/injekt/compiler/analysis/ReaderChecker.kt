@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtAnnotatedExpression
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtElement
@@ -176,8 +177,12 @@ class ReaderChecker : AdditionalTypeChecker, CallChecker, DeclarationChecker {
         descriptor: DeclarationDescriptor,
         trace: BindingTrace
     ): Boolean {
-        trace.bindingContext.get(InjektWritableSlices.IS_READER, descriptor)?.let {
-            return it
+        val psi = descriptor.findPsi() as? KtElement
+
+        psi?.let {
+            trace.bindingContext.get(InjektWritableSlices.IS_READER, it)?.let {
+                return it
+            }
         }
 
         var isReader = descriptor.hasAnnotation(InjektFqNames.Reader)
@@ -186,7 +191,7 @@ class ReaderChecker : AdditionalTypeChecker, CallChecker, DeclarationChecker {
             isReader = descriptor.correspondingProperty.hasAnnotation(InjektFqNames.Reader)
         }
 
-        trace.record(InjektWritableSlices.IS_READER, descriptor, isReader)
+        psi?.let { trace.record(InjektWritableSlices.IS_READER, it, isReader) }
 
         return isReader
     }

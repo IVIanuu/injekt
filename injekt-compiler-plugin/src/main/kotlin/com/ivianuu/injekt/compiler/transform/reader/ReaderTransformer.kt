@@ -272,9 +272,6 @@ class ReaderTransformer(
             copyTypeParametersFrom(clazz)
             parentFunction?.let { copyTypeParametersFrom(it) }
 
-            annotations += DeclarationIrBuilder(pluginContext, symbol)
-                .irCall(symbols.contextMarker.constructors.single())
-
             annotations += DeclarationIrBuilder(pluginContext, symbol).run {
                 irCall(symbols.name.constructors.single()).apply {
                     putValueArgument(
@@ -571,9 +568,6 @@ class ReaderTransformer(
             addMetadataIfNotLocal()
             copyTypeParametersFrom(transformedFunction)
             parentFunction?.let { copyTypeParametersFrom(it) }
-
-            annotations += DeclarationIrBuilder(pluginContext, symbol)
-                .irCall(symbols.contextMarker.constructors.single())
 
             annotations += DeclarationIrBuilder(pluginContext, symbol).run {
                 irCall(symbols.name.constructors.single()).apply {

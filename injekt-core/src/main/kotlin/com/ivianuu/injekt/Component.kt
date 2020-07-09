@@ -26,6 +26,6 @@ annotation class Component(val parent: KClass<*> = Nothing::class) {
     annotation class Factory
 }
 
-fun buildComponents(): Unit = injektIntrinsic()
+fun initializeComponents(): Unit = injektIntrinsic()
 
 inline fun <reified T> componentFactory(): T = ComponentFactories.get(T::class)

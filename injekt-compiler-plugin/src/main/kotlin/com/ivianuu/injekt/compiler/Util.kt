@@ -102,30 +102,6 @@ fun Annotated.hasAnnotation(fqName: FqName): Boolean {
     return annotations.hasAnnotation(fqName)
 }
 
-fun Annotated.hasAnnotatedAnnotations(
-    annotation: FqName,
-    module: ModuleDescriptor
-): Boolean = annotations.any { it.hasAnnotation(annotation, module) }
-
-fun Annotated.getAnnotatedAnnotations(
-    annotation: FqName,
-    module: ModuleDescriptor
-): List<AnnotationDescriptor> =
-    annotations.filter {
-        it.hasAnnotation(annotation, module)
-    }
-
-fun IrAnnotationContainer.hasAnnotatedAnnotations(
-    annotation: FqName
-): Boolean = annotations.any { it.type.classOrNull!!.owner.hasAnnotation(annotation) }
-
-fun IrAnnotationContainer.getAnnotatedAnnotations(
-    annotation: FqName
-): List<IrConstructorCall> =
-    annotations.filter {
-        it.type.classOrNull!!.owner.hasAnnotation(annotation)
-    }
-
 fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescriptor): Boolean {
     val thisFqName = this.fqName ?: return false
     val descriptor =
@@ -149,11 +125,6 @@ fun IrType.isTypeParameter() = toKotlinType().isTypeParameter()
 
 fun IrTypeArgument.hasAnnotation(fqName: FqName): Boolean =
     typeOrNull?.hasAnnotation(fqName) == true
-
-fun IrType.getFunctionReturnType(): IrType = typeArguments.last().typeOrFail
-
-fun IrType.getFunctionParameterTypes(): List<IrType> = typeArguments.dropLast(1)
-    .map { it.typeOrFail }
 
 val IrMemberAccessExpression.typeArguments: List<IrType>
     get() =
@@ -442,5 +413,5 @@ valueParameters.map { it.type }.map {
 }.hashCode().absoluteValue
 }"
 
-val IrModuleFragment.infoPackageFile: IrFile
-    get() = files.single { it.fqName == InjektFqNames.InfoPackage }
+val IrModuleFragment.indexPackageFile: IrFile
+    get() = files.single { it.fqName == InjektFqNames.IndexPackage }

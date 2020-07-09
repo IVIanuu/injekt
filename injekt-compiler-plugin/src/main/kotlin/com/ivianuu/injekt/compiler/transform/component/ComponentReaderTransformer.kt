@@ -21,12 +21,11 @@ import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.getJoinedName
-import com.ivianuu.injekt.compiler.infoPackageFile
+import com.ivianuu.injekt.compiler.indexPackageFile
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
-import com.ivianuu.injekt.compiler.uniqueName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -91,7 +90,7 @@ class ComponentReaderTransformer(
                         component.classifierOrFail
                     )
 
-            module.infoPackageFile.addChild(
+            module.indexPackageFile.addChild(
                 buildClass {
                     name = nameProvider.allocateForGroup(
                         getJoinedName(
@@ -105,18 +104,10 @@ class ComponentReaderTransformer(
                     createImplicitParameterDeclarationWithWrappedDescriptor()
                     addMetadataIfNotLocal()
                     annotations += DeclarationIrBuilder(pluginContext, symbol).run {
-                        irCall(symbols.injektInfo.constructors.single()).apply {
+                        irCall(symbols.index.constructors.single()).apply {
                             putValueArgument(
                                 0,
                                 irString(context.classOrNull!!.descriptor.fqNameSafe.asString())
-                            )
-                            putValueArgument(
-                                1,
-                                irString(context.classOrNull!!.owner.uniqueName())
-                            )
-                            putValueArgument(
-                                2,
-                                irString("class")
                             )
                         }
                     }

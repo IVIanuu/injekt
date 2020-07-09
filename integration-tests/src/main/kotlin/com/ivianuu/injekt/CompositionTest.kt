@@ -89,7 +89,7 @@ class CompositionTest {
             }
             
             class App { 
-                val component = compositionFactoryOf<AppComponent, () -> AppComponent>()() 
+                val component = componentFactory<AppComponent, () -> AppComponent>()() 
                 val foo: Foo = component.runReader { get() }
                 init { 
                     Activity(this) 
@@ -175,7 +175,7 @@ class CompositionTest {
                 }
                 
                 class App { 
-                    val component = compositionFactoryOf<AppComponent, () -> AppComponent>()()
+                    val component = componentFactory<AppComponent, () -> AppComponent>()()
                     private val foo: Foo = component.runReader { get() }
                 }
                 """

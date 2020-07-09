@@ -31,10 +31,9 @@ object InjektFqNames {
 
     val InternalPackage = InjektPackage.child("internal")
     val ComponentFactories = InternalPackage.child("ComponentFactories")
-    val ContextMarker = InternalPackage.child("ContextMarker")
     val EntryPoint = InternalPackage.child("EntryPoint")
-    val InjektInfo = InternalPackage.child("InjektInfo")
+    val Index = InternalPackage.child("Index")
     val Name = InternalPackage.child("Name")
 
-    val InfoPackage = InternalPackage.child("info")
+    val IndexPackage = InternalPackage.child("info")
 }

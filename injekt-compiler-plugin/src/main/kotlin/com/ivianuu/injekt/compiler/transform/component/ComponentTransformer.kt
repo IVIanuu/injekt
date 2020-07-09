@@ -54,7 +54,7 @@ class ComponentTransformer(pluginContext: IrPluginContext) :
         module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
                 if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.buildComponents"
+                    "com.ivianuu.injekt.initializeComponents"
                 ) {
                     buildComponentCalls += BuildComponentCall(
                         expression,

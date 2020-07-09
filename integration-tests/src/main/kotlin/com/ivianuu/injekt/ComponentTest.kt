@@ -44,7 +44,7 @@ class ComponentTest {
         fun bar() = Bar(get())
         
         fun invoke(): Bar {
-            buildComponents()
+            initializeComponents()
             val component = componentFactory<MyComponent.Factory>().create()
             return component.runReader { get<Bar>() }
         }
@@ -78,7 +78,7 @@ class ComponentTest {
         fun bar() = Bar(get())
         
         fun invoke(): Bar {
-            buildComponents()
+            initializeComponents()
             val childComponent = componentFactory<ParentComponent.Factory>().create().runReader {
                 get<ChildComponent.Factory>().create()
             }
@@ -96,7 +96,7 @@ class ComponentTest {
         fun foo() = Foo()
         
         val component by lazy {
-            buildComponents()
+            initializeComponents()
             componentFactory<TestComponent.Factory>().create()
         }
         
@@ -116,7 +116,7 @@ class ComponentTest {
         fun foo() = Foo()
         
         val component by lazy {
-            buildComponents()
+            initializeComponents()
             componentFactory<TestComponent.Factory>().create()
         }
         
@@ -136,7 +136,7 @@ class ComponentTest {
         fun foo() = Foo()
         
         val component by lazy {
-            buildComponents()
+            initializeComponents()
             componentFactory<TestComponent.Factory>().create()
         }
         
@@ -154,7 +154,7 @@ class ComponentTest {
         fun foo() = Foo()
         
         val component by lazy {
-            buildComponents()
+            initializeComponents()
             componentFactory<TestComponent.Factory>().create()
         }
         
@@ -166,18 +166,22 @@ class ComponentTest {
     }
 
     @Test
-    fun testAnnotatedClass() = codegen(
-        """
-        @Unscoped class AnnotatedBar(foo: Foo)
-        
-        @Factory
-        fun factory(): TestComponent1<AnnotatedBar> {
-            unscoped<Foo>()
-            return create()
+    fun testAnnotatedClass() = codegen("""
+        @Unscoped
+        @Reader 
+        class AnnotatedBar {
+            private val foo: Foo = get()
         }
         
-        val component = factory()
-        fun invoke() = component.a
+        @Unscoped
+        fun foo(): Foo = Foo()
+
+        val component by lazy {
+            initializeComponents()
+            componentFactory<TestComponent.Factory>().create()
+        }
+
+        fun invoke(): AnnotatedBar = component.runReader { get<AnnotatedBar>() }
     """
     ) {
         assertNotSame(
@@ -187,28 +191,13 @@ class ComponentTest {
     }
 
     @Test
-    fun testEmpty() = codegen(
-        """
-        interface TestComponent {
-        }
-        
-        @Factory
-        fun invoke(): TestComponent = create()
-         """
-    ) {
-        invokeSingleFile()
-    }
-
-    @Test
-    fun testFactoryImplementationBinding() = codegen(
-        """
-        @Unscoped class Dep(val testComponent: TestComponent1<Dep>)
-        
-        @Factory
-        fun factory(): TestComponent1<Dep> = create()
-        
-        fun invoke(): Pair<TestComponent1<Dep>, TestComponent1<Dep>> = factory().let {
-            it to it.a.testComponent
+    fun testComponentBinding() = codegen("""
+        fun invoke(): Pair<TestComponent, TestComponent> {
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            return component.runReader { 
+                component to get<TestComponent>()
+            }
         }
     """
     ) {
@@ -218,6 +207,23 @@ class ComponentTest {
 
     @Test
     fun testGenericAnnotatedClass() = codegen(
+        """
+        @Unscoped @Reader class Dep<T> {
+            val value: T = get()
+        }
+        
+        @Unscoped fun foo() = Foo() 
+        
+        fun invoke() {
+            initializeComponents()
+            componentFactory<TestComponent.Factory>().create().runReader {
+                get<Dep<Foo>>()
+            }
+        }
+    """
+    )
+    @Test
+    fun testGenericProvider() = codegen(
         """
         @Unscoped class Dep<T>(val value: T)
         
@@ -229,5 +235,6 @@ class ComponentTest {
         }
     """
     )
+
 
 }

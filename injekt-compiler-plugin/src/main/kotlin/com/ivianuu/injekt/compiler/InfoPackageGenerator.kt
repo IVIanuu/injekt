@@ -52,7 +52,7 @@ class InfoPackageGenerator : AnalysisHandlerExtension {
                 CoreLocalVirtualFile(
                     CoreLocalFileSystem(),
                     File.createTempFile("tmp", "File.kt").apply {
-                        writeText("package ${InjektFqNames.InfoPackage}")
+                        writeText("package ${InjektFqNames.IndexPackage}")
                     })
             ) {},
             isCompiled = false

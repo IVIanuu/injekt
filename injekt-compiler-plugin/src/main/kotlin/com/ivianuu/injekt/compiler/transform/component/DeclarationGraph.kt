@@ -18,16 +18,20 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
-import com.ivianuu.injekt.compiler.infoPackageFile
+import com.ivianuu.injekt.compiler.indexPackageFile
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrConst
-import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.util.constructedClass
+import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -45,6 +49,27 @@ class DeclarationGraph(
     val entryPoints: List<EntryPoint> get() = _entryPoints
     private val _entryPoints = mutableListOf<EntryPoint>()
 
+    private val indices by lazy {
+        val memberScope = pluginContext.moduleDescriptor.getPackage(InjektFqNames.IndexPackage)
+            .memberScope
+
+        (module.indexPackageFile.declarations
+            .filterIsInstance<IrClass>() +
+                (memberScope.getClassifierNames() ?: emptySet()).mapNotNull {
+                    memberScope.getContributedClassifier(
+                        it,
+                        NoLookupLocation.FROM_BACKEND
+                    )
+                }.map { pluginContext.referenceClass(it.fqNameSafe)!!.owner })
+            .map {
+                it.getAnnotation(InjektFqNames.Index)!!
+                    .getValueArgument(0)!!
+                    .let { it as IrConst<String> }
+                    .value
+                    .let { FqName(it) }
+            }
+    }
+
     fun initialize() {
         collectComponentFactories()
         collectEntryPoints()
@@ -52,92 +77,37 @@ class DeclarationGraph(
     }
 
     private fun collectComponentFactories() {
-        val memberScope = pluginContext.moduleDescriptor.getPackage(InjektFqNames.InfoPackage)
-            .memberScope
-
-        (module.infoPackageFile.declarations
-            .filterIsInstance<IrClass>() +
-                (memberScope.getClassifierNames() ?: emptySet()).mapNotNull {
-                    memberScope.getContributedClassifier(
-                        it,
-                        NoLookupLocation.FROM_BACKEND
-                    )
-                }.map { pluginContext.referenceClass(it.fqNameSafe)!!.owner })
-            .mapNotNull {
-                val infoAnnotation = it.getAnnotation(InjektFqNames.InjektInfo)!!
-                val fqName = infoAnnotation.getValueArgument(0)!!
-                    .let { it as IrConst<String> }
-                    .value
-                    .let { FqName(it) }
-                val type = infoAnnotation.getValueArgument(2)!!
-                    .let { it as IrConst<String> }
-                    .value
-                if (type == "class") pluginContext.referenceClass(fqName)!!.owner
-                else null
-            }
+        indices
+            .mapNotNull { pluginContext.referenceClass(it)?.owner }
             .filter { it.hasAnnotation(InjektFqNames.ComponentFactory) }
             .forEach { _componentFactories += ComponentFactory(it) }
     }
 
     private fun collectEntryPoints() {
-        val memberScope = pluginContext.moduleDescriptor.getPackage(InjektFqNames.InfoPackage)
-            .memberScope
-
-        (module.infoPackageFile.declarations
-            .filterIsInstance<IrClass>() +
-                (memberScope.getClassifierNames() ?: emptySet()).mapNotNull {
-                    memberScope.getContributedClassifier(
-                        it,
-                        NoLookupLocation.FROM_BACKEND
-                    )
-                }.map { pluginContext.referenceClass(it.fqNameSafe)!!.owner })
-            .mapNotNull {
-                val infoAnnotation = it.getAnnotation(InjektFqNames.InjektInfo)!!
-                val fqName = infoAnnotation.getValueArgument(0)!!
-                    .let { it as IrConst<String> }
-                    .value
-                    .let { FqName(it) }
-                val type = infoAnnotation.getValueArgument(2)!!
-                    .let { it as IrConst<String> }
-                    .value
-                if (type == "class") pluginContext.referenceClass(fqName)!!.owner
-                else null
-            }
+        indices
+            .mapNotNull { pluginContext.referenceClass(it)?.owner }
             .filter { it.hasAnnotation(InjektFqNames.EntryPoint) }
             .forEach { _entryPoints += EntryPoint(it) }
     }
 
     private fun collectBindings() {
-        val memberScope = pluginContext.moduleDescriptor.getPackage(InjektFqNames.InfoPackage)
-            .memberScope
-
-        (module.infoPackageFile.declarations
-            .filterIsInstance<IrClass>() +
-                (memberScope.getClassifierNames() ?: emptySet()).mapNotNull {
-                    memberScope.getContributedClassifier(
-                        it,
-                        NoLookupLocation.FROM_BACKEND
-                    )
-                }.map { pluginContext.referenceClass(it.fqNameSafe)!!.owner })
+        indices
             .flatMapFix {
-                val infoAnnotation = it.getAnnotation(InjektFqNames.InjektInfo)!!
-                val fqName = infoAnnotation.getValueArgument(0)!!
-                    .let { it as IrConst<String> }
-                    .value
-                    .let { FqName(it) }
-                val type = infoAnnotation.getValueArgument(2)!!
-                    .let { it as IrConst<String> }
-                    .value
-                if (type == "fun") pluginContext.referenceFunctions(fqName)
-                    .map { it.owner }
-                else emptyList()
+                pluginContext.referenceFunctions(it)
+                    .map { it.owner } +
+                        (pluginContext.referenceClass(it)?.constructors
+                            ?.map { it.owner }
+                            ?.toList() ?: emptyList())
             }
             .filter {
                 (it.hasAnnotation(InjektFqNames.Unscoped) ||
-                        it.hasAnnotation(InjektFqNames.Scoped)) &&
-                        it.valueParameters.lastOrNull()?.type?.classOrNull?.owner?.hasAnnotation(
-                            InjektFqNames.ContextMarker
-                        ) == true
+                        it.hasAnnotation(InjektFqNames.Scoped)) ||
+                        (it is IrConstructor && (it.constructedClass.hasAnnotation(InjektFqNames.Unscoped) ||
+                                it.constructedClass.hasAnnotation(InjektFqNames.Scoped)))
+            }
+            .filter {
+                !it.hasAnnotation(InjektFqNames.Reader) ||
+                        it.valueParameters.lastOrNull()?.name?.asString() == "_context"
             }
             .forEach { _bindings += Binding(it) }
     }

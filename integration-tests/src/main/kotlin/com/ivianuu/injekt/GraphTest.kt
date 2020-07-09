@@ -137,7 +137,7 @@ class GraphTest {
         @Unscoped @Reader fun foo2(): Foo2 = Foo()
         
         fun invoke(): Pair<Foo, Foo> {
-            buildComponents()
+            initializeComponents()
             val component = componentFactory<TestComponent.Factory>().create()
             return component.runReader { get<Foo1>() to get<Foo2>() }
         }

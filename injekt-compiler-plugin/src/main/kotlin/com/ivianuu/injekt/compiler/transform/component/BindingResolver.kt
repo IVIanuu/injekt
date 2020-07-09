@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
+import com.ivianuu.injekt.compiler.typeWith
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -32,11 +33,14 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.getAnnotation
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isFunction
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -108,61 +112,67 @@ class ProvideBindingResolver(
                 )
 
                 val readerContext =
-                    function.valueParameters.last().type.classOrNull!!.owner
+                    if (function.hasAnnotation(InjektFqNames.Reader) ||
+                        (function is IrConstructor && function.constructedClass.hasAnnotation(InjektFqNames.Reader)))
+                        function.valueParameters.lastOrNull()?.type?.classOrNull?.owner else null
 
                 val dependencies = mutableListOf<BindingRequest>()
 
-                dependencies += BindingRequest(
-                    component.factoryImpl.node.component.defaultType.asKey(), null, null
-                )
+                if (readerContext != null) {
+                    dependencies += BindingRequest(
+                        component.factoryImpl.node.component.defaultType.asKey(),
+                        requestedKey,
+                        function.valueParameters.last().descriptor.fqNameSafe
+                    )
 
-                val processedSuperTypes = mutableSetOf<IrType>()
+                    val processedSuperTypes = mutableSetOf<IrType>()
 
-                fun collectDependencies(
-                    superClass: IrClass,
-                    typeArguments: List<IrType>
-                ) {
-                    if (superClass.defaultType in processedSuperTypes) return
-                    processedSuperTypes += superClass.defaultType
-                    for (declaration in superClass.declarations.toList()) {
-                        if (declaration !is IrFunction) continue
-                        if (declaration is IrConstructor) continue
-                        if (declaration.isFakeOverride) continue
-                        if (declaration.dispatchReceiverParameter?.type == component.factoryImpl.pluginContext.irBuiltIns.anyType) break
-                        dependencies += BindingRequest(
-                            key = declaration.returnType
-                                .substitute(
-                                    superClass.typeParameters
-                                        .map { it.symbol }
-                                        .zip(typeArguments)
-                                        .toMap()
-                                )
-                                .asKey(),
-                            requestingKey = requestedKey,
-                            requestOrigin = superClass.getAnnotation(InjektFqNames.Name)
-                                ?.getValueArgument(0)
-                                ?.let { it as IrConst<String> }
-                                ?.value
-                                ?.let { FqName(it) },
-                        )
+                    fun collectDependencies(
+                        superClass: IrClass,
+                        typeArguments: List<IrType>
+                    ) {
+                        if (superClass.defaultType in processedSuperTypes) return
+                        processedSuperTypes += superClass.defaultType
+                        for (declaration in superClass.declarations.toList()) {
+                            if (declaration !is IrFunction) continue
+                            if (declaration is IrConstructor) continue
+                            if (declaration.isFakeOverride) continue
+                            if (declaration.dispatchReceiverParameter?.type == component.factoryImpl.pluginContext.irBuiltIns.anyType) break
+                            dependencies += BindingRequest(
+                                key = declaration.returnType
+                                    .substitute(
+                                        superClass.typeParameters
+                                            .map { it.symbol }
+                                            .zip(typeArguments)
+                                            .toMap()
+                                    )
+                                    .asKey(),
+                                requestingKey = requestedKey,
+                                requestOrigin = superClass.getAnnotation(InjektFqNames.Name)
+                                    ?.getValueArgument(0)
+                                    ?.let { it as IrConst<String> }
+                                    ?.value
+                                    ?.let { FqName(it) },
+                            )
+                        }
+
+                        superClass.superTypes
+                            .map { it to it.classOrNull?.owner }
+                            .forEach { (superType, clazz) ->
+                                if (clazz != null)
+                                    collectDependencies(
+                                        clazz,
+                                        superType.typeArguments.map { it.typeOrFail }
+                                    )
+                            }
                     }
 
-                    superClass.superTypes
-                        .map { it to it.classOrNull?.owner }
-                        .forEach { (superType, clazz) ->
-                            if (clazz != null)
-                                collectDependencies(
-                                    clazz,
-                                    superType.typeArguments.map { it.typeOrFail }
-                                )
-                        }
-                }
-
-                readerContext.superTypes.forEach { superType ->
-                    collectDependencies(
-                        superType.classOrNull!!.owner,
-                        superType.typeArguments.map { it.typeOrFail }
-                    )
+                    readerContext.superTypes.forEach { superType ->
+                        collectDependencies(
+                            superType.classOrNull!!.owner,
+                            superType.typeArguments.map { it.typeOrFail }
+                        )
+                    }
                 }
 
                 val parameters = mutableListOf<InjektDeclarationIrBuilder.FactoryParameter>()
@@ -178,11 +188,13 @@ class ProvideBindingResolver(
                         )
                     }*/
 
-                parameters += InjektDeclarationIrBuilder.FactoryParameter(
-                    name = "_context",
-                    type = readerContext.defaultType,
-                    assisted = false
-                )
+                if (readerContext != null) {
+                    parameters += InjektDeclarationIrBuilder.FactoryParameter(
+                        name = "_context",
+                        type = readerContext.defaultType,
+                        assisted = false
+                    )
+                }
 
                 ProvisionBindingNode(
                     key = requestedKey,

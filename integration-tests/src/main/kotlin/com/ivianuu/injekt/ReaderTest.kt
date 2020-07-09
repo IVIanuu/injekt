@@ -27,13 +27,9 @@ import org.junit.Test
 class ReaderTest {
 
     @Test
-    fun testSimpleReader() = codegen(
-        """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
+    fun testSimpleReader() = codegen("""
+        @Unscoped @Reader
+        fun foo() = Foo()
         
         @Reader
         fun func(foo: Foo = get()): Foo {
@@ -41,8 +37,8 @@ class ReaderTest {
         }
         
         fun invoke(): Foo { 
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
             return component.runReader { func() }
         }
     """
@@ -51,13 +47,9 @@ class ReaderTest {
     }
 
     @Test
-    fun testSimpleReaderLambda() = codegen(
-        """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
+    fun testSimpleReaderLambda() = codegen("""
+        @Unscoped @Reader
+        fun foo() = Foo()
         
         @Reader
         fun func(foo: Foo = get()): Foo {
@@ -72,8 +64,8 @@ class ReaderTest {
         fun <R> withFoo(block: @Reader (Foo) -> R): R = block(func())
         
         fun invoke(): Foo {
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
             return component.runReader {
                 withFoo {
                     other()
@@ -87,19 +79,15 @@ class ReaderTest {
     }
 
     @Test
-    fun testSimpleReaderLambdaProperty() = codegen(
-        """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
+    fun testSimpleReaderLambdaProperty() = codegen("""
+        @Unscoped @Reader
+        fun foo() = Foo()
         
         val foo: @Reader () -> Foo = { get() }
 
         fun invoke(): Foo {
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
             return component.runReader { foo() }
         }
     """
@@ -108,13 +96,9 @@ class ReaderTest {
     }
 
     @Test
-    fun testNestedReader() = codegen(
-        """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
+    fun testNestedReader() = codegen("""
+        @Unscoped @Reader
+        fun foo() = Foo()
         
         @Reader
         fun createFoo(foo: Foo = get()): Foo {
@@ -127,8 +111,8 @@ class ReaderTest {
         fun <R> reader(block: @Reader () -> R) = block()
         
         fun invoke(): Foo {
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
             return component.runReader {
                 nonReader { 
                     reader { 
@@ -147,13 +131,9 @@ class ReaderTest {
     }
 
     @Test
-    fun testSuspendBlockInReadingBlock() = codegen(
-        """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
+    fun testSuspendBlockInReadingBlock() = codegen("""
+        @Unscoped @Reader
+        fun foo() = Foo()
         
         @Reader
         suspend fun func(foo: Foo = get()): Foo {
@@ -162,8 +142,8 @@ class ReaderTest {
         }
         
         fun invoke(): Foo { 
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
             return component.runReader {
                 runBlocking { 
                     func()
@@ -176,13 +156,9 @@ class ReaderTest {
     }
 
     @Test
-    fun testReadingBlockInSuspendBlock() = codegen(
-        """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
+    fun testReadingBlockInSuspendBlock() = codegen("""
+        @Unscoped @Reader
+        fun foo() = Foo()
         
         @Reader
         suspend fun func(foo: Foo = get()): Foo {
@@ -191,8 +167,8 @@ class ReaderTest {
         }
         
         fun invoke(): Foo { 
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
             return runBlocking {
                 component.runReader {
                     func()
@@ -205,13 +181,9 @@ class ReaderTest {
     }
 
     @Test
-    fun testSuspendReaderLambda() = codegen(
-        """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
+    fun testSuspendReaderLambda() = codegen("""
+        @Unscoped @Reader
+        fun foo() = Foo()
         
         @Reader
         suspend fun func(foo: Foo = get()): Foo {
@@ -228,8 +200,8 @@ class ReaderTest {
         suspend fun <R> withFoo(block: @Reader suspend (Foo) -> R): R = block(func())
         
         fun invoke(): Foo {
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
             return runBlocking {
                 component.runReader {
                     withFoo {
@@ -245,13 +217,9 @@ class ReaderTest {
     }
 
     @Test
-    fun testSuspendNestedReader() = codegen(
-        """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
+    fun testSuspendNestedReader() = codegen("""
+        @Unscoped @Reader
+        fun foo() = Foo()
         
         @Reader
         suspend fun createFoo(foo: Foo = get()): Foo {
@@ -265,8 +233,8 @@ class ReaderTest {
         fun <R> Reader(block: @Reader () -> R) = block()
         
         fun invoke() {
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
             component.runReader {
                 nonReader { 
                     Reader { 
@@ -287,13 +255,9 @@ class ReaderTest {
     }
 
     @Test
-    fun testReaderCallInDefaultParameter() = codegen(
-        """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
+    fun testReaderCallInDefaultParameter() = codegen("""
+        @Unscoped @Reader
+        fun foo() = Foo()
         
         @Reader
         fun func(foo: Foo = get()): Foo {
@@ -304,8 +268,8 @@ class ReaderTest {
         fun withDefault(foo: Foo = func()): Foo = foo
         
         fun invoke(): Foo { 
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
             return component.runReader { withDefault() }
         }
     """
@@ -314,20 +278,16 @@ class ReaderTest {
     }
 
     @Test
-    fun testReaderCallInDefaultParameterWithCapture() = codegen(
-        """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
+    fun testReaderCallInDefaultParameterWithCapture() = codegen("""
+        @Unscoped @Reader
+        fun foo() = Foo()
         
         @Reader
         fun withDefault(foo: Foo = get(), foo2: Foo = foo): Foo = foo
         
         fun invoke(): Foo { 
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
             return component.runReader { withDefault() }
         }
     """
@@ -340,10 +300,8 @@ class ReaderTest {
         listOf(
             source(
                 """
-                @Reader
-                fun foo(): Foo {
-                    return get()
-                } 
+                @Unscoped @Reader
+                fun foo() = Foo()
             """
             ),
         ),
@@ -361,12 +319,6 @@ class ReaderTest {
         listOf(
             source(
                 """
-                    @CompositionFactory 
-                    fun factory(): TestCompositionComponent {
-                        unscoped { Foo() }
-                        return create() 
-                    }
-        
                     @Reader
                     fun <R> withBar(block: @Reader (Bar) -> R): R = block(bar()) 
                 """
@@ -389,8 +341,8 @@ class ReaderTest {
             source(
                 """
                 fun invoke(): Foo {
-                    initializeCompositions()
-                    component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+                    initializeComponents()
+                    component = componentFactory<TestComponent.Factory>().create()
                     return getFoo()
                 }
                 """,
@@ -402,20 +354,16 @@ class ReaderTest {
     }
 
     @Test
-    fun testReaderProperty() = codegen(
-        """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
+    fun testReaderProperty() = codegen("""
+        @Unscoped @Reader
+        fun foo() = Foo()
         
         @Reader
         val foo: Foo get() = get()
         
         fun invoke(): Foo { 
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
             return component.runReader { foo }
         }
     """
@@ -426,13 +374,9 @@ class ReaderTest {
     @Test
     fun testMultiCompileReaderProperty() = multiCodegen(
         listOf(
-            source(
-                """
-                @CompositionFactory 
-                fun factory(): TestCompositionComponent {
-                    unscoped { Foo() }
-                    return create() 
-                }
+            source("""
+                @Unscoped @Reader 
+                fun foo() = Foo()
         
                 @Reader
                 val foo: Foo get() = get()
@@ -443,8 +387,8 @@ class ReaderTest {
             source(
                 """
                 fun invoke(): Foo { 
-                    initializeCompositions()
-                    val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+                    initializeComponents()
+                    val component = componentFactory<TestComponent.Factory>().create()
                     return component.runReader { foo }
                 }
                 """,
@@ -456,13 +400,9 @@ class ReaderTest {
     }
 
     @Test
-    fun testReaderClass() = codegen(
-        """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
+    fun testReaderClass() = codegen("""
+        @Unscoped @Reader
+        fun foo() = Foo()
         
         @Reader
         class FooFactory {
@@ -470,8 +410,8 @@ class ReaderTest {
         }
         
         fun invoke(): Foo { 
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
             return component.runReader { FooFactory().getFoo() }
         }
     """
@@ -482,18 +422,14 @@ class ReaderTest {
     @Test
     fun testReaderClassMulti() = multiCodegen(
         listOf(
-            source(
-                """
-                @CompositionFactory 
-                fun factory(): TestCompositionComponent {
-                    unscoped { Foo() }
-                return create() 
-            }
+            source("""
+                @Unscoped @Reader
+                fun foo() = Foo()
         
-            @Reader
-            class FooFactory {
-                fun getFoo() = get<Foo>()
-            } 
+                @Reader
+                class FooFactory {
+                    fun getFoo() = get<Foo>()
+                } 
             """
             )
         ),
@@ -501,8 +437,8 @@ class ReaderTest {
             source(
                 """ 
                 fun invoke(): Foo { 
-                    initializeCompositions()
-                    val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+                    initializeComponents()
+                    val component = componentFactory<TestComponent.Factory>().create()
                     return component.runReader { FooFactory().getFoo() }
                 }
             """, name = "File.kt"
@@ -526,8 +462,8 @@ class ReaderTest {
         }
         
         fun invoke(): Foo { 
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
             return component.runReader { FooFactory().getFoo() }
         }
     """
@@ -551,8 +487,8 @@ class ReaderTest {
         }
         
         fun invoke(): Foo { 
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
             return component.runReader { get<FooFactory>().getFoo() }
         }
     """
@@ -578,8 +514,8 @@ class ReaderTest {
         class FooFactory : SuperClass()
         
         fun invoke(): Foo { 
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
             return component.runReader { FooFactory().getFoo() }
         }
     """
@@ -605,8 +541,8 @@ class ReaderTest {
         class FooFactory : SuperClass()
         
         fun invoke(): Foo { 
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
             return component.runReader { FooFactory().getFoo() }
         }
     """
@@ -632,8 +568,8 @@ class ReaderTest {
         class FooFactory : SuperClass<String>("hello")
         
         fun invoke(): Foo { 
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
             return component.runReader { FooFactory().getFoo() }
         }
     """
@@ -657,8 +593,8 @@ class ReaderTest {
         }
         
         fun invoke(): Foo { 
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
             return component.runReader { get<@Provider (String) -> FooFactory>()("hello").getFoo() }
         }
     """
@@ -682,8 +618,8 @@ class ReaderTest {
         }
         
         fun invoke(): Foo {
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
             return component.runReader { get<FooFactory>().foo }
         }
     """
@@ -714,8 +650,8 @@ class ReaderTest {
             source(
                 """
                     fun invoke(): Foo { 
-                        initializeCompositions()
-                        val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+                        initializeComponents()
+                        val component = componentFactory<TestComponent.Factory>().create()
                         return component.runReader { get<@Provider (String) -> FooFactory>()("hello").getFoo() }
                     }
             """, name = "File.kt"
@@ -751,8 +687,8 @@ class ReaderTest {
         fun <T> provide() = get<T>()
         
         fun invoke(): Foo { 
-            initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
             return component.runReader { provide() }
         }
     """
@@ -780,8 +716,8 @@ class ReaderTest {
             source(
                 """
                 fun invoke(): Foo { 
-                    initializeCompositions()
-                    val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+                    initializeComponents()
+                    val component = componentFactory<TestComponent.Factory>().create()
                     return component.runReader { provide() }
                 }
             """, name = "File.kt"

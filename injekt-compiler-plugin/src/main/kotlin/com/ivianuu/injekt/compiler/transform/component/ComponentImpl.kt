@@ -44,8 +44,10 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -61,6 +63,8 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
         createImplicitParameterDeclarationWithWrappedDescriptor()
         superTypes += factoryImpl.node.component.defaultType
         superTypes += factoryImpl.node.entryPoints.map { it.entryPoint.defaultType }
+        println("c ${factoryImpl.node.component.defaultType.render()}\n" +
+                "e ${factoryImpl.node.entryPoints.map { it.entryPoint.defaultType.render() }}")
     }
 
     private val dependencyRequests =

@@ -1,7 +1,7 @@
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.Scoped
-import com.ivianuu.injekt.buildComponents
+import com.ivianuu.injekt.initializeComponents
 import com.ivianuu.injekt.componentFactory
 import com.ivianuu.injekt.get
 import com.ivianuu.injekt.runReader
@@ -38,7 +38,7 @@ interface TestComponent {
 fun foo() = Foo()
 
 val component by lazy {
-    buildComponents()
+    initializeComponents()
     componentFactory<TestComponent.Factory>().create()
 }
 

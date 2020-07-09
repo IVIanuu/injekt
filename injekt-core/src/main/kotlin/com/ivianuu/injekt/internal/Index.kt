@@ -16,4 +16,4 @@
 
 package com.ivianuu.injekt.internal
 
-annotation class ContextMarker
+annotation class Index(val fqName: String)

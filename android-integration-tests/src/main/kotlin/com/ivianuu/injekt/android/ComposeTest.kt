@@ -138,7 +138,7 @@ class ComposeTest {
         @androidx.compose.Composable
         fun cool(): Foo {
             initializeCompositions()
-            val component = compositionFactoryOf<TestCompositionComponent, () -> TestCompositionComponent>()()
+            val component = componentFactory<TestComponent.Factory>().create()
             return component.runReader {
                     withFoo {
                         other()

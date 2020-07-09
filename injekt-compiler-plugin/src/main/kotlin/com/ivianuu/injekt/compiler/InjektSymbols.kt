@@ -37,12 +37,10 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
 
     val componentFactories: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.ComponentFactories)!!
-    val contextMarker: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.ContextMarker)!!
     val entryPoint: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.EntryPoint)!!
-    val injektInfo: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.InjektInfo)!!
+    val index: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.Index)!!
     val name: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.Name)!!
 
