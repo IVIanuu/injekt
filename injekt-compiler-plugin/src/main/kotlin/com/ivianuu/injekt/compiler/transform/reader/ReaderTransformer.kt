@@ -29,13 +29,13 @@ import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
+import com.ivianuu.injekt.compiler.jvmNameAnnotation
 import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.thisOfClass
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
-import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.typeWith
@@ -481,9 +481,8 @@ class ReaderTransformer(
                 annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
             ) {
                 val name = JvmAbi.getterName(descriptor.correspondingProperty.name.identifier)
-                annotations += InjektDeclarationIrBuilder(pluginContext, symbol).jvmNameAnnotation(
-                    name
-                )
+                annotations += DeclarationIrBuilder(pluginContext, symbol)
+                    .jvmNameAnnotation(name, pluginContext)
                 correspondingPropertySymbol?.owner?.getter = this
             }
 
@@ -491,9 +490,8 @@ class ReaderTransformer(
                 annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
             ) {
                 val name = JvmAbi.setterName(descriptor.correspondingProperty.name.identifier)
-                annotations += InjektDeclarationIrBuilder(pluginContext, symbol).jvmNameAnnotation(
-                    name
-                )
+                annotations += DeclarationIrBuilder(pluginContext, symbol)
+                    .jvmNameAnnotation(name, pluginContext)
                 correspondingPropertySymbol?.owner?.setter = this
             }
         }
@@ -836,8 +834,8 @@ class ReaderTransformer(
                                         isPrimary = true
                                         visibility = Visibilities.PUBLIC
                                     }.apply {
-                                        InjektDeclarationIrBuilder(pluginContext, symbol).run {
-                                            body = builder.irBlockBody {
+                                        DeclarationIrBuilder(pluginContext, symbol).run {
+                                            body = irBlockBody {
                                                 +irDelegatingConstructorCall(context.irBuiltIns.anyClass.owner.constructors.single())
                                                 +IrInstanceInitializerCallImpl(
                                                     UNDEFINED_OFFSET,

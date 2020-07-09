@@ -17,10 +17,11 @@
 package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.tmpFunction
-import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.typeWith
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
@@ -80,7 +81,7 @@ class ComponentExpressions(
     private fun providerExpression(binding: ProviderBindingNode): ComponentExpression {
         val dependency = getBindingExpression(binding.dependencies.single())
         return { c ->
-            InjektDeclarationIrBuilder(pluginContext, scope.scopeOwnerSymbol)
+            DeclarationIrBuilder(pluginContext, scope.scopeOwnerSymbol)
                 .irLambda(binding.key.type) {
                     +irReturn(dependency(this, c))
                 }
@@ -117,7 +118,7 @@ class ComponentExpressions(
             irCall(lazy).apply {
                 putValueArgument(
                     0,
-                    InjektDeclarationIrBuilder(pluginContext, symbol)
+                    DeclarationIrBuilder(pluginContext, symbol)
                         .irLambda(
                             pluginContext.tmpFunction(0)
                                 .typeWith(binding.key.type)

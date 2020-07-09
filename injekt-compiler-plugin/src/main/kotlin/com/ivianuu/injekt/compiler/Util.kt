@@ -32,7 +32,15 @@ import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
+import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
+import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
+import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
+import org.jetbrains.kotlin.ir.builders.declarations.buildFun
+import org.jetbrains.kotlin.ir.builders.irBlockBody
+import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
@@ -59,8 +67,11 @@ import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
+import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
+import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
@@ -69,6 +80,7 @@ import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
+import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.toKotlinType
@@ -81,6 +93,7 @@ import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isSuspend
+import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -88,6 +101,7 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -415,3 +429,73 @@ valueParameters.map { it.type }.map {
 
 val IrModuleFragment.indexPackageFile: IrFile
     get() = files.single { it.fqName == InjektFqNames.IndexPackage }
+
+fun IrBuilderWithScope.singleClassArgConstructorCall(
+    clazz: IrClassSymbol,
+    value: IrClassifierSymbol
+): IrConstructorCall =
+    irCall(clazz.constructors.single()).apply {
+        putValueArgument(
+            0,
+            IrClassReferenceImpl(
+                startOffset, endOffset,
+                context.irBuiltIns.kClassClass.typeWith(value.defaultType),
+                value,
+                value.defaultType
+            )
+        )
+    }
+
+fun IrBuilderWithScope.irLambda(
+    type: IrType,
+    startOffset: Int = UNDEFINED_OFFSET,
+    endOffset: Int = UNDEFINED_OFFSET,
+    body: IrBlockBodyBuilder.(IrFunction) -> Unit
+): IrExpression {
+    val returnType = type.typeArguments.last().typeOrNull!!
+
+    val lambda = buildFun {
+        origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
+        name = Name.special("<anonymous>")
+        this.returnType = returnType
+        visibility = Visibilities.LOCAL
+        isSuspend = type.isSuspendFunction()
+    }.apply {
+        parent = scope.getLocalDeclarationParent()
+        type.typeArguments.dropLast(1).forEachIndexed { index, typeArgument ->
+            addValueParameter(
+                "p$index",
+                typeArgument.typeOrNull!!
+            )
+        }
+        annotations += type.annotations.map {
+            it.deepCopyWithSymbols()
+        }
+        this.body =
+            DeclarationIrBuilder(context, symbol).irBlockBody { body(this, this@apply) }
+    }
+
+    return IrFunctionExpressionImpl(
+        startOffset = startOffset,
+        endOffset = endOffset,
+        type = type,
+        function = lambda,
+        origin = IrStatementOrigin.LAMBDA
+    )
+}
+
+data class FactoryParameter(
+    val name: String,
+    val type: IrType,
+    val assisted: Boolean
+)
+
+fun IrBuilderWithScope.jvmNameAnnotation(
+    name: String,
+    pluginContext: IrPluginContext
+): IrConstructorCall {
+    val jvmName = pluginContext.referenceClass(DescriptorUtils.JVM_NAME)!!
+    return irCall(jvmName.constructors.single()).apply {
+        putValueArgument(0, irString(name))
+    }
+}

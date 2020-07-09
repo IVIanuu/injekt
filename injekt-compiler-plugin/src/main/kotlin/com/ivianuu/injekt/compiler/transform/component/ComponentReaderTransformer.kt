@@ -22,8 +22,8 @@ import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.indexPackageFile
+import com.ivianuu.injekt.compiler.singleClassArgConstructorCall
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
-import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
@@ -84,7 +84,7 @@ class ComponentReaderTransformer(
                 call.getValueArgument(0)!!.type.typeArguments.first().typeOrFail
 
             context.classOrNull!!.owner.annotations +=
-                InjektDeclarationIrBuilder(pluginContext, context.classOrNull!!)
+                DeclarationIrBuilder(pluginContext, context.classOrNull!!)
                     .singleClassArgConstructorCall(
                         symbols.entryPoint,
                         component.classifierOrFail

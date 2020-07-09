@@ -16,9 +16,9 @@
 
 package com.ivianuu.injekt.compiler.transform.component
 
+import com.ivianuu.injekt.compiler.FactoryParameter
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.isTypeParameter
-import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -146,8 +146,8 @@ class ProvisionBindingNode(
     scoped: Boolean,
     owner: ComponentImpl,
     origin: FqName?,
-    val createExpression: IrBuilderWithScope.(Map<InjektDeclarationIrBuilder.FactoryParameter, () -> IrExpression?>) -> IrExpression,
-    val parameters: List<InjektDeclarationIrBuilder.FactoryParameter>
+    val createExpression: IrBuilderWithScope.(Map<FactoryParameter, () -> IrExpression?>) -> IrExpression,
+    val parameters: List<FactoryParameter>
 ) : BindingNode(key, context, dependencies, targetComponent, scoped, owner, origin)
 
 fun IrType.asKey(): Key = Key(this)

@@ -16,13 +16,12 @@
 
 package com.ivianuu.injekt.compiler.transform.component
 
+import com.ivianuu.injekt.compiler.FactoryParameter
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
 import com.ivianuu.injekt.compiler.substitute
-import com.ivianuu.injekt.compiler.transform.InjektDeclarationIrBuilder
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
-import com.ivianuu.injekt.compiler.typeWith
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -40,7 +39,6 @@ import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isFunction
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -175,7 +173,7 @@ class ProvideBindingResolver(
                     }
                 }
 
-                val parameters = mutableListOf<InjektDeclarationIrBuilder.FactoryParameter>()
+                val parameters = mutableListOf<FactoryParameter>()
 
                 /*parameters += providerType
                     .getFunctionParameterTypes()
@@ -189,7 +187,7 @@ class ProvideBindingResolver(
                     }*/
 
                 if (readerContext != null) {
-                    parameters += InjektDeclarationIrBuilder.FactoryParameter(
+                    parameters += FactoryParameter(
                         name = "_context",
                         type = readerContext.defaultType,
                         assisted = false
