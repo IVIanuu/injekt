@@ -34,12 +34,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         ReaderTransformer(pluginContext, symbolRemapper).doLower(moduleFragment)
         IndexPackageDeclarationTransformer(pluginContext).doLower(moduleFragment)
 
-        try {
-            println(moduleFragment.dumpSrc())
-        } catch (e: Exception) {
-
-        }
-
         ComponentReaderTransformer(pluginContext).doLower(moduleFragment)
         ComponentTransformer(pluginContext).doLower(moduleFragment)
         TmpMetadataPatcher(pluginContext).doLower(moduleFragment)
