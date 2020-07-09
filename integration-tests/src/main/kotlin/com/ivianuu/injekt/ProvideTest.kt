@@ -20,7 +20,7 @@ import com.ivianuu.injekt.test.assertCompileError
 import com.ivianuu.injekt.test.codegen
 import org.junit.Test
 
-class AnnotatedBindingTest {
+class ProvideTest {
 
     @Test
     fun testAnnotatedClassOk() = codegen(
@@ -66,7 +66,7 @@ class AnnotatedBindingTest {
     @Test
     fun testMultipleScopesFails() = codegen(
         """
-        @TestScope @TestScope2 class Dep
+        @Scoped(Any::class) @Scoped(Any::class) class Dep
     """
     ) {
         assertCompileError("scope")
