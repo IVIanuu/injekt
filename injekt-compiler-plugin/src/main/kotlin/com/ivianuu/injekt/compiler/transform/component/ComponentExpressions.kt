@@ -175,32 +175,26 @@ class ComponentExpressions(
 typealias ComponentExpression = IrBuilderWithScope.(ComponentExpressionContext) -> IrExpression
 
 data class ComponentExpressionContext(
-    val componentAccessor: Map<ComponentImpl, () -> IrExpression>
+    val accessors: Map<ComponentImpl, () -> IrExpression>
 ) {
     operator fun get(factory: ComponentImpl) =
-        componentAccessor.getValue(factory)()
+        accessors.getValue(factory)()
 }
 
-fun IrBuilderWithScope.ComponentExpressionContext(
+fun ComponentExpressionContext(
     thisComponent: ComponentImpl,
-    thisAccessor: () -> IrExpression = { irGet(thisComponent.clazz.thisReceiver!!) }
+    thisAccessor: () -> IrExpression
 ): ComponentExpressionContext {
-    val allComponents = mutableListOf<ComponentImpl>()
+    val componentsWithAccessor = mutableMapOf<ComponentImpl, () -> IrExpression>()
+
+    componentsWithAccessor[thisComponent] = thisAccessor
+
     var current: ComponentImpl? = thisComponent
-    if (current != null) {
-        while (current != null) {
-            allComponents += current
-            current = current.factoryImpl.parent?.componentImpl
-        }
-    } else {
-        allComponents += thisComponent
+    while (current != null) {
+        val parent = current.factoryImpl.parent?.componentImpl ?: break
+        componentsWithAccessor[parent] = current.factoryImpl.parentAccessor!!
+        current = parent
     }
 
-    return ComponentExpressionContext(
-        allComponents.associateWith { component ->
-            if (component == thisComponent) thisAccessor else ({
-                irGet(component.clazz.thisReceiver!!)
-            })
-        }
-    )
+    return ComponentExpressionContext(componentsWithAccessor)
 }

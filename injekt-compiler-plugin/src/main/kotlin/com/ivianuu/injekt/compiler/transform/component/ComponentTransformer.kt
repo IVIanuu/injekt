@@ -109,6 +109,7 @@ class ComponentTransformer(pluginContext: IrPluginContext) :
                     .forEach { node ->
                         val componentFactoryImpl = ComponentFactoryImpl(
                             scope.getLocalDeclarationParent(),
+                            null,
                             node,
                             null,
                             pluginContext,

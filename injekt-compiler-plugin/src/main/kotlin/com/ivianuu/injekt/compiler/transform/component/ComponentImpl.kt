@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.buildClass
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
@@ -48,7 +47,7 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
     val origin: FqName? = factoryImpl.node.component.descriptor.fqNameSafe
 
     val clazz = buildClass {
-        name = Name.special("<impl>")
+        name = Name.special("<${factoryImpl.node.component.descriptor.fqNameSafe} impl>")
         visibility = Visibilities.LOCAL
     }.apply clazz@{
         parent = factoryImpl.factoryClass
@@ -87,42 +86,25 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
                     component = this@ComponentImpl
                 )
 
-                collectDependencyRequests()
-
                 val constructor = clazz.addConstructor {
                     returnType = clazz.defaultType
                     isPrimary = true
                     visibility = Visibilities.PUBLIC
                 }.apply {
                     body = DeclarationIrBuilder(factoryImpl.pluginContext, symbol).irBlockBody {
-                        componentMembers.blockBuilder = this
-                        val superType = clazz.superTypes.first()
-                        +irDelegatingConstructorCall(
-                            if (superType.classOrNull!!.owner.kind == ClassKind.CLASS)
-                                superType.classOrNull!!.owner.constructors.single { it.valueParameters.isEmpty() }
-                            else context.irBuiltIns.anyClass.constructors.single().owner
-                        )
+                        +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
                         +IrInstanceInitializerCallImpl(
                             UNDEFINED_OFFSET,
                             UNDEFINED_OFFSET,
                             clazz.symbol,
                             context.irBuiltIns.unitType
                         )
+
+                        componentMembers.blockBuilder = this
                     }
                 }
 
-                dependencyRequests.forEach { (_, request) ->
-                    if (request.key !in implementedRequests) {
-                        componentExpressions.getBindingExpression(request)
-                    }
-                }
-
-                val notImplementedRequests = dependencyRequests
-                    .filter { it.second.key !in implementedRequests }
-
-                check(notImplementedRequests.isEmpty()) {
-                    notImplementedRequests.toString()
-                }
+                implementRequests()
 
                 +clazz
                 +irCall(constructor)
@@ -130,7 +112,7 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
         }
     }
 
-    private fun collectDependencyRequests() {
+    private fun implementRequests() {
         val processedSuperTypes = mutableSetOf<IrType>()
         val declarationNames = mutableSetOf<Name>()
         var firstRound = true
@@ -138,10 +120,12 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
             val entryPoints = if (firstRound) {
                 factoryImpl.node.entryPoints.map { it.entryPoint }
             } else {
-                dependencyRequests
-                    .map { it.second }
-                    .map { graph.getBinding(it) }
-                    .mapNotNull { it.context }
+                (graph.resolvedBindings.values
+                    .mapNotNull { it.context } +
+                        dependencyRequests
+                            .map { it.second }
+                            .map { graph.getBinding(it) }
+                            .mapNotNull { it.context })
                     .filter { it.defaultType !in processedSuperTypes }
             }
 
@@ -168,6 +152,11 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
                             ?.let { FqName(it) }
                     )
                     dependencyRequests += declaration to request
+                    dependencyRequests.forEach { (_, request) ->
+                        if (request.key !in implementedRequests) {
+                            componentExpressions.getBindingExpression(request)
+                        }
+                    }
                     graph.getBinding(request)
                 }
 

@@ -74,10 +74,11 @@ class ChildComponentFactoryBindingResolver(
             owner = parentComponent,
             origin = node.factory.factory.descriptor.fqNameSafe,
             parent = parentComponent.clazz,
-            childComponentFactoryExpression = {
+            childComponentFactoryExpression = { c ->
                 irBlock {
                     val childComponentFactoryImpl = ComponentFactoryImpl(
                         parentComponent.clazz,
+                        { c[parentComponent] },
                         node,
                         parentComponent.factoryImpl,
                         parentComponent.factoryImpl.pluginContext,

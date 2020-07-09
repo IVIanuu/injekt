@@ -57,7 +57,9 @@ class ComponentMembers(
         )
 
         with(blockBuilder) {
-            val context = ComponentExpressionContext(component)
+            val context = ComponentExpressionContext(component) {
+                irGet(component.clazz.thisReceiver!!)
+            }
             +irSetField(
                 context[component],
                 field,

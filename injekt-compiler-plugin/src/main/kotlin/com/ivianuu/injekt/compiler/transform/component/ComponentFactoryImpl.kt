@@ -31,14 +31,17 @@ import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
+import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ComponentFactoryImpl(
     val irParent: IrDeclarationParent,
+    val parentAccessor: (() -> IrExpression)?,
     val node: ComponentNode,
     val parent: ComponentFactoryImpl?,
     val pluginContext: IrPluginContext,
@@ -47,7 +50,7 @@ class ComponentFactoryImpl(
 ) {
 
     val factoryClass = buildClass {
-        name = Name.special("<factory impl>")
+        name = Name.special("<${node.component.descriptor.fqNameSafe} factory impl>")
         visibility = Visibilities.LOCAL
     }.apply clazz@{
         parent = irParent
