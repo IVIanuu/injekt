@@ -252,7 +252,7 @@ class ComponentTest {
             initializeComponents()
             val foo = Foo()
             val component = componentFactory<MyComponent.Factory>().create(foo)
-            return foo- to component.runReader { get<Foo>() }
+            return foo to component.runReader { get<Foo>() }
         }
     """
     ) {

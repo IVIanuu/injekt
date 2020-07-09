@@ -64,15 +64,6 @@ class ProvideTest {
     }
 
     @Test
-    fun testMultipleScopesFails() = codegen(
-        """
-        @Scoped(Any::class) @Scoped(Any::class) class Dep
-    """
-    ) {
-        assertCompileError("scope")
-    }
-
-    @Test
     fun testClassAndConstructorAnnotationFails() = codegen(
         """
          @Unscoped class Dep @Unscoped constructor()  

@@ -17,11 +17,13 @@
 package com.ivianuu.injekt.sample
 
 import com.ivianuu.injekt.ApplicationComponent
+import com.ivianuu.injekt.DistinctType
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.get
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
+@DistinctType
 typealias AppService = suspend () -> Unit
 
 @BindingEffect(ApplicationComponent::class)

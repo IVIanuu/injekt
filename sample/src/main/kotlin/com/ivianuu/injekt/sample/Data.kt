@@ -23,10 +23,9 @@ import com.ivianuu.injekt.Scoped
 import com.ivianuu.injekt.Unscoped
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.get
-import com.ivianuu.injekt.sample.proof.Provide
 import java.io.File
 
-@Provide
+@Unscoped
 @Reader
 fun databaseFile(): DatabaseFile = get<ApplicationContext>().cacheDir
 
