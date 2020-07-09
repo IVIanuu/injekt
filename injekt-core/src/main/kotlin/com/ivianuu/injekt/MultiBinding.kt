@@ -16,6 +16,6 @@
 
 package com.ivianuu.injekt
 
-annotation class SetElements
-
 annotation class MapEntries
+
+annotation class SetElements

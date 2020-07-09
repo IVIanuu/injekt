@@ -95,6 +95,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
+import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
@@ -138,7 +139,6 @@ class ReaderTransformer(
     private val transformedClasses = mutableSetOf<IrClass>()
 
     private val globalNameProvider = NameProvider()
-    private val contextClassFunctionNameProvider = NameProvider()
 
     fun getContextForFunction(reader: IrFunction): IrClass =
         transformFunctionIfNeeded(reader).valueParameters.last().type.classOrNull!!.owner
@@ -321,8 +321,7 @@ class ReaderTransformer(
 
         val providerFunctionByGetCall = getCalls.associateWith { getCall ->
             contextClass.addFunction {
-                name = contextClassFunctionNameProvider.getProvideFunctionNameForGetCall(
-                    clazz,
+                name = getProvideFunctionNameForGetCall(
                     getCall.type
                         .remapTypeParameters(clazz, contextClass)
                         .let {
@@ -358,10 +357,7 @@ class ReaderTransformer(
                 .filterNot { it is IrConstructor }
                 .forEach { genericContextFunction ->
                     genericFunctionMap += genericContextFunction to contextClass.addFunction {
-                        name = contextClassFunctionNameProvider.getProvideFunctionNameForGetCall(
-                            clazz,
-                            genericContextFunction.returnType
-                        )
+                        name = getProvideFunctionNameForGetCall(genericContextFunction.returnType)
                         returnType = genericContextFunction.returnType
                             .substitute(genericContext.typeParameters
                                 .map { it.symbol }
@@ -616,8 +612,7 @@ class ReaderTransformer(
 
         val providerFunctionByGetCall = getCalls.associateWith { getCall ->
             contextClass.addFunction {
-                name = contextClassFunctionNameProvider.getProvideFunctionNameForGetCall(
-                    transformedFunction,
+                name = getProvideFunctionNameForGetCall(
                     getCall.type
                         .remapTypeParameters(function, transformedFunction)
                         .remapTypeParameters(transformedFunction, contextClass)
@@ -655,10 +650,7 @@ class ReaderTransformer(
                 .filterNot { it is IrConstructor }
                 .forEach { genericContextFunction ->
                     genericFunctionMap += genericContextFunction to contextClass.addFunction {
-                        name = contextClassFunctionNameProvider.getProvideFunctionNameForGetCall(
-                            transformedFunction,
-                            genericContextFunction.returnType
-                        )
+                        name = getProvideFunctionNameForGetCall(genericContextFunction.returnType)
                         returnType = genericContextFunction.returnType
                             .substitute(genericContext.typeParameters
                                 .map { it.symbol }
@@ -942,10 +934,17 @@ class ReaderTransformer(
         ).asString() + "_$suffix"
     ).asNameId()
 
-    private fun NameProvider.getProvideFunctionNameForGetCall(
-        declaration: IrDeclarationWithName,
+    private fun getProvideFunctionNameForGetCall(
         type: IrType
-    ): Name = getBaseName(declaration, type.classifierOrFail.descriptor.name.asString())
+    ): Name {
+        val fqName = if (type is IrSimpleType && type.abbreviation != null &&
+            type.abbreviation!!.typeAlias.descriptor.hasAnnotation(InjektFqNames.DistinctType)
+        )
+            type.abbreviation!!.typeAlias.descriptor.fqNameSafe
+        else type.classifierOrFail.descriptor.fqNameSafe
+        return fqName.pathSegments()
+            .joinToString("_").asNameId()
+    }
 
     private fun transformFunctionExpression(
         transformedCallee: IrFunction,

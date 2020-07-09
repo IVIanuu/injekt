@@ -28,10 +28,8 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -67,7 +65,9 @@ class DeclarationGraph(
                     .let { it as IrConst<String> }
                     .value
                     .let { FqName(it) }
-            }
+            } +
+                // this is a workaround for cleaner tests
+                FqName("com.ivianuu.injekt.test.TestComponent.Factory")
     }
 
     fun initialize() {

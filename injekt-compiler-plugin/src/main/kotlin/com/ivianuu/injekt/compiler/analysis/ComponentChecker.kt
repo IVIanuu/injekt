@@ -107,10 +107,11 @@ class ComponentChecker : DeclarationChecker {
     private fun ClassDescriptor.getAllDeclarations(): Set<DeclarationDescriptor> {
         val declarations = mutableSetOf<DeclarationDescriptor>()
         fun ClassDescriptor.collect() {
-            if (defaultType.isAnyOrNullableAny()) return
             declarations += unsubstitutedMemberScope.getContributedDescriptors()
                 .filter {
-                    it is FunctionDescriptor || it is PropertyDescriptor
+                    (it is FunctionDescriptor
+                            && it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() != true)
+                            || it is PropertyDescriptor
                 }
             defaultType.supertypes()
                 .mapNotNull { it.constructor.declarationDescriptor as? ClassDescriptor }

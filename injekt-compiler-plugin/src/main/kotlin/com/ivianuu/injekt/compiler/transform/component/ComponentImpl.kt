@@ -124,6 +124,7 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
 
     private fun implementDependencyRequests(): Unit = clazz.run clazz@{
         val implementedSuperTypes = mutableSetOf<IrType>()
+        val declarationNames = mutableSetOf<Name>()
         var firstRound = true
         while (true) {
             val entryPoints = if (firstRound) {
@@ -145,7 +146,9 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
                     if (declaration !is IrFunction) continue
                     if (declaration is IrConstructor) continue
                     if (declaration.isFakeOverride) continue
+                    if (declaration.name in declarationNames) continue
                     if (declaration.dispatchReceiverParameter?.type == factoryImpl.pluginContext.irBuiltIns.anyType) break
+                    declarationNames += declaration.name
 
                     clazz.addFunction {
                         name = declaration.name
