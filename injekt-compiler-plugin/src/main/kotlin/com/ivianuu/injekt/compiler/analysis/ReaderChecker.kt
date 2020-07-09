@@ -190,6 +190,12 @@ class ReaderChecker : AdditionalTypeChecker, CallChecker, DeclarationChecker {
         if (!isReader && descriptor is PropertyGetterDescriptor) {
             isReader = descriptor.correspondingProperty.hasAnnotation(InjektFqNames.Reader)
         }
+        if (!isReader) {
+            isReader = trace.bindingContext.get(
+                InjektWritableSlices.IS_READER,
+                descriptor
+            ) ?: false
+        }
 
         psi?.let { trace.record(InjektWritableSlices.IS_READER, it, isReader) }
 

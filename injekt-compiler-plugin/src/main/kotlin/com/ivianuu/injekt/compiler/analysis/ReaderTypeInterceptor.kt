@@ -37,7 +37,7 @@ import org.jetbrains.kotlin.types.typeUtil.replaceAnnotations
 
 @OptIn(org.jetbrains.kotlin.extensions.internal.InternalNonStableExtensionPoints::class)
 @Suppress("INVISIBLE_REFERENCE", "EXPERIMENTAL_IS_NOT_ENABLED")
-class InjektTypeAnnotationResolutionInterceptorExtension(
+class ReaderTypeInterceptor(
     private val readerChecker: ReaderChecker
 ) : TypeResolutionInterceptorExtension {
 
@@ -62,9 +62,9 @@ class InjektTypeAnnotationResolutionInterceptorExtension(
     ): KotlinType {
         if (resultType === TypeUtils.NO_EXPECTED_TYPE) return resultType
         if (element !is KtLambdaExpression) return resultType
-        val module = context.scope.ownerDescriptor.module
         val isReader = readerChecker.isReader(context.trace, element, resultType)
-        return if (isReader) resultType.withReaderAnnotation(module) else resultType
+        return if (isReader) resultType.withReaderAnnotation(context.scope.ownerDescriptor.module)
+        else resultType
     }
 
     private fun KotlinType.withReaderAnnotation(
