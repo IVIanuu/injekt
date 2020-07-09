@@ -19,3 +19,6 @@ package com.ivianuu.injekt.compiler
 // todo assisted
 // todo multibinding
 // todo binding adapter
+// todo provide resolution
+// - prefer internal over external
+// todo allow default params
