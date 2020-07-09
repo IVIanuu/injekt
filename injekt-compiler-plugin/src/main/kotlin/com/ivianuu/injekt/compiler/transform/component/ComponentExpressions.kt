@@ -48,8 +48,6 @@ class ComponentExpressions(
     fun getBindingExpression(request: BindingRequest): ComponentExpression {
         val binding = graph.getBinding(request)
 
-        lazy { }
-
         if (binding.owner != component) {
             return parent?.getBindingExpression(request)!!
         }
