@@ -20,10 +20,15 @@ import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
+import org.jetbrains.kotlin.types.typeUtil.supertypes
 
 class ComponentChecker : DeclarationChecker {
 
@@ -35,17 +40,86 @@ class ComponentChecker : DeclarationChecker {
         if (descriptor !is ClassDescriptor) return
 
         if (descriptor.hasAnnotation(InjektFqNames.Component)) {
+            if (descriptor.kind != ClassKind.INTERFACE) {
+                context.trace.report(
+                    InjektErrors.COMPONENT_MUST_BE_AN_INTERFACE
+                        .on(declaration)
+                )
+            }
+
             if (descriptor.declaredTypeParameters.isNotEmpty()) {
                 context.trace.report(
                     InjektErrors.COMPONENT_WITH_TYPE_PARAMETERS
                         .on(declaration)
                 )
             }
+
+            println("component decls ${descriptor.getAllDeclarations()}")
+
+            if (descriptor.getAllDeclarations().isNotEmpty()) {
+                context.trace.report(
+                    InjektErrors.COMPONENT_MUST_BE_EMPTY
+                        .on(declaration)
+                )
+            }
         }
 
         if (descriptor.hasAnnotation(InjektFqNames.ComponentFactory)) {
-            // todo
+            if (descriptor.kind != ClassKind.INTERFACE) {
+                context.trace.report(
+                    InjektErrors.COMPONENT_FACTORY_MUST_BE_AN_INTERFACE
+                        .on(declaration)
+                )
+            }
+
+            if (descriptor.declaredTypeParameters.isNotEmpty()) {
+                context.trace.report(
+                    InjektErrors.COMPONENT_FACTORY_WITH_TYPE_PARAMETERS
+                        .on(declaration)
+                )
+            }
+
+            val singleFunction = descriptor.getAllDeclarations()
+                .filterIsInstance<FunctionDescriptor>()
+                .singleOrNull()
+
+            fun reportSingleFunction() {
+                context.trace.report(
+                    InjektErrors.COMPONENT_FACTORY_SINGLE_FUNCTION
+                        .on(declaration)
+                )
+            }
+
+            if (singleFunction == null) {
+                reportSingleFunction()
+                return
+            }
+
+            if ((singleFunction.returnType?.constructor?.declarationDescriptor as? ClassDescriptor)
+                    ?.hasAnnotation(InjektFqNames.Component) != true
+            ) {
+                reportSingleFunction()
+                return
+            }
         }
+    }
+
+    private fun ClassDescriptor.getAllDeclarations(): Set<DeclarationDescriptor> {
+        val declarations = mutableSetOf<DeclarationDescriptor>()
+        fun ClassDescriptor.collect() {
+            if (defaultType.isAnyOrNullableAny()) return
+            declarations += unsubstitutedMemberScope.getContributedDescriptors()
+                .filter {
+                    it is FunctionDescriptor || it is PropertyDescriptor
+                }
+            defaultType.supertypes()
+                .mapNotNull { it.constructor.declarationDescriptor as? ClassDescriptor }
+                .forEach { it.collect() }
+        }
+
+        collect()
+
+        return declarations
     }
 
 }

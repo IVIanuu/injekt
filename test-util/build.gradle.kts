@@ -29,7 +29,7 @@ dependencies {
 
     api(project(":injekt-compiler-plugin"))
     api(project(":injekt-core"))
-    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
+    //kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
 
     api(Deps.Coroutines.core)
     api(Deps.Coroutines.test)
