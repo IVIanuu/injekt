@@ -18,5 +18,4 @@ package com.ivianuu.injekt.internal
 
 import kotlin.reflect.KClass
 
-@Target(AnnotationTarget.CLASS)
 annotation class EntryPoint(val component: KClass<*>)

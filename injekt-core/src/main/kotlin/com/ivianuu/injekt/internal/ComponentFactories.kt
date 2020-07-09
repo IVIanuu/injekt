@@ -30,4 +30,5 @@ object ComponentFactories {
         return factories[component] as? T
             ?: error("Couldn't get factory for component ${component.java.name}")
     }
+
 }
