@@ -154,7 +154,7 @@ class GivenBindingResolver(
                                     ?.getValueArgument(0)
                                     ?.let { it as IrConst<String> }
                                     ?.value
-                                    ?.let { FqName(it) },
+                                    ?.let { FqName(it) }
                             )
                         }
 
@@ -187,7 +187,7 @@ class GivenBindingResolver(
                     )
                 }
 
-                ProvisionBindingNode(
+                GivenBindingNode(
                     key = requestedKey,
                     context = readerContext,
                     dependencies = dependencies,

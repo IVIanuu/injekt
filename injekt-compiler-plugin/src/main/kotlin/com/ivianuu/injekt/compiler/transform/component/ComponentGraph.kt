@@ -46,7 +46,6 @@ class ComponentGraph(
         var binding = resolvedBindings[request.key]
         if (binding != null) return binding
 
-
         val bindings = bindingsResolvers.flatMapFix { it(request.key) }
 
         if (bindings.size > 1) {

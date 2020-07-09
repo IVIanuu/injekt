@@ -82,7 +82,6 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
                 componentExpressions = ComponentExpressions(
                     graph = graph,
                     pluginContext = factoryImpl.pluginContext,
-                    symbols = factoryImpl.symbols,
                     members = componentMembers,
                     parent = factoryImpl.parent?.componentImpl?.componentExpressions,
                     component = this@ComponentImpl
@@ -118,6 +117,13 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
                     }
                 }
 
+                val notImplementedRequests = dependencyRequests
+                    .filter { it.second.key !in implementedRequests }
+
+                check(notImplementedRequests.isEmpty()) {
+                    notImplementedRequests.toString()
+                }
+
                 +clazz
                 +irCall(constructor)
             }
@@ -132,14 +138,14 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
             val entryPoints = if (firstRound) {
                 factoryImpl.node.entryPoints.map { it.entryPoint }
             } else {
-                graph.resolvedBindings.values
+                dependencyRequests
+                    .map { it.second }
+                    .map { graph.getBinding(it) }
                     .mapNotNull { it.context }
                     .filter { it.defaultType !in processedSuperTypes }
             }
 
-            if (entryPoints.isEmpty()) {
-                break
-            }
+            if (entryPoints.isEmpty()) break
 
             fun collect(superClass: IrClass) {
                 if (superClass.defaultType in processedSuperTypes) return

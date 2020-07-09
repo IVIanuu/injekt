@@ -74,6 +74,18 @@ class ComponentImplBindingNode(
     component.factoryImpl.node.component.descriptor.fqNameSafe
 )
 
+class GivenBindingNode(
+    key: Key,
+    context: IrClass?,
+    dependencies: List<BindingRequest>,
+    targetComponent: IrType?,
+    scoped: Boolean,
+    owner: ComponentImpl,
+    origin: FqName?,
+    val createExpression: IrBuilderWithScope.(Map<FactoryParameter, () -> IrExpression?>) -> IrExpression,
+    val parameters: List<FactoryParameter>
+) : BindingNode(key, context, dependencies, targetComponent, scoped, owner, origin)
+
 class InputParameterBindingNode(
     component: ComponentImpl,
     val inputParameter: IrValueParameter
@@ -119,18 +131,6 @@ class ProviderBindingNode(
     owner,
     origin
 )
-
-class ProvisionBindingNode(
-    key: Key,
-    context: IrClass?,
-    dependencies: List<BindingRequest>,
-    targetComponent: IrType?,
-    scoped: Boolean,
-    owner: ComponentImpl,
-    origin: FqName?,
-    val createExpression: IrBuilderWithScope.(Map<FactoryParameter, () -> IrExpression?>) -> IrExpression,
-    val parameters: List<FactoryParameter>
-) : BindingNode(key, context, dependencies, targetComponent, scoped, owner, origin)
 
 fun IrType.asKey(): Key = Key(this)
 

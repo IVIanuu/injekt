@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.transform.component
 
-import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.typeWith
@@ -26,7 +25,6 @@ import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irNull
-import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
@@ -36,7 +34,6 @@ import org.jetbrains.kotlin.name.FqName
 class ComponentExpressions(
     private val graph: ComponentGraph,
     private val pluginContext: IrPluginContext,
-    private val symbols: InjektSymbols,
     private val members: ComponentMembers,
     private val parent: ComponentExpressions?,
     private val component: ComponentImpl
@@ -46,29 +43,30 @@ class ComponentExpressions(
         mutableMapOf<BindingRequest, ComponentExpression>()
 
     fun getBindingExpression(request: BindingRequest): ComponentExpression {
+        bindingExpressions[request]?.let { return it }
+
         val binding = graph.getBinding(request)
 
         if (binding.owner != component) {
-            return parent?.getBindingExpression(request)!!
+            return parentExpression(request)
+                .also { bindingExpressions[request] = it }
         }
-
-        bindingExpressions[request]?.let { return it }
 
         val expression = when (binding) {
             is ChildComponentFactoryBindingNode -> childComponentFactoryExpression(binding) to true
             is ComponentImplBindingNode -> componentExpression(binding) to false
+            is GivenBindingNode -> givenExpression(binding) to true
             is InputParameterBindingNode -> inputParameterExpression(binding) to false
             is NullBindingNode -> nullExpression(binding) to false
             is ProviderBindingNode -> providerExpression(binding) to true
-            is ProvisionBindingNode -> provisionExpression(binding) to true
         }.let { (expression, forceWrap) ->
             if (forceWrap || component.dependencyRequests.any {
                     it.second.key == binding.key
                 }) expression.wrapInFunction(binding.key) else expression
         }
 
-        bindingExpressions[request] = expression
         return expression
+            .also { bindingExpressions[request] = it }
     }
 
     private fun childComponentFactoryExpression(binding: ChildComponentFactoryBindingNode): ComponentExpression =
@@ -89,13 +87,11 @@ class ComponentExpressions(
         val dependency = getBindingExpression(binding.dependencies.single())
         return { c ->
             DeclarationIrBuilder(pluginContext, scope.scopeOwnerSymbol)
-                .irLambda(binding.key.type) {
-                    +irReturn(dependency(this, c))
-                }
+                .irLambda(binding.key.type) { dependency(this, c) }
         }
     }
 
-    private fun provisionExpression(binding: ProvisionBindingNode): ComponentExpression {
+    private fun givenExpression(binding: GivenBindingNode): ComponentExpression {
         val dependencies = binding.dependencies
             .map { getBindingExpression(it) }
 
@@ -129,9 +125,7 @@ class ComponentExpressions(
                         .irLambda(
                             pluginContext.tmpFunction(0)
                                 .typeWith(binding.key.type)
-                        ) {
-                            +irReturn(instanceExpression(this, c))
-                        }
+                        ) { instanceExpression(this, c) }
                 )
             }
         }
@@ -160,6 +154,20 @@ class ComponentExpressions(
                 dispatchReceiver = c[component]
             }
         }
+    }
+
+    private fun parentExpression(request: BindingRequest): ComponentExpression {
+        val parentExpression = parent?.getBindingExpression(request)!!
+        if (component.dependencyRequests.any {
+                it.second.key == request.key
+            }) {
+            val function = members.getFunction(request.key, parentExpression)
+            return { c ->
+                irCall(function).apply {
+                    dispatchReceiver = c[component]
+                }
+            }
+        } else return parentExpression
     }
 
 }

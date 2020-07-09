@@ -32,12 +32,11 @@ import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
-import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
-import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
@@ -439,7 +438,7 @@ fun IrBuilderWithScope.irLambda(
     type: IrType,
     startOffset: Int = UNDEFINED_OFFSET,
     endOffset: Int = UNDEFINED_OFFSET,
-    body: IrBlockBodyBuilder.(IrFunction) -> Unit
+    body: IrBuilderWithScope.(IrFunction) -> IrExpression
 ): IrExpression {
     val returnType = type.typeArguments.last().typeOrNull!!
 
@@ -461,7 +460,9 @@ fun IrBuilderWithScope.irLambda(
             it.deepCopyWithSymbols()
         }
         this.body =
-            DeclarationIrBuilder(context, symbol).irBlockBody { body(this, this@apply) }
+            DeclarationIrBuilder(context, symbol).run {
+                irExprBody(body(this, this@apply))
+            }
     }
 
     return IrFunctionExpressionImpl(
