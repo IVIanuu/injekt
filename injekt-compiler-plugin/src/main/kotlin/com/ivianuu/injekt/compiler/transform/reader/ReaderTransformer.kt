@@ -100,6 +100,7 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.defaultType
+import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.constructedClass
@@ -942,8 +943,11 @@ class ReaderTransformer(
         )
             type.abbreviation!!.typeAlias.descriptor.fqNameSafe
         else type.classifierOrFail.descriptor.fqNameSafe
-        return fqName.pathSegments()
-            .joinToString("_").asNameId()
+        return (listOfNotNull(if (type.isMarkedNullable()) "nullable" else null) +
+                fqName.pathSegments().map { it.asString() })
+            .joinToString("_")
+            .decapitalize()
+            .asNameId()
     }
 
     private fun transformFunctionExpression(

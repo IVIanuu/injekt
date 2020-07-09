@@ -22,7 +22,6 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.render
 
 class Graph(
@@ -42,8 +41,6 @@ class Graph(
         ChildComponentFactoryBindingResolver(component)
     )
     val resolvedBindings = mutableMapOf<Key, BindingNode>()
-
-    private val chain = mutableSetOf<Key>()
 
     fun getBinding(request: BindingRequest): BindingNode {
         var binding = resolvedBindings[request.key]
@@ -96,28 +93,6 @@ class Graph(
                     "required at '${request.requestOrigin.orUnknown()}' " +
                     "in '${component.origin}'"
         )
-    }
-
-    fun validate(request: BindingRequest) {
-        check(request.key !in chain || chain
-            .toList()
-            .let { it.subList(it.indexOf(request.key), it.size) }
-            .any { it.type.isFunction() }
-        ) {
-            val chain = (chain.toList() + request.key)
-                .let { it.subList(it.indexOf(request.key), it.size) }
-
-            // todo pretty print
-            "Circular dependency for '${request.key}' in '${component.origin}' chain $chain"
-        }
-
-        // we don't have to check further because it's a legal cycle
-        if (request.key in chain) return
-
-        chain += request.key
-        val binding = getBinding(request)
-        binding.dependencies.forEach { validate(it) }
-        chain -= request.key
     }
 
 }

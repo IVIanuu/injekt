@@ -51,11 +51,13 @@ class GraphTest {
     @Test
     fun testDuplicatedBindingFails() = codegen(
         """
-        @Factory
-        fun createFoo(): TestComponent1<Foo> {
-            unscoped { Foo() }
-            unscoped { Foo() }
-            return create()
+        @Unscoped fun foo1() = Foo()
+        @Unscoped fun foo2() = Foo()
+        
+        fun invoke() {
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            component.runReader { get<Foo>() }
         }
         """
     ) {
@@ -63,64 +65,14 @@ class GraphTest {
     }
 
     @Test
-    fun testCircularDependency() = codegen(
-        """
-        @Unscoped class A(b: B)
-        @Unscoped class B(a: A)
-        @Factory fun createA(): TestComponent1<A> = create()
-    """
-    ) {
-        assertInternalError("circular")
-    }
-
-    @Test
-    fun testCircularDependencyWithProvider() = codegen(
-        """
-        @Scoped(TestComponent1::class) class A(b: B)
-        @Unscoped class B(a: @Provider () -> A)
-        @Factory fun invoke(): TestComponent1<A> {
-            return create()
-        }
-    """
-    ) {
-        invokeSingleFile()
-    }
-
-    @Test
-    fun testCircularDependencyWithProvider2() = codegen(
-        """
-        @Scoped(TestComponent1::class) class A(b: B)
-        @Unscoped class B(a: @Provider () -> A)
-        @Factory fun invoke(): TestComponent1<B> {
-            return create()
-        }
-    """
-    ) {
-        invokeSingleFile()
-    }
-
-    @Test
-    fun testCircularDependencyWithIrrelevantProvider() = codegen(
-        """
-        @Scoped(TestComponent::class) class A(b: B)
-        @Unscoped class B(a: A)
-        @Unscoped class C(b: @Provider () -> B)
-        @Factory fun invoke(): TestComponent1<B> {
-            return create()
-        }
-    """
-    ) {
-        assertInternalError("circular")
-    }
-
-    @Test
     fun testComponentMismatch() = codegen(
         """
         @Scoped(Any::class) class Dep
 
-        @Factory
-        fun createDep(): TestComponent1<Dep> {
-            return create()
+        fun invoke() {
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            component.runReader { get<Dep>() }
         }
         """
     ) {
@@ -150,11 +102,13 @@ class GraphTest {
     @Test
     fun testIgnoresNullability() = codegen(
         """
-        @Factory
-        fun createFoo(): TestComponent1<Foo> {
-            unscoped<Foo> { Foo() }
-            unscoped<Foo?> { null }
-            return create()
+        @Unscoped fun foo(): Foo = Foo()
+        @Unscoped fun nullableFoo(): Foo? = null
+
+        fun invoke() { 
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            component.runReader { get<Foo1>() to get<Foo2>() }
         }
     """
     ) {
@@ -164,10 +118,12 @@ class GraphTest {
     @Test
     fun testReturnsInstanceForNullableBinding() = codegen(
         """
-        @Factory
-        fun invoke(): TestComponent1<Foo?> {
-            unscoped<Foo?>()
-            return create()
+        @Unscoped fun foo(): Foo = Foo()
+
+        fun invoke(): Foo? { 
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            return component.runReader { get<Foo?>() }
         }
         """
     ) {
@@ -177,12 +133,11 @@ class GraphTest {
     @Test
     fun testReturnsNullOnMissingNullableBinding() = codegen(
         """
-        @Factory
-        fun factory(): TestComponent1<Foo?> {
-            return create()
+        fun invoke(): Foo? { 
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            return component.runReader { get<Foo?>() }
         }
-        
-        fun invoke() = factory().a
         """
     ) {
         assertNull(invokeSingleFile())
@@ -191,30 +146,12 @@ class GraphTest {
     @Test
     fun testTypeWithStarProjectedArg() = codegen(
         """
-        @Factory
-        fun factory(): TestComponent1<List<*>> {
-            unscoped<List<*>> { listOf<Any?>() }
-            return create()
-        }
-    """
-    )
-
-    @Test
-    fun testGenericAnnotatedClass() = codegen(
-        """
-        @Unscoped
-        class Wrapper<T>(val value: T)
+        @Unscoped fun list(): List<*> = emptyList<Any?>()
         
-        interface WrappedComponent {
-            val fooWrapper: Wrapper<Foo>
-            val barWrapper: Wrapper<Bar>
-        }
-        
-        @Factory
-        fun createWrapperComponent(): WrappedComponent {
-            unscoped<Foo>()
-            unscoped<Bar>()
-            return create()
+        fun invoke() { 
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            component.runReader { get<List<*>>() }
         }
     """
     )

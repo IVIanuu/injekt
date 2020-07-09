@@ -18,20 +18,16 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.buildClass
-import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
-import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
-import org.jetbrains.kotlin.ir.builders.irExprBody
-import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -39,13 +35,11 @@ import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
-import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.getAnnotation
-import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -60,8 +54,10 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
         parent = factoryImpl.factoryClass
         createImplicitParameterDeclarationWithWrappedDescriptor()
         superTypes += factoryImpl.node.component.defaultType
-        superTypes += factoryImpl.node.entryPoints.map { it.entryPoint.defaultType }
     }
+
+    val dependencyRequests = mutableListOf<Pair<IrFunction, BindingRequest>>()
+    val implementedRequests = mutableListOf<Key>()
 
     private val componentMembers = ComponentMembers(this, factoryImpl.pluginContext)
 
@@ -92,6 +88,8 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
                     component = this@ComponentImpl
                 )
 
+                collectDependencyRequests()
+
                 val constructor = clazz.addConstructor {
                     returnType = clazz.defaultType
                     isPrimary = true
@@ -114,7 +112,11 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
                     }
                 }
 
-                implementDependencyRequests()
+                dependencyRequests.forEach { (_, request) ->
+                    if (request.key !in implementedRequests) {
+                        componentExpressions.getBindingExpression(request)
+                    }
+                }
 
                 +clazz
                 +irCall(constructor)
@@ -122,8 +124,8 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
         }
     }
 
-    private fun implementDependencyRequests(): Unit = clazz.run clazz@{
-        val implementedSuperTypes = mutableSetOf<IrType>()
+    private fun collectDependencyRequests() {
+        val processedSuperTypes = mutableSetOf<IrType>()
         val declarationNames = mutableSetOf<Name>()
         var firstRound = true
         while (true) {
@@ -132,66 +134,47 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
             } else {
                 graph.resolvedBindings.values
                     .mapNotNull { it.context }
-                    .filter { it.defaultType !in implementedSuperTypes }
+                    .filter { it.defaultType !in processedSuperTypes }
             }
 
             if (entryPoints.isEmpty()) {
                 break
             }
 
-            fun implementFunctions(superClass: IrClass) {
-                if (superClass.defaultType in implementedSuperTypes) return
-                implementedSuperTypes += superClass.defaultType
+            fun collect(superClass: IrClass) {
+                if (superClass.defaultType in processedSuperTypes) return
+                processedSuperTypes += superClass.defaultType
                 for (declaration in superClass.declarations.toList()) {
                     if (declaration !is IrFunction) continue
                     if (declaration is IrConstructor) continue
-                    if (declaration.isFakeOverride) continue
                     if (declaration.name in declarationNames) continue
-                    if (declaration.dispatchReceiverParameter?.type == factoryImpl.pluginContext.irBuiltIns.anyType) break
+                    if (declaration.dispatchReceiverParameter?.type ==
+                        factoryImpl.pluginContext.irBuiltIns.anyType
+                    ) break
                     declarationNames += declaration.name
-
-                    clazz.addFunction {
-                        name = declaration.name
-                        returnType = declaration.returnType
-                        visibility = declaration.visibility
-                    }.apply function@{
-                        overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
-                        dispatchReceiverParameter = clazz.thisReceiver!!.copyTo(this)
-                        this.body = DeclarationIrBuilder(factoryImpl.pluginContext, symbol).run {
-                            val request = BindingRequest(
-                                returnType.asKey(),
-                                null,
-                                superClass.getAnnotation(InjektFqNames.Name)
-                                    ?.getValueArgument(0)
-                                    ?.let { it as IrConst<String> }
-                                    ?.value
-                                    ?.let { FqName(it) }
-                            )
-
-                            graph.validate(request)
-
-                            val expression =
-                                componentExpressions.getBindingExpression(request)
-
-                            irExprBody(
-                                expression(ComponentExpressionContext(this@ComponentImpl) {
-                                    irGet(dispatchReceiverParameter!!)
-                                })
-                            )
-                        }
-                    }
+                    val request = BindingRequest(
+                        declaration.returnType.asKey(),
+                        null,
+                        superClass.getAnnotation(InjektFqNames.Name)
+                            ?.getValueArgument(0)
+                            ?.let { it as IrConst<String> }
+                            ?.value
+                            ?.let { FqName(it) }
+                    )
+                    dependencyRequests += declaration to request
+                    graph.getBinding(request)
                 }
 
                 superClass.superTypes
                     .map { it.classOrNull!!.owner }
-                    .forEach { implementFunctions(it) }
+                    .forEach { collect(it) }
 
                 if (firstRound) firstRound = false
             }
 
-            entryPoints.forEach { context ->
-                clazz.superTypes += context.defaultType
-                implementFunctions(context)
+            entryPoints.forEach { entryPoint ->
+                clazz.superTypes += entryPoint.defaultType
+                collect(entryPoint)
             }
         }
     }

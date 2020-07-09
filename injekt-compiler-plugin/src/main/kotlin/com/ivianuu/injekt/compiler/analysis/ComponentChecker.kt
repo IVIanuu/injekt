@@ -54,8 +54,6 @@ class ComponentChecker : DeclarationChecker {
                 )
             }
 
-            println("component decls ${descriptor.getAllDeclarations()}")
-
             if (descriptor.getAllDeclarations().isNotEmpty()) {
                 context.trace.report(
                     InjektErrors.COMPONENT_MUST_BE_EMPTY

@@ -109,6 +109,9 @@ class ProvideBindingResolver(
                 val targetComponent = function.getClassFromSingleValueAnnotationOrNull(
                     InjektFqNames.Scoped, pluginContext
                 )
+                    ?: if (function is IrConstructor) function.constructedClass.getClassFromSingleValueAnnotationOrNull(
+                        InjektFqNames.Scoped, pluginContext
+                    ) else null
 
                 val readerContext =
                     if (function.hasAnnotation(InjektFqNames.Reader) ||

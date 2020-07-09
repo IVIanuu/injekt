@@ -308,7 +308,6 @@ class ReaderTest {
         listOf(
             source(
                 """
-                
                 @Reader
                 fun bar(): Bar {
                     return Bar(foo())
@@ -327,7 +326,7 @@ class ReaderTest {
         listOf(
             source(
                 """
-                lateinit var component: TestCompositionComponent
+                lateinit var component: TestComponent
                 
                 fun getFoo() = component.runReader {
                     withBar {
@@ -451,11 +450,7 @@ class ReaderTest {
     @Test
     fun testReaderClassWithAnnotatedConstructor() = codegen(
         """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
+        @Unscoped fun foo() = Foo()
         
         class FooFactory @Reader constructor() {
             fun getFoo() = get<Foo>()
@@ -474,12 +469,8 @@ class ReaderTest {
     @Test
     fun testInjectReaderClass() = codegen(
         """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
-        
+        @Unscoped fun foo() = Foo()
+ 
         @Reader
         @Unscoped
         class FooFactory {
@@ -499,12 +490,8 @@ class ReaderTest {
     @Test
     fun testReaderOpenSubclass() = codegen(
         """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
-        
+        @Unscoped fun foo() = Foo()
+
         @Reader
         open class SuperClass {
             fun getFoo() = get<Foo>()
@@ -526,11 +513,7 @@ class ReaderTest {
     @Test
     fun testReaderAbstractSubclass() = codegen(
         """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
+        @Unscoped fun foo() = Foo()
         
         @Reader
         abstract class SuperClass {
@@ -553,11 +536,7 @@ class ReaderTest {
     @Test
     fun testGenericSuperClass() = codegen(
         """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
+        @Unscoped fun foo() = Foo()
         
         @Reader
         open class SuperClass<T>(val value: T) {
@@ -580,11 +559,7 @@ class ReaderTest {
     @Test
     fun testReaderClassWithAssistedParameters() = codegen(
         """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
+        @Unscoped fun foo() = Foo()
         
         @Reader
         @Unscoped
@@ -605,11 +580,7 @@ class ReaderTest {
     @Test
     fun testReaderClassAccessesReaderFunctionInInit() = codegen(
         """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
+        @Unscoped fun foo() = Foo()
         
         @Reader
         @Unscoped
@@ -632,11 +603,7 @@ class ReaderTest {
         listOf(
             source(
                 """
-                @CompositionFactory 
-                fun factory(): TestCompositionComponent {
-                    unscoped { Foo() }
-                    return create()
-                }
+                @Unscoped fun foo() = Foo()
         
                 @Reader
                 @Unscoped
@@ -677,11 +644,7 @@ class ReaderTest {
     @Test
     fun testGenericReader() = codegen(
         """
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
+        @Unscoped fun foo() = Foo()
         
         @Reader
         fun <T> provide() = get<T>()
@@ -701,11 +664,7 @@ class ReaderTest {
         listOf(
             source(
                 """
-                @CompositionFactory 
-                fun factory(): TestCompositionComponent {
-                    unscoped { Foo() }
-                    return create() 
-                }
+                @Unscoped fun foo() = Foo()
 
                 @Reader 
                 fun <T> provide() = get<T>()

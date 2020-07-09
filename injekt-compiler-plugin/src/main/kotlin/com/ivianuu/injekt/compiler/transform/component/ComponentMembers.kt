@@ -72,14 +72,23 @@ class ComponentMembers(
         key: Key,
         body: ComponentExpression
     ): IrFunction {
+        val dependencyRequest = component.dependencyRequests
+            .singleOrNull { it.second.key == key }
+
+        if (dependencyRequest != null) {
+            component.implementedRequests += dependencyRequest.second.key
+        }
+
         return buildFun {
-            this.name = Name.identifier(
-                getFunctionsNameProvider.allocateForGroup(
-                    key.type.classifierOrFail.descriptor.name.asString()
-                ).decapitalize()
-            )
+            this.name = dependencyRequest?.first?.name
+                ?: Name.identifier(
+                    getFunctionsNameProvider.allocateForGroup(
+                        key.type.classifierOrFail.descriptor.name.asString()
+                    ).decapitalize()
+                )
             returnType = key.type
-            visibility = Visibilities.PRIVATE
+            visibility =
+                if (dependencyRequest != null) Visibilities.PUBLIC else Visibilities.PRIVATE
         }.apply {
             dispatchReceiverParameter = component.clazz.thisReceiver!!.copyTo(this)
             this.parent = component.clazz
