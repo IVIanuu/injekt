@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform.component
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.flatMapFix
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.isFunction
@@ -29,14 +30,16 @@ class Graph(
     val component: ComponentImpl,
     context: IrPluginContext,
     declarationGraph: DeclarationGraph,
-    val symbols: InjektSymbols
+    val symbols: InjektSymbols,
+    inputParameters: List<IrValueParameter>
 ) {
 
     private val bindingsResolvers = listOf(
+        InputParameterBindingResolver(inputParameters, component),
+        ProvideBindingResolver(context, declarationGraph, component),
         NoArgProviderBindingResolver(component),
         ComponentImplBindingResolver(component),
-        ChildComponentFactoryBindingResolver(component),
-        ProvideBindingResolver(context, declarationGraph, component)
+        ChildComponentFactoryBindingResolver(component)
     )
     val resolvedBindings = mutableMapOf<Key, BindingNode>()
 

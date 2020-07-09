@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
@@ -175,17 +176,6 @@ class ProvideBindingResolver(
 
                 val parameters = mutableListOf<FactoryParameter>()
 
-                /*parameters += providerType
-                    .getFunctionParameterTypes()
-                    .dropLast(1)
-                    .mapIndexed { index, type ->
-                        InjektDeclarationIrBuilder.FactoryParameter(
-                            name = "p$index",
-                            type = type,
-                            assisted = true
-                        )
-                    }*/
-
                 if (readerContext != null) {
                     parameters += FactoryParameter(
                         name = "_context",
@@ -253,8 +243,21 @@ class ComponentImplBindingResolver(
                 it.entryPoint.defaultType.asKey() == requestedKey
             }
         ) return emptyList()
-        return listOf(
-            ComponentImplBindingNode(component)
-        )
+        return listOf(ComponentImplBindingNode(component))
+    }
+}
+
+class InputParameterBindingResolver(
+    inputParameters: List<IrValueParameter>,
+    private val component: ComponentImpl
+) : BindingResolver {
+
+    private val bindings = inputParameters.map {
+        InputParameterBindingNode(component, it)
+    }
+
+    override fun invoke(requestedKey: Key): List<BindingNode> {
+        return bindings
+            .filter { it.key == requestedKey }
     }
 }

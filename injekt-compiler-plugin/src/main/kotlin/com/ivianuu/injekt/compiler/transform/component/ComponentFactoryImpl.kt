@@ -77,19 +77,24 @@ class ComponentFactoryImpl(
     val componentImpl = ComponentImpl(this)
 
     fun getClass(): IrClass {
-        factoryClass.addFunction {
-            val superFactoryFunction = node.factory.factory.functions
-                .single { !it.isFakeOverride }
+        val superFactoryFunction = node.factory.factory.functions
+            .single { !it.isFakeOverride }
 
+        factoryClass.addFunction {
             name = superFactoryFunction.name
             returnType = superFactoryFunction.returnType
         }.apply {
             dispatchReceiverParameter = factoryClass.thisReceiver!!.copyTo(this)
+
+            valueParameters = superFactoryFunction.valueParameters.map { valueParameter ->
+                valueParameter.copyTo(this)
+            }
+
             body = DeclarationIrBuilder(
                 pluginContext,
                 symbol
             ).irExprBody(
-                componentImpl.getImplExpression()
+                componentImpl.getImplExpression(valueParameters)
             )
         }
 

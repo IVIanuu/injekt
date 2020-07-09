@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
 import org.jetbrains.kotlin.ir.types.IrErrorType
@@ -34,38 +35,6 @@ import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-interface Node
-
-class BindingRequest(
-    val key: Key,
-    val requestingKey: Key?,
-    val requestOrigin: FqName?
-) {
-
-    fun copy(
-        key: Key = this.key,
-        requestingKey: Key? = this.requestingKey,
-        requestOrigin: FqName? = this.requestOrigin
-    ): BindingRequest = BindingRequest(key, requestingKey, requestOrigin)
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as BindingRequest
-
-        if (key != other.key) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int = key.hashCode()
-
-    override fun toString(): String =
-        "BindingRequest(key=$key, requestingKey=$requestingKey, requestOrigin=$requestOrigin)"
-
-}
-
 sealed class BindingNode(
     val key: Key,
     val context: IrClass?,
@@ -74,7 +43,7 @@ sealed class BindingNode(
     val scoped: Boolean,
     val owner: ComponentImpl,
     val origin: FqName?
-) : Node
+)
 
 class ChildComponentFactoryBindingNode(
     key: Key,
@@ -103,6 +72,19 @@ class ComponentImplBindingNode(
     false,
     component,
     component.factoryImpl.node.component.descriptor.fqNameSafe
+)
+
+class InputParameterBindingNode(
+    component: ComponentImpl,
+    val inputParameter: IrValueParameter
+) : BindingNode(
+    key = inputParameter.type.asKey(),
+    null,
+    emptyList(),
+    null,
+    false,
+    component,
+    inputParameter.descriptor.fqNameSafe
 )
 
 class NullBindingNode(
@@ -186,5 +168,35 @@ class Key(val type: IrType) {
             ?.typeAlias?.owner?.symbol
             ?.takeIf { it.owner.hasAnnotation(InjektFqNames.DistinctType) }
             ?: this
+
+}
+
+class BindingRequest(
+    val key: Key,
+    val requestingKey: Key?,
+    val requestOrigin: FqName?
+) {
+
+    fun copy(
+        key: Key = this.key,
+        requestingKey: Key? = this.requestingKey,
+        requestOrigin: FqName? = this.requestOrigin
+    ): BindingRequest = BindingRequest(key, requestingKey, requestOrigin)
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as BindingRequest
+
+        if (key != other.key) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int = key.hashCode()
+
+    override fun toString(): String =
+        "BindingRequest(key=$key, requestingKey=$requestingKey, requestOrigin=$requestOrigin)"
 
 }

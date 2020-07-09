@@ -222,6 +222,7 @@ class ComponentTest {
         }
     """
     )
+
     @Test
     fun testGenericProvider() = codegen(
         """
@@ -236,5 +237,27 @@ class ComponentTest {
     """
     )
 
+    @Test
+    fun testComponentInput() = codegen(
+        """
+        @Component
+        interface MyComponent {
+            @Component.Factory
+            interface Factory {
+                fun create(foo: Foo): MyComponent
+            }
+        }
+        
+        fun invoke(): Pair<Foo, Foo> {
+            initializeComponents()
+            val foo = Foo()
+            val component = componentFactory<MyComponent.Factory>().create(foo)
+            return foo- to component.runReader { get<Foo>() }
+        }
+    """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Foo, Foo>>()
+        assertSame(a, b)
+    }
 
 }

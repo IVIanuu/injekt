@@ -57,6 +57,7 @@ class ComponentExpressions(
         val expression = when (binding) {
             is ChildComponentFactoryBindingNode -> childComponentFactoryExpression(binding)
             is ComponentImplBindingNode -> componentExpression(binding)
+            is InputParameterBindingNode -> inputParameterExpression(binding)
             is NullBindingNode -> nullExpression(binding)
             is ProviderBindingNode -> providerExpression(binding)
             is ProvisionBindingNode -> provisionExpression(binding)
@@ -72,6 +73,10 @@ class ComponentExpressions(
     private fun componentExpression(
         binding: ComponentImplBindingNode
     ): ComponentExpression = { c -> c[binding.component] }
+
+    private fun inputParameterExpression(
+        binding: InputParameterBindingNode
+    ): ComponentExpression = { irGet(binding.inputParameter) }
 
     private fun nullExpression(binding: NullBindingNode): ComponentExpression =
         { irNull() }

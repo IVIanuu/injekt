@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
@@ -67,7 +68,7 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
     private lateinit var graph: Graph
     private lateinit var componentExpressions: ComponentExpressions
 
-    fun getImplExpression(): IrExpression {
+    fun getImplExpression(inputParameters: List<IrValueParameter>): IrExpression {
         return DeclarationIrBuilder(
             factoryImpl.pluginContext,
             factoryImpl.factoryClass.symbol
@@ -78,7 +79,8 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
                     component = this@ComponentImpl,
                     context = factoryImpl.pluginContext,
                     declarationGraph = factoryImpl.declarationGraph,
-                    symbols = factoryImpl.symbols
+                    symbols = factoryImpl.symbols,
+                    inputParameters = inputParameters
                 )
 
                 componentExpressions = ComponentExpressions(
