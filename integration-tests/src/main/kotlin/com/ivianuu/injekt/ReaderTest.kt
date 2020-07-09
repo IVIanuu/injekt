@@ -28,11 +28,11 @@ class ReaderTest {
 
     @Test
     fun testSimpleReader() = codegen("""
-        @Unscoped @Reader
+        @Given @Reader
         fun foo() = Foo()
         
         @Reader
-        fun func(foo: Foo = get()): Foo {
+        fun func(foo: Foo = given()): Foo {
             return foo
         }
         
@@ -48,11 +48,11 @@ class ReaderTest {
 
     @Test
     fun testSimpleReaderLambda() = codegen("""
-        @Unscoped @Reader
+        @Given @Reader
         fun foo() = Foo()
         
         @Reader
-        fun func(foo: Foo = get()): Foo {
+        fun func(foo: Foo = given()): Foo {
             return foo
         }
         
@@ -80,10 +80,10 @@ class ReaderTest {
 
     @Test
     fun testSimpleReaderLambdaProperty() = codegen("""
-        @Unscoped @Reader
+        @Given @Reader
         fun foo() = Foo()
         
-        val foo: @Reader () -> Foo = { get() }
+        val foo: @Reader () -> Foo = { given() }
 
         fun invoke(): Foo {
             initializeComponents()
@@ -97,11 +97,11 @@ class ReaderTest {
 
     @Test
     fun testNestedReader() = codegen("""
-        @Unscoped @Reader
+        @Given @Reader
         fun foo() = Foo()
         
         @Reader
-        fun createFoo(foo: Foo = get()): Foo {
+        fun createFoo(foo: Foo = given()): Foo {
             return foo
         }
         
@@ -132,11 +132,11 @@ class ReaderTest {
 
     @Test
     fun testSuspendBlockInReadingBlock() = codegen("""
-        @Unscoped @Reader
+        @Given @Reader
         fun foo() = Foo()
         
         @Reader
-        suspend fun func(foo: Foo = get()): Foo {
+        suspend fun func(foo: Foo = given()): Foo {
             delay(1000)
             return foo
         }
@@ -157,7 +157,7 @@ class ReaderTest {
 
     @Test
     fun testReadingBlockInSuspendBlock() = codegen("""
-        @Unscoped @Reader
+        @Given @Reader
         fun foo() = Foo()
         
         @Reader
@@ -182,7 +182,7 @@ class ReaderTest {
 
     @Test
     fun testSuspendReaderLambda() = codegen("""
-        @Unscoped @Reader
+        @Given @Reader
         fun foo() = Foo()
         
         @Reader
@@ -218,7 +218,7 @@ class ReaderTest {
 
     @Test
     fun testSuspendNestedReader() = codegen("""
-        @Unscoped @Reader
+        @Given @Reader
         fun foo() = Foo()
         
         @Reader
@@ -256,7 +256,7 @@ class ReaderTest {
 
     @Test
     fun testReaderCallInDefaultParameter() = codegen("""
-        @Unscoped @Reader
+        @Given @Reader
         fun foo() = Foo()
         
         @Reader
@@ -279,7 +279,7 @@ class ReaderTest {
 
     @Test
     fun testReaderCallInDefaultParameterWithCapture() = codegen("""
-        @Unscoped @Reader
+        @Given @Reader
         fun foo() = Foo()
         
         @Reader
@@ -300,7 +300,7 @@ class ReaderTest {
         listOf(
             source(
                 """
-                @Unscoped @Reader
+                @Given @Reader
                 fun foo() = Foo()
             """
             ),
@@ -354,7 +354,7 @@ class ReaderTest {
 
     @Test
     fun testReaderProperty() = codegen("""
-        @Unscoped @Reader
+        @Given @Reader
         fun foo() = Foo()
         
         @Reader
@@ -374,7 +374,7 @@ class ReaderTest {
     fun testMultiCompileReaderProperty() = multiCodegen(
         listOf(
             source("""
-                @Unscoped @Reader 
+                @Given @Reader 
                 fun foo() = Foo()
         
                 @Reader
@@ -400,12 +400,12 @@ class ReaderTest {
 
     @Test
     fun testReaderClass() = codegen("""
-        @Unscoped @Reader
+        @Given @Reader
         fun foo() = Foo()
         
         @Reader
         class FooFactory {
-            fun getFoo() = get<Foo>()
+            fun getFoo() = given<Foo>()
         }
         
         fun invoke(): Foo { 
@@ -422,12 +422,12 @@ class ReaderTest {
     fun testReaderClassMulti() = multiCodegen(
         listOf(
             source("""
-                @Unscoped @Reader
+                @Given @Reader
                 fun foo() = Foo()
         
                 @Reader
                 class FooFactory {
-                    fun getFoo() = get<Foo>()
+                    fun getFoo() = given<Foo>()
                 } 
             """
             )
@@ -450,10 +450,10 @@ class ReaderTest {
     @Test
     fun testReaderClassWithAnnotatedConstructor() = codegen(
         """
-        @Unscoped fun foo() = Foo()
+        @Given fun foo() = Foo()
         
         class FooFactory @Reader constructor() {
-            fun getFoo() = get<Foo>()
+            fun getFoo() = given<Foo>()
         }
         
         fun invoke(): Foo { 
@@ -469,18 +469,18 @@ class ReaderTest {
     @Test
     fun testInjectReaderClass() = codegen(
         """
-        @Unscoped fun foo() = Foo()
+        @Given fun foo() = Foo()
  
         @Reader
-        @Unscoped
+        @Given
         class FooFactory {
-            fun getFoo() = get<Foo>()
+            fun getFoo() = given<Foo>()
         }
         
         fun invoke(): Foo { 
             initializeComponents()
             val component = componentFactory<TestComponent.Factory>().create()
-            return component.runReader { get<FooFactory>().getFoo() }
+            return component.runReader { given<FooFactory>().getFoo() }
         }
     """
     ) {
@@ -490,11 +490,11 @@ class ReaderTest {
     @Test
     fun testReaderOpenSubclass() = codegen(
         """
-        @Unscoped fun foo() = Foo()
+        @Given fun foo() = Foo()
 
         @Reader
         open class SuperClass {
-            fun getFoo() = get<Foo>()
+            fun getFoo() = given<Foo>()
         }
         
         @Reader
@@ -513,11 +513,11 @@ class ReaderTest {
     @Test
     fun testReaderAbstractSubclass() = codegen(
         """
-        @Unscoped fun foo() = Foo()
+        @Given fun foo() = Foo()
         
         @Reader
         abstract class SuperClass {
-            fun getFoo() = get<Foo>()
+            fun getFoo() = given<Foo>()
         }
         
         @Reader
@@ -536,11 +536,11 @@ class ReaderTest {
     @Test
     fun testGenericSuperClass() = codegen(
         """
-        @Unscoped fun foo() = Foo()
+        @Given fun foo() = Foo()
         
         @Reader
         open class SuperClass<T>(val value: T) {
-            fun getFoo() = get<Foo>()
+            fun getFoo() = given<Foo>()
         }
         
         @Reader
@@ -559,18 +559,18 @@ class ReaderTest {
     @Test
     fun testReaderClassWithAssistedParameters() = codegen(
         """
-        @Unscoped fun foo() = Foo()
+        @Given fun foo() = Foo()
         
         @Reader
-        @Unscoped
+        @Given
         class FooFactory(val assisted: @Assisted String) {
-            fun getFoo() = get<Foo>()
+            fun getFoo() = given<Foo>()
         }
         
         fun invoke(): Foo { 
             initializeComponents()
             val component = componentFactory<TestComponent.Factory>().create()
-            return component.runReader { get<@Provider (String) -> FooFactory>()("hello").getFoo() }
+            return component.runReader { given<@Provider (String) -> FooFactory>()("hello").getFoo() }
         }
     """
     ) {
@@ -580,10 +580,10 @@ class ReaderTest {
     @Test
     fun testReaderClassAccessesReaderFunctionInInit() = codegen(
         """
-        @Unscoped fun foo() = Foo()
+        @Given fun foo() = Foo()
         
         @Reader
-        @Unscoped
+        @Given
         class FooFactory {
             val foo: Foo = get()
         }
@@ -591,7 +591,7 @@ class ReaderTest {
         fun invoke(): Foo {
             initializeComponents()
             val component = componentFactory<TestComponent.Factory>().create()
-            return component.runReader { get<FooFactory>().foo }
+            return component.runReader { given<FooFactory>().foo }
         }
     """
     ) {
@@ -603,12 +603,12 @@ class ReaderTest {
         listOf(
             source(
                 """
-                @Unscoped fun foo() = Foo()
+                @Given fun foo() = Foo()
         
                 @Reader
-                @Unscoped
+                @Given
                 class FooFactory(val assisted: @Assisted String) {
-                    fun getFoo() = get<Foo>()
+                    fun getFoo() = given<Foo>()
                 }
             """
             )
@@ -619,7 +619,7 @@ class ReaderTest {
                     fun invoke(): Foo { 
                         initializeComponents()
                         val component = componentFactory<TestComponent.Factory>().create()
-                        return component.runReader { get<@Provider (String) -> FooFactory>()("hello").getFoo() }
+                        return component.runReader { given<@Provider (String) -> FooFactory>()("hello").getFoo() }
                     }
             """, name = "File.kt"
             )
@@ -644,10 +644,10 @@ class ReaderTest {
     @Test
     fun testGenericReader() = codegen(
         """
-        @Unscoped fun foo() = Foo()
+        @Given fun foo() = Foo()
         
         @Reader
-        fun <T> provide() = get<T>()
+        fun <T> provide() = given<T>()
         
         fun invoke(): Foo { 
             initializeComponents()
@@ -664,10 +664,10 @@ class ReaderTest {
         listOf(
             source(
                 """
-                @Unscoped fun foo() = Foo()
+                @Given fun foo() = Foo()
 
                 @Reader 
-                fun <T> provide() = get<T>()
+                fun <T> provide() = given<T>()
                 """
             )
         ),

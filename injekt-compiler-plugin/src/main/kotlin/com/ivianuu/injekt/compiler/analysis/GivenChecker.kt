@@ -27,7 +27,7 @@ import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
-class ProvideChecker : DeclarationChecker {
+class GivenChecker : DeclarationChecker {
     override fun check(
         declaration: KtDeclaration,
         descriptor: DeclarationDescriptor,
@@ -35,39 +35,32 @@ class ProvideChecker : DeclarationChecker {
     ) {
         if (descriptor !is ClassDescriptor) return
 
-        val classHasAnnotation = descriptor.hasAnnotation(InjektFqNames.Unscoped) ||
-                descriptor.hasAnnotation(InjektFqNames.Scoped)
+        val classHasAnnotation = descriptor.hasAnnotation(InjektFqNames.Given)
 
         val annotatedConstructors = descriptor.constructors
-            .filter {
-                it.hasAnnotation(InjektFqNames.Unscoped) ||
-                        it.hasAnnotation(InjektFqNames.Scoped)
-            }
+            .filter { it.hasAnnotation(InjektFqNames.Given) }
 
         if (!classHasAnnotation && annotatedConstructors.isEmpty()) return
-
-        checkAnnotations(declaration, descriptor, context)
-        descriptor.constructors.forEach { checkAnnotations(declaration, it, context) }
 
         if (classHasAnnotation && descriptor.constructors.size > 1 &&
             annotatedConstructors.isEmpty()
         ) {
             context.trace.report(
-                InjektErrors.MULTIPLE_CONSTRUCTORS
+                InjektErrors.MULTIPLE_CONSTRUCTORS_ON_GIVEN_CLASS
                     .on(declaration)
             )
         }
 
         if (classHasAnnotation && annotatedConstructors.isNotEmpty()) {
             context.trace.report(
-                InjektErrors.EITHER_CLASS_OR_CONSTRUCTOR
+                InjektErrors.EITHER_CLASS_OR_CONSTRUCTOR_GIVEN
                     .on(declaration)
             )
         }
 
         if (annotatedConstructors.size > 1) {
             context.trace.report(
-                InjektErrors.MULTIPLE_CONSTRUCTORS_ANNOTATED
+                InjektErrors.MULTIPLE_GIVEN_ANNOTATED_CONSTRUCTORS
                     .on(declaration)
             )
         }
@@ -75,26 +68,7 @@ class ProvideChecker : DeclarationChecker {
         if ((descriptor.kind != ClassKind.CLASS && descriptor.kind != ClassKind.OBJECT) ||
             descriptor.modality == Modality.ABSTRACT
         ) {
-            context.trace.report(InjektErrors.ANNOTATED_BINDING_CANNOT_BE_ABSTRACT.on(declaration))
-        }
-    }
-
-    private fun checkAnnotations(
-        declaration: KtDeclaration,
-        descriptor: DeclarationDescriptor,
-        context: DeclarationCheckerContext
-    ) {
-        if (!descriptor.hasAnnotation(InjektFqNames.Unscoped) &&
-            !descriptor.hasAnnotation(InjektFqNames.Scoped)
-        ) return
-
-        if (descriptor.hasAnnotation(InjektFqNames.Unscoped) &&
-            descriptor.hasAnnotation(InjektFqNames.Scoped)
-        ) {
-            context.trace.report(
-                InjektErrors.UNSCOPED_WITH_SCOPED
-                    .on(declaration)
-            )
+            context.trace.report(InjektErrors.GIVEN_CLASS_CANNOT_BE_ABSTRACT.on(declaration))
         }
     }
 

@@ -30,7 +30,7 @@ class InjektStorageContainerContributor(
         platform: TargetPlatform,
         moduleDescriptor: ModuleDescriptor
     ) {
-        container.useInstance(ProvideChecker())
+        container.useInstance(GivenChecker())
         container.useInstance(ComponentChecker())
         container.useInstance(readerChecker)
     }

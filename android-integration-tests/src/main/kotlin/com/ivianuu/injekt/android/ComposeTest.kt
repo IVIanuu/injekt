@@ -17,20 +17,12 @@
 package com.ivianuu.injekt.android
 
 import androidx.compose.plugins.kotlin.ComposeComponentRegistrar
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.ui.test.createComposeRule
 import com.ivianuu.injekt.compiler.InjektComponentRegistrar
-import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
-import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
-import junit.framework.Assert
-import junit.framework.Assert.assertTrue
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 
 class ComposeTest {
 
@@ -172,7 +164,7 @@ class ComposeTest {
             @androidx.compose.Composable
             fun <T> inject(): T { 
                 val component = ComponentAmbient.current
-                return androidx.compose.remember(component) { component.get() }
+                return androidx.compose.remember(component) { component.given() }
             }
             
             @androidx.compose.Composable
@@ -204,7 +196,7 @@ class ComposeTest {
             @androidx.compose.Composable
             fun <T> inject(): T { 
                 val component = ComponentAmbient.current
-                return androidx.compose.remember(component) { component.get() }
+                return androidx.compose.remember(component) { component.given() }
             }
             
             @androidx.compose.Composable
@@ -237,7 +229,7 @@ class ComposeTest {
                 @androidx.compose.Composable 
                 fun <T> inject(): T { 
                     val component = ComponentAmbient.current
-                    return androidx.compose.remember(component) { component.get() }
+                    return androidx.compose.remember(component) { component.given() }
                 }
         """
             )
@@ -278,7 +270,7 @@ class ComposeTest {
                 @androidx.compose.Composable 
                 fun <T> inject(): T { 
                     val component = ComponentAmbient.current
-                    return androidx.compose.remember(component) { component.get() }
+                    return androidx.compose.remember(component) { component.given() }
                 }
         """
             )

@@ -19,10 +19,9 @@ package com.ivianuu.injekt.android
 import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
 import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 
 @Component(parent = ApplicationComponent::class)
@@ -37,6 +36,6 @@ fun BroadcastReceiver.newReceiverComponent(
     context: Context
 ): ReceiverComponent {
     return (context.applicationContext as Application).applicationComponent.runReader {
-        get<ReceiverComponent.Factory>().create(this)
+        given<ReceiverComponent.Factory>().create(this)
     }
 }

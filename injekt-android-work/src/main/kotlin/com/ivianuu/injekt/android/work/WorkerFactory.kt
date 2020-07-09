@@ -21,13 +21,6 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.ApplicationComponent
-import com.ivianuu.injekt.MapEntries
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.Provider
-import com.ivianuu.injekt.Unscoped
-import com.ivianuu.injekt.alias
-import com.ivianuu.injekt.map
-import com.ivianuu.injekt.unscoped
 import kotlin.reflect.KClass
 
 @BindingAdapter(ApplicationComponent::class)
@@ -43,7 +36,7 @@ annotation class BindWorker {
     }
 }
 
-@Unscoped
+@Given
 internal class InjektWorkerFactory(
     private val workers: Map<KClass<out ListenableWorker>, @Provider (Context, WorkerParameters) -> ListenableWorker>
 ) : WorkerFactory() {

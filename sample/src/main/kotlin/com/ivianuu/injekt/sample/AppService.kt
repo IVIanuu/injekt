@@ -16,32 +16,22 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.DistinctType
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.given
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 @DistinctType
 typealias AppService = suspend () -> Unit
 
-@BindingEffect(ApplicationComponent::class)
-annotation class BindAppService {
-    companion object {
-        @Module
-        inline operator fun <reified T : AppService> invoke() {
-            set<AppService> {
-                add<T>()
-            }
-        }
-    }
-}
+@DistinctType
+typealias AppServices = Set<AppService>
 
 @Reader
 fun startAppServices() {
     println("app service init")
-    get<Set<AppService>>().forEach { service ->
+    given<Set<AppService>>().forEach { service ->
         GlobalScope.launch { service() }
     }
 }

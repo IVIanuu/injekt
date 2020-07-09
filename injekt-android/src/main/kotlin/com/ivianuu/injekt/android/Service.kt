@@ -22,9 +22,9 @@ import android.content.res.Resources
 import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.DistinctType
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.Unscoped
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 
 @Component(parent = ApplicationComponent::class)
@@ -37,7 +37,7 @@ interface ServiceComponent {
 
 fun Service.newServiceComponent(): ServiceComponent {
     return application.applicationComponent.runReader {
-        get<ServiceComponent.Factory>().create(this)
+        given<ServiceComponent.Factory>().create(this)
     }
 }
 
@@ -47,11 +47,11 @@ typealias ServiceContext = Context
 typealias ServiceResources = Resources
 
 object ServiceModule {
-    @Unscoped
+    @Given
     @Reader
-    fun context(): ServiceContext = get<Service>()
+    fun context(): ServiceContext = given<Service>()
 
-    @Unscoped
+    @Given
     @Reader
-    fun resources(): ServiceResources = get<Service>().resources
+    fun resources(): ServiceResources = given<Service>().resources
 }

@@ -36,7 +36,7 @@ class CompositionTest {
                 
                 class FooEntryPointConsumer(testComponent: TestCompositionComponent) {
                     init {
-                        testComponent.runReader { get<Foo>() }
+                        testComponent.runReader { given<Foo>() }
                     }
                 }
                 """
@@ -108,7 +108,7 @@ class CompositionTest {
             
             class Activity(private val app: App) { 
                 val component = app.component.runReader {
-                    get<@ChildFactory () -> ActivityComponent>()() 
+                    given<@ChildFactory () -> ActivityComponent>()() 
                 }
                 val foo: Foo = component.runReader { get()  }
                 val bar: Bar = component.runReader { get() }
@@ -129,7 +129,7 @@ class CompositionTest {
             
             class Fragment(private val activity: Activity) { 
                 private val component = activity.component.runReader {
-                    get<@ChildFactory () -> FragmentComponent>()() 
+                    given<@ChildFactory () -> FragmentComponent>()() 
                 }
                 val foo: Foo = component.runReader { get() }
                 val bar: Bar = component.runReader { get() }
@@ -185,7 +185,7 @@ class CompositionTest {
             source(
                 """
                 class Activity(private val app: App) {
-                    val component = app.component.runReader { get<@ChildFactory () -> ActivityComponent>()() }
+                    val component = app.component.runReader { given<@ChildFactory () -> ActivityComponent>()() }
                     private val foo: Foo = component.runReader { get() }
                     private val bar: Bar = component.runReader { get() }
                 }
@@ -201,7 +201,7 @@ class CompositionTest {
                 }
                 
                 class Fragment(private val activity: Activity) {
-                    private val component = activity.component.runReader { get<@ChildFactory () -> FragmentComponent>()() }
+                    private val component = activity.component.runReader { given<@ChildFactory () -> FragmentComponent>()() }
                     private val foo: Foo = component.runReader { get() }
                     private val bar: Bar = component.runReader { get() }
                     private val baz: Baz = component.runReader { get() }
@@ -226,7 +226,7 @@ class CompositionTest {
         fun invoke(component: TestCompositionComponent) { 
             initializeCompositions()
             val injectedComponent = component.runReader {
-                get<TestCompositionComponent>()
+                given<TestCompositionComponent>()
             }
         }
     """
@@ -255,7 +255,7 @@ class CompositionTest {
         fun invoke(component: ParentComponent) {
             initializeCompositions()
             val injectedComponent = component.runReader {
-                get<@ChildFactory () -> ChildComponent>()
+                given<@ChildFactory () -> ChildComponent>()
             }
         }
     """

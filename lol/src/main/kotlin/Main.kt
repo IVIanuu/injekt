@@ -1,9 +1,9 @@
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.Scoped
-import com.ivianuu.injekt.initializeComponents
 import com.ivianuu.injekt.componentFactory
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.given
+import com.ivianuu.injekt.initializeComponents
 import com.ivianuu.injekt.runReader
 
 /*
@@ -33,7 +33,7 @@ interface TestComponent {
     }
 }
 
-@Scoped(TestComponent::class)
+@Given(TestComponent::class)
 @Reader
 fun foo() = Foo()
 
@@ -42,4 +42,4 @@ val component by lazy {
     componentFactory<TestComponent.Factory>().create()
 }
 
-fun invoke() = component.runReader { get<() -> Foo>() }
+fun invoke() = component.runReader { given<() -> Foo>() }

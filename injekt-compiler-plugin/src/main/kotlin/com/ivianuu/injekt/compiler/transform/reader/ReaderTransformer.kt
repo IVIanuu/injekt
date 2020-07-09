@@ -283,7 +283,7 @@ class ReaderTransformer(
             }
         }
 
-        val getCalls = mutableListOf<IrCall>()
+        val givenCalls = mutableListOf<IrCall>()
         val readerCalls = mutableListOf<IrFunctionAccessExpression>()
 
         clazz.transformChildrenVoid(object : IrElementTransformerVoid() {
@@ -309,9 +309,9 @@ class ReaderTransformer(
                     expression.isReaderConstructorCall()
                 ) {
                     if (result is IrCall &&
-                        result.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get"
+                        result.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given"
                     ) {
-                        getCalls += result
+                        givenCalls += result
                     } else {
                         readerCalls += result
                     }
@@ -320,10 +320,10 @@ class ReaderTransformer(
             }
         })
 
-        val providerFunctionByGetCall = getCalls.associateWith { getCall ->
+        val providerFunctionByGivenCall = givenCalls.associateWith { givenCall ->
             contextClass.addFunction {
-                name = getProvideFunctionNameForGetCall(
-                    getCall.type
+                name = getProvideFunctionNameForGivenCall(
+                    givenCall.type
                         .remapTypeParameters(clazz, contextClass)
                         .let {
                             if (parentFunction != null) {
@@ -331,7 +331,7 @@ class ReaderTransformer(
                             } else it
                         }
                 )
-                returnType = getCall.type
+                returnType = givenCall.type
                     .remapTypeParameters(clazz, contextClass)
                     .let {
                         if (parentFunction != null) {
@@ -358,7 +358,7 @@ class ReaderTransformer(
                 .filterNot { it is IrConstructor }
                 .forEach { genericContextFunction ->
                     genericFunctionMap += genericContextFunction to contextClass.addFunction {
-                        name = getProvideFunctionNameForGetCall(genericContextFunction.returnType)
+                        name = getProvideFunctionNameForGivenCall(genericContextFunction.returnType)
                         returnType = genericContextFunction.returnType
                             .substitute(genericContext.typeParameters
                                 .map { it.symbol }
@@ -443,8 +443,8 @@ class ReaderTransformer(
 
         clazz.transform(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
-                return if (expression in getCalls) {
-                    val providerFunction = providerFunctionByGetCall.getValue(expression)
+                return if (expression in givenCalls) {
+                    val providerFunction = providerFunctionByGivenCall.getValue(expression)
                     DeclarationIrBuilder(pluginContext, expression.symbol).run {
                         irCall(providerFunction).apply {
                             dispatchReceiver = irGetField(
@@ -574,7 +574,7 @@ class ReaderTransformer(
             }
         }
 
-        val getCalls = mutableListOf<IrCall>()
+        val givenCalls = mutableListOf<IrCall>()
         val readerCalls = mutableListOf<IrFunctionAccessExpression>()
 
         transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
@@ -600,9 +600,9 @@ class ReaderTransformer(
                     expression.isReaderConstructorCall()
                 ) {
                     if (result is IrCall &&
-                        expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.get"
+                        expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given"
                     ) {
-                        getCalls += result
+                        givenCalls += result
                     } else {
                         readerCalls += result
                     }
@@ -611,10 +611,10 @@ class ReaderTransformer(
             }
         })
 
-        val providerFunctionByGetCall = getCalls.associateWith { getCall ->
+        val providerFunctionByGivenCall = givenCalls.associateWith { givenCall ->
             contextClass.addFunction {
-                name = getProvideFunctionNameForGetCall(
-                    getCall.type
+                name = getProvideFunctionNameForGivenCall(
+                    givenCall.type
                         .remapTypeParameters(function, transformedFunction)
                         .remapTypeParameters(transformedFunction, contextClass)
                         .let {
@@ -623,7 +623,7 @@ class ReaderTransformer(
                             } else it
                         }
                 )
-                returnType = getCall.type
+                returnType = givenCall.type
                     .remapTypeParameters(function, transformedFunction)
                     .remapTypeParameters(transformedFunction, contextClass)
                     .let {
@@ -651,7 +651,7 @@ class ReaderTransformer(
                 .filterNot { it is IrConstructor }
                 .forEach { genericContextFunction ->
                     genericFunctionMap += genericContextFunction to contextClass.addFunction {
-                        name = getProvideFunctionNameForGetCall(genericContextFunction.returnType)
+                        name = getProvideFunctionNameForGivenCall(genericContextFunction.returnType)
                         returnType = genericContextFunction.returnType
                             .substitute(genericContext.typeParameters
                                 .map { it.symbol }
@@ -718,8 +718,8 @@ class ReaderTransformer(
 
         transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
-                return if (expression in getCalls) {
-                    val providerFunction = providerFunctionByGetCall.getValue(expression)
+                return if (expression in givenCalls) {
+                    val providerFunction = providerFunctionByGivenCall.getValue(expression)
                     DeclarationIrBuilder(pluginContext, expression.symbol).run {
                         irCall(providerFunction).apply {
                             dispatchReceiver = irGet(contextValueParameter)
@@ -935,7 +935,7 @@ class ReaderTransformer(
         ).asString() + "_$suffix"
     ).asNameId()
 
-    private fun getProvideFunctionNameForGetCall(
+    private fun getProvideFunctionNameForGivenCall(
         type: IrType
     ): Name {
         val fqName = if (type is IrSimpleType && type.abbreviation != null &&

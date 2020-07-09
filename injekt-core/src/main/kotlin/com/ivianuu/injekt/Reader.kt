@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.internal.injektIntrinsic
-
 @Target(
     AnnotationTarget.TYPE,
     AnnotationTarget.FUNCTION,
@@ -27,9 +25,6 @@ import com.ivianuu.injekt.internal.injektIntrinsic
     AnnotationTarget.CONSTRUCTOR
 )
 annotation class Reader
-
-@Reader
-fun <T> get(): T = injektIntrinsic()
 
 inline fun <R> Any.runReader(
     block: @Reader () -> R

@@ -61,7 +61,7 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
 
     private val componentMembers = ComponentMembers(this, factoryImpl.pluginContext)
 
-    private lateinit var graph: Graph
+    private lateinit var graph: ComponentGraph
     private lateinit var componentExpressions: ComponentExpressions
 
     fun getImplExpression(inputParameters: List<IrValueParameter>): IrExpression {
@@ -70,7 +70,7 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
             factoryImpl.factoryClass.symbol
         ).run {
             irBlock {
-                graph = Graph(
+                graph = ComponentGraph(
                     parent = factoryImpl.parent?.componentImpl?.graph,
                     component = this@ComponentImpl,
                     context = factoryImpl.pluginContext,

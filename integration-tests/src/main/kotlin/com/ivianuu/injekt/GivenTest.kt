@@ -20,64 +20,55 @@ import com.ivianuu.injekt.test.assertCompileError
 import com.ivianuu.injekt.test.codegen
 import org.junit.Test
 
-class ProvideTest {
+class GivenTest {
 
     @Test
-    fun testAnnotatedClassOk() = codegen(
+    fun testGivenClassOk() = codegen(
         """ 
-        @Unscoped class Dep
+        @Given class Dep
     """
     )
 
     @Test
-    fun testAnnotatedObjectOk() = codegen(
+    fun testGivenObjectOk() = codegen(
         """ 
-        @Unscoped object Dep
+        @Given object Dep
     """
     )
 
     @Test
-    fun testAnnotatedAbstractClassFails() = codegen(
+    fun testGivenAbstractClassFails() = codegen(
         """ 
-        @Unscoped abstract class Dep
+        @Given abstract class Dep
     """
     ) {
         assertCompileError("abstract")
     }
 
     @Test
-    fun testAnnotatedInterfaceFails() = codegen(
+    fun testGivenInterfaceFails() = codegen(
         """ 
-        @Unscoped interface Dep
+        @Given interface Dep
     """
     ) {
         assertCompileError("abstract")
     }
 
     @Test
-    fun testAnnotatedAnnotationClassFails() = codegen(
-        """ 
-        @Unscoped interface Dep
-    """
-    ) {
-        assertCompileError("abstract")
-    }
-
-    @Test
-    fun testClassAndConstructorAnnotationFails() = codegen(
+    fun testGivenClassAndGivenConstructorFails() = codegen(
         """
-         @Unscoped class Dep @Unscoped constructor()  
+         @Given class Dep @Given constructor()  
         """
     ) {
         assertCompileError("either")
     }
 
     @Test
-    fun testMultipleConstructorsWithAnnotationsFails() = codegen(
+    fun testMultipleGivenConstructorsFails() = codegen(
         """
             class Dep {
-                @Unscoped constructor(foo: Foo)
-                @Unscoped constructor(bar: Bar)
+                @Given constructor(foo: Foo)
+                @Given constructor(bar: Bar)
             }
         """
     ) {
@@ -85,9 +76,9 @@ class ProvideTest {
     }
 
     @Test
-    fun testMultipleConstructorsWithoutAnnotationsFails() = codegen(
+    fun testMultipleConstructorsOnGivenClassFails() = codegen(
         """
-            @Unscoped
+            @Given
             class Dep { 
                 constructor(foo: Foo)
                 constructor(bar: Bar)

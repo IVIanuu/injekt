@@ -22,20 +22,20 @@ import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.Scoped
 import com.ivianuu.injekt.Unscoped
 import com.ivianuu.injekt.android.ApplicationContext
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.given
 import java.io.File
-
-@Unscoped
-@Reader
-fun databaseFile(): DatabaseFile = get<ApplicationContext>().cacheDir
 
 @DistinctType
 typealias DatabaseFile = File
 
-@Scoped(ApplicationComponent::class)
+@Given
+@Reader
+fun databaseFile(): DatabaseFile = given<ApplicationContext>().cacheDir
+
+@Given(ApplicationComponent::class)
 class Database(private val file: DatabaseFile)
 
-@Scoped(ApplicationComponent::class)
+@Given(ApplicationComponent::class)
 class Repo(private val database: Database, private val api: Api) {
     fun refresh() {
     }
@@ -43,8 +43,8 @@ class Repo(private val database: Database, private val api: Api) {
 
 @Reader
 fun refreshRepo() {
-    get<Repo>().refresh()
+    given<Repo>().refresh()
 }
 
-@Scoped(ApplicationComponent::class)
+@Given(ApplicationComponent::class)
 class Api

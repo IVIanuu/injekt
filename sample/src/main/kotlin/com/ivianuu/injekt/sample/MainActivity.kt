@@ -27,7 +27,7 @@ import androidx.work.WorkManager
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.android.ActivityContext
 import com.ivianuu.injekt.android.activityComponent
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -52,13 +52,13 @@ class MainActivity : AppCompatActivity() {
 @Reader
 @Composable
 fun WithMainViewModel(children: @Composable (MainViewModel) -> Unit) {
-    val viewModel = remember { get<MainViewModel>() }
+    val viewModel = remember { given<MainViewModel>() }
     children(viewModel)
 }
 
 @Reader
 private fun enqueueWork() {
-    WorkManager.getInstance(get<ActivityContext>())
+    WorkManager.getInstance(given<ActivityContext>())
         .enqueue(
             OneTimeWorkRequestBuilder<TestWorker>()
                 .build()

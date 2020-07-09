@@ -40,7 +40,7 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class IndexPackageDeclarationTransformer(pluginContext: IrPluginContext) :
+class IndexingTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     override fun lower() {
@@ -48,17 +48,16 @@ class IndexPackageDeclarationTransformer(pluginContext: IrPluginContext) :
 
         module.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitConstructor(declaration: IrConstructor): IrStatement {
-                if (declaration.hasAnnotation(InjektFqNames.Unscoped) ||
-                    declaration.hasAnnotation(InjektFqNames.Scoped)
-                ) {
+                if (declaration.hasAnnotation(InjektFqNames.Given)) {
                     declarations += declaration.constructedClass
                 }
                 return super.visitConstructor(declaration)
             }
 
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                if (declaration.hasAnnotation(InjektFqNames.Unscoped) ||
-                    declaration.hasAnnotation(InjektFqNames.Scoped)
+                if (declaration.hasAnnotation(InjektFqNames.Given) ||
+                    declaration.hasAnnotation(InjektFqNames.MapEntries) ||
+                    declaration.hasAnnotation(InjektFqNames.SetElements)
                 ) {
                     declarations += declaration
                 }
@@ -68,8 +67,7 @@ class IndexPackageDeclarationTransformer(pluginContext: IrPluginContext) :
             override fun visitClass(declaration: IrClass): IrStatement {
                 if (declaration.hasAnnotation(InjektFqNames.Component) ||
                     declaration.hasAnnotation(InjektFqNames.ComponentFactory) ||
-                    declaration.hasAnnotation(InjektFqNames.Unscoped) ||
-                    declaration.hasAnnotation(InjektFqNames.Scoped)
+                    declaration.hasAnnotation(InjektFqNames.Given)
                 ) {
                     declarations += declaration
                 }

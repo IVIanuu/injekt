@@ -38,14 +38,20 @@ class DeclarationGraph(
     private val pluginContext: IrPluginContext
 ) {
 
-    val componentFactories: List<ComponentFactory> get() = _componentFactories
     private val _componentFactories = mutableListOf<ComponentFactory>()
+    val componentFactories: List<ComponentFactory> get() = _componentFactories
 
-    val bindings: List<Binding> get() = _bindings
     private val _bindings = mutableListOf<Binding>()
+    val bindings: List<Binding> get() = _bindings
 
     val entryPoints: List<EntryPoint> get() = _entryPoints
     private val _entryPoints = mutableListOf<EntryPoint>()
+
+    private val _mapEntries = mutableListOf<MapEntries>()
+    val mapEntries: List<MapEntries> get() = _mapEntries
+
+    private val _setElements = mutableListOf<SetElements>()
+    val setElements: List<SetElements> get() = _setElements
 
     private val indices by lazy {
         val memberScope = pluginContext.moduleDescriptor.getPackage(InjektFqNames.IndexPackage)
@@ -74,6 +80,8 @@ class DeclarationGraph(
         collectComponentFactories()
         collectEntryPoints()
         collectBindings()
+        collectMapEntries()
+        collectSetElements()
     }
 
     private fun collectComponentFactories() {
@@ -100,16 +108,38 @@ class DeclarationGraph(
                             ?.toList() ?: emptyList())
             }
             .filter {
-                (it.hasAnnotation(InjektFqNames.Unscoped) ||
-                        it.hasAnnotation(InjektFqNames.Scoped)) ||
-                        (it is IrConstructor && (it.constructedClass.hasAnnotation(InjektFqNames.Unscoped) ||
-                                it.constructedClass.hasAnnotation(InjektFqNames.Scoped)))
+                it.hasAnnotation(InjektFqNames.Given) ||
+                        (it is IrConstructor && it.constructedClass.hasAnnotation(InjektFqNames.Given))
             }
             .filter {
                 !it.hasAnnotation(InjektFqNames.Reader) ||
                         it.valueParameters.lastOrNull()?.name?.asString() == "_context"
             }
             .forEach { _bindings += Binding(it) }
+    }
+
+    private fun collectMapEntries() {
+        indices
+            .flatMapFix { pluginContext.referenceFunctions(it) }
+            .map { it.owner }
+            .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
+            .filter {
+                !it.hasAnnotation(InjektFqNames.Reader) ||
+                        it.valueParameters.lastOrNull()?.name?.asString() == "_context"
+            }
+            .forEach { _mapEntries += MapEntries(it) }
+    }
+
+    private fun collectSetElements() {
+        indices
+            .flatMapFix { pluginContext.referenceFunctions(it) }
+            .map { it.owner }
+            .filter { it.hasAnnotation(InjektFqNames.SetElements) }
+            .filter {
+                !it.hasAnnotation(InjektFqNames.Reader) ||
+                        it.valueParameters.lastOrNull()?.name?.asString() == "_context"
+            }
+            .forEach { _setElements += SetElements(it) }
     }
 
 }
@@ -124,4 +154,12 @@ class Binding(
 
 class EntryPoint(
     val entryPoint: IrClass
+)
+
+class SetElements(
+    val function: IrFunction
+)
+
+class MapEntries(
+    val function: IrFunction
 )

@@ -24,8 +24,8 @@ import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.render
 
-class Graph(
-    val parent: Graph?,
+class ComponentGraph(
+    val parent: ComponentGraph?,
     val component: ComponentImpl,
     context: IrPluginContext,
     declarationGraph: DeclarationGraph,
@@ -35,7 +35,7 @@ class Graph(
 
     private val bindingsResolvers = listOf(
         InputParameterBindingResolver(inputParameters, component),
-        ProvideBindingResolver(context, declarationGraph, component),
+        GivenBindingResolver(context, declarationGraph, component),
         NoArgProviderBindingResolver(component),
         ComponentImplBindingResolver(component),
         ChildComponentFactoryBindingResolver(component)

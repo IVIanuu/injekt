@@ -27,7 +27,7 @@ class AssistedTest {
     @Test
     fun testAssistedWithAnnotations() = codegen(
         """
-        @Unscoped
+        @Given
         class Dep(
             val assisted: @Assisted String,
             val foo: Foo
@@ -53,7 +53,7 @@ class AssistedTest {
         listOf(
             source(
                 """
-                @Unscoped 
+                @Given 
                 class Dep(
                     val assisted: @Assisted String,
                     val foo: Foo

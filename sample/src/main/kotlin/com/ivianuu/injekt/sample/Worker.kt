@@ -24,7 +24,7 @@ import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.android.work.BindWorker
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.given
 
 @BindWorker
 @Reader
@@ -33,7 +33,7 @@ class TestWorker(
     workerParams: WorkerParameters
 ) : Worker(context, workerParams) {
     init {
-        println("hello $context $workerParams ${get<Repo>()}")
+        println("hello $context $workerParams ${given<Repo>()}")
     }
 
     override fun doWork(): Result = Result.success()
@@ -42,7 +42,7 @@ class TestWorker(
 @Reader
 fun initializeWorkers() {
     WorkManager.initialize(
-        get<ApplicationContext>(), Configuration.Builder()
-            .setWorkerFactory(get()).build()
+        given<ApplicationContext>(), Configuration.Builder()
+            .setWorkerFactory(given()).build()
     )
 }

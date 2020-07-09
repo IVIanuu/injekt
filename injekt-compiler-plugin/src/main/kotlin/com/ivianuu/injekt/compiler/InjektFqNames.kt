@@ -23,11 +23,10 @@ object InjektFqNames {
     val Component = InjektPackage.child("Component")
     val ComponentFactory = Component.child("Factory")
     val DistinctType = InjektPackage.child("DistinctType")
+    val Given = InjektPackage.child("Given")
     val MapEntries = InjektPackage.child("MapEntries")
     val Reader = InjektPackage.child("Reader")
-    val Scoped = InjektPackage.child("Scoped")
     val SetElements = InjektPackage.child("SetElements")
-    val Unscoped = InjektPackage.child("Unscoped")
 
     val InternalPackage = InjektPackage.child("internal")
     val ComponentFactories = InternalPackage.child("ComponentFactories")
@@ -35,5 +34,5 @@ object InjektFqNames {
     val Index = InternalPackage.child("Index")
     val Name = InternalPackage.child("Name")
 
-    val IndexPackage = InternalPackage.child("info")
+    val IndexPackage = InternalPackage.child("index")
 }

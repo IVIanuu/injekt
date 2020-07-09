@@ -22,12 +22,11 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
-import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.DistinctType
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.Unscoped
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 
 @Component(parent = RetainedActivityComponent::class)
@@ -41,7 +40,7 @@ interface ActivityComponent {
 val ComponentActivity.activityComponent: ActivityComponent
     get() = lifecycle.singleton {
         retainedActivityComponent.runReader {
-            get<ActivityComponent.Factory>().create(this)
+            given<ActivityComponent.Factory>().create(this)
         }
     }
 
@@ -57,23 +56,23 @@ typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
 typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 
 object ActivityModule {
-    @Unscoped
+    @Given
     @Reader
-    fun context(): ActivityContext = get<ComponentActivity>()
+    fun context(): ActivityContext = given<ComponentActivity>()
 
-    @Unscoped
+    @Given
     @Reader
-    fun resources(): ActivityResources = get<ActivityContext>().resources
+    fun resources(): ActivityResources = given<ActivityContext>().resources
 
-    @Unscoped
+    @Given
     @Reader
-    fun lifecycleOwner(): ActivityLifecycleOwner = get<ComponentActivity>()
+    fun lifecycleOwner(): ActivityLifecycleOwner = given<ComponentActivity>()
 
-    @Unscoped
+    @Given
     @Reader
-    fun savedStateRegistryOwner(): ActivitySavedStateRegistryOwner = get<ComponentActivity>()
+    fun savedStateRegistryOwner(): ActivitySavedStateRegistryOwner = given<ComponentActivity>()
 
-    @Unscoped
+    @Given
     @Reader
-    fun viewModelStoreOwner(): ActivityViewModelStoreOwner = get<ComponentActivity>()
+    fun viewModelStoreOwner(): ActivityViewModelStoreOwner = given<ComponentActivity>()
 }

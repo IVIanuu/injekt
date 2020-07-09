@@ -23,7 +23,6 @@ import org.jetbrains.kotlin.backend.common.ir.copyBodyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
@@ -255,16 +254,6 @@ fun KClassValue.getIrClass(
 fun String.asNameId(): Name = Name.identifier(this)
 
 fun FqName.child(name: String) = child(name.asNameId())
-
-fun IrClass.getInjectConstructor(): IrConstructor? {
-    if (kind == ClassKind.OBJECT) return null
-    constructors
-        .firstOrNull {
-            it.hasAnnotation(InjektFqNames.Unscoped) ||
-                    it.hasAnnotation(InjektFqNames.Scoped)
-        }?.let { return it }
-    return constructors.singleOrNull()
-}
 
 fun IrClass.getReaderConstructor(): IrConstructor? {
     constructors

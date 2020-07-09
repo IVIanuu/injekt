@@ -34,7 +34,7 @@ import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.name.FqName
 
 class ComponentExpressions(
-    private val graph: Graph,
+    private val graph: ComponentGraph,
     private val pluginContext: IrPluginContext,
     private val symbols: InjektSymbols,
     private val members: ComponentMembers,

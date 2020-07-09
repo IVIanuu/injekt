@@ -30,7 +30,7 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import java.io.File
 
-class InfoPackageGenerator : AnalysisHandlerExtension {
+class IndexPackageGenerator : AnalysisHandlerExtension {
 
     private var generated = false
 

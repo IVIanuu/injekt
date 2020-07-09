@@ -54,7 +54,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
         )
         AnalysisHandlerExtension.registerExtension(
             project,
-            InfoPackageGenerator()
+            IndexPackageGenerator()
         )
     }
 

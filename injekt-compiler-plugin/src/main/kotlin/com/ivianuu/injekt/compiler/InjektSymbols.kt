@@ -26,14 +26,14 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
         get() = pluginContext.referenceClass(InjektFqNames.ComponentFactory)!!
     val distinctType: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.DistinctType)!!
+    val given: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.Given)!!
     val mapEntries: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.MapEntries)!!
     val reader: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.Reader)!!
     val setElements: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.SetElements)!!
-    val unscoped: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.Unscoped)!!
 
     val componentFactories: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.ComponentFactories)!!

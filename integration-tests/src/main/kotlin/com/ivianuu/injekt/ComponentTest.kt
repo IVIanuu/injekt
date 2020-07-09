@@ -38,15 +38,15 @@ class ComponentTest {
             }
         }
         
-        @Unscoped @Reader
+        @Given @Reader
         fun foo() = Foo()
-        @Unscoped @Reader
-        fun bar() = Bar(get())
+        @Given @Reader
+        fun bar() = Bar(given())
         
         fun invoke(): Bar {
             initializeComponents()
             val component = componentFactory<MyComponent.Factory>().create()
-            return component.runReader { get<Bar>() }
+            return component.runReader { given<Bar>() }
         }
     """
     ) {
@@ -72,17 +72,17 @@ class ComponentTest {
             }
         }
         
-        @Scoped(ParentComponent::class) @Reader
+        @Given(ParentComponent::class) @Reader
         fun foo() = Foo()
-        @Unscoped @Reader
-        fun bar() = Bar(get())
+        @Given @Reader
+        fun bar() = Bar(given())
         
         fun invoke(): Bar {
             initializeComponents()
             val childComponent = componentFactory<ParentComponent.Factory>().create().runReader {
-                get<ChildComponent.Factory>().create()
+                given<ChildComponent.Factory>().create()
             }
-            return childComponent.runReader { get<Bar>() }
+            return childComponent.runReader { given<Bar>() }
         }
     """
     ) {
@@ -92,7 +92,7 @@ class ComponentTest {
     @Test
     fun testUnscoped() = codegen(
         """
-        @Unscoped @Reader
+        @Given @Reader
         fun foo() = Foo()
         
         val component by lazy {
@@ -100,7 +100,7 @@ class ComponentTest {
             componentFactory<TestComponent.Factory>().create()
         }
         
-        fun invoke() = component.runReader { get<Foo>() }
+        fun invoke() = component.runReader { given<Foo>() }
     """
     ) {
         assertNotSame(
@@ -112,7 +112,7 @@ class ComponentTest {
     @Test
     fun testScoped() = codegen(
         """
-        @Scoped(TestComponent::class) @Reader
+        @Given(TestComponent::class) @Reader
         fun foo() = Foo()
         
         val component by lazy {
@@ -120,7 +120,7 @@ class ComponentTest {
             componentFactory<TestComponent.Factory>().create()
         }
         
-        fun invoke() = component.runReader { get<Foo>() }
+        fun invoke() = component.runReader { given<Foo>() }
     """
     ) {
         assertSame(
@@ -132,7 +132,7 @@ class ComponentTest {
     @Test
     fun testUnscopedProvider() = codegen(
         """
-        @Unscoped @Reader
+        @Given @Reader
         fun foo() = Foo()
         
         val component by lazy {
@@ -140,7 +140,7 @@ class ComponentTest {
             componentFactory<TestComponent.Factory>().create()
         }
         
-        fun invoke() = component.runReader { get<() -> Foo>() }
+        fun invoke() = component.runReader { given<() -> Foo>() }
     """
     ) {
         val provider = invokeSingleFile<() -> Foo>()
@@ -150,7 +150,7 @@ class ComponentTest {
     @Test
     fun testScopedProvider() = codegen(
         """
-        @Scoped(TestComponent::class) @Reader
+        @Given(TestComponent::class) @Reader
         fun foo() = Foo()
         
         val component by lazy {
@@ -158,7 +158,7 @@ class ComponentTest {
             componentFactory<TestComponent.Factory>().create()
         }
         
-        fun invoke() = component.runReader { get<() -> Foo>() }
+        fun invoke() = component.runReader { given<() -> Foo>() }
     """
     ) {
         val provider = invokeSingleFile<() -> Foo>()
@@ -167,13 +167,13 @@ class ComponentTest {
 
     @Test
     fun testAnnotatedClass() = codegen("""
-        @Unscoped
+        @Given
         @Reader 
         class AnnotatedBar {
-            private val foo: Foo = get()
+            private val foo: Foo = given()
         }
         
-        @Unscoped
+        @Given
         fun foo(): Foo = Foo()
 
         val component by lazy {
@@ -181,7 +181,7 @@ class ComponentTest {
             componentFactory<TestComponent.Factory>().create()
         }
 
-        fun invoke(): AnnotatedBar = component.runReader { get<AnnotatedBar>() }
+        fun invoke(): AnnotatedBar = component.runReader { given<AnnotatedBar>() }
     """
     ) {
         assertNotSame(
@@ -196,7 +196,7 @@ class ComponentTest {
             initializeComponents()
             val component = componentFactory<TestComponent.Factory>().create()
             return component.runReader { 
-                component to get<TestComponent>()
+                component to given<TestComponent>()
             }
         }
     """
@@ -208,16 +208,16 @@ class ComponentTest {
     @Test
     fun testGenericAnnotatedClass() = codegen(
         """
-        @Unscoped @Reader class Dep<T> {
-            val value: T = get()
+        @Given @Reader class Dep<T> {
+            val value: T = given()
         }
         
-        @Unscoped fun foo() = Foo() 
+        @Given fun foo() = Foo() 
         
         fun invoke() {
             initializeComponents()
             componentFactory<TestComponent.Factory>().create().runReader {
-                get<Dep<Foo>>()
+                given<Dep<Foo>>()
             }
         }
     """
@@ -226,7 +226,7 @@ class ComponentTest {
     @Test
     fun testGenericProvider() = codegen(
         """
-        @Unscoped class Dep<T>(val value: T)
+        @Given class Dep<T>(val value: T)
         
         @Factory
         fun factory(): TestComponent2<Dep<String>, Dep<Int>> {
@@ -252,7 +252,7 @@ class ComponentTest {
             initializeComponents()
             val foo = Foo()
             val component = componentFactory<MyComponent.Factory>().create(foo)
-            return foo to component.runReader { get<Foo>() }
+            return foo to component.runReader { given<Foo>() }
         }
     """
     ) {

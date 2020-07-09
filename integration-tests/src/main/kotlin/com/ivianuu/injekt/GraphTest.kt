@@ -30,8 +30,11 @@ class GraphTest {
     @Test
     fun testMissingBindingFails() = codegen(
         """
-        @Unscoped class Dep(bar: Bar)
-        @Factory fun createDep(): TestComponent1<Dep> = create()
+        @Given class Dep(bar: Bar)
+        fun invoke() {
+            initializeComponents()
+            component.runReader { get<Dep>() }
+        }
         """
     ) {
         assertInternalError("no binding")
@@ -41,7 +44,7 @@ class GraphTest {
     @Test
     fun testCannotResolveDirectBindingWithAssistedParameters() = codegen(
         """
-        @Unscoped class Dep(bar: @Assisted Bar)
+        @Given class Dep(bar: @Assisted Bar)
         @Factory fun createDep(): TestComponent1<Dep> = create()
         """
     ) {
@@ -51,13 +54,13 @@ class GraphTest {
     @Test
     fun testDuplicatedBindingFails() = codegen(
         """
-        @Unscoped fun foo1() = Foo()
-        @Unscoped fun foo2() = Foo()
+        @Given fun foo1() = Foo()
+        @Given fun foo2() = Foo()
         
         fun invoke() {
             initializeComponents()
             val component = componentFactory<TestComponent.Factory>().create()
-            component.runReader { get<Foo>() }
+            component.runReader { given<Foo>() }
         }
         """
     ) {
@@ -67,12 +70,12 @@ class GraphTest {
     @Test
     fun testComponentMismatch() = codegen(
         """
-        @Scoped(Any::class) class Dep
+        @Given(Any::class) class Dep
 
         fun invoke() {
             initializeComponents()
             val component = componentFactory<TestComponent.Factory>().create()
-            component.runReader { get<Dep>() }
+            component.runReader { given<Dep>() }
         }
         """
     ) {
@@ -85,13 +88,13 @@ class GraphTest {
         @DistinctType typealias Foo1 = Foo
         @DistinctType typealias Foo2 = Foo
         
-        @Unscoped @Reader fun foo1(): Foo1 = Foo()
-        @Unscoped @Reader fun foo2(): Foo2 = Foo()
+        @Given @Reader fun foo1(): Foo1 = Foo()
+        @Given @Reader fun foo2(): Foo2 = Foo()
         
         fun invoke(): Pair<Foo, Foo> {
             initializeComponents()
             val component = componentFactory<TestComponent.Factory>().create()
-            return component.runReader { get<Foo1>() to get<Foo2>() }
+            return component.runReader { given<Foo1>() to given<Foo2>() }
         }
     """
     ) {
@@ -102,13 +105,13 @@ class GraphTest {
     @Test
     fun testIgnoresNullability() = codegen(
         """
-        @Unscoped fun foo(): Foo = Foo()
-        @Unscoped fun nullableFoo(): Foo? = null
+        @Given fun foo(): Foo = Foo()
+        @Given fun nullableFoo(): Foo? = null
 
         fun invoke() { 
             initializeComponents()
             val component = componentFactory<TestComponent.Factory>().create()
-            component.runReader { get<Foo1>() to get<Foo2>() }
+            component.runReader { given<Foo1>() to given<Foo2>() }
         }
     """
     ) {
@@ -118,12 +121,12 @@ class GraphTest {
     @Test
     fun testReturnsInstanceForNullableBinding() = codegen(
         """
-        @Unscoped fun foo(): Foo = Foo()
+        @Given fun foo(): Foo = Foo()
 
         fun invoke(): Foo? { 
             initializeComponents()
             val component = componentFactory<TestComponent.Factory>().create()
-            return component.runReader { get<Foo?>() }
+            return component.runReader { given<Foo?>() }
         }
         """
     ) {
@@ -136,7 +139,7 @@ class GraphTest {
         fun invoke(): Foo? { 
             initializeComponents()
             val component = componentFactory<TestComponent.Factory>().create()
-            return component.runReader { get<Foo?>() }
+            return component.runReader { given<Foo?>() }
         }
         """
     ) {
@@ -146,12 +149,12 @@ class GraphTest {
     @Test
     fun testTypeWithStarProjectedArg() = codegen(
         """
-        @Unscoped fun list(): List<*> = emptyList<Any?>()
+        @Given fun list(): List<*> = emptyList<Any?>()
         
         fun invoke() { 
             initializeComponents()
             val component = componentFactory<TestComponent.Factory>().create()
-            component.runReader { get<List<*>>() }
+            component.runReader { given<List<*>>() }
         }
     """
     )

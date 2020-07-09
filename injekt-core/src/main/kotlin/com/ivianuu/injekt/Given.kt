@@ -16,8 +16,15 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.internal.injektIntrinsic
 import kotlin.reflect.KClass
 
-annotation class Unscoped
+@Target(
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.CLASS,
+    AnnotationTarget.CONSTRUCTOR
+)
+annotation class Given(val component: KClass<*> = Nothing::class)
 
-annotation class Scoped(val component: KClass<*>)
+@Reader
+fun <T> given(): T = injektIntrinsic()

@@ -64,7 +64,7 @@ interface InjektErrors {
 
         @JvmField
         val NOT_A_COMPONENT = error(
-            "Type must be annotated with @Component"
+            "Must be a @Component type"
         )
 
         @JvmField
@@ -73,8 +73,8 @@ interface InjektErrors {
         )
 
         @JvmField
-        val ANNOTATED_BINDING_CANNOT_BE_ABSTRACT = error(
-            "Annotated bindings cannot be an interface or abstract"
+        val GIVEN_CLASS_CANNOT_BE_ABSTRACT = error(
+            "@Given class cannot be an interface or abstract"
         )
 
         @JvmField
@@ -83,23 +83,18 @@ interface InjektErrors {
         )
 
         @JvmField
-        val UNSCOPED_WITH_SCOPED = error(
-            "@Unscoped cannot be combined with @Scope annotated annotations"
+        val EITHER_CLASS_OR_CONSTRUCTOR_GIVEN = error(
+            "Either the class or a constructor may be annotated with @Given"
         )
 
         @JvmField
-        val EITHER_CLASS_OR_CONSTRUCTOR = error(
-            "Either the class or a constructor may be annotated"
+        val MULTIPLE_GIVEN_ANNOTATED_CONSTRUCTORS = error(
+            "Only 1 one constructor may be annotated with @Given"
         )
 
         @JvmField
-        val MULTIPLE_CONSTRUCTORS_ANNOTATED = error(
-            "Only 1 one constructor may be annotated"
-        )
-
-        @JvmField
-        val MULTIPLE_CONSTRUCTORS = error(
-            "Can't choose a constructor. Annotate the right one"
+        val MULTIPLE_CONSTRUCTORS_ON_GIVEN_CLASS = error(
+            "Can't choose a constructor. Annotate the right one with @Given"
         )
 
         @JvmField

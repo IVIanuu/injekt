@@ -47,10 +47,10 @@ class CommonScenariosTest {
                         return create()
                     }
                     
-                    @Unscoped
+                    @Given
                     class OtherAnnotatedClass(foo: Foo)
                     
-                    @Unscoped
+                    @Given
                     class OtherAssistedClass(
                         assisted: @Assisted String,
                         foo: Foo
@@ -100,10 +100,10 @@ class CommonScenariosTest {
         """
         abstract class Worker(context: Context)
         
-        @Unscoped class Context
+        @Given class Context
         
-        @Unscoped class WorkerA(context: @Assisted Context, foo: Foo) : Worker(context)
-        @Unscoped class WorkerB(context: @Assisted Context) : Worker(context)
+        @Given class WorkerA(context: @Assisted Context, foo: Foo) : Worker(context)
+        @Given class WorkerB(context: @Assisted Context) : Worker(context)
         
         @Module 
         inline fun <reified T : Worker> bindWorkerIntoMap() {
@@ -112,7 +112,7 @@ class CommonScenariosTest {
             }
         }
         
-        @Unscoped
+        @Given
         class WorkerFactory(
             private val workers: Map<KClass<out Worker>, @Provider (Context) -> Worker>,
             private val context: Context

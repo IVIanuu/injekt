@@ -17,8 +17,16 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
+import com.ivianuu.injekt.MapEntries
+import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.runReader
+
+@MapEntries
+@Reader
+fun mySpecialWorker() = "a" to {
+
+}
 
 class App : Application() {
 

@@ -96,7 +96,7 @@ class ChildComponentFactoryBindingResolver(
     }
 }
 
-class ProvideBindingResolver(
+class GivenBindingResolver(
     private val pluginContext: IrPluginContext,
     private val declarationGraph: DeclarationGraph,
     private val component: ComponentImpl
@@ -107,10 +107,10 @@ class ProvideBindingResolver(
             .map { binding ->
                 val function = binding.function
                 val targetComponent = function.getClassFromSingleValueAnnotationOrNull(
-                    InjektFqNames.Scoped, pluginContext
+                    InjektFqNames.Given, pluginContext
                 )
                     ?: if (function is IrConstructor) function.constructedClass.getClassFromSingleValueAnnotationOrNull(
-                        InjektFqNames.Scoped, pluginContext
+                        InjektFqNames.Given, pluginContext
                     ) else null
 
                 val readerContext =

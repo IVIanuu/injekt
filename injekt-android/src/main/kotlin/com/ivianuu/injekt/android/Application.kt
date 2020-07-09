@@ -23,10 +23,10 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.DistinctType
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.Unscoped
 import com.ivianuu.injekt.componentFactory
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.given
 
 val Application.applicationComponent: ApplicationComponent
     get() = ProcessLifecycleOwner.get().lifecycle.singleton {
@@ -45,11 +45,11 @@ typealias ApplicationContext = Context
 typealias ApplicationResources = Resources
 
 object ApplicationModule {
-    @Unscoped
+    @Given
     @Reader
-    fun context(): ApplicationContext = get<Application>()
+    fun context(): ApplicationContext = given<Application>()
 
-    @Unscoped
+    @Given
     @Reader
-    fun resources(): ApplicationResources = get<Application>().resources
+    fun resources(): ApplicationResources = given<Application>().resources
 }

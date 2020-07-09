@@ -25,9 +25,9 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.DistinctType
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.Unscoped
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 
 @Component(parent = ActivityComponent::class)
@@ -41,7 +41,7 @@ interface FragmentComponent {
 val Fragment.fragmentComponent: FragmentComponent
     get() = lifecycle.singleton {
         activity!!.activityComponent.runReader {
-            get<FragmentComponent.Factory>().create(this)
+            given<FragmentComponent.Factory>().create(this)
         }
     }
 
@@ -57,23 +57,23 @@ typealias FragmentSavedStateRegistryOwner = SavedStateRegistryOwner
 typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
 
 object FragmentModule {
-    @Unscoped
+    @Given
     @Reader
-    fun context(): FragmentContext = get<Fragment>().requireContext()
+    fun context(): FragmentContext = given<Fragment>().requireContext()
 
-    @Unscoped
+    @Given
     @Reader
-    fun resources(): FragmentResources = get<FragmentContext>().resources
+    fun resources(): FragmentResources = given<FragmentContext>().resources
 
-    @Unscoped
+    @Given
     @Reader
-    fun lifecycleOwner(): FragmentLifecycleOwner = get<ComponentActivity>()
+    fun lifecycleOwner(): FragmentLifecycleOwner = given<ComponentActivity>()
 
-    @Unscoped
+    @Given
     @Reader
-    fun savedStateRegistryOwner(): FragmentSavedStateRegistryOwner = get<Fragment>()
+    fun savedStateRegistryOwner(): FragmentSavedStateRegistryOwner = given<Fragment>()
 
-    @Unscoped
+    @Given
     @Reader
-    fun viewModelStoreOwner(): FragmentViewModelStoreOwner = get<ViewModelStoreOwner>()
+    fun viewModelStoreOwner(): FragmentViewModelStoreOwner = given<ViewModelStoreOwner>()
 }
