@@ -21,12 +21,12 @@ import androidx.work.Configuration
 import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.ApplicationComponent
-import com.ivianuu.injekt.MapEntries
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.android.ApplicationContext
+import com.ivianuu.injekt.android.work.BindWorker
 import com.ivianuu.injekt.given
 
+@BindWorker
 @Reader
 class TestWorker(
     context: Context,
@@ -38,10 +38,6 @@ class TestWorker(
 
     override fun doWork(): Result = Result.success()
 }
-
-@MapEntries(ApplicationComponent::class)
-@Reader
-fun bindTestWorker() = worker<TestWorker>()
 
 @Reader
 fun initializeWorkers() {
