@@ -116,6 +116,22 @@ class MapBindingNode(
     null
 )
 
+class SetBindingNode(
+    key: Key,
+    contexts: List<IrClass>,
+    dependencies: List<BindingRequest>,
+    owner: ComponentImpl,
+    val functions: List<IrFunction>
+) : BindingNode(
+    key,
+    contexts,
+    dependencies,
+    null,
+    false,
+    owner,
+    null
+)
+
 class NullBindingNode(
     key: Key,
     owner: ComponentImpl

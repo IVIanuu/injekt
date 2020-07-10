@@ -272,6 +272,59 @@ class MapBindingResolver(
 
 }
 
+class SetBindingResolver(
+    parent: SetBindingResolver?,
+    private val pluginContext: IrPluginContext,
+    declarationGraph: DeclarationGraph,
+    private val component: ComponentImpl
+) : BindingResolver {
+
+    private val sets: Map<Key, List<SetElements>> =
+        mutableMapOf<Key, List<SetElements>>().also { mergedSet ->
+            if (parent != null) mergedSet += parent.sets
+
+            val thisMaps = declarationGraph.setElements
+                .filter {
+                    it.function.getClassFromSingleValueAnnotation(
+                        InjektFqNames.SetElements,
+                        pluginContext
+                    ) == component.factoryImpl.node.component
+                }
+                .groupBy { it.function.returnType.asKey() }
+
+            thisMaps.forEach { (mapKey, elements) ->
+                val existingElements = mergedSet[mapKey] ?: emptyList()
+                mergedSet[mapKey] = existingElements + elements
+            }
+        }
+
+    override fun invoke(requestedKey: Key): List<BindingNode> {
+        return sets[requestedKey]?.let { setElements ->
+            listOf(
+                SetBindingNode(
+                    requestedKey,
+                    setElements
+                        .mapNotNull {
+                            it.function.valueParameters.lastOrNull()
+                                ?.takeIf { it.name.asString() == "_context" }
+                                ?.let { it.type.classOrNull!!.owner }
+                        },
+                    setElements
+                        .mapNotNull {
+                            it.function.valueParameters.lastOrNull()
+                                ?.takeIf { it.name.asString() == "_context" }
+                                ?.let { component.factoryImpl.node.component.defaultType }
+                                ?.let { BindingRequest(it.asKey(), null, null) }
+                        },
+                    component,
+                    setElements.map { it.function }
+                )
+            )
+        } ?: emptyList()
+    }
+
+}
+
 class NoArgProviderBindingResolver(
     private val component: ComponentImpl
 ) : BindingResolver {

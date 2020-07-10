@@ -64,6 +64,7 @@ class ComponentExpressions(
             is MapBindingNode -> mapBindingExpression(binding) to false
             is NullBindingNode -> nullExpression(binding) to false
             is ProviderBindingNode -> providerExpression(binding) to true
+            is SetBindingNode -> setBindingExpression(binding) to false
         }.let { (expression, forceWrap) ->
             if (forceWrap || component.dependencyRequests.any {
                     it.second.key == binding.key
@@ -126,6 +127,51 @@ class ComponentExpressions(
                 }
 
                 +irGet(tmpMap)
+            }
+        }
+    }
+
+    private fun setBindingExpression(bindingNode: SetBindingNode): ComponentExpression {
+        return { c ->
+            irBlock {
+                val tmpSet = irTemporary(
+                    irCall(pluginContext.referenceFunctions(
+                        FqName("kotlin.collections.mutableSetOf")
+                    ).first { it.owner.valueParameters.isEmpty() })
+                )
+                val collectionType = pluginContext.referenceClass(
+                    FqName("kotlin.collections.Collection")
+                )
+                bindingNode.functions.forEach { function ->
+                    +irCall(
+                        tmpSet.type.classOrNull!!
+                            .functions
+                            .map { it.owner }
+                            .single {
+                                it.name.asString() == "addAll" &&
+                                        it.valueParameters.singleOrNull()?.type?.classOrNull == collectionType
+                            }
+                    ).apply {
+                        dispatchReceiver = irGet(tmpSet)
+                        putValueArgument(
+                            0,
+                            irCall(function).apply {
+                                if (function.dispatchReceiverParameter != null)
+                                    dispatchReceiver =
+                                        irGetObject(function.dispatchReceiverParameter!!.type.classOrNull!!)
+                                if (function.valueParameters.isNotEmpty()) {
+                                    putValueArgument(
+                                        0,
+                                        getBindingExpression(bindingNode.dependencies.first())
+                                            .invoke(this@irBlock, c)
+                                    )
+                                }
+                            }
+                        )
+                    }
+                }
+
+                +irGet(tmpSet)
             }
         }
     }
