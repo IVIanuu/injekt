@@ -20,7 +20,6 @@ import com.ivianuu.injekt.test.Command
 import com.ivianuu.injekt.test.CommandA
 import com.ivianuu.injekt.test.CommandB
 import com.ivianuu.injekt.test.CommandC
-import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertEquals
@@ -72,7 +71,7 @@ class MapTest {
     }
 
     @Test
-    fun testUndeclaredMap() = codegen(
+    fun testEmptyMap() = codegen(
         """
         fun invoke(): Map<KClass<out Command>, Command> {
             initializeComponents()
@@ -81,7 +80,9 @@ class MapTest {
         }
         """
     ) {
-        assertInternalError("no binding found")
+        val map =
+            invokeSingleFile<Map<KClass<out Command>, Command>>()
+        assertEquals(0, map.size)
     }
 
     @Test

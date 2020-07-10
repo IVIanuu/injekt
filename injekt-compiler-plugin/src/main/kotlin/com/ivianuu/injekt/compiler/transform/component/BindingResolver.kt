@@ -289,8 +289,23 @@ class MapBindingResolver(
         )
     }
 
-    override fun invoke(requestedKey: Key): List<BindingNode> = mapBindings
-        .filter { it.key == requestedKey }
+    override fun invoke(requestedKey: Key): List<BindingNode> {
+        return mapBindings
+            .filter { it.key == requestedKey }
+            .takeIf { it.isNotEmpty() }
+            ?: if (requestedKey.type.classOrNull == pluginContext.referenceClass(
+                    FqName("kotlin.collections.Map")
+                )
+            ) listOf(
+                MapBindingNode(
+                    requestedKey,
+                    emptyList(),
+                    emptyList(),
+                    component,
+                    emptyList()
+                )
+            ) else emptyList()
+    }
 
 }
 
@@ -341,8 +356,23 @@ class SetBindingResolver(
         )
     }
 
-    override fun invoke(requestedKey: Key): List<BindingNode> =
-        setBindings.filter { it.key == requestedKey }
+    override fun invoke(requestedKey: Key): List<BindingNode> {
+        return setBindings
+            .filter { it.key == requestedKey }
+            .takeIf { it.isNotEmpty() }
+            ?: if (requestedKey.type.classOrNull == pluginContext.referenceClass(
+                    FqName("kotlin.collections.Set")
+                )
+            ) listOf(
+                SetBindingNode(
+                    requestedKey,
+                    emptyList(),
+                    emptyList(),
+                    component,
+                    emptyList()
+                )
+            ) else emptyList()
+    }
 
 }
 

@@ -20,7 +20,6 @@ import com.ivianuu.injekt.test.Command
 import com.ivianuu.injekt.test.CommandA
 import com.ivianuu.injekt.test.CommandB
 import com.ivianuu.injekt.test.CommandC
-import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertEquals
@@ -71,7 +70,7 @@ class SetTest {
     }
 
     @Test
-    fun testUndeclaredSet() = codegen(
+    fun testEmptySet() = codegen(
         """
         fun invoke(): Set<Command> {
             initializeComponents()
@@ -80,7 +79,8 @@ class SetTest {
         }
         """
     ) {
-        assertInternalError("no binding found")
+        val set = invokeSingleFile<Set<Command>>().toList()
+        assertEquals(0, set.size)
     }
 
     @Test
