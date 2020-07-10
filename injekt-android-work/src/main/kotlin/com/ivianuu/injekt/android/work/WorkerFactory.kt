@@ -20,9 +20,7 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.MapEntries
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
 import kotlin.reflect.KClass
@@ -46,10 +44,6 @@ internal class InjektWorkerFactory(
 }
 
 object WorkerInjectionModule {
-    @MapEntries(ApplicationComponent::class)
-    fun workers() =
-        emptyMap<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>()
-
     @Given
     @Reader
     fun workerFactory(): WorkerFactory = given<InjektWorkerFactory>()
