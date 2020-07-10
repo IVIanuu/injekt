@@ -33,19 +33,9 @@ class GraphTest {
         @Given class Dep(bar: Bar)
         fun invoke() {
             initializeComponents()
-            component.runReader { get<Dep>() }
+            val component = componentFactory<TestComponent.Factory>().create()
+            component.runReader { given<Dep>() }
         }
-        """
-    ) {
-        assertInternalError("no binding")
-    }
-
-    // todo name
-    @Test
-    fun testCannotResolveDirectBindingWithAssistedParameters() = codegen(
-        """
-        @Given class Dep(bar: @Assisted Bar)
-        @Factory fun createDep(): TestComponent1<Dep> = create()
         """
     ) {
         assertInternalError("no binding")

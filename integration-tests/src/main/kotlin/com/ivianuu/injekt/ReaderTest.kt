@@ -162,7 +162,7 @@ class ReaderTest {
         fun foo() = Foo()
         
         @Reader
-        suspend fun func(foo: Foo = get()): Foo {
+        suspend fun func(foo: Foo = given()): Foo {
             delay(1000)
             return foo
         }
@@ -187,7 +187,7 @@ class ReaderTest {
         fun foo() = Foo()
         
         @Reader
-        suspend fun func(foo: Foo = get()): Foo {
+        suspend fun func(foo: Foo = given()): Foo {
             delay(1000)
             return foo
         }
@@ -261,7 +261,7 @@ class ReaderTest {
         fun foo() = Foo()
         
         @Reader
-        fun func(foo: Foo = get()): Foo {
+        fun func(foo: Foo = given()): Foo {
             return foo
         }
         
@@ -284,7 +284,7 @@ class ReaderTest {
         fun foo() = Foo()
         
         @Reader
-        fun withDefault(foo: Foo = get(), foo2: Foo = foo): Foo = foo
+        fun withDefault(foo: Foo = given(), foo2: Foo = foo): Foo = foo
         
         fun invoke(): Foo { 
             initializeComponents()
@@ -359,7 +359,7 @@ class ReaderTest {
         fun foo() = Foo()
         
         @Reader
-        val foo: Foo get() = get()
+        val foo: Foo get() = given()
         
         fun invoke(): Foo { 
             initializeComponents()
@@ -379,7 +379,7 @@ class ReaderTest {
                 fun foo() = Foo()
         
                 @Reader
-                val foo: Foo get() = get()
+                val foo: Foo get() = given()
             """
             )
         ),
@@ -558,27 +558,6 @@ class ReaderTest {
     }
 
     @Test
-    fun testReaderClassWithAssistedParameters() = codegen(
-        """
-        @Given fun foo() = Foo()
-        
-        @Reader
-        @Given
-        class FooFactory(val assisted: @Assisted String) {
-            fun getFoo() = given<Foo>()
-        }
-        
-        fun invoke(): Foo { 
-            initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
-            return component.runReader { given<@Provider (String) -> FooFactory>()("hello").getFoo() }
-        }
-    """
-    ) {
-        assertTrue(invokeSingleFile() is Foo)
-    }
-
-    @Test
     fun testReaderClassAccessesReaderFunctionInInit() = codegen(
         """
         @Given fun foo() = Foo()
@@ -586,7 +565,7 @@ class ReaderTest {
         @Reader
         @Given
         class FooFactory {
-            val foo: Foo = get()
+            val foo: Foo = given()
         }
         
         fun invoke(): Foo {
