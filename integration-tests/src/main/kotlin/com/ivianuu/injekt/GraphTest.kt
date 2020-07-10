@@ -20,6 +20,8 @@ import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertNull
@@ -89,6 +91,40 @@ class GraphTest {
     """
     ) {
         val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
+        assertNotSame(foo1, foo2)
+    }
+
+    @Test
+    fun testDistinctTypeAliasMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                @Distinct typealias Foo1 = Foo
+                @Given @Reader fun foo1(): Foo1 = Foo()
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                @Distinct typealias Foo2 = Foo
+                @Given @Reader fun foo2(): Foo2 = Foo() 
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                fun invoke(): Pair<Foo, Foo> {
+                    initializeComponents()
+                    val component = componentFactory<TestComponent.Factory>().create()
+                    return component.runReader { given<Foo1>() to given<Foo2>() }
+                } 
+            """, name = "File.kt"
+            )
+        )
+    ) {
+        val (foo1, foo2) = it.last().invokeSingleFile<Pair<Foo, Foo>>()
         assertNotSame(foo1, foo2)
     }
 

@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isTypeParameter
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -28,7 +29,6 @@ import org.jetbrains.kotlin.ir.types.IrErrorType
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -175,8 +175,8 @@ class Key(val type: IrType) {
 
     private val IrType.distinctedType: Any
         get() = (this as? IrSimpleType)?.abbreviation
-            ?.typeAlias?.owner?.symbol
-            ?.takeIf { it.owner.hasAnnotation(InjektFqNames.Distinct) }
+            ?.typeAlias
+            ?.takeIf { it.descriptor.hasAnnotation(InjektFqNames.Distinct) }
             ?: this
 
 }
