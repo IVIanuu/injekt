@@ -166,7 +166,8 @@ class ComponentTest {
     }
 
     @Test
-    fun testAnnotatedClass() = codegen("""
+    fun testGivenClass() = codegen(
+        """
         @Given
         @Reader 
         class AnnotatedBar {
@@ -181,17 +182,32 @@ class ComponentTest {
             componentFactory<TestComponent.Factory>().create()
         }
 
-        fun invoke(): AnnotatedBar = component.runReader { given<AnnotatedBar>() }
+        fun invoke() = component.runReader { given<AnnotatedBar>() }
     """
     ) {
-        assertNotSame(
-            invokeSingleFile(),
-            invokeSingleFile()
-        )
+        invokeSingleFile()
     }
 
     @Test
-    fun testComponentBinding() = codegen("""
+    fun testGivenProperty() = codegen(
+        """
+        @Given
+        val foo = Foo()
+        
+        val component by lazy {
+            initializeComponents()
+            componentFactory<TestComponent.Factory>().create()
+        }
+
+        fun invoke() = component.runReader { given<Foo>() }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testComponentBinding() = codegen(
+        """
         fun invoke(): Pair<TestComponent, TestComponent> {
             initializeComponents()
             val component = componentFactory<TestComponent.Factory>().create()

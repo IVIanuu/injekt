@@ -21,24 +21,15 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.ApplicationComponent
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.MapEntries
+import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.given
 import kotlin.reflect.KClass
-
-@BindingAdapter(ApplicationComponent::class)
-annotation class BindWorker {
-    companion object {
-        @Module
-        inline operator fun <reified T : ListenableWorker> invoke() {
-            unscoped<T>()
-            map<KClass<out ListenableWorker>, @Provider (Context, WorkerParameters) -> ListenableWorker> {
-                put<@Provider (Context, WorkerParameters) -> T>(T::class)
-            }
-        }
-    }
-}
 
 @Given
 internal class InjektWorkerFactory(
-    private val workers: Map<KClass<out ListenableWorker>, @Provider (Context, WorkerParameters) -> ListenableWorker>
+    private val workers: Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
 ) : WorkerFactory() {
 
     override fun createWorker(
@@ -51,9 +42,12 @@ internal class InjektWorkerFactory(
     }
 }
 
-@Module
-fun WorkerInjectionModule() {
-    installIn<ApplicationComponent>()
-    map<KClass<out ListenableWorker>, ListenableWorker>()
-    alias<InjektWorkerFactory, WorkerFactory>()
+object WorkerInjectionModule {
+    @MapEntries(ApplicationComponent::class)
+    fun workers() =
+        emptyMap<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>()
+
+    @Given
+    @Reader
+    fun workerFactory(): WorkerFactory = given<InjektWorkerFactory>()
 }

@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
@@ -105,11 +106,15 @@ class DeclarationGraph(
                     .map { it.owner } +
                         (pluginContext.referenceClass(it)?.constructors
                             ?.map { it.owner }
-                            ?.toList() ?: emptyList())
+                            ?.toList() ?: emptyList()) +
+                        pluginContext.referenceProperties(it)
+                            .mapNotNull { it.owner.getter }
             }
             .filter {
                 it.hasAnnotation(InjektFqNames.Given) ||
-                        (it is IrConstructor && it.constructedClass.hasAnnotation(InjektFqNames.Given))
+                        (it is IrConstructor && it.constructedClass.hasAnnotation(InjektFqNames.Given) ||
+                                it is IrSimpleFunction &&
+                                it.correspondingPropertySymbol?.owner?.hasAnnotation(InjektFqNames.Given) == true)
             }
             .filter {
                 !it.hasAnnotation(InjektFqNames.Reader) ||

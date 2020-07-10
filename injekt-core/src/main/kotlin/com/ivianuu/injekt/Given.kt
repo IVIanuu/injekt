@@ -22,7 +22,8 @@ import kotlin.reflect.KClass
 @Target(
     AnnotationTarget.FUNCTION,
     AnnotationTarget.CLASS,
-    AnnotationTarget.CONSTRUCTOR
+    AnnotationTarget.CONSTRUCTOR,
+    AnnotationTarget.PROPERTY
 )
 annotation class Given(val component: KClass<*> = Nothing::class)
 

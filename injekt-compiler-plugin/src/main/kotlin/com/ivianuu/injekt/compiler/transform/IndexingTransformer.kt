@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -72,6 +73,13 @@ class IndexingTransformer(pluginContext: IrPluginContext) :
                     declarations += declaration
                 }
                 return super.visitClass(declaration)
+            }
+
+            override fun visitProperty(declaration: IrProperty): IrStatement {
+                if (declaration.hasAnnotation(InjektFqNames.Given)) {
+                    declarations += declaration
+                }
+                return super.visitProperty(declaration)
             }
         })
 
