@@ -243,7 +243,7 @@ class ReaderTransformer(
                     .filter { it.hasAnnotation(InjektFqNames.Name) }
                     .single {
                         it.annotations.findAnnotation(InjektFqNames.Name)!!
-                            .argumentValue("name")
+                            .argumentValue("value")
                             .let { it as StringValue }
                             .value == clazz.uniqueName()
                     }
@@ -527,7 +527,7 @@ class ReaderTransformer(
                     .filter { it.hasAnnotation(InjektFqNames.Name) }
                     .single {
                         it.annotations.findAnnotation(InjektFqNames.Name)!!
-                            .argumentValue("name")
+                            .argumentValue("value")
                             .let { it as StringValue }
                             .value == transformedFunction.uniqueName()
                     }
