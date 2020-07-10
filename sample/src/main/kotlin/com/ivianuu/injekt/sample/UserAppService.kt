@@ -16,10 +16,12 @@
 
 package com.ivianuu.injekt.sample
 
+import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.SetElements
 
-@BindAppService
+@SetElements(ApplicationComponent::class)
 @Reader
-suspend fun runUserAppService() {
+fun userAppService(): AppService = {
     println("run")
 }

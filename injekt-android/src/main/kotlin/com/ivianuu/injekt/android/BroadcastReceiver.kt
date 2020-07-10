@@ -20,34 +20,22 @@ import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import com.ivianuu.injekt.ApplicationComponent
-import com.ivianuu.injekt.ChildFactory
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.composition.CompositionComponent
-import com.ivianuu.injekt.composition.CompositionFactory
-import com.ivianuu.injekt.composition.parent
-import com.ivianuu.injekt.composition.runReader
-import com.ivianuu.injekt.create
-import com.ivianuu.injekt.get
-import com.ivianuu.injekt.unscoped
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.given
+import com.ivianuu.injekt.runReader
 
-@Target(AnnotationTarget.TYPE)
-@Qualifier
-annotation class ForReceiver
-
-@CompositionComponent
-interface ReceiverComponent
+@Component(parent = ApplicationComponent::class)
+interface ReceiverComponent {
+    @Component.Factory
+    interface Factory {
+        fun create(instance: BroadcastReceiver): ReceiverComponent
+    }
+}
 
 fun BroadcastReceiver.newReceiverComponent(
     context: Context
 ): ReceiverComponent {
     return (context.applicationContext as Application).applicationComponent.runReader {
-        get<@ChildFactory (BroadcastReceiver) -> ReceiverComponent>()(this)
+        given<ReceiverComponent.Factory>().create(this)
     }
-}
-
-@CompositionFactory
-fun createReceiverComponent(instance: BroadcastReceiver): ReceiverComponent {
-    parent<ApplicationComponent>()
-    unscoped { instance }
-    return create()
 }

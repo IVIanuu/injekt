@@ -23,23 +23,15 @@ import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.platform.TargetPlatform
 
 class InjektStorageContainerContributor(
-    private val typeAnnotationChecker: TypeAnnotationChecker
+    private val readerChecker: ReaderChecker
 ) : StorageComponentContainerContributor {
     override fun registerModuleComponents(
         container: StorageComponentContainer,
         platform: TargetPlatform,
         moduleDescriptor: ModuleDescriptor
     ) {
-        container.useInstance(AnnotatedBindingChecker())
-        container.useInstance(BindingEffectChecker())
-        container.useInstance(CompositionComponentChecker())
-        container.useInstance(DslCallChecker())
-        container.useInstance(FactoryChecker())
-        container.useInstance(MapChecker())
-        container.useInstance(ModuleChecker())
-        container.useInstance(QualifierChecker())
-        container.useInstance(ReaderChecker(typeAnnotationChecker))
-        container.useInstance(SetChecker())
-        container.useInstance(typeAnnotationChecker)
+        container.useInstance(GivenChecker())
+        container.useInstance(ComponentChecker())
+        container.useInstance(readerChecker)
     }
 }

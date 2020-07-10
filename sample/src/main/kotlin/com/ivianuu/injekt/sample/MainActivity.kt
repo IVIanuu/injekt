@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.sample
 
-import android.content.Context
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.Composable
@@ -25,12 +24,11 @@ import androidx.lifecycle.ViewModel
 import androidx.ui.core.setContent
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import com.ivianuu.injekt.android.ActivityViewModel
-import com.ivianuu.injekt.android.ForActivity
-import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.get
-import com.ivianuu.injekt.composition.runReader
+import com.ivianuu.injekt.android.ActivityContext
+import com.ivianuu.injekt.android.activityComponent
+import com.ivianuu.injekt.given
+import com.ivianuu.injekt.runReader
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
@@ -48,26 +46,27 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
 }
 
 @Reader
 @Composable
 fun WithMainViewModel(children: @Composable (MainViewModel) -> Unit) {
-    val viewModel = remember { get<MainViewModel>() }
+    val viewModel = remember { given<MainViewModel>() }
     children(viewModel)
 }
 
 @Reader
 private fun enqueueWork() {
-    WorkManager.getInstance(get<@ForActivity Context>())
+    WorkManager.getInstance(given<ActivityContext>())
         .enqueue(
             OneTimeWorkRequestBuilder<TestWorker>()
                 .build()
         )
 }
 
-@ActivityViewModel
-class MainViewModel(private val repo: Repo) : ViewModel() {
+@Reader
+class MainViewModel : ViewModel() {
     init {
         println("init ")
     }

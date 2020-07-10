@@ -20,35 +20,38 @@ import android.app.Service
 import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.ApplicationComponent
-import com.ivianuu.injekt.ChildFactory
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.alias
-import com.ivianuu.injekt.composition.CompositionComponent
-import com.ivianuu.injekt.composition.CompositionFactory
-import com.ivianuu.injekt.get
-import com.ivianuu.injekt.composition.parent
-import com.ivianuu.injekt.composition.runReader
-import com.ivianuu.injekt.create
-import com.ivianuu.injekt.unscoped
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.Distinct
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.given
+import com.ivianuu.injekt.runReader
 
-@Target(AnnotationTarget.TYPE)
-@Qualifier
-annotation class ForService
-
-@CompositionComponent
-interface ServiceComponent
-
-fun Service.newServiceComponent(): ServiceComponent {
-    return application.applicationComponent.runReader {
-        get<@ChildFactory (Service) -> ServiceComponent>()(this)
+@Component(parent = ApplicationComponent::class)
+interface ServiceComponent {
+    @Component.Factory
+    interface Factory {
+        fun create(instance: Service): ServiceComponent
     }
 }
 
-@CompositionFactory
-fun createServiceComponent(instance: Service): ServiceComponent {
-    parent<ApplicationComponent>()
-    unscoped { instance }
-    alias<Service, @ForService Context>()
-    unscoped<@ForService Resources> { get<Service>().resources }
-    return create()
+fun Service.newServiceComponent(): ServiceComponent {
+    return application.applicationComponent.runReader {
+        given<ServiceComponent.Factory>().create(this)
+    }
+}
+
+@Distinct
+typealias ServiceContext = Context
+@Distinct
+typealias ServiceResources = Resources
+
+object ServiceModule {
+    @Given
+    @Reader
+    fun context(): ServiceContext = given<Service>()
+
+    @Given
+    @Reader
+    fun resources(): ServiceResources = given<Service>().resources
 }

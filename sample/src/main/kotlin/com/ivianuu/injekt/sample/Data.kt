@@ -16,41 +16,37 @@
 
 package com.ivianuu.injekt.sample
 
-import android.content.Context
 import com.ivianuu.injekt.ApplicationComponent
-import com.ivianuu.injekt.ForApplication
-import com.ivianuu.injekt.Module
-import com.ivianuu.injekt.Qualifier
+import com.ivianuu.injekt.Distinct
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.Scoped
-import com.ivianuu.injekt.composition.installIn
-import com.ivianuu.injekt.get
-import com.ivianuu.injekt.unscoped
+import com.ivianuu.injekt.android.ApplicationContext
+import com.ivianuu.injekt.given
 import java.io.File
 
-@Module
-fun DataModule() {
-    installIn<ApplicationComponent>()
-    unscoped<@DatabaseFile File> { get<@ForApplication Context>().cacheDir }
-}
+@Distinct
+typealias DatabaseFile = File
 
-@Target(AnnotationTarget.TYPE)
-@Qualifier
-annotation class DatabaseFile
+@Given
+@Reader
+fun databaseFile(): DatabaseFile = given<ApplicationContext>().cacheDir
 
-@Scoped(ApplicationComponent::class)
-class Database(private val file: @DatabaseFile File)
+@Given(ApplicationComponent::class)
+class Database(private val file: DatabaseFile)
 
-@Scoped(ApplicationComponent::class)
-class Repo(private val database: Database, private val api: Api) {
+@Given(ApplicationComponent::class)
+class Repo(
+    private val database: Database = given(),
+    private val api: Api = given()
+) {
     fun refresh() {
     }
 }
 
 @Reader
 fun refreshRepo() {
-    get<Repo>().refresh()
+    given<Repo>().refresh()
 }
 
-@Scoped(ApplicationComponent::class)
+@Given(ApplicationComponent::class)
 class Api

@@ -20,16 +20,17 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.ivianuu.injekt.ApplicationComponent
-import com.ivianuu.injekt.ChildFactory
-import com.ivianuu.injekt.composition.CompositionComponent
-import com.ivianuu.injekt.composition.CompositionFactory
-import com.ivianuu.injekt.get
-import com.ivianuu.injekt.composition.parent
-import com.ivianuu.injekt.composition.runReader
-import com.ivianuu.injekt.create
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.given
+import com.ivianuu.injekt.runReader
 
-@CompositionComponent
-interface RetainedActivityComponent
+@Component(parent = ApplicationComponent::class)
+interface RetainedActivityComponent {
+    @Component.Factory
+    interface Factory {
+        fun create(): RetainedActivityComponent
+    }
+}
 
 val ComponentActivity.retainedActivityComponent: RetainedActivityComponent
     get() {
@@ -39,19 +40,13 @@ val ComponentActivity.retainedActivityComponent: RetainedActivityComponent
         synchronized(holder) {
             if (holder.component == null) {
                 holder.component = application.applicationComponent.runReader {
-                    get<@ChildFactory () -> RetainedActivityComponent>()()
+                    given<RetainedActivityComponent.Factory>().create()
                 }
             }
         }
 
         return holder.component!!
     }
-
-@CompositionFactory
-fun createRetainedActivityComponent(): RetainedActivityComponent {
-    parent<ApplicationComponent>()
-    return create()
-}
 
 private class RetainedActivityComponentHolder : ViewModel() {
     var component: RetainedActivityComponent? = null

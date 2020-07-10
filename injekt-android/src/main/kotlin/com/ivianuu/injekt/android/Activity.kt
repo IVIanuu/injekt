@@ -22,39 +22,57 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
-import com.ivianuu.injekt.ChildFactory
-import com.ivianuu.injekt.Qualifier
-import com.ivianuu.injekt.alias
-import com.ivianuu.injekt.composition.CompositionComponent
-import com.ivianuu.injekt.composition.CompositionFactory
-import com.ivianuu.injekt.get
-import com.ivianuu.injekt.composition.parent
-import com.ivianuu.injekt.composition.runReader
-import com.ivianuu.injekt.create
-import com.ivianuu.injekt.unscoped
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.Distinct
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.given
+import com.ivianuu.injekt.runReader
 
-@Target(AnnotationTarget.TYPE)
-@Qualifier
-annotation class ForActivity
-
-@CompositionComponent
-interface ActivityComponent
+@Component(parent = RetainedActivityComponent::class)
+interface ActivityComponent {
+    @Component.Factory
+    interface Factory {
+        fun create(instance: ComponentActivity): ActivityComponent
+    }
+}
 
 val ComponentActivity.activityComponent: ActivityComponent
     get() = lifecycle.singleton {
         retainedActivityComponent.runReader {
-            get<@ChildFactory (ComponentActivity) -> ActivityComponent>()(this)
+            given<ActivityComponent.Factory>().create(this)
         }
     }
 
-@CompositionFactory
-fun createActivityComponent(instance: ComponentActivity): ActivityComponent {
-    parent<RetainedActivityComponent>()
-    unscoped { instance }
-    alias<ComponentActivity, @ForActivity Context>()
-    unscoped<@ForActivity Resources> { get<ComponentActivity>().resources }
-    alias<ComponentActivity, @ForActivity LifecycleOwner>()
-    alias<ComponentActivity, @ForActivity SavedStateRegistryOwner>()
-    alias<ComponentActivity, @ForActivity ViewModelStoreOwner>()
-    return create()
+@Distinct
+typealias ActivityContext = Context
+@Distinct
+typealias ActivityResources = Resources
+@Distinct
+typealias ActivityLifecycleOwner = LifecycleOwner
+@Distinct
+typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
+@Distinct
+typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
+
+object ActivityModule {
+    @Given
+    @Reader
+    fun context(): ActivityContext = given<ComponentActivity>()
+
+    @Given
+    @Reader
+    fun resources(): ActivityResources = given<ActivityContext>().resources
+
+    @Given
+    @Reader
+    fun lifecycleOwner(): ActivityLifecycleOwner = given<ComponentActivity>()
+
+    @Given
+    @Reader
+    fun savedStateRegistryOwner(): ActivitySavedStateRegistryOwner = given<ComponentActivity>()
+
+    @Given
+    @Reader
+    fun viewModelStoreOwner(): ActivityViewModelStoreOwner = given<ComponentActivity>()
 }

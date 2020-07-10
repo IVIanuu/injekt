@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.reader
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.analysis.TypeAnnotationChecker
+import com.ivianuu.injekt.compiler.analysis.ReaderChecker
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrDelegatingConstructorCall
@@ -29,13 +29,10 @@ import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 
 fun IrFunction.isReader(bindingContext: BindingContext): Boolean {
     if (hasAnnotation(InjektFqNames.Reader)) return true
-    val typeAnnotationChecker = TypeAnnotationChecker()
+    val readerChecker = ReaderChecker()
     val bindingTrace = DelegatingBindingTrace(bindingContext, "Injekt IR")
     return try {
-        typeAnnotationChecker.hasTypeAnnotation(
-            bindingTrace, descriptor,
-            InjektFqNames.Reader
-        )
+        readerChecker.isReader(descriptor, bindingTrace)
     } catch (e: Exception) {
         false
     }

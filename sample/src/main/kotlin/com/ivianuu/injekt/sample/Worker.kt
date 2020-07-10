@@ -21,29 +21,32 @@ import androidx.work.Configuration
 import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.Assisted
-import com.ivianuu.injekt.ForApplication
+import com.ivianuu.injekt.ApplicationComponent
+import com.ivianuu.injekt.MapEntries
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.android.work.BindWorker
-import com.ivianuu.injekt.get
+import com.ivianuu.injekt.android.ApplicationContext
+import com.ivianuu.injekt.android.work.worker
+import com.ivianuu.injekt.given
 
-@BindWorker
+@Reader
 class TestWorker(
-    context: @Assisted Context,
-    workerParams: @Assisted WorkerParameters,
-    repo: Repo
+    context: Context,
+    workerParams: WorkerParameters
 ) : Worker(context, workerParams) {
     init {
-        println("hello $context $workerParams $repo")
+        println("hello $context $workerParams ${given<Repo>()}")
     }
 
     override fun doWork(): Result = Result.success()
 }
 
+@MapEntries(ApplicationComponent::class)
+fun testWorkerIntoMap() = worker<TestWorker>()
+
 @Reader
 fun initializeWorkers() {
     WorkManager.initialize(
-        get<@ForApplication Context>(), Configuration.Builder()
-            .setWorkerFactory(get()).build()
+        given<ApplicationContext>(), Configuration.Builder()
+            .setWorkerFactory(given()).build()
     )
 }

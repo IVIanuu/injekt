@@ -16,107 +16,33 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.compositionsEnabled
 import com.ivianuu.injekt.compiler.dumpSrc
-import com.ivianuu.injekt.compiler.transform.composition.BindingEffectTransformer
-import com.ivianuu.injekt.compiler.transform.composition.CompositionFactoryParentTransformer
-import com.ivianuu.injekt.compiler.transform.composition.CompositionMetadataTransformer
-import com.ivianuu.injekt.compiler.transform.composition.EntryPointOfTransformer
-import com.ivianuu.injekt.compiler.transform.composition.GenerateCompositionsTransformer
+import com.ivianuu.injekt.compiler.transform.component.ComponentReaderTransformer
+import com.ivianuu.injekt.compiler.transform.component.ComponentTransformer
 import com.ivianuu.injekt.compiler.transform.reader.ReaderTransformer
-import com.ivianuu.injekt.compiler.transform.composition.CompositionComponentReaderCallTransformer
-import com.ivianuu.injekt.compiler.transform.factory.FactoryModuleTransformer
-import com.ivianuu.injekt.compiler.transform.factory.RootFactoryTransformer
-import com.ivianuu.injekt.compiler.transform.module.ModuleTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
-import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
-import org.jetbrains.kotlin.ir.symbols.IrPropertySymbol
-import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
-import org.jetbrains.kotlin.name.FqName
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val symbolRemapper = DeepCopySymbolRemapper()
+        val pluginContext = InjektPluginContext(moduleFragment, pluginContext, symbolRemapper)
 
-        val pluginContext = object : IrPluginContext by pluginContext {
-            override fun referenceClass(fqName: FqName): IrClassSymbol? {
-                return pluginContext.referenceClass(fqName)
-                    ?.let { symbolRemapper.getReferencedClass(it) }
-            }
+        ReaderTransformer(pluginContext, symbolRemapper).doLower(moduleFragment)
+        IndexingTransformer(pluginContext).doLower(moduleFragment)
 
-            override fun referenceConstructors(classFqn: FqName): Collection<IrConstructorSymbol> {
-                return pluginContext.referenceConstructors(classFqn)
-                    .map { symbolRemapper.getReferencedConstructor(it) }
-            }
+        ComponentReaderTransformer(pluginContext).doLower(moduleFragment)
+        ComponentTransformer(pluginContext).doLower(moduleFragment)
+        TmpMetadataPatcher(pluginContext).doLower(moduleFragment)
 
-            override fun referenceFunctions(fqName: FqName): Collection<IrSimpleFunctionSymbol> {
-                return pluginContext.referenceFunctions(fqName)
-                    .map { symbolRemapper.getReferencedSimpleFunction(it) }
-            }
+        try {
+            println(moduleFragment.dumpSrc())
+        } catch (e: Exception) {
 
-            override fun referenceProperties(fqName: FqName): Collection<IrPropertySymbol> {
-                return pluginContext.referenceProperties(fqName)
-                    .map { symbolRemapper.getReferencedProperty(it) }
-            }
         }
-
-        val declarationStore = InjektDeclarationStore(pluginContext)
-
-        val readerFunctionTransformer = ReaderTransformer(pluginContext, symbolRemapper)
-            .also { declarationStore.readerTransformer = it }
-        readerFunctionTransformer.lower(moduleFragment)
-
-        val moduleFunctionTransformer = ModuleTransformer(pluginContext, declarationStore)
-            .also { declarationStore.moduleFunctionTransformer = it }
-        val factoryModuleTransformer = FactoryModuleTransformer(
-            pluginContext
-        ).also { declarationStore.factoryModuleTransformer = it }
-        val factoryTransformer = RootFactoryTransformer(
-            pluginContext,
-            declarationStore
-        ).also { declarationStore.factoryTransformer = it }
-
-        if (pluginContext.compositionsEnabled) {
-            BindingEffectTransformer(pluginContext, declarationStore).lower(moduleFragment)
-
-            CompositionComponentReaderCallTransformer(
-                pluginContext
-            ).lower(moduleFragment)
-
-            // generate a @Module entryPointModule() { entryPoint<T>() } module at each call site of entryPointOf<T>()
-            EntryPointOfTransformer(pluginContext).lower(moduleFragment)
-
-            // add @Parents annotation to @CompositionFactory functions
-            CompositionFactoryParentTransformer(pluginContext)
-                .lower(moduleFragment)
-
-            CompositionMetadataTransformer(pluginContext)
-                .also { declarationStore.compositionMetadataTransformer = it }
-                .lower(moduleFragment)
-
-            // generate composition factories
-            GenerateCompositionsTransformer(
-                pluginContext, declarationStore
-            ).lower(moduleFragment)
-        }
-
-        // move the module block of a @Factory function to a separate @Module function
-        factoryModuleTransformer.lower(moduleFragment)
-
-        // transform @Module functions
-        moduleFunctionTransformer.lower(moduleFragment)
-        readerFunctionTransformer.addContextClassesToFiles()
-
-        // generate factory implementations
-        factoryTransformer.lower(moduleFragment)
-
-        // patch metadata
-        TmpMetadataPatcher(pluginContext).lower(moduleFragment)
     }
 
 }
