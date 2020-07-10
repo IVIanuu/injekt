@@ -49,7 +49,6 @@ class ComponentGraph(
     private val bindingsResolvers = listOf(
         InputParameterBindingResolver(inputParameters, component),
         GivenBindingResolver(context, declarationGraph, component),
-        NoArgProviderBindingResolver(component),
         ComponentImplBindingResolver(component),
         ChildComponentFactoryBindingResolver(component),
         mapBindingResolver,

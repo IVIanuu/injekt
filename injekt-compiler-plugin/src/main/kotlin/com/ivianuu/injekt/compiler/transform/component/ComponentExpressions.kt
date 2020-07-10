@@ -63,7 +63,6 @@ class ComponentExpressions(
             is InputParameterBindingNode -> inputParameterExpression(binding) to false
             is MapBindingNode -> mapBindingExpression(binding) to false
             is NullBindingNode -> nullExpression(binding) to false
-            is ProviderBindingNode -> providerExpression(binding) to true
             is SetBindingNode -> setBindingExpression(binding) to false
         }.let { (expression, forceWrap) ->
             if (forceWrap || component.dependencyRequests.any {
@@ -178,14 +177,6 @@ class ComponentExpressions(
 
     private fun nullExpression(binding: NullBindingNode): ComponentExpression =
         { irNull() }
-
-    private fun providerExpression(binding: ProviderBindingNode): ComponentExpression {
-        val dependency = getBindingExpression(binding.dependencies.single())
-        return { c ->
-            DeclarationIrBuilder(pluginContext, scope.scopeOwnerSymbol)
-                .irLambda(binding.key.type) { dependency(this, c) }
-        }
-    }
 
     private fun givenExpression(binding: GivenBindingNode): ComponentExpression {
         val dependencies = binding.dependencies

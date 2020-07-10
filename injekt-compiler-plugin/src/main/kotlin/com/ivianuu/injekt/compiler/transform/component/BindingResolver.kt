@@ -42,7 +42,6 @@ import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.hasDefaultValue
 import org.jetbrains.kotlin.ir.util.isFakeOverride
-import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -345,26 +344,6 @@ class SetBindingResolver(
     override fun invoke(requestedKey: Key): List<BindingNode> =
         setBindings.filter { it.key == requestedKey }
 
-}
-
-class NoArgProviderBindingResolver(
-    private val component: ComponentImpl
-) : BindingResolver {
-    override fun invoke(requestedKey: Key): List<BindingNode> {
-        val requestedType = requestedKey.type
-        return when {
-            requestedType.isFunction() &&
-                    requestedType.typeArguments.size == 1 ->
-                listOf(
-                    ProviderBindingNode(
-                        requestedKey,
-                        component,
-                        null
-                    )
-                )
-            else -> emptyList()
-        }
-    }
 }
 
 class ComponentImplBindingResolver(

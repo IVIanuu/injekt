@@ -18,8 +18,6 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.isTypeParameter
-import com.ivianuu.injekt.compiler.typeArguments
-import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -142,26 +140,6 @@ class NullBindingNode(
     false,
     owner,
     null
-)
-
-class ProviderBindingNode(
-    key: Key,
-    owner: ComponentImpl,
-    origin: FqName?,
-) : BindingNode(
-    key,
-    emptyList(),
-    listOf(
-        BindingRequest(
-            key.type.typeArguments.single().typeOrFail.asKey(),
-            key,
-            origin
-        )
-    ),
-    null,
-    false,
-    owner,
-    origin
 )
 
 fun IrType.asKey(): Key = Key(this)
