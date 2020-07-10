@@ -23,15 +23,12 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 @Distinct
-typealias AppService = suspend () -> Unit
-
-@Distinct
-typealias AppServices = Set<AppService>
+typealias AppServices = Set<suspend () -> Unit>
 
 @Reader
 fun startAppServices() {
     println("app service init")
-    given<Set<AppService>>().forEach { service ->
+    given<AppServices>().forEach { service ->
         GlobalScope.launch { service() }
     }
 }

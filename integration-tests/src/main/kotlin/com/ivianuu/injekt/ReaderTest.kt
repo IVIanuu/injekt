@@ -579,36 +579,6 @@ class ReaderTest {
     }
 
     @Test
-    fun testReaderClassWithAssistedParametersMulti() = multiCodegen(
-        listOf(
-            source(
-                """
-                @Given fun foo() = Foo()
-        
-                @Reader
-                @Given
-                class FooFactory(val assisted: @Assisted String) {
-                    fun getFoo() = given<Foo>()
-                }
-            """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    fun invoke(): Foo { 
-                        initializeComponents()
-                        val component = componentFactory<TestComponent.Factory>().create()
-                        return component.runReader { given<@Provider (String) -> FooFactory>()("hello").getFoo() }
-                    }
-            """, name = "File.kt"
-            )
-        )
-    ) {
-        assertTrue(it.last().invokeSingleFile() is Foo)
-    }
-
-    @Test
     fun testReaderWithSameName() = codegen(
         """
         @Reader

@@ -18,30 +18,28 @@ package com.ivianuu.injekt.sample
 
 import android.content.Context
 import androidx.work.Configuration
+import androidx.work.CoroutineWorker
 import androidx.work.WorkManager
-import androidx.work.Worker
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.ApplicationComponent
-import com.ivianuu.injekt.MapEntries
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.android.ApplicationContext
-import com.ivianuu.injekt.android.work.worker
+import com.ivianuu.injekt.android.work.GivenWorker
 import com.ivianuu.injekt.given
 
+@GivenWorker
 @Reader
 class TestWorker(
     context: Context,
     workerParams: WorkerParameters
-) : Worker(context, workerParams) {
+) : CoroutineWorker(context, workerParams) {
+
     init {
         println("hello $context $workerParams ${given<Repo>()}")
     }
 
-    override fun doWork(): Result = Result.success()
-}
+    override suspend fun doWork(): Result = Result.success()
 
-@MapEntries(ApplicationComponent::class)
-fun testWorkerIntoMap() = worker<TestWorker>()
+}
 
 @Reader
 fun initializeWorkers() {

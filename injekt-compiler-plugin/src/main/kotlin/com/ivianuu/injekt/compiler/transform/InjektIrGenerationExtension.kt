@@ -31,11 +31,12 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         val symbolRemapper = DeepCopySymbolRemapper()
         val pluginContext = InjektPluginContext(moduleFragment, pluginContext, symbolRemapper)
 
-        ReaderTransformer(pluginContext, symbolRemapper).doLower(moduleFragment)
+        val readerTransformer = ReaderTransformer(pluginContext, symbolRemapper)
+        readerTransformer.doLower(moduleFragment)
         IndexingTransformer(pluginContext).doLower(moduleFragment)
 
         ComponentReaderTransformer(pluginContext).doLower(moduleFragment)
-        ComponentTransformer(pluginContext).doLower(moduleFragment)
+        ComponentTransformer(pluginContext, readerTransformer).doLower(moduleFragment)
         TmpMetadataPatcher(pluginContext).doLower(moduleFragment)
 
         try {

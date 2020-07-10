@@ -20,6 +20,8 @@ import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
@@ -87,6 +89,57 @@ class ComponentTest {
     """
     ) {
         assertTrue(invokeSingleFile() is Bar)
+    }
+
+    @Test
+    fun testSimpleWithChildMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                @Component
+                interface ParentComponent {
+                    @Component.Factory
+                    interface Factory {
+                        fun create(): ParentComponent
+                    }
+                }
+                
+                @Given(ParentComponent::class) @Reader
+                fun foo() = Foo()
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                @Component(parent = ParentComponent::class)
+                interface ChildComponent {
+                    @Component.Factory
+                    interface Factory {
+                        fun create(): ChildComponent 
+                    }
+                }
+                
+                @Given @Reader
+                fun bar() = Bar(given())
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                fun invoke(): Bar {
+                    initializeComponents()
+                    val childComponent = componentFactory<ParentComponent.Factory>().create().runReader {
+                        given<ChildComponent.Factory>().create()
+                    }
+                return childComponent.runReader { given<Bar>() }
+        } 
+            """, name = "File.kt"
+            )
+        )
+    ) {
+        assertTrue(it.last().invokeSingleFile() is Bar)
     }
 
     @Test

@@ -144,6 +144,9 @@ class ReaderTransformer(
     fun getContextForFunction(reader: IrFunction): IrClass =
         transformFunctionIfNeeded(reader).valueParameters.last().type.classOrNull!!.owner
 
+    fun getTransformedFunction(reader: IrFunction) =
+        transformFunctionIfNeeded(reader)
+
     override fun lower() {
         module.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitClass(declaration: IrClass): IrStatement =

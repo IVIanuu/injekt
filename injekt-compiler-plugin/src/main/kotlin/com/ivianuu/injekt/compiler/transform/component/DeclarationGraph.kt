@@ -19,6 +19,8 @@ package com.ivianuu.injekt.compiler.transform.component
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.indexPackageFile
+import com.ivianuu.injekt.compiler.isExternalDeclaration
+import com.ivianuu.injekt.compiler.transform.reader.ReaderTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -36,7 +38,8 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class DeclarationGraph(
     private val module: IrModuleFragment,
-    private val pluginContext: IrPluginContext
+    private val pluginContext: IrPluginContext,
+    private val readerTransformer: ReaderTransformer
 ) {
 
     private val _componentFactories = mutableListOf<ComponentFactory>()
@@ -112,6 +115,11 @@ class DeclarationGraph(
                         pluginContext.referenceProperties(it)
                             .mapNotNull { it.owner.getter }
             }
+            .map {
+                if (it.isExternalDeclaration()) readerTransformer.getTransformedFunction(it)
+                else it
+            }
+            .distinct()
             .filter {
                 it.hasAnnotation(InjektFqNames.Given) ||
                         (it is IrConstructor && it.constructedClass.hasAnnotation(InjektFqNames.Given) ||
@@ -129,6 +137,11 @@ class DeclarationGraph(
         indices
             .flatMapFix { pluginContext.referenceFunctions(it) }
             .map { it.owner }
+            .map {
+                if (it.isExternalDeclaration()) readerTransformer.getTransformedFunction(it)
+                else it
+            }
+            .distinct()
             .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
             .filter {
                 !it.hasAnnotation(InjektFqNames.Reader) ||
@@ -141,6 +154,11 @@ class DeclarationGraph(
         indices
             .flatMapFix { pluginContext.referenceFunctions(it) }
             .map { it.owner }
+            .map {
+                if (it.isExternalDeclaration()) readerTransformer.getTransformedFunction(it)
+                else it
+            }
+            .distinct()
             .filter { it.hasAnnotation(InjektFqNames.SetElements) }
             .filter {
                 !it.hasAnnotation(InjektFqNames.Reader) ||

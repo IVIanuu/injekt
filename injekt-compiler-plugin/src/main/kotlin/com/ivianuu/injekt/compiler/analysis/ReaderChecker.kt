@@ -252,6 +252,7 @@ class ReaderChecker : AdditionalTypeChecker, CallChecker, DeclarationChecker {
         expressionTypeWithSmartCast: KotlinType,
         c: ResolutionContext<*>
     ) {
+        return
         if (expression is KtLambdaExpression) {
             val expectedType = c.expectedType
             if (expectedType === TypeUtils.NO_EXPECTED_TYPE) return

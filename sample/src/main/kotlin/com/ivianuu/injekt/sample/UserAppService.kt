@@ -16,12 +16,11 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.SetElements
+import com.ivianuu.injekt.android.work.GivenWorker
 
-@SetElements(ApplicationComponent::class)
+@GivenWorker
 @Reader
-fun userAppService(): AppService = {
+suspend fun userAppWorker() {
     println("run")
 }
