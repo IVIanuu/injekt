@@ -474,12 +474,6 @@ fun IrBuilderWithScope.irLambda(
     )
 }
 
-data class FactoryParameter(
-    val name: String,
-    val type: IrType,
-    val assisted: Boolean
-)
-
 fun IrBuilderWithScope.jvmNameAnnotation(
     name: String,
     pluginContext: IrPluginContext

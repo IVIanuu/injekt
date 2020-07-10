@@ -16,11 +16,11 @@
 
 package com.ivianuu.injekt.compiler.transform.component
 
-import com.ivianuu.injekt.compiler.FactoryParameter
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
 import com.ivianuu.injekt.compiler.substitute
+import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -34,11 +34,13 @@ import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.hasDefaultValue
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.name.FqName
@@ -106,7 +108,6 @@ class GivenBindingResolver(
 
     private val bindings = declarationGraph.bindings
         .map { binding ->
-            val key = binding.function.returnType.asKey()
             val function = binding.function
             val targetComponent = function.getClassFromSingleValueAnnotationOrNull(
                 InjektFqNames.Given, pluginContext
@@ -124,6 +125,26 @@ class GivenBindingResolver(
                     function.valueParameters.lastOrNull()?.type?.classOrNull?.owner else null
 
             val dependencies = mutableListOf<BindingRequest>()
+
+            val parameters = mutableListOf<BindingParameter>()
+
+            parameters += binding.function.valueParameters
+                .filter { it.name.asString() != "_context" }
+                .filter { !it.hasDefaultValue() }
+                .map { valueParameter ->
+                    BindingParameter(
+                        valueParameter.name.asString(),
+                        valueParameter.type.asKey(),
+                        true
+                    )
+                }
+
+            val key = if (parameters.isEmpty()) binding.function.returnType.asKey()
+            else pluginContext.tmpFunction(parameters.size)
+                .typeWith(
+                    parameters.map { it.key.type } + binding.function.returnType
+                )
+                .asKey()
 
             if (readerContext != null) {
                 dependencies += BindingRequest(
@@ -154,7 +175,7 @@ class GivenBindingResolver(
                                         .toMap()
                                 )
                                 .asKey(),
-                            requestingKey = key,
+                            requestingKey = null, // todo
                             requestOrigin = superClass.getAnnotation(InjektFqNames.Name)
                                 ?.getValueArgument(0)
                                 ?.let { it as IrConst<String> }
@@ -182,12 +203,10 @@ class GivenBindingResolver(
                 }
             }
 
-            val parameters = mutableListOf<FactoryParameter>()
-
             if (readerContext != null) {
-                parameters += FactoryParameter(
+                parameters += BindingParameter(
                     name = "_context",
-                    type = readerContext.defaultType,
+                    key = readerContext.defaultType.asKey(),
                     assisted = false
                 )
             }
@@ -334,7 +353,8 @@ class NoArgProviderBindingResolver(
     override fun invoke(requestedKey: Key): List<BindingNode> {
         val requestedType = requestedKey.type
         return when {
-            requestedType.isFunction() ->
+            requestedType.isFunction() &&
+                    requestedType.typeArguments.size == 1 ->
                 listOf(
                     ProviderBindingNode(
                         requestedKey,

@@ -206,6 +206,42 @@ class ComponentTest {
     }
 
     @Test
+    fun testAssistedGivenFunction() = codegen(
+        """ 
+        @Given
+        fun bar(foo: Foo) = Bar(foo)
+
+        val component by lazy {
+            initializeComponents()
+            componentFactory<TestComponent.Factory>().create()
+        }
+
+        fun invoke() = component.runReader { given<(Foo) -> Bar>() }
+    """
+    ) {
+        val barFactory = invokeSingleFile<(Foo) -> Bar>()
+        barFactory(Foo())
+    }
+
+    @Test
+    fun testAssistedGivenClass() = codegen(
+        """ 
+        @Given
+        class AnnotatedBar(foo: Foo)
+
+        val component by lazy {
+            initializeComponents()
+            componentFactory<TestComponent.Factory>().create()
+        }
+
+        fun invoke() = component.runReader { given<(Foo) -> AnnotatedBar>() }
+    """
+    ) {
+        val barFactory = invokeSingleFile<(Foo) -> Any>()
+        barFactory(Foo())
+    }
+
+    @Test
     fun testComponentBinding() = codegen(
         """
         fun invoke(): Pair<TestComponent, TestComponent> {

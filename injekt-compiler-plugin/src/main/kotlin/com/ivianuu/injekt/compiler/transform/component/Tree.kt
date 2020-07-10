@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.transform.component
 
-import com.ivianuu.injekt.compiler.FactoryParameter
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.typeArguments
@@ -83,8 +82,8 @@ class GivenBindingNode(
     scoped: Boolean,
     owner: ComponentImpl,
     origin: FqName?,
-    val createExpression: IrBuilderWithScope.(Map<FactoryParameter, () -> IrExpression?>) -> IrExpression,
-    val parameters: List<FactoryParameter>
+    val createExpression: IrBuilderWithScope.(Map<BindingParameter, () -> IrExpression?>) -> IrExpression,
+    val parameters: List<BindingParameter>
 ) : BindingNode(key, listOfNotNull(context), dependencies, targetComponent, scoped, owner, origin)
 
 class InputParameterBindingNode(
@@ -233,3 +232,9 @@ class BindingRequest(
         "BindingRequest(key=$key, requestingKey=$requestingKey, requestOrigin=$requestOrigin)"
 
 }
+
+data class BindingParameter(
+    val name: String,
+    val key: Key,
+    val assisted: Boolean
+)

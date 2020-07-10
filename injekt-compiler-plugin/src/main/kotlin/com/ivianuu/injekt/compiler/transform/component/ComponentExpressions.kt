@@ -192,17 +192,48 @@ class ComponentExpressions(
             .map { getBindingExpression(it) }
 
         val instanceExpression: ComponentExpression = bindingExpression@{ c ->
-            binding.createExpression(
-                this,
-                binding.parameters
-                    .mapIndexed { index, parameter ->
-                        index to parameter
-                    }
-                    .associateWith { (index, parameter) ->
-                        { dependencies[index](c) }
-                    }
-                    .mapKeys { it.key.second }
-            )
+            if (binding.parameters.any { it.assisted }) {
+                irLambda(binding.key.type) { function ->
+                    val (assistedParameters, nonAssistedParameters) = binding.parameters
+                        .partition { it.assisted }
+                    binding.createExpression(
+                        this,
+                        binding.parameters
+                            .associateWith { parameter ->
+                                if (parameter.assisted) {
+                                    {
+                                        irGet(
+                                            function.valueParameters[assistedParameters.indexOf(
+                                                parameter
+                                            )]
+                                        )
+                                    }
+                                } else {
+                                    {
+                                        dependencies[nonAssistedParameters.indexOf(parameter)](c)
+                                    }
+                                }
+                            }
+                    )
+                }
+            } else {
+                binding.createExpression(
+                    this,
+                    binding.parameters
+                        .mapIndexed { index, parameter ->
+                            index to parameter
+                        }
+                        .associateWith { (index, parameter) ->
+                            { dependencies[index](c) }
+                        }
+                        .mapKeys { it.key.second }
+                )
+            }
+        }
+
+        // todo
+        check(binding.parameters.size <= 1) {
+            "Scoped bindings with assisted parameters are unsupported"
         }
 
         if (!binding.scoped) return instanceExpression
