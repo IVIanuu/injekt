@@ -35,10 +35,10 @@ fun databaseFile(): DatabaseFile = given<ApplicationContext>().cacheDir
 class Database(private val file: DatabaseFile)
 
 @Given(ApplicationComponent::class)
-@Reader
-class Repo {
-    private val database: Database = given()
-    private val repo: Repo = given()
+class Repo(
+    private val database: Database = given(),
+    private val api: Api = given()
+) {
     fun refresh() {
     }
 }

@@ -226,19 +226,24 @@ class MapBindingResolver(
     private val component: ComponentImpl
 ) : BindingResolver {
 
-    private val maps: Map<Key, List<MapEntries>> = (parent?.maps?.toMap() ?: emptyMap()) +
-            declarationGraph.mapEntries
+    private val maps: Map<Key, List<MapEntries>> =
+        mutableMapOf<Key, List<MapEntries>>().also { mergedMap ->
+            if (parent != null) mergedMap += parent.maps
+
+            val thisMaps = declarationGraph.mapEntries
                 .filter {
                     it.function.getClassFromSingleValueAnnotation(
                         InjektFqNames.MapEntries,
                         pluginContext
-                    ) ==
-                            component.factoryImpl.node.component
+                    ) == component.factoryImpl.node.component
                 }
                 .groupBy { it.function.returnType.asKey() }
-                .also {
-                    println("initialized maps $it")
-                }
+
+            thisMaps.forEach { (mapKey, entries) ->
+                val existingEntries = mergedMap[mapKey] ?: emptyList()
+                mergedMap[mapKey] = existingEntries + entries
+            }
+        }
 
     override fun invoke(requestedKey: Key): List<BindingNode> {
         return maps[requestedKey]?.let { mapEntries ->

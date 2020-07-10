@@ -32,6 +32,22 @@ interface TestComponent {
     }
 }
 
+@Component
+interface TestParentComponent {
+    @Component.Factory
+    interface Factory {
+        fun create(): TestParentComponent
+    }
+}
+
+@Component(parent = TestParentComponent::class)
+interface TestChildComponent {
+    @Component.Factory
+    interface Factory {
+        fun create(): TestChildComponent
+    }
+}
+
 interface Command
 
 class CommandA : Command

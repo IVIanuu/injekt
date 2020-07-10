@@ -74,7 +74,9 @@ class DeclarationGraph(
                     .let { FqName(it) }
             } +
                 // this is a workaround for cleaner tests
-                FqName("com.ivianuu.injekt.test.TestComponent.Factory")
+                FqName("com.ivianuu.injekt.test.TestComponent.Factory") +
+                FqName("com.ivianuu.injekt.test.TestParentComponent.Factory") +
+                FqName("com.ivianuu.injekt.test.TestChildComponent.Factory")
     }
 
     fun initialize() {

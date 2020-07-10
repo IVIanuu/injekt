@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt
 
+import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
@@ -684,6 +685,32 @@ class ReaderTest {
         )
     ) {
         assertTrue(it.last().invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testNestedRunReader() = codegen(
+        """
+        @Given(TestParentComponent::class) @Reader
+        fun foo() = Foo()
+        
+        @Given(TestChildComponent::class) @Reader
+        fun bar() = Bar(given())
+        
+        fun invoke(): Bar { 
+            initializeComponents()
+            val parentComponent = componentFactory<TestParentComponent.Factory>().create()
+            val childComponent = parentComponent.runReader {
+                given<TestChildComponent.Factory>().create()
+            }
+            return parentComponent.runReader {
+                childComponent.runReader {
+                    given<Bar>()
+                }
+            }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
     }
 
 }
