@@ -22,7 +22,7 @@ import android.content.res.Resources
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.DistinctType
+import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.componentFactory
@@ -39,9 +39,9 @@ interface ApplicationComponentFactory {
     fun create(instance: Application): ApplicationComponent
 }
 
-@DistinctType
+@Distinct
 typealias ApplicationContext = Context
-@DistinctType
+@Distinct
 typealias ApplicationResources = Resources
 
 object ApplicationModule {

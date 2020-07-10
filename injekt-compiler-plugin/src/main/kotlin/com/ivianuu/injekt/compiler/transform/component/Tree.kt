@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
@@ -37,7 +38,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 sealed class BindingNode(
     val key: Key,
-    val context: IrClass?,
+    val contexts: List<IrClass>,
     val dependencies: List<BindingRequest>,
     val targetComponent: IrType?,
     val scoped: Boolean,
@@ -52,7 +53,7 @@ class ChildComponentFactoryBindingNode(
     val parent: IrClass,
     val childComponentFactoryExpression: ComponentExpression
 ) : BindingNode(
-    key, null, listOf(
+    key, emptyList(), listOf(
         BindingRequest(
             parent.defaultType.asKey(),
             key,
@@ -66,7 +67,7 @@ class ComponentImplBindingNode(
     val component: ComponentImpl,
 ) : BindingNode(
     component.factoryImpl.node.component.defaultType.asKey(),
-    null,
+    emptyList(),
     emptyList(),
     null,
     false,
@@ -84,14 +85,14 @@ class GivenBindingNode(
     origin: FqName?,
     val createExpression: IrBuilderWithScope.(Map<FactoryParameter, () -> IrExpression?>) -> IrExpression,
     val parameters: List<FactoryParameter>
-) : BindingNode(key, context, dependencies, targetComponent, scoped, owner, origin)
+) : BindingNode(key, listOfNotNull(context), dependencies, targetComponent, scoped, owner, origin)
 
 class InputParameterBindingNode(
     component: ComponentImpl,
     val inputParameter: IrValueParameter
 ) : BindingNode(
-    key = inputParameter.type.asKey(),
-    null,
+    inputParameter.type.asKey(),
+    emptyList(),
     emptyList(),
     null,
     false,
@@ -99,12 +100,28 @@ class InputParameterBindingNode(
     inputParameter.descriptor.fqNameSafe
 )
 
+class MapBindingNode(
+    key: Key,
+    contexts: List<IrClass>,
+    dependencies: List<BindingRequest>,
+    owner: ComponentImpl,
+    val functions: List<IrFunction>
+) : BindingNode(
+    key,
+    contexts,
+    dependencies,
+    null,
+    false,
+    owner,
+    null
+)
+
 class NullBindingNode(
     key: Key,
     owner: ComponentImpl
 ) : BindingNode(
     key,
-    null,
+    emptyList(),
     emptyList(),
     null,
     false,
@@ -118,7 +135,7 @@ class ProviderBindingNode(
     origin: FqName?,
 ) : BindingNode(
     key,
-    null,
+    emptyList(),
     listOf(
         BindingRequest(
             key.type.typeArguments.single().typeOrFail.asKey(),
@@ -166,7 +183,7 @@ class Key(val type: IrType) {
     private val IrType.distinctedType: Any
         get() = (this as? IrSimpleType)?.abbreviation
             ?.typeAlias?.owner?.symbol
-            ?.takeIf { it.owner.hasAnnotation(InjektFqNames.DistinctType) }
+            ?.takeIf { it.owner.hasAnnotation(InjektFqNames.Distinct) }
             ?: this
 
 }

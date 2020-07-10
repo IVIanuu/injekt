@@ -22,7 +22,7 @@ object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
     val Component = InjektPackage.child("Component")
     val ComponentFactory = Component.child("Factory")
-    val DistinctType = InjektPackage.child("DistinctType")
+    val Distinct = InjektPackage.child("Distinct")
     val Given = InjektPackage.child("Given")
     val MapEntries = InjektPackage.child("MapEntries")
     val Reader = InjektPackage.child("Reader")

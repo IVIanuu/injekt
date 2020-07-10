@@ -23,7 +23,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.DistinctType
+import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
@@ -44,15 +44,15 @@ val ComponentActivity.activityComponent: ActivityComponent
         }
     }
 
-@DistinctType
+@Distinct
 typealias ActivityContext = Context
-@DistinctType
+@Distinct
 typealias ActivityResources = Resources
-@DistinctType
+@Distinct
 typealias ActivityLifecycleOwner = LifecycleOwner
-@DistinctType
+@Distinct
 typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
-@DistinctType
+@Distinct
 typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 
 object ActivityModule {

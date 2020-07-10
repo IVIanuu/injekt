@@ -83,10 +83,10 @@ class GraphTest {
     }
 
     @Test
-    fun testDistinctTypeDistinction() = codegen(
+    fun testDistinctTypeAlias() = codegen(
         """
-        @DistinctType typealias Foo1 = Foo
-        @DistinctType typealias Foo2 = Foo
+        @Distinct typealias Foo1 = Foo
+        @Distinct typealias Foo2 = Foo
         
         @Given @Reader fun foo1(): Foo1 = Foo()
         @Given @Reader fun foo2(): Foo2 = Foo()

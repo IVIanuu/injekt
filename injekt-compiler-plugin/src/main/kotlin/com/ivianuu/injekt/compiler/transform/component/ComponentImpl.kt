@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.flatMapFix
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -121,11 +122,11 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
                 factoryImpl.node.entryPoints.map { it.entryPoint }
             } else {
                 (graph.resolvedBindings.values
-                    .mapNotNull { it.context } +
+                    .flatMapFix { it.contexts } +
                         dependencyRequests
                             .map { it.second }
                             .map { graph.getBinding(it) }
-                            .mapNotNull { it.context })
+                            .flatMapFix { it.contexts })
                     .filter { it.defaultType !in processedSuperTypes }
             }
 

@@ -24,8 +24,8 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
         get() = pluginContext.referenceClass(InjektFqNames.Component)!!
     val componentFactory: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.ComponentFactory)!!
-    val distinctType: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.DistinctType)!!
+    val distinct: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.Distinct)!!
     val given: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.Given)!!
     val mapEntries: IrClassSymbol

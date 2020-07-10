@@ -22,12 +22,16 @@ import com.ivianuu.injekt.compiler.typeWith
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
+import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irNull
+import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.name.FqName
 
@@ -57,6 +61,7 @@ class ComponentExpressions(
             is ComponentImplBindingNode -> componentExpression(binding) to false
             is GivenBindingNode -> givenExpression(binding) to true
             is InputParameterBindingNode -> inputParameterExpression(binding) to false
+            is MapBindingNode -> mapBindingExpression(binding) to false
             is NullBindingNode -> nullExpression(binding) to false
             is ProviderBindingNode -> providerExpression(binding) to true
         }.let { (expression, forceWrap) ->
@@ -79,6 +84,51 @@ class ComponentExpressions(
     private fun inputParameterExpression(
         binding: InputParameterBindingNode
     ): ComponentExpression = { irGet(binding.inputParameter) }
+
+    private fun mapBindingExpression(bindingNode: MapBindingNode): ComponentExpression {
+        return { c ->
+            irBlock {
+                val tmpMap = irTemporary(
+                    irCall(pluginContext.referenceFunctions(
+                        FqName("kotlin.collections.mutableMapOf")
+                    ).first { it.owner.valueParameters.isEmpty() })
+                )
+                val mapType = pluginContext.referenceClass(
+                    FqName("kotlin.collections.Map")
+                )!!
+                bindingNode.functions.forEach { function ->
+                    +irCall(
+                        tmpMap.type.classOrNull!!
+                            .functions
+                            .map { it.owner }
+                            .single {
+                                it.name.asString() == "putAll" &&
+                                        it.valueParameters.singleOrNull()?.type?.classOrNull == mapType
+                            }
+                    ).apply {
+                        dispatchReceiver = irGet(tmpMap)
+                        putValueArgument(
+                            0,
+                            irCall(function).apply {
+                                if (function.dispatchReceiverParameter != null)
+                                    dispatchReceiver =
+                                        irGetObject(function.dispatchReceiverParameter!!.type.classOrNull!!)
+                                if (function.valueParameters.isNotEmpty()) {
+                                    putValueArgument(
+                                        0,
+                                        getBindingExpression(bindingNode.dependencies.first())
+                                            .invoke(this@irBlock, c)
+                                    )
+                                }
+                            }
+                        )
+                    }
+                }
+
+                +irGet(tmpMap)
+            }
+        }
+    }
 
     private fun nullExpression(binding: NullBindingNode): ComponentExpression =
         { irNull() }

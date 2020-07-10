@@ -24,7 +24,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.DistinctType
+import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
@@ -45,15 +45,15 @@ val Fragment.fragmentComponent: FragmentComponent
         }
     }
 
-@DistinctType
+@Distinct
 typealias FragmentContext = Context
-@DistinctType
+@Distinct
 typealias FragmentResources = Resources
-@DistinctType
+@Distinct
 typealias FragmentLifecycleOwner = LifecycleOwner
-@DistinctType
+@Distinct
 typealias FragmentSavedStateRegistryOwner = SavedStateRegistryOwner
-@DistinctType
+@Distinct
 typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
 
 object FragmentModule {

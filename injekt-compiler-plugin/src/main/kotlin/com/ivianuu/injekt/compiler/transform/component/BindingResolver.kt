@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.FactoryParameter
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.typeArguments
@@ -216,6 +217,54 @@ class GivenBindingResolver(
                 )
             }
     }
+}
+
+class MapBindingResolver(
+    parent: MapBindingResolver?,
+    private val pluginContext: IrPluginContext,
+    declarationGraph: DeclarationGraph,
+    private val component: ComponentImpl
+) : BindingResolver {
+
+    private val maps: Map<Key, List<MapEntries>> = (parent?.maps?.toMap() ?: emptyMap()) +
+            declarationGraph.mapEntries
+                .filter {
+                    it.function.getClassFromSingleValueAnnotation(
+                        InjektFqNames.MapEntries,
+                        pluginContext
+                    ) ==
+                            component.factoryImpl.node.component
+                }
+                .groupBy { it.function.returnType.asKey() }
+                .also {
+                    println("initialized maps $it")
+                }
+
+    override fun invoke(requestedKey: Key): List<BindingNode> {
+        return maps[requestedKey]?.let { mapEntries ->
+            listOf(
+                MapBindingNode(
+                    requestedKey,
+                    mapEntries
+                        .mapNotNull {
+                            it.function.valueParameters.lastOrNull()
+                                ?.takeIf { it.name.asString() == "_context" }
+                                ?.let { it.type.classOrNull!!.owner }
+                        },
+                    mapEntries
+                        .mapNotNull {
+                            it.function.valueParameters.lastOrNull()
+                                ?.takeIf { it.name.asString() == "_context" }
+                                ?.let { component.factoryImpl.node.component.defaultType }
+                                ?.let { BindingRequest(it.asKey(), null, null) }
+                        },
+                    component,
+                    mapEntries.map { it.function }
+                )
+            )
+        } ?: emptyList()
+    }
+
 }
 
 class NoArgProviderBindingResolver(

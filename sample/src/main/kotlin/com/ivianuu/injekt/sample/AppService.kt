@@ -16,16 +16,16 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.DistinctType
+import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
-@DistinctType
+@Distinct
 typealias AppService = suspend () -> Unit
 
-@DistinctType
+@Distinct
 typealias AppServices = Set<AppService>
 
 @Reader

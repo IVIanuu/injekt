@@ -17,16 +17,33 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
+import androidx.fragment.app.Fragment
+import androidx.work.Worker
+import com.ivianuu.injekt.ApplicationComponent
+import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.MapEntries
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.android.applicationComponent
+import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
+import kotlin.reflect.KClass
 
-@MapEntries
+@MapEntries(ApplicationComponent::class)
 @Reader
-fun mySpecialWorker() = "a" to {
+fun mySpecialWorker() = mapOf(
+    "a" to "a",
+    "b" to "b"
+)
 
-}
+@Reader
+inline fun <reified T : Worker> worker(): Map<KClass<out Worker>, () -> Worker> =
+    mapOf(T::class to { given<T>() })
+
+@Distinct
+typealias Fragments = Map<String, Fragment>
+
+@MapEntries(ApplicationComponent::class)
+fun fragments(): Fragments = emptyMap()
 
 class App : Application() {
 
@@ -40,3 +57,4 @@ class App : Application() {
     }
 
 }
+

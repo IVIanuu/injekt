@@ -21,7 +21,7 @@ import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.DistinctType
+import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
@@ -41,9 +41,9 @@ fun Service.newServiceComponent(): ServiceComponent {
     }
 }
 
-@DistinctType
+@Distinct
 typealias ServiceContext = Context
-@DistinctType
+@Distinct
 typealias ServiceResources = Resources
 
 object ServiceModule {

@@ -17,4 +17,4 @@
 package com.ivianuu.injekt
 
 @Target(AnnotationTarget.TYPEALIAS)
-annotation class DistinctType
+annotation class Distinct

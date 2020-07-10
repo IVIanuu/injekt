@@ -33,12 +33,20 @@ class ComponentGraph(
     inputParameters: List<IrValueParameter>
 ) {
 
+    private val mapBindingResolver: MapBindingResolver = MapBindingResolver(
+        parent?.mapBindingResolver,
+        component.factoryImpl.pluginContext,
+        component.factoryImpl.declarationGraph,
+        component
+    )
+
     private val bindingsResolvers = listOf(
         InputParameterBindingResolver(inputParameters, component),
         GivenBindingResolver(context, declarationGraph, component),
         NoArgProviderBindingResolver(component),
         ComponentImplBindingResolver(component),
-        ChildComponentFactoryBindingResolver(component)
+        ChildComponentFactoryBindingResolver(component),
+        mapBindingResolver
     )
     val resolvedBindings = mutableMapOf<Key, BindingNode>()
 

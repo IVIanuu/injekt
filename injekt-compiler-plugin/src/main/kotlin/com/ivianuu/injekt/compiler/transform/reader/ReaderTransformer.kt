@@ -939,7 +939,7 @@ class ReaderTransformer(
         type: IrType
     ): Name {
         val fqName = if (type is IrSimpleType && type.abbreviation != null &&
-            type.abbreviation!!.typeAlias.descriptor.hasAnnotation(InjektFqNames.DistinctType)
+            type.abbreviation!!.typeAlias.descriptor.hasAnnotation(InjektFqNames.Distinct)
         )
             type.abbreviation!!.typeAlias.descriptor.fqNameSafe
         else type.classifierOrFail.descriptor.fqNameSafe

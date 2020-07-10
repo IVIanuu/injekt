@@ -17,15 +17,14 @@
 package com.ivianuu.injekt.sample
 
 import com.ivianuu.injekt.ApplicationComponent
-import com.ivianuu.injekt.DistinctType
+import com.ivianuu.injekt.Distinct
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.Scoped
-import com.ivianuu.injekt.Unscoped
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.given
 import java.io.File
 
-@DistinctType
+@Distinct
 typealias DatabaseFile = File
 
 @Given
@@ -36,7 +35,10 @@ fun databaseFile(): DatabaseFile = given<ApplicationContext>().cacheDir
 class Database(private val file: DatabaseFile)
 
 @Given(ApplicationComponent::class)
-class Repo(private val database: Database, private val api: Api) {
+@Reader
+class Repo {
+    private val database: Database = given()
+    private val repo: Repo = given()
     fun refresh() {
     }
 }
