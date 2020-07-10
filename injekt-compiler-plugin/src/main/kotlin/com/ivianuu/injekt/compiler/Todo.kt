@@ -18,4 +18,3 @@ package com.ivianuu.injekt.compiler
 
 // todo binding adapter??
 // todo provide resolution e.g. prefer internal over external
-// todo allow default params

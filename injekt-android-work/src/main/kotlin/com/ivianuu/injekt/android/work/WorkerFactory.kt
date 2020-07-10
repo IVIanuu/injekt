@@ -27,18 +27,8 @@ import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
 import kotlin.reflect.KClass
 
-@Target(AnnotationTarget.ANNOTATION_CLASS)
-annotation class BindingEffect
-
-@BindingEffect
-annotation class BindWorker {
-    companion object {
-        @MapEntries(ApplicationComponent::class)
-        @Reader
-        inline operator fun <reified T : ListenableWorker> invoke() =
-            mapOf(T::class to given<(Context, WorkerParameters) -> T>())
-    }
-}
+@Reader
+inline fun <reified T : ListenableWorker> worker() = mapOf(T::class to { given<T>() })
 
 @Given
 internal class InjektWorkerFactory(
