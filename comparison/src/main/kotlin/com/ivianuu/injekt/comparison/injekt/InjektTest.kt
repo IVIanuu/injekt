@@ -30,7 +30,7 @@ object InjektTest : InjectionTest {
     private var component: InjektTestComponent? = null
 
     override fun setup() {
-        component = componentFactory<InjektTestComponentFactory>().create()
+        component = componentFactory<InjektTestComponent.Factory>().create()
     }
 
     override fun inject() {
@@ -44,9 +44,9 @@ object InjektTest : InjectionTest {
 }
 
 @Component
-interface InjektTestComponent
-
-@Component.Factory
-interface InjektTestComponentFactory {
-    fun create(): InjektTestComponent
+interface InjektTestComponent {
+    @Component.Factory
+    interface Factory {
+        fun create(): InjektTestComponent
+    }
 }
