@@ -128,7 +128,7 @@ class GraphTest {
         assertNotSame(foo1, foo2)
     }
 
-    @Test
+    // todo @Test
     fun testIgnoresNullability() = codegen(
         """
         @Given fun foo(): Foo = Foo()
@@ -144,7 +144,7 @@ class GraphTest {
         assertInternalError("multiple")
     }
 
-    @Test
+    // todo @Test
     fun testReturnsInstanceForNullableBinding() = codegen(
         """
         @Given fun foo(): Foo = Foo()

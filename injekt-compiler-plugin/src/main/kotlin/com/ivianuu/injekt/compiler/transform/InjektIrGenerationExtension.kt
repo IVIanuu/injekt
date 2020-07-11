@@ -31,7 +31,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         readerTransformer.doLower(moduleFragment)
         IndexingTransformer(pluginContext).doLower(moduleFragment)
 
-        ComponentReaderTransformer(pluginContext).doLower(moduleFragment)
+        ComponentReaderTransformer(pluginContext, readerTransformer).doLower(moduleFragment)
         ComponentTransformer(pluginContext, readerTransformer).doLower(moduleFragment)
         TmpMetadataPatcher(pluginContext).doLower(moduleFragment)
 

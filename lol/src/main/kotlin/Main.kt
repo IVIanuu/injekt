@@ -10,33 +10,24 @@ class Foo
 class Bar(foo: Foo)
 
 @Component
-interface ParentComponent {
+interface TestComponent {
     @Component.Factory
     interface Factory {
-        fun create(): ParentComponent
+        fun create(): TestComponent
     }
 }
-
-@Component(parent = ParentComponent::class)
-interface ChildComponent {
-    @Component.Factory
-    interface Factory {
-        fun create(): ChildComponent
-    }
-}
-
-@Given(ParentComponent::class)
-@Reader
-fun foo() = Foo()
 
 @Given
 @Reader
-fun bar() = Bar(given())
+fun foo() = Foo()
 
-fun invoke(): Bar {
+@Reader
+fun func(): Foo {
+    return given()
+}
+
+fun main() {
     initializeComponents()
-    val childComponent = componentFactory<ParentComponent.Factory>().create().runReader {
-        given<ChildComponent.Factory>().create()
-    }
-    return childComponent.runReader { given<Bar>() }
+    val component = componentFactory<TestComponent.Factory>().create()
+    component.runReader { func() }
 }

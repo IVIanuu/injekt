@@ -113,10 +113,14 @@ class ComponentExpressions(
                                 if (function.dispatchReceiverParameter != null)
                                     dispatchReceiver =
                                         irGetObject(function.dispatchReceiverParameter!!.type.classOrNull!!)
-                                if (function.valueParameters.isNotEmpty()) {
+                                function.valueParameters.forEach { valueParameter ->
                                     putValueArgument(
-                                        0,
-                                        getBindingExpression(bindingNode.dependencies.first())
+                                        valueParameter.index,
+                                        getBindingExpression(
+                                            bindingNode.dependencies.single {
+                                                it.key == valueParameter.type.asKey()
+                                            }
+                                        )
                                             .invoke(this@irBlock, c)
                                     )
                                 }
@@ -158,10 +162,14 @@ class ComponentExpressions(
                                 if (function.dispatchReceiverParameter != null)
                                     dispatchReceiver =
                                         irGetObject(function.dispatchReceiverParameter!!.type.classOrNull!!)
-                                if (function.valueParameters.isNotEmpty()) {
+                                function.valueParameters.forEach { valueParameter ->
                                     putValueArgument(
-                                        0,
-                                        getBindingExpression(bindingNode.dependencies.first())
+                                        valueParameter.index,
+                                        getBindingExpression(
+                                            bindingNode.dependencies.single {
+                                                it.key == valueParameter.type.asKey()
+                                            }
+                                        )
                                             .invoke(this@irBlock, c)
                                     )
                                 }

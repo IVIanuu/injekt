@@ -25,9 +25,3 @@ package com.ivianuu.injekt
 annotation class Reader
 
 inline fun <R> Any.runReader(block: () -> R): R = block()
-
-@JvmName("actualReader")
-inline fun <R> runReader(
-    context: Any,
-    block: (Any) -> R
-): R = block(context)

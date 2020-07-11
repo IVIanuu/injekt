@@ -16,6 +16,55 @@
 
 package com.ivianuu.injekt.compiler.transform.component
 
+import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.isExternalDeclaration
+import com.ivianuu.injekt.compiler.uniqueName
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
+import org.jetbrains.kotlin.ir.expressions.IrConst
+import org.jetbrains.kotlin.ir.util.constructedClass
+import org.jetbrains.kotlin.ir.util.findAnnotation
+import org.jetbrains.kotlin.ir.util.getPackageFragment
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.annotations.argumentValue
+import org.jetbrains.kotlin.resolve.constants.StringValue
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"
+
+fun IrPluginContext.getReaderInfo(declaration: IrDeclarationWithName): IrClass? {
+    val declaration = if (declaration is IrConstructor)
+        declaration.constructedClass else declaration
+
+    return if (declaration.isExternalDeclaration()) {
+        moduleDescriptor.getPackage(declaration.getPackageFragment()!!.fqName)
+            .memberScope
+            .getContributedDescriptors()
+            .filterIsInstance<ClassDescriptor>()
+            .filter { it.hasAnnotation(InjektFqNames.Name) }
+            .singleOrNull {
+                (it.annotations.findAnnotation(InjektFqNames.Name)!!
+                    .argumentValue("value")
+                    .let { it as StringValue }
+                    .value == declaration.uniqueName())
+            }
+            ?.let { referenceClass(it.fqNameSafe)?.owner }
+    } else {
+        declaration.getPackageFragment()!!
+            .declarations
+            .filterIsInstance<IrClass>()
+            .filter { it.hasAnnotation(InjektFqNames.Name) }
+            .singleOrNull { clazz ->
+                val name = clazz.annotations.findAnnotation(InjektFqNames.Name)!!
+                    .getValueArgument(0)!!
+                    .let { it as IrConst<String> }
+                    .value
+                (name == declaration.uniqueName())
+            }
+    }
+}

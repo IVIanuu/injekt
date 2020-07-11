@@ -16,8 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform.component
 
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.distinctedType
 import com.ivianuu.injekt.compiler.isTypeParameter
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -26,7 +25,6 @@ import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
 import org.jetbrains.kotlin.ir.types.IrErrorType
-import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.render
@@ -35,7 +33,6 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 sealed class BindingNode(
     val key: Key,
-    val contexts: List<IrClass>,
     val dependencies: List<BindingRequest>,
     val targetComponent: IrType?,
     val scoped: Boolean,
@@ -50,7 +47,7 @@ class ChildComponentFactoryBindingNode(
     val parent: IrClass,
     val childComponentFactoryExpression: ComponentExpression
 ) : BindingNode(
-    key, emptyList(), listOf(
+    key, listOf(
         BindingRequest(
             parent.defaultType.asKey(),
             key,
@@ -65,7 +62,6 @@ class ComponentImplBindingNode(
 ) : BindingNode(
     component.factoryImpl.node.component.defaultType.asKey(),
     emptyList(),
-    emptyList(),
     null,
     false,
     component,
@@ -74,7 +70,6 @@ class ComponentImplBindingNode(
 
 class GivenBindingNode(
     key: Key,
-    context: IrClass?,
     dependencies: List<BindingRequest>,
     targetComponent: IrType?,
     scoped: Boolean,
@@ -82,14 +77,13 @@ class GivenBindingNode(
     origin: FqName?,
     val createExpression: IrBuilderWithScope.(Map<BindingParameter, () -> IrExpression?>) -> IrExpression,
     val parameters: List<BindingParameter>
-) : BindingNode(key, listOfNotNull(context), dependencies, targetComponent, scoped, owner, origin)
+) : BindingNode(key, dependencies, targetComponent, scoped, owner, origin)
 
 class InputParameterBindingNode(
     component: ComponentImpl,
     val inputParameter: IrValueParameter
 ) : BindingNode(
     inputParameter.type.asKey(),
-    emptyList(),
     emptyList(),
     null,
     false,
@@ -99,13 +93,11 @@ class InputParameterBindingNode(
 
 class MapBindingNode(
     key: Key,
-    contexts: List<IrClass>,
     dependencies: List<BindingRequest>,
     owner: ComponentImpl,
     val functions: List<IrFunction>
 ) : BindingNode(
     key,
-    contexts,
     dependencies,
     null,
     false,
@@ -115,13 +107,11 @@ class MapBindingNode(
 
 class SetBindingNode(
     key: Key,
-    contexts: List<IrClass>,
     dependencies: List<BindingRequest>,
     owner: ComponentImpl,
     val functions: List<IrFunction>
 ) : BindingNode(
     key,
-    contexts,
     dependencies,
     null,
     false,
@@ -134,7 +124,6 @@ class NullBindingNode(
     owner: ComponentImpl
 ) : BindingNode(
     key,
-    emptyList(),
     emptyList(),
     null,
     false,
@@ -173,12 +162,6 @@ class Key(val type: IrType) {
         }.toString()
     }
 
-    private val IrType.distinctedType: Any
-        get() = (this as? IrSimpleType)?.abbreviation
-            ?.typeAlias
-            ?.takeIf { it.descriptor.hasAnnotation(InjektFqNames.Distinct) }
-            ?: this
-
 }
 
 class BindingRequest(
@@ -214,5 +197,6 @@ class BindingRequest(
 data class BindingParameter(
     val name: String,
     val key: Key,
-    val assisted: Boolean
+    val assisted: Boolean,
+    val origin: FqName?
 )

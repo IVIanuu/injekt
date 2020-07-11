@@ -33,9 +33,7 @@ class ReaderTest {
         fun foo() = Foo()
         
         @Reader
-        fun func(foo: Foo = given()): Foo {
-            return foo
-        }
+        fun func(): Foo = given<Foo>()
         
         fun invoke(): Foo { 
             initializeComponents()
@@ -53,9 +51,7 @@ class ReaderTest {
         fun foo() = Foo()
         
         @Reader
-        fun createFoo(foo: Foo = given()): Foo {
-            return foo
-        }
+        fun createFoo() = given<Foo>()
         
         fun <R> nonReader(block: () -> R) = block()
         
@@ -79,9 +75,9 @@ class ReaderTest {
         fun foo() = Foo()
         
         @Reader
-        suspend fun func(foo: Foo = given()): Foo {
+        suspend fun func(): Foo {
             delay(1000)
-            return foo
+            return given()
         }
         
         fun invoke(): Foo { 
@@ -104,9 +100,9 @@ class ReaderTest {
         fun foo() = Foo()
         
         @Reader
-        suspend fun func(foo: Foo = given()): Foo {
+        suspend fun func(): Foo {
             delay(1000)
-            return foo
+            return given()
         }
         
         fun invoke(): Foo { 
@@ -129,9 +125,9 @@ class ReaderTest {
         fun foo() = Foo()
         
         @Reader
-        suspend fun createFoo(foo: Foo = get()): Foo {
+        suspend fun createFoo(foo: Foo): Foo {
             delay(1000)
-            return foo
+            return given()
         }
         
         fun <R> nonReader(block: () -> R) = block()
@@ -167,9 +163,7 @@ class ReaderTest {
         fun foo() = Foo()
         
         @Reader
-        fun func(foo: Foo = given()): Foo {
-            return foo
-        }
+        fun func() = given<Foo>()
         
         @Reader
         fun withDefault(foo: Foo = func()): Foo = foo

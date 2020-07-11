@@ -17,30 +17,23 @@
 package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
-import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.tmpFunction
-import com.ivianuu.injekt.compiler.typeArguments
-import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
-import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
-import org.jetbrains.kotlin.ir.expressions.IrConst
-import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.getAnnotation
-import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.hasDefaultValue
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -115,105 +108,37 @@ class GivenBindingResolver(
                     InjektFqNames.Given, pluginContext
                 ) else null
 
-            val readerContext =
-                if (function.hasAnnotation(InjektFqNames.Reader) ||
-                    (function is IrConstructor && function.constructedClass.hasAnnotation(
-                        InjektFqNames.Reader
-                    ))
-                )
-                    function.valueParameters.lastOrNull()?.type?.classOrNull?.owner else null
-
-            val dependencies = mutableListOf<BindingRequest>()
+            val readerInfo = pluginContext.getReaderInfo(function)
 
             val parameters = mutableListOf<BindingParameter>()
 
-            parameters += binding.function.valueParameters
-                .filter { it.name.asString() != "_context" }
-                .filter { !it.hasDefaultValue() }
-                .map { valueParameter ->
-                    BindingParameter(
-                        valueParameter.name.asString(),
-                        valueParameter.type.asKey(),
-                        true
-                    )
-                }
+            parameters += function.valueParameters.map { valueParameter ->
+                BindingParameter(
+                    name = valueParameter.name.asString(),
+                    key = valueParameter.type.asKey(),
+                    assisted = readerInfo?.declarations
+                        ?.filterIsInstance<IrDeclarationWithName>()
+                        ?.none { it.name == valueParameter.name } ?: true,
+                    origin = valueParameter.descriptor.fqNameSafe
+                )
+            }
 
-            val key = if (parameters.isEmpty()) binding.function.returnType.asKey()
-            else pluginContext.tmpFunction(parameters.size)
+            val assistedParameters = parameters.filter { it.assisted }
+
+            val key = if (assistedParameters.isEmpty()) binding.function.returnType.asKey()
+            else pluginContext.tmpFunction(assistedParameters.size)
                 .typeWith(
-                    parameters.map { it.key.type } + binding.function.returnType
+                    assistedParameters.map { it.key.type } + binding.function.returnType
                 )
                 .asKey()
 
-            if (readerContext != null) {
-                dependencies += BindingRequest(
-                    component.factoryImpl.node.component.defaultType.asKey(),
-                    binding.function.returnType.asKey(),
-                    function.valueParameters.last().descriptor.fqNameSafe
-                )
-
-                val processedSuperTypes = mutableSetOf<IrType>()
-
-                fun collectDependencies(
-                    superClass: IrClass,
-                    typeArguments: List<IrType>
-                ) {
-                    if (superClass.defaultType in processedSuperTypes) return
-                    processedSuperTypes += superClass.defaultType
-                    for (declaration in superClass.declarations.toList()) {
-                        if (declaration !is IrFunction) continue
-                        if (declaration is IrConstructor) continue
-                        if (declaration.isFakeOverride) continue
-                        if (declaration.dispatchReceiverParameter?.type == component.factoryImpl.pluginContext.irBuiltIns.anyType) break
-                        dependencies += BindingRequest(
-                            key = declaration.returnType
-                                .substitute(
-                                    superClass.typeParameters
-                                        .map { it.symbol }
-                                        .zip(typeArguments)
-                                        .toMap()
-                                )
-                                .asKey(),
-                            requestingKey = null, // todo
-                            requestOrigin = superClass.getAnnotation(InjektFqNames.Name)
-                                ?.getValueArgument(0)
-                                ?.let { it as IrConst<String> }
-                                ?.value
-                                ?.let { FqName(it) }
-                        )
-                    }
-
-                    superClass.superTypes
-                        .map { it to it.classOrNull?.owner }
-                        .forEach { (superType, clazz) ->
-                            if (clazz != null)
-                                collectDependencies(
-                                    clazz,
-                                    superType.typeArguments.map { it.typeOrFail }
-                                )
-                        }
-                }
-
-                readerContext.superTypes.forEach { superType ->
-                    collectDependencies(
-                        superType.classOrNull!!.owner,
-                        superType.typeArguments.map { it.typeOrFail }
-                    )
-                }
-            }
-
-            if (readerContext != null) {
-                parameters += BindingParameter(
-                    name = "_context",
-                    key = readerContext.defaultType.asKey(),
-                    assisted = false
-                )
-            }
-
             GivenBindingNode(
                 key = key,
-                context = readerContext,
-                dependencies = dependencies,
+                dependencies = parameters
+                    .filterNot { it.assisted }
+                    .map {
+                        BindingRequest(it.key, key, null) // todo
+                    },
                 targetComponent = targetComponent?.defaultType,
                 scoped = targetComponent != null,
                 createExpression = { parametersMap ->
@@ -272,17 +197,18 @@ class MapBindingResolver(
         MapBindingNode(
             key,
             entries
-                .mapNotNull {
-                    it.function.valueParameters.lastOrNull()
-                        ?.takeIf { it.name.asString() == "_context" }
-                        ?.let { it.type.classOrNull!!.owner }
-                },
-            entries
-                .mapNotNull {
-                    it.function.valueParameters.lastOrNull()
-                        ?.takeIf { it.name.asString() == "_context" }
-                        ?.let { component.factoryImpl.node.component.defaultType }
-                        ?.let { BindingRequest(it.asKey(), null, null) }
+                .flatMapFix { mapEntries ->
+                    val function = mapEntries.function
+                    val readerInfo = pluginContext.getReaderInfo(function)
+                    readerInfo?.declarations
+                        ?.filterIsInstance<IrFunction>()
+                        ?.filterNot { it is IrConstructor }
+                        ?.filterNot { it.isFakeOverride }
+                        ?.filterNot { it.dispatchReceiverParameter?.type == pluginContext.irBuiltIns.anyType }
+                        ?.map { it.returnType }
+                        ?.distinct()
+                        ?.map { BindingRequest(it.asKey(), null, null) }
+                        ?: emptyList()
                 },
             component,
             entries.map { it.function }
@@ -299,7 +225,6 @@ class MapBindingResolver(
             ) listOf(
                 MapBindingNode(
                     requestedKey,
-                    emptyList(),
                     emptyList(),
                     component,
                     emptyList()
@@ -339,17 +264,18 @@ class SetBindingResolver(
         SetBindingNode(
             key,
             elements
-                .mapNotNull {
-                    it.function.valueParameters.lastOrNull()
-                        ?.takeIf { it.name.asString() == "_context" }
-                        ?.let { it.type.classOrNull!!.owner }
-                },
-            elements
-                .mapNotNull {
-                    it.function.valueParameters.lastOrNull()
-                        ?.takeIf { it.name.asString() == "_context" }
-                        ?.let { component.factoryImpl.node.component.defaultType }
-                        ?.let { BindingRequest(it.asKey(), null, null) }
+                .flatMapFix { setElements ->
+                    val function = setElements.function
+                    val readerInfo = pluginContext.getReaderInfo(function)
+                    readerInfo?.declarations
+                        ?.filterIsInstance<IrFunction>()
+                        ?.filterNot { it is IrConstructor }
+                        ?.filterNot { it.isFakeOverride }
+                        ?.filterNot { it.dispatchReceiverParameter?.type == pluginContext.irBuiltIns.anyType }
+                        ?.map { it.returnType }
+                        ?.distinct()
+                        ?.map { BindingRequest(it.asKey(), null, null) }
+                        ?: emptyList()
                 },
             component,
             elements.map { it.function }
@@ -366,7 +292,6 @@ class SetBindingResolver(
             ) listOf(
                 SetBindingNode(
                     requestedKey,
-                    emptyList(),
                     emptyList(),
                     component,
                     emptyList()
