@@ -19,19 +19,15 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.component.ComponentReaderTransformer
 import com.ivianuu.injekt.compiler.transform.component.ComponentTransformer
-import com.ivianuu.injekt.compiler.transform.reader.ReaderTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val symbolRemapper = DeepCopySymbolRemapper()
-        val pluginContext = InjektPluginContext(moduleFragment, pluginContext, symbolRemapper)
-
-        val readerTransformer = ReaderTransformer(pluginContext, symbolRemapper)
+        val pluginContext = InjektPluginContext(moduleFragment, pluginContext)
+        val readerTransformer = ReaderTransformer(pluginContext)
         readerTransformer.doLower(moduleFragment)
         IndexingTransformer(pluginContext).doLower(moduleFragment)
 

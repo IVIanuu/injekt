@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.sample
 
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.android.work.GivenWorker
 
 @GivenWorker
 @Reader

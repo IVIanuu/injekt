@@ -17,18 +17,14 @@
 package com.ivianuu.injekt
 
 @Target(
-    AnnotationTarget.TYPE,
     AnnotationTarget.FUNCTION,
-    AnnotationTarget.TYPE_PARAMETER,
     AnnotationTarget.PROPERTY,
     AnnotationTarget.CLASS,
     AnnotationTarget.CONSTRUCTOR
 )
 annotation class Reader
 
-inline fun <R> Any.runReader(
-    block: @Reader () -> R
-): R = block()
+inline fun <R> Any.runReader(block: () -> R): R = block()
 
 @JvmName("actualReader")
 inline fun <R> runReader(
