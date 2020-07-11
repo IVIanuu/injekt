@@ -18,8 +18,8 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.indexPackageFile
 import com.ivianuu.injekt.compiler.singleClassArgConstructorCall
@@ -74,7 +74,7 @@ class ComponentReaderTransformer(
                             getJoinedName(
                                 currentFile.fqName,
                                 currentScope!!.scope.scopeOwner.fqNameSafe.parent()
-                                    .child(currentScope!!.scope.scopeOwner.name.asString() + "Reader")
+                                    .child("${currentScope!!.scope.scopeOwner.name.asString()}Reader".asNameId())
                             )
                         )
                         kind = ClassKind.INTERFACE

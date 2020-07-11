@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.child
 import com.ivianuu.injekt.compiler.copy
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getJoinedName
@@ -794,9 +793,9 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                 .parent()
                 .let {
                     if (declaration.name.isSpecial) {
-                        it.child(allocateForGroup("Lambda"))
+                        it.child(allocateForGroup("Lambda").asNameId())
                     } else {
-                        it.child(declaration.name.asString())
+                        it.child(declaration.name.asString().asNameId())
                     }
                 }
         ).asString() + "_$suffix"

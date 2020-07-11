@@ -20,19 +20,19 @@ import org.jetbrains.kotlin.name.FqName
 
 object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
-    val Component = InjektPackage.child("Component")
-    val ComponentFactory = Component.child("Factory")
-    val Distinct = InjektPackage.child("Distinct")
-    val Given = InjektPackage.child("Given")
-    val MapEntries = InjektPackage.child("MapEntries")
-    val Reader = InjektPackage.child("Reader")
-    val SetElements = InjektPackage.child("SetElements")
+    val Component = InjektPackage.child("Component".asNameId())
+    val ComponentFactory = Component.child("Factory".asNameId())
+    val Distinct = InjektPackage.child("Distinct".asNameId())
+    val Given = InjektPackage.child("Given".asNameId())
+    val MapEntries = InjektPackage.child("MapEntries".asNameId())
+    val Reader = InjektPackage.child("Reader".asNameId())
+    val SetElements = InjektPackage.child("SetElements".asNameId())
 
-    val InternalPackage = InjektPackage.child("internal")
-    val ComponentFactories = InternalPackage.child("ComponentFactories")
-    val EntryPoint = InternalPackage.child("EntryPoint")
-    val Index = InternalPackage.child("Index")
-    val Name = InternalPackage.child("Name")
+    val InternalPackage = InjektPackage.child("internal".asNameId())
+    val ComponentFactories = InternalPackage.child("ComponentFactories".asNameId())
+    val EntryPoint = InternalPackage.child("EntryPoint".asNameId())
+    val Index = InternalPackage.child("Index".asNameId())
+    val Name = InternalPackage.child("Name".asNameId())
 
-    val IndexPackage = InternalPackage.child("index")
+    val IndexPackage = InternalPackage.child("index".asNameId())
 }

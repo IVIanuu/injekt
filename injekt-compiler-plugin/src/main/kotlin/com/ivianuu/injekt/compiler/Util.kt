@@ -101,12 +101,8 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.KClassValue
-import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DescriptorWithContainerSource
-import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.replace
-import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import kotlin.math.absoluteValue
 
@@ -252,8 +248,6 @@ fun KClassValue.getIrClass(
 
 fun String.asNameId(): Name = Name.identifier(this)
 
-fun FqName.child(name: String) = child(name.asNameId())
-
 fun IrClass.getReaderConstructor(): IrConstructor? {
     constructors
         .firstOrNull {
@@ -291,13 +285,6 @@ fun IrFunction.getFunctionType(pluginContext: IrPluginContext): IrType {
     return (if (isSuspend) pluginContext.tmpSuspendFunction(valueParameters.size)
     else pluginContext.tmpFunction(valueParameters.size))
         .typeWith(valueParameters.map { it.type } + returnType)
-}
-
-fun FunctionDescriptor.getFunctionType(): KotlinType {
-    return (if (isSuspend) builtIns.getSuspendFunction(valueParameters.size)
-    else builtIns.getFunction(valueParameters.size))
-        .defaultType
-        .replace(newArguments = valueParameters.map { it.type.asTypeProjection() } + returnType!!.asTypeProjection())
 }
 
 fun IrPluginContext.tmpFunction(n: Int): IrClassSymbol =
