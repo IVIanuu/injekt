@@ -64,17 +64,15 @@ class ComponentGraph(
 
         val bindings = bindingsResolvers.flatMapFix { it(request.key) }
 
-        if (bindings.size > 1) {
+        if (bindings.filterNot { it is ProviderBindingNode }.size > 1) {
             error(
-                "Multiple bindings found for '${request.key}' at:\n${bindings.joinToString(
-                    "\n"
-                ) {
-                    "'${it.origin.orUnknown()}'"
-                }} in '${component.origin}'"
+                "Multiple bindings found for '${request.key}' at:\n${bindings
+                    .filterNot { it is ProviderBindingNode }
+                    .joinToString("\n") { "'${it.origin.orUnknown()}'" }} in '${component.origin}'"
             )
         }
 
-        binding = bindings.singleOrNull()
+        binding = bindings.firstOrNull()
 
         if (binding?.targetComponent != null &&
             binding.targetComponent != component.factoryImpl.node.component.defaultType
