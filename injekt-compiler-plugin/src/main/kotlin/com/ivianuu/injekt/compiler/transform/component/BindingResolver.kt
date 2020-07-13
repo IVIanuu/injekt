@@ -117,16 +117,17 @@ class GivenBindingResolver(
 
             val parameters = mutableListOf<BindingParameter>()
 
-            parameters += function.valueParameters.map { valueParameter ->
-                BindingParameter(
-                    name = valueParameter.name.asString(),
-                    key = valueParameter.type.asKey(),
-                    assisted = readerInfo?.declarations
-                        ?.filterIsInstance<IrDeclarationWithName>()
-                        ?.none { it.name == valueParameter.name } ?: true,
-                    origin = valueParameter.descriptor.fqNameSafe
-                )
-            }
+            parameters += function.valueParameters
+                .map { valueParameter ->
+                    BindingParameter(
+                        name = valueParameter.name.asString(),
+                        key = valueParameter.type.asKey(),
+                        assisted = readerInfo?.declarations
+                            ?.filterIsInstance<IrDeclarationWithName>()
+                            ?.none { it.name == valueParameter.name } ?: true,
+                        origin = valueParameter.descriptor.fqNameSafe
+                    )
+                }
 
             val assistedParameters = parameters.filter { it.assisted }
 

@@ -35,6 +35,7 @@ import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.thisOfClass
 import com.ivianuu.injekt.compiler.transform.component.getReaderInfo
 import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.uniqueName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
@@ -639,19 +640,29 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
         ).asString() + "_$suffix"
     ).asNameId()
 
-    private fun getNameForType(type: IrType): Name {
-        val fqName = if (type is IrSimpleType && type.abbreviation != null &&
-            type.abbreviation!!.typeAlias.descriptor.hasAnnotation(InjektFqNames.Distinct)
-        )
-            type.abbreviation!!.typeAlias.descriptor.fqNameSafe
-        else type.classifierOrFail.descriptor.fqNameSafe
-        return (listOfNotNull(if (type.isMarkedNullable()) "nullable" else null) +
-                fqName.pathSegments().map { it.asString() })
-            .joinToString("_")
-            .decapitalize()
-            .let { "_$it" }
-            .asNameId()
-    }
+    private fun getNameForType(type: IrType): Name = buildString {
+        append("_")
+        fun IrType.render() {
+            val fqName = if (this is IrSimpleType && abbreviation != null &&
+                abbreviation!!.typeAlias.descriptor.hasAnnotation(InjektFqNames.Distinct)
+            ) abbreviation!!.typeAlias.descriptor.fqNameSafe
+            else classifierOrFail.descriptor.fqNameSafe
+            append(
+                (listOfNotNull(if (isMarkedNullable()) "nullable" else null) +
+                        fqName.pathSegments().map { it.asString() })
+                    .joinToString("_")
+                    .decapitalize()
+            )
+
+            typeArguments.forEachIndexed { index, typeArgument ->
+                if (index == 0) append("_")
+                typeArgument.typeOrFail.render()
+                if (index != typeArguments.lastIndex) append("_")
+            }
+        }
+
+        type.render()
+    }.asNameId()
 
     private fun IrFunction.copyAsReader(): IrFunction {
         return copy(pluginContext).apply {

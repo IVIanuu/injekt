@@ -75,6 +75,23 @@ class GraphTest {
     }
 
     @Test
+    fun testDistinctTypeParameter() = codegen(
+        """
+        @SetElements(TestComponent::class) @Reader fun setA() = setOf("a")
+        @SetElements(TestComponent::class) @Reader fun setB() = setOf(0)
+        
+        fun invoke(): Pair<Set<String>, Set<Int>> {
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            return component.runReader { given<Set<String>>() to given<Set<Int>>() }
+        }
+    """
+    ) {
+        val (setA, setB) = invokeSingleFile<Pair<Set<String>, Set<Int>>>()
+        assertNotSame(setA, setB)
+    }
+
+    @Test
     fun testDistinctTypeAlias() = codegen(
         """
         @Distinct typealias Foo1 = Foo

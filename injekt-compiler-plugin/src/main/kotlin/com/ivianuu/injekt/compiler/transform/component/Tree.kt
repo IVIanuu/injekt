@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt.compiler.transform.component
 
+import com.ivianuu.injekt.compiler.compareTypeWithDistinct
 import com.ivianuu.injekt.compiler.distinctedType
+import com.ivianuu.injekt.compiler.hashWithDistinct
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
@@ -169,12 +171,10 @@ class Key(val type: IrType) {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
         other as Key
-        if (type.distinctedType != other.type.distinctedType) return false
-        return true
+        return compareTypeWithDistinct(type, other.type)
     }
 
-    override fun hashCode(): Int = type.distinctedType
-        .hashCode()
+    override fun hashCode(): Int = type.hashWithDistinct()
 
     override fun toString(): String {
         return when (val distinctedType = type.distinctedType) {

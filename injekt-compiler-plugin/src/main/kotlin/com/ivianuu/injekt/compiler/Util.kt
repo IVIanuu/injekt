@@ -408,6 +408,30 @@ val IrType.distinctedType: Any
         ?.takeIf { it.descriptor.hasAnnotation(InjektFqNames.Distinct) }
         ?: this
 
+fun compareTypeWithDistinct(
+    a: IrType,
+    b: IrType
+): Boolean {
+    if (a.distinctedType != b.distinctedType) return false
+    val aTypeArguments = a.typeArguments
+    val bTypeArguments = b.typeArguments
+    if (aTypeArguments.size != bTypeArguments.size) return false
+
+    for (i in aTypeArguments.indices) {
+        val aType = aTypeArguments[i].typeOrFail
+        val bType = bTypeArguments[i].typeOrFail
+        if (!compareTypeWithDistinct(aType, bType)) return false
+    }
+
+    return true
+}
+
+fun IrType.hashWithDistinct(): Int {
+    var result = distinctedType.hashCode()
+    result += 31 * typeArguments.map { it.typeOrFail.hashWithDistinct() }.hashCode()
+    return result
+}
+
 val IrModuleFragment.indexPackageFile: IrFile
     get() = files.single { it.fqName == InjektFqNames.IndexPackage }
 

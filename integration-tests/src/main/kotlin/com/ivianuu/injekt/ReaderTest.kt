@@ -598,4 +598,29 @@ class ReaderTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
+    @Test
+    fun testGenericReaderDependencyOfSameType() = codegen(
+        """
+        @Given @Reader
+        class MyClass {
+            val set1: Set<String> = given()
+            val set2: Set<Int> = given()
+        }
+        
+        @SetElements(TestComponent::class) @Reader
+        fun set1() = emptySet<String>()
+        
+        @SetElements(TestComponent::class) @Reader
+        fun set2() = emptySet<Int>()
+        
+        fun invoke() { 
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            component.runReader { given<MyClass>() }
+        }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
 }
