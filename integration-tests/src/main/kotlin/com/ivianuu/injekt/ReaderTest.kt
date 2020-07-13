@@ -562,4 +562,40 @@ class ReaderTest {
         assertTrue(invokeSingleFile() is Bar)
     }
 
+    @Test
+    fun testGivenInDefaultParameter() = codegen(
+        """
+        @Given fun foo() = Foo()
+        
+        @Reader
+        fun createFoo(foo: Foo = given()): Foo = foo
+        
+        fun invoke(): Foo { 
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            return component.runReader { createFoo() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testGivenClassInDefaultParameter() = codegen(
+        """
+        @Given fun foo() = Foo()
+        
+        @Reader
+        class CreateFoo(val foo: Foo = given())
+        
+        fun invoke(): Foo { 
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            return component.runReader { CreateFoo().foo }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
 }

@@ -25,7 +25,6 @@ import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.given
 
-@GivenWorker
 @Reader
 class TestWorker(
     context: Context,

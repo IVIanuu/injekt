@@ -18,16 +18,13 @@ interface TestComponent {
 }
 
 @Given
-@Reader
 fun foo() = Foo()
 
 @Reader
-fun func(): Foo {
-    return given()
-}
+fun createFoo(foo: Foo = given()): Foo = foo
 
-fun main() {
+fun invoke(): Foo {
     initializeComponents()
     val component = componentFactory<TestComponent.Factory>().create()
-    component.runReader { func() }
+    return component.runReader { createFoo() }
 }
