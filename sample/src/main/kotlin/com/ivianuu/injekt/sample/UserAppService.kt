@@ -18,7 +18,6 @@ package com.ivianuu.injekt.sample
 
 import com.ivianuu.injekt.Reader
 
-@GivenWorker
 @Reader
 suspend fun userAppWorker() {
     println("run")

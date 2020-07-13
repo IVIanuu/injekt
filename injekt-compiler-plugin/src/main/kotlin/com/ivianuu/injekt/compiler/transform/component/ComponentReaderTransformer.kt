@@ -24,27 +24,37 @@ import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.indexPackageFile
 import com.ivianuu.injekt.compiler.singleClassArgConstructorCall
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
-import com.ivianuu.injekt.compiler.typeArguments
-import com.ivianuu.injekt.compiler.typeOrFail
+import com.ivianuu.injekt.compiler.transform.ReaderTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
+import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irImplicitCast
 import org.jetbrains.kotlin.ir.builders.irString
+import org.jetbrains.kotlin.ir.builders.irTemporary
+import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.expressions.IrBlockBody
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
+import org.jetbrains.kotlin.ir.expressions.IrGetValue
+import org.jetbrains.kotlin.ir.expressions.IrReturn
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ComponentReaderTransformer(
-    pluginContext: IrPluginContext
+    pluginContext: IrPluginContext,
+    private val readerTransformer: ReaderTransformer
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val nameProvider = NameProvider()
@@ -54,15 +64,15 @@ class ComponentReaderTransformer(
             override fun visitCall(expression: IrCall): IrExpression {
                 val result = super.visitCall(expression) as IrCall
                 if (expression.symbol.descriptor.fqNameSafe.asString() !=
-                    "com.ivianuu.injekt.runReader" ||
-                    expression.extensionReceiver == null
+                    "com.ivianuu.injekt.runReader"
                 ) return result
                 val component = result.extensionReceiver!!.type
-                val context =
-                    result.getValueArgument(0)!!.type.typeArguments.first().typeOrFail
+                val lambda = (result.getValueArgument(0) as IrFunctionExpression)
+                    .function
+                val readerInfo = readerTransformer.getReaderInfoForDeclaration(lambda)
 
-                context.classOrNull!!.owner.annotations +=
-                    DeclarationIrBuilder(pluginContext, context.classOrNull!!)
+                readerInfo.annotations +=
+                    DeclarationIrBuilder(pluginContext, readerInfo.symbol)
                         .singleClassArgConstructorCall(
                             symbols.entryPoint,
                             component.classifierOrFail
@@ -85,7 +95,7 @@ class ComponentReaderTransformer(
                             irCall(symbols.index.constructors.single()).apply {
                                 putValueArgument(
                                     0,
-                                    irString(context.classOrNull!!.descriptor.fqNameSafe.asString())
+                                    irString(readerInfo.descriptor.fqNameSafe.asString())
                                 )
                             }
                         }
@@ -93,20 +103,38 @@ class ComponentReaderTransformer(
                 )
 
                 return DeclarationIrBuilder(pluginContext, result.symbol).run {
-                    irCall(
-                        pluginContext.referenceFunctions(
-                            FqName("com.ivianuu.injekt.runReader")
-                        ).single { it.owner.extensionReceiverParameter == null }
-                    ).apply {
-                        putValueArgument(
-                            0,
-                            result.extensionReceiver
-                        )
+                    irBlock {
+                        val variablesByValueParameter =
+                            lambda.valueParameters.associateWith { valueParameter ->
+                                val componentFunction = readerInfo.declarations
+                                    .filterIsInstance<IrFunction>()
+                                    .single { it.name == valueParameter.name }
+                                irTemporary(
+                                    irCall(componentFunction).apply {
+                                        dispatchReceiver = irImplicitCast(
+                                            result.extensionReceiver!!.deepCopyWithVariables(),
+                                            readerInfo.defaultType
+                                        )
+                                    }
+                                )
+                            }.mapKeys { it.key.symbol }
+                        (lambda.body as IrBlockBody).statements.forEach { stmt ->
+                            +stmt.transform(
+                                object : IrElementTransformerVoid() {
+                                    override fun visitGetValue(expression: IrGetValue): IrExpression {
+                                        return variablesByValueParameter[expression.symbol]
+                                            ?.let { irGet(it) }
+                                            ?: super.visitGetValue(expression)
+                                    }
 
-                        putValueArgument(
-                            1,
-                            result.getValueArgument(0)!!
-                        )
+                                    override fun visitReturn(expression: IrReturn): IrExpression {
+                                        val result = super.visitReturn(expression) as IrReturn
+                                        return if (result.returnTargetSymbol == lambda.symbol) result.value else result
+                                    }
+                                },
+                                null
+                            )
+                        }
                     }
                 }
             }

@@ -36,5 +36,5 @@ dependencies {
 
     implementation(Deps.AndroidX.Compose.runtime)
     kotlinCompilerPluginClasspath(Deps.AndroidX.Compose.compiler)
-    implementation(Deps.AndroidX.Ui.material)
+    implementation(Deps.AndroidX.Compose.material)
 }

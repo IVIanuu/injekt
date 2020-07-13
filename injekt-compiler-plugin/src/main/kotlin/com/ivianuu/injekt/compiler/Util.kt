@@ -44,6 +44,7 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -84,6 +85,7 @@ import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.dump
@@ -281,12 +283,6 @@ fun IrDeclaration.isExternalDeclaration() = origin ==
         IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
         origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
 
-fun IrFunction.getFunctionType(pluginContext: IrPluginContext): IrType {
-    return (if (isSuspend) pluginContext.tmpSuspendFunction(valueParameters.size)
-    else pluginContext.tmpFunction(valueParameters.size))
-        .typeWith(valueParameters.map { it.type } + returnType)
-}
-
 fun IrPluginContext.tmpFunction(n: Int): IrClassSymbol =
     referenceClass(builtIns.getFunction(n).fqNameSafe)!!
 
@@ -394,16 +390,32 @@ fun dexSafeName(name: Name): Name {
     } else name
 }
 
-fun IrClass.uniqueName(): String = "c_${descriptor.fqNameSafe}"
+fun IrDeclarationWithName.uniqueName() = when (this) {
+    is IrClass -> "c_${descriptor.fqNameSafe}"
+    is IrFunction -> "f_${descriptor.fqNameSafe}_${
+    descriptor.valueParameters
+        .filterNot { it.name.asString().startsWith("_") }
+        .map { it.type }.map {
+            it.constructor.declarationDescriptor!!.fqNameSafe
+        }.hashCode().absoluteValue
+    }${if (visibility == Visibilities.LOCAL) "_$startOffset" else ""}"
+    else -> error("Unsupported declaration ${dump()}")
+}
 
-fun IrFunction.uniqueName(): String = "f_${descriptor.fqNameSafe}_${
-valueParameters.map { it.type }.map {
-    it.classifierOrFail.descriptor.fqNameSafe
-}.hashCode().absoluteValue
-}"
+val IrType.distinctedType: Any
+    get() = (this as? IrSimpleType)?.abbreviation
+        ?.typeAlias
+        ?.takeIf { it.descriptor.hasAnnotation(InjektFqNames.Distinct) }
+        ?: this
 
 val IrModuleFragment.indexPackageFile: IrFile
     get() = files.single { it.fqName == InjektFqNames.IndexPackage }
+
+fun IrFunction.isReader(): Boolean = hasAnnotation(InjektFqNames.Reader) ||
+        (this is IrConstructor && (constructedClass.hasAnnotation(InjektFqNames.Reader))) ||
+        (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.hasAnnotation(
+            InjektFqNames.Reader
+        ) == true)
 
 fun IrBuilderWithScope.singleClassArgConstructorCall(
     clazz: IrClassSymbol,

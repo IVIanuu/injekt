@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.flatMapFix
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -116,62 +115,44 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
     private fun implementRequests() {
         val processedSuperTypes = mutableSetOf<IrType>()
         val declarationNames = mutableSetOf<Name>()
-        var firstRound = true
-        while (true) {
-            val entryPoints = if (firstRound) {
-                factoryImpl.node.entryPoints.map { it.entryPoint }
-            } else {
-                (graph.resolvedBindings.values
-                    .flatMapFix { it.contexts } +
-                        dependencyRequests
-                            .map { it.second }
-                            .map { graph.getBinding(it) }
-                            .flatMapFix { it.contexts })
-                    .filter { it.defaultType !in processedSuperTypes }
-            }
-
-            if (entryPoints.isEmpty()) break
-
-            fun collect(superClass: IrClass) {
-                if (superClass.defaultType in processedSuperTypes) return
-                processedSuperTypes += superClass.defaultType
-                for (declaration in superClass.declarations.toList()) {
-                    if (declaration !is IrFunction) continue
-                    if (declaration is IrConstructor) continue
-                    if (declaration.name in declarationNames) continue
-                    if (declaration.dispatchReceiverParameter?.type ==
-                        factoryImpl.pluginContext.irBuiltIns.anyType
-                    ) break
-                    declarationNames += declaration.name
-                    val request = BindingRequest(
-                        declaration.returnType.asKey(),
-                        null,
-                        superClass.getAnnotation(InjektFqNames.Name)
-                            ?.getValueArgument(0)
-                            ?.let { it as IrConst<String> }
-                            ?.value
-                            ?.let { FqName(it) }
-                    )
-                    dependencyRequests += declaration to request
-                    dependencyRequests.forEach { (_, request) ->
-                        if (request.key !in implementedRequests) {
-                            componentExpressions.getBindingExpression(request)
-                        }
+        val entryPoints = factoryImpl.node.entryPoints.map { it.entryPoint }
+        fun collect(superClass: IrClass) {
+            if (superClass.defaultType in processedSuperTypes) return
+            processedSuperTypes += superClass.defaultType
+            for (declaration in superClass.declarations.toList()) {
+                if (declaration !is IrFunction) continue
+                if (declaration is IrConstructor) continue
+                if (declaration.name in declarationNames) continue
+                if (declaration.dispatchReceiverParameter?.type ==
+                    factoryImpl.pluginContext.irBuiltIns.anyType
+                ) break
+                declarationNames += declaration.name
+                val request = BindingRequest(
+                    declaration.returnType.asKey(),
+                    null,
+                    superClass.getAnnotation(InjektFqNames.Name)
+                        ?.getValueArgument(0)
+                        ?.let { it as IrConst<String> }
+                        ?.value
+                        ?.let { FqName(it) }
+                )
+                dependencyRequests += declaration to request
+                dependencyRequests.forEach { (_, request) ->
+                    if (request.key !in implementedRequests) {
+                        componentExpressions.getBindingExpression(request)
                     }
-                    graph.getBinding(request)
                 }
-
-                superClass.superTypes
-                    .map { it.classOrNull!!.owner }
-                    .forEach { collect(it) }
-
-                if (firstRound) firstRound = false
+                graph.getBinding(request)
             }
 
-            entryPoints.forEach { entryPoint ->
-                clazz.superTypes += entryPoint.defaultType
-                collect(entryPoint)
-            }
+            superClass.superTypes
+                .map { it.classOrNull!!.owner }
+                .forEach { collect(it) }
+        }
+
+        entryPoints.forEach { entryPoint ->
+            clazz.superTypes += entryPoint.defaultType
+            collect(entryPoint)
         }
     }
 

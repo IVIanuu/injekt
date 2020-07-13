@@ -33,9 +33,7 @@ class ReaderTest {
         fun foo() = Foo()
         
         @Reader
-        fun func(foo: Foo = given()): Foo {
-            return foo
-        }
+        fun func(): Foo = given<Foo>()
         
         fun invoke(): Foo { 
             initializeComponents()
@@ -53,9 +51,7 @@ class ReaderTest {
         fun foo() = Foo()
         
         @Reader
-        fun createFoo(foo: Foo = given()): Foo {
-            return foo
-        }
+        fun createFoo() = given<Foo>()
         
         fun <R> nonReader(block: () -> R) = block()
         
@@ -79,9 +75,9 @@ class ReaderTest {
         fun foo() = Foo()
         
         @Reader
-        suspend fun func(foo: Foo = given()): Foo {
+        suspend fun func(): Foo {
             delay(1000)
-            return foo
+            return given()
         }
         
         fun invoke(): Foo { 
@@ -104,9 +100,9 @@ class ReaderTest {
         fun foo() = Foo()
         
         @Reader
-        suspend fun func(foo: Foo = given()): Foo {
+        suspend fun func(): Foo {
             delay(1000)
-            return foo
+            return given()
         }
         
         fun invoke(): Foo { 
@@ -129,9 +125,9 @@ class ReaderTest {
         fun foo() = Foo()
         
         @Reader
-        suspend fun createFoo(foo: Foo = get()): Foo {
+        suspend fun createFoo(foo: Foo): Foo {
             delay(1000)
-            return foo
+            return given()
         }
         
         fun <R> nonReader(block: () -> R) = block()
@@ -167,9 +163,7 @@ class ReaderTest {
         fun foo() = Foo()
         
         @Reader
-        fun func(foo: Foo = given()): Foo {
-            return foo
-        }
+        fun func() = given<Foo>()
         
         @Reader
         fun withDefault(foo: Foo = func()): Foo = foo
@@ -566,6 +560,42 @@ class ReaderTest {
     """
     ) {
         assertTrue(invokeSingleFile() is Bar)
+    }
+
+    @Test
+    fun testGivenInDefaultParameter() = codegen(
+        """
+        @Given fun foo() = Foo()
+        
+        @Reader
+        fun createFoo(foo: Foo = given()): Foo = foo
+        
+        fun invoke(): Foo { 
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            return component.runReader { createFoo() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testGivenClassInDefaultParameter() = codegen(
+        """
+        @Given fun foo() = Foo()
+        
+        @Reader
+        class CreateFoo(val foo: Foo = given())
+        
+        fun invoke(): Foo { 
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            return component.runReader { CreateFoo().foo }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
     }
 
 }

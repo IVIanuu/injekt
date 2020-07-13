@@ -115,21 +115,15 @@ class DeclarationGraph(
                         pluginContext.referenceProperties(it)
                             .mapNotNull { it.owner.getter }
             }
-            .map {
-                if (it.isExternalDeclaration()) readerTransformer.getTransformedFunction(it)
-                else it
-            }
-            .distinct()
             .filter {
                 it.hasAnnotation(InjektFqNames.Given) ||
-                        (it is IrConstructor && it.constructedClass.hasAnnotation(InjektFqNames.Given) ||
-                                it is IrSimpleFunction &&
-                                it.correspondingPropertySymbol?.owner?.hasAnnotation(InjektFqNames.Given) == true)
+                        (it is IrConstructor && it.constructedClass.hasAnnotation(InjektFqNames.Given)) ||
+                        (it is IrSimpleFunction && it.correspondingPropertySymbol?.owner?.hasAnnotation(
+                            InjektFqNames.Given
+                        ) == true)
             }
-            .filter {
-                !it.hasAnnotation(InjektFqNames.Reader) ||
-                        it.valueParameters.lastOrNull()?.name?.asString() == "_context"
-            }
+            .map { readerTransformer.getTransformedFunction(it) }
+            .distinct()
             .forEach { _bindings += Binding(it) }
     }
 
@@ -141,12 +135,9 @@ class DeclarationGraph(
                 if (it.isExternalDeclaration()) readerTransformer.getTransformedFunction(it)
                 else it
             }
-            .distinct()
             .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
-            .filter {
-                !it.hasAnnotation(InjektFqNames.Reader) ||
-                        it.valueParameters.lastOrNull()?.name?.asString() == "_context"
-            }
+            .map { readerTransformer.getTransformedFunction(it) }
+            .distinct()
             .forEach { _mapEntries += MapEntries(it) }
     }
 
@@ -158,12 +149,9 @@ class DeclarationGraph(
                 if (it.isExternalDeclaration()) readerTransformer.getTransformedFunction(it)
                 else it
             }
-            .distinct()
             .filter { it.hasAnnotation(InjektFqNames.SetElements) }
-            .filter {
-                !it.hasAnnotation(InjektFqNames.Reader) ||
-                        it.valueParameters.lastOrNull()?.name?.asString() == "_context"
-            }
+            .map { readerTransformer.getTransformedFunction(it) }
+            .distinct()
             .forEach { _setElements += SetElements(it) }
     }
 

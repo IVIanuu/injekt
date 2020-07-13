@@ -25,7 +25,6 @@ import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.given
 
-@GivenWorker
 @Reader
 class TestWorker(
     context: Context,
@@ -33,6 +32,7 @@ class TestWorker(
 ) : CoroutineWorker(context, workerParams) {
 
     init {
+
         println("hello $context $workerParams ${given<Repo>()}")
     }
 
