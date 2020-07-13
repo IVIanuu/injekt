@@ -35,7 +35,6 @@ import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.thisOfClass
 import com.ivianuu.injekt.compiler.transform.component.getReaderInfo
 import com.ivianuu.injekt.compiler.typeArguments
-import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.uniqueName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
@@ -87,6 +86,7 @@ import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
+import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
@@ -656,7 +656,7 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
 
             typeArguments.forEachIndexed { index, typeArgument ->
                 if (index == 0) append("_")
-                typeArgument.typeOrFail.render()
+                typeArgument.typeOrNull?.render() ?: append("star")
                 if (index != typeArguments.lastIndex) append("_")
             }
         }

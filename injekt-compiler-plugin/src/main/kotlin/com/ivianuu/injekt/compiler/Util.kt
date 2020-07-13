@@ -409,17 +409,19 @@ val IrType.distinctedType: Any
         ?: this
 
 fun compareTypeWithDistinct(
-    a: IrType,
-    b: IrType
+    a: IrType?,
+    b: IrType?
 ): Boolean {
+    if ((a == null) != (b == null)) return false
+    if (a == null || b == null) return true
     if (a.distinctedType != b.distinctedType) return false
     val aTypeArguments = a.typeArguments
     val bTypeArguments = b.typeArguments
     if (aTypeArguments.size != bTypeArguments.size) return false
 
     for (i in aTypeArguments.indices) {
-        val aType = aTypeArguments[i].typeOrFail
-        val bType = bTypeArguments[i].typeOrFail
+        val aType = aTypeArguments[i].typeOrNull
+        val bType = bTypeArguments[i].typeOrNull
         if (!compareTypeWithDistinct(aType, bType)) return false
     }
 
@@ -428,7 +430,7 @@ fun compareTypeWithDistinct(
 
 fun IrType.hashWithDistinct(): Int {
     var result = distinctedType.hashCode()
-    result += 31 * typeArguments.map { it.typeOrFail.hashWithDistinct() }.hashCode()
+    result += 31 * typeArguments.mapNotNull { it.typeOrNull?.hashWithDistinct() }.hashCode()
     return result
 }
 
