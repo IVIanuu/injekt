@@ -274,6 +274,42 @@ class ComponentTest {
         assertSame(component, dep)
     }
 
+    @Test
+    fun testUnscopedProvider() = codegen(
+        """
+        @Given @Reader
+        fun foo() = Foo()
+        
+        val component by lazy {
+            initializeComponents()
+            componentFactory<TestComponent.Factory>().create()
+        }
+        
+        fun invoke() = component.runReader { given<() -> Foo>() }
+    """
+    ) {
+        val provider = invokeSingleFile<() -> Foo>()
+        assertNotSame(provider(), provider())
+    }
+
+    @Test
+    fun testScopedProvider() = codegen(
+        """
+        @Given(TestComponent::class) @Reader
+        fun foo() = Foo()
+        
+        val component by lazy {
+            initializeComponents()
+            componentFactory<TestComponent.Factory>().create()
+        }
+        
+        fun invoke() = component.runReader { given<() -> Foo>() }
+    """
+    ) {
+        val provider = invokeSingleFile<() -> Foo>()
+        assertSame(provider(), provider())
+    }
+
     // todo @Test
     fun testGenericAnnotatedClass() = codegen(
         """

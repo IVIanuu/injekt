@@ -52,9 +52,11 @@ class ComponentGraph(
         ComponentImplBindingResolver(component),
         ChildComponentFactoryBindingResolver(component),
         mapBindingResolver,
-        setBindingResolver
+        setBindingResolver,
+        ProviderBindingResolver(component)
     )
-    val resolvedBindings = mutableMapOf<Key, BindingNode>()
+
+    private val resolvedBindings = mutableMapOf<Key, BindingNode>()
 
     fun getBinding(request: BindingRequest): BindingNode {
         var binding = resolvedBindings[request.key]

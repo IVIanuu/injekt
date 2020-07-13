@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
 import com.ivianuu.injekt.compiler.tmpFunction
+import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.irBlock
@@ -38,6 +39,7 @@ import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.isFakeOverride
+import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -188,6 +190,26 @@ class GivenBindingResolver(
 
     override fun invoke(requestedKey: Key): List<BindingNode> =
         bindings.filter { it.key == requestedKey }
+}
+
+class ProviderBindingResolver(
+    private val component: ComponentImpl
+) : BindingResolver {
+    override fun invoke(requestedKey: Key): List<BindingNode> {
+        val requestedType = requestedKey.type
+        return when {
+            requestedType.isFunction() &&
+                    requestedType.typeArguments.size == 1 ->
+                listOf(
+                    ProviderBindingNode(
+                        requestedKey,
+                        component,
+                        null
+                    )
+                )
+            else -> emptyList()
+        }
+    }
 }
 
 class MapBindingResolver(
