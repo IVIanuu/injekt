@@ -28,6 +28,17 @@ import org.junit.Test
 class ReaderTest {
 
     @Test
+    fun lol() = codegen("""
+         @Given
+    @Reader
+    fun shortcutManager() = systemService<Int>()
+
+    @Reader
+    private inline fun <reified T : Any> systemService(): T = error("")
+
+    """)
+
+    @Test
     fun testSimpleReader() = codegen("""
         @Given @Reader
         fun foo() = Foo()

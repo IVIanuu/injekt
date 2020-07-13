@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import androidx.compose.plugins.kotlin.ComposeIrGenerationExtension
 import com.google.auto.service.AutoService
 import com.ivianuu.injekt.compiler.analysis.InjektStorageContainerContributor
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
@@ -27,6 +26,7 @@ import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
@@ -40,15 +40,21 @@ class InjektComponentRegistrar : ComponentRegistrar {
         )
         val irExtensionPoint = Extensions.getArea(project)
             .getExtensionPoint(IrGenerationExtension.extensionPointName)
-        val composeExtension = irExtensionPoint.extensionList.singleOrNull {
-            it is ComposeIrGenerationExtension
+
+        val composeIrExtensionClass = try {
+            Class.forName("androidx.compose.plugins.kotlin.ComposeIrGenerationExtension")
+        } catch (t: Throwable) {
+            null
         }
-        if (composeExtension != null) irExtensionPoint.unregisterExtension(
-            ComposeIrGenerationExtension::class.java
-        )
+        val composeExtension = if (composeIrExtensionClass != null) {
+            irExtensionPoint.extensionList.singleOrNull {
+                it.javaClass == composeIrExtensionClass
+            }
+        } else null
+        if (composeExtension != null) irExtensionPoint
+            .unregisterExtension(composeIrExtensionClass as Class<out IrGenerationExtension>)
         irExtensionPoint.registerExtension(InjektIrGenerationExtension()) {}
         if (composeExtension != null) irExtensionPoint.registerExtension(composeExtension) {}
-
 
         AnalysisHandlerExtension.registerExtension(
             project,

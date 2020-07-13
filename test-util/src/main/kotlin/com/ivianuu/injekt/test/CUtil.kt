@@ -105,6 +105,7 @@ fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().
     useIR = true
     jvmTarget = "1.8"
     verbose = false
+    kotlincArguments += "-XXLanguage:+NewInference"
     block()
 }
 
