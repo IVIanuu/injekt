@@ -80,6 +80,7 @@ import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
 
 object SystemServiceModule {
+
     @Given
     @Reader
     fun accessibilityManager() = systemService<AccessibilityManager>()
