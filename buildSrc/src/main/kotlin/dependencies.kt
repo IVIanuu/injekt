@@ -31,7 +31,7 @@ object Build {
 object Publishing {
     const val groupId = "com.ivianuu.injekt"
     const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev208"
+    const val version = "${Build.versionName}-dev209"
 }
 
 object Deps {
@@ -40,13 +40,11 @@ object Deps {
     object AndroidX {
         const val appCompat = "androidx.appcompat:appcompat:1.1.0"
 
-        const val composeVersion = "0.0.1-dev153"
-
         object Compose {
-            const val version = composeVersion
+            const val version = "0.0.1-dev153"
             const val compiler = "androidx.compose:compose-compiler:$version"
             const val material = "androidx.compose.material:material:$version"
-            const val runtime = "androidx.compose.runtime:runtime:$composeVersion"
+            const val runtime = "androidx.compose.runtime:runtime:$version"
             const val test = "androidx.compose.test:test-core:$version"
         }
 
