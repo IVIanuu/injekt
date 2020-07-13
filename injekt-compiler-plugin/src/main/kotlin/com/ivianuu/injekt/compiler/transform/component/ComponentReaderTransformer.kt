@@ -34,15 +34,21 @@ import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irImplicitCast
 import org.jetbrains.kotlin.ir.builders.irString
+import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.expressions.IrBlockBody
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
+import org.jetbrains.kotlin.ir.expressions.IrGetValue
+import org.jetbrains.kotlin.ir.expressions.IrReturn
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -98,15 +104,12 @@ class ComponentReaderTransformer(
 
                 return DeclarationIrBuilder(pluginContext, result.symbol).run {
                     irBlock {
-                        +lambda
-                        +irCall(lambda).apply {
-                            lambda.valueParameters.forEach { valueParameter ->
+                        val variablesByValueParameter =
+                            lambda.valueParameters.associateWith { valueParameter ->
                                 val componentFunction = readerInfo.declarations
                                     .filterIsInstance<IrFunction>()
                                     .single { it.name == valueParameter.name }
-
-                                putValueArgument(
-                                    valueParameter.index,
+                                irTemporary(
                                     irCall(componentFunction).apply {
                                         dispatchReceiver = irImplicitCast(
                                             result.extensionReceiver!!.deepCopyWithVariables(),
@@ -114,7 +117,23 @@ class ComponentReaderTransformer(
                                         )
                                     }
                                 )
-                            }
+                            }.mapKeys { it.key.symbol }
+                        (lambda.body as IrBlockBody).statements.forEach { stmt ->
+                            +stmt.transform(
+                                object : IrElementTransformerVoid() {
+                                    override fun visitGetValue(expression: IrGetValue): IrExpression {
+                                        return variablesByValueParameter[expression.symbol]
+                                            ?.let { irGet(it) }
+                                            ?: super.visitGetValue(expression)
+                                    }
+
+                                    override fun visitReturn(expression: IrReturn): IrExpression {
+                                        val result = super.visitReturn(expression) as IrReturn
+                                        return if (result.returnTargetSymbol == lambda.symbol) result.value else result
+                                    }
+                                },
+                                null
+                            )
                         }
                     }
                 }

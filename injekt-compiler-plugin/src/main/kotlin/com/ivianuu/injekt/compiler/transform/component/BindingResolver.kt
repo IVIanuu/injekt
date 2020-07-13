@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
 import com.ivianuu.injekt.compiler.tmpFunction
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
@@ -29,6 +30,8 @@ import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
+import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
@@ -137,12 +140,32 @@ class GivenBindingResolver(
                 dependencies = parameters
                     .filterNot { it.assisted }
                     .map {
-                        BindingRequest(it.key, key, null) // todo
+                        BindingRequest(it.key, key, it.origin) // todo
                     },
                 targetComponent = targetComponent?.defaultType,
                 scoped = targetComponent != null,
                 createExpression = { parametersMap ->
-                    irCall(function).apply {
+                    val call = if (function is IrConstructor) {
+                        IrConstructorCallImpl(
+                            UNDEFINED_OFFSET,
+                            UNDEFINED_OFFSET,
+                            function.returnType,
+                            function.symbol,
+                            function.constructedClass.typeParameters.size,
+                            function.typeParameters.size,
+                            function.valueParameters.size
+                        )
+                    } else {
+                        IrCallImpl(
+                            UNDEFINED_OFFSET,
+                            UNDEFINED_OFFSET,
+                            function.returnType,
+                            function.symbol,
+                            function.typeParameters.size,
+                            function.valueParameters.size
+                        )
+                    }
+                    call.apply {
                         if (function.dispatchReceiverParameter != null) {
                             dispatchReceiver = irGetObject(
                                 function.dispatchReceiverParameter!!.type.classOrNull!!

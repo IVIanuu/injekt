@@ -89,14 +89,11 @@ import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
-import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -305,7 +302,7 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
         readerConstructor.body = DeclarationIrBuilder(pluginContext, clazz.symbol).run {
             irBlockBody {
                 readerConstructor.body?.statements?.forEach {
-                    +it.deepCopyWithSymbols()
+                    +it
                     if (it is IrDelegatingConstructorCall) {
                         valueParametersByFields.forEach { (field, valueParameter) ->
                             +irSetField(
@@ -544,18 +541,9 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
         readerCalls: List<IrFunctionAccessExpression>,
         provider: (IrType, IrFunctionAccessExpression) -> IrBuilderWithScope.(List<ScopeWithIr>) -> IrExpression
     ) where T : IrDeclaration, T : IrDeclarationParent {
-        println("rewrite calls for ${owner.dump()}\ngive calls ${givenCalls.map { it.render() }}\n" +
-                "reader calls ${readerCalls.map { it.render() }}"
-        )
-
         owner.transform(object : IrElementTransformerVoidWithContext() {
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
                 val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
-                println(
-                    "visit fun access ${expression.render()} $result\n" +
-                            "is in given calls ${result in givenCalls}\n" +
-                            "is in reader calls ${result in readerCalls}"
-                )
                 return when (result) {
                     in givenCalls -> {
                         provider(result.getTypeArgument(0)!!, result)(
@@ -565,7 +553,6 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                     }
                     in readerCalls -> {
                         val transformedCallee = transformFunctionIfNeeded(result.symbol.owner)
-                        println("transform reader call ${result.dump()} ${transformedCallee.render()}")
                         fun IrFunctionAccessExpression.fillGivenParameters() {
                             (result.valueArgumentsCount until valueArgumentsCount).forEach {
                                 putValueArgument(
