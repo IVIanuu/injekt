@@ -230,12 +230,12 @@ class ComponentExpressions(
             }
         }
 
+        if (!binding.scoped) return instanceExpression
+
         // todo
         check(binding.parameters.size <= 1) {
             "Scoped bindings with assisted parameters are unsupported"
         }
-
-        if (!binding.scoped) return instanceExpression
 
         val lazy = pluginContext.referenceFunctions(FqName("kotlin.lazy"))
             .single { it.owner.valueParameters.size == 1 }
