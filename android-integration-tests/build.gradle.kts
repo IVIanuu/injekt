@@ -40,12 +40,12 @@ android {
 }
 
 dependencies {
-    implementation(Deps.AndroidX.Compose.runtimeDesktop)
+    implementation(Deps.AndroidX.Compose.runtime)
     implementation(Deps.AndroidX.Compose.compiler)
 
     implementation(project(":injekt-android"))
 
-    implementation(Deps.AndroidX.Ui.test)
+    implementation(Deps.AndroidX.Compose.test)
 
     implementation(project(":test-util"))
     kapt(project(":test-util"))

@@ -90,11 +90,13 @@ import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -245,6 +247,7 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                 }
                 return result
             }
+
         })
 
         val givenTypes = mutableMapOf<Any, IrType>()
@@ -541,77 +544,88 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
         readerCalls: List<IrFunctionAccessExpression>,
         provider: (IrType, IrFunctionAccessExpression) -> IrBuilderWithScope.(List<ScopeWithIr>) -> IrExpression
     ) where T : IrDeclaration, T : IrDeclarationParent {
+        println("rewrite calls for ${owner.dump()}\ngive calls ${givenCalls.map { it.render() }}\n" +
+                "reader calls ${readerCalls.map { it.render() }}"
+        )
+
         owner.transform(object : IrElementTransformerVoidWithContext() {
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
-                return when (expression) {
+                val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
+                println(
+                    "visit fun access ${expression.render()} $result\n" +
+                            "is in given calls ${result in givenCalls}\n" +
+                            "is in reader calls ${result in readerCalls}"
+                )
+                return when (result) {
                     in givenCalls -> {
-                        provider(expression.getTypeArgument(0)!!, expression)(
-                            DeclarationIrBuilder(pluginContext, expression.symbol),
+                        provider(result.getTypeArgument(0)!!, result)(
+                            DeclarationIrBuilder(pluginContext, result.symbol),
                             allScopes
                         )
                     }
                     in readerCalls -> {
-                        val transformedCallee = transformFunctionIfNeeded(expression.symbol.owner)
+                        val transformedCallee = transformFunctionIfNeeded(result.symbol.owner)
+                        println("transform reader call ${result.dump()} ${transformedCallee.render()}")
                         fun IrFunctionAccessExpression.fillGivenParameters() {
-                            (expression.valueArgumentsCount until valueArgumentsCount).forEach {
+                            (result.valueArgumentsCount until valueArgumentsCount).forEach {
                                 putValueArgument(
                                     it,
                                     provider(
                                         transformedCallee.valueParameters[it].type,
-                                        expression
+                                        result
                                     )(
-                                        DeclarationIrBuilder(pluginContext, expression.symbol),
+                                        DeclarationIrBuilder(pluginContext, result.symbol),
                                         allScopes
                                     )
                                 )
                             }
                         }
-                        when (expression) {
+                        when (result) {
                             is IrConstructorCall -> {
                                 IrConstructorCallImpl(
-                                    expression.startOffset,
-                                    expression.endOffset,
+                                    result.startOffset,
+                                    result.endOffset,
                                     transformedCallee.returnType,
                                     transformedCallee.symbol as IrConstructorSymbol,
-                                    expression.typeArgumentsCount,
+                                    result.typeArgumentsCount,
                                     transformedCallee.typeParameters.size,
                                     transformedCallee.valueParameters.size,
-                                    expression.origin
+                                    result.origin
                                 ).apply {
-                                    copyTypeAndValueArgumentsFrom(expression)
+                                    copyTypeAndValueArgumentsFrom(result)
                                     fillGivenParameters()
                                 }
                             }
                             is IrDelegatingConstructorCall -> {
                                 IrDelegatingConstructorCallImpl(
-                                    expression.startOffset,
-                                    expression.endOffset,
-                                    expression.type,
+                                    result.startOffset,
+                                    result.endOffset,
+                                    result.type,
                                     transformedCallee.symbol as IrConstructorSymbol,
-                                    expression.typeArgumentsCount,
+                                    result.typeArgumentsCount,
                                     transformedCallee.valueParameters.size
                                 ).apply {
-                                    copyTypeAndValueArgumentsFrom(expression)
+                                    copyTypeAndValueArgumentsFrom(result)
                                     fillGivenParameters()
                                 }
                             }
                             else -> {
-                                expression as IrCall
+                                result as IrCall
                                 IrCallImpl(
-                                    expression.startOffset,
-                                    expression.endOffset,
+                                    result.startOffset,
+                                    result.endOffset,
                                     transformedCallee.returnType,
                                     transformedCallee.symbol,
-                                    expression.origin,
-                                    expression.superQualifierSymbol
+                                    result.origin,
+                                    result.superQualifierSymbol
                                 ).apply {
-                                    copyTypeAndValueArgumentsFrom(expression)
+                                    copyTypeAndValueArgumentsFrom(result)
                                     fillGivenParameters()
                                 }
                             }
                         }
                     }
-                    else -> super.visitFunctionAccess(expression)
+                    else -> result
                 }
             }
         }, null)

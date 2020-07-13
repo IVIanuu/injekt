@@ -16,14 +16,13 @@
 
 package com.ivianuu.injekt.compiler
 
+import androidx.compose.plugins.kotlin.ComposeIrGenerationExtension
 import com.google.auto.service.AutoService
 import com.ivianuu.injekt.compiler.analysis.InjektStorageContainerContributor
-import com.ivianuu.injekt.compiler.analysis.ReaderChecker
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
-import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
@@ -35,17 +34,22 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project: MockProject,
         configuration: CompilerConfiguration
     ) {
-        val readerChecker = ReaderChecker()
         StorageComponentContainerContributor.registerExtension(
             project,
-            InjektStorageContainerContributor(readerChecker)
+            InjektStorageContainerContributor()
         )
-        Extensions.getArea(project)
+        val irExtensionPoint = Extensions.getArea(project)
             .getExtensionPoint(IrGenerationExtension.extensionPointName)
-            .registerExtension(
-                InjektIrGenerationExtension(),
-                LoadingOrder.FIRST
-            )
+        val composeExtension = irExtensionPoint.extensionList.singleOrNull {
+            it is ComposeIrGenerationExtension
+        }
+        if (composeExtension != null) irExtensionPoint.unregisterExtension(
+            ComposeIrGenerationExtension::class.java
+        )
+        irExtensionPoint.registerExtension(InjektIrGenerationExtension()) {}
+        if (composeExtension != null) irExtensionPoint.registerExtension(composeExtension) {}
+
+
         AnalysisHandlerExtension.registerExtension(
             project,
             IndexPackageGenerator()

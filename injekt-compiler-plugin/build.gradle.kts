@@ -30,4 +30,5 @@ dependencies {
     kapt(Deps.processingX)
     compileOnly(Deps.Kotlin.compilerEmbeddable)
     implementation(Deps.Kotlin.stdlib)
+    implementation(Deps.AndroidX.Compose.compiler)
 }
