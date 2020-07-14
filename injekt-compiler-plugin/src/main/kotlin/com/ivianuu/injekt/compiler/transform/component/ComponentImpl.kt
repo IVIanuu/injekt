@@ -150,7 +150,7 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
         }
 
         dependencyRequests.forEach { (_, request) ->
-            graph.getBinding(request)
+            graph.validate(request)
             if (request.key !in implementedRequests) {
                 componentExpressions.getBindingExpression(request)
             }

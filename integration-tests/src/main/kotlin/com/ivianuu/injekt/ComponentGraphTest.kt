@@ -27,7 +27,7 @@ import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertNull
 import org.junit.Test
 
-class GraphTest {
+class ComponentGraphTest {
 
     @Test
     fun testMissingBindingFails() = codegen(
@@ -57,6 +57,108 @@ class GraphTest {
         """
     ) {
         assertInternalError("multiple")
+    }
+
+    @Test
+    fun testCircularDependency() = codegen(
+        """
+        @Given
+        @Reader
+        class A {
+            val b: B = given()
+        }
+        @Given 
+        @Reader
+        class B {
+            val a: A = given()
+        }
+        
+        fun invoke() {
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            component.runReader { given<A>() }
+        }
+    """
+    ) {
+        assertInternalError("circular")
+    }
+
+    @Test
+    fun testCircularDependencyWithProvider() = codegen(
+        """
+        @Given(TestComponent::class) 
+        @Reader
+        class A {
+            val b: () -> B = given()
+        }
+        @Given 
+        @Reader
+        class B {
+            val a: A = given()
+        }
+        
+        fun invoke() {
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            component.runReader { given<A>() }
+        }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testCircularDependencyWithProvider2() = codegen(
+        """
+        @Given(TestComponent::class) 
+        @Reader
+        class A {
+            val b: B = given()
+        }
+        @Given
+        @Reader
+        class B {
+            val a: () -> A = given()
+        }
+        
+        fun invoke() {
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            component.runReader { given<A>() }
+        }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testCircularDependencyWithIrrelevantProvider() = codegen(
+        """
+        @Given(TestComponent::class) 
+        @Reader
+        class A {
+            val c: () -> C = given()
+        }
+        @Given 
+        @Reader
+        class B {
+            val c: C = given()
+        }
+        
+        @Given
+        @Reader
+        class C {
+            val b: B = given()
+        }
+        
+        fun invoke() {
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            component.runReader { given<A>() }
+        }
+    """
+    ) {
+        assertInternalError("circular")
     }
 
     @Test

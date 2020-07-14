@@ -41,18 +41,11 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         IndexingTransformer(injektPluginContext).doLower(moduleFragment)
 
-        try {
-            println(moduleFragment.dumpSrc())
-        } catch (t: Throwable) {
-
-        }
-
         ComponentTransformer(injektPluginContext, readerTransformer).doLower(moduleFragment)
 
         try {
             println(moduleFragment.dumpSrc())
         } catch (t: Throwable) {
-
         }
 
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
