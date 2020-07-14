@@ -155,6 +155,8 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
                 componentExpressions.getBindingExpression(request)
             }
         }
+
+        componentMembers.initializeFunctionBodies()
     }
 
 }

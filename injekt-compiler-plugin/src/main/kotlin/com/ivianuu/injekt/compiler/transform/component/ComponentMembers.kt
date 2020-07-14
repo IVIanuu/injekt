@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.expressions.IrBody
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.name.Name
 
@@ -44,6 +45,18 @@ class ComponentMembers(
     private val getFunctionsNameProvider = NameProvider()
 
     private val membersNameProvider = NameProvider()
+
+    private val functionBodies = mutableMapOf<IrFunction, () -> IrBody>()
+
+    fun initializeFunctionBodies() {
+        while (functionBodies.isNotEmpty()) {
+            val currentFunctionBodies = functionBodies.toList()
+            functionBodies.clear()
+            currentFunctionBodies.forEach { (function, body) ->
+                function.body = body()
+            }
+        }
+    }
 
     fun cachedValue(
         key: Key,
@@ -94,16 +107,18 @@ class ComponentMembers(
         }.apply {
             dispatchReceiverParameter = component.clazz.thisReceiver!!.copyTo(this)
             this.parent = component.clazz
-            this.body = DeclarationIrBuilder(pluginContext, symbol).run {
-                irExprBody(
-                    body(
-                        this,
-                        ComponentExpressionContext(component) { irGet(dispatchReceiverParameter!!) }
-                    )
-                )
-
-            }
             component.clazz.addChild(this)
+            functionBodies[this] = {
+                DeclarationIrBuilder(pluginContext, symbol).run {
+                    irExprBody(
+                        body(
+                            this,
+                            ComponentExpressionContext(component) { irGet(dispatchReceiverParameter!!) }
+                        )
+                    )
+
+                }
+            }
             getFunctions += this
         }
     }

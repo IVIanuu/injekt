@@ -188,8 +188,8 @@ class ComponentExpressions(
         { irNull() }
 
     private fun providerExpression(binding: ProviderBindingNode): ComponentExpression {
-        val dependency = getBindingExpression(binding.dependencies.single())
         return { c ->
+            val dependency = getBindingExpression(binding.dependencies.single())
             DeclarationIrBuilder(pluginContext, scope.scopeOwnerSymbol)
                 .irLambda(binding.key.type) { dependency(this, c) }
         }
