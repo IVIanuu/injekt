@@ -137,12 +137,6 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
                         ?.let { FqName(it) }
                 )
                 dependencyRequests += declaration to request
-                dependencyRequests.forEach { (_, request) ->
-                    if (request.key !in implementedRequests) {
-                        componentExpressions.getBindingExpression(request)
-                    }
-                }
-                graph.getBinding(request)
             }
 
             superClass.superTypes
@@ -153,6 +147,13 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
         entryPoints.forEach { entryPoint ->
             clazz.superTypes += entryPoint.defaultType
             collect(entryPoint)
+        }
+
+        dependencyRequests.forEach { (_, request) ->
+            graph.getBinding(request)
+            if (request.key !in implementedRequests) {
+                componentExpressions.getBindingExpression(request)
+            }
         }
     }
 
