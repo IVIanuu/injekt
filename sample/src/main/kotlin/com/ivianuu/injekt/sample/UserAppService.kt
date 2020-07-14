@@ -18,6 +18,7 @@ package com.ivianuu.injekt.sample
 
 import com.ivianuu.injekt.Reader
 
+@BindAppService
 @Reader
 suspend fun userAppWorker() {
     println("run")

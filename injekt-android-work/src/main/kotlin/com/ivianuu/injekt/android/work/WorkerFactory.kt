@@ -20,25 +20,42 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
+import com.ivianuu.injekt.ApplicationComponent
+import com.ivianuu.injekt.Distinct
+import com.ivianuu.injekt.Effect
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.MapEntries
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
 import kotlin.reflect.KClass
 
-@Reader
-inline fun <reified T : ListenableWorker> worker() = mapOf(T::class to { given<T>() })
+@Effect
+annotation class BindWorker {
+    companion object {
+        @MapEntries(ApplicationComponent::class)
+        @Reader
+        inline operator fun <reified T : ListenableWorker> invoke(): Workers = mapOf(
+            T::class to given<(Context, WorkerParameters) -> T>()
+        )
+    }
+}
+
+@Distinct
+typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
 
 @Given
-internal class InjektWorkerFactory(
-    private val workers: Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
-) : WorkerFactory() {
+@Reader
+internal class InjektWorkerFactory : WorkerFactory() {
 
     override fun createWorker(
         appContext: Context,
         workerClassName: String,
         workerParameters: WorkerParameters
     ): ListenableWorker? {
-        return workers[Class.forName(workerClassName).kotlin]?.invoke(appContext, workerParameters)
+        return given<Workers>()[Class.forName(workerClassName).kotlin]?.invoke(
+            appContext,
+            workerParameters
+        )
             ?: error("Could not find a worker for $workerClassName")
     }
 }

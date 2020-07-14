@@ -145,6 +145,7 @@ import org.jetbrains.kotlin.types.TypeProjectionImpl
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
+import org.jetbrains.kotlin.types.withAbbreviation
 import kotlin.math.absoluteValue
 
 fun Annotated.hasAnnotation(fqName: FqName): Boolean {
@@ -250,7 +251,20 @@ fun IrType.remapTypeParameters(
                     )
                 }
 
-                classifier is IrClass ->
+                classifier is IrClass -> {
+                    val arguments = arguments.map {
+                        when (it) {
+                            is IrTypeProjection -> makeTypeProjection(
+                                it.type.remapTypeParameters(
+                                    source,
+                                    target,
+                                    srcToDstParameterMap
+                                ),
+                                it.variance
+                            )
+                            else -> it
+                        }
+                    }
                     IrSimpleTypeImpl(
                         makeKotlinType(
                             classifier.symbol,
@@ -261,22 +275,11 @@ fun IrType.remapTypeParameters(
                         ),
                         classifier.symbol,
                         hasQuestionMark,
-                        arguments.map {
-                            when (it) {
-                                is IrTypeProjection -> makeTypeProjection(
-                                    it.type.remapTypeParameters(
-                                        source,
-                                        target,
-                                        srcToDstParameterMap
-                                    ),
-                                    it.variance
-                                )
-                                else -> it
-                            }
-                        },
+                        arguments,
                         annotations,
                         abbreviation
                     )
+                }
 
                 else -> this
             }
@@ -331,7 +334,23 @@ fun makeKotlinType(
         .makeNullableAsSpecified(hasQuestionMark)
         .let {
             if (abbreviation != null) {
-                it // todo
+                it.withAbbreviation(
+                    abbreviation.typeAlias.descriptor.defaultType
+                        .replace(
+                            newArguments = abbreviation.arguments.mapIndexed { index, it ->
+                                when (it) {
+                                    is IrTypeProjection -> TypeProjectionImpl(
+                                        it.variance,
+                                        it.type.toKotlinType()
+                                    )
+                                    is IrStarProjection -> StarProjectionImpl((classifier.descriptor as ClassDescriptor).typeConstructor.parameters[index])
+                                    else -> error(it)
+                                }
+                            },
+                            newAnnotations = if (annotations.isEmpty()) Annotations.EMPTY
+                            else Annotations.create(annotations.map { it.toAnnotationDescriptor() })
+                        )
+                )
             } else {
                 it
             }

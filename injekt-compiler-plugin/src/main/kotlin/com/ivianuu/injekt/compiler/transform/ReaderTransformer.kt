@@ -90,11 +90,13 @@ import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -284,7 +286,7 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
 
         givenTypes.values.forEach { givenType ->
             givenFields[givenType.distinctedType] = clazz.addField(
-                fieldName = getNameForType(givenType),
+                fieldName = getNameForType(givenType, clazz),
                 fieldType = givenType
             )
 
@@ -491,7 +493,7 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
 
         givenTypes.values.forEach { givenType ->
             givenValueParameters[givenType.distinctedType] = transformedFunction.addValueParameter(
-                name = getNameForType(givenType).asString(),
+                name = getNameForType(givenType, function).asString(),
                 type = givenType
             )
 
@@ -527,7 +529,7 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
 
     private fun IrClass.addReaderInfoForType(type: IrType) {
         addFunction {
-            this.name = getNameForType(type)
+            this.name = getNameForType(type, this@addReaderInfoForType)
             returnType = type
             modality = Modality.ABSTRACT
         }.apply {
@@ -640,28 +642,35 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
         ).asString() + "_$suffix"
     ).asNameId()
 
-    private fun getNameForType(type: IrType): Name = buildString {
-        append("_")
-        fun IrType.render() {
-            val fqName = if (this is IrSimpleType && abbreviation != null &&
-                abbreviation!!.typeAlias.descriptor.hasAnnotation(InjektFqNames.Distinct)
-            ) abbreviation!!.typeAlias.descriptor.fqNameSafe
-            else classifierOrFail.descriptor.fqNameSafe
-            append(
-                (listOfNotNull(if (isMarkedNullable()) "nullable" else null) +
-                        fqName.pathSegments().map { it.asString() })
-                    .joinToString("_")
-                    .decapitalize()
-            )
+    private fun getNameForType(
+        type: IrType,
+        owner: IrDeclaration
+    ): Name = buildString {
+        try {
+            append("_")
+            fun IrType.render() {
+                val fqName = if (this is IrSimpleType && abbreviation != null &&
+                    abbreviation!!.typeAlias.descriptor.hasAnnotation(InjektFqNames.Distinct)
+                ) abbreviation!!.typeAlias.descriptor.fqNameSafe
+                else classifierOrFail.descriptor.fqNameSafe
+                append(
+                    (listOfNotNull(if (isMarkedNullable()) "nullable" else null) +
+                            fqName.pathSegments().map { it.asString() })
+                        .joinToString("_")
+                        .decapitalize()
+                )
 
-            typeArguments.forEachIndexed { index, typeArgument ->
-                if (index == 0) append("_")
-                typeArgument.typeOrNull?.render() ?: append("star")
-                if (index != typeArguments.lastIndex) append("_")
+                typeArguments.forEachIndexed { index, typeArgument ->
+                    if (index == 0) append("_")
+                    typeArgument.typeOrNull?.render() ?: append("star")
+                    if (index != typeArguments.lastIndex) append("_")
+                }
             }
-        }
 
-        type.render()
+            type.render()
+        } catch (e: Exception) {
+            error("Couldn't render ${type.render()} for declaration ${owner.dump()}")
+        }
     }.asNameId()
 
     private fun IrFunction.copyAsReader(): IrFunction {

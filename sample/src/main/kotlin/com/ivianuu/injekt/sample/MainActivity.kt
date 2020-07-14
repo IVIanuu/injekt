@@ -24,6 +24,7 @@ import androidx.lifecycle.ViewModel
 import androidx.ui.core.setContent
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.android.ActivityContext
 import com.ivianuu.injekt.android.activityComponent
@@ -66,6 +67,7 @@ private fun enqueueWork(context: ActivityContext = given()) {
 }
 
 @Reader
+@Given
 class MainViewModel : ViewModel() {
     init {
         println("init")

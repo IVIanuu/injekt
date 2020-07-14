@@ -279,7 +279,6 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             DeclarationIrBuilder(pluginContext, symbol).run {
                 annotations += irCall(symbols.given.constructors.single())
                 annotations += irCall(symbols.reader.constructors.single())
-                annotations += irCall(symbols.reader.constructors.single())
             }
 
             body = DeclarationIrBuilder(pluginContext, symbol).run {
