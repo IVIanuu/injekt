@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
@@ -56,9 +57,10 @@ class IndexingTransformer(pluginContext: IrPluginContext) :
             }
 
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                if (declaration.hasAnnotation(InjektFqNames.Given) ||
-                    declaration.hasAnnotation(InjektFqNames.MapEntries) ||
-                    declaration.hasAnnotation(InjektFqNames.SetElements)
+                if ((declaration.hasAnnotation(InjektFqNames.Given) ||
+                            declaration.hasAnnotation(InjektFqNames.MapEntries) ||
+                            declaration.hasAnnotation(InjektFqNames.SetElements)) &&
+                    !declaration.isInEffect()
                 ) {
                     declarations += declaration
                 }
@@ -76,7 +78,9 @@ class IndexingTransformer(pluginContext: IrPluginContext) :
             }
 
             override fun visitProperty(declaration: IrProperty): IrStatement {
-                if (declaration.hasAnnotation(InjektFqNames.Given)) {
+                if (declaration.hasAnnotation(InjektFqNames.Given) &&
+                    !declaration.isInEffect()
+                ) {
                     declarations += declaration
                 }
                 return super.visitProperty(declaration)
@@ -104,6 +108,17 @@ class IndexingTransformer(pluginContext: IrPluginContext) :
                 }
             )
         }
+    }
+
+    private fun IrDeclaration.isInEffect(): Boolean {
+        var current: IrDeclaration? = parent as? IrDeclaration
+
+        while (current != null) {
+            if (current.hasAnnotation(InjektFqNames.Effect)) return true
+            current = current.parent as? IrDeclaration
+        }
+
+        return false
     }
 
 }

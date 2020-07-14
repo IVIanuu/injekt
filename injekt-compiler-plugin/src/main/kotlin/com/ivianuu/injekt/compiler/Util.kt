@@ -23,14 +23,19 @@ import org.jetbrains.kotlin.backend.common.ir.copyBodyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
+import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
+import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
@@ -62,11 +67,17 @@ import org.jetbrains.kotlin.ir.descriptors.WrappedFunctionDescriptorWithContaine
 import org.jetbrains.kotlin.ir.descriptors.WrappedPropertyGetterDescriptor
 import org.jetbrains.kotlin.ir.descriptors.WrappedPropertySetterDescriptor
 import org.jetbrains.kotlin.ir.descriptors.WrappedSimpleFunctionDescriptor
+import org.jetbrains.kotlin.ir.expressions.IrClassReference
+import org.jetbrains.kotlin.ir.expressions.IrConst
+import org.jetbrains.kotlin.ir.expressions.IrConstKind
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
+import org.jetbrains.kotlin.ir.expressions.IrSpreadElement
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
+import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
@@ -74,7 +85,9 @@ import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
+import org.jetbrains.kotlin.ir.types.IrStarProjection
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.IrTypeAbbreviation
 import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.types.classOrNull
@@ -82,18 +95,22 @@ import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
+import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
+import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isAnnotationClass
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
+import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -102,9 +119,31 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.DescriptorUtils
+import org.jetbrains.kotlin.resolve.constants.AnnotationValue
+import org.jetbrains.kotlin.resolve.constants.ArrayValue
+import org.jetbrains.kotlin.resolve.constants.BooleanValue
+import org.jetbrains.kotlin.resolve.constants.ByteValue
+import org.jetbrains.kotlin.resolve.constants.CharValue
+import org.jetbrains.kotlin.resolve.constants.ConstantValue
+import org.jetbrains.kotlin.resolve.constants.DoubleValue
+import org.jetbrains.kotlin.resolve.constants.EnumValue
+import org.jetbrains.kotlin.resolve.constants.FloatValue
+import org.jetbrains.kotlin.resolve.constants.IntValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
+import org.jetbrains.kotlin.resolve.constants.LongValue
+import org.jetbrains.kotlin.resolve.constants.NullValue
+import org.jetbrains.kotlin.resolve.constants.ShortValue
+import org.jetbrains.kotlin.resolve.constants.StringValue
+import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
+import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DescriptorWithContainerSource
+import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.SimpleType
+import org.jetbrains.kotlin.types.StarProjectionImpl
+import org.jetbrains.kotlin.types.TypeProjectionImpl
+import org.jetbrains.kotlin.types.replace
+import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import kotlin.math.absoluteValue
 
@@ -118,6 +157,30 @@ fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescrip
         module.findClassAcrossModuleDependencies(ClassId.topLevel(thisFqName)) ?: return false
     return descriptor.hasAnnotation(annotation)
 }
+
+fun Annotated.hasAnnotatedAnnotations(
+    annotation: FqName,
+    module: ModuleDescriptor
+): Boolean = annotations.any { it.hasAnnotation(annotation, module) }
+
+fun Annotated.getAnnotatedAnnotations(
+    annotation: FqName,
+    module: ModuleDescriptor
+): List<AnnotationDescriptor> =
+    annotations.filter {
+        it.hasAnnotation(annotation, module)
+    }
+
+fun IrAnnotationContainer.hasAnnotatedAnnotations(
+    annotation: FqName
+): Boolean = annotations.any { it.type.classOrNull!!.owner.hasAnnotation(annotation) }
+
+fun IrAnnotationContainer.getAnnotatedAnnotations(
+    annotation: FqName
+): List<IrConstructorCall> =
+    annotations.filter {
+        it.type.classOrNull!!.owner.hasAnnotation(annotation)
+    }
 
 inline fun <T, R> Iterable<T>.flatMapFix(
     block: (T) -> Iterable<R>
@@ -140,6 +203,22 @@ val IrMemberAccessExpression.typeArguments: List<IrType>
     get() =
         (0 until typeArgumentsCount).map { getTypeArgument(it)!! }
 
+fun IrType.copy(
+    classifier: IrClassifierSymbol = classifierOrFail,
+    isMarkedNullable: Boolean = this.isMarkedNullable(),
+    arguments: List<IrTypeArgument> = (this as IrSimpleType).arguments,
+    annotations: List<IrConstructorCall> = this.annotations,
+    abbreviation: IrTypeAbbreviation? = (this as IrSimpleType).abbreviation,
+): IrType {
+    return IrSimpleTypeImpl(
+        makeKotlinType(classifier, arguments, isMarkedNullable, annotations, abbreviation),
+        classifier,
+        isMarkedNullable,
+        arguments,
+        annotations,
+    )
+}
+
 fun IrType.remapTypeParameters(
     source: IrTypeParametersContainer,
     target: IrTypeParametersContainer,
@@ -156,6 +235,13 @@ fun IrType.remapTypeParameters(
                         else
                             classifier
                     IrSimpleTypeImpl(
+                        makeKotlinType(
+                            newClassifier.symbol,
+                            arguments,
+                            hasQuestionMark,
+                            annotations,
+                            abbreviation
+                        ),
                         newClassifier.symbol,
                         hasQuestionMark,
                         arguments,
@@ -166,6 +252,13 @@ fun IrType.remapTypeParameters(
 
                 classifier is IrClass ->
                     IrSimpleTypeImpl(
+                        makeKotlinType(
+                            classifier.symbol,
+                            arguments,
+                            hasQuestionMark,
+                            annotations,
+                            abbreviation
+                        ),
                         classifier.symbol,
                         hasQuestionMark,
                         arguments.map {
@@ -206,12 +299,92 @@ fun IrType.substitute(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrTy
 
     val newAnnotations = annotations.map { it.deepCopyWithSymbols() }
     return IrSimpleTypeImpl(
+        makeKotlinType(classifier, arguments, hasQuestionMark, annotations, abbreviation),
         classifier,
         hasQuestionMark,
         newArguments,
         newAnnotations,
         abbreviation
     )
+}
+
+fun makeKotlinType(
+    classifier: IrClassifierSymbol,
+    arguments: List<IrTypeArgument>,
+    hasQuestionMark: Boolean,
+    annotations: List<IrConstructorCall>,
+    abbreviation: IrTypeAbbreviation?
+): SimpleType {
+    val kotlinTypeArguments = arguments.mapIndexed { index, it ->
+        when (it) {
+            is IrTypeProjection -> TypeProjectionImpl(it.variance, it.type.toKotlinType())
+            is IrStarProjection -> StarProjectionImpl((classifier.descriptor as ClassDescriptor).typeConstructor.parameters[index])
+            else -> error(it)
+        }
+    }
+    return classifier.descriptor.defaultType
+        .replace(
+            newArguments = kotlinTypeArguments,
+            newAnnotations = if (annotations.isEmpty()) Annotations.EMPTY
+            else Annotations.create(annotations.map { it.toAnnotationDescriptor() })
+        )
+        .makeNullableAsSpecified(hasQuestionMark)
+        .let {
+            if (abbreviation != null) {
+                it // todo
+            } else {
+                it
+            }
+        }
+}
+
+fun IrConstructorCall.toAnnotationDescriptor(): AnnotationDescriptor {
+    assert(symbol.owner.parentAsClass.isAnnotationClass) {
+        "Expected call to constructor of annotation class but was: ${this.dump()}"
+    }
+
+    return AnnotationDescriptorImpl(
+        symbol.owner.parentAsClass.defaultType.toKotlinType(),
+        symbol.owner.valueParameters.map { it.name to getValueArgument(it.index) }
+            .filter { it.second != null }
+            .associate { it.first to it.second!!.toConstantValue() },
+        /*TODO*/ SourceElement.NO_SOURCE
+    )
+}
+
+fun IrElement.toConstantValue(): ConstantValue<*> {
+    return when (this) {
+        is IrConst<*> -> when (kind) {
+            IrConstKind.Null -> NullValue()
+            IrConstKind.Boolean -> BooleanValue(value as Boolean)
+            IrConstKind.Char -> CharValue(value as Char)
+            IrConstKind.Byte -> ByteValue(value as Byte)
+            IrConstKind.Short -> ShortValue(value as Short)
+            IrConstKind.Int -> IntValue(value as Int)
+            IrConstKind.Long -> LongValue(value as Long)
+            IrConstKind.String -> StringValue(value as String)
+            IrConstKind.Float -> FloatValue(value as Float)
+            IrConstKind.Double -> DoubleValue(value as Double)
+        }
+        is IrVararg -> {
+            val elements =
+                elements.map { if (it is IrSpreadElement) error("$it is not expected") else it.toConstantValue() }
+            ArrayValue(elements) { moduleDescriptor ->
+                // TODO: substitute.
+                moduleDescriptor.builtIns.array.defaultType
+            }
+        }
+        is IrGetEnumValue -> EnumValue(
+            symbol.owner.parentAsClass.descriptor.classId!!,
+            symbol.owner.name
+        )
+        is IrClassReference -> KClassValue(
+            classType.classifierOrFail.descriptor.classId!!, /*TODO*/
+            0
+        )
+        is IrConstructorCall -> AnnotationValue(this.toAnnotationDescriptor())
+        else -> error("$this is not expected: ${this.dump()}")
+    }
 }
 
 fun <T> T.getClassFromSingleValueAnnotation(
@@ -405,7 +578,9 @@ fun IrDeclarationWithName.uniqueName() = when (this) {
 val IrType.distinctedType: Any
     get() = (this as? IrSimpleType)?.abbreviation
         ?.typeAlias
-        ?.takeIf { it.descriptor.hasAnnotation(InjektFqNames.Distinct) }
+        ?.takeIf {
+            it.descriptor.hasAnnotation(InjektFqNames.Distinct)
+        }
         ?: this
 
 fun compareTypeWithDistinct(
@@ -415,6 +590,7 @@ fun compareTypeWithDistinct(
     if ((a == null) != (b == null)) return false
     if (a == null || b == null) return true
     if (a.distinctedType != b.distinctedType) return false
+
     val aTypeArguments = a.typeArguments
     val bTypeArguments = b.typeArguments
     if (aTypeArguments.size != bTypeArguments.size) return false
@@ -424,6 +600,18 @@ fun compareTypeWithDistinct(
         val bType = bTypeArguments[i].typeOrNull
         if (!compareTypeWithDistinct(aType, bType)) return false
     }
+
+    val aQualifier = a.getAnnotation(InjektFqNames.Qualifier)
+        ?.getValueArgument(0)
+        ?.let { it as IrConst<String> }
+        ?.value
+
+    val bQualifier = b.getAnnotation(InjektFqNames.Qualifier)
+        ?.getValueArgument(0)
+        ?.let { it as IrConst<String> }
+        ?.value
+
+    if (aQualifier != bQualifier) return false
 
     return true
 }
@@ -507,4 +695,11 @@ fun IrBuilderWithScope.jvmNameAnnotation(
     return irCall(jvmName.constructors.single()).apply {
         putValueArgument(0, irString(name))
     }
+}
+
+fun FunctionDescriptor.getFunctionType(): KotlinType {
+    return (if (isSuspend) builtIns.getSuspendFunction(valueParameters.size)
+    else builtIns.getFunction(valueParameters.size))
+        .defaultType
+        .replace(newArguments = valueParameters.map { it.type.asTypeProjection() } + returnType!!.asTypeProjection())
 }

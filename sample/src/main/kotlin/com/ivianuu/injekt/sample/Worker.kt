@@ -32,7 +32,6 @@ class TestWorker(
 ) : CoroutineWorker(context, workerParams) {
 
     init {
-
         println("hello $context $workerParams ${given<Repo>()}")
     }
 

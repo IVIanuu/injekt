@@ -23,6 +23,7 @@ object InjektFqNames {
     val Component = InjektPackage.child("Component".asNameId())
     val ComponentFactory = Component.child("Factory".asNameId())
     val Distinct = InjektPackage.child("Distinct".asNameId())
+    val Effect = InjektPackage.child("Effect".asNameId())
     val Given = InjektPackage.child("Given".asNameId())
     val MapEntries = InjektPackage.child("MapEntries".asNameId())
     val Reader = InjektPackage.child("Reader".asNameId())
@@ -33,6 +34,7 @@ object InjektFqNames {
     val EntryPoint = InternalPackage.child("EntryPoint".asNameId())
     val Index = InternalPackage.child("Index".asNameId())
     val Name = InternalPackage.child("Name".asNameId())
+    val Qualifier = InternalPackage.child("Qualifier".asNameId())
 
     val IndexPackage = InternalPackage.child("index".asNameId())
 }

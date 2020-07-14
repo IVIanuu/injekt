@@ -22,32 +22,40 @@ import com.ivianuu.injekt.compiler.transform.component.ComponentTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
-import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.linkage.IrDeserializer
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
-import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val injektPluginContext = InjektPluginContext(moduleFragment, pluginContext)
+
+        EffectTransformer(injektPluginContext).doLower(moduleFragment)
+
         val readerTransformer = ReaderTransformer(injektPluginContext)
         readerTransformer.doLower(moduleFragment)
-        IndexingTransformer(injektPluginContext).doLower(moduleFragment)
 
         ComponentReaderTransformer(injektPluginContext, readerTransformer).doLower(moduleFragment)
-        ComponentTransformer(injektPluginContext, readerTransformer).doLower(moduleFragment)
-        TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
+
+        IndexingTransformer(injektPluginContext).doLower(moduleFragment)
 
         try {
             println(moduleFragment.dumpSrc())
-        } catch (e: Exception) {
+        } catch (t: Throwable) {
 
         }
+
+        ComponentTransformer(injektPluginContext, readerTransformer).doLower(moduleFragment)
+
+        try {
+            println(moduleFragment.dumpSrc())
+        } catch (t: Throwable) {
+
+        }
+
+        TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 
         generateSymbols(pluginContext)
     }

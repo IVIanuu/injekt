@@ -107,6 +107,36 @@ interface InjektErrors {
             "@Reader class cannot be an object"
         )
 
+        @JvmField
+        val EFFECT_WITHOUT_COMPANION = error(
+            "@Effect annotated class needs a companion object"
+        )
+
+        @JvmField
+        val EFFECT_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS = error(
+            "@Effect functions cannot have value parameters"
+        )
+
+        @JvmField
+        val EFFECT_FUNCTION_NEEDS_ONE_TYPE_PARAMETER = error(
+            "@Effect functions must have 1 type parameter"
+        )
+
+        @JvmField
+        val NOT_IN_EFFECT_BOUNDS = error(
+            "Annotated class is not in @Effect bounds"
+        )
+
+        @JvmField
+        val EFFECT_WITHOUT_GIVEN = error(
+            "@Effect must be combined with @Given"
+        )
+
+        @JvmField
+        val EFFECT_WITH_TYPE_PARAMETERS = error(
+            "@BindingEffect and @Effect annotated declaration cannot have type parameters"
+        )
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,

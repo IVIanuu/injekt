@@ -131,10 +131,11 @@ class GivenBindingResolver(
 
             val assistedParameters = parameters.filter { it.assisted }
 
-            val key = if (assistedParameters.isEmpty()) binding.function.returnType.asKey()
+            val key = if (assistedParameters.isEmpty()) function.returnType
+                .asKey()
             else pluginContext.tmpFunction(assistedParameters.size)
                 .typeWith(
-                    assistedParameters.map { it.key.type } + binding.function.returnType
+                    assistedParameters.map { it.key.type } + function.returnType
                 )
                 .asKey()
 
