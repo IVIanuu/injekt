@@ -34,7 +34,7 @@ class TmpMetadataPatcher(pluginContext: IrPluginContext) :
             override fun visitFile(declaration: IrFile): IrFile {
                 (declaration as IrFileImpl).metadata =
                     MetadataSource.File(
-                        (declaration.metadata!!.descriptors + (declaration.declarations
+                        ((declaration.metadata as MetadataSource.File).descriptors + (declaration.declarations
                             .filter { !it.hasAnnotation(InjektFqNames.Reader) })
                             .map { it.descriptor })
                             .distinct()

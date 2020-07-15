@@ -206,6 +206,23 @@ class ComponentTest {
     }
 
     @Test
+    fun testGivenObject() = codegen(
+        """
+        @Given
+        object AnnotatedFoo
+
+        val component by lazy {
+            initializeComponents()
+            componentFactory<TestComponent.Factory>().create()
+        }
+
+        fun invoke() = component.runReader { given<AnnotatedFoo>() }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
     fun testGivenProperty() = codegen(
         """
         @Given

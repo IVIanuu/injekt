@@ -623,4 +623,44 @@ class ReaderTest {
         invokeSingleFile()
     }
 
+    // todo @Test
+    fun testReaderCycle() = codegen(
+        """
+        @Reader
+        fun a() {
+            given<Int>()
+            b()
+        }
+        
+        @Reader
+        fun b() {
+            given<String>()
+            a()
+        }
+    """
+    )
+
+    // todo @Test
+    fun testIntermediateReaderCycle() = codegen(
+        """
+        @Reader
+        fun a() {
+            given<Int>()
+            b()
+        }
+        
+        @Reader
+        fun b() {
+            given<String>()
+            c()
+        }
+        
+        @Reader
+        fun c() {
+            given<Double>()
+            a()
+        }
+    """
+    )
+
 }

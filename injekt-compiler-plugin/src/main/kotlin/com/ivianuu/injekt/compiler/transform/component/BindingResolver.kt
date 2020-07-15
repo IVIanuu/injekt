@@ -254,7 +254,7 @@ class MapBindingResolver(
                         ?.filterNot { it.dispatchReceiverParameter?.type == pluginContext.irBuiltIns.anyType }
                         ?.map { it.returnType }
                         ?.distinct()
-                        ?.map { BindingRequest(it.asKey(), null, null) }
+                        ?.map { BindingRequest(it.asKey(), key, null) }
                         ?: emptyList()
                 },
             component,
@@ -321,7 +321,7 @@ class SetBindingResolver(
                         ?.filterNot { it.dispatchReceiverParameter?.type == pluginContext.irBuiltIns.anyType }
                         ?.map { it.returnType }
                         ?.distinct()
-                        ?.map { BindingRequest(it.asKey(), null, null) }
+                        ?.map { BindingRequest(it.asKey(), key, null) }
                         ?: emptyList()
                 },
             component,

@@ -65,7 +65,6 @@ class EffectChecker : DeclarationChecker {
             .filter { it.dispatchReceiverParameter?.value?.type == companion.defaultType }
             .forEach { effectFunction ->
                 if (effectFunction.typeParameters.size != 1) {
-                    println("report $effectFunction")
                     context.trace.report(
                         InjektErrors.EFFECT_FUNCTION_NEEDS_ONE_TYPE_PARAMETER
                             .on(declaration)

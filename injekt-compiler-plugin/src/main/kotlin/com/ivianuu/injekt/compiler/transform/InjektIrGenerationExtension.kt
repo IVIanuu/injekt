@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.component.ComponentReaderTransformer
 import com.ivianuu.injekt.compiler.transform.component.ComponentTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -42,11 +41,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         IndexingTransformer(injektPluginContext).doLower(moduleFragment)
 
         ComponentTransformer(injektPluginContext, readerTransformer).doLower(moduleFragment)
-
-        try {
-            println(moduleFragment.dumpSrc())
-        } catch (t: Throwable) {
-        }
 
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 

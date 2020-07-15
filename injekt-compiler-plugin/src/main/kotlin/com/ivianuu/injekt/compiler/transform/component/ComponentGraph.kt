@@ -132,8 +132,9 @@ class ComponentGraph(
 
         error(
             "No binding found for '${request.key}' " +
-                    "required at '${request.requestOrigin.orUnknown()}' " +
-                    "in '${component.origin}'"
+                    "required at '${request.requestingKey}' '${request.requestOrigin.orUnknown()}' " +
+                    "in '${component.origin}' " +
+                    "chain '$chain'"
         )
     }
 

@@ -200,7 +200,7 @@ fun IrType.isTypeParameter() = toKotlinType().isTypeParameter()
 fun IrTypeArgument.hasAnnotation(fqName: FqName): Boolean =
     typeOrNull?.hasAnnotation(fqName) == true
 
-val IrMemberAccessExpression.typeArguments: List<IrType>
+val IrMemberAccessExpression<*>.typeArguments: List<IrType>
     get() =
         (0 until typeArgumentsCount).map { getTypeArgument(it)!! }
 

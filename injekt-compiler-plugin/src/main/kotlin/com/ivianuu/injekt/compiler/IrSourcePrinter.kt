@@ -38,7 +38,6 @@ import org.jetbrains.kotlin.ir.declarations.IrTypeAlias
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.IrVariable
-import org.jetbrains.kotlin.ir.descriptors.IrBuiltInOperator
 import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrBlockBody
 import org.jetbrains.kotlin.ir.expressions.IrBranch
@@ -262,33 +261,9 @@ private class IrSourcePrinterVisitor(
         val function = expression.symbol.owner
         val name = function.name.asString()
         val descriptor = function.descriptor
-        val isOperator = descriptor.isOperator || function is IrBuiltInOperator
+        val isOperator = descriptor.isOperator
         val isInfix = descriptor.isInfix
         if (isOperator) {
-            if (name == "not") {
-                // IR tree for `a !== b` looks like `not(equals(a, b))` which makes
-                // it challenging to print it like the former. To do so, we capture when we are in
-                // a "not" call, and then check to see if the argument is an equals call. if it is,
-                // we will just print the child call and put the transformer into a mode where it
-                // knows to print the negative
-                val arg = expression.dispatchReceiver!!
-                if (arg is IrCall) {
-                    val fn = arg.symbol.owner
-                    if (fn is IrBuiltInOperator) {
-                        when (fn.name.asString()) {
-                            "equals",
-                            "EQEQ",
-                            "EQEQEQ" -> {
-                                val prevIsInNotCall = isInNotCall
-                                isInNotCall = true
-                                arg.print()
-                                isInNotCall = prevIsInNotCall
-                                return
-                            }
-                        }
-                    }
-                }
-            }
             val opSymbol = when (name) {
                 "contains" -> "in"
                 "equals" -> if (isInNotCall) "!=" else "=="
@@ -1250,7 +1225,7 @@ private class IrSourcePrinterVisitor(
         }
     }
 
-    private fun IrMemberAccessExpression.getValueParameterNamesForDebug(): List<String> {
+    private fun IrMemberAccessExpression<*>.getValueParameterNamesForDebug(): List<String> {
         val expectedCount = valueArgumentsCount
         return if (symbol.isBound) {
             val owner = symbol.owner
