@@ -41,17 +41,14 @@ object Deps {
         const val appCompat = "androidx.appcompat:appcompat:1.1.0"
 
         object Compose {
-            const val version = "0.0.1-dev156"
+            const val version = "0.0.1-dev155"
             const val compiler = "androidx.compose:compose-compiler:$version"
-            const val runtime = "androidx.compose:compose-runtime:$version"
-            const val animation = "androidx.ui:ui-animation:$version"
-            const val core = "androidx.ui:ui-core:$version"
-            const val foundation = "androidx.ui:ui-foundation:$version"
-            const val layout = "androidx.ui:ui-layout:$version"
-            const val material = "androidx.ui:ui-material:$version"
-            const val materialIconsExtended = "androidx.ui:ui-material-icons-extended:$version"
-            const val test = "androidx.ui:ui-test:$version"
-            const val text = "androidx.ui:ui-text:$version"
+            const val core = "androidx.compose.ui:ui:$version"
+            const val material = "androidx.compose.material:material:$version"
+            const val materialIconsExtended =
+                "androidx.compose.material:material-icons-extended:$version"
+            const val runtime = "androidx.compose.runtime:runtime:$version"
+            const val test = "androidx.compose.test:test-core:$version"
         }
 
         object Lifecycle {
