@@ -509,8 +509,7 @@ fun IrType.readableName(): Name = buildString {
         ) abbreviation!!.typeAlias.descriptor.fqNameSafe
         else classifierOrFail.descriptor.fqNameSafe
         append(
-            (listOfNotNull(if (isMarkedNullable()) "nullable" else null) +
-                    fqName.pathSegments().map { it.asString() })
+            fqName.pathSegments().map { it.asString() }
                 .joinToString("_")
                 .decapitalize()
         )
