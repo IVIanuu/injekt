@@ -247,7 +247,7 @@ class ComponentGraphTest {
         assertNotSame(foo1, foo2)
     }
 
-    // todo @Test
+    @Test
     fun testIgnoresNullability() = codegen(
         """
         @Given fun foo(): Foo = Foo()
@@ -256,14 +256,14 @@ class ComponentGraphTest {
         fun invoke() { 
             initializeComponents()
             val component = componentFactory<TestComponent.Factory>().create()
-            component.runReader { given<Foo1>() to given<Foo2>() }
+            component.runReader { given<Foo>() to given<Foo?>() }
         }
     """
     ) {
         assertInternalError("multiple")
     }
 
-    // todo @Test
+    @Test
     fun testReturnsInstanceForNullableBinding() = codegen(
         """
         @Given fun foo(): Foo = Foo()

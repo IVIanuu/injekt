@@ -632,39 +632,18 @@ val IrType.distinctedType: Any
 fun compareTypeWithDistinct(
     a: IrType?,
     b: IrType?
-): Boolean {
-    if ((a == null) != (b == null)) return false
-    if (a == null || b == null) return true
-    if (a.distinctedType != b.distinctedType) return false
-
-    val aTypeArguments = a.typeArguments
-    val bTypeArguments = b.typeArguments
-    if (aTypeArguments.size != bTypeArguments.size) return false
-
-    for (i in aTypeArguments.indices) {
-        val aType = aTypeArguments[i].typeOrNull
-        val bType = bTypeArguments[i].typeOrNull
-        if (!compareTypeWithDistinct(aType, bType)) return false
-    }
-
-    val aQualifier = a.getAnnotation(InjektFqNames.Qualifier)
-        ?.getValueArgument(0)
-        ?.let { it as IrConst<String> }
-        ?.value
-
-    val bQualifier = b.getAnnotation(InjektFqNames.Qualifier)
-        ?.getValueArgument(0)
-        ?.let { it as IrConst<String> }
-        ?.value
-
-    if (aQualifier != bQualifier) return false
-
-    return true
-}
+): Boolean = a?.hashWithDistinct() == b?.hashWithDistinct()
 
 fun IrType.hashWithDistinct(): Int {
-    var result = distinctedType.hashCode()
-    result += 31 * typeArguments.mapNotNull { it.typeOrNull?.hashWithDistinct() }.hashCode()
+    var result = 0
+    val distinctedType = distinctedType
+    if (distinctedType is IrSimpleType) {
+        result += 31 * distinctedType.classifier.hashCode()
+        result += 31 * distinctedType.arguments.map { it.typeOrNull?.hashWithDistinct() ?: 0 }
+            .hashCode()
+    } else {
+        result += 31 * distinctedType.hashCode()
+    }
 
     val qualifier = getAnnotation(InjektFqNames.Qualifier)
         ?.getValueArgument(0)

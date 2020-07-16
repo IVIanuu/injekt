@@ -23,7 +23,6 @@ import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.copy
 import com.ivianuu.injekt.compiler.distinctedType
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.getReaderConstructor
@@ -473,9 +472,6 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             }
         readerCalls.flatMapFix { readerCall ->
             val transformedCallee = transformFunctionIfNeeded(readerCall.symbol.owner)
-
-            println("found reader call ${readerCall.dumpSrc()}\n${transformedCallee.dumpSrc()}")
-
             transformedCallee
                 .valueParameters
                 .filter { it.hasAnnotation(InjektFqNames.Implicit) }
@@ -545,8 +541,6 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             val valueParameter = givenValueParameters[finalType]!!
             return@rewriteCalls { irGet(valueParameter) }
         }
-
-        println("transformed ${function.dumpSrc()}\n${transformedFunction.dumpSrc()}")
 
         return transformedFunction
     }

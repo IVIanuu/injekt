@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.indexPackageFile
 import com.ivianuu.injekt.compiler.readableName
@@ -163,7 +162,6 @@ class ComponentEntryPointTransformer(
                                         }
                                     )
                                 }.mapKeys { it.key.symbol }
-                        println("entry point ${entryPoint.dumpSrc()} for ${lambda.dumpSrc()}")
                         (lambda.body as IrBlockBody).statements.forEach { stmt ->
                             +stmt.transform(
                                 object : IrElementTransformerVoid() {
