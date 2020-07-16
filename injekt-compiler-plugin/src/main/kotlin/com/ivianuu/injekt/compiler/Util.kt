@@ -502,6 +502,30 @@ fun nameWithoutIllegalChars(name: String): Name = name
     .replace(",", "")
     .asNameId()
 
+fun IrType.readableName(): Name = buildString {
+    append("_")
+    fun IrType.renderName() {
+        val fqName = if (this is IrSimpleType && abbreviation != null &&
+            abbreviation!!.typeAlias.descriptor.hasAnnotation(InjektFqNames.Distinct)
+        ) abbreviation!!.typeAlias.descriptor.fqNameSafe
+        else classifierOrFail.descriptor.fqNameSafe
+        append(
+            (listOfNotNull(if (isMarkedNullable()) "nullable" else null) +
+                    fqName.pathSegments().map { it.asString() })
+                .joinToString("_")
+                .decapitalize()
+        )
+
+        typeArguments.forEachIndexed { index, typeArgument ->
+            if (index == 0) append("_")
+            typeArgument.typeOrNull?.renderName() ?: append("star")
+            if (index != typeArguments.lastIndex) append("_")
+        }
+    }
+
+    renderName()
+}.asNameId()
+
 fun wrapDescriptor(descriptor: FunctionDescriptor): WrappedSimpleFunctionDescriptor {
     return when (descriptor) {
         is PropertyGetterDescriptor ->

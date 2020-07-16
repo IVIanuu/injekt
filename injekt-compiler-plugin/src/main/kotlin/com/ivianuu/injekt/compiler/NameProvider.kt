@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.name.Name
 
 class NameProvider {
@@ -37,10 +36,7 @@ class NameProvider {
     }
 
     fun allocateForType(type: IrType): Name {
-        return allocateForGroup(
-            type.classifierOrFail.descriptor.name.asString()
-                .decapitalize()
-        ).asNameId()
+        return allocateForGroup(type.readableName())
     }
 
 }

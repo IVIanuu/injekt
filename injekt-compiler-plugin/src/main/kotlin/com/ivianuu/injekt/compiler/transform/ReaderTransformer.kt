@@ -30,6 +30,7 @@ import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isReader
 import com.ivianuu.injekt.compiler.jvmNameAnnotation
+import com.ivianuu.injekt.compiler.readableName
 import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.thisOfClass
@@ -82,21 +83,16 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
-import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.classifierOrFail
-import org.jetbrains.kotlin.ir.types.isMarkedNullable
-import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
+import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -180,6 +176,13 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                 .filterNot { it is IrConstructor }
                 .filterNot { it.isFakeOverride }
                 .filterNot { it.dispatchReceiverParameter?.type == irBuiltIns.anyType }
+                .sortedBy {
+                    it.getAnnotation(InjektFqNames.Index)!!
+                        .getValueArgument(0)
+                        .let { it as IrConst<String> }
+                        .value
+                        .toInt()
+                }
                 .forEach { readerValueParameter ->
                     readerConstructor.addValueParameter(
                         readerValueParameter.name.asString(),
@@ -283,22 +286,24 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
         }
 
         val givenFields = mutableMapOf<Any, IrField>()
+        val valueParametersByFields = mutableMapOf<IrField, IrValueParameter>()
 
         givenTypes.values.forEach { givenType ->
-            givenFields[givenType.distinctedType] = clazz.addField(
-                fieldName = getNameForType(givenType, clazz),
+            val field = clazz.addField(
+                fieldName = givenType.readableName(),
                 fieldType = givenType
             )
+            givenFields[givenType.distinctedType] = field
 
-            readerInfo.addReaderInfoForType(
-                givenType.remapTypeParameters(clazz, readerInfo)
-            )
-        }
-
-        val valueParametersByFields = givenFields.values.associateWith { field ->
-            readerConstructor.addValueParameter(
+            val valueParameter = readerConstructor.addValueParameter(
                 field.name.asString(),
                 field.type
+            )
+            valueParametersByFields[field] = valueParameter
+
+            readerInfo.addReaderInfoForType(
+                givenType.remapTypeParameters(clazz, readerInfo),
+                valueParameter.index
             )
         }
 
@@ -380,6 +385,13 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                     .filterNot { it is IrConstructor }
                     .filterNot { it.isFakeOverride }
                     .filterNot { it.dispatchReceiverParameter?.type == irBuiltIns.anyType }
+                    .sortedBy {
+                        it.getAnnotation(InjektFqNames.Index)!!
+                            .getValueArgument(0)
+                            .let { it as IrConst<String> }
+                            .value
+                            .toInt()
+                    }
                     .forEach { readerValueParameter ->
                         transformedFunction.addValueParameter(
                             readerValueParameter.name.asString(),
@@ -492,14 +504,16 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
         val givenValueParameters = mutableMapOf<Any, IrValueParameter>()
 
         givenTypes.values.forEach { givenType ->
-            givenValueParameters[givenType.distinctedType] = transformedFunction.addValueParameter(
-                name = getNameForType(givenType, function).asString(),
+            val valueParameter = transformedFunction.addValueParameter(
+                name = givenType.readableName().asString(),
                 type = givenType
             )
+            givenValueParameters[givenType.distinctedType] = valueParameter
 
             readerInfo.addReaderInfoForType(
                 givenType
-                    .remapTypeParameters(transformedFunction, readerInfo)
+                    .remapTypeParameters(transformedFunction, readerInfo),
+                valueParameter.index
             )
         }
 
@@ -527,14 +541,22 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
         return transformedFunction
     }
 
-    private fun IrClass.addReaderInfoForType(type: IrType) {
+    private fun IrClass.addReaderInfoForType(
+        type: IrType,
+        valueParameterIndex: Int
+    ) {
         addFunction {
-            this.name = getNameForType(type, this@addReaderInfoForType)
+            this.name = type.readableName()
             returnType = type
             modality = Modality.ABSTRACT
         }.apply {
             dispatchReceiverParameter = thisReceiver?.copyTo(this)
             addMetadataIfNotLocal()
+            annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+                irCall(symbols.index.constructors.single()).apply {
+                    putValueArgument(0, irString(valueParameterIndex.toString()))
+                }
+            }
         }
     }
 
@@ -641,37 +663,6 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                 }
         ).asString() + "_$suffix"
     ).asNameId()
-
-    private fun getNameForType(
-        type: IrType,
-        owner: IrDeclaration
-    ): Name = buildString {
-        try {
-            append("_")
-            fun IrType.render() {
-                val fqName = if (this is IrSimpleType && abbreviation != null &&
-                    abbreviation!!.typeAlias.descriptor.hasAnnotation(InjektFqNames.Distinct)
-                ) abbreviation!!.typeAlias.descriptor.fqNameSafe
-                else classifierOrFail.descriptor.fqNameSafe
-                append(
-                    (listOfNotNull(if (isMarkedNullable()) "nullable" else null) +
-                            fqName.pathSegments().map { it.asString() })
-                        .joinToString("_")
-                        .decapitalize()
-                )
-
-                typeArguments.forEachIndexed { index, typeArgument ->
-                    if (index == 0) append("_")
-                    typeArgument.typeOrNull?.render() ?: append("star")
-                    if (index != typeArguments.lastIndex) append("_")
-                }
-            }
-
-            type.render()
-        } catch (e: Exception) {
-            error("Couldn't render ${type.render()} for declaration ${owner.dump()}")
-        }
-    }.asNameId()
 
     private fun IrFunction.copyAsReader(): IrFunction {
         return copy(pluginContext).apply {
