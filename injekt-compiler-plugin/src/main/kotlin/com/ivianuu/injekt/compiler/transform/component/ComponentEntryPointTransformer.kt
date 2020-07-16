@@ -26,7 +26,6 @@ import com.ivianuu.injekt.compiler.indexPackageFile
 import com.ivianuu.injekt.compiler.readableName
 import com.ivianuu.injekt.compiler.singleClassArgConstructorCall
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
-import com.ivianuu.injekt.compiler.transform.ReaderTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -62,8 +61,7 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ComponentEntryPointTransformer(
-    pluginContext: IrPluginContext,
-    private val readerTransformer: ReaderTransformer
+    pluginContext: IrPluginContext
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val nameProvider = NameProvider()

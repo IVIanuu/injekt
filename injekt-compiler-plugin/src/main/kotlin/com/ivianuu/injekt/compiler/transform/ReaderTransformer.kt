@@ -110,6 +110,7 @@ import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
+// todo dedup transform code
 class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransformer(pluginContext) {
 
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
@@ -186,17 +187,25 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
         }
 
         val givenCalls = mutableListOf<IrCall>()
+        val defaultValueParameterByGivenCalls = mutableMapOf<IrCall, IrValueParameter>()
         val readerCalls = mutableListOf<IrFunctionAccessExpression>()
 
         clazz.transformChildrenVoid(object : IrElementTransformerVoid() {
 
             private val functionStack = mutableListOf<IrFunction>()
+            private val valueParameterStack = mutableListOf<IrValueParameter>()
 
             override fun visitFunction(declaration: IrFunction): IrStatement {
                 val isReader = declaration.isReader() && declaration != readerConstructor
                 if (isReader) functionStack.push(declaration)
                 return super.visitFunction(declaration)
                     .also { if (isReader) functionStack.pop() }
+            }
+
+            override fun visitValueParameter(declaration: IrValueParameter): IrStatement {
+                valueParameterStack += declaration
+                return super.visitValueParameter(declaration)
+                    .also { valueParameterStack -= declaration }
             }
 
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
@@ -211,6 +220,11 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                         result.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given"
                     ) {
                         givenCalls += result
+                        valueParameterStack.lastOrNull()
+                            ?.takeIf { it.type == result.type }
+                            ?.let {
+                                defaultValueParameterByGivenCalls[result] = it
+                            }
                     } else {
                         readerCalls += result
                     }
@@ -242,14 +256,13 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
         }
 
         val givenTypes = mutableMapOf<Any, IrType>()
+        val callsByTypes = mutableMapOf<Any, IrFunctionAccessExpression>()
 
         givenCalls
-            .map { givenCall ->
-                givenCall.type
-                    .remapTypeParameters(clazz, readerInfo)
-            }
-            .forEach {
-                givenTypes[it.distinctedType] = it
+            .forEach { givenCall ->
+                val type = givenCall.type
+                givenTypes[type.distinctedType] = type
+                callsByTypes[type.distinctedType] = givenCall
             }
         readerCalls.flatMapFix { readerCall ->
             val transformedCallee = transformFunctionIfNeeded(readerCall.symbol.owner)
@@ -267,8 +280,10 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                                 .toMap()
                         )
                 }
-        }.forEach {
-            givenTypes[it.distinctedType] = it
+                .map { readerCall to it }
+        }.forEach { (call, type) ->
+            givenTypes[type.distinctedType] = type
+            callsByTypes[type.distinctedType] = call
         }
 
         val givenFields = mutableMapOf<Any, IrField>()
@@ -281,10 +296,13 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             )
             givenFields[givenType.distinctedType] = field
 
-            val valueParameter = readerConstructor.addValueParameter(
+            val call = callsByTypes[givenType.distinctedType]
+            val defaultValueParameter = defaultValueParameterByGivenCalls[call]
+
+            val valueParameter = (defaultValueParameter ?: readerConstructor.addValueParameter(
                 field.name.asString(),
                 field.type
-            ).apply {
+            )).apply {
                 annotations += DeclarationIrBuilder(pluginContext, symbol)
                     .irCall(symbols.implicit.constructors.single())
             }
@@ -400,17 +418,25 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
         }
 
         val givenCalls = mutableListOf<IrCall>()
+        val defaultValueParameterByGivenCalls = mutableMapOf<IrCall, IrValueParameter>()
         val readerCalls = mutableListOf<IrFunctionAccessExpression>()
 
         transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
 
             private val functionStack = mutableListOf(transformedFunction)
+            private val valueParameterStack = mutableListOf<IrValueParameter>()
 
             override fun visitFunction(declaration: IrFunction): IrStatement {
                 val isReader = declaration.isReader()
                 if (isReader) functionStack.push(declaration)
                 return super.visitFunction(declaration)
                     .also { if (isReader) functionStack.pop() }
+            }
+
+            override fun visitValueParameter(declaration: IrValueParameter): IrStatement {
+                valueParameterStack += declaration
+                return super.visitValueParameter(declaration)
+                    .also { valueParameterStack -= declaration }
             }
 
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
@@ -425,6 +451,11 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                         expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given"
                     ) {
                         givenCalls += result
+                        valueParameterStack.lastOrNull()
+                            ?.takeIf { it.type == result.type }
+                            ?.let {
+                                defaultValueParameterByGivenCalls[result] = it
+                            }
                     } else {
                         readerCalls += result
                     }
@@ -434,13 +465,14 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
         })
 
         val givenTypes = mutableMapOf<Any, IrType>()
+        val callsByTypes = mutableMapOf<Any, IrFunctionAccessExpression>()
+
         givenCalls
-            .map { givenCall ->
-                givenCall.type
+            .forEach { givenCall ->
+                val type = givenCall.type
                     .remapTypeParameters(function, transformedFunction)
-            }
-            .forEach {
-                givenTypes[it.distinctedType] = it
+                givenTypes[type.distinctedType] = type
+                callsByTypes[type.distinctedType] = givenCall
             }
         readerCalls.flatMapFix { readerCall ->
             val transformedCallee = transformFunctionIfNeeded(readerCall.symbol.owner)
@@ -465,17 +497,22 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                                 .toMap()
                         )
                 }
-        }.forEach {
-            givenTypes[it.distinctedType] = it
+                .map { readerCall to it }
+        }.forEach { (call, type) ->
+            givenTypes[type.distinctedType] = type
+            callsByTypes[type.distinctedType] = call
         }
 
         val givenValueParameters = mutableMapOf<Any, IrValueParameter>()
 
         givenTypes.values.forEach { givenType ->
-            val valueParameter = transformedFunction.addValueParameter(
+            val call = callsByTypes[givenType.distinctedType]
+            val defaultValueParameter = defaultValueParameterByGivenCalls[call]
+
+            val valueParameter = (defaultValueParameter ?: transformedFunction.addValueParameter(
                 name = givenType.readableName().asString(),
                 type = givenType
-            ).apply {
+            )).apply {
                 annotations += DeclarationIrBuilder(pluginContext, symbol)
                     .irCall(symbols.implicit.constructors.single())
             }
