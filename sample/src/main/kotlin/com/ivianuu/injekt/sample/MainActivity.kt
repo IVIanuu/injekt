@@ -58,8 +58,8 @@ fun WithMainViewModel(children: @Composable (MainViewModel) -> Unit) {
 }
 
 @Reader
-private fun enqueueWork() {
-    WorkManager.getInstance(given<ActivityContext>())
+private fun enqueueWork(context: ActivityContext = given()) {
+    WorkManager.getInstance(context)
         .enqueue(
             OneTimeWorkRequestBuilder<TestWorker>()
                 .build()

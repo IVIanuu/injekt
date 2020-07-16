@@ -23,10 +23,10 @@ import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.copy
 import com.ivianuu.injekt.compiler.distinctedType
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.getReaderConstructor
-import com.ivianuu.injekt.compiler.hasAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isReader
 import com.ivianuu.injekt.compiler.jvmNameAnnotation
@@ -48,7 +48,6 @@ import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclaration
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
@@ -106,8 +105,6 @@ import org.jetbrains.kotlin.load.java.JvmAbi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.DescriptorUtils
-import org.jetbrains.kotlin.resolve.annotations.argumentValue
-import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 // todo dedup transform code
@@ -477,6 +474,8 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
         readerCalls.flatMapFix { readerCall ->
             val transformedCallee = transformFunctionIfNeeded(readerCall.symbol.owner)
 
+            println("found reader call ${readerCall.dumpSrc()}\n${transformedCallee.dumpSrc()}")
+
             transformedCallee
                 .valueParameters
                 .filter { it.hasAnnotation(InjektFqNames.Implicit) }
@@ -546,6 +545,8 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             val valueParameter = givenValueParameters[finalType]!!
             return@rewriteCalls { irGet(valueParameter) }
         }
+
+        println("transformed ${function.dumpSrc()}\n${transformedFunction.dumpSrc()}")
 
         return transformedFunction
     }
@@ -765,36 +766,6 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                 annotations += DeclarationIrBuilder(pluginContext, symbol)
                     .jvmNameAnnotation(name, pluginContext)
                 correspondingPropertySymbol?.owner?.setter = this
-            }
-        }
-    }
-
-    private fun getReaderInfoForDeclaration(reader: IrDeclarationWithName): IrClass {
-        val reader =
-            when (reader) {
-                is IrClass -> transformClassIfNeeded(reader)
-                is IrConstructor -> transformClassIfNeeded(reader.constructedClass)
-                else -> transformFunctionIfNeeded(reader as IrFunction)
-            }
-        return if (reader.isExternalDeclaration()) {
-            module.descriptor.getPackage(reader.getPackageFragment()!!.fqName)
-                .memberScope
-                .getContributedDescriptors()
-                .filterIsInstance<ClassDescriptor>()
-                .filter { it.hasAnnotation(InjektFqNames.Name) }
-                .single {
-                    it.annotations.findAnnotation(InjektFqNames.Name)!!
-                        .argumentValue("value")
-                        .let { it as StringValue }
-                        .value == reader.uniqueName()
-                }
-                .let { pluginContext.referenceClass(it.fqNameSafe)!!.owner }
-        } else {
-            readerInfos.single {
-                it.annotations.findAnnotation(InjektFqNames.Name)!!
-                    .getValueArgument(0)!!
-                    .let { it as IrConst<String> }
-                    .value == reader.uniqueName()
             }
         }
     }

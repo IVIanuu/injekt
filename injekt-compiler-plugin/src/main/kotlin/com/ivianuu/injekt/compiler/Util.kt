@@ -574,7 +574,11 @@ fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
         fn.dispatchReceiverParameter = dispatchReceiverParameter?.copyTo(fn)
         fn.extensionReceiverParameter = extensionReceiverParameter?.copyTo(fn)
         fn.valueParameters = valueParameters.map { p ->
-            p.copyTo(fn, name = dexSafeName(p.name))
+            p.copyTo(
+                fn,
+                name = dexSafeName(p.name),
+                type = p.type.remapTypeParameters(this, fn)
+            )
         }
         fn.annotations = annotations.map { a -> a }
         fn.metadata = metadata

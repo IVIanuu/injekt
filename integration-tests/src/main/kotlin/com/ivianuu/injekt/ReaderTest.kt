@@ -581,6 +581,27 @@ class ReaderTest {
     }
 
     @Test
+    fun testGivenWithDistinctType() = codegen(
+        """
+        @Distinct 
+        typealias Foo2 = Foo
+        
+        @Given fun foo(): Foo2 = Foo()
+        
+        @Reader
+        fun createFoo(foo: Foo2 = given()): Foo2 = foo
+        
+        fun invoke(): Foo { 
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            return component.runReader { createFoo() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
     fun testGivenClassInDefaultParameter() = codegen(
         """
         @Given fun foo() = Foo()
