@@ -35,6 +35,7 @@ import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.thisOfClass
 import com.ivianuu.injekt.compiler.transform.component.getReaderInfo
+import com.ivianuu.injekt.compiler.transform.component.getReaderSignature
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.uniqueName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
@@ -53,14 +54,17 @@ import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
+import org.jetbrains.kotlin.ir.builders.irInt
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -82,8 +86,10 @@ import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
@@ -92,11 +98,12 @@ import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.isFakeOverride
+import org.jetbrains.kotlin.ir.util.hasDefaultValue
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.load.java.JvmAbi
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
@@ -164,58 +171,18 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
 
         transformedClasses += clazz
 
-        if (readerConstructor.valueParameters.any { it.name.asString().startsWith("_") })
+        if (readerConstructor.valueParameters.any { it.hasAnnotation(InjektFqNames.Implicit) })
             return clazz
 
         if (clazz.isExternalDeclaration()) {
             val readerInfo = pluginContext.getReaderInfo(clazz)!!
             readerInfos += readerInfo
 
-            readerInfo.declarations
-                .filterIsInstance<IrFunction>()
-                .filterNot { it is IrConstructor }
-                .filterNot { it.isFakeOverride }
-                .filterNot { it.dispatchReceiverParameter?.type == irBuiltIns.anyType }
-                .sortedBy {
-                    it.getAnnotation(InjektFqNames.Index)!!
-                        .getValueArgument(0)
-                        .let { it as IrConst<String> }
-                        .value
-                        .toInt()
-                }
-                .forEach { readerValueParameter ->
-                    readerConstructor.addValueParameter(
-                        readerValueParameter.name.asString(),
-                        readerValueParameter.returnType
-                            .remapTypeParameters(
-                                readerInfo,
-                                clazz
-                            )
-                    )
-                }
-
-            return clazz
-        }
-
-        val readerInfo = buildClass {
-            kind = ClassKind.INTERFACE
-            name = globalNameProvider.getInfoClassName(clazz)
-        }.apply {
-            parent = clazz.file
-            createImplicitParameterDeclarationWithWrappedDescriptor()
-            addMetadataIfNotLocal()
-            copyTypeParametersFrom(clazz)
-
-            annotations += DeclarationIrBuilder(pluginContext, symbol).run {
-                irCall(symbols.name.constructors.single()).apply {
-                    putValueArgument(
-                        0,
-                        irString(clazz.uniqueName())
-                    )
-                }
+            readerConstructor.copySignatureFrom(readerInfo) {
+                it.remapTypeParameters(readerInfo, clazz)
             }
 
-            readerInfos += this
+            return clazz
         }
 
         val givenCalls = mutableListOf<IrCall>()
@@ -253,6 +220,27 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
 
         })
 
+        val readerInfo = buildClass {
+            kind = ClassKind.INTERFACE
+            name = globalNameProvider.getInfoClassName(clazz)
+        }.apply {
+            parent = clazz.file
+            createImplicitParameterDeclarationWithWrappedDescriptor()
+            addMetadataIfNotLocal()
+            copyTypeParametersFrom(clazz)
+
+            annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+                irCall(symbols.name.constructors.single()).apply {
+                    putValueArgument(
+                        0,
+                        irString(clazz.uniqueName())
+                    )
+                }
+            }
+
+            readerInfos += this
+        }
+
         val givenTypes = mutableMapOf<Any, IrType>()
 
         givenCalls
@@ -263,20 +251,18 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             .forEach {
                 givenTypes[it.distinctedType] = it
             }
-
         readerCalls.flatMapFix { readerCall ->
-            val callReaderInfo = getReaderInfoForDeclaration(readerCall.symbol.owner)
-            callReaderInfo
-                .declarations
-                .filterIsInstance<IrFunction>()
-                .filterNot { it is IrConstructor }
-                .filterNot { it.isFakeOverride }
-                .filterNot { it.dispatchReceiverParameter?.type == irBuiltIns.anyType }
+            val transformedCallee = transformFunctionIfNeeded(readerCall.symbol.owner)
+
+            transformedCallee
+                .valueParameters
+                .filter { it.hasAnnotation(InjektFqNames.Implicit) }
+                .map { it.type }
                 .map {
-                    it.returnType
-                        .remapTypeParameters(callReaderInfo, readerCall.symbol.owner)
+                    it
+                        .remapTypeParameters(readerCall.symbol.owner, transformedCallee)
                         .substitute(
-                            readerCall.symbol.owner.typeParameters.map { it.symbol }
+                            transformedCallee.typeParameters.map { it.symbol }
                                 .zip(readerCall.typeArguments)
                                 .toMap()
                         )
@@ -298,13 +284,15 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             val valueParameter = readerConstructor.addValueParameter(
                 field.name.asString(),
                 field.type
-            )
+            ).apply {
+                annotations += DeclarationIrBuilder(pluginContext, symbol)
+                    .irCall(symbols.implicit.constructors.single())
+            }
             valueParametersByFields[field] = valueParameter
+        }
 
-            readerInfo.addReaderInfoForType(
-                givenType.remapTypeParameters(clazz, readerInfo),
-                valueParameter.index
-            )
+        readerInfo.addSignature(readerConstructor) {
+            it.remapTypeParameters(clazz, readerInfo)
         }
 
         readerConstructor.body = DeclarationIrBuilder(pluginContext, clazz.symbol).run {
@@ -329,15 +317,14 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             givenCalls,
             readerCalls
         ) { type, expression ->
-            val field = givenFields.getValue(
-                type.substitute(
-                    transformFunctionIfNeeded(expression.symbol.owner)
-                        .typeParameters
-                        .map { it.symbol }
-                        .zip(expression.typeArguments)
-                        .toMap()
-                ).distinctedType
-            )
+            val finalType = type.substitute(
+                transformFunctionIfNeeded(expression.symbol.owner)
+                    .typeParameters
+                    .map { it.symbol }
+                    .zip(expression.typeArguments)
+                    .toMap()
+            ).distinctedType
+            val field = givenFields[finalType]!!
 
             return@rewriteCalls { scopes ->
                 if (scopes.none { it.irElement == readerConstructor }) {
@@ -367,7 +354,7 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
 
         if (!function.isReader()) return function
 
-        if (function.valueParameters.any { it.name.asString().startsWith("_") }) {
+        if (function.valueParameters.any { it.hasAnnotation(InjektFqNames.Implicit) }) {
             transformedFunctions[function] = function
             return function
         }
@@ -380,28 +367,9 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                 val readerInfo = pluginContext.getReaderInfo(transformedFunction)!!
                 readerInfos += readerInfo
 
-                readerInfo.declarations
-                    .filterIsInstance<IrFunction>()
-                    .filterNot { it is IrConstructor }
-                    .filterNot { it.isFakeOverride }
-                    .filterNot { it.dispatchReceiverParameter?.type == irBuiltIns.anyType }
-                    .sortedBy {
-                        it.getAnnotation(InjektFqNames.Index)!!
-                            .getValueArgument(0)
-                            .let { it as IrConst<String> }
-                            .value
-                            .toInt()
-                    }
-                    .forEach { readerValueParameter ->
-                        transformedFunction.addValueParameter(
-                            readerValueParameter.name.asString(),
-                            readerValueParameter.returnType
-                                .remapTypeParameters(
-                                    readerInfo,
-                                    transformedFunction
-                                )
-                        )
-                    }
+                transformedFunction.copySignatureFrom(readerInfo) {
+                    it.remapTypeParameters(readerInfo, transformedFunction)
+                }
             }
 
             return transformedFunction
@@ -475,17 +443,17 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                 givenTypes[it.distinctedType] = it
             }
         readerCalls.flatMapFix { readerCall ->
-            val callReaderInfo = getReaderInfoForDeclaration(readerCall.symbol.owner)
-            callReaderInfo
-                .declarations
-                .filterIsInstance<IrFunction>()
-                .filterNot { it is IrConstructor }
-                .filterNot { it.isFakeOverride }
-                .filterNot { it.dispatchReceiverParameter?.type == irBuiltIns.anyType }
+            val transformedCallee = transformFunctionIfNeeded(readerCall.symbol.owner)
+
+            transformedCallee
+                .valueParameters
+                .filter { it.hasAnnotation(InjektFqNames.Implicit) }
+                .map { it.type }
                 .map {
-                    it.returnType
+                    it
+                        .remapTypeParameters(readerCall.symbol.owner, transformedCallee)
                         .substitute(
-                            callReaderInfo.typeParameters.map { it.symbol }
+                            transformedCallee.typeParameters.map { it.symbol }
                                 .zip(
                                     readerCall.typeArguments
                                         .map {
@@ -507,14 +475,17 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             val valueParameter = transformedFunction.addValueParameter(
                 name = givenType.readableName().asString(),
                 type = givenType
-            )
+            ).apply {
+                annotations += DeclarationIrBuilder(pluginContext, symbol)
+                    .irCall(symbols.implicit.constructors.single())
+            }
             givenValueParameters[givenType.distinctedType] = valueParameter
+        }
 
-            readerInfo.addReaderInfoForType(
-                givenType
-                    .remapTypeParameters(transformedFunction, readerInfo),
-                valueParameter.index
-            )
+        readerInfo.addSignature(transformedFunction) {
+            it
+                .remapTypeParameters(function, transformedFunction)
+                .remapTypeParameters(transformedFunction, readerInfo)
         }
 
         rewriteCalls(
@@ -522,7 +493,7 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             givenCalls,
             readerCalls
         ) { type, expression ->
-            val valueParameter = givenValueParameters.getValue(type
+            val finalType = type
                 .remapTypeParameters(function, transformedFunction)
                 .substitute(
                     transformFunctionIfNeeded(expression.symbol.owner)
@@ -533,29 +504,98 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                                 .map { it.remapTypeParameters(function, transformedFunction) }
                         )
                         .toMap()
-                ).distinctedType
-            )
+                )
+                .distinctedType
+            val valueParameter = givenValueParameters[finalType]!!
             return@rewriteCalls { irGet(valueParameter) }
         }
 
         return transformedFunction
     }
 
-    private fun IrClass.addReaderInfoForType(
-        type: IrType,
-        valueParameterIndex: Int
+    private fun IrFunction.copySignatureFrom(
+        readerInfo: IrClass,
+        remapType: (IrType) -> IrType
     ) {
-        addFunction {
-            this.name = type.readableName()
-            returnType = type
+        val signature = readerInfo.getReaderSignature()
+
+        val implicitIndices = signature.getAnnotation(InjektFqNames.Implicits)!!
+            .getValueArgument(0)
+            .let { it as IrVarargImpl }
+            .elements
+            .map { it as IrConst<Int> }
+            .map { it.value }
+
+        valueParameters = signature.valueParameters.map {
+            it.copyTo(
+                this,
+                type = remapType(it.type),
+                varargElementType = it.varargElementType?.let(remapType)
+            )
+        }.onEach {
+            if (it.index in implicitIndices) {
+                it.annotations += DeclarationIrBuilder(pluginContext, it.symbol)
+                    .irCall(symbols.implicit.constructors.single())
+            }
+        }
+    }
+
+    private fun IrClass.addSignature(
+        function: IrFunction,
+        remapType: (IrType) -> IrType
+    ) {
+        addFunction(
+            name = "signature",
+            returnType = remapType(function.returnType),
             modality = Modality.ABSTRACT
-        }.apply {
-            dispatchReceiverParameter = thisReceiver?.copyTo(this)
+        ).apply {
             addMetadataIfNotLocal()
+
             annotations += DeclarationIrBuilder(pluginContext, symbol).run {
-                irCall(symbols.index.constructors.single()).apply {
-                    putValueArgument(0, irString(valueParameterIndex.toString()))
-                }
+                irCall(symbols.implicits.constructors.single())
+                    .apply {
+                        val intArray = pluginContext.referenceClass(
+                            FqName("kotlin.IntArray")
+                        )!!
+                        putValueArgument(
+                            0,
+                            IrVarargImpl(
+                                UNDEFINED_OFFSET,
+                                UNDEFINED_OFFSET,
+                                intArray.defaultType,
+                                irBuiltIns.intType,
+                                function.valueParameters
+                                    .filter { it.hasAnnotation(InjektFqNames.Implicit) }
+                                    .map { it.index }
+                                    .map { irInt(it) }
+                            )
+                        )
+                    }
+            }
+
+            dispatchReceiverParameter = thisReceiver!!.copyTo(this)
+
+            valueParameters = function.valueParameters.map {
+                it.copyTo(
+                    this,
+                    type = remapType(it.type),
+                    varargElementType = it.varargElementType?.let(remapType),
+                    defaultValue = if (it.hasDefaultValue()) DeclarationIrBuilder(
+                        pluginContext,
+                        it.symbol
+                    ).run {
+                        irExprBody(
+                            irCall(
+                                pluginContext.referenceFunctions(
+                                    FqName("com.ivianuu.injekt.internal.injektIntrinsic")
+                                )
+                                    .single()
+                            ).apply {
+                                putTypeArgument(0, it.type)
+                            }
+                        )
+                    } else null
+                )
             }
         }
     }
@@ -579,17 +619,22 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                     in readerCalls -> {
                         val transformedCallee = transformFunctionIfNeeded(result.symbol.owner)
                         fun IrFunctionAccessExpression.fillGivenParameters() {
-                            (result.valueArgumentsCount until valueArgumentsCount).forEach {
-                                putValueArgument(
-                                    it,
-                                    provider(
-                                        transformedCallee.valueParameters[it].type,
-                                        result
-                                    )(
-                                        DeclarationIrBuilder(pluginContext, result.symbol),
-                                        allScopes
+                            transformedCallee.valueParameters.forEach { valueParameter ->
+                                val valueArgument = getValueArgument(valueParameter.index)
+                                if (valueParameter.hasAnnotation(InjektFqNames.Implicit) &&
+                                    valueArgument == null
+                                ) {
+                                    putValueArgument(
+                                        valueParameter.index,
+                                        provider(
+                                            valueParameter.type,
+                                            result
+                                        )(
+                                            DeclarationIrBuilder(pluginContext, result.symbol),
+                                            allScopes
+                                        )
                                     )
-                                )
+                                }
                             }
                         }
                         when (result) {
@@ -687,7 +732,7 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
         }
     }
 
-    fun getReaderInfoForDeclaration(reader: IrDeclarationWithName): IrClass {
+    private fun getReaderInfoForDeclaration(reader: IrDeclarationWithName): IrClass {
         val reader =
             when (reader) {
                 is IrClass -> transformClassIfNeeded(reader)

@@ -218,6 +218,6 @@ class BindingRequest(
 data class BindingParameter(
     val name: String,
     val key: Key,
-    val assisted: Boolean,
+    val explicit: Boolean,
     val origin: FqName?
 )

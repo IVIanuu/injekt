@@ -200,25 +200,25 @@ class ComponentExpressions(
             .map { getBindingExpression(it) }
 
         val instanceExpression: ComponentExpression = bindingExpression@{ c ->
-            if (binding.parameters.any { it.assisted }) {
+            if (binding.parameters.any { it.explicit }) {
                 irLambda(binding.key.type) { function ->
-                    val (assistedParameters, nonAssistedParameters) = binding.parameters
-                        .partition { it.assisted }
+                    val (explicitParameters, implicitParameters) = binding.parameters
+                        .partition { it.explicit }
                     binding.createExpression(
                         this,
                         binding.parameters
                             .associateWith { parameter ->
-                                if (parameter.assisted) {
+                                if (parameter.explicit) {
                                     {
                                         irGet(
-                                            function.valueParameters[assistedParameters.indexOf(
+                                            function.valueParameters[explicitParameters.indexOf(
                                                 parameter
                                             )]
                                         )
                                     }
                                 } else {
                                     {
-                                        dependencies[nonAssistedParameters.indexOf(parameter)](c)
+                                        dependencies[implicitParameters.indexOf(parameter)](c)
                                     }
                                 }
                             }
@@ -244,10 +244,10 @@ class ComponentExpressions(
         // todo
         check(
             binding.parameters
-                .filter { it.assisted }
+                .filter { it.explicit }
                 .size <= 1
         ) {
-            "Scoped bindings with assisted parameters are unsupported ${binding.key}"
+            "Scoped bindings with explicit parameters are unsupported ${binding.key}"
         }
 
         val lazy = pluginContext.referenceFunctions(FqName("kotlin.lazy"))

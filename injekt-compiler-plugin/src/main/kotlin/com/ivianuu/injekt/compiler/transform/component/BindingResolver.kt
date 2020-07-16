@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.distinctedType
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
@@ -28,8 +29,6 @@ import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
-import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
@@ -38,7 +37,7 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.isFakeOverride
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -99,7 +98,7 @@ class ChildComponentFactoryBindingResolver(
 
 class GivenBindingResolver(
     private val pluginContext: IrPluginContext,
-    private val declarationGraph: DeclarationGraph,
+    declarationGraph: DeclarationGraph,
     private val component: ComponentImpl
 ) : BindingResolver {
 
@@ -113,8 +112,6 @@ class GivenBindingResolver(
                     InjektFqNames.Given, pluginContext
                 ) else null
 
-            val readerInfo = pluginContext.getReaderInfo(function)
-
             val parameters = mutableListOf<BindingParameter>()
 
             parameters += function.valueParameters
@@ -122,30 +119,26 @@ class GivenBindingResolver(
                     BindingParameter(
                         name = valueParameter.name.asString(),
                         key = valueParameter.type.asKey(),
-                        assisted = readerInfo?.declarations
-                            ?.filterIsInstance<IrDeclarationWithName>()
-                            ?.none { it.name == valueParameter.name } ?: true,
+                        explicit = !valueParameter.hasAnnotation(InjektFqNames.Implicit),
                         origin = valueParameter.descriptor.fqNameSafe
                     )
                 }
 
-            val assistedParameters = parameters.filter { it.assisted }
+            val explicitParameters = parameters.filter { it.explicit }
 
-            val key = if (assistedParameters.isEmpty()) function.returnType
+            val key = if (explicitParameters.isEmpty()) function.returnType
                 .asKey()
-            else pluginContext.tmpFunction(assistedParameters.size)
+            else pluginContext.tmpFunction(explicitParameters.size)
                 .typeWith(
-                    assistedParameters.map { it.key.type } + function.returnType
+                    explicitParameters.map { it.key.type } + function.returnType
                 )
                 .asKey()
 
             GivenBindingNode(
                 key = key,
                 dependencies = parameters
-                    .filterNot { it.assisted }
-                    .map {
-                        BindingRequest(it.key, key, it.origin) // todo
-                    },
+                    .filterNot { it.explicit }
+                    .map { BindingRequest(it.key, key, it.origin) },
                 targetComponent = targetComponent?.defaultType,
                 scoped = targetComponent != null,
                 createExpression = { parametersMap ->
@@ -200,7 +193,8 @@ class ProviderBindingResolver(
     override fun invoke(requestedKey: Key): List<BindingNode> {
         val requestedType = requestedKey.type
         return when {
-            requestedType.isFunction() &&
+            requestedType == requestedType.distinctedType &&
+                    requestedType.isFunction() &&
                     requestedType.typeArguments.size == 1 ->
                 listOf(
                     ProviderBindingNode(
@@ -246,16 +240,12 @@ class MapBindingResolver(
             entries
                 .flatMapFix { mapEntries ->
                     val function = mapEntries.function
-                    val readerInfo = pluginContext.getReaderInfo(function)
-                    readerInfo?.declarations
-                        ?.filterIsInstance<IrFunction>()
-                        ?.filterNot { it is IrConstructor }
-                        ?.filterNot { it.isFakeOverride }
-                        ?.filterNot { it.dispatchReceiverParameter?.type == pluginContext.irBuiltIns.anyType }
-                        ?.map { it.returnType }
-                        ?.distinct()
-                        ?.map { BindingRequest(it.asKey(), key, null) }
-                        ?: emptyList()
+                    function
+                        .valueParameters
+                        .filter { it.hasAnnotation(InjektFqNames.Implicit) }
+                        .map { it.type }
+                        .distinct()
+                        .map { BindingRequest(it.asKey(), key, null) }
                 },
             component,
             entries.map { it.function }
@@ -292,7 +282,7 @@ class SetBindingResolver(
         mutableMapOf<Key, List<SetElements>>().also { mergedSet ->
             if (parent != null) mergedSet += parent.sets
 
-            val thisMaps = declarationGraph.setElements
+            val thisSets = declarationGraph.setElements
                 .filter {
                     it.function.getClassFromSingleValueAnnotation(
                         InjektFqNames.SetElements,
@@ -301,7 +291,7 @@ class SetBindingResolver(
                 }
                 .groupBy { it.function.returnType.asKey() }
 
-            thisMaps.forEach { (mapKey, elements) ->
+            thisSets.forEach { (mapKey, elements) ->
                 val existingElements = mergedSet[mapKey] ?: emptyList()
                 mergedSet[mapKey] = existingElements + elements
             }
@@ -313,16 +303,12 @@ class SetBindingResolver(
             elements
                 .flatMapFix { setElements ->
                     val function = setElements.function
-                    val readerInfo = pluginContext.getReaderInfo(function)
-                    readerInfo?.declarations
-                        ?.filterIsInstance<IrFunction>()
-                        ?.filterNot { it is IrConstructor }
-                        ?.filterNot { it.isFakeOverride }
-                        ?.filterNot { it.dispatchReceiverParameter?.type == pluginContext.irBuiltIns.anyType }
-                        ?.map { it.returnType }
-                        ?.distinct()
-                        ?.map { BindingRequest(it.asKey(), key, null) }
-                        ?: emptyList()
+                    function
+                        .valueParameters
+                        .filter { it.hasAnnotation(InjektFqNames.Implicit) }
+                        .map { it.type }
+                        .distinct()
+                        .map { BindingRequest(it.asKey(), key, null) }
                 },
             component,
             elements.map { it.function }

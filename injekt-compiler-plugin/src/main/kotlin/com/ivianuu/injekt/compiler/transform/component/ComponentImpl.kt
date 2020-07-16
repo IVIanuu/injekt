@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.transform.component
 
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.buildClass
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -31,14 +30,12 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
-import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -130,11 +127,7 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
                 val request = BindingRequest(
                     declaration.returnType.asKey(),
                     null,
-                    superClass.getAnnotation(InjektFqNames.Name)
-                        ?.getValueArgument(0)
-                        ?.let { it as IrConst<String> }
-                        ?.value
-                        ?.let { FqName(it) }
+                    declaration.descriptor.fqNameSafe
                 )
                 dependencyRequests += declaration to request
             }

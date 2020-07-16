@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.findAnnotation
+import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.name.FqName
@@ -36,6 +37,9 @@ import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"
+
+fun IrClass.getReaderSignature() = functions
+    .single { it.name.asString() == "signature" }
 
 fun IrPluginContext.getReaderInfo(declaration: IrDeclarationWithName): IrClass? {
     val declaration = if (declaration is IrConstructor)

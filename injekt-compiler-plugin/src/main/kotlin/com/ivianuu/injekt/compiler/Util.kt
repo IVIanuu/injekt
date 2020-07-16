@@ -503,7 +503,6 @@ fun nameWithoutIllegalChars(name: String): Name = name
     .asNameId()
 
 fun IrType.readableName(): Name = buildString {
-    append("_")
     fun IrType.renderName() {
         val fqName = if (this is IrSimpleType && abbreviation != null &&
             abbreviation!!.typeAlias.descriptor.hasAnnotation(InjektFqNames.Distinct)
@@ -609,11 +608,11 @@ fun dexSafeName(name: Name): Name {
 fun IrDeclarationWithName.uniqueName() = when (this) {
     is IrClass -> "c_${descriptor.fqNameSafe}"
     is IrFunction -> "f_${descriptor.fqNameSafe}_${
-    descriptor.valueParameters
-        .filterNot { it.name.asString().startsWith("_") }
-        .map { it.type }.map {
-            it.constructor.declarationDescriptor!!.fqNameSafe
-        }.hashCode().absoluteValue
+        descriptor.valueParameters
+            .filterNot { it.hasAnnotation(InjektFqNames.Implicit) }
+            .map { it.type }.map {
+                it.constructor.declarationDescriptor!!.fqNameSafe
+            }.hashCode().absoluteValue
     }${if (visibility == Visibilities.LOCAL) "_$startOffset" else ""}"
     else -> error("Unsupported declaration ${dump()}")
 }
@@ -662,6 +661,16 @@ fun compareTypeWithDistinct(
 fun IrType.hashWithDistinct(): Int {
     var result = distinctedType.hashCode()
     result += 31 * typeArguments.mapNotNull { it.typeOrNull?.hashWithDistinct() }.hashCode()
+
+    val qualifier = getAnnotation(InjektFqNames.Qualifier)
+        ?.getValueArgument(0)
+        ?.let { it as IrConst<String> }
+        ?.value
+
+    if (qualifier != null) {
+        result += 31 * qualifier.hashCode()
+    }
+
     return result
 }
 
