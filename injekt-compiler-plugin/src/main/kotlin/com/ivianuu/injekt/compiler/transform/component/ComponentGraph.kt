@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.flatMapFix
-import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
@@ -66,7 +65,7 @@ class ComponentGraph(
         check(request.key !in chain || chain
             .toList()
             .let { it.subList(it.indexOf(request.key), it.size) }
-            .any { it.type.isFunction() && it.type.typeArguments.size == 1 }
+            .any { it.type.isFunction() }
         ) {
             val chain = (chain.toList() + request.key)
                 .let { it.subList(it.indexOf(request.key), it.size) }
