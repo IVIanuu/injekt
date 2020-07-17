@@ -59,7 +59,11 @@ class ComponentFactoryImpl(
         .owner
 
     val factoryClass = buildClass {
-        name = Name.special("<${component.descriptor.fqNameSafe} factory impl>")
+        name = if (parent == null) {
+            Name.special("<${component.descriptor.fqNameSafe} factory impl>")
+        } else {
+            Name.identifier(component.name.asString() + "FactoryImpl")
+        }
         visibility = Visibilities.LOCAL
     }.apply clazz@{
         parent = irParent

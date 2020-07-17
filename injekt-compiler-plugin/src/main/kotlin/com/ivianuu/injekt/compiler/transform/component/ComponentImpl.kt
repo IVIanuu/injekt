@@ -44,7 +44,7 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
     val origin: FqName? = factoryImpl.component.descriptor.fqNameSafe
 
     val clazz = buildClass {
-        name = Name.special("<${factoryImpl.component.descriptor.fqNameSafe} impl>")
+        name = Name.identifier("ComponentImpl")
         visibility = Visibilities.LOCAL
     }.apply clazz@{
         parent = factoryImpl.factoryClass
