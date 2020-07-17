@@ -2,22 +2,15 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Effect
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.componentFactory
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.initializeComponents
-import com.ivianuu.injekt.runReader
 import kotlinx.coroutines.runBlocking
 
 class Foo
 class Bar(foo: Foo)
 
 @Component
-interface TestComponent {
-    @Component.Factory
-    interface Factory {
-        fun create(): TestComponent
-    }
-}
+interface TestComponent
 
 typealias FooFactory = suspend () -> Foo
 
@@ -38,6 +31,6 @@ suspend fun fooFactory(): Foo {
 
 fun main() {
     initializeComponents()
-    val component = componentFactory<TestComponent.Factory>().create()
+    val component = rootComponent<TestComponent>()
     return component.runReader { runBlocking { given<FooFactory>()() } }
 }

@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
@@ -37,6 +38,7 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.name.FqName
@@ -45,40 +47,45 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 typealias BindingResolver = (Key) -> List<BindingNode>
 
 class ChildComponentFactoryBindingResolver(
+    private val declarationGraph: DeclarationGraph,
     private val parentComponent: ComponentImpl
 ) : BindingResolver {
 
     private val childComponents =
-        mutableMapOf<Key, MutableList<Lazy<ChildComponentFactoryBindingNode>>>()
+        mutableMapOf<Key, ChildComponentFactoryBindingNode>()
 
-    init {
-        parentComponent.factoryImpl.node.children
-            .forEach { childNode ->
-                val key = childNode.factory.factory.defaultType.asKey()
-                childComponents.getOrPut(key) { mutableListOf() } += childComponentFactoryBindingNode(
-                    key, childNode
-                )
-            }
-    }
+    override fun invoke(requestedKey: Key): List<BindingNode> {
+        childComponents[requestedKey]?.let { return listOf(it) }
 
-    override fun invoke(requestedKey: Key): List<BindingNode> =
-        childComponents[requestedKey]?.map { it.value } ?: emptyList()
+        val factory = requestedKey.type.classOrNull?.owner
 
-    private fun childComponentFactoryBindingNode(
-        key: Key,
-        node: ComponentNode
-    ) = lazy {
-        return@lazy ChildComponentFactoryBindingNode(
-            key = key,
+        if (factory?.hasAnnotation(InjektFqNames.ChildComponentFactory) != true) return emptyList()
+
+        val component = factory.functions
+            .filterNot { it.isFakeOverride }
+            .single()
+            .returnType
+            .classOrNull!!
+            .owner
+
+        val node = ChildComponentFactoryBindingNode(
+            key = requestedKey,
             owner = parentComponent,
-            origin = node.factory.factory.descriptor.fqNameSafe,
+            origin = factory.descriptor.fqNameSafe,
             parent = parentComponent.clazz,
             childComponentFactoryExpression = { c ->
                 irBlock {
                     val childComponentFactoryImpl = ComponentFactoryImpl(
                         parentComponent.clazz,
                         { c[parentComponent] },
-                        node,
+                        factory,
+                        declarationGraph.entryPoints
+                            .filter {
+                                it.getClassFromSingleValueAnnotation(
+                                    InjektFqNames.EntryPoint,
+                                    parentComponent.factoryImpl.pluginContext
+                                ) == component
+                            },
                         parentComponent.factoryImpl,
                         parentComponent.factoryImpl.pluginContext,
                         parentComponent.factoryImpl.declarationGraph,
@@ -93,6 +100,10 @@ class ChildComponentFactoryBindingResolver(
                 }
             }
         )
+
+        childComponents[requestedKey] = node
+
+        return listOf(node)
     }
 }
 
@@ -103,8 +114,7 @@ class GivenBindingResolver(
 ) : BindingResolver {
 
     private val bindings = declarationGraph.bindings
-        .map { binding ->
-            val function = binding.function
+        .map { function ->
             val targetComponent = function.getClassFromSingleValueAnnotationOrNull(
                 InjektFqNames.Given, pluginContext
             )
@@ -215,18 +225,18 @@ class MapBindingResolver(
     private val component: ComponentImpl
 ) : BindingResolver {
 
-    private val maps: Map<Key, List<MapEntries>> =
-        mutableMapOf<Key, List<MapEntries>>().also { mergedMap ->
+    private val maps: Map<Key, List<IrFunction>> =
+        mutableMapOf<Key, List<IrFunction>>().also { mergedMap ->
             if (parent != null) mergedMap += parent.maps
 
             val thisMaps = declarationGraph.mapEntries
                 .filter {
-                    it.function.getClassFromSingleValueAnnotation(
+                    it.getClassFromSingleValueAnnotation(
                         InjektFqNames.MapEntries,
                         pluginContext
-                    ) == component.factoryImpl.node.component
+                    ) == component.factoryImpl.component
                 }
-                .groupBy { it.function.returnType.asKey() }
+                .groupBy { it.returnType.asKey() }
 
             thisMaps.forEach { (mapKey, entries) ->
                 val existingEntries = mergedMap[mapKey] ?: emptyList()
@@ -238,8 +248,7 @@ class MapBindingResolver(
         MapBindingNode(
             key,
             entries
-                .flatMapFix { mapEntries ->
-                    val function = mapEntries.function
+                .flatMapFix { function ->
                     function
                         .valueParameters
                         .filter { it.hasAnnotation(InjektFqNames.Implicit) }
@@ -248,7 +257,7 @@ class MapBindingResolver(
                         .map { BindingRequest(it.asKey(), key, null) }
                 },
             component,
-            entries.map { it.function }
+            entries
         )
     }
 
@@ -278,18 +287,18 @@ class SetBindingResolver(
     private val component: ComponentImpl
 ) : BindingResolver {
 
-    private val sets: Map<Key, List<SetElements>> =
-        mutableMapOf<Key, List<SetElements>>().also { mergedSet ->
+    private val sets: Map<Key, List<IrFunction>> =
+        mutableMapOf<Key, List<IrFunction>>().also { mergedSet ->
             if (parent != null) mergedSet += parent.sets
 
             val thisSets = declarationGraph.setElements
                 .filter {
-                    it.function.getClassFromSingleValueAnnotation(
+                    it.getClassFromSingleValueAnnotation(
                         InjektFqNames.SetElements,
                         pluginContext
-                    ) == component.factoryImpl.node.component
+                    ) == component.factoryImpl.component
                 }
-                .groupBy { it.function.returnType.asKey() }
+                .groupBy { it.returnType.asKey() }
 
             thisSets.forEach { (mapKey, elements) ->
                 val existingElements = mergedSet[mapKey] ?: emptyList()
@@ -301,8 +310,7 @@ class SetBindingResolver(
         SetBindingNode(
             key,
             elements
-                .flatMapFix { setElements ->
-                    val function = setElements.function
+                .flatMapFix { function ->
                     function
                         .valueParameters
                         .filter { it.hasAnnotation(InjektFqNames.Implicit) }
@@ -311,7 +319,7 @@ class SetBindingResolver(
                         .map { BindingRequest(it.asKey(), key, null) }
                 },
             component,
-            elements.map { it.function }
+            elements
         )
     }
 
@@ -338,10 +346,10 @@ class ComponentImplBindingResolver(
     private val component: ComponentImpl
 ) : BindingResolver {
     override fun invoke(requestedKey: Key): List<BindingNode> {
-        if (requestedKey != component.factoryImpl.node.component.defaultType.asKey() &&
+        if (requestedKey != component.factoryImpl.component.defaultType.asKey() &&
             requestedKey != component.clazz.defaultType.asKey() &&
-            component.factoryImpl.node.entryPoints.none {
-                it.entryPoint.defaultType.asKey() == requestedKey
+            component.factoryImpl.entryPoints.none {
+                it.defaultType.asKey() == requestedKey
             }
         ) return emptyList()
         return listOf(ComponentImplBindingNode(component))

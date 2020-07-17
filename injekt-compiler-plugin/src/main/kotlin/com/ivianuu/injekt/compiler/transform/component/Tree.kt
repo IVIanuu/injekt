@@ -64,12 +64,12 @@ class ChildComponentFactoryBindingNode(
 class ComponentImplBindingNode(
     val component: ComponentImpl,
 ) : BindingNode(
-    component.factoryImpl.node.component.defaultType.asKey(),
+    component.factoryImpl.component.defaultType.asKey(),
     emptyList(),
     null,
     false,
     component,
-    component.factoryImpl.node.component.descriptor.fqNameSafe
+    component.factoryImpl.component.descriptor.fqNameSafe
 )
 
 class GivenBindingNode(

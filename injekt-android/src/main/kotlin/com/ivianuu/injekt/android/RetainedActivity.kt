@@ -20,8 +20,8 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.childComponent
 import com.ivianuu.injekt.runReader
-import com.ivianuu.injekt.subcomponent
 
 @Component
 interface RetainedActivityComponent
@@ -34,7 +34,7 @@ val ComponentActivity.retainedActivityComponent: RetainedActivityComponent
         synchronized(holder) {
             if (holder.component == null) {
                 holder.component = application.applicationComponent.runReader {
-                    subcomponent()
+                    childComponent()
                 }
             }
         }

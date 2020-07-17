@@ -41,15 +41,15 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
-    val origin: FqName? = factoryImpl.node.component.descriptor.fqNameSafe
+    val origin: FqName? = factoryImpl.component.descriptor.fqNameSafe
 
     val clazz = buildClass {
-        name = Name.special("<${factoryImpl.node.component.descriptor.fqNameSafe} impl>")
+        name = Name.special("<${factoryImpl.component.descriptor.fqNameSafe} impl>")
         visibility = Visibilities.LOCAL
     }.apply clazz@{
         parent = factoryImpl.factoryClass
         createImplicitParameterDeclarationWithWrappedDescriptor()
-        superTypes += factoryImpl.node.component.defaultType
+        superTypes += factoryImpl.component.defaultType
     }
 
     val dependencyRequests = mutableListOf<Pair<IrFunction, BindingRequest>>()
@@ -112,7 +112,7 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
     private fun implementRequests() {
         val processedSuperTypes = mutableSetOf<IrType>()
         val declarationNames = mutableSetOf<Name>()
-        val entryPoints = factoryImpl.node.entryPoints.map { it.entryPoint }
+        val entryPoints = factoryImpl.entryPoints
         fun collect(superClass: IrClass) {
             if (superClass.defaultType in processedSuperTypes) return
             processedSuperTypes += superClass.defaultType

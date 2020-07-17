@@ -26,9 +26,9 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.childComponent
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
-import com.ivianuu.injekt.subcomponent
 
 @Component
 interface ActivityComponent
@@ -36,7 +36,7 @@ interface ActivityComponent
 val ComponentActivity.activityComponent: ActivityComponent
     get() = lifecycle.singleton {
         retainedActivityComponent.runReader {
-            subcomponent(this)
+            childComponent(this)
         }
     }
 

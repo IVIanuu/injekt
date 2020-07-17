@@ -21,8 +21,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Distinct
+import com.ivianuu.injekt.childComponent
 import com.ivianuu.injekt.runReader
-import com.ivianuu.injekt.subcomponent
 
 @Component
 interface ReceiverComponent
@@ -32,6 +32,6 @@ typealias ReceiverContext = Context
 
 fun BroadcastReceiver.newReceiverComponent(context: Context): ReceiverComponent {
     return (context.applicationContext as Application).applicationComponent.runReader {
-        subcomponent(this, context as ReceiverContext)
+        childComponent(this, context as ReceiverContext)
     }
 }

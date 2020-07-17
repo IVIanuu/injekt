@@ -14,29 +14,8 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.test
+package com.ivianuu.injekt.internal
 
-import com.ivianuu.injekt.Component
+annotation class RootComponentFactory
 
-class Foo
-
-class Bar(foo: Foo)
-
-class Baz(foo: Foo, bar: Bar)
-
-@Component
-interface TestComponent
-
-@Component
-interface TestParentComponent
-
-@Component
-interface TestChildComponent
-
-interface Command
-
-class CommandA : Command
-
-class CommandB : Command
-
-class CommandC : Command
+annotation class ChildComponentFactory

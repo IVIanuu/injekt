@@ -27,9 +27,9 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.childComponent
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
-import com.ivianuu.injekt.subcomponent
 
 @Component
 interface FragmentComponent
@@ -37,7 +37,7 @@ interface FragmentComponent
 val Fragment.fragmentComponent: FragmentComponent
     get() = lifecycle.singleton {
         activity!!.activityComponent.runReader {
-            subcomponent(this)
+            childComponent(this)
         }
     }
 

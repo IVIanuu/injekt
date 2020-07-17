@@ -42,20 +42,20 @@ class DeclarationGraph(
     private val readerTransformer: ReaderTransformer
 ) {
 
-    private val _componentFactories = mutableListOf<ComponentFactory>()
-    val componentFactories: List<ComponentFactory> get() = _componentFactories
+    private val _rootComponentFactories = mutableListOf<IrClass>()
+    val rootComponentFactories: List<IrClass> get() = _rootComponentFactories
 
-    private val _bindings = mutableListOf<Binding>()
-    val bindings: List<Binding> get() = _bindings
+    private val _bindings = mutableListOf<IrFunction>()
+    val bindings: List<IrFunction> get() = _bindings
 
-    val entryPoints: List<EntryPoint> get() = _entryPoints
-    private val _entryPoints = mutableListOf<EntryPoint>()
+    val entryPoints: List<IrClass> get() = _entryPoints
+    private val _entryPoints = mutableListOf<IrClass>()
 
-    private val _mapEntries = mutableListOf<MapEntries>()
-    val mapEntries: List<MapEntries> get() = _mapEntries
+    private val _mapEntries = mutableListOf<IrFunction>()
+    val mapEntries: List<IrFunction> get() = _mapEntries
 
-    private val _setElements = mutableListOf<SetElements>()
-    val setElements: List<SetElements> get() = _setElements
+    private val _setElements = mutableListOf<IrFunction>()
+    val setElements: List<IrFunction> get() = _setElements
 
     private val indices by lazy {
         val memberScope = pluginContext.moduleDescriptor.getPackage(InjektFqNames.IndexPackage)
@@ -75,33 +75,29 @@ class DeclarationGraph(
                     .let { it as IrConst<String> }
                     .value
                     .let { FqName(it) }
-            } +
-                // this is a workaround for cleaner tests
-                FqName("com.ivianuu.injekt.test.TestComponent.Factory") +
-                FqName("com.ivianuu.injekt.test.TestParentComponent.Factory") +
-                FqName("com.ivianuu.injekt.test.TestChildComponent.Factory")
+            }
     }
 
     fun initialize() {
-        collectComponentFactories()
+        collectRootComponentFactories()
         collectEntryPoints()
         collectBindings()
         collectMapEntries()
         collectSetElements()
     }
 
-    private fun collectComponentFactories() {
+    private fun collectRootComponentFactories() {
         indices
             .mapNotNull { pluginContext.referenceClass(it)?.owner }
-            .filter { it.hasAnnotation(InjektFqNames.ComponentFactory) }
-            .forEach { _componentFactories += ComponentFactory(it) }
+            .filter { it.hasAnnotation(InjektFqNames.RootComponentFactory) }
+            .forEach { _rootComponentFactories += it }
     }
 
     private fun collectEntryPoints() {
         indices
             .mapNotNull { pluginContext.referenceClass(it)?.owner }
             .filter { it.hasAnnotation(InjektFqNames.EntryPoint) }
-            .forEach { _entryPoints += EntryPoint(it) }
+            .forEach { _entryPoints += it }
     }
 
     private fun collectBindings() {
@@ -124,7 +120,7 @@ class DeclarationGraph(
             }
             .map { readerTransformer.getTransformedFunction(it) }
             .distinct()
-            .forEach { _bindings += Binding(it) }
+            .forEach { _bindings += it }
     }
 
     private fun collectMapEntries() {
@@ -138,7 +134,7 @@ class DeclarationGraph(
             .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
             .map { readerTransformer.getTransformedFunction(it) }
             .distinct()
-            .forEach { _mapEntries += MapEntries(it) }
+            .forEach { _mapEntries += it }
     }
 
     private fun collectSetElements() {
@@ -152,27 +148,7 @@ class DeclarationGraph(
             .filter { it.hasAnnotation(InjektFqNames.SetElements) }
             .map { readerTransformer.getTransformedFunction(it) }
             .distinct()
-            .forEach { _setElements += SetElements(it) }
+            .forEach { _setElements += it }
     }
 
 }
-
-class ComponentFactory(
-    val factory: IrClass
-)
-
-class Binding(
-    val function: IrFunction
-)
-
-class EntryPoint(
-    val entryPoint: IrClass
-)
-
-class SetElements(
-    val function: IrFunction
-)
-
-class MapEntries(
-    val function: IrFunction
-)

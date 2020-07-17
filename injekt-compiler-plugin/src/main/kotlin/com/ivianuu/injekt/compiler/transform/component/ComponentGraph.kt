@@ -51,7 +51,7 @@ class ComponentGraph(
         InputParameterBindingResolver(inputParameters, component),
         GivenBindingResolver(context, declarationGraph, component),
         ComponentImplBindingResolver(component),
-        ChildComponentFactoryBindingResolver(component),
+        ChildComponentFactoryBindingResolver(declarationGraph, component),
         mapBindingResolver,
         setBindingResolver,
         ProviderBindingResolver(component)
@@ -103,13 +103,13 @@ class ComponentGraph(
         binding = bindings.firstOrNull()
 
         if (binding?.targetComponent != null &&
-            binding.targetComponent != component.factoryImpl.node.component.defaultType
+            binding.targetComponent != component.factoryImpl.component.defaultType
         ) {
             if (parent == null) {
                 error(
                     "Component mismatch binding '${binding.key}' " +
                             "requires component '${binding.targetComponent?.render()}' but component is " +
-                            "${component.factoryImpl.node.component.render()} '${component.origin}'"
+                            "${component.factoryImpl.component.render()} '${component.origin}'"
                 )
             } else {
                 binding = null

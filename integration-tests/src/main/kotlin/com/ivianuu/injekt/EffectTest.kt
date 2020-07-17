@@ -53,7 +53,7 @@ class EffectTest {
         
         fun invoke() {
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             component.runReader { 
                 given<Dep>() 
                 given<String>()
@@ -190,7 +190,7 @@ class EffectTest {
         
         fun invoke(): Foo { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { given<FooFactory>()() }
         }
     """
@@ -231,7 +231,7 @@ class EffectTest {
                 """
                 fun invoke(): Foo { 
                     initializeComponents()
-                    val component = componentFactory<TestComponent.Factory>().create()
+                    val component = rootComponent<TestComponent>()
                     return component.runReader { given<FooFactory>()() }
                 }
             """, name = "File.kt"
@@ -262,7 +262,7 @@ class EffectTest {
         
         fun invoke(): Foo { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { runBlocking { given<FooFactory>()() } }
         }
     """
