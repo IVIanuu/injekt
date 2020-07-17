@@ -18,7 +18,7 @@ package com.ivianuu.injekt.internal
 
 import kotlin.reflect.KClass
 
-object ComponentFactories {
+object RootComponentFactories {
 
     private val factories = mutableMapOf<KClass<*>, Any>()
 

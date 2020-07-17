@@ -44,22 +44,22 @@ class ComponentTransformer(
     private val readerTransformer: ReaderTransformer
 ) : AbstractInjektTransformer(pluginContext) {
 
-    private data class BuildComponentCall(
+    private data class InitializeComponentsCall(
         val call: IrCall,
         val scope: ScopeWithIr,
         val file: IrFile
     )
 
     override fun lower() {
-        val buildComponentCalls =
-            mutableListOf<BuildComponentCall>()
+        val initializeComponentCalls =
+            mutableListOf<InitializeComponentsCall>()
 
         module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
                 if (expression.symbol.descriptor.fqNameSafe.asString() ==
                     "com.ivianuu.injekt.initializeComponents"
                 ) {
-                    buildComponentCalls += BuildComponentCall(
+                    initializeComponentCalls += InitializeComponentsCall(
                         expression,
                         currentScope!!,
                         currentFile
@@ -69,15 +69,15 @@ class ComponentTransformer(
             }
         })
 
-        if (buildComponentCalls.isEmpty()) return
+        if (initializeComponentCalls.isEmpty()) return
 
         val declarationGraph = DeclarationGraph(module, pluginContext, readerTransformer)
             .also { it.initialize() }
 
         if (declarationGraph.componentFactories.isEmpty()) return
 
-        val callMap = buildComponentCalls.associateWith {
-            transformBuildComponentCall(declarationGraph, it)
+        val callMap = initializeComponentCalls.associateWith {
+            transformInitializeComponentsCall(declarationGraph, it)
         }.mapKeys { it.key.call }
 
         module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
@@ -87,9 +87,9 @@ class ComponentTransformer(
         })
     }
 
-    private fun transformBuildComponentCall(
+    private fun transformInitializeComponentsCall(
         declarationGraph: DeclarationGraph,
-        call: BuildComponentCall
+        call: InitializeComponentsCall
     ): IrExpression {
         val componentTree = ComponentTree(
             pluginContext, declarationGraph.componentFactories.groupBy {

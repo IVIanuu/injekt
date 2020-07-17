@@ -28,34 +28,35 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
+import com.ivianuu.injekt.subcomponent
 
-@Component(parent = RetainedActivityComponent::class)
-interface ActivityComponent {
-    @Component.Factory
-    interface Factory {
-        fun create(instance: ComponentActivity): ActivityComponent
-    }
-}
+@Component
+interface ActivityComponent
 
 val ComponentActivity.activityComponent: ActivityComponent
     get() = lifecycle.singleton {
         retainedActivityComponent.runReader {
-            given<ActivityComponent.Factory>().create(this)
+            subcomponent(this)
         }
     }
 
 @Distinct
 typealias ActivityContext = Context
+
 @Distinct
 typealias ActivityResources = Resources
+
 @Distinct
 typealias ActivityLifecycleOwner = LifecycleOwner
+
 @Distinct
 typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
+
 @Distinct
 typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 
 object ActivityModule {
+
     @Given
     @Reader
     fun context(): ActivityContext = given<ComponentActivity>()
@@ -75,4 +76,5 @@ object ActivityModule {
     @Given
     @Reader
     fun viewModelStoreOwner(): ActivityViewModelStoreOwner = given<ComponentActivity>()
+
 }

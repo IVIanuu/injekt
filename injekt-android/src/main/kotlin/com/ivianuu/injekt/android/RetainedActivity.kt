@@ -19,18 +19,12 @@ package com.ivianuu.injekt.android
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
+import com.ivianuu.injekt.subcomponent
 
-@Component(parent = ApplicationComponent::class)
-interface RetainedActivityComponent {
-    @Component.Factory
-    interface Factory {
-        fun create(): RetainedActivityComponent
-    }
-}
+@Component
+interface RetainedActivityComponent
 
 val ComponentActivity.retainedActivityComponent: RetainedActivityComponent
     get() {
@@ -40,7 +34,7 @@ val ComponentActivity.retainedActivityComponent: RetainedActivityComponent
         synchronized(holder) {
             if (holder.component == null) {
                 holder.component = application.applicationComponent.runReader {
-                    given<RetainedActivityComponent.Factory>().create()
+                    subcomponent()
                 }
             }
         }

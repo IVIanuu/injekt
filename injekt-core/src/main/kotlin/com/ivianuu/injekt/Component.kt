@@ -16,16 +16,14 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.internal.ComponentFactories
 import com.ivianuu.injekt.internal.injektIntrinsic
-import kotlin.reflect.KClass
 
 @Target(AnnotationTarget.CLASS)
-annotation class Component(val parent: KClass<*> = Nothing::class) {
-    @Target(AnnotationTarget.CLASS)
-    annotation class Factory
-}
+annotation class Component
 
 fun initializeComponents(): Unit = injektIntrinsic()
 
-inline fun <reified T> componentFactory(): T = ComponentFactories.get(T::class)
+inline fun <T> rootComponent(vararg instances: Any?): T = injektIntrinsic()
+
+@Reader
+inline fun <T> subcomponent(vararg instances: Any?): T = injektIntrinsic()

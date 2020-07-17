@@ -21,30 +21,25 @@ import android.content.Context
 import android.content.res.Resources
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.ApplicationComponent
-import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.componentFactory
 import com.ivianuu.injekt.given
+import com.ivianuu.injekt.rootComponent
 
 val Application.applicationComponent: ApplicationComponent
     get() = ProcessLifecycleOwner.get().lifecycle.singleton {
-        componentFactory<ApplicationComponentFactory>()
-            .create(this)
+        rootComponent(this)
     }
-
-@Component.Factory
-interface ApplicationComponentFactory {
-    fun create(instance: Application): ApplicationComponent
-}
 
 @Distinct
 typealias ApplicationContext = Context
+
 @Distinct
 typealias ApplicationResources = Resources
 
 object ApplicationModule {
+
     @Given
     @Reader
     fun context(): ApplicationContext = given<Application>()
@@ -52,4 +47,5 @@ object ApplicationModule {
     @Given
     @Reader
     fun resources(): ApplicationResources = given<Application>().resources
+
 }

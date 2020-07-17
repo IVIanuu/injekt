@@ -19,23 +19,19 @@ package com.ivianuu.injekt.android
 import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
-import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.given
+import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.runReader
+import com.ivianuu.injekt.subcomponent
 
-@Component(parent = ApplicationComponent::class)
-interface ReceiverComponent {
-    @Component.Factory
-    interface Factory {
-        fun create(instance: BroadcastReceiver): ReceiverComponent
-    }
-}
+@Component
+interface ReceiverComponent
 
-fun BroadcastReceiver.newReceiverComponent(
-    context: Context
-): ReceiverComponent {
+@Distinct
+typealias ReceiverContext = Context
+
+fun BroadcastReceiver.newReceiverComponent(context: Context): ReceiverComponent {
     return (context.applicationContext as Application).applicationComponent.runReader {
-        given<ReceiverComponent.Factory>().create(this)
+        subcomponent(this, context as ReceiverContext)
     }
 }
