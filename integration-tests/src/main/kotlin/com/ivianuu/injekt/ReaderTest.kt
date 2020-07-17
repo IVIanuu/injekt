@@ -18,6 +18,7 @@ package com.ivianuu.injekt
 
 import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
+import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
@@ -697,5 +698,21 @@ class ReaderTest {
         }
     """
     )
+
+    @Test
+    fun testGivenCallInComplexDefaultExpressionCreatesAnAdditionalValueParameter() = codegen(
+        """
+        @Reader 
+        fun createFoo(foo: Foo = "lol".run { given() }) = foo
+        
+        fun invoke() {
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            component.runReader { createFoo(Foo()) }
+        }
+    """
+    ) {
+        assertInternalError("no binding")
+    }
 
 }

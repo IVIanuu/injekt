@@ -76,6 +76,7 @@ import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrExpressionBody
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
@@ -213,7 +214,10 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                     ) {
                         givenCalls += result
                         valueParameterStack.lastOrNull()
-                            ?.takeIf { it.type == result.type }
+                            ?.takeIf {
+                                it.defaultValue is IrExpressionBody &&
+                                        it.defaultValue!!.statements.single() == result
+                            }
                             ?.let {
                                 defaultValueParameterByGivenCalls[result] = it
                             }
@@ -400,7 +404,10 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                     ) {
                         givenCalls += result
                         valueParameterStack.lastOrNull()
-                            ?.takeIf { it.type == result.type }
+                            ?.takeIf {
+                                it.defaultValue is IrExpressionBody &&
+                                        it.defaultValue!!.statements.single() == result
+                            }
                             ?.let {
                                 defaultValueParameterByGivenCalls[result] = it
                             }
