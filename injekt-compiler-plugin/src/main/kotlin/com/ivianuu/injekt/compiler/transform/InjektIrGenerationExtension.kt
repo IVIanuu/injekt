@@ -16,9 +16,8 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.dumpSrc
-import com.ivianuu.injekt.compiler.transform.component.ComponentEntryPointTransformer
 import com.ivianuu.injekt.compiler.transform.component.ComponentFactoryTransformer
+import com.ivianuu.injekt.compiler.transform.component.EntryPointTransformer
 import com.ivianuu.injekt.compiler.transform.component.RootComponentTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -40,7 +39,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         val readerTransformer = ReaderTransformer(injektPluginContext)
         readerTransformer.doLower(moduleFragment)
 
-        ComponentEntryPointTransformer(injektPluginContext).doLower(moduleFragment)
+        EntryPointTransformer(injektPluginContext).doLower(moduleFragment)
 
         IndexingTransformer(injektPluginContext).doLower(moduleFragment)
 
@@ -49,8 +48,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 
         generateSymbols(pluginContext)
-
-        println(moduleFragment.dumpSrc())
     }
 
 }

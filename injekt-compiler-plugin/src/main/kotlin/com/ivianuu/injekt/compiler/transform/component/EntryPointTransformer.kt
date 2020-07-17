@@ -21,8 +21,6 @@ import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.getJoinedName
-import com.ivianuu.injekt.compiler.indexPackageFile
 import com.ivianuu.injekt.compiler.readableName
 import com.ivianuu.injekt.compiler.singleClassArgConstructorCall
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
@@ -40,7 +38,6 @@ import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irImplicitCast
-import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrFile
@@ -53,14 +50,13 @@ import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrReturn
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrFail
-import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ComponentEntryPointTransformer(
+class EntryPointTransformer(
     pluginContext: IrPluginContext
 ) : AbstractInjektTransformer(pluginContext) {
 
@@ -90,11 +86,7 @@ class ComponentEntryPointTransformer(
 
                 val entryPoint = buildClass {
                     name = nameProvider.allocateForGroup(
-                        getJoinedName(
-                            currentFile.fqName,
-                            currentScope!!.scope.scopeOwner.fqNameSafe.parent()
-                                .child("${currentScope!!.scope.scopeOwner.name.asString()}EntryPoint".asNameId())
-                        )
+                        "${currentScope!!.scope.scopeOwner.name.asString()}EntryPoint".asNameId()
                     )
                     kind = ClassKind.INTERFACE
                 }.apply {
@@ -121,30 +113,6 @@ class ComponentEntryPointTransformer(
                 }
 
                 newDeclarations += entryPoint
-
-                module.indexPackageFile.addChild(
-                    buildClass {
-                        name = nameProvider.allocateForGroup(
-                            getJoinedName(
-                                currentFile.fqName,
-                                currentScope!!.scope.scopeOwner.fqNameSafe.parent()
-                                    .child("${currentScope!!.scope.scopeOwner.name.asString()}Reader".asNameId())
-                            )
-                        )
-                        kind = ClassKind.INTERFACE
-                    }.apply {
-                        createImplicitParameterDeclarationWithWrappedDescriptor()
-                        addMetadataIfNotLocal()
-                        annotations += DeclarationIrBuilder(pluginContext, symbol).run {
-                            irCall(symbols.index.constructors.single()).apply {
-                                putValueArgument(
-                                    0,
-                                    irString(entryPoint.descriptor.fqNameSafe.asString())
-                                )
-                            }
-                        }
-                    }
-                )
 
                 return DeclarationIrBuilder(pluginContext, result.symbol).run {
                     irBlock {
