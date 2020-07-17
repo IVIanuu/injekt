@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.component.ComponentEntryPointTransformer
 import com.ivianuu.injekt.compiler.transform.component.ComponentTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -46,8 +45,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 
         generateSymbols(pluginContext)
-
-        println(moduleFragment.dumpSrc())
     }
 
 }

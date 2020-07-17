@@ -275,10 +275,12 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             val call = callsByTypes[givenType.distinctedType]
             val defaultValueParameter = defaultValueParameterByGivenCalls[call]
 
-            val valueParameter = (defaultValueParameter ?: readerConstructor.addValueParameter(
-                field.name.asString(),
-                field.type
-            )).apply {
+            val valueParameter = (defaultValueParameter
+                ?.also { it.defaultValue = null }
+                ?: readerConstructor.addValueParameter(
+                    field.name.asString(),
+                    field.type
+                )).apply {
                 annotations += DeclarationIrBuilder(pluginContext, symbol)
                     .irCall(symbols.implicit.constructors.single())
             }
@@ -464,10 +466,12 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             val call = callsByTypes[givenType.distinctedType]
             val defaultValueParameter = defaultValueParameterByGivenCalls[call]
 
-            val valueParameter = (defaultValueParameter ?: transformedFunction.addValueParameter(
-                name = givenType.readableName().asString(),
-                type = givenType
-            )).apply {
+            val valueParameter = (defaultValueParameter
+                ?.also { it.defaultValue = null }
+                ?: transformedFunction.addValueParameter(
+                    name = givenType.readableName().asString(),
+                    type = givenType
+                )).apply {
                 annotations += DeclarationIrBuilder(pluginContext, symbol)
                     .irCall(symbols.implicit.constructors.single())
             }
