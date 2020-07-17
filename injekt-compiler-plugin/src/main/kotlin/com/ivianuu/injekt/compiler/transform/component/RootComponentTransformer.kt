@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -39,27 +40,27 @@ import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ComponentTransformer(
+class RootComponentTransformer(
     pluginContext: IrPluginContext,
     private val readerTransformer: ReaderTransformer
 ) : AbstractInjektTransformer(pluginContext) {
 
-    private data class BuildComponentCall(
+    private data class InitializeComponentsCall(
         val call: IrCall,
         val scope: ScopeWithIr,
         val file: IrFile
     )
 
     override fun lower() {
-        val buildComponentCalls =
-            mutableListOf<BuildComponentCall>()
+        val initializeComponentCalls =
+            mutableListOf<InitializeComponentsCall>()
 
         module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
                 if (expression.symbol.descriptor.fqNameSafe.asString() ==
                     "com.ivianuu.injekt.initializeComponents"
                 ) {
-                    buildComponentCalls += BuildComponentCall(
+                    initializeComponentCalls += InitializeComponentsCall(
                         expression,
                         currentScope!!,
                         currentFile
@@ -69,15 +70,15 @@ class ComponentTransformer(
             }
         })
 
-        if (buildComponentCalls.isEmpty()) return
+        if (initializeComponentCalls.isEmpty()) return
 
         val declarationGraph = DeclarationGraph(module, pluginContext, readerTransformer)
             .also { it.initialize() }
 
-        if (declarationGraph.componentFactories.isEmpty()) return
+        if (declarationGraph.rootComponentFactories.isEmpty()) return
 
-        val callMap = buildComponentCalls.associateWith {
-            transformBuildComponentCall(declarationGraph, it)
+        val callMap = initializeComponentCalls.associateWith {
+            transformInitializeComponentsCall(declarationGraph, it)
         }.mapKeys { it.key.call }
 
         module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
@@ -87,33 +88,41 @@ class ComponentTransformer(
         })
     }
 
-    private fun transformBuildComponentCall(
+    private fun transformInitializeComponentsCall(
         declarationGraph: DeclarationGraph,
-        call: BuildComponentCall
+        call: InitializeComponentsCall
     ): IrExpression {
-        val componentTree = ComponentTree(
-            pluginContext, declarationGraph.componentFactories.groupBy {
-                it.factory.functions
-                    .filterNot { it.isFakeOverride }
-                    .single()
-                    .returnType
-            }, declarationGraph.entryPoints.groupBy {
-                it.entryPoint.getClassFromSingleValueAnnotation(
-                    InjektFqNames.EntryPoint,
-                    pluginContext
-                ).defaultType
-            }
-        )
+        val rootComponentFactories = declarationGraph.rootComponentFactories.groupBy {
+            it.functions
+                .filterNot { it.isFakeOverride }
+                .single()
+                .returnType
+        }
+
+        val entryPoints = declarationGraph.entryPoints.groupBy {
+            it.getClassFromSingleValueAnnotation(
+                InjektFqNames.EntryPoint,
+                pluginContext
+            )
+        }
 
         return DeclarationIrBuilder(pluginContext, call.call.symbol).run {
             irBlock {
-                componentTree.nodes
-                    .filter { it.parentComponent == null }
-                    .forEach { node ->
+                rootComponentFactories.values
+                    .flatten()
+                    .forEach { componentFactory ->
+                        val component = componentFactory.functions
+                            .filterNot { it.isFakeOverride }
+                            .single()
+                            .returnType
+                            .classOrNull!!
+                            .owner
+
                         val componentFactoryImpl = ComponentFactoryImpl(
                             scope.getLocalDeclarationParent(),
                             null,
-                            node,
+                            componentFactory,
+                            entryPoints.getOrElse(component) { emptyList() },
                             null,
                             pluginContext,
                             declarationGraph,
@@ -121,21 +130,21 @@ class ComponentTransformer(
                         )
                         +componentFactoryImpl.getClass()
                         +irCall(
-                            symbols.componentFactories
+                            symbols.rootComponentFactories
                                 .functions
                                 .single { it.owner.name.asString() == "register" }
                         ).apply {
                             dispatchReceiver =
-                                irGetObject(symbols.componentFactories)
+                                irGetObject(symbols.rootComponentFactories)
 
                             putValueArgument(
                                 0,
                                 IrClassReferenceImpl(
                                     UNDEFINED_OFFSET,
                                     UNDEFINED_OFFSET,
-                                    irBuiltIns.kClassClass.typeWith(node.factory.factory.defaultType),
-                                    node.factory.factory.symbol,
-                                    node.factory.factory.defaultType
+                                    irBuiltIns.kClassClass.typeWith(componentFactory.defaultType),
+                                    componentFactory.symbol,
+                                    componentFactory.defaultType
                                 )
                             )
 

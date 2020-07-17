@@ -33,12 +33,7 @@ class ComponentTest {
     fun testSimple() = codegen(
         """
         @Component
-        interface MyComponent {
-            @Component.Factory
-            interface Factory {
-                fun create(): MyComponent
-            }
-        }
+        interface MyComponent
         
         @Given @Reader
         fun foo() = Foo()
@@ -47,7 +42,7 @@ class ComponentTest {
         
         fun invoke(): Bar {
             initializeComponents()
-            val component = componentFactory<MyComponent.Factory>().create()
+            val component = rootComponent<MyComponent>()
             return component.runReader { given<Bar>() }
         }
     """
@@ -59,20 +54,10 @@ class ComponentTest {
     fun testSimpleWithChild() = codegen(
         """
         @Component
-        interface ParentComponent {
-            @Component.Factory
-            interface Factory {
-                fun create(): ParentComponent
-            }
-        }
+        interface ParentComponent
         
-        @Component(parent = ParentComponent::class)
-        interface ChildComponent {
-            @Component.Factory
-            interface Factory {
-                fun create(): ChildComponent
-            }
-        }
+        @Component
+        interface ChildComponent
         
         @Given(ParentComponent::class) @Reader
         fun foo() = Foo()
@@ -81,8 +66,8 @@ class ComponentTest {
         
         fun invoke(): Bar {
             initializeComponents()
-            val childComponent = componentFactory<ParentComponent.Factory>().create().runReader {
-                given<ChildComponent.Factory>().create()
+            val childComponent = rootComponent<ParentComponent>().runReader {
+                childComponent<ChildComponent>()
             }
             return childComponent.runReader { given<Bar>() }
         }
@@ -96,15 +81,8 @@ class ComponentTest {
         listOf(
             source(
                 """
-                @Component
-                interface ParentComponent {
-                    @Component.Factory
-                    interface Factory {
-                        fun create(): ParentComponent
-                    }
-                }
-                
-                @Given(ParentComponent::class) @Reader
+                @Given(TestParentComponent::class)
+                @Reader
                 fun foo() = Foo()
             """
             )
@@ -112,14 +90,6 @@ class ComponentTest {
         listOf(
             source(
                 """
-                @Component(parent = ParentComponent::class)
-                interface ChildComponent {
-                    @Component.Factory
-                    interface Factory {
-                        fun create(): ChildComponent 
-                    }
-                }
-                
                 @Given @Reader
                 fun bar() = Bar(given())
             """
@@ -130,11 +100,11 @@ class ComponentTest {
                 """
                 fun invoke(): Bar {
                     initializeComponents()
-                    val childComponent = componentFactory<ParentComponent.Factory>().create().runReader {
-                        given<ChildComponent.Factory>().create()
+                    val childComponent = rootComponent<TestParentComponent>().runReader {
+                        childComponent<TestChildComponent>()
                     }
-                return childComponent.runReader { given<Bar>() }
-        } 
+                    return childComponent.runReader { given<Bar>() }
+                } 
             """, name = "File.kt"
             )
         )
@@ -150,7 +120,7 @@ class ComponentTest {
         
         val component by lazy {
             initializeComponents()
-            componentFactory<TestComponent.Factory>().create()
+            rootComponent<TestComponent>()
         }
         
         fun invoke() = component.runReader { given<Foo>() }
@@ -170,7 +140,7 @@ class ComponentTest {
         
         val component by lazy {
             initializeComponents()
-            componentFactory<TestComponent.Factory>().create()
+            rootComponent<TestComponent>()
         }
         
         fun invoke() = component.runReader { given<Foo>() }
@@ -196,7 +166,7 @@ class ComponentTest {
 
         val component by lazy {
             initializeComponents()
-            componentFactory<TestComponent.Factory>().create()
+            rootComponent<TestComponent>()
         }
 
         fun invoke() = component.runReader { given<AnnotatedBar>() }
@@ -213,7 +183,7 @@ class ComponentTest {
 
         val component by lazy {
             initializeComponents()
-            componentFactory<TestComponent.Factory>().create()
+            rootComponent<TestComponent>()
         }
 
         fun invoke() = component.runReader { given<AnnotatedFoo>() }
@@ -230,7 +200,7 @@ class ComponentTest {
         
         val component by lazy {
             initializeComponents()
-            componentFactory<TestComponent.Factory>().create()
+            rootComponent<TestComponent>()
         }
 
         fun invoke() = component.runReader { given<Foo>() }
@@ -247,7 +217,7 @@ class ComponentTest {
 
         val component by lazy {
             initializeComponents()
-            componentFactory<TestComponent.Factory>().create()
+            rootComponent<TestComponent>()
         }
 
         fun invoke() = component.runReader { given<(Foo) -> Bar>() }
@@ -265,7 +235,7 @@ class ComponentTest {
 
         val component by lazy {
             initializeComponents()
-            componentFactory<TestComponent.Factory>().create()
+            rootComponent<TestComponent>()
         }
 
         fun invoke() = component.runReader { given<(Foo) -> AnnotatedBar>() }
@@ -280,7 +250,7 @@ class ComponentTest {
         """
         fun invoke(): Pair<TestComponent, TestComponent> {
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { 
                 component to given<TestComponent>()
             }
@@ -299,7 +269,7 @@ class ComponentTest {
         
         val component by lazy {
             initializeComponents()
-            componentFactory<TestComponent.Factory>().create()
+            rootComponent<TestComponent>()
         }
         
         fun invoke() = component.runReader { given<() -> Foo>() }
@@ -317,7 +287,7 @@ class ComponentTest {
         
         val component by lazy {
             initializeComponents()
-            componentFactory<TestComponent.Factory>().create()
+            rootComponent<TestComponent>()
         }
         
         fun invoke() = component.runReader { given<() -> Foo>() }
@@ -338,7 +308,7 @@ class ComponentTest {
         
         fun invoke() {
             initializeComponents()
-            componentFactory<TestComponent.Factory>().create().runReader {
+            rootComponent<TestComponent>().runReader {
                 given<Dep<Foo>>()
             }
         }
@@ -362,18 +332,10 @@ class ComponentTest {
     @Test
     fun testComponentInput() = codegen(
         """
-        @Component
-        interface MyComponent {
-            @Component.Factory
-            interface Factory {
-                fun create(foo: Foo): MyComponent
-            }
-        }
-        
         fun invoke(): Pair<Foo, Foo> {
             initializeComponents()
             val foo = Foo()
-            val component = componentFactory<MyComponent.Factory>().create(foo)
+            val component = rootComponent<TestComponent>(foo)
             return foo to component.runReader { given<Foo>() }
         }
     """

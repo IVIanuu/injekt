@@ -61,45 +61,6 @@ class ComponentChecker : DeclarationChecker {
                 )
             }
         }
-
-        if (descriptor.hasAnnotation(InjektFqNames.ComponentFactory)) {
-            if (descriptor.kind != ClassKind.INTERFACE) {
-                context.trace.report(
-                    InjektErrors.COMPONENT_FACTORY_MUST_BE_AN_INTERFACE
-                        .on(declaration)
-                )
-            }
-
-            if (descriptor.declaredTypeParameters.isNotEmpty()) {
-                context.trace.report(
-                    InjektErrors.COMPONENT_FACTORY_WITH_TYPE_PARAMETERS
-                        .on(declaration)
-                )
-            }
-
-            val singleFunction = descriptor.getAllDeclarations()
-                .filterIsInstance<FunctionDescriptor>()
-                .singleOrNull()
-
-            fun reportSingleFunction() {
-                context.trace.report(
-                    InjektErrors.COMPONENT_FACTORY_SINGLE_FUNCTION
-                        .on(declaration)
-                )
-            }
-
-            if (singleFunction == null) {
-                reportSingleFunction()
-                return
-            }
-
-            if ((singleFunction.returnType?.constructor?.declarationDescriptor as? ClassDescriptor)
-                    ?.hasAnnotation(InjektFqNames.Component) != true
-            ) {
-                reportSingleFunction()
-                return
-            }
-        }
     }
 
     private fun ClassDescriptor.getAllDeclarations(): Set<DeclarationDescriptor> {

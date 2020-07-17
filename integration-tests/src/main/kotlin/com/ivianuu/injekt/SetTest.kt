@@ -57,7 +57,7 @@ class SetTest {
         
         fun invoke(): Set<Command> {
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { given<Set<Command>>() }
         }
         """
@@ -74,7 +74,7 @@ class SetTest {
         """
         fun invoke(): Set<Command> {
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { given<Set<Command>>() }
         }
         """
@@ -104,8 +104,8 @@ class SetTest {
         
         fun invoke(): Pair<Set<Command>, Set<Command>> {
             initializeComponents()
-            val parentComponent = componentFactory<TestParentComponent.Factory>().create()
-            val childComponent = parentComponent.runReader { given<TestChildComponent.Factory>().create() }
+            val parentComponent = rootComponent<TestParentComponent>()
+            val childComponent = parentComponent.runReader { childComponent<TestChildComponent>() }
             return parentComponent.runReader {
                 given<Set<Command>>() to childComponent.runReader {
                     given<Set<Command>>()

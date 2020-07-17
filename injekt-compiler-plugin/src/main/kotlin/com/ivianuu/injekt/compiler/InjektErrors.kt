@@ -48,18 +48,8 @@ interface InjektErrors {
         )
 
         @JvmField
-        val COMPONENT_FACTORY_SINGLE_FUNCTION = error(
-            "@Component.Factory must contain a single function with a @Component return type"
-        )
-
-        @JvmField
         val COMPONENT_MUST_BE_AN_INTERFACE = error(
             "@Component must be an interface"
-        )
-
-        @JvmField
-        val COMPONENT_FACTORY_MUST_BE_AN_INTERFACE = error(
-            "@Component.Factory must be an interface"
         )
 
         @JvmField

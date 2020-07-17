@@ -27,36 +27,37 @@ import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.childComponent
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 
-@Component(parent = ActivityComponent::class)
-interface FragmentComponent {
-    @Component.Factory
-    interface Factory {
-        fun create(instance: Fragment): FragmentComponent
-    }
-}
+@Component
+interface FragmentComponent
 
 val Fragment.fragmentComponent: FragmentComponent
     get() = lifecycle.singleton {
         activity!!.activityComponent.runReader {
-            given<FragmentComponent.Factory>().create(this)
+            childComponent(this)
         }
     }
 
 @Distinct
 typealias FragmentContext = Context
+
 @Distinct
 typealias FragmentResources = Resources
+
 @Distinct
 typealias FragmentLifecycleOwner = LifecycleOwner
+
 @Distinct
 typealias FragmentSavedStateRegistryOwner = SavedStateRegistryOwner
+
 @Distinct
 typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
 
 object FragmentModule {
+
     @Given
     @Reader
     fun context(): FragmentContext = given<Fragment>().requireContext()
@@ -76,4 +77,5 @@ object FragmentModule {
     @Given
     @Reader
     fun viewModelStoreOwner(): FragmentViewModelStoreOwner = given<ViewModelStoreOwner>()
+
 }

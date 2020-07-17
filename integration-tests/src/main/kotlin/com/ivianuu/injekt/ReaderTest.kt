@@ -29,7 +29,8 @@ import org.junit.Test
 class ReaderTest {
 
     @Test
-    fun testSimpleReader() = codegen("""
+    fun testSimpleReader() = codegen(
+        """
         @Given @Reader
         fun foo() = Foo()
         
@@ -38,7 +39,7 @@ class ReaderTest {
         
         fun invoke(): Foo { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { func() }
         }
     """
@@ -47,7 +48,8 @@ class ReaderTest {
     }
 
     @Test
-    fun testNestedReader() = codegen("""
+    fun testNestedReader() = codegen(
+        """
         @Given @Reader
         fun foo() = Foo()
         
@@ -58,7 +60,7 @@ class ReaderTest {
         
         fun invoke(): Foo {
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader {
                 nonReader { 
                     createFoo()
@@ -71,7 +73,8 @@ class ReaderTest {
     }
 
     @Test
-    fun testSuspendBlockInReadingBlock() = codegen("""
+    fun testSuspendBlockInReadingBlock() = codegen(
+        """
         @Given @Reader
         fun foo() = Foo()
         
@@ -83,7 +86,7 @@ class ReaderTest {
         
         fun invoke(): Foo { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader {
                 runBlocking { 
                     func()
@@ -96,7 +99,8 @@ class ReaderTest {
     }
 
     @Test
-    fun testReadingBlockInSuspendBlock() = codegen("""
+    fun testReadingBlockInSuspendBlock() = codegen(
+        """
         @Given @Reader
         fun foo() = Foo()
         
@@ -108,7 +112,7 @@ class ReaderTest {
         
         fun invoke(): Foo { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return runBlocking {
                 component.runReader {
                     func()
@@ -121,7 +125,8 @@ class ReaderTest {
     }
 
     @Test
-    fun testSuspendNestedReader() = codegen("""
+    fun testSuspendNestedReader() = codegen(
+        """
         @Given @Reader
         fun foo() = Foo()
         
@@ -138,7 +143,7 @@ class ReaderTest {
         
         fun invoke() {
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             component.runReader {
                 nonReader { 
                     Reader { 
@@ -159,7 +164,8 @@ class ReaderTest {
     }
 
     @Test
-    fun testReaderCallInDefaultParameter() = codegen("""
+    fun testReaderCallInDefaultParameter() = codegen(
+        """
         @Given @Reader
         fun foo() = Foo()
         
@@ -171,7 +177,7 @@ class ReaderTest {
         
         fun invoke(): Foo { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { withDefault() }
         }
     """
@@ -180,7 +186,8 @@ class ReaderTest {
     }
 
     @Test
-    fun testReaderCallInDefaultParameterWithCapture() = codegen("""
+    fun testReaderCallInDefaultParameterWithCapture() = codegen(
+        """
         @Given @Reader
         fun foo() = Foo()
         
@@ -189,7 +196,7 @@ class ReaderTest {
         
         fun invoke(): Foo { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { withDefault() }
         }
     """
@@ -243,7 +250,7 @@ class ReaderTest {
                 """
                 fun invoke(): Foo {
                     initializeComponents()
-                    component = componentFactory<TestComponent.Factory>().create()
+                    component = rootComponent<TestComponent>()
                     return getFoo()
                 }
                 """,
@@ -255,7 +262,8 @@ class ReaderTest {
     }
 
     @Test
-    fun testReaderProperty() = codegen("""
+    fun testReaderProperty() = codegen(
+        """
         @Given @Reader
         fun foo() = Foo()
         
@@ -264,7 +272,7 @@ class ReaderTest {
         
         fun invoke(): Foo { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { foo }
         }
     """
@@ -275,7 +283,8 @@ class ReaderTest {
     @Test
     fun testMultiCompileReaderProperty() = multiCodegen(
         listOf(
-            source("""
+            source(
+                """
                 @Given @Reader 
                 fun foo() = Foo()
         
@@ -289,7 +298,7 @@ class ReaderTest {
                 """
                 fun invoke(): Foo { 
                     initializeComponents()
-                    val component = componentFactory<TestComponent.Factory>().create()
+                    val component = rootComponent<TestComponent>()
                     return component.runReader { foo }
                 }
                 """,
@@ -301,7 +310,8 @@ class ReaderTest {
     }
 
     @Test
-    fun testReaderClass() = codegen("""
+    fun testReaderClass() = codegen(
+        """
         @Given @Reader
         fun foo() = Foo()
         
@@ -312,7 +322,7 @@ class ReaderTest {
         
         fun invoke(): Foo { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { FooFactory().getFoo() }
         }
     """
@@ -323,7 +333,8 @@ class ReaderTest {
     @Test
     fun testReaderClassMulti() = multiCodegen(
         listOf(
-            source("""
+            source(
+                """
                 @Given @Reader
                 fun foo() = Foo()
         
@@ -339,7 +350,7 @@ class ReaderTest {
                 """ 
                 fun invoke(): Foo { 
                     initializeComponents()
-                    val component = componentFactory<TestComponent.Factory>().create()
+                    val component = rootComponent<TestComponent>()
                     return component.runReader { FooFactory().getFoo() }
                 }
             """, name = "File.kt"
@@ -360,7 +371,7 @@ class ReaderTest {
         
         fun invoke(): Foo { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { FooFactory().getFoo() }
         }
     """
@@ -381,7 +392,7 @@ class ReaderTest {
         
         fun invoke(): Foo { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { given<FooFactory>().getFoo() }
         }
     """
@@ -404,7 +415,7 @@ class ReaderTest {
         
         fun invoke(): Foo { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { FooFactory().getFoo() }
         }
     """
@@ -427,7 +438,7 @@ class ReaderTest {
         
         fun invoke(): Foo { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { FooFactory().getFoo() }
         }
     """
@@ -450,7 +461,7 @@ class ReaderTest {
         
         fun invoke(): Foo { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { FooFactory().getFoo() }
         }
     """
@@ -471,7 +482,7 @@ class ReaderTest {
         
         fun invoke(): Foo {
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { given<FooFactory>().foo }
         }
     """
@@ -502,7 +513,7 @@ class ReaderTest {
         
         fun invoke(): Foo { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { provide() }
         }
     """
@@ -527,7 +538,7 @@ class ReaderTest {
                 """
                 fun invoke(): Foo { 
                     initializeComponents()
-                    val component = componentFactory<TestComponent.Factory>().create()
+                    val component = rootComponent<TestComponent>()
                     return component.runReader { provide() }
                 }
             """, name = "File.kt"
@@ -548,9 +559,9 @@ class ReaderTest {
         
         fun invoke(): Bar { 
             initializeComponents()
-            val parentComponent = componentFactory<TestParentComponent.Factory>().create()
+            val parentComponent = rootComponent<TestParentComponent>()
             val childComponent = parentComponent.runReader {
-                given<TestChildComponent.Factory>().create()
+                childComponent<TestChildComponent>()
             }
             return parentComponent.runReader {
                 childComponent.runReader {
@@ -573,7 +584,7 @@ class ReaderTest {
         
         fun invoke(): Foo { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { createFoo() }
         }
     """
@@ -594,7 +605,7 @@ class ReaderTest {
         
         fun invoke(): Foo { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { createFoo() }
         }
     """
@@ -612,7 +623,7 @@ class ReaderTest {
         
         fun invoke(): Foo { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { CreateFoo().foo }
         }
     """
@@ -637,7 +648,7 @@ class ReaderTest {
         
         fun invoke() { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             component.runReader { given<MyClass>() }
         }
     """
@@ -693,7 +704,7 @@ class ReaderTest {
         
         fun invoke() {
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             component.runReader { createFoo(Foo()) }
         }
     """
@@ -707,7 +718,7 @@ class ReaderTest {
         
         fun invoke() {
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             component.runReader { createFoo(Foo()) }
         }
     """

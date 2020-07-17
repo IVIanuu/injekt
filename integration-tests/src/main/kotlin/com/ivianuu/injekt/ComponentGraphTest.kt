@@ -35,7 +35,7 @@ class ComponentGraphTest {
         @Given class Dep(bar: Bar)
         fun invoke() {
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             component.runReader { given<Dep>() }
         }
         """
@@ -51,7 +51,7 @@ class ComponentGraphTest {
         
         fun invoke() {
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             component.runReader { given<Foo>() }
         }
         """
@@ -75,7 +75,7 @@ class ComponentGraphTest {
         
         fun invoke() {
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             component.runReader { given<A>() }
         }
     """
@@ -99,7 +99,7 @@ class ComponentGraphTest {
         
         fun invoke() {
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             component.runReader { given<A>() }
         }
     """
@@ -123,7 +123,7 @@ class ComponentGraphTest {
         
         fun invoke() {
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             component.runReader { given<A>() }
         }
     """
@@ -153,7 +153,7 @@ class ComponentGraphTest {
         
         fun invoke() {
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             component.runReader { given<A>() }
         }
     """
@@ -168,7 +168,7 @@ class ComponentGraphTest {
 
         fun invoke() {
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             component.runReader { given<Dep>() }
         }
         """
@@ -184,7 +184,7 @@ class ComponentGraphTest {
         
         fun invoke(): Pair<Set<String>, Set<Int>> {
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { given<Set<String>>() to given<Set<Int>>() }
         }
     """
@@ -204,7 +204,7 @@ class ComponentGraphTest {
         
         fun invoke(): Pair<Foo, Foo> {
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { given<Foo1>() to given<Foo2>() }
         }
     """
@@ -236,7 +236,7 @@ class ComponentGraphTest {
                 """
                 fun invoke(): Pair<Foo, Foo> {
                     initializeComponents()
-                    val component = componentFactory<TestComponent.Factory>().create()
+                    val component = rootComponent<TestComponent>()
                     return component.runReader { given<Foo1>() to given<Foo2>() }
                 } 
             """, name = "File.kt"
@@ -255,7 +255,7 @@ class ComponentGraphTest {
 
         fun invoke() { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             component.runReader { given<Foo>() to given<Foo?>() }
         }
     """
@@ -270,7 +270,7 @@ class ComponentGraphTest {
 
         fun invoke(): Foo? { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { given<Foo?>() }
         }
         """
@@ -283,7 +283,7 @@ class ComponentGraphTest {
         """
         fun invoke(): Foo? { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { given<Foo?>() }
         }
         """
@@ -298,7 +298,7 @@ class ComponentGraphTest {
         
         fun invoke() { 
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             component.runReader { given<List<*>>() }
         }
     """

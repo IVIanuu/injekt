@@ -19,34 +19,31 @@ package com.ivianuu.injekt.android
 import android.app.Service
 import android.content.Context
 import android.content.res.Resources
-import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.childComponent
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 
-@Component(parent = ApplicationComponent::class)
-interface ServiceComponent {
-    @Component.Factory
-    interface Factory {
-        fun create(instance: Service): ServiceComponent
-    }
-}
+@Component
+interface ServiceComponent
 
 fun Service.newServiceComponent(): ServiceComponent {
     return application.applicationComponent.runReader {
-        given<ServiceComponent.Factory>().create(this)
+        childComponent(this)
     }
 }
 
 @Distinct
 typealias ServiceContext = Context
+
 @Distinct
 typealias ServiceResources = Resources
 
 object ServiceModule {
+
     @Given
     @Reader
     fun context(): ServiceContext = given<Service>()
@@ -54,4 +51,5 @@ object ServiceModule {
     @Given
     @Reader
     fun resources(): ServiceResources = given<Service>().resources
+
 }

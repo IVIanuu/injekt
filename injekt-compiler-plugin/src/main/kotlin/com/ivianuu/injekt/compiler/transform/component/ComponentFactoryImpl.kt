@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
@@ -42,20 +43,28 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class ComponentFactoryImpl(
     val irParent: IrDeclarationParent,
     val parentAccessor: (() -> IrExpression)?,
-    val node: ComponentNode,
+    val factory: IrClass,
+    val entryPoints: List<IrClass>,
     val parent: ComponentFactoryImpl?,
     val pluginContext: IrPluginContext,
     val declarationGraph: DeclarationGraph,
     val symbols: InjektSymbols
 ) {
 
+    val component = factory.functions
+        .filterNot { it.isFakeOverride }
+        .single()
+        .returnType
+        .classOrNull!!
+        .owner
+
     val factoryClass = buildClass {
-        name = Name.special("<${node.component.descriptor.fqNameSafe} factory impl>")
+        name = Name.special("<${component.descriptor.fqNameSafe} factory impl>")
         visibility = Visibilities.LOCAL
     }.apply clazz@{
         parent = irParent
         createImplicitParameterDeclarationWithWrappedDescriptor()
-        superTypes += node.factory.factory.defaultType
+        superTypes += factory.defaultType
 
         addConstructor {
             returnType = defaultType
@@ -80,7 +89,7 @@ class ComponentFactoryImpl(
     val componentImpl = ComponentImpl(this)
 
     fun getClass(): IrClass {
-        val superFactoryFunction = node.factory.factory.functions
+        val superFactoryFunction = factory.functions
             .single { !it.isFakeOverride }
 
         factoryClass.addFunction {

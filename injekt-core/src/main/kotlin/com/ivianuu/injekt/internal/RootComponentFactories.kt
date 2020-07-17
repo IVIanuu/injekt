@@ -18,17 +18,17 @@ package com.ivianuu.injekt.internal
 
 import kotlin.reflect.KClass
 
-object ComponentFactories {
+object RootComponentFactories {
 
     private val factories = mutableMapOf<KClass<*>, Any>()
 
-    fun register(component: KClass<*>, factory: Any) {
-        factories[component] = factory
+    fun register(factoryClass: KClass<*>, factory: Any) {
+        factories[factoryClass] = factory
     }
 
-    fun <T> get(component: KClass<*>): T {
-        return factories[component] as? T
-            ?: error("Couldn't get factory for component ${component.java.name}")
+    fun <T> get(factoryClass: KClass<*>): T {
+        return factories[factoryClass] as? T
+            ?: error("Couldn't get factory '${factoryClass.java.name}'")
     }
 
 }

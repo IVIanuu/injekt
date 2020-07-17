@@ -57,7 +57,7 @@ class MapTest {
         
         fun invoke(): Map<KClass<out Command>, Command> {
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { given<Map<KClass<out Command>, Command>>() }
         }
         """
@@ -75,7 +75,7 @@ class MapTest {
         """
         fun invoke(): Map<KClass<out Command>, Command> {
             initializeComponents()
-            val component = componentFactory<TestComponent.Factory>().create()
+            val component = rootComponent<TestComponent>()
             return component.runReader { given<Map<KClass<out Command>, Command>>() }
         }
         """
@@ -106,8 +106,8 @@ class MapTest {
         
         fun invoke(): Pair<Map<KClass<out Command>, Command>, Map<KClass<out Command>, Command>> {
             initializeComponents()
-            val parentComponent = componentFactory<TestParentComponent.Factory>().create()
-            val childComponent = parentComponent.runReader { given<TestChildComponent.Factory>().create() }
+            val parentComponent = rootComponent<TestParentComponent>()
+            val childComponent = parentComponent.runReader { childComponent<TestChildComponent>() }
             return parentComponent.runReader {
                 given<Map<KClass<out Command>, Command>>() to childComponent.runReader {
                     given<Map<KClass<out Command>, Command>>()
