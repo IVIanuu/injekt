@@ -597,6 +597,12 @@ fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
     }
 }
 
+fun IrMemberAccessExpression<*>.getValueArgumentSafe(index: Int) = try {
+    getValueArgument(index)
+} catch (t: Throwable) {
+    null
+}
+
 fun dexSafeName(name: Name): Name {
     return if (name.isSpecial && name.asString().contains(' ')) {
         val sanitized = name

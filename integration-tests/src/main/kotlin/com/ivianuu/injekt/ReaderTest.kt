@@ -684,4 +684,18 @@ class ReaderTest {
     """
     )
 
+    @Test
+    fun testDoesNotRequireExplicitOverriddenParameters() = codegen(
+        """
+        @Reader 
+        fun createFoo(foo: Foo = given()) = foo
+        
+        fun invoke() {
+            initializeComponents()
+            val component = componentFactory<TestComponent.Factory>().create()
+            component.runReader { createFoo(Foo()) }
+        }
+    """
+    )
+
 }

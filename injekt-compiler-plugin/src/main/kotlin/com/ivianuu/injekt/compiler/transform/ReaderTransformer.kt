@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.distinctedType
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.getReaderConstructor
+import com.ivianuu.injekt.compiler.getValueArgumentSafe
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isReader
 import com.ivianuu.injekt.compiler.jvmNameAnnotation
@@ -240,6 +241,7 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             transformedCallee
                 .valueParameters
                 .filter { it.hasAnnotation(InjektFqNames.Implicit) }
+                .filter { readerCall.getValueArgumentSafe(it.index) == null }
                 .map { it.type }
                 .map {
                     it
@@ -425,6 +427,7 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             transformedCallee
                 .valueParameters
                 .filter { it.hasAnnotation(InjektFqNames.Implicit) }
+                .filter { readerCall.getValueArgumentSafe(it.index) == null }
                 .map { it.type }
                 .map {
                     it
