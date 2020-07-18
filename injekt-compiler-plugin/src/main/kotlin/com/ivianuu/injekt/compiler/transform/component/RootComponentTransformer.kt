@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.transform.ReaderTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.irBlock
@@ -128,7 +129,9 @@ class RootComponentTransformer(
                             declarationGraph,
                             symbols
                         )
-                        +componentFactoryImpl.getClass()
+
+                        call.file.addChild(componentFactoryImpl.getClass())
+
                         +irCall(
                             symbols.rootComponentFactories
                                 .functions

@@ -614,9 +614,21 @@ fun dexSafeName(name: Name): Name {
     } else name
 }
 
-fun IrDeclarationWithName.uniqueName() = when (this) {
+
+fun IrDeclarationWithName.uniqueFqName() = when (this) {
     is IrClass -> "c_${descriptor.fqNameSafe}"
     is IrFunction -> "f_${descriptor.fqNameSafe}_${
+        descriptor.valueParameters
+            .filterNot { it.hasAnnotation(InjektFqNames.Implicit) }
+            .map { it.type }.map {
+                it.constructor.declarationDescriptor!!.fqNameSafe
+            }.hashCode().absoluteValue
+    }${if (visibility == Visibilities.LOCAL) "_$startOffset" else ""}"
+    else -> error("Unsupported declaration ${dump()}")
+}
+
+fun IrDeclarationWithName.uniqueName() = when (this) {
+    is IrFunction -> "f_${descriptor.name}_${
         descriptor.valueParameters
             .filterNot { it.hasAnnotation(InjektFqNames.Implicit) }
             .map { it.type }.map {

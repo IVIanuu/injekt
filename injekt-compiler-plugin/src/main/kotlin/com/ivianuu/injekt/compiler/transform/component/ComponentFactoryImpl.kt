@@ -38,7 +38,6 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ComponentFactoryImpl(
     val irParent: IrDeclarationParent,
@@ -59,12 +58,10 @@ class ComponentFactoryImpl(
         .owner
 
     val factoryClass = buildClass {
-        name = if (parent == null) {
-            Name.special("<${component.descriptor.fqNameSafe} factory impl>")
-        } else {
-            Name.identifier(component.name.asString() + "FactoryImpl")
+        name = Name.identifier(component.name.asString() + "FactoryImpl")
+        if (parent != null) {
+            visibility = Visibilities.LOCAL
         }
-        visibility = Visibilities.LOCAL
     }.apply clazz@{
         parent = irParent
         createImplicitParameterDeclarationWithWrappedDescriptor()

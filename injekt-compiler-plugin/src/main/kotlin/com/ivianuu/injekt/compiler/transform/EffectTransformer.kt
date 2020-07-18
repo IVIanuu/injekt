@@ -95,10 +95,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                 .map { it.symbol.owner.constructedClass }
             val effectModule = effectModuleForClass(
                 clazz,
-                getJoinedName(
-                    clazz.getPackageFragment()!!.fqName,
-                    clazz.descriptor.fqNameSafe.child("Effects".asNameId())
-                ),
+                "${clazz.name}Effects".asNameId(),
                 effects
             )
 
@@ -111,10 +108,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                 .map { it.symbol.owner.constructedClass }
             val effectModule = effectDeclarationsForFunction(
                 function,
-                getJoinedName(
-                    function.getPackageFragment()!!.fqName,
-                    function.descriptor.fqNameSafe.child("Effects".asNameId())
-                ),
+                "${function.name}Effects".asNameId(),
                 effects
             )
 

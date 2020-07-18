@@ -34,7 +34,7 @@ import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.thisOfClass
 import com.ivianuu.injekt.compiler.typeArguments
-import com.ivianuu.injekt.compiler.uniqueName
+import com.ivianuu.injekt.compiler.uniqueFqName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -564,7 +564,7 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             irCall(symbols.name.constructors.single()).apply {
                 putValueArgument(
                     0,
-                    irString(owner.uniqueName())
+                    irString(owner.uniqueFqName())
                 )
             }
         }
@@ -759,7 +759,7 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                 function.getAnnotation(InjektFqNames.Name)!!
                     .getValueArgument(0)!!
                     .let { it as IrConst<String> }
-                    .value == declaration.uniqueName()
+                    .value == declaration.uniqueFqName()
             }
     }
 
