@@ -82,235 +82,177 @@ import com.ivianuu.injekt.given
 object SystemServiceModule {
 
     @Given
-    @Reader
     fun accessibilityManager() = systemService<AccessibilityManager>()
 
     @Given
-    @Reader
     fun accountManager() = systemService<AccountManager>()
 
     @Given
-    @Reader
     fun activityManager() = systemService<ActivityManager>()
 
     @Given
-    @Reader
     fun alarmManager() = systemService<AlarmManager>()
 
     @Given
-    @Reader
     fun audioManager() = systemService<AudioManager>()
 
     @Given
-    @Reader
     fun clipboardManager() = systemService<ClipboardManager>()
 
     @Given
-    @Reader
     fun connectivityManager() = systemService<ConnectivityManager>()
 
     @Given
-    @Reader
     fun devicePolicyManager() = systemService<DevicePolicyManager>()
 
     @Given
-    @Reader
     fun downloadManager() = systemService<DownloadManager>()
 
     @Given
-    @Reader
     fun dropBoxManager() = systemService<DropBoxManager>()
 
     @Given
-    @Reader
     fun inputMethodManager() = systemService<InputMethodManager>()
 
     @Given
-    @Reader
     fun keyguardManager() = systemService<KeyguardManager>()
 
     @Given
-    @Reader
     fun layoutInflater() = systemService<LayoutInflater>()
 
     @Given
-    @Reader
     fun locationManager() = systemService<LocationManager>()
 
     @Given
-    @Reader
     fun nfcManager() = systemService<NfcManager>()
 
     @Given
-    @Reader
     fun notificationManager() = systemService<NotificationManager>()
 
     @Given
-    @Reader
     fun powerManager() = systemService<PowerManager>()
 
     @Given
-    @Reader
     fun searchManager() = systemService<SearchManager>()
 
     @Given
-    @Reader
     fun sensorManager() = systemService<SensorManager>()
 
     @Given
-    @Reader
     fun storageManager() = systemService<StorageManager>()
 
     @Given
-    @Reader
     fun telephonyManager() = systemService<TelephonyManager>()
 
     @Given
-    @Reader
     fun textServicesManager() = systemService<TextServicesManager>()
 
     @Given
-    @Reader
     fun uiModeManager() = systemService<UiModeManager>()
 
     @Given
-    @Reader
     fun usbManager() = systemService<UsbManager>()
 
     @Given
-    @Reader
     fun vibrator() = systemService<Vibrator>()
 
     @Given
-    @Reader
     fun wallpaperManager() = systemService<WallpaperManager>()
 
     @Given
-    @Reader
     fun wifiP2pManager() = systemService<WifiP2pManager>()
 
     @Given
-    @Reader
     fun wifiManager() = systemService<WifiManager>()
 
     @Given
-    @Reader
     fun windowManager() = systemService<WindowManager>()
 
     @Given
-    @Reader
     fun inputManager() = systemService<InputManager>()
 
     @Given
-    @Reader
     fun mediaRouter() = systemService<MediaRouter>()
 
     @Given
-    @Reader
     fun nsdManager() = systemService<NsdManager>()
 
     @Given
-    @Reader
     fun displayManager() = systemService<DisplayManager>()
 
     @Given
-    @Reader
     fun userManager() = systemService<UserManager>()
 
     @Given
-    @Reader
     fun bluetoothManager() = systemService<BluetoothManager>()
 
     @Given
-    @Reader
     fun appOpsManager() = systemService<AppOpsManager>()
 
     @Given
-    @Reader
     fun captioningManager() = systemService<CaptioningManager>()
 
     @Given
-    @Reader
     fun consumerIrManager() = systemService<ConsumerIrManager>()
 
     @Given
-    @Reader
     fun printManager() = systemService<PrintManager>()
 
     @Given
-    @Reader
     fun appWidgetManager() = systemService<AppWidgetManager>()
 
     @Given
-    @Reader
     fun batteryManager() = systemService<BatteryManager>()
 
     @Given
-    @Reader
     fun cameraManager() = systemService<CameraManager>()
 
     @Given
-    @Reader
     fun jobScheduler() = systemService<JobScheduler>()
 
     @Given
-    @Reader
     fun launcherApps() = systemService<LauncherApps>()
 
     @Given
-    @Reader
     fun mediaProjectionManager() = systemService<MediaProjectionManager>()
 
     @Given
-    @Reader
     fun mediaSessionManager() = systemService<MediaSessionManager>()
 
     @Given
-    @Reader
     fun restrictionsManager() = systemService<RestrictionsManager>()
 
     @Given
-    @Reader
     fun telecomManager() = systemService<TelecomManager>()
 
     @Given
-    @Reader
     fun tvInputManager() = systemService<TvInputManager>()
 
     @Given
-    @Reader
     fun subscriptionManager() = systemService<SubscriptionManager>()
 
     @Given
-    @Reader
     fun usageStatsManager() = systemService<UsageStatsManager>()
 
     @Given
-    @Reader
     fun carrierConfigManager() = systemService<CarrierConfigManager>()
 
     @Given
-    @Reader
     fun fingerprintManager() = systemService<FingerprintManager>()
 
     @Given
-    @Reader
     fun midiManager() = systemService<MidiManager>()
 
     @Given
-    @Reader
     fun networkStatsManager() = systemService<NetworkStatsManager>()
 
     @Given
-    @Reader
     fun hardwarePropertiesManager() = systemService<HardwarePropertiesManager>()
 
     @Given
-    @Reader
     fun systemHealthManager() = systemService<SystemHealthManager>()
 
     @Given
-    @Reader
     fun shortcutManager() = systemService<ShortcutManager>()
 
     @Reader

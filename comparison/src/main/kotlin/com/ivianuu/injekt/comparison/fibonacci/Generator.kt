@@ -26,7 +26,7 @@ fun main() {
                     appendLine(
                         """
                         class Fib$index @Inject constructor()
-                        @Given @Reader fun fib$index() = Fib$index()
+                        @Given fun fib$index() = Fib$index()
                         """.trimIndent()
                     )
                 } else {
@@ -36,7 +36,7 @@ fun main() {
                             val fibM1: Fib${index - 1},
                             val fibM2: Fib${index - 2}
                         )
-                        @Given @Reader fun fib$index() = Fib$index(get(), get())
+                        @Given fun fib$index() = Fib$index(get(), get())
                             """.trimIndent()
                     )
                 }

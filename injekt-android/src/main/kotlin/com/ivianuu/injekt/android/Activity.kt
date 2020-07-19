@@ -25,7 +25,6 @@ import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.childComponent
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
@@ -58,23 +57,18 @@ typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 object ActivityModule {
 
     @Given
-    @Reader
     fun context(): ActivityContext = given<ComponentActivity>()
 
     @Given
-    @Reader
     fun resources(): ActivityResources = given<ActivityContext>().resources
 
     @Given
-    @Reader
     fun lifecycleOwner(): ActivityLifecycleOwner = given<ComponentActivity>()
 
     @Given
-    @Reader
     fun savedStateRegistryOwner(): ActivitySavedStateRegistryOwner = given<ComponentActivity>()
 
     @Given
-    @Reader
     fun viewModelStoreOwner(): ActivityViewModelStoreOwner = given<ComponentActivity>()
 
 }

@@ -23,7 +23,6 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.rootComponent
 
@@ -41,11 +40,9 @@ typealias ApplicationResources = Resources
 object ApplicationModule {
 
     @Given
-    @Reader
     fun context(): ApplicationContext = given<Application>()
 
     @Given
-    @Reader
     fun resources(): ApplicationResources = given<Application>().resources
 
 }

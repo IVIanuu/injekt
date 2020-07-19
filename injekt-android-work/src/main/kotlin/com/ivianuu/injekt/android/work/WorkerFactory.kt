@@ -25,7 +25,6 @@ import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Effect
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.MapEntries
-import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
 import kotlin.reflect.KClass
 
@@ -33,7 +32,6 @@ import kotlin.reflect.KClass
 annotation class BindWorker {
     companion object {
         @MapEntries(ApplicationComponent::class)
-        @Reader
         inline operator fun <reified T : ListenableWorker> invoke(): Workers = mapOf(
             T::class to given<(Context, WorkerParameters) -> T>()
         )
@@ -44,7 +42,6 @@ annotation class BindWorker {
 typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
 
 @Given
-@Reader
 internal class InjektWorkerFactory : WorkerFactory() {
 
     override fun createWorker(
@@ -62,6 +59,5 @@ internal class InjektWorkerFactory : WorkerFactory() {
 
 object WorkerInjectionModule {
     @Given
-    @Reader
     fun workerFactory(): WorkerFactory = given<InjektWorkerFactory>()
 }

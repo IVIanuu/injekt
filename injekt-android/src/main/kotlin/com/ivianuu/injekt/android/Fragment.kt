@@ -26,7 +26,6 @@ import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.childComponent
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
@@ -59,23 +58,18 @@ typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
 object FragmentModule {
 
     @Given
-    @Reader
     fun context(): FragmentContext = given<Fragment>().requireContext()
 
     @Given
-    @Reader
     fun resources(): FragmentResources = given<FragmentContext>().resources
 
     @Given
-    @Reader
     fun lifecycleOwner(): FragmentLifecycleOwner = given<ComponentActivity>()
 
     @Given
-    @Reader
     fun savedStateRegistryOwner(): FragmentSavedStateRegistryOwner = given<Fragment>()
 
     @Given
-    @Reader
     fun viewModelStoreOwner(): FragmentViewModelStoreOwner = given<ViewModelStoreOwner>()
 
 }

@@ -32,7 +32,6 @@ typealias AppServices = Set<suspend () -> Unit>
 annotation class BindAppService {
     companion object {
         @SetElements(ApplicationComponent::class)
-        @Reader
         inline operator fun <reified T : suspend () -> Unit> invoke(): AppServices = setOf(
             given<T>()
         )

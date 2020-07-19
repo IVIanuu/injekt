@@ -66,7 +66,6 @@ private fun enqueueWork(context: ActivityContext = given()) {
         )
 }
 
-@Reader
 @Given
 class MainViewModel : ViewModel() {
     init {

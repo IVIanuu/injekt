@@ -22,7 +22,6 @@ import android.content.res.Resources
 import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.childComponent
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
@@ -45,11 +44,9 @@ typealias ServiceResources = Resources
 object ServiceModule {
 
     @Given
-    @Reader
     fun context(): ServiceContext = given<Service>()
 
     @Given
-    @Reader
     fun resources(): ServiceResources = given<Service>().resources
 
 }

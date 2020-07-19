@@ -28,17 +28,14 @@ import java.io.File
 typealias DatabaseFile = File
 
 @Given
-@Reader
 fun databaseFile(): DatabaseFile = given<ApplicationContext>().cacheDir
 
 @Given(ApplicationComponent::class)
-@Reader
 class Database(
     private val file: DatabaseFile = given()
 )
 
 @Given(ApplicationComponent::class)
-@Reader
 class Repo(
     private val database: Database = given(),
     private val api: Api = given()
