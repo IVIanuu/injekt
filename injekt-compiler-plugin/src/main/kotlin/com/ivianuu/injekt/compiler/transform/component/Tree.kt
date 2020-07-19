@@ -24,8 +24,8 @@ import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
 import org.jetbrains.kotlin.ir.types.IrErrorType
@@ -83,16 +83,16 @@ class GivenBindingNode(
     val parameters: List<BindingParameter>
 ) : BindingNode(key, dependencies, targetComponent, scoped, owner, origin)
 
-class InputParameterBindingNode(
+class InputBindingNode(
     component: ComponentImpl,
-    val inputParameter: IrValueParameter
+    val inputField: IrField
 ) : BindingNode(
-    inputParameter.type.asKey(),
+    inputField.type.asKey(),
     emptyList(),
     null,
     false,
     component,
-    inputParameter.descriptor.fqNameSafe
+    inputField.descriptor.fqNameSafe
 )
 
 class MapBindingNode(

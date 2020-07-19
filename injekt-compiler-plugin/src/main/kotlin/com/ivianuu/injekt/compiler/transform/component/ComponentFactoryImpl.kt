@@ -19,29 +19,35 @@ package com.ivianuu.injekt.compiler.transform.component
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
+import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
+import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlockBody
+import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
+import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irGetField
+import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
-import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.name.Name
 
 class ComponentFactoryImpl(
     val irParent: IrDeclarationParent,
-    val parentAccessor: (() -> IrExpression)?,
     val factory: IrClass,
     val entryPoints: List<IrClass>,
     val parent: ComponentFactoryImpl?,
@@ -57,21 +63,34 @@ class ComponentFactoryImpl(
         .classOrNull!!
         .owner
 
-    val factoryClass = buildClass {
+    val clazz: IrClass = buildClass {
         name = Name.identifier(component.name.asString() + "FactoryImpl")
-        if (parent != null) {
-            visibility = Visibilities.LOCAL
-        }
+        if (parent != null) visibility = Visibilities.PRIVATE
     }.apply clazz@{
         parent = irParent
         createImplicitParameterDeclarationWithWrappedDescriptor()
         superTypes += factory.defaultType
+
+        val parentField = if (this@ComponentFactoryImpl.parent != null) {
+            addField(
+                "parent",
+                this@ComponentFactoryImpl.parent.componentImpl.clazz.defaultType
+            )
+        } else {
+            null
+        }
 
         addConstructor {
             returnType = defaultType
             isPrimary = true
             visibility = Visibilities.PUBLIC
         }.apply {
+            val parentValueParameter = if (parentField != null) {
+                addValueParameter(parentField.name.asString(), parentField.type)
+            } else {
+                null
+            }
+
             body = DeclarationIrBuilder(
                 pluginContext,
                 symbol
@@ -83,34 +102,65 @@ class ComponentFactoryImpl(
                     this@clazz.symbol,
                     context.irBuiltIns.unitType
                 )
+                if (parentValueParameter != null) {
+                    +irSetField(
+                        irGet(thisReceiver!!),
+                        parentField!!,
+                        irGet(parentValueParameter)
+                    )
+                }
             }
         }
     }
 
     val componentImpl = ComponentImpl(this)
 
-    fun getClass(): IrClass {
+    fun init() {
         val superFactoryFunction = factory.functions
             .single { !it.isFakeOverride }
 
-        factoryClass.addFunction {
+        clazz.addFunction {
             name = superFactoryFunction.name
             returnType = superFactoryFunction.returnType
         }.apply {
-            dispatchReceiverParameter = factoryClass.thisReceiver!!.copyTo(this)
+            dispatchReceiverParameter = clazz.thisReceiver!!.copyTo(this)
 
             valueParameters = superFactoryFunction.valueParameters.map { valueParameter ->
                 valueParameter.copyTo(this)
             }
 
+            componentImpl.init()
+            clazz.addChild(componentImpl.clazz)
+
             body = DeclarationIrBuilder(
                 pluginContext,
                 symbol
-            ).irExprBody(
-                componentImpl.getImplExpression(valueParameters)
-            )
-        }
+            ).run {
+                irExprBody(
+                    irCall(
+                        componentImpl.clazz.constructors.single()
+                    ).apply {
+                        if (this@ComponentFactoryImpl.parent != null) {
+                            putValueArgument(
+                                0,
+                                irGetField(
+                                    irGet(dispatchReceiverParameter!!),
+                                    this@ComponentFactoryImpl.clazz.fields.single {
+                                        it.name.asString() == "parent"
+                                    }
+                                )
+                            )
+                        }
 
-        return factoryClass
+                        valueParameters.forEach { valueParameter ->
+                            putValueArgument(
+                                valueParameter.index + if (this@ComponentFactoryImpl.parent != null) 1 else 0,
+                                irGet(valueParameter)
+                            )
+                        }
+                    }
+                )
+            }
+        }
     }
 }

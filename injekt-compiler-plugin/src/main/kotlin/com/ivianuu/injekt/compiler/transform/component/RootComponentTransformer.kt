@@ -121,7 +121,6 @@ class RootComponentTransformer(
 
                         val componentFactoryImpl = ComponentFactoryImpl(
                             scope.getLocalDeclarationParent(),
-                            null,
                             componentFactory,
                             entryPoints.getOrElse(component) { emptyList() },
                             null,
@@ -130,7 +129,8 @@ class RootComponentTransformer(
                             symbols
                         )
 
-                        call.file.addChild(componentFactoryImpl.getClass())
+                        componentFactoryImpl.init()
+                        call.file.addChild(componentFactoryImpl.clazz)
 
                         +irCall(
                             symbols.rootComponentFactories
@@ -154,7 +154,7 @@ class RootComponentTransformer(
                             putValueArgument(
                                 1,
                                 irCall(
-                                    componentFactoryImpl.factoryClass.constructors
+                                    componentFactoryImpl.clazz.constructors
                                         .single()
                                 )
                             )

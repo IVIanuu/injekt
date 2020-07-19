@@ -25,12 +25,14 @@ import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.name.FqName
@@ -60,7 +62,7 @@ class ComponentExpressions(
             is ChildComponentFactoryBindingNode -> childComponentFactoryExpression(binding) to true
             is ComponentImplBindingNode -> componentExpression(binding) to false
             is GivenBindingNode -> givenExpression(binding) to true
-            is InputParameterBindingNode -> inputParameterExpression(binding) to false
+            is InputBindingNode -> inputExpression(binding) to false
             is MapBindingNode -> mapBindingExpression(binding) to false
             is NullBindingNode -> nullExpression(binding) to false
             is ProviderBindingNode -> providerExpression(binding) to true
@@ -82,9 +84,14 @@ class ComponentExpressions(
         binding: ComponentImplBindingNode
     ): ComponentExpression = { c -> c[binding.component] }
 
-    private fun inputParameterExpression(
-        binding: InputParameterBindingNode
-    ): ComponentExpression = { irGet(binding.inputParameter) }
+    private fun inputExpression(
+        binding: InputBindingNode
+    ): ComponentExpression = { c ->
+        irGetField(
+            c[component],
+            binding.inputField
+        )
+    }
 
     private fun mapBindingExpression(bindingNode: MapBindingNode): ComponentExpression {
         return { c ->
@@ -324,16 +331,26 @@ fun ComponentExpressionContext(
     thisComponent: ComponentImpl,
     thisAccessor: () -> IrExpression
 ): ComponentExpressionContext {
-    val componentsWithAccessor = mutableMapOf<ComponentImpl, () -> IrExpression>()
-
-    componentsWithAccessor[thisComponent] = thisAccessor
-
+    val allImplementations = mutableListOf<ComponentImpl>()
     var current: ComponentImpl? = thisComponent
-    while (current != null) {
-        val parent = current.factoryImpl.parent?.componentImpl ?: break
-        componentsWithAccessor[parent] = current.factoryImpl.parentAccessor!!
-        current = parent
+    if (current != null) {
+        while (current != null) {
+            allImplementations += current
+            current = current.factoryImpl.parent?.componentImpl
+        }
+    } else {
+        allImplementations += thisComponent
+    }
+    val implementationWithAccessor =
+        mutableMapOf<ComponentImpl, () -> IrExpression>()
+
+    allImplementations.fold(thisAccessor) { acc: () -> IrExpression, component: ComponentImpl ->
+        implementationWithAccessor[component] = acc
+        {
+            DeclarationIrBuilder(component.factoryImpl.pluginContext, component.clazz.symbol)
+                .irGetField(acc(), component.clazz.fields.single { it.name.asString() == "parent" })
+        }
     }
 
-    return ComponentExpressionContext(componentsWithAccessor)
+    return ComponentExpressionContext(implementationWithAccessor)
 }

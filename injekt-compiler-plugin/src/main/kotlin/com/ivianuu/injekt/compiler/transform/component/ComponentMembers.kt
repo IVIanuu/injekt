@@ -39,7 +39,7 @@ class ComponentMembers(
     private val pluginContext: IrPluginContext
 ) {
 
-    lateinit var blockBuilder: IrBlockBodyBuilder
+    lateinit var constructorBlockBuilder: IrBlockBodyBuilder
 
     private val getFunctions = mutableListOf<IrFunction>()
     private val getFunctionsNameProvider = NameProvider()
@@ -69,7 +69,7 @@ class ComponentMembers(
             fieldVisibility = Visibilities.PRIVATE
         )
 
-        with(blockBuilder) {
+        with(constructorBlockBuilder) {
             val context = ComponentExpressionContext(component) {
                 irGet(component.clazz.thisReceiver!!)
             }

@@ -24,13 +24,14 @@ import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
@@ -77,7 +78,6 @@ class ChildComponentFactoryBindingResolver(
                 irBlock {
                     val childComponentFactoryImpl = ComponentFactoryImpl(
                         parentComponent.clazz,
-                        { c[parentComponent] },
                         factory,
                         declarationGraph.entryPoints
                             .filter {
@@ -92,11 +92,15 @@ class ChildComponentFactoryBindingResolver(
                         parentComponent.factoryImpl.symbols,
                     )
 
-                    +childComponentFactoryImpl.getClass()
+                    childComponentFactoryImpl.init()
+                    parentComponent.clazz.addChild(childComponentFactoryImpl.clazz)
+
                     +irCall(
-                        childComponentFactoryImpl.factoryClass.constructors
+                        childComponentFactoryImpl.clazz.constructors
                             .single()
-                    )
+                    ).apply {
+                        putValueArgument(0, c[parentComponent])
+                    }
                 }
             }
         )
@@ -356,13 +360,13 @@ class ComponentImplBindingResolver(
     }
 }
 
-class InputParameterBindingResolver(
-    inputParameters: List<IrValueParameter>,
+class InputsBindingResolver(
+    inputParameters: List<IrField>,
     private val component: ComponentImpl
 ) : BindingResolver {
 
     private val bindings = inputParameters.map {
-        InputParameterBindingNode(component, it)
+        InputBindingNode(component, it)
     }
 
     override fun invoke(requestedKey: Key): List<BindingNode> {

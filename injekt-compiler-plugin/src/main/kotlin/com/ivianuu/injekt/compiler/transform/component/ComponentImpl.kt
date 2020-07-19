@@ -22,34 +22,33 @@ import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
-import org.jetbrains.kotlin.ir.builders.irBlock
+import org.jetbrains.kotlin.ir.builders.declarations.addField
+import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlockBody
-import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
+import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrValueParameter
-import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ComponentImpl(
-    val factoryImpl: ComponentFactoryImpl
-) {
+class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
     val origin: FqName? = factoryImpl.component.descriptor.fqNameSafe
 
     val clazz = buildClass {
         name = Name.identifier("ComponentImpl")
-        visibility = Visibilities.LOCAL
+        visibility = Visibilities.PRIVATE
     }.apply clazz@{
-        parent = factoryImpl.factoryClass
+        parent = factoryImpl.clazz
         createImplicitParameterDeclarationWithWrappedDescriptor()
         superTypes += factoryImpl.component.defaultType
     }
@@ -62,53 +61,91 @@ class ComponentImpl(
     private lateinit var graph: ComponentGraph
     private lateinit var componentExpressions: ComponentExpressions
 
-    fun getImplExpression(inputParameters: List<IrValueParameter>): IrExpression {
-        return DeclarationIrBuilder(
-            factoryImpl.pluginContext,
-            factoryImpl.factoryClass.symbol
-        ).run {
-            irBlock {
-                graph = ComponentGraph(
-                    parent = factoryImpl.parent?.componentImpl?.graph,
-                    component = this@ComponentImpl,
-                    context = factoryImpl.pluginContext,
-                    declarationGraph = factoryImpl.declarationGraph,
-                    symbols = factoryImpl.symbols,
-                    inputParameters = inputParameters
+    fun init() {
+        val parentField = if (factoryImpl.parent != null) {
+            clazz.addField(
+                "parent",
+                factoryImpl.parent.componentImpl.clazz.defaultType
+            )
+        } else {
+            null
+        }
+
+        val inputs = factoryImpl.clazz.functions.single { it.name.asString() == "create" }
+            .valueParameters
+
+        val inputFields = inputs.map {
+            clazz.addField(
+                it.name.asString(),
+                it.type
+            )
+        }
+
+        graph = ComponentGraph(
+            parent = factoryImpl.parent?.componentImpl?.graph,
+            component = this@ComponentImpl,
+            context = factoryImpl.pluginContext,
+            declarationGraph = factoryImpl.declarationGraph,
+            symbols = factoryImpl.symbols,
+            inputs = inputFields
+        )
+
+        componentExpressions = ComponentExpressions(
+            graph = graph,
+            pluginContext = factoryImpl.pluginContext,
+            members = componentMembers,
+            parent = factoryImpl.parent?.componentImpl?.componentExpressions,
+            component = this@ComponentImpl
+        )
+
+        clazz.addConstructor {
+            returnType = clazz.defaultType
+            isPrimary = true
+            visibility = Visibilities.PUBLIC
+        }.apply {
+            val parentValueParameter = if (parentField != null) {
+                addValueParameter(parentField.name.asString(), parentField.type)
+            } else {
+                null
+            }
+
+            val inputValueParametersByField = inputFields.associateWith {
+                addValueParameter(
+                    it.name.asString(),
+                    it.type
+                )
+            }
+
+            body = DeclarationIrBuilder(factoryImpl.pluginContext, symbol).irBlockBody {
+                +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
+                +IrInstanceInitializerCallImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    clazz.symbol,
+                    context.irBuiltIns.unitType
                 )
 
-                componentExpressions = ComponentExpressions(
-                    graph = graph,
-                    pluginContext = factoryImpl.pluginContext,
-                    members = componentMembers,
-                    parent = factoryImpl.parent?.componentImpl?.componentExpressions,
-                    component = this@ComponentImpl
-                )
-
-                val constructor = clazz.addConstructor {
-                    returnType = clazz.defaultType
-                    isPrimary = true
-                    visibility = Visibilities.PUBLIC
-                }.apply {
-                    body = DeclarationIrBuilder(factoryImpl.pluginContext, symbol).irBlockBody {
-                        +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
-                        +IrInstanceInitializerCallImpl(
-                            UNDEFINED_OFFSET,
-                            UNDEFINED_OFFSET,
-                            clazz.symbol,
-                            context.irBuiltIns.unitType
-                        )
-
-                        componentMembers.blockBuilder = this
-                    }
+                if (parentValueParameter != null) {
+                    +irSetField(
+                        irGet(clazz.thisReceiver!!),
+                        parentField!!,
+                        irGet(parentValueParameter)
+                    )
                 }
 
-                implementRequests()
+                inputValueParametersByField.forEach { (field, valueParameter) ->
+                    +irSetField(
+                        irGet(clazz.thisReceiver!!),
+                        field,
+                        irGet(valueParameter)
+                    )
+                }
 
-                +clazz
-                +irCall(constructor)
+                componentMembers.constructorBlockBuilder = this
             }
         }
+
+        implementRequests()
     }
 
     private fun implementRequests() {
