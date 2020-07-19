@@ -126,7 +126,10 @@ class ComponentFactoryImpl(
             dispatchReceiverParameter = clazz.thisReceiver!!.copyTo(this)
 
             valueParameters = superFactoryFunction.valueParameters.map { valueParameter ->
-                valueParameter.copyTo(this)
+                valueParameter.copyTo(
+                    this,
+                    type = valueParameter.type
+                )
             }
 
             componentImpl.init()

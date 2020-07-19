@@ -17,8 +17,8 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.transform.component.ComponentFactoryTransformer
+import com.ivianuu.injekt.compiler.transform.component.ComponentTransformer
 import com.ivianuu.injekt.compiler.transform.component.EntryPointTransformer
-import com.ivianuu.injekt.compiler.transform.component.RootComponentTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
@@ -43,7 +43,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         IndexingTransformer(injektPluginContext).doLower(moduleFragment)
 
-        RootComponentTransformer(injektPluginContext, readerTransformer).doLower(moduleFragment)
+        ComponentTransformer(injektPluginContext, readerTransformer).doLower(moduleFragment)
 
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 

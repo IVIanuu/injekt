@@ -41,7 +41,7 @@ import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class RootComponentTransformer(
+class ComponentTransformer(
     pluginContext: IrPluginContext,
     private val implicitTransformer: ImplicitTransformer
 ) : AbstractInjektTransformer(pluginContext) {
