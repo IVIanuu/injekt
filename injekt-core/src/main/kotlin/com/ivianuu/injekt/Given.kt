@@ -28,4 +28,7 @@ import kotlin.reflect.KClass
 annotation class Given(val component: KClass<*> = Nothing::class)
 
 @Reader
-fun <T> given(): T = injektIntrinsic()
+fun <T> given(
+    vararg instances: Any?,
+    lazy: Boolean = false
+): T = injektIntrinsic()

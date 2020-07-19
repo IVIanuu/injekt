@@ -34,6 +34,7 @@ import com.ivianuu.injekt.compiler.readableName
 import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.thisOfClass
+import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.uniqueFqName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
@@ -86,16 +87,21 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
+import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
+import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.hasDefaultValue
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -209,9 +215,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                     result !is IrDelegatingConstructorCall
                 ) return result
                 if (expression.symbol.owner.canUseImplicits()) {
-                    if (result is IrCall &&
-                        result.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given"
-                    ) {
+                    if (result is IrCall && result.symbol.owner.isGiven) {
                         givenCalls += result
                         valueParameterStack.lastOrNull()
                             ?.takeIf {
@@ -235,7 +239,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
 
         givenCalls
             .forEach { givenCall ->
-                val type = givenCall.type
+                val type = givenCall.getRealGivenType()
                 givenTypes[type.distinctedType] = type
                 callsByTypes[type.distinctedType] = givenCall
             }
@@ -307,28 +311,29 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
         }
 
         rewriteCalls(
-            clazz,
-            givenCalls,
-            readerCalls
-        ) { type, expression ->
-            val finalType = type.substitute(
-                transformFunctionIfNeeded(expression.symbol.owner)
-                    .typeParameters
-                    .map { it.symbol }
-                    .zip(expression.typeArguments)
-                    .toMap()
-            ).distinctedType
+            owner = clazz,
+            givenCalls = givenCalls,
+            readerCalls = readerCalls
+        ) { type, expression, scopes ->
+            val finalType = (if (expression.symbol.owner.isGiven) {
+                expression.getRealGivenType()
+            } else type)
+                .substitute(
+                    transformFunctionIfNeeded(expression.symbol.owner)
+                        .typeParameters
+                        .map { it.symbol }
+                        .zip(expression.typeArguments)
+                        .toMap()
+                ).distinctedType
             val field = givenFields[finalType]!!
 
-            return@rewriteCalls { scopes ->
-                if (scopes.none { it.irElement == readerConstructor }) {
-                    irGetField(
-                        irGet(scopes.thisOfClass(clazz)!!),
-                        field
-                    )
-                } else {
-                    irGet(valueParametersByFields.getValue(field))
-                }
+            return@rewriteCalls if (scopes.none { it.irElement == readerConstructor }) {
+                irGetField(
+                    irGet(scopes.thisOfClass(clazz)!!),
+                    field
+                )
+            } else {
+                irGet(valueParametersByFields.getValue(field))
             }
         }
 
@@ -357,7 +362,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
             val transformedFunction = function.copyAsReader()
             transformedFunctions[function] = transformedFunction
 
-            if (transformedFunction.descriptor.fqNameSafe.asString() != "com.ivianuu.injekt.given") {
+            if (!transformedFunction.isGiven) {
                 val signature = getReaderSignature(transformedFunction)!!
                 readerSignatures += signature
                 transformedFunction.copySignatureFrom(signature) {
@@ -401,9 +406,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                 ) return result
                 if (functionStack.lastOrNull() != transformedFunction) return result
                 if (expression.symbol.owner.canUseImplicits()) {
-                    if (result is IrCall &&
-                        expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given"
-                    ) {
+                    if (result is IrCall && expression.symbol.owner.isGiven) {
                         givenCalls += result
                         valueParameterStack.lastOrNull()
                             ?.takeIf {
@@ -426,7 +429,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
 
         givenCalls
             .forEach { givenCall ->
-                val type = givenCall.type
+                val type = givenCall.getRealGivenType()
                     .remapTypeParameters(function, transformedFunction)
                 givenTypes[type.distinctedType] = type
                 callsByTypes[type.distinctedType] = givenCall
@@ -486,12 +489,13 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
         }
 
         rewriteCalls(
-            transformedFunction,
-            givenCalls,
-            readerCalls
-        ) { type, expression ->
-            val finalType = type
-                .remapTypeParameters(function, transformedFunction)
+            owner = transformedFunction,
+            givenCalls = givenCalls,
+            readerCalls = readerCalls
+        ) { type, expression, _ ->
+            val finalType = (if (expression.symbol.owner.isGiven) {
+                expression.getRealGivenType()
+            } else type).remapTypeParameters(function, transformedFunction)
                 .substitute(
                     transformFunctionIfNeeded(expression.symbol.owner)
                         .typeParameters
@@ -503,8 +507,14 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                         .toMap()
                 )
                 .distinctedType
-            val valueParameter = givenValueParameters[finalType]!!
-            return@rewriteCalls { irGet(valueParameter) }
+            val valueParameter = givenValueParameters[finalType] ?: error(
+                "Could not find for ${(finalType as? IrType)?.render() ?: finalType} expr ${expression.dump()}\nexisting ${
+                    givenValueParameters.map {
+                        it.value.render()
+                    }
+                }"
+            )
+            return@rewriteCalls irGet(valueParameter)
         }
 
         return transformedFunction
@@ -532,6 +542,25 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                 it.annotations += DeclarationIrBuilder(pluginContext, it.symbol)
                     .irCall(symbols.implicit.constructors.single())
             }
+        }
+    }
+
+    private fun IrFunctionAccessExpression.getRealGivenType(): IrType {
+        if (!symbol.owner.isGiven) return type
+
+        val arguments = (getValueArgument(0) as? IrVarargImpl)
+            ?.elements
+            ?.map { it as IrExpression } ?: emptyList()
+
+        val lazy = getValueArgument(1)
+            ?.let { it as IrConst<Boolean> }
+            ?.value ?: false
+
+        return when {
+            arguments.isNotEmpty() -> pluginContext.tmpFunction(arguments.size)
+                .typeWith(arguments.map { it.type } + type)
+            lazy -> pluginContext.tmpFunction(0).typeWith(type)
+            else -> type
         }
     }
 
@@ -637,17 +666,56 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
         owner: T,
         givenCalls: List<IrCall>,
         readerCalls: List<IrFunctionAccessExpression>,
-        provider: (IrType, IrFunctionAccessExpression) -> IrBuilderWithScope.(List<ScopeWithIr>) -> IrExpression
+        provider: IrBuilderWithScope.(IrType, IrFunctionAccessExpression, List<ScopeWithIr>) -> IrExpression
     ) where T : IrDeclaration, T : IrDeclarationParent {
         owner.transform(object : IrElementTransformerVoidWithContext() {
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
-                val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
-                return when (result) {
+                return when (val result =
+                    super.visitFunctionAccess(expression) as IrFunctionAccessExpression) {
                     in givenCalls -> {
-                        provider(result.getTypeArgument(0)!!, result)(
+                        val rawExpression = provider(
                             DeclarationIrBuilder(pluginContext, result.symbol),
+                            result.getTypeArgument(0)!!,
+                            result,
                             allScopes
                         )
+
+                        val arguments = (result.getValueArgument(0) as? IrVarargImpl)
+                            ?.elements
+                            ?.map { it as IrExpression } ?: emptyList()
+
+                        val lazy = result.getValueArgument(1)
+                            ?.let { it as IrConst<Boolean> }
+                            ?.value ?: false
+
+                        when {
+                            arguments.isNotEmpty() -> DeclarationIrBuilder(
+                                pluginContext,
+                                result.symbol
+                            ).irCall(
+                                rawExpression.type.classOrNull!!
+                                    .owner
+                                    .functions
+                                    .first { it.name.asString() == "invoke" }
+                            ).apply {
+                                dispatchReceiver = rawExpression
+                                arguments.forEachIndexed { index, argument ->
+                                    putValueArgument(index, argument)
+                                }
+                            }
+                            lazy -> DeclarationIrBuilder(
+                                pluginContext,
+                                result.symbol
+                            ).irCall(
+                                rawExpression.type.classOrNull!!
+                                    .owner
+                                    .functions
+                                    .first { it.name.asString() == "invoke" }
+                            ).apply {
+                                dispatchReceiver = rawExpression
+                            }
+                            else -> rawExpression
+                        }
                     }
                     in readerCalls -> {
                         val transformedCallee = transformFunctionIfNeeded(result.symbol.owner)
@@ -660,10 +728,9 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                                     putValueArgument(
                                         valueParameter.index,
                                         provider(
-                                            valueParameter.type,
-                                            result
-                                        )(
                                             DeclarationIrBuilder(pluginContext, result.symbol),
+                                            valueParameter.type,
+                                            result,
                                             allScopes
                                         )
                                     )
@@ -720,6 +787,9 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
             }
         }, null)
     }
+
+    private val IrFunction.isGiven: Boolean
+        get() = descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given"
 
     private fun IrFunction.copyAsReader(): IrFunction {
         return copy(pluginContext).apply {

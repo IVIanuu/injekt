@@ -23,6 +23,7 @@ import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
+import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -722,6 +723,42 @@ class ReaderTest {
     """
     ) {
         assertInternalError("no binding")
+    }
+
+    @Test
+    fun testLazyGiven() = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+        
+        val component by lazy {
+            initializeComponents()
+            rootComponent<TestComponent>()
+        }
+        
+        fun invoke() = component.runReader {
+            given<Foo>(lazy = true) to given<Foo>(lazy = true)
+        }
+        """
+    ) {
+        val (a, b) = invokeSingleFile<Pair<Foo, Foo>>()
+        assertNotSame(a, b)
+    }
+
+    @Test
+    fun testAssistedGiven() = codegen(
+        """
+        @Given
+        fun bar(foo: Foo) = Bar(foo)
+        
+        fun invoke(): Bar {
+            initializeComponents()
+            val component = rootComponent<TestComponent>()
+            return component.runReader { given<Bar>(Foo()) }
+        }
+        """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
     }
 
 }
