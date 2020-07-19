@@ -33,26 +33,21 @@ class MapTest {
     fun testSimpleMap() = codegen(
         """
         @Given 
-        @Reader 
         fun commandA() = CommandA()
         
         @MapEntries(TestComponent::class) 
-        @Reader
         fun commandAIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandA::class to given<CommandA>())
         
         @Given 
-        @Reader
         fun commandB() = CommandB()
+
         @MapEntries(TestComponent::class) 
-        @Reader
         fun commandBIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandB::class to given<CommandB>())
         
         @Given 
-        @Reader
         fun commandC() = CommandC()
         
         @MapEntries(TestComponent::class)
-        @Reader
         fun commandCIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandC::class to given<CommandC>())
         
         fun invoke(): Map<KClass<out Command>, Command> {
@@ -89,19 +84,15 @@ class MapTest {
     fun testNestedMap() = codegen(
         """
         @Given 
-        @Reader 
         fun commandA() = CommandA()
         
         @MapEntries(TestParentComponent::class) 
-        @Reader
         fun commandAIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandA::class to given<CommandA>())
         
         @Given 
-        @Reader 
         fun commandB() = CommandB()
         
         @MapEntries(TestChildComponent::class) 
-        @Reader
         fun commandBIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandB::class to given<CommandB>())
         
         fun invoke(): Pair<Map<KClass<out Command>, Command>, Map<KClass<out Command>, Command>> {

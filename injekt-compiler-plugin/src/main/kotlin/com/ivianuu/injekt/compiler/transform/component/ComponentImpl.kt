@@ -47,7 +47,7 @@ class ComponentImpl(
 
     val clazz = buildClass {
         name = Name.identifier("ComponentImpl")
-        visibility = Visibilities.PRIVATE
+        visibility = Visibilities.LOCAL
     }.apply clazz@{
         parent = factoryImpl.factoryClass
         createImplicitParameterDeclarationWithWrappedDescriptor()

@@ -35,9 +35,9 @@ class ComponentTest {
         @Component
         interface MyComponent
         
-        @Given @Reader
+        @Given
         fun foo() = Foo()
-        @Given @Reader
+        @Given
         fun bar() = Bar(given())
         
         fun invoke(): Bar {
@@ -59,9 +59,9 @@ class ComponentTest {
         @Component
         interface ChildComponent
         
-        @Given(ParentComponent::class) @Reader
+        @Given(ParentComponent::class)
         fun foo() = Foo()
-        @Given @Reader
+        @Given
         fun bar() = Bar(given())
         
         fun invoke(): Bar {
@@ -82,7 +82,6 @@ class ComponentTest {
             source(
                 """
                 @Given(TestParentComponent::class)
-                @Reader
                 fun foo() = Foo()
             """
             )
@@ -90,7 +89,7 @@ class ComponentTest {
         listOf(
             source(
                 """
-                @Given @Reader
+                @Given
                 fun bar() = Bar(given())
             """
             )
@@ -115,7 +114,7 @@ class ComponentTest {
     @Test
     fun testUnscoped() = codegen(
         """
-        @Given @Reader
+        @Given
         fun foo() = Foo()
         
         val component by lazy {
@@ -135,7 +134,7 @@ class ComponentTest {
     @Test
     fun testScoped() = codegen(
         """
-        @Given(TestComponent::class) @Reader
+        @Given(TestComponent::class)
         fun foo() = Foo()
         
         val component by lazy {
@@ -156,7 +155,6 @@ class ComponentTest {
     fun testGivenClass() = codegen(
         """
         @Given
-        @Reader 
         class AnnotatedBar {
             private val foo: Foo = given()
         }
@@ -175,7 +173,7 @@ class ComponentTest {
         invokeSingleFile()
     }
 
-    @Test
+    // todo @Test
     fun testGivenObject() = codegen(
         """
         @Given
@@ -264,7 +262,7 @@ class ComponentTest {
     @Test
     fun testUnscopedProvider() = codegen(
         """
-        @Given @Reader
+        @Given
         fun foo() = Foo()
         
         val component by lazy {
@@ -282,7 +280,7 @@ class ComponentTest {
     @Test
     fun testScopedProvider() = codegen(
         """
-        @Given(TestComponent::class) @Reader
+        @Given(TestComponent::class)
         fun foo() = Foo()
         
         val component by lazy {

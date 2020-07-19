@@ -20,7 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.indexPackageFile
 import com.ivianuu.injekt.compiler.isExternalDeclaration
-import com.ivianuu.injekt.compiler.transform.ReaderTransformer
+import com.ivianuu.injekt.compiler.transform.ImplicitTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -39,7 +39,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class DeclarationGraph(
     private val module: IrModuleFragment,
     private val pluginContext: IrPluginContext,
-    private val readerTransformer: ReaderTransformer
+    private val implicitTransformer: ImplicitTransformer
 ) {
 
     private val _rootComponentFactories = mutableListOf<IrClass>()
@@ -118,7 +118,7 @@ class DeclarationGraph(
                             InjektFqNames.Given
                         ) == true)
             }
-            .map { readerTransformer.getTransformedFunction(it) }
+            .map { implicitTransformer.getTransformedFunction(it) }
             .distinct()
             .forEach { _bindings += it }
     }
@@ -128,11 +128,11 @@ class DeclarationGraph(
             .flatMapFix { pluginContext.referenceFunctions(it) }
             .map { it.owner }
             .map {
-                if (it.isExternalDeclaration()) readerTransformer.getTransformedFunction(it)
+                if (it.isExternalDeclaration()) implicitTransformer.getTransformedFunction(it)
                 else it
             }
             .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
-            .map { readerTransformer.getTransformedFunction(it) }
+            .map { implicitTransformer.getTransformedFunction(it) }
             .distinct()
             .forEach { _mapEntries += it }
     }
@@ -142,11 +142,11 @@ class DeclarationGraph(
             .flatMapFix { pluginContext.referenceFunctions(it) }
             .map { it.owner }
             .map {
-                if (it.isExternalDeclaration()) readerTransformer.getTransformedFunction(it)
+                if (it.isExternalDeclaration()) implicitTransformer.getTransformedFunction(it)
                 else it
             }
             .filter { it.hasAnnotation(InjektFqNames.SetElements) }
-            .map { readerTransformer.getTransformedFunction(it) }
+            .map { implicitTransformer.getTransformedFunction(it) }
             .distinct()
             .forEach { _setElements += it }
     }

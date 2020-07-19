@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.component.ComponentFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.component.EntryPointTransformer
 import com.ivianuu.injekt.compiler.transform.component.RootComponentTransformer
@@ -36,7 +37,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         ComponentFactoryTransformer(injektPluginContext).doLower(moduleFragment)
 
-        val readerTransformer = ReaderTransformer(injektPluginContext)
+        val readerTransformer = ImplicitTransformer(injektPluginContext)
         readerTransformer.doLower(moduleFragment)
 
         EntryPointTransformer(injektPluginContext).doLower(moduleFragment)
@@ -48,6 +49,8 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 
         generateSymbols(pluginContext)
+
+        println(moduleFragment.dumpSrc())
     }
 
 }

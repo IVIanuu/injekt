@@ -63,12 +63,10 @@ class ComponentGraphTest {
     fun testCircularDependency() = codegen(
         """
         @Given
-        @Reader
         class A {
             val b: B = given()
         }
         @Given 
-        @Reader
         class B {
             val a: A = given()
         }
@@ -87,12 +85,10 @@ class ComponentGraphTest {
     fun testCircularDependencyWithProvider() = codegen(
         """
         @Given(TestComponent::class) 
-        @Reader
         class A {
             val b: () -> B = given()
         }
         @Given 
-        @Reader
         class B {
             val a: A = given()
         }
@@ -111,12 +107,10 @@ class ComponentGraphTest {
     fun testCircularDependencyWithProvider2() = codegen(
         """
         @Given(TestComponent::class) 
-        @Reader
         class A {
             val b: B = given()
         }
         @Given
-        @Reader
         class B {
             val a: () -> A = given()
         }
@@ -135,18 +129,15 @@ class ComponentGraphTest {
     fun testCircularDependencyWithIrrelevantProvider() = codegen(
         """
         @Given(TestComponent::class) 
-        @Reader
         class A {
             val c: () -> C = given()
         }
         @Given 
-        @Reader
         class B {
             val c: C = given()
         }
         
         @Given
-        @Reader
         class C {
             val b: B = given()
         }
@@ -179,8 +170,8 @@ class ComponentGraphTest {
     @Test
     fun testDistinctTypeParameter() = codegen(
         """
-        @SetElements(TestComponent::class) @Reader fun setA() = setOf("a")
-        @SetElements(TestComponent::class) @Reader fun setB() = setOf(0)
+        @SetElements(TestComponent::class) fun setA() = setOf("a")
+        @SetElements(TestComponent::class) fun setB() = setOf(0)
         
         fun invoke(): Pair<Set<String>, Set<Int>> {
             initializeComponents()
@@ -199,8 +190,8 @@ class ComponentGraphTest {
         @Distinct typealias Foo1 = Foo
         @Distinct typealias Foo2 = Foo
         
-        @Given @Reader fun foo1(): Foo1 = Foo()
-        @Given @Reader fun foo2(): Foo2 = Foo()
+        @Given fun foo1(): Foo1 = Foo()
+        @Given fun foo2(): Foo2 = Foo()
         
         fun invoke(): Pair<Foo, Foo> {
             initializeComponents()
@@ -219,7 +210,7 @@ class ComponentGraphTest {
             source(
                 """
                 @Distinct typealias Foo1 = Foo
-                @Given @Reader fun foo1(): Foo1 = Foo()
+                @Given fun foo1(): Foo1 = Foo()
             """
             )
         ),
@@ -227,7 +218,7 @@ class ComponentGraphTest {
             source(
                 """
                 @Distinct typealias Foo2 = Foo
-                @Given @Reader fun foo2(): Foo2 = Foo() 
+                @Given fun foo2(): Foo2 = Foo() 
             """
             )
         ),

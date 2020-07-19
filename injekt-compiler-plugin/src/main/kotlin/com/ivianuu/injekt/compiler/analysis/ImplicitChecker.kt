@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.analysis
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.hasAnnotation
+import com.ivianuu.injekt.compiler.isMarkedAsImplicit
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -43,7 +44,7 @@ import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-class ReaderChecker : CallChecker, DeclarationChecker {
+class ImplicitChecker : CallChecker, DeclarationChecker {
 
     override fun check(
         declaration: KtDeclaration,
@@ -54,6 +55,19 @@ class ReaderChecker : CallChecker, DeclarationChecker {
             is ClassDescriptor -> checkClass(declaration, descriptor, context)
             is FunctionDescriptor -> checkFunction(declaration, descriptor, context)
         }
+
+        var implicitAnnotations = 0
+        if (descriptor.hasAnnotation(InjektFqNames.Given)) implicitAnnotations += 1
+        if (descriptor.hasAnnotation(InjektFqNames.Reader)) implicitAnnotations += 1
+        if (descriptor.hasAnnotation(InjektFqNames.MapEntries)) implicitAnnotations += 1
+        if (descriptor.hasAnnotation(InjektFqNames.SetElements)) implicitAnnotations += 1
+
+        if (implicitAnnotations > 1) {
+            context.trace.report(
+                InjektErrors.MULTIPLE_IMPLICIT_ANNOTATIONS
+                    .on(declaration)
+            )
+        }
     }
 
     private fun checkClass(
@@ -61,8 +75,8 @@ class ReaderChecker : CallChecker, DeclarationChecker {
         descriptor: ClassDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (!descriptor.hasAnnotation(InjektFqNames.Reader) &&
-            descriptor.constructors.none { it.hasAnnotation(InjektFqNames.Reader) }
+        if (!descriptor.isMarkedAsImplicit() &&
+            descriptor.constructors.none { it.isMarkedAsImplicit() }
         ) return
 
         if (descriptor.kind == ClassKind.INTERFACE) {
@@ -85,9 +99,9 @@ class ReaderChecker : CallChecker, DeclarationChecker {
         descriptor: FunctionDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (!descriptor.hasAnnotation(InjektFqNames.Reader) &&
+        if (!descriptor.isMarkedAsImplicit() &&
             (descriptor !is ConstructorDescriptor ||
-                    !descriptor.constructedClass.hasAnnotation(InjektFqNames.Reader))
+                    !descriptor.constructedClass.isMarkedAsImplicit())
         ) return
 
         if (descriptor.modality != Modality.FINAL) {
@@ -120,12 +134,12 @@ class ReaderChecker : CallChecker, DeclarationChecker {
 
         if (resulting !is FunctionDescriptor) return
 
-        if (resulting.hasAnnotation(InjektFqNames.Reader)) {
+        if (resulting.isMarkedAsImplicit()) {
             checkInvocations(reportOn, context)
         }
 
         if (resulting is ConstructorDescriptor &&
-            (resulting.constructedClass.hasAnnotation(InjektFqNames.Reader))
+            (resulting.constructedClass.isMarkedAsImplicit())
         ) {
             checkInvocations(reportOn, context)
         }
@@ -142,13 +156,13 @@ class ReaderChecker : CallChecker, DeclarationChecker {
                 if (name == "runReader") return@findEnclosingContext true
             }
 
-            it.hasAnnotation(InjektFqNames.Reader) ||
+            it.isMarkedAsImplicit() ||
                     (it is PropertyGetterDescriptor &&
-                            it.correspondingProperty.hasAnnotation(InjektFqNames.Reader)) ||
+                            it.correspondingProperty.isMarkedAsImplicit()) ||
                     (it is ConstructorDescriptor &&
-                            it.constructedClass.hasAnnotation(InjektFqNames.Reader) ||
+                            it.constructedClass.isMarkedAsImplicit() ||
                             (it is ClassDescriptor && it.constructors.any {
-                                it.hasAnnotation(InjektFqNames.Reader)
+                                it.isMarkedAsImplicit()
                             }))
         }
 

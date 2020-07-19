@@ -20,14 +20,16 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.copy
 import com.ivianuu.injekt.compiler.distinctedType
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.getValueArgumentSafe
 import com.ivianuu.injekt.compiler.isExternalDeclaration
-import com.ivianuu.injekt.compiler.isReader
+import com.ivianuu.injekt.compiler.isMarkedAsImplicit
 import com.ivianuu.injekt.compiler.jvmNameAnnotation
 import com.ivianuu.injekt.compiler.readableName
 import com.ivianuu.injekt.compiler.remapTypeParameters
@@ -89,6 +91,7 @@ import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.getAnnotation
@@ -104,7 +107,8 @@ import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 // todo dedup transform code
-class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransformer(pluginContext) {
+class ImplicitTransformer(pluginContext: IrPluginContext) :
+    AbstractInjektTransformer(pluginContext) {
 
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
     private val transformedClasses = mutableSetOf<IrClass>()
@@ -157,9 +161,7 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
 
         val readerConstructor = clazz.getReaderConstructor()
 
-        if (!clazz.hasAnnotation(InjektFqNames.Reader) &&
-            readerConstructor == null
-        ) return clazz
+        if (!clazz.isMarkedAsImplicit() && readerConstructor == null) return clazz
 
         if (readerConstructor == null) return clazz
 
@@ -189,7 +191,7 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             private val valueParameterStack = mutableListOf<IrValueParameter>()
 
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                val isReader = declaration.isReader() && declaration != readerConstructor
+                val isReader = declaration.canUseImplicits() && declaration != readerConstructor
                 if (isReader) functionStack.push(declaration)
                 return super.visitFunction(declaration)
                     .also { if (isReader) functionStack.pop() }
@@ -208,7 +210,7 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                     result !is IrConstructorCall &&
                     result !is IrDelegatingConstructorCall
                 ) return result
-                if (expression.symbol.owner.isReader()) {
+                if (expression.symbol.owner.canUseImplicits()) {
                     if (result is IrCall &&
                         result.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given"
                     ) {
@@ -337,7 +339,7 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
 
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
         if (function is IrConstructor) {
-            return if (function.isReader()) {
+            return if (function.canUseImplicits()) {
                 transformClassIfNeeded(function.constructedClass)
                     .getReaderConstructor()!!
             } else function
@@ -346,7 +348,7 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
 
-        if (!function.isReader()) return function
+        if (!function.canUseImplicits()) return function
 
         if (function.valueParameters.any { it.hasAnnotation(InjektFqNames.Implicit) }) {
             transformedFunctions[function] = function
@@ -360,6 +362,10 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             if (transformedFunction.descriptor.fqNameSafe.asString() != "com.ivianuu.injekt.given") {
                 val signature = getReaderSignature(transformedFunction)!!
                 readerSignatures += signature
+                println(
+                    "transformed $function ${function.dumpSrc()} to " +
+                            "$transformedFunction ${transformedFunction.dump()}\n${signature.dump()}"
+                )
                 transformedFunction.copySignatureFrom(signature) {
                     it.remapTypeParameters(signature, transformedFunction)
                 }
@@ -381,7 +387,7 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             private val valueParameterStack = mutableListOf<IrValueParameter>()
 
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                val isReader = declaration.isReader()
+                val isReader = declaration.canUseImplicits()
                 if (isReader) functionStack.push(declaration)
                 return super.visitFunction(declaration)
                     .also { if (isReader) functionStack.pop() }
@@ -400,7 +406,7 @@ class ReaderTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                     result !is IrDelegatingConstructorCall
                 ) return result
                 if (functionStack.lastOrNull() != transformedFunction) return result
-                if (expression.symbol.owner.isReader()) {
+                if (expression.symbol.owner.canUseImplicits()) {
                     if (result is IrCall &&
                         expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given"
                     ) {

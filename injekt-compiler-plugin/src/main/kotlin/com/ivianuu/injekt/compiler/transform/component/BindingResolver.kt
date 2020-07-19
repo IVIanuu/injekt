@@ -38,6 +38,7 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunction
@@ -143,6 +144,8 @@ class GivenBindingResolver(
                     explicitParameters.map { it.key.type } + function.returnType
                 )
                 .asKey()
+
+            println("found binding $function ${function.dump()}")
 
             GivenBindingNode(
                 key = key,

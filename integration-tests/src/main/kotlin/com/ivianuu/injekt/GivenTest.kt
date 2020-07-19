@@ -29,7 +29,7 @@ class GivenTest {
     """
     )
 
-    @Test
+    // todo @Test
     fun testGivenObjectOk() = codegen(
         """ 
         @Given object Dep
