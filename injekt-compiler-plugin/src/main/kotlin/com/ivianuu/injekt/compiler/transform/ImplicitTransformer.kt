@@ -23,7 +23,6 @@ import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.copy
 import com.ivianuu.injekt.compiler.distinctedType
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.getReaderConstructor
@@ -91,7 +90,6 @@ import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.getAnnotation
@@ -362,10 +360,6 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
             if (transformedFunction.descriptor.fqNameSafe.asString() != "com.ivianuu.injekt.given") {
                 val signature = getReaderSignature(transformedFunction)!!
                 readerSignatures += signature
-                println(
-                    "transformed $function ${function.dumpSrc()} to " +
-                            "$transformedFunction ${transformedFunction.dump()}\n${signature.dump()}"
-                )
                 transformedFunction.copySignatureFrom(signature) {
                     it.remapTypeParameters(signature, transformedFunction)
                 }
