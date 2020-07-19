@@ -19,22 +19,30 @@ package com.ivianuu.injekt.android
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 
-private val instancesByLifecycle = ConcurrentHashMap<Lifecycle, Any>()
+private val instancesByLifecycle = ConcurrentHashMap<Lifecycle, Any?>()
 
 internal fun <T> Lifecycle.singleton(initializer: () -> T): T {
-    check(currentState != Lifecycle.State.DESTROYED) {
-        "Cannot store instances on destroyed lifecycles"
-    }
-    return instancesByLifecycle.getOrPut(this, initializer)
-        .also {
-            addObserver(object : LifecycleEventObserver {
-                override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-                    if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
+    return if (instancesByLifecycle.contains(this)) {
+        instancesByLifecycle[this] as T
+    } else {
+        val instance = initializer()
+        instancesByLifecycle[this] = instance
+        addObserver(object : LifecycleEventObserver {
+            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+                if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
+                    println("destroyed")
+                    source.lifecycleScope.launch(NonCancellable) {
+                        println("clear instances")
                         instancesByLifecycle -= this@singleton
                     }
                 }
-            })
-        } as T
+            }
+        })
+        instance
+    }
 }
