@@ -40,11 +40,13 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
+class ComponentImpl(
+    val factoryImpl: ComponentFactoryImpl
+) {
     val origin: FqName? = factoryImpl.component.descriptor.fqNameSafe
 
     val clazz = buildClass {
-        name = Name.special("<${factoryImpl.component.descriptor.fqNameSafe} impl>")
+        name = Name.identifier("ComponentImpl")
         visibility = Visibilities.LOCAL
     }.apply clazz@{
         parent = factoryImpl.factoryClass

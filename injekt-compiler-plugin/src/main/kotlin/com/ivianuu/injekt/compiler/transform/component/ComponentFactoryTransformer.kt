@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -78,11 +77,7 @@ class ComponentFactoryTransformer(
                 val componentFactory = buildClass {
                     // todo naming
                     name = nameProvider.allocateForGroup(
-                        getJoinedName(
-                            currentFile.fqName,
-                            currentScope!!.scope.scopeOwner.fqNameSafe.parent()
-                                .child("${currentScope!!.scope.scopeOwner.name.asString()}Factory".asNameId())
-                        )
+                        "${currentScope!!.scope.scopeOwner.name.asString()}Factory".asNameId()
                     )
                     kind = ClassKind.INTERFACE
                 }.apply {

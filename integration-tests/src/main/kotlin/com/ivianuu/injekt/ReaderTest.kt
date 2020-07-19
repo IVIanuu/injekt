@@ -31,7 +31,7 @@ class ReaderTest {
     @Test
     fun testSimpleReader() = codegen(
         """
-        @Given @Reader
+        @Given
         fun foo() = Foo()
         
         @Reader
@@ -50,7 +50,7 @@ class ReaderTest {
     @Test
     fun testNestedReader() = codegen(
         """
-        @Given @Reader
+        @Given
         fun foo() = Foo()
         
         @Reader
@@ -75,7 +75,7 @@ class ReaderTest {
     @Test
     fun testSuspendBlockInReadingBlock() = codegen(
         """
-        @Given @Reader
+        @Given
         fun foo() = Foo()
         
         @Reader
@@ -101,7 +101,7 @@ class ReaderTest {
     @Test
     fun testReadingBlockInSuspendBlock() = codegen(
         """
-        @Given @Reader
+        @Given
         fun foo() = Foo()
         
         @Reader
@@ -166,7 +166,7 @@ class ReaderTest {
     @Test
     fun testReaderCallInDefaultParameter() = codegen(
         """
-        @Given @Reader
+        @Given
         fun foo() = Foo()
         
         @Reader
@@ -188,7 +188,7 @@ class ReaderTest {
     @Test
     fun testReaderCallInDefaultParameterWithCapture() = codegen(
         """
-        @Given @Reader
+        @Given
         fun foo() = Foo()
         
         @Reader
@@ -209,7 +209,7 @@ class ReaderTest {
         listOf(
             source(
                 """
-                @Given @Reader
+                @Given
                 fun foo() = Foo()
             """
             ),
@@ -264,7 +264,7 @@ class ReaderTest {
     @Test
     fun testReaderProperty() = codegen(
         """
-        @Given @Reader
+        @Given
         fun foo() = Foo()
         
         @Reader
@@ -285,7 +285,7 @@ class ReaderTest {
         listOf(
             source(
                 """
-                @Given @Reader 
+                @Given 
                 fun foo() = Foo()
         
                 @Reader
@@ -312,7 +312,7 @@ class ReaderTest {
     @Test
     fun testReaderClass() = codegen(
         """
-        @Given @Reader
+        @Given
         fun foo() = Foo()
         
         @Reader
@@ -335,7 +335,7 @@ class ReaderTest {
         listOf(
             source(
                 """
-                @Given @Reader
+                @Given
                 fun foo() = Foo()
         
                 @Reader
@@ -384,7 +384,6 @@ class ReaderTest {
         """
         @Given fun foo() = Foo()
  
-        @Reader
         @Given
         class FooFactory {
             fun getFoo() = given<Foo>()
@@ -474,7 +473,6 @@ class ReaderTest {
         """
         @Given fun foo() = Foo()
         
-        @Reader
         @Given
         class FooFactory {
             val foo: Foo = given()
@@ -551,10 +549,10 @@ class ReaderTest {
     @Test
     fun testNestedRunReader() = codegen(
         """
-        @Given(TestParentComponent::class) @Reader
+        @Given(TestParentComponent::class)
         fun foo() = Foo()
         
-        @Given(TestChildComponent::class) @Reader
+        @Given(TestChildComponent::class)
         fun bar() = Bar(given())
         
         fun invoke(): Bar { 
@@ -634,16 +632,16 @@ class ReaderTest {
     @Test
     fun testGenericReaderDependencyOfSameType() = codegen(
         """
-        @Given @Reader
+        @Given
         class MyClass {
             val set1: Set<String> = given()
             val set2: Set<Int> = given()
         }
         
-        @SetElements(TestComponent::class) @Reader
+        @SetElements(TestComponent::class)
         fun set1() = emptySet<String>()
         
-        @SetElements(TestComponent::class) @Reader
+        @SetElements(TestComponent::class)
         fun set2() = emptySet<Int>()
         
         fun invoke() { 

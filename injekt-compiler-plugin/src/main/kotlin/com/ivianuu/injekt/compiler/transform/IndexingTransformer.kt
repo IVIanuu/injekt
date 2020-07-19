@@ -69,7 +69,8 @@ class IndexingTransformer(pluginContext: IrPluginContext) :
 
             override fun visitClass(declaration: IrClass): IrStatement {
                 if (declaration.hasAnnotation(InjektFqNames.Given) ||
-                    declaration.hasAnnotation(InjektFqNames.RootComponentFactory)
+                    declaration.hasAnnotation(InjektFqNames.RootComponentFactory) ||
+                    declaration.hasAnnotation(InjektFqNames.EntryPoint)
                 ) {
                     declarations += declaration
                 }

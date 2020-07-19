@@ -16,12 +16,11 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.canUseImplicits
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
-import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
@@ -35,7 +34,7 @@ class TmpMetadataPatcher(pluginContext: IrPluginContext) :
                 (declaration as IrFileImpl).metadata =
                     MetadataSource.File(
                         ((declaration.metadata as MetadataSource.File).descriptors + (declaration.declarations
-                            .filter { !it.hasAnnotation(InjektFqNames.Reader) })
+                            .filter { !it.canUseImplicits() })
                             .map { it.descriptor })
                             .distinct()
                     )

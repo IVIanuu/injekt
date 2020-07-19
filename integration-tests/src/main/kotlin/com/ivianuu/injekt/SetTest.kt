@@ -32,27 +32,21 @@ class SetTest {
     fun testSimpleSet() = codegen(
         """
         @Given 
-        @Reader 
         fun commandA() = CommandA()
         
         @SetElements(TestComponent::class) 
-        @Reader
         fun commandAIntoSet(): Set<Command> = setOf(given<CommandA>())
         
         @Given 
-        @Reader
         fun commandB() = CommandB()
         
         @SetElements(TestComponent::class) 
-        @Reader
         fun commandBIntoSet(): Set<Command> = setOf(given<CommandB>())
         
         @Given 
-        @Reader
         fun commandC() = CommandC()
         
         @SetElements(TestComponent::class)
-        @Reader
         fun commandCIntoSet(): Set<Command> = setOf(given<CommandC>())
         
         fun invoke(): Set<Command> {
@@ -87,19 +81,15 @@ class SetTest {
     fun testNestedSet() = codegen(
         """
         @Given 
-        @Reader 
         fun commandA() = CommandA()
         
         @SetElements(TestParentComponent::class) 
-        @Reader
         fun commandAIntoSet(): Set<Command> = setOf(given<CommandA>())
         
         @Given 
-        @Reader 
         fun commandB() = CommandB()
         
         @SetElements(TestChildComponent::class) 
-        @Reader
         fun commandBIntoSet(): Set<Command> = setOf(given<CommandB>())
         
         fun invoke(): Pair<Set<Command>, Set<Command>> {

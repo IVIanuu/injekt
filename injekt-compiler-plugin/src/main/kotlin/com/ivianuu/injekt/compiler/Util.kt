@@ -445,9 +445,9 @@ fun String.asNameId(): Name = Name.identifier(this)
 fun IrClass.getReaderConstructor(): IrConstructor? {
     constructors
         .firstOrNull {
-            it.hasAnnotation(InjektFqNames.Reader)
+            it.isMarkedAsImplicit()
         }?.let { return it }
-    if (!hasAnnotation(InjektFqNames.Reader)) return null
+    if (!isMarkedAsImplicit()) return null
     return primaryConstructor
 }
 
@@ -614,9 +614,33 @@ fun dexSafeName(name: Name): Name {
     } else name
 }
 
-fun IrDeclarationWithName.uniqueName() = when (this) {
+
+fun IrDeclarationWithName.uniqueFqName() = when (this) {
     is IrClass -> "c_${descriptor.fqNameSafe}"
     is IrFunction -> "f_${descriptor.fqNameSafe}_${
+        descriptor.valueParameters
+            .filterNot { it.hasAnnotation(InjektFqNames.Implicit) }
+            .map { it.type }.map {
+                it.constructor.declarationDescriptor!!.fqNameSafe
+            }.hashCode().absoluteValue
+    }${if (visibility == Visibilities.LOCAL) "_$startOffset" else ""}"
+    else -> error("Unsupported declaration ${dump()}")
+}
+
+fun Annotated.isMarkedAsImplicit(): Boolean =
+    hasAnnotation(InjektFqNames.Reader) ||
+            hasAnnotation(InjektFqNames.Given) ||
+            hasAnnotation(InjektFqNames.MapEntries) ||
+            hasAnnotation(InjektFqNames.SetElements)
+
+fun IrAnnotationContainer.isMarkedAsImplicit(): Boolean =
+    hasAnnotation(InjektFqNames.Reader) ||
+            hasAnnotation(InjektFqNames.Given) ||
+            hasAnnotation(InjektFqNames.MapEntries) ||
+            hasAnnotation(InjektFqNames.SetElements)
+
+fun IrDeclarationWithName.uniqueName() = when (this) {
+    is IrFunction -> "f_${descriptor.name}_${
         descriptor.valueParameters
             .filterNot { it.hasAnnotation(InjektFqNames.Implicit) }
             .map { it.type }.map {
@@ -665,11 +689,9 @@ fun IrType.hashWithDistinct(): Int {
 val IrModuleFragment.indexPackageFile: IrFile
     get() = files.single { it.fqName == InjektFqNames.IndexPackage }
 
-fun IrFunction.isReader(): Boolean = hasAnnotation(InjektFqNames.Reader) ||
-        (this is IrConstructor && (constructedClass.hasAnnotation(InjektFqNames.Reader))) ||
-        (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.hasAnnotation(
-            InjektFqNames.Reader
-        ) == true)
+fun IrAnnotationContainer.canUseImplicits(): Boolean = isMarkedAsImplicit() ||
+        (this is IrConstructor && constructedClass.isMarkedAsImplicit()) ||
+        (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsImplicit() == true)
 
 fun IrBuilderWithScope.singleClassArgConstructorCall(
     clazz: IrClassSymbol,

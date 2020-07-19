@@ -98,6 +98,11 @@ interface InjektErrors {
         )
 
         @JvmField
+        val MULTIPLE_IMPLICIT_ANNOTATIONS = error(
+            "A declaration can only be annotated with one of @Reader, @Given, @MapEntries or @SetElements"
+        )
+
+        @JvmField
         val EFFECT_WITHOUT_COMPANION = error(
             "@Effect annotated class needs a companion object"
         )

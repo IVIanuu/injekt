@@ -33,7 +33,7 @@ class EffectTest {
         @Effect
         annotation class Effect1 {
             companion object {
-                @Given @Reader
+                @Given
                 fun <T> bind() = given<T>().toString()
             }
         }
@@ -41,7 +41,7 @@ class EffectTest {
         @Effect
         annotation class Effect2 {
             companion object {
-                @Given @Reader
+                @Given
                 fun <T : Any> bind(): Any = given<T>()
             }
         }
@@ -177,7 +177,7 @@ class EffectTest {
         @Effect
         annotation class BindFooFactory {
             companion object {
-                @Given @Reader
+                @Given
                 operator fun <T : FooFactory> invoke(): FooFactory = given<T>()
             }
         }
@@ -208,7 +208,7 @@ class EffectTest {
                 @Effect
                 annotation class BindFooFactory {
                     companion object {
-                        @Given @Reader
+                        @Given
                         operator fun <T : FooFactory> invoke(): FooFactory = given<T>()
                     }
                 }
@@ -249,7 +249,7 @@ class EffectTest {
         @Effect
         annotation class BindFooFactory {
             companion object {
-                @Given @Reader
+                @Given
                 operator fun <T : FooFactory> invoke(): FooFactory = given<T>()
             }
         }
