@@ -63,10 +63,10 @@ class ComponentExpressions(
             is ComponentImplBindingNode -> componentExpression(binding) to false
             is GivenBindingNode -> givenExpression(binding) to true
             is InputBindingNode -> inputExpression(binding) to false
-            is MapBindingNode -> mapBindingExpression(binding) to false
+            is MapBindingNode -> mapBindingExpression(binding) to true
             is NullBindingNode -> nullExpression(binding) to false
             is ProviderBindingNode -> providerExpression(binding) to true
-            is SetBindingNode -> setBindingExpression(binding) to false
+            is SetBindingNode -> setBindingExpression(binding) to true
         }.let { (expression, forceWrap) ->
             if (forceWrap || component.dependencyRequests.any {
                     it.second.key == binding.key
