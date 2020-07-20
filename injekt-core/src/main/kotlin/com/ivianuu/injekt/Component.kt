@@ -23,7 +23,7 @@ annotation class Component
 
 fun initializeComponents(): Unit = injektIntrinsic()
 
-fun <T> rootComponent(vararg instances: Any?): T = injektIntrinsic()
+fun <T> rootComponent(vararg inputs: Any?): T = injektIntrinsic()
 
 @Reader
-fun <T> childComponent(vararg instances: Any?): T = injektIntrinsic()
+fun <T> childComponent(vararg inputs: Any?): T = injektIntrinsic()

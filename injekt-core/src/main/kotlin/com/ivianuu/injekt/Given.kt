@@ -29,6 +29,6 @@ annotation class Given(val component: KClass<*> = Nothing::class)
 
 @Reader
 fun <T> given(
-    vararg instances: Any?,
+    vararg arguments: Any?,
     lazy: Boolean = false
 ): T = injektIntrinsic()
