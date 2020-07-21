@@ -65,7 +65,6 @@ import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
-import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
@@ -93,7 +92,6 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
@@ -101,7 +99,6 @@ import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.hasDefaultValue
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -110,7 +107,6 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-// todo dedup transform code
 class ImplicitTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
@@ -185,120 +181,36 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
             return clazz
         }
 
-        val givenCalls = mutableListOf<IrCall>()
-        val defaultValueParameterByGivenCalls = mutableMapOf<IrCall, IrValueParameter>()
-        val readerCalls = mutableListOf<IrFunctionAccessExpression>()
+        val fieldsByValueParameters = mutableMapOf<IrValueParameter, IrField>()
 
-        clazz.transformChildrenVoid(object : IrElementTransformerVoid() {
-
-            private val functionStack = mutableListOf<IrFunction>()
-            private val valueParameterStack = mutableListOf<IrValueParameter>()
-
-            override fun visitFunction(declaration: IrFunction): IrStatement {
-                val isReader = declaration.canUseImplicits() && declaration != readerConstructor
-                if (isReader) functionStack.push(declaration)
-                return super.visitFunction(declaration)
-                    .also { if (isReader) functionStack.pop() }
-            }
-
-            override fun visitValueParameter(declaration: IrValueParameter): IrStatement {
-                valueParameterStack += declaration
-                return super.visitValueParameter(declaration)
-                    .also { valueParameterStack -= declaration }
-            }
-
-            override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
-                val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
-                if (functionStack.isNotEmpty()) return result
-                if (result !is IrCall &&
-                    result !is IrConstructorCall &&
-                    result !is IrDelegatingConstructorCall
-                ) return result
-                if (expression.symbol.owner.canUseImplicits()) {
-                    if (result is IrCall && result.symbol.owner.isGiven) {
-                        givenCalls += result
-                        valueParameterStack.lastOrNull()
-                            ?.takeIf {
-                                it.defaultValue is IrExpressionBody &&
-                                        it.defaultValue!!.statements.single() == result
-                            }
-                            ?.let {
-                                defaultValueParameterByGivenCalls[result] = it
-                            }
-                    } else {
-                        readerCalls += result
-                    }
+        transformDeclaration(
+            owner = clazz,
+            function = readerConstructor,
+            givenValueParameterAdded = { valueParameter ->
+                fieldsByValueParameters[valueParameter] = clazz.addField(
+                    fieldName = valueParameter.type.readableName(),
+                    fieldType = valueParameter.type
+                )
+            },
+            provider = { type, valueParameter, scopes ->
+                if (scopes.none { it.irElement == readerConstructor }) {
+                    val field = fieldsByValueParameters[valueParameter]!!
+                    irGetField(
+                        irGet(scopes.thisOfClass(clazz)!!),
+                        field
+                    )
+                } else {
+                    irGet(valueParameter)
                 }
-                return result
             }
-
-        })
-
-        val givenTypes = mutableMapOf<Any, IrType>()
-        val callsByTypes = mutableMapOf<Any, IrFunctionAccessExpression>()
-
-        givenCalls
-            .forEach { givenCall ->
-                val type = givenCall.getRealGivenType()
-                givenTypes[type.distinctedType] = type
-                callsByTypes[type.distinctedType] = givenCall
-            }
-        readerCalls.flatMapFix { readerCall ->
-            val transformedCallee = transformFunctionIfNeeded(readerCall.symbol.owner)
-
-            transformedCallee
-                .valueParameters
-                .filter { it.hasAnnotation(InjektFqNames.Implicit) }
-                .filter { readerCall.getValueArgumentSafe(it.index) == null }
-                .map { it.type }
-                .map {
-                    it
-                        .remapTypeParameters(readerCall.symbol.owner, transformedCallee)
-                        .substitute(
-                            transformedCallee.typeParameters.map { it.symbol }
-                                .zip(readerCall.typeArguments)
-                                .toMap()
-                        )
-                }
-                .map { readerCall to it }
-        }.forEach { (call, type) ->
-            givenTypes[type.distinctedType] = type
-            callsByTypes[type.distinctedType] = call
-        }
-
-        val givenFields = mutableMapOf<Any, IrField>()
-        val valueParametersByFields = mutableMapOf<IrField, IrValueParameter>()
-
-        givenTypes.values.forEach { givenType ->
-            val field = clazz.addField(
-                fieldName = givenType.readableName(),
-                fieldType = givenType
-            )
-            givenFields[givenType.distinctedType] = field
-
-            val call = callsByTypes[givenType.distinctedType]
-            val defaultValueParameter = defaultValueParameterByGivenCalls[call]
-
-            val valueParameter = (defaultValueParameter
-                ?.also { it.defaultValue = null }
-                ?: readerConstructor.addValueParameter(
-                    field.name.asString(),
-                    field.type
-                )).apply {
-                annotations += DeclarationIrBuilder(pluginContext, symbol)
-                    .irCall(symbols.implicit.constructors.single())
-            }
-            valueParametersByFields[field] = valueParameter
-        }
-
-        readerSignatures += createReaderSignature(clazz, readerConstructor) { it }
+        )
 
         readerConstructor.body = DeclarationIrBuilder(pluginContext, clazz.symbol).run {
             irBlockBody {
                 readerConstructor.body?.statements?.forEach {
                     +it
                     if (it is IrDelegatingConstructorCall) {
-                        valueParametersByFields.forEach { (field, valueParameter) ->
+                        fieldsByValueParameters.forEach { (valueParameter, field) ->
                             +irSetField(
                                 irGet(clazz.thisReceiver!!),
                                 field,
@@ -307,33 +219,6 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                         }
                     }
                 }
-            }
-        }
-
-        rewriteCalls(
-            owner = clazz,
-            givenCalls = givenCalls,
-            readerCalls = readerCalls
-        ) { type, expression, scopes ->
-            val finalType = (if (expression.symbol.owner.isGiven) {
-                expression.getRealGivenType()
-            } else type)
-                .substitute(
-                    transformFunctionIfNeeded(expression.symbol.owner)
-                        .typeParameters
-                        .map { it.symbol }
-                        .zip(expression.typeArguments)
-                        .toMap()
-                ).distinctedType
-            val field = givenFields[finalType]!!
-
-            return@rewriteCalls if (scopes.none { it.irElement == readerConstructor }) {
-                irGetField(
-                    irGet(scopes.thisOfClass(clazz)!!),
-                    field
-                )
-            } else {
-                irGet(valueParametersByFields.getValue(field))
             }
         }
 
@@ -376,17 +261,38 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
         val transformedFunction = function.copyAsReader()
         transformedFunctions[function] = transformedFunction
 
+        transformDeclaration(
+            owner = transformedFunction,
+            function = transformedFunction,
+            remapType = { it.remapTypeParameters(function, transformedFunction) },
+            provider = { _, valueParameter, _ -> irGet(valueParameter) }
+        )
+
+        return transformedFunction
+    }
+
+    private fun <T> transformDeclaration(
+        owner: T,
+        function: IrFunction,
+        remapType: (IrType) -> IrType = { it },
+        givenValueParameterAdded: (IrValueParameter) -> Unit = {},
+        provider: IrBuilderWithScope.(Any, IrValueParameter, List<ScopeWithIr>) -> IrExpression
+    ) where T : IrDeclarationWithName, T : IrDeclarationParent {
         val givenCalls = mutableListOf<IrCall>()
         val defaultValueParameterByGivenCalls = mutableMapOf<IrCall, IrValueParameter>()
         val readerCalls = mutableListOf<IrFunctionAccessExpression>()
 
-        transformedFunction.transformChildrenVoid(object : IrElementTransformerVoid() {
+        owner.transformChildrenVoid(object : IrElementTransformerVoid() {
 
-            private val functionStack = mutableListOf(transformedFunction)
+            private val functionStack = mutableListOf<IrFunction>()
             private val valueParameterStack = mutableListOf<IrValueParameter>()
 
+            init {
+                if (owner is IrFunction) functionStack += owner
+            }
+
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                val isReader = declaration.canUseImplicits()
+                val isReader = declaration.isMarkedAsImplicit()
                 if (isReader) functionStack.push(declaration)
                 return super.visitFunction(declaration)
                     .also { if (isReader) functionStack.pop() }
@@ -404,7 +310,9 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                     result !is IrConstructorCall &&
                     result !is IrDelegatingConstructorCall
                 ) return result
-                if (functionStack.lastOrNull() != transformedFunction) return result
+                if (functionStack.isNotEmpty() &&
+                    functionStack.lastOrNull() != owner
+                ) return result
                 if (expression.symbol.owner.canUseImplicits()) {
                     if (result is IrCall && expression.symbol.owner.isGiven) {
                         givenCalls += result
@@ -430,7 +338,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
         givenCalls
             .forEach { givenCall ->
                 val type = givenCall.getRealGivenType()
-                    .remapTypeParameters(function, transformedFunction)
+                    .let(remapType)
                 givenTypes[type.distinctedType] = type
                 callsByTypes[type.distinctedType] = givenCall
             }
@@ -448,11 +356,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                             transformedCallee.typeParameters.map { it.symbol }
                                 .zip(
                                     readerCall.typeArguments
-                                        .map {
-                                            it.remapTypeParameters(
-                                                function, transformedFunction
-                                            )
-                                        }
+                                        .map(remapType)
                                 )
                                 .toMap()
                         )
@@ -471,53 +375,43 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
 
             val valueParameter = (defaultValueParameter
                 ?.also { it.defaultValue = null }
-                ?: transformedFunction.addValueParameter(
+                ?: function.addValueParameter(
                     name = givenType.readableName().asString(),
                     type = givenType
                 )).apply {
                 annotations += DeclarationIrBuilder(pluginContext, symbol)
                     .irCall(symbols.implicit.constructors.single())
             }
+            givenValueParameterAdded(valueParameter)
             givenValueParameters[givenType.distinctedType] = valueParameter
         }
 
-        readerSignatures += createReaderSignature(
-            transformedFunction,
-            transformedFunction
-        ) {
-            it.remapTypeParameters(function, transformedFunction)
-        }
+        readerSignatures += createReaderSignature(owner, function, remapType)
 
         rewriteCalls(
-            owner = transformedFunction,
+            owner = owner,
             givenCalls = givenCalls,
             readerCalls = readerCalls
-        ) { type, expression, _ ->
+        ) { type, expression, scopes ->
             val finalType = (if (expression.symbol.owner.isGiven) {
                 expression.getRealGivenType()
-            } else type).remapTypeParameters(function, transformedFunction)
+            } else type).let(remapType)
                 .substitute(
                     transformFunctionIfNeeded(expression.symbol.owner)
                         .typeParameters
                         .map { it.symbol }
                         .zip(
                             expression.typeArguments
-                                .map { it.remapTypeParameters(function, transformedFunction) }
+                                .map(remapType)
                         )
                         .toMap()
                 )
                 .distinctedType
-            val valueParameter = givenValueParameters[finalType] ?: error(
-                "Could not find for ${(finalType as? IrType)?.render() ?: finalType} expr ${expression.dump()}\nexisting ${
-                    givenValueParameters.map {
-                        it.value.render()
-                    }
-                }"
-            )
-            return@rewriteCalls irGet(valueParameter)
-        }
 
-        return transformedFunction
+            val valueParameter = givenValueParameters[finalType]!!
+
+            return@rewriteCalls provider(this, finalType, valueParameter, scopes)
+        }
     }
 
     private fun IrFunction.copySignatureFrom(
@@ -667,7 +561,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
         givenCalls: List<IrCall>,
         readerCalls: List<IrFunctionAccessExpression>,
         provider: IrBuilderWithScope.(IrType, IrFunctionAccessExpression, List<ScopeWithIr>) -> IrExpression
-    ) where T : IrDeclaration, T : IrDeclarationParent {
+    ) where T : IrDeclarationWithName, T : IrDeclarationParent {
         owner.transform(object : IrElementTransformerVoidWithContext() {
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
                 return when (val result =
