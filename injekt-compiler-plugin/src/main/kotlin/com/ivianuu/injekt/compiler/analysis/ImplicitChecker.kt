@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
@@ -54,6 +55,7 @@ class ImplicitChecker : CallChecker, DeclarationChecker {
         when (descriptor) {
             is ClassDescriptor -> checkClass(declaration, descriptor, context)
             is FunctionDescriptor -> checkFunction(declaration, descriptor, context)
+            is PropertyDescriptor -> checkProperty(declaration, descriptor, context)
         }
 
         var implicitAnnotations = 0
@@ -107,6 +109,28 @@ class ImplicitChecker : CallChecker, DeclarationChecker {
         if (descriptor.modality != Modality.FINAL) {
             context.trace.report(
                 InjektErrors.READER_MUST_BE_FINAL
+                    .on(declaration)
+            )
+        }
+    }
+
+    private fun checkProperty(
+        declaration: KtDeclaration,
+        descriptor: PropertyDescriptor,
+        context: DeclarationCheckerContext
+    ) {
+        if (!descriptor.isMarkedAsImplicit()) return
+
+        if (descriptor.backingField != null) {
+            context.trace.report(
+                InjektErrors.READER_PROPERTY_WITH_BACKING_FIELD
+                    .on(declaration)
+            )
+        }
+
+        if (descriptor.isVar) {
+            context.trace.report(
+                InjektErrors.READER_PROPERTY_VAR
                     .on(declaration)
             )
         }

@@ -38,11 +38,6 @@ interface InjektErrors {
         )
 
         @JvmField
-        val COMPONENT_FACTORY_WITH_TYPE_PARAMETERS = error(
-            "@Component.Factory cannot contain type parameters"
-        )
-
-        @JvmField
         val COMPONENT_MUST_BE_EMPTY = error(
             "@Component must be an empty interface"
         )
@@ -95,6 +90,16 @@ interface InjektErrors {
         @JvmField
         val READER_CLASS_CANNOT_BE_OBJECT = error(
             "@Reader class cannot be an object"
+        )
+
+        @JvmField
+        val READER_PROPERTY_WITH_BACKING_FIELD = error(
+            "@Reader property cannot have a backing field"
+        )
+
+        @JvmField
+        val READER_PROPERTY_VAR = error(
+            "@Reader property cannot have be a var"
         )
 
         @JvmField

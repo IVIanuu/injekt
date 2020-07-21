@@ -130,4 +130,24 @@ class ReaderDslTest {
         assertCompileError("object")
     }
 
+    @Test
+    fun testReaderPropertyWithBackingFieldFails() = codegen(
+        """
+            @Reader
+            val property = ""
+    """
+    ) {
+        assertCompileError("backing field")
+    }
+
+    @Test
+    fun testReaderVarFails() = codegen(
+        """
+            @Reader
+            var property = ""
+    """
+    ) {
+        assertCompileError("var")
+    }
+
 }
