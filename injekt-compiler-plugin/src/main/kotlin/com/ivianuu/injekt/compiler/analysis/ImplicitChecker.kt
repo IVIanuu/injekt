@@ -119,7 +119,7 @@ class ImplicitChecker : CallChecker, DeclarationChecker {
         descriptor: PropertyDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (!descriptor.isMarkedAsImplicit()) return
+        if (!descriptor.hasAnnotation(InjektFqNames.Reader)) return
 
         if (descriptor.backingField != null) {
             context.trace.report(
