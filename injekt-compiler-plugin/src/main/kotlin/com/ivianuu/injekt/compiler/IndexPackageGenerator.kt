@@ -32,8 +32,6 @@ import java.io.File
 
 class IndexPackageGenerator : AnalysisHandlerExtension {
 
-    private var generated = false
-
     override fun doAnalysis(
         project: Project,
         module: ModuleDescriptor,
@@ -42,21 +40,21 @@ class IndexPackageGenerator : AnalysisHandlerExtension {
         bindingTrace: BindingTrace,
         componentProvider: ComponentProvider
     ): AnalysisResult? {
-        if (generated) return null
-        generated = true
         files as ArrayList<KtFile>
 
-        files += KtFile(
-            viewProvider = object : SingleRootFileViewProvider(
-                PsiManager.getInstance(project),
-                CoreLocalVirtualFile(
-                    CoreLocalFileSystem(),
-                    File.createTempFile("tmp", "File.kt").apply {
-                        writeText("package ${InjektFqNames.IndexPackage}")
-                    })
-            ) {},
-            isCompiled = false
-        )
+        if (files.none { it.packageFqName == InjektFqNames.IndexPackage }) {
+            files += KtFile(
+                viewProvider = object : SingleRootFileViewProvider(
+                    PsiManager.getInstance(project),
+                    CoreLocalVirtualFile(
+                        CoreLocalFileSystem(),
+                        File.createTempFile("tmp", "File.kt").apply {
+                            writeText("package ${InjektFqNames.IndexPackage}")
+                        })
+                ) {},
+                isCompiled = false
+            )
+        }
 
         return null
     }
