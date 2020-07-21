@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.copy
 import com.ivianuu.injekt.compiler.distinctedType
@@ -29,6 +30,7 @@ import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.getValueArgumentSafe
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isMarkedAsImplicit
+import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.jvmNameAnnotation
 import com.ivianuu.injekt.compiler.readableName
 import com.ivianuu.injekt.compiler.remapTypeParameters
@@ -43,20 +45,24 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
+import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
+import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
@@ -83,6 +89,7 @@ import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.types.IrType
@@ -92,6 +99,8 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
+import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
@@ -114,6 +123,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
     private val transformedClasses = mutableSetOf<IrClass>()
 
     private val readerSignatures = mutableSetOf<IrFunction>()
+    private val params = mutableSetOf<IrClass>()
 
     private val globalNameProvider = NameProvider()
 
@@ -138,7 +148,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
 
         module.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitClass(declaration: IrClass): IrStatement =
-                transformClassIfNeeded(super.visitClass(declaration) as IrClass)
+                transformClassIfNeeded(super.visitClass(declaration) as IrClass, false)
         })
 
         module.transformChildrenVoid(object : IrElementTransformerVoid() {
@@ -154,9 +164,21 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                     parent.addChild(readerSignature)
                 }
             }
+
+        params
+            .filterNot { it.isExternalDeclaration() }
+            .forEach { params ->
+                val parent = params.parent as IrDeclarationContainer
+                if (params !in parent.declarations) {
+                    parent.addChild(params)
+                }
+            }
     }
 
-    private fun transformClassIfNeeded(clazz: IrClass): IrClass {
+    private fun transformClassIfNeeded(
+        clazz: IrClass,
+        isParams: Boolean
+    ): IrClass {
         if (clazz in transformedClasses) return clazz
 
         val readerConstructor = clazz.getReaderConstructor()
@@ -186,6 +208,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
         transformDeclaration(
             owner = clazz,
             function = readerConstructor,
+            isParams = isParams,
             givenValueParameterAdded = { valueParameter ->
                 fieldsByValueParameters[valueParameter] = clazz.addField(
                     fieldName = valueParameter.type.readableName(),
@@ -228,7 +251,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
         if (function is IrConstructor) {
             return if (function.canUseImplicits()) {
-                transformClassIfNeeded(function.constructedClass)
+                transformClassIfNeeded(function.constructedClass, false)
                     .getReaderConstructor()!!
             } else function
         }
@@ -264,6 +287,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
         transformDeclaration(
             owner = transformedFunction,
             function = transformedFunction,
+            isParams = false,
             remapType = { it.remapTypeParameters(function, transformedFunction) },
             provider = { _, valueParameter, _ -> irGet(valueParameter) }
         )
@@ -274,10 +298,11 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
     private fun <T> transformDeclaration(
         owner: T,
         function: IrFunction,
+        isParams: Boolean,
         remapType: (IrType) -> IrType = { it },
         givenValueParameterAdded: (IrValueParameter) -> Unit = {},
         provider: IrBuilderWithScope.(Any, IrValueParameter, List<ScopeWithIr>) -> IrExpression
-    ) where T : IrDeclarationWithName, T : IrDeclarationParent {
+    ) where T : IrDeclarationWithName, T : IrDeclarationParent, T : IrTypeParametersContainer {
         val givenCalls = mutableListOf<IrCall>()
         val defaultValueParameterByGivenCalls = mutableMapOf<IrCall, IrValueParameter>()
         val readerCalls = mutableListOf<IrFunctionAccessExpression>()
@@ -342,48 +367,76 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                 givenTypes[type.distinctedType] = type
                 callsByTypes[type.distinctedType] = givenCall
             }
-        readerCalls.flatMapFix { readerCall ->
-            val transformedCallee = transformFunctionIfNeeded(readerCall.symbol.owner)
-            transformedCallee
-                .valueParameters
-                .filter { it.hasAnnotation(InjektFqNames.Implicit) }
-                .filter { readerCall.getValueArgumentSafe(it.index) == null }
-                .map { it.type }
-                .map {
-                    it
-                        .remapTypeParameters(readerCall.symbol.owner, transformedCallee)
-                        .substitute(
-                            transformedCallee.typeParameters.map { it.symbol }
-                                .zip(
-                                    readerCall.typeArguments
-                                        .map(remapType)
-                                )
-                                .toMap()
-                        )
-                }
-                .map { readerCall to it }
-        }.forEach { (call, type) ->
-            givenTypes[type.distinctedType] = type
-            callsByTypes[type.distinctedType] = call
+        readerCalls
+            .flatMapFix { readerCall ->
+                val transformedCallee = transformFunctionIfNeeded(readerCall.symbol.owner)
+                transformedCallee
+                    .valueParameters
+                    .filter { it.hasAnnotation(InjektFqNames.Implicit) }
+                    .filter { readerCall.getValueArgumentSafe(it.index) == null }
+                    .map { it.type }
+                    .map {
+                        it
+                            .remapTypeParameters(readerCall.symbol.owner, transformedCallee)
+                            .substitute(
+                                transformedCallee.typeParameters.map { it.symbol }
+                                    .zip(
+                                        readerCall.typeArguments
+                                            .map(remapType)
+                                    )
+                                    .toMap()
+                            )
+                    }
+                    .map { readerCall to it }
+            }.forEach { (call, type) ->
+                givenTypes[type.distinctedType] = type
+                callsByTypes[type.distinctedType] = call
+            }
+
+        val mergedParams = if (
+            !isParams &&
+            givenTypes.size > 10 &&
+            givenTypes.values
+                .none { it.isTypeParameter() }
+        )
+            createParams(owner, givenTypes.values)
+                .also { transformClassIfNeeded(it, true) }
+                .also { params += it }
+        else null
+
+        val mergedParamsType = mergedParams?.let {
+            it.typeWith(owner.typeParameters.map { it.defaultType })
         }
 
         val givenValueParameters = mutableMapOf<Any, IrValueParameter>()
 
-        givenTypes.values.forEach { givenType ->
-            val call = callsByTypes[givenType.distinctedType]
-            val defaultValueParameter = defaultValueParameterByGivenCalls[call]
-
-            val valueParameter = (defaultValueParameter
-                ?.also { it.defaultValue = null }
-                ?: function.addValueParameter(
-                    name = givenType.readableName().asString(),
-                    type = givenType
-                )).apply {
+        if (mergedParams != null) {
+            val valueParameter = function.addValueParameter(
+                name = mergedParamsType!!.readableName().asString(),
+                type = mergedParamsType
+            ).apply {
                 annotations += DeclarationIrBuilder(pluginContext, symbol)
                     .irCall(symbols.implicit.constructors.single())
             }
             givenValueParameterAdded(valueParameter)
-            givenValueParameters[givenType.distinctedType] = valueParameter
+            givenValueParameters[mergedParamsType] = valueParameter
+        } else {
+            givenTypes.values.forEach { givenType ->
+                val call = callsByTypes[givenType.distinctedType]
+                val defaultValueParameter = defaultValueParameterByGivenCalls[call]
+
+                val valueParameter = (defaultValueParameter
+                    ?.also { it.defaultValue = null }
+                    ?: function.addValueParameter(
+                        name = givenType.readableName().asString(),
+                        type = givenType
+                    )).apply {
+                    annotations += DeclarationIrBuilder(pluginContext, symbol)
+                        .irCall(symbols.implicit.constructors.single())
+                }
+                givenValueParameterAdded(valueParameter)
+                givenValueParameters[givenType.distinctedType] = valueParameter
+            }
         }
 
         readerSignatures += createReaderSignature(owner, function, remapType)
@@ -408,9 +461,106 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                 )
                 .distinctedType
 
-            val valueParameter = givenValueParameters[finalType]!!
+            val providerExpression = if (mergedParams != null) {
+                provider(
+                    this,
+                    mergedParamsType!!.distinctedType,
+                    givenValueParameters.values.single(),
+                    scopes
+                )
+            } else {
+                provider(this, finalType, givenValueParameters[finalType]!!, scopes)
+            }
 
-            return@rewriteCalls provider(this, finalType, valueParameter, scopes)
+            if (mergedParams != null) {
+                val mergedParamsField = mergedParams.fields
+                    .first {
+                        it.type
+                            .remapTypeParameters(mergedParams, owner)
+                            .distinctedType == finalType
+                    }
+
+                irGetField(
+                    providerExpression,
+                    mergedParamsField
+                )
+            } else {
+                providerExpression
+            }
+        }
+    }
+
+    private fun <T> createParams(
+        owner: T,
+        givenTypes: Collection<IrType>
+    ): IrClass where T : IrDeclarationWithName, T : IrTypeParametersContainer = buildClass {
+        name = uniqueName(owner, "Params")
+    }.apply clazz@{
+        parent = owner.file
+        createImplicitParameterDeclarationWithWrappedDescriptor()
+        addMetadataIfNotLocal()
+
+        annotations += DeclarationIrBuilder(pluginContext, symbol)
+            .irCall(symbols.given.constructors.single())
+
+        copyTypeParametersFrom(owner)
+
+        val fieldsByType = givenTypes.associateWith { givenType ->
+            addField(
+                fieldName = givenType
+                    .remapTypeParameters(owner, this)
+                    .readableName().asString(),
+                fieldType = givenType
+                    .remapTypeParameters(owner, this),
+                fieldVisibility = Visibilities.PUBLIC
+            )
+        }
+
+        addConstructor {
+            returnType = defaultType
+            isPrimary = true
+            visibility = Visibilities.PUBLIC
+        }.apply {
+            val valueParametersByField = fieldsByType.values.associateWith {
+                addValueParameter(
+                    name = it.name.asString(),
+                    type = it.type
+                ).apply {
+                    defaultValue = DeclarationIrBuilder(pluginContext, symbol).run {
+                        irExprBody(
+                            irCall(
+                                pluginContext.referenceFunctions(FqName("com.ivianuu.injekt.given"))
+                                    .single(),
+                                type
+                            ).apply {
+                                putTypeArgument(0, type)
+                            }
+                        )
+                    }
+                }
+            }
+
+            body = DeclarationIrBuilder(
+                pluginContext,
+                symbol
+            ).irBlockBody {
+                +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
+                +IrInstanceInitializerCallImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    this@clazz.symbol,
+                    context.irBuiltIns.unitType
+                )
+                valueParametersByField.forEach { (field, valueParameter) ->
+                    DeclarationIrBuilder(pluginContext, symbol).run {
+                        +irSetField(
+                            irGet(thisReceiver!!),
+                            field,
+                            irGet(valueParameter)
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -463,20 +613,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
         function: IrFunction,
         remapType: (IrType) -> IrType
     ) = buildFun {
-        this.name = globalNameProvider.allocateForGroup(
-            getJoinedName(
-                owner.getPackageFragment()!!.fqName,
-                owner.descriptor.fqNameSafe
-                    .parent()
-                    .let {
-                        if (owner.name.isSpecial) {
-                            it.child(globalNameProvider.allocateForGroup("Lambda").asNameId())
-                        } else {
-                            it.child(owner.name.asString().asNameId())
-                        }
-                    }
-            ).asString() + "_ReaderSignature"
-        ).asNameId()
+        this.name = uniqueName(owner, "ReaderSignature")
     }.apply {
         parent = owner.file
         addMetadataIfNotLocal()
@@ -555,6 +692,24 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
             )
         }
     }
+
+    private fun uniqueName(
+        owner: IrDeclarationWithName,
+        suffix: String
+    ) = globalNameProvider.allocateForGroup(
+        getJoinedName(
+            owner.getPackageFragment()!!.fqName,
+            owner.descriptor.fqNameSafe
+                .parent()
+                .let {
+                    if (owner.name.isSpecial) {
+                        it.child(globalNameProvider.allocateForGroup("Lambda").asNameId())
+                    } else {
+                        it.child(owner.name.asString().asNameId())
+                    }
+                }
+        ).asString() + "_" + suffix
+    ).asNameId()
 
     private fun <T> rewriteCalls(
         owner: T,
