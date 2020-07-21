@@ -131,6 +131,14 @@ class ReaderDslTest {
     }
 
     @Test
+    fun testReaderPropertyOk() = codegen(
+        """
+        @Reader
+        val property: Boolean get() = given()
+    """
+    )
+
+    @Test
     fun testReaderPropertyWithBackingFieldFails() = codegen(
         """
             @Reader

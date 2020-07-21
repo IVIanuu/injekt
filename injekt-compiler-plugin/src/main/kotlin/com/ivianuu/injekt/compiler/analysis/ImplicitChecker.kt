@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
 import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
@@ -119,9 +120,10 @@ class ImplicitChecker : CallChecker, DeclarationChecker {
         descriptor: PropertyDescriptor,
         context: DeclarationCheckerContext
     ) {
+        if (declaration !is KtProperty) return
         if (!descriptor.hasAnnotation(InjektFqNames.Reader)) return
 
-        if (descriptor.backingField != null) {
+        if (declaration.initializer != null) {
             context.trace.report(
                 InjektErrors.READER_PROPERTY_WITH_BACKING_FIELD
                     .on(declaration)
