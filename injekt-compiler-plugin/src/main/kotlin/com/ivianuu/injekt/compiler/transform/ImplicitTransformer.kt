@@ -58,6 +58,7 @@ import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
+import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
@@ -100,7 +101,6 @@ import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
@@ -395,7 +395,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
 
         val mergedParams = if (
             !isParams &&
-            givenTypes.size > 10 &&
+            givenTypes.size > 9 &&
             givenTypes.values
                 .none { it.isTypeParameter() }
         )
@@ -473,17 +473,17 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
             }
 
             if (mergedParams != null) {
-                val mergedParamsField = mergedParams.fields
-                    .first {
-                        it.type
-                            .remapTypeParameters(mergedParams, owner)
-                            .distinctedType == finalType
+                val mergedParamsFunction = mergedParams.functions
+                    .single {
+                        it.dispatchReceiverParameter?.type?.classOrNull == mergedParams.symbol &&
+                                it.returnType
+                                    .remapTypeParameters(mergedParams, owner)
+                                    .distinctedType == finalType
                     }
 
-                irGetField(
-                    providerExpression,
-                    mergedParamsField
-                )
+                irCall(mergedParamsFunction).apply {
+                    dispatchReceiver = providerExpression
+                }
             } else {
                 providerExpression
             }
@@ -505,15 +505,32 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
 
         copyTypeParametersFrom(owner)
 
-        val fieldsByType = givenTypes.associateWith { givenType ->
-            addField(
-                fieldName = givenType
-                    .remapTypeParameters(owner, this)
-                    .readableName().asString(),
-                fieldType = givenType
-                    .remapTypeParameters(owner, this),
-                fieldVisibility = Visibilities.PUBLIC
-            )
+        givenTypes.forEach { givenType ->
+            addFunction {
+                name = givenType
+                    .remapTypeParameters(owner, this@clazz)
+                    .readableName()
+                returnType = givenType
+                    .remapTypeParameters(owner, this@clazz)
+            }.apply {
+                dispatchReceiverParameter = thisReceiver!!.copyTo(this)
+                addMetadataIfNotLocal()
+
+                body = DeclarationIrBuilder(
+                    pluginContext,
+                    symbol
+                ).run {
+                    irExprBody(
+                        irCall(
+                            pluginContext.referenceFunctions(FqName("com.ivianuu.injekt.given"))
+                                .single(),
+                            returnType
+                        ).apply {
+                            putTypeArgument(0, returnType)
+                        }
+                    )
+                }
+            }
         }
 
         addConstructor {
@@ -521,25 +538,6 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
             isPrimary = true
             visibility = Visibilities.PUBLIC
         }.apply {
-            val valueParametersByField = fieldsByType.values.associateWith {
-                addValueParameter(
-                    name = it.name.asString(),
-                    type = it.type
-                ).apply {
-                    defaultValue = DeclarationIrBuilder(pluginContext, symbol).run {
-                        irExprBody(
-                            irCall(
-                                pluginContext.referenceFunctions(FqName("com.ivianuu.injekt.given"))
-                                    .single(),
-                                type
-                            ).apply {
-                                putTypeArgument(0, type)
-                            }
-                        )
-                    }
-                }
-            }
-
             body = DeclarationIrBuilder(
                 pluginContext,
                 symbol
@@ -551,15 +549,6 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                     this@clazz.symbol,
                     context.irBuiltIns.unitType
                 )
-                valueParametersByField.forEach { (field, valueParameter) ->
-                    DeclarationIrBuilder(pluginContext, symbol).run {
-                        +irSetField(
-                            irGet(thisReceiver!!),
-                            field,
-                            irGet(valueParameter)
-                        )
-                    }
-                }
             }
         }
     }
