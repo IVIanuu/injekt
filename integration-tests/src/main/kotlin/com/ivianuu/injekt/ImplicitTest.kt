@@ -27,7 +27,7 @@ import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
-class ReaderTest {
+class ImplicitTest {
 
     @Test
     fun testSimpleReader() = codegen(

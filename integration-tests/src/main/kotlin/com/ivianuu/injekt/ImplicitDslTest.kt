@@ -21,7 +21,7 @@ import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import org.junit.Test
 
-class ReaderDslTest {
+class ImplicitDslTest {
 
     @Test
     fun testReaderInvocationInReaderAllowed() =
