@@ -27,17 +27,15 @@ import java.util.concurrent.ConcurrentHashMap
 private val instancesByLifecycle = ConcurrentHashMap<Lifecycle, Any?>()
 
 internal fun <T> Lifecycle.singleton(initializer: () -> T): T {
-    return if (instancesByLifecycle.contains(this)) {
-        instancesByLifecycle[this] as T
+    return if (instancesByLifecycle.containsKey(this)) {
+        (instancesByLifecycle[this] as T)
     } else {
         val instance = initializer()
         instancesByLifecycle[this] = instance
         addObserver(object : LifecycleEventObserver {
             override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
                 if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
-                    println("destroyed")
                     source.lifecycleScope.launch(NonCancellable) {
-                        println("clear instances")
                         instancesByLifecycle -= this@singleton
                     }
                 }
