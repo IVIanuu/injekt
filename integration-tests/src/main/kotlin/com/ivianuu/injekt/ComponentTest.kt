@@ -152,6 +152,27 @@ class ComponentTest {
     }
 
     @Test
+    fun testNestedScoped() = codegen(
+        """
+        @Given(TestParentComponent::class)
+        fun foo() = Foo()
+
+        fun invoke(): Pair<Foo, Foo> {
+            initializeComponents()
+            val parentComponent = rootComponent<TestParentComponent>()
+            return parentComponent.runReader { 
+                given<Foo>() to childComponent<TestChildComponent>().runReader {
+                    given<Foo>()
+                }
+            }
+        }
+    """
+    ) {
+        val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
+        assertSame(foo1, foo2)
+    }
+
+    @Test
     fun testGivenClass() = codegen(
         """
         @Given
