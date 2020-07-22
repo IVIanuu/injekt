@@ -200,7 +200,7 @@ fun IrType.isTypeParameter() = toKotlinType().isTypeParameter()
 fun IrTypeArgument.hasAnnotation(fqName: FqName): Boolean =
     typeOrNull?.hasAnnotation(fqName) == true
 
-val IrMemberAccessExpression<*>.typeArguments: List<IrType>
+val IrMemberAccessExpression.typeArguments: List<IrType>
     get() =
         (0 until typeArgumentsCount).map { getTypeArgument(it)!! }
 
@@ -597,7 +597,7 @@ fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
     }
 }
 
-fun IrMemberAccessExpression<*>.getValueArgumentSafe(index: Int) = try {
+fun IrMemberAccessExpression.getValueArgumentSafe(index: Int) = try {
     getValueArgument(index)
 } catch (t: Throwable) {
     null

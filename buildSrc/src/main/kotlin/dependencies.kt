@@ -31,7 +31,7 @@ object Build {
 object Publishing {
     const val groupId = "com.ivianuu.injekt"
     const val vcsUrl = "https://github.com/IVIanuu/injekt"
-    const val version = "${Build.versionName}-dev223"
+    const val version = "${Build.versionName}-dev225"
 }
 
 object Deps {
@@ -41,7 +41,7 @@ object Deps {
         const val appCompat = "androidx.appcompat:appcompat:1.1.0"
 
         object Compose {
-            const val version = "0.0.1-dev155"
+            const val version = "0.1.0-dev15"
             const val compiler = "androidx.compose:compose-compiler:$version"
             const val core = "androidx.compose.ui:ui:$version"
             const val material = "androidx.compose.material:material:$version"
@@ -62,7 +62,7 @@ object Deps {
             const val junit = "androidx.test.ext:junit:1.0.0"
         }
 
-        const val work = "androidx.work:work-runtime-ktx:2.1.0"
+        const val work = "androidx.work:work-runtime-ktx:2.4.0"
     }
 
     const val bintrayGradlePlugin =
@@ -99,7 +99,7 @@ object Deps {
     const val koin = "org.koin:koin-core:2.1.5"
 
     object Kotlin {
-        private const val version = "1.4.255-SNAPSHOT"
+        private const val version = "1.4-M3"
         const val compilerEmbeddable = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$version"
         const val gradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:$version"
         const val gradlePluginApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$version"

@@ -1225,7 +1225,7 @@ private class IrSourcePrinterVisitor(
         }
     }
 
-    private fun IrMemberAccessExpression<*>.getValueParameterNamesForDebug(): List<String> {
+    private fun IrMemberAccessExpression.getValueParameterNamesForDebug(): List<String> {
         val expectedCount = valueArgumentsCount
         return if (symbol.isBound) {
             val owner = symbol.owner
