@@ -20,9 +20,8 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.indexPackageFile
+import com.ivianuu.injekt.compiler.transform.component.DeclarationGraph
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -41,9 +40,13 @@ import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import java.io.File
 
-class IndexingTransformer(pluginContext: IrPluginContext) :
-    AbstractInjektTransformer(pluginContext) {
+class IndexingTransformer(
+    pluginContext: IrPluginContext,
+    private val outputDir: String,
+    private val declarationGraph: DeclarationGraph
+) : AbstractInjektTransformer(pluginContext) {
 
     override fun lower() {
         val declarations = mutableSetOf<IrDeclarationWithName>()
@@ -88,24 +91,36 @@ class IndexingTransformer(pluginContext: IrPluginContext) :
         })
 
         declarations.forEach { declaration ->
-            module.indexPackageFile.addChild(
-                buildClass {
-                    name = declaration.descriptor.fqNameSafe
-                        .pathSegments().joinToString("_")
-                        .asNameId()
-                    kind = ClassKind.INTERFACE
-                }.apply {
-                    createImplicitParameterDeclarationWithWrappedDescriptor()
-                    addMetadataIfNotLocal()
-                    annotations += DeclarationIrBuilder(pluginContext, symbol).run {
-                        irCall(symbols.index.constructors.single()).apply {
-                            putValueArgument(
-                                0,
-                                irString(declaration.descriptor.fqNameSafe.asString())
-                            )
-                        }
+            val index = buildClass {
+                name = declaration.descriptor.fqNameSafe
+                    .pathSegments().joinToString("_")
+                    .asNameId()
+                kind = ClassKind.INTERFACE
+            }.apply {
+                createImplicitParameterDeclarationWithWrappedDescriptor()
+                addMetadataIfNotLocal()
+                annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+                    irCall(symbols.index.constructors.single()).apply {
+                        putValueArgument(
+                            0,
+                            irString(declaration.descriptor.fqNameSafe.asString())
+                        )
                     }
                 }
+            }
+            declarationGraph.stubs += index
+            val file = File(outputDir, index.name.asString() + ".kt")
+            file.parentFile.mkdirs()
+            file.createNewFile()
+            file.writeText(
+                """
+                package ${InjektFqNames.IndexPackage}
+                
+                import com.ivianuu.injekt.internal.Index
+                
+                @Index("${declaration.descriptor.fqNameSafe.asString()}")
+                interface ${index.name}
+            """.trimIndent()
             )
         }
     }

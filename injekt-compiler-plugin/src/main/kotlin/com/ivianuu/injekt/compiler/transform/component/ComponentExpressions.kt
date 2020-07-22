@@ -17,10 +17,15 @@
 package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.irLambda
+import com.ivianuu.injekt.compiler.lookupTracker
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.typeWith
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.incremental.components.LocationInfo
+import org.jetbrains.kotlin.incremental.components.LookupLocation
+import org.jetbrains.kotlin.incremental.components.Position
+import org.jetbrains.kotlin.incremental.record
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -29,11 +34,15 @@ import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irTemporary
+import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.fields
+import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.name.FqName
 
@@ -104,7 +113,10 @@ class ComponentExpressions(
                 val mapType = pluginContext.referenceClass(
                     FqName("kotlin.collections.Map")
                 )!!
-                bindingNode.functions.forEach { function ->
+                bindingNode.functions.forEach {
+                    recordLookup(it.signature)
+                }
+                bindingNode.functions.forEach { (function) ->
                     +irCall(
                         tmpMap.type.classOrNull!!
                             .functions
@@ -153,7 +165,10 @@ class ComponentExpressions(
                 val collectionType = pluginContext.referenceClass(
                     FqName("kotlin.collections.Collection")
                 )
-                bindingNode.functions.forEach { function ->
+                bindingNode.functions.forEach {
+                    recordLookup(it.signature)
+                }
+                bindingNode.functions.forEach { (function) ->
                     +irCall(
                         tmpSet.type.classOrNull!!
                             .functions
@@ -203,6 +218,7 @@ class ComponentExpressions(
     }
 
     private fun givenExpression(binding: GivenBindingNode): ComponentExpression {
+        recordLookup(binding.implicitPair.signature)
         val dependencies = binding.dependencies
             .map { getBindingExpression(it) }
 
@@ -316,6 +332,21 @@ class ComponentExpressions(
         } else return parentExpression
     }
 
+    private fun recordLookup(signature: IrFunction) {
+        val location = object : LookupLocation {
+            override val location: LocationInfo? = object : LocationInfo {
+                override val filePath: String
+                    get() = component.clazz.file.path
+                override val position: Position
+                    get() = Position.NO_POSITION
+            }
+        }
+        lookupTracker!!.record(
+            location,
+            signature.getPackageFragment()!!.packageFragmentDescriptor,
+            signature.name
+        )
+    }
 }
 
 typealias ComponentExpression = IrBuilderWithScope.(ComponentExpressionContext) -> IrExpression

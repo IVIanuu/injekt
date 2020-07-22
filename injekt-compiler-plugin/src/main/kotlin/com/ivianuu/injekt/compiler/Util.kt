@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -147,6 +148,8 @@ import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.types.withAbbreviation
 import kotlin.math.absoluteValue
+
+var lookupTracker: LookupTracker? = null
 
 fun Annotated.hasAnnotation(fqName: FqName): Boolean {
     return annotations.hasAnnotation(fqName)
@@ -687,7 +690,7 @@ fun IrType.hashWithDistinct(): Int {
 }
 
 val IrModuleFragment.indexPackageFile: IrFile
-    get() = files.single { it.fqName == InjektFqNames.IndexPackage }
+    get() = files.first { it.fqName == InjektFqNames.IndexPackage }
 
 fun IrAnnotationContainer.canUseImplicits(): Boolean = isMarkedAsImplicit() ||
         (this is IrConstructor && constructedClass.isMarkedAsImplicit()) ||

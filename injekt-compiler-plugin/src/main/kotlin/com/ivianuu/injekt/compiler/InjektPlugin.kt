@@ -22,11 +22,14 @@ import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
+import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
+import org.jetbrains.kotlin.compiler.plugin.CliOption
+import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.CompilerConfigurationKey
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
@@ -34,6 +37,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project: MockProject,
         configuration: CompilerConfiguration
     ) {
+        val outputDir = configuration.getNotNull(OutputDirKey)
         StorageComponentContainerContributor.registerExtension(
             project,
             InjektStorageContainerContributor()
@@ -53,7 +57,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
         } else null
         if (composeExtension != null) irExtensionPoint
             .unregisterExtension(composeIrExtensionClass as Class<out IrGenerationExtension>)
-        irExtensionPoint.registerExtension(InjektIrGenerationExtension()) {}
+        irExtensionPoint.registerExtension(InjektIrGenerationExtension(outputDir)) {}
         if (composeExtension != null) irExtensionPoint.registerExtension(composeExtension) {}
 
         AnalysisHandlerExtension.registerExtension(
@@ -63,3 +67,28 @@ class InjektComponentRegistrar : ComponentRegistrar {
     }
 
 }
+
+@AutoService(CommandLineProcessor::class)
+class InjektCommandLineProcessor : CommandLineProcessor {
+    override val pluginId = "com.ivianuu.injekt"
+
+    override val pluginOptions = listOf(
+        CliOption(
+            optionName = "outputDir",
+            valueDescription = "generated src dir",
+            description = "generated src"
+        )
+    )
+
+    override fun processOption(
+        option: AbstractCliOption,
+        value: String,
+        configuration: CompilerConfiguration
+    ) {
+        when (option.optionName) {
+            "outputDir" -> configuration.put(OutputDirKey, value)
+        }
+    }
+}
+
+val OutputDirKey = CompilerConfigurationKey<String>("outputDir")

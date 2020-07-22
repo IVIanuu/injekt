@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.transform.component.ComponentFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.component.ComponentTransformer
+import com.ivianuu.injekt.compiler.transform.component.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.component.EntryPointTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -26,24 +27,42 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.linkage.IrDeserializer
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
+import org.jetbrains.kotlin.ir.util.dump
 
-class InjektIrGenerationExtension : IrGenerationExtension {
+var isInteresting = false
+
+class InjektIrGenerationExtension(
+    private val outputDir: String
+) : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val injektPluginContext = InjektPluginContext(moduleFragment, pluginContext)
+
+        isInteresting = moduleFragment.dump().contains("sample")
 
         EffectTransformer(injektPluginContext).doLower(moduleFragment)
 
         ComponentFactoryTransformer(injektPluginContext).doLower(moduleFragment)
 
-        val readerTransformer = ImplicitTransformer(injektPluginContext)
-        readerTransformer.doLower(moduleFragment)
+        val implicitTransformer = ImplicitTransformer(injektPluginContext)
+
+        val declarationGraph = DeclarationGraph(
+            moduleFragment,
+            pluginContext,
+            implicitTransformer
+        )
+
+        implicitTransformer.doLower(moduleFragment)
 
         EntryPointTransformer(injektPluginContext).doLower(moduleFragment)
 
-        IndexingTransformer(injektPluginContext).doLower(moduleFragment)
+        IndexingTransformer(
+            injektPluginContext,
+            "build/generated/source/kapt/main",
+            declarationGraph
+        ).doLower(moduleFragment)
 
-        ComponentTransformer(injektPluginContext, readerTransformer).doLower(moduleFragment)
+        ComponentTransformer(injektPluginContext, implicitTransformer).doLower(moduleFragment)
 
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 

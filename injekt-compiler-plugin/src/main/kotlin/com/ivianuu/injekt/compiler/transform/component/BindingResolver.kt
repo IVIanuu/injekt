@@ -31,7 +31,6 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrField
-import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
@@ -118,7 +117,8 @@ class GivenBindingResolver(
 ) : BindingResolver {
 
     private val bindings = declarationGraph.bindings
-        .map { function ->
+        .map { implicitPair ->
+            val (function, signature) = implicitPair
             val targetComponent = function.getClassFromSingleValueAnnotationOrNull(
                 InjektFqNames.Given, pluginContext
             )
@@ -193,7 +193,8 @@ class GivenBindingResolver(
                 },
                 parameters = parameters,
                 owner = component,
-                origin = function.descriptor.fqNameSafe
+                origin = function.descriptor.fqNameSafe,
+                implicitPair = implicitPair
             )
         }
 
@@ -229,18 +230,18 @@ class MapBindingResolver(
     private val component: ComponentImpl
 ) : BindingResolver {
 
-    private val maps: Map<Key, List<IrFunction>> =
-        mutableMapOf<Key, List<IrFunction>>().also { mergedMap ->
+    private val maps: Map<Key, List<DeclarationGraph.ImplicitPair>> =
+        mutableMapOf<Key, List<DeclarationGraph.ImplicitPair>>().also { mergedMap ->
             if (parent != null) mergedMap += parent.maps
 
             val thisMaps = declarationGraph.mapEntries
                 .filter {
-                    it.getClassFromSingleValueAnnotation(
+                    it.function.getClassFromSingleValueAnnotation(
                         InjektFqNames.MapEntries,
                         pluginContext
                     ) == component.factoryImpl.component
                 }
-                .groupBy { it.returnType.asKey() }
+                .groupBy { it.function.returnType.asKey() }
 
             thisMaps.forEach { (mapKey, entries) ->
                 val existingEntries = mergedMap[mapKey] ?: emptyList()
@@ -252,7 +253,7 @@ class MapBindingResolver(
         MapBindingNode(
             key,
             entries
-                .flatMapFix { function ->
+                .flatMapFix { (function) ->
                     function
                         .valueParameters
                         .filter { it.hasAnnotation(InjektFqNames.Implicit) }
@@ -291,18 +292,18 @@ class SetBindingResolver(
     private val component: ComponentImpl
 ) : BindingResolver {
 
-    private val sets: Map<Key, List<IrFunction>> =
-        mutableMapOf<Key, List<IrFunction>>().also { mergedSet ->
+    private val sets: Map<Key, List<DeclarationGraph.ImplicitPair>> =
+        mutableMapOf<Key, List<DeclarationGraph.ImplicitPair>>().also { mergedSet ->
             if (parent != null) mergedSet += parent.sets
 
             val thisSets = declarationGraph.setElements
                 .filter {
-                    it.getClassFromSingleValueAnnotation(
+                    it.function.getClassFromSingleValueAnnotation(
                         InjektFqNames.SetElements,
                         pluginContext
                     ) == component.factoryImpl.component
                 }
-                .groupBy { it.returnType.asKey() }
+                .groupBy { it.function.returnType.asKey() }
 
             thisSets.forEach { (mapKey, elements) ->
                 val existingElements = mergedSet[mapKey] ?: emptyList()
@@ -314,7 +315,7 @@ class SetBindingResolver(
         SetBindingNode(
             key,
             elements
-                .flatMapFix { function ->
+                .flatMapFix { (function) ->
                     function
                         .valueParameters
                         .filter { it.hasAnnotation(InjektFqNames.Implicit) }

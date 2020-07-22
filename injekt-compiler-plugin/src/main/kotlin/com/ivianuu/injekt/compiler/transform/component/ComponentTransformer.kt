@@ -120,7 +120,7 @@ class ComponentTransformer(
                             .owner
 
                         val componentFactoryImpl = ComponentFactoryImpl(
-                            scope.getLocalDeclarationParent(),
+                            call.file,
                             componentFactory,
                             entryPoints.getOrElse(component) { emptyList() },
                             null,

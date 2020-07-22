@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalVirtualFile
 import org.jetbrains.kotlin.com.intellij.psi.PsiManager
 import org.jetbrains.kotlin.com.intellij.psi.SingleRootFileViewProvider
 import org.jetbrains.kotlin.container.ComponentProvider
+import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
@@ -40,6 +41,8 @@ class IndexPackageGenerator : AnalysisHandlerExtension {
         bindingTrace: BindingTrace,
         componentProvider: ComponentProvider
     ): AnalysisResult? {
+        lookupTracker = componentProvider.get()
+
         files as ArrayList<KtFile>
 
         if (files.none { it.packageFqName == InjektFqNames.IndexPackage }) {
@@ -48,7 +51,7 @@ class IndexPackageGenerator : AnalysisHandlerExtension {
                     PsiManager.getInstance(project),
                     CoreLocalVirtualFile(
                         CoreLocalFileSystem(),
-                        File.createTempFile("tmp", "File.kt").apply {
+                        File.createTempFile("tmp", "File${System.currentTimeMillis()}.kt").apply {
                             writeText("package ${InjektFqNames.IndexPackage}")
                         })
                 ) {},
