@@ -24,21 +24,13 @@ import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.linkage.IrDeserializer
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
-import org.jetbrains.kotlin.ir.util.dump
 
-var isInteresting = false
-
-class InjektIrGenerationExtension(
-    private val outputDir: String
-) : IrGenerationExtension {
+class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val injektPluginContext = InjektPluginContext(moduleFragment, pluginContext)
-
-        isInteresting = moduleFragment.dump().contains("sample")
 
         EffectTransformer(injektPluginContext).doLower(moduleFragment)
 
@@ -48,7 +40,7 @@ class InjektIrGenerationExtension(
 
         val declarationGraph = DeclarationGraph(
             moduleFragment,
-            pluginContext,
+            injektPluginContext,
             implicitTransformer
         )
 
@@ -56,13 +48,9 @@ class InjektIrGenerationExtension(
 
         EntryPointTransformer(injektPluginContext).doLower(moduleFragment)
 
-        IndexingTransformer(
-            injektPluginContext,
-            "build/generated/source/kapt/main",
-            declarationGraph
-        ).doLower(moduleFragment)
+        IndexingTransformer(injektPluginContext).doLower(moduleFragment)
 
-        ComponentTransformer(injektPluginContext, implicitTransformer).doLower(moduleFragment)
+        ComponentTransformer(injektPluginContext, declarationGraph).doLower(moduleFragment)
 
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 
@@ -105,10 +93,3 @@ private fun generateSymbols(pluginContext: IrPluginContext) {
         }
     } while ((unbound - visited).isNotEmpty())
 }
-
-private val IrPluginContext.linker: IrDeserializer
-    get() = IrPluginContextImpl::class.java
-    .declaredFields
-    .single { it.name == "linker" }
-    .also { it.isAccessible = true }
-    .get(this) as IrDeserializer

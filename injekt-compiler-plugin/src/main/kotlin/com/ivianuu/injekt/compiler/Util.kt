@@ -52,10 +52,8 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
-import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrMetadataSourceOwner
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
@@ -688,9 +686,6 @@ fun IrType.hashWithDistinct(): Int {
 
     return result
 }
-
-val IrModuleFragment.indexPackageFile: IrFile
-    get() = files.first { it.fqName == InjektFqNames.IndexPackage }
 
 fun IrAnnotationContainer.canUseImplicits(): Boolean = isMarkedAsImplicit() ||
         (this is IrConstructor && constructedClass.isMarkedAsImplicit()) ||

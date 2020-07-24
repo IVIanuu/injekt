@@ -25,8 +25,6 @@ import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Effect
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.MapEntries
-import com.ivianuu.injekt.android.ApplicationContext
-import com.ivianuu.injekt.android.ApplicationResources
 import com.ivianuu.injekt.given
 import kotlin.reflect.KClass
 
@@ -45,12 +43,6 @@ typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters
 
 @Given
 internal class InjektWorkerFactory : WorkerFactory() {
-
-    init {
-        given<ApplicationContext>()
-        given<ApplicationResources>()
-    }
-
     override fun createWorker(
         appContext: Context,
         workerClassName: String,

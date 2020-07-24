@@ -16,17 +16,14 @@
 
 package com.ivianuu.injekt.test
 
-import com.ivianuu.injekt.compiler.InjektCommandLineProcessor
 import com.ivianuu.injekt.compiler.InjektComponentRegistrar
 import com.tschuchort.compiletesting.KotlinCompilation
-import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
 import io.github.classgraph.ClassGraph
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.intellij.lang.annotations.Language
 import java.io.File
-import java.nio.file.Files
 import kotlin.reflect.KClass
 
 var fileIndex = 0
@@ -104,19 +101,11 @@ fun multiCodegen(
 
 fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().apply {
     compilerPlugins = listOf(InjektComponentRegistrar())
-    commandLineProcessors = listOf(InjektCommandLineProcessor())
     inheritClassPath = true
     useIR = true
     jvmTarget = "1.8"
     verbose = false
     kotlincArguments += "-XXLanguage:+NewInference"
-    pluginOptions += PluginOption(
-        "com.ivianuu.injekt",
-        "outputDir",
-        Files.createTempDirectory("tmp")
-            .toFile()
-            .path
-    )
     block()
 }
 

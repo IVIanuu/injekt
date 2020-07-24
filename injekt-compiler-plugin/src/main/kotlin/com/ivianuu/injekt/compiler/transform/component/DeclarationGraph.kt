@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler.transform.component
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.transform.ImplicitTransformer
-import com.ivianuu.injekt.compiler.transform.isInteresting
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -41,8 +40,6 @@ class DeclarationGraph(
     private val implicitTransformer: ImplicitTransformer
 ) {
 
-    val stubs = mutableListOf<IrClass>()
-
     private val _rootComponentFactories = mutableListOf<IrClass>()
     val rootComponentFactories: List<IrClass> get() = _rootComponentFactories
 
@@ -58,29 +55,26 @@ class DeclarationGraph(
     private val _setElements = mutableListOf<ImplicitPair>()
     val setElements: List<ImplicitPair> get() = _setElements
 
-    val indices by lazy {
+    val indices: List<FqName> by lazy {
         val memberScope = pluginContext.moduleDescriptor.getPackage(InjektFqNames.IndexPackage)
             .memberScope
 
-        if (isInteresting) {
-            //error("Member scope ${(memberScope as LazyScopeAdapter).getActualScope()}")
-        }
-
-        (stubs + (memberScope.getClassifierNames() ?: emptySet()).mapNotNull {
+        ((module.files
+            .filter { it.fqName == InjektFqNames.IndexPackage }
+            .flatMapFix { it.declarations }
+            .filterIsInstance<IrClass>()) + ((memberScope.getClassifierNames()
+            ?: emptySet()).mapNotNull {
             memberScope.getContributedClassifier(
                 it,
                 NoLookupLocation.FROM_BACKEND
             )
-        }.map { pluginContext.referenceClass(it.fqNameSafe)!!.owner })
+        }.map { pluginContext.referenceClass(it.fqNameSafe)!!.owner }))
             .map {
                 it.getAnnotation(InjektFqNames.Index)!!
                     .getValueArgument(0)!!
                     .let { it as IrConst<String> }
                     .value
                     .let { FqName(it) }
-            }
-            .also {
-                println("indices $it")
             }
     }
 
@@ -93,8 +87,12 @@ class DeclarationGraph(
     }
 
     private fun collectRootComponentFactories() {
+        println("collect root component factories $indices")
         indices
-            .mapNotNull { pluginContext.referenceClass(it)?.owner }
+            .mapNotNull {
+                pluginContext.referenceClass(it)?.owner
+                    .also { r -> println("c for $it-> $r") }
+            }
             .filter { it.hasAnnotation(InjektFqNames.RootComponentFactory) }
             .forEach { _rootComponentFactories += it }
     }

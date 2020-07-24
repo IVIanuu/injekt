@@ -20,11 +20,11 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.transform.component.DeclarationGraph
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.impl.PackageFragmentDescriptorImpl
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
@@ -34,18 +34,21 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
+import org.jetbrains.kotlin.ir.declarations.MetadataSource
+import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
+import org.jetbrains.kotlin.ir.symbols.impl.IrFileSymbolImpl
+import org.jetbrains.kotlin.ir.util.NaiveSourceBasedFileEntryImpl
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import java.io.File
+import org.jetbrains.kotlin.resolve.scopes.MemberScope
 
 class IndexingTransformer(
-    pluginContext: IrPluginContext,
-    private val outputDir: String,
-    private val declarationGraph: DeclarationGraph
+    pluginContext: IrPluginContext
 ) : AbstractInjektTransformer(pluginContext) {
 
     override fun lower() {
@@ -91,25 +94,46 @@ class IndexingTransformer(
         })
 
         declarations.forEach { declaration ->
-            val index = buildClass {
-                name = declaration.descriptor.fqNameSafe
-                    .pathSegments().joinToString("_")
-                    .asNameId()
-                kind = ClassKind.INTERFACE
-            }.apply {
-                createImplicitParameterDeclarationWithWrappedDescriptor()
-                addMetadataIfNotLocal()
-                annotations += DeclarationIrBuilder(pluginContext, symbol).run {
-                    irCall(symbols.index.constructors.single()).apply {
-                        putValueArgument(
-                            0,
-                            irString(declaration.descriptor.fqNameSafe.asString())
-                        )
+            val file = IrFileImpl(
+                fileEntry = NaiveSourceBasedFileEntryImpl(
+                    "<index for ${declaration.descriptor.fqNameSafe}>",
+                    intArrayOf()
+                ),
+                symbol = IrFileSymbolImpl(
+                    object : PackageFragmentDescriptorImpl(
+                        pluginContext.moduleDescriptor,
+                        InjektFqNames.IndexPackage
+                    ) {
+                        override fun getMemberScope(): MemberScope = MemberScope.Empty
+                    }
+                ),
+                InjektFqNames.IndexPackage
+            ).apply {
+                this.declarations += buildClass {
+                    name = declaration.descriptor.fqNameSafe
+                        .pathSegments().joinToString("_")
+                        .asNameId()
+                    kind = ClassKind.INTERFACE
+                }.apply {
+                    createImplicitParameterDeclarationWithWrappedDescriptor()
+                    addMetadataIfNotLocal()
+                    annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+                        irCall(symbols.index.constructors.single()).apply {
+                            putValueArgument(
+                                0,
+                                irString(declaration.descriptor.fqNameSafe.asString())
+                            )
+                        }
                     }
                 }
+
+                metadata = MetadataSource.File(
+                    declarations.map { it.descriptor }
+                )
             }
-            declarationGraph.stubs += index
-            val file = File(outputDir, index.name.asString() + ".kt")
+
+            module.files += file
+            /*val file = File(outputDir, index.name.asString() + ".kt")
             file.parentFile.mkdirs()
             file.createNewFile()
             file.writeText(
@@ -122,6 +146,8 @@ class IndexingTransformer(
                 interface ${index.name}
             """.trimIndent()
             )
+*/
+            println("indexed ${file.render()}")
         }
     }
 
