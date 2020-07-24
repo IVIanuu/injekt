@@ -25,7 +25,6 @@ import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
-import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
 import org.jetbrains.kotlin.ir.types.IrErrorType
@@ -80,7 +79,8 @@ class GivenBindingNode(
     owner: ComponentImpl,
     origin: FqName?,
     val createExpression: IrBuilderWithScope.(Map<BindingParameter, () -> IrExpression?>) -> IrExpression,
-    val parameters: List<BindingParameter>
+    val parameters: List<BindingParameter>,
+    val implicitPair: DeclarationGraph.ImplicitPair
 ) : BindingNode(key, dependencies, targetComponent, scoped, owner, origin)
 
 class InputBindingNode(
@@ -99,7 +99,7 @@ class MapBindingNode(
     key: Key,
     dependencies: List<BindingRequest>,
     owner: ComponentImpl,
-    val functions: List<IrFunction>
+    val functions: List<DeclarationGraph.ImplicitPair>
 ) : BindingNode(
     key,
     dependencies,
@@ -113,7 +113,7 @@ class SetBindingNode(
     key: Key,
     dependencies: List<BindingRequest>,
     owner: ComponentImpl,
-    val functions: List<IrFunction>
+    val functions: List<DeclarationGraph.ImplicitPair>
 ) : BindingNode(
     key,
     dependencies,

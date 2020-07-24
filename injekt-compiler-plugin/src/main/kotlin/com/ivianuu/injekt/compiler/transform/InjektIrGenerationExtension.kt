@@ -18,12 +18,12 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.transform.component.ComponentFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.component.ComponentTransformer
+import com.ivianuu.injekt.compiler.transform.component.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.component.EntryPointTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.linkage.IrDeserializer
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
 
@@ -36,14 +36,21 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         ComponentFactoryTransformer(injektPluginContext).doLower(moduleFragment)
 
-        val readerTransformer = ImplicitTransformer(injektPluginContext)
-        readerTransformer.doLower(moduleFragment)
+        val implicitTransformer = ImplicitTransformer(injektPluginContext)
+
+        val declarationGraph = DeclarationGraph(
+            moduleFragment,
+            injektPluginContext,
+            implicitTransformer
+        )
+
+        implicitTransformer.doLower(moduleFragment)
 
         EntryPointTransformer(injektPluginContext).doLower(moduleFragment)
 
         IndexingTransformer(injektPluginContext).doLower(moduleFragment)
 
-        ComponentTransformer(injektPluginContext, readerTransformer).doLower(moduleFragment)
+        ComponentTransformer(injektPluginContext, declarationGraph).doLower(moduleFragment)
 
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 
@@ -86,10 +93,3 @@ private fun generateSymbols(pluginContext: IrPluginContext) {
         }
     } while ((unbound - visited).isNotEmpty())
 }
-
-private val IrPluginContext.linker: IrDeserializer
-    get() = IrPluginContextImpl::class.java
-    .declaredFields
-    .single { it.name == "linker" }
-    .also { it.isAccessible = true }
-    .get(this) as IrDeserializer

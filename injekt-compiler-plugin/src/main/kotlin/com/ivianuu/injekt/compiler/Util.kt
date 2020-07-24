@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -51,10 +52,8 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
-import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrMetadataSourceOwner
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
@@ -147,6 +146,8 @@ import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.types.withAbbreviation
 import kotlin.math.absoluteValue
+
+var lookupTracker: LookupTracker? = null
 
 fun Annotated.hasAnnotation(fqName: FqName): Boolean {
     return annotations.hasAnnotation(fqName)
@@ -685,9 +686,6 @@ fun IrType.hashWithDistinct(): Int {
 
     return result
 }
-
-val IrModuleFragment.indexPackageFile: IrFile
-    get() = files.single { it.fqName == InjektFqNames.IndexPackage }
 
 fun IrAnnotationContainer.canUseImplicits(): Boolean = isMarkedAsImplicit() ||
         (this is IrConstructor && constructedClass.isMarkedAsImplicit()) ||

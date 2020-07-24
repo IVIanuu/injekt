@@ -32,6 +32,7 @@ import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isMarkedAsImplicit
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.jvmNameAnnotation
+import com.ivianuu.injekt.compiler.lookupTracker
 import com.ivianuu.injekt.compiler.readableName
 import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.substitute
@@ -53,6 +54,11 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.incremental.KotlinLookupLocation
+import org.jetbrains.kotlin.incremental.components.LocationInfo
+import org.jetbrains.kotlin.incremental.components.LookupLocation
+import org.jetbrains.kotlin.incremental.components.Position
+import org.jetbrains.kotlin.incremental.record
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -79,6 +85,7 @@ import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
+import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
@@ -111,8 +118,10 @@ import org.jetbrains.kotlin.ir.util.hasDefaultValue
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.load.java.JvmAbi
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -122,13 +131,16 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
     private val transformedClasses = mutableSetOf<IrClass>()
 
-    private val readerSignatures = mutableSetOf<IrFunction>()
+    private val readerSignatures = mutableMapOf<IrFunction, IrFunction>()
     private val params = mutableSetOf<IrClass>()
 
     private val globalNameProvider = NameProvider()
 
-    fun getTransformedFunction(reader: IrFunction) =
-        transformFunctionIfNeeded(reader)
+    fun getTransformedFunction(function: IrFunction) =
+        transformFunctionIfNeeded(function)
+
+    fun getReaderSignature(function: IrFunction) =
+        readerSignatures[transformFunctionIfNeeded(function)]!!
 
     override fun lower() {
         module.transformChildrenVoid(object : IrElementTransformerVoid() {
@@ -157,6 +169,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
         })
 
         readerSignatures
+            .values
             .filterNot { it.isExternalDeclaration() }
             .forEach { readerSignature ->
                 val parent = readerSignature.parent as IrDeclarationContainer
@@ -192,9 +205,11 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
         if (readerConstructor.valueParameters.any { it.hasAnnotation(InjektFqNames.Implicit) })
             return clazz
 
-        if (clazz.isExternalDeclaration()) {
-            val readerSignature = getReaderSignature(clazz)!!
-            readerSignatures += readerSignature
+        val existingSignature = getExternalReaderSignature(clazz)
+
+        if (clazz.isExternalDeclaration() || existingSignature != null) {
+            val readerSignature = getExternalReaderSignature(clazz)!!
+            readerSignatures[readerConstructor] = readerSignature
 
             readerConstructor.copySignatureFrom(readerSignature) {
                 it.remapTypeParameters(readerSignature, clazz)
@@ -207,7 +222,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
 
         transformDeclaration(
             owner = clazz,
-            function = readerConstructor,
+            ownerFunction = readerConstructor,
             isParams = isParams,
             givenValueParameterAdded = { valueParameter ->
                 fieldsByValueParameters[valueParameter] = clazz.addField(
@@ -266,13 +281,15 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
             return function
         }
 
-        if (function.isExternalDeclaration()) {
+        val existingSignature = getExternalReaderSignature(function)
+
+        if (function.isExternalDeclaration() || existingSignature != null) {
             val transformedFunction = function.copyAsReader()
             transformedFunctions[function] = transformedFunction
 
             if (!transformedFunction.isGiven) {
-                val signature = getReaderSignature(transformedFunction)!!
-                readerSignatures += signature
+                val signature = getExternalReaderSignature(transformedFunction)!!
+                readerSignatures[transformedFunction] = signature
                 transformedFunction.copySignatureFrom(signature) {
                     it.remapTypeParameters(signature, transformedFunction)
                 }
@@ -286,7 +303,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
 
         transformDeclaration(
             owner = transformedFunction,
-            function = transformedFunction,
+            ownerFunction = transformedFunction,
             isParams = false,
             remapType = { it.remapTypeParameters(function, transformedFunction) },
             provider = { _, valueParameter, _ -> irGet(valueParameter) }
@@ -297,7 +314,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
 
     private fun <T> transformDeclaration(
         owner: T,
-        function: IrFunction,
+        ownerFunction: IrFunction,
         isParams: Boolean,
         remapType: (IrType) -> IrType = { it },
         givenValueParameterAdded: (IrValueParameter) -> Unit = {},
@@ -411,7 +428,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
         val givenValueParameters = mutableMapOf<Any, IrValueParameter>()
 
         if (mergedParams != null) {
-            val valueParameter = function.addValueParameter(
+            val valueParameter = ownerFunction.addValueParameter(
                 name = mergedParamsType!!.readableName().asString(),
                 type = mergedParamsType
             ).apply {
@@ -427,7 +444,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
 
                 val valueParameter = (defaultValueParameter
                     ?.also { it.defaultValue = null }
-                    ?: function.addValueParameter(
+                    ?: ownerFunction.addValueParameter(
                         name = givenType.readableName().asString(),
                         type = givenType
                     )).apply {
@@ -439,10 +456,11 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
             }
         }
 
-        readerSignatures += createReaderSignature(owner, function, remapType)
+        readerSignatures[ownerFunction] = createReaderSignature(owner, ownerFunction, remapType)
 
         rewriteCalls(
             owner = owner,
+            ownerFunction = ownerFunction,
             givenCalls = givenCalls,
             readerCalls = readerCalls
         ) { type, expression, scopes ->
@@ -599,7 +617,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
 
     private fun createReaderSignature(
         owner: IrDeclarationWithName,
-        function: IrFunction,
+        ownerFunction: IrFunction,
         remapType: (IrType) -> IrType
     ) = buildFun {
         this.name = uniqueName(owner, "ReaderSignature")
@@ -631,7 +649,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                             UNDEFINED_OFFSET,
                             intArray.defaultType,
                             irBuiltIns.intType,
-                            function.valueParameters
+                            ownerFunction.valueParameters
                                 .filter { it.hasAnnotation(InjektFqNames.Implicit) }
                                 .map { it.index }
                                 .map { irInt(it) }
@@ -640,10 +658,10 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                 }
         }
 
-        returnType = remapType(function.returnType)
+        returnType = remapType(ownerFunction.returnType)
             .remapTypeParameters(owner, this)
 
-        valueParameters = function.valueParameters.map {
+        valueParameters = ownerFunction.valueParameters.map {
             it.copyTo(
                 this,
                 type = remapType(it.type)
@@ -702,6 +720,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
 
     private fun <T> rewriteCalls(
         owner: T,
+        ownerFunction: T,
         givenCalls: List<IrCall>,
         readerCalls: List<IrFunctionAccessExpression>,
         provider: IrBuilderWithScope.(IrType, IrFunctionAccessExpression, List<ScopeWithIr>) -> IrExpression
@@ -757,6 +776,25 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                     }
                     in readerCalls -> {
                         val transformedCallee = transformFunctionIfNeeded(result.symbol.owner)
+                        val readerSignature = readerSignatures[transformedCallee]!!
+
+                        val ownerKtElement = owner.descriptor.findPsi() as? KtElement
+                        val location = ownerKtElement?.let { KotlinLookupLocation(it) }
+                            ?: object : LookupLocation {
+                                override val location: LocationInfo?
+                                    get() = object : LocationInfo {
+                                        override val filePath: String
+                                            get() = owner.file.path
+                                        override val position: Position
+                                            get() = Position.NO_POSITION
+                                    }
+                            }
+                        lookupTracker!!.record(
+                            location,
+                            readerSignature.getPackageFragment()!!.packageFragmentDescriptor,
+                            readerSignature.descriptor.name
+                        )
+
                         fun IrFunctionAccessExpression.fillGivenParameters() {
                             transformedCallee.valueParameters.forEach { valueParameter ->
                                 val valueArgument = getValueArgument(valueParameter.index)
@@ -852,7 +890,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
         }
     }
 
-    private fun getReaderSignature(owner: IrDeclarationWithName): IrFunction? {
+    private fun getExternalReaderSignature(owner: IrDeclarationWithName): IrFunction? {
         val declaration = if (owner is IrConstructor)
             owner.constructedClass else owner
 

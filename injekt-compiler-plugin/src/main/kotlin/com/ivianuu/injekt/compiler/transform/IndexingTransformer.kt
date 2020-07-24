@@ -20,12 +20,11 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.indexPackageFile
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.impl.PackageFragmentDescriptorImpl
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
@@ -35,15 +34,22 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
+import org.jetbrains.kotlin.ir.declarations.MetadataSource
+import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
+import org.jetbrains.kotlin.ir.symbols.impl.IrFileSymbolImpl
+import org.jetbrains.kotlin.ir.util.NaiveSourceBasedFileEntryImpl
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.scopes.MemberScope
 
-class IndexingTransformer(pluginContext: IrPluginContext) :
-    AbstractInjektTransformer(pluginContext) {
+class IndexingTransformer(
+    pluginContext: IrPluginContext
+) : AbstractInjektTransformer(pluginContext) {
 
     override fun lower() {
         val declarations = mutableSetOf<IrDeclarationWithName>()
@@ -88,8 +94,22 @@ class IndexingTransformer(pluginContext: IrPluginContext) :
         })
 
         declarations.forEach { declaration ->
-            module.indexPackageFile.addChild(
-                buildClass {
+            val file = IrFileImpl(
+                fileEntry = NaiveSourceBasedFileEntryImpl(
+                    "<index for ${declaration.descriptor.fqNameSafe}>",
+                    intArrayOf()
+                ),
+                symbol = IrFileSymbolImpl(
+                    object : PackageFragmentDescriptorImpl(
+                        pluginContext.moduleDescriptor,
+                        InjektFqNames.IndexPackage
+                    ) {
+                        override fun getMemberScope(): MemberScope = MemberScope.Empty
+                    }
+                ),
+                InjektFqNames.IndexPackage
+            ).apply {
+                this.declarations += buildClass {
                     name = declaration.descriptor.fqNameSafe
                         .pathSegments().joinToString("_")
                         .asNameId()
@@ -106,7 +126,28 @@ class IndexingTransformer(pluginContext: IrPluginContext) :
                         }
                     }
                 }
+
+                metadata = MetadataSource.File(
+                    declarations.map { it.descriptor }
+                )
+            }
+
+            module.files += file
+            /*val file = File(outputDir, index.name.asString() + ".kt")
+            file.parentFile.mkdirs()
+            file.createNewFile()
+            file.writeText(
+                """
+                package ${InjektFqNames.IndexPackage}
+                
+                import com.ivianuu.injekt.internal.Index
+                
+                @Index("${declaration.descriptor.fqNameSafe.asString()}")
+                interface ${index.name}
+            """.trimIndent()
             )
+*/
+            println("indexed ${file.render()}")
         }
     }
 

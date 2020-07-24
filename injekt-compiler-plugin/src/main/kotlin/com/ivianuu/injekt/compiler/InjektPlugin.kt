@@ -26,7 +26,6 @@ import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 @AutoService(ComponentRegistrar::class)
 class InjektComponentRegistrar : ComponentRegistrar {
@@ -58,7 +57,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
 
         AnalysisHandlerExtension.registerExtension(
             project,
-            IndexPackageGenerator()
+            LookupTrackerProvider()
         )
     }
 

@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler.transform.component
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
-import com.ivianuu.injekt.compiler.transform.ImplicitTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -38,12 +37,13 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ComponentTransformer(
     pluginContext: IrPluginContext,
-    private val implicitTransformer: ImplicitTransformer
+    private val declarationGraph: DeclarationGraph
 ) : AbstractInjektTransformer(pluginContext) {
 
     private data class InitializeComponentsCall(
@@ -73,8 +73,9 @@ class ComponentTransformer(
 
         if (initializeComponentCalls.isEmpty()) return
 
-        val declarationGraph = DeclarationGraph(module, pluginContext, implicitTransformer)
-            .also { it.initialize() }
+        declarationGraph.initialize()
+
+        println("decl graph ${declarationGraph.rootComponentFactories.map { it.render() }}")
 
         if (declarationGraph.rootComponentFactories.isEmpty()) return
 
@@ -120,7 +121,7 @@ class ComponentTransformer(
                             .owner
 
                         val componentFactoryImpl = ComponentFactoryImpl(
-                            scope.getLocalDeclarationParent(),
+                            call.file,
                             componentFactory,
                             entryPoints.getOrElse(component) { emptyList() },
                             null,

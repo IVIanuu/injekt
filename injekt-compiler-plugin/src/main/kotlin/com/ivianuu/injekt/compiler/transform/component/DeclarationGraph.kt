@@ -18,8 +18,6 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
-import com.ivianuu.injekt.compiler.indexPackageFile
-import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.transform.ImplicitTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
@@ -37,7 +35,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class DeclarationGraph(
-    private val module: IrModuleFragment,
+    val module: IrModuleFragment,
     private val pluginContext: IrPluginContext,
     private val implicitTransformer: ImplicitTransformer
 ) {
@@ -45,30 +43,32 @@ class DeclarationGraph(
     private val _rootComponentFactories = mutableListOf<IrClass>()
     val rootComponentFactories: List<IrClass> get() = _rootComponentFactories
 
-    private val _bindings = mutableListOf<IrFunction>()
-    val bindings: List<IrFunction> get() = _bindings
+    private val _bindings = mutableListOf<ImplicitPair>()
+    val bindings: List<ImplicitPair> get() = _bindings
 
     val entryPoints: List<IrClass> get() = _entryPoints
     private val _entryPoints = mutableListOf<IrClass>()
 
-    private val _mapEntries = mutableListOf<IrFunction>()
-    val mapEntries: List<IrFunction> get() = _mapEntries
+    private val _mapEntries = mutableListOf<ImplicitPair>()
+    val mapEntries: List<ImplicitPair> get() = _mapEntries
 
-    private val _setElements = mutableListOf<IrFunction>()
-    val setElements: List<IrFunction> get() = _setElements
+    private val _setElements = mutableListOf<ImplicitPair>()
+    val setElements: List<ImplicitPair> get() = _setElements
 
-    private val indices by lazy {
+    val indices: List<FqName> by lazy {
         val memberScope = pluginContext.moduleDescriptor.getPackage(InjektFqNames.IndexPackage)
             .memberScope
 
-        (module.indexPackageFile.declarations
-            .filterIsInstance<IrClass>() +
-                (memberScope.getClassifierNames() ?: emptySet()).mapNotNull {
-                    memberScope.getContributedClassifier(
-                        it,
-                        NoLookupLocation.FROM_BACKEND
-                    )
-                }.map { pluginContext.referenceClass(it.fqNameSafe)!!.owner })
+        ((module.files
+            .filter { it.fqName == InjektFqNames.IndexPackage }
+            .flatMapFix { it.declarations }
+            .filterIsInstance<IrClass>()) + ((memberScope.getClassifierNames()
+            ?: emptySet()).mapNotNull {
+            memberScope.getContributedClassifier(
+                it,
+                NoLookupLocation.FROM_BACKEND
+            )
+        }.map { pluginContext.referenceClass(it.fqNameSafe)!!.owner }))
             .map {
                 it.getAnnotation(InjektFqNames.Index)!!
                     .getValueArgument(0)!!
@@ -87,8 +87,12 @@ class DeclarationGraph(
     }
 
     private fun collectRootComponentFactories() {
+        println("collect root component factories $indices")
         indices
-            .mapNotNull { pluginContext.referenceClass(it)?.owner }
+            .mapNotNull {
+                pluginContext.referenceClass(it)?.owner
+                    .also { r -> println("c for $it-> $r") }
+            }
             .filter { it.hasAnnotation(InjektFqNames.RootComponentFactory) }
             .forEach { _rootComponentFactories += it }
     }
@@ -118,7 +122,12 @@ class DeclarationGraph(
                             InjektFqNames.Given
                         ) == true)
             }
-            .map { implicitTransformer.getTransformedFunction(it) }
+            .map {
+                ImplicitPair(
+                    implicitTransformer.getTransformedFunction(it),
+                    implicitTransformer.getReaderSignature(it)
+                )
+            }
             .distinct()
             .forEach { _bindings += it }
     }
@@ -127,12 +136,13 @@ class DeclarationGraph(
         indices
             .flatMapFix { pluginContext.referenceFunctions(it) }
             .map { it.owner }
-            .map {
-                if (it.isExternalDeclaration()) implicitTransformer.getTransformedFunction(it)
-                else it
-            }
             .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
-            .map { implicitTransformer.getTransformedFunction(it) }
+            .map {
+                ImplicitPair(
+                    implicitTransformer.getTransformedFunction(it),
+                    implicitTransformer.getReaderSignature(it)
+                )
+            }
             .distinct()
             .forEach { _mapEntries += it }
     }
@@ -141,14 +151,20 @@ class DeclarationGraph(
         indices
             .flatMapFix { pluginContext.referenceFunctions(it) }
             .map { it.owner }
-            .map {
-                if (it.isExternalDeclaration()) implicitTransformer.getTransformedFunction(it)
-                else it
-            }
             .filter { it.hasAnnotation(InjektFqNames.SetElements) }
-            .map { implicitTransformer.getTransformedFunction(it) }
+            .map {
+                ImplicitPair(
+                    implicitTransformer.getTransformedFunction(it),
+                    implicitTransformer.getReaderSignature(it)
+                )
+            }
             .distinct()
             .forEach { _setElements += it }
     }
+
+    data class ImplicitPair(
+        val function: IrFunction,
+        val signature: IrFunction
+    )
 
 }
