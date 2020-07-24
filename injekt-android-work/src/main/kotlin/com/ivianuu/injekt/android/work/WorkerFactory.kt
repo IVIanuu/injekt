@@ -43,6 +43,7 @@ typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters
 
 @Given
 internal class InjektWorkerFactory : WorkerFactory() {
+
     override fun createWorker(
         appContext: Context,
         workerClassName: String,
@@ -51,7 +52,8 @@ internal class InjektWorkerFactory : WorkerFactory() {
         return given<Workers>()[Class.forName(workerClassName).kotlin]?.invoke(
             appContext,
             workerParameters
-        ) ?: error("Could not find a worker for $workerClassName")
+        )
+            ?: error("Could not find a worker for $workerClassName")
     }
 }
 
