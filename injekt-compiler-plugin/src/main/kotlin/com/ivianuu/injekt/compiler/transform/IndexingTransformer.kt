@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.hiddenDeprecatedAnnotation
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -125,6 +126,8 @@ class IndexingTransformer(
                             )
                         }
                     }
+                    annotations += DeclarationIrBuilder(pluginContext, symbol)
+                        .hiddenDeprecatedAnnotation(pluginContext)
                 }
 
                 metadata = MetadataSource.File(

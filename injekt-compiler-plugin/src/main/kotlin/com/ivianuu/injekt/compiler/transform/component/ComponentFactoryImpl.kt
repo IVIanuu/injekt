@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.hiddenDeprecatedAnnotation
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -70,6 +71,9 @@ class ComponentFactoryImpl(
         parent = irParent
         createImplicitParameterDeclarationWithWrappedDescriptor()
         superTypes += factory.defaultType
+
+        annotations += DeclarationIrBuilder(pluginContext, symbol)
+            .hiddenDeprecatedAnnotation(pluginContext)
 
         val parentField = if (this@ComponentFactoryImpl.parent != null) {
             addField(

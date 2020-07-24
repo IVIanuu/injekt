@@ -16,4 +16,5 @@
 
 package com.ivianuu.injekt.internal
 
+@Deprecated("internal", level = DeprecationLevel.HIDDEN)
 annotation class Name(val value: String)

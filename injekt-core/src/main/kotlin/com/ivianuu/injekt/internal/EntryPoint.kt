@@ -18,4 +18,5 @@ package com.ivianuu.injekt.internal
 
 import kotlin.reflect.KClass
 
+@Deprecated("internal", level = DeprecationLevel.HIDDEN)
 annotation class EntryPoint(val component: KClass<*>)

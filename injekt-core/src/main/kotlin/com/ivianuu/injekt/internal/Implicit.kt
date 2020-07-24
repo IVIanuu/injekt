@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt.internal
 
+@Deprecated("internal", level = DeprecationLevel.HIDDEN)
 annotation class Implicit
 
+@Deprecated("internal", level = DeprecationLevel.HIDDEN)
 annotation class Implicits(val indices: IntArray)

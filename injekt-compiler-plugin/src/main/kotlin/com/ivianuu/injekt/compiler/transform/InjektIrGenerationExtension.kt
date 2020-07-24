@@ -56,7 +56,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         generateSymbols(pluginContext)
 
-        //println(moduleFragment.dumpSrc())
+        //println(moduleFragment.dump())
     }
 
 }

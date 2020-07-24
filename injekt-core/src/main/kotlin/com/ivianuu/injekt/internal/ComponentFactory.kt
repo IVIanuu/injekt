@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt.internal
 
+@Deprecated("internal", level = DeprecationLevel.HIDDEN)
 annotation class RootComponentFactory
 
+@Deprecated("internal", level = DeprecationLevel.HIDDEN)
 annotation class ChildComponentFactory
