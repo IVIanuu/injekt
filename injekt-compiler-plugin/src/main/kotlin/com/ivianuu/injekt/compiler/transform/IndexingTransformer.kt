@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.impl.PackageFragmentDescriptorImpl
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -110,12 +111,13 @@ class IndexingTransformer(
                 InjektFqNames.IndexPackage
             ).apply {
                 this.declarations += buildClass {
-                    name = "_${
+                    name = "${
                         declaration.descriptor.fqNameSafe
                             .pathSegments()
                             .joinToString("_")
-                    }\$Index".asNameId()
+                    }Index".asNameId()
                     kind = ClassKind.INTERFACE
+                    visibility = Visibilities.INTERNAL
                 }.apply {
                     createImplicitParameterDeclarationWithWrappedDescriptor()
                     addMetadataIfNotLocal()

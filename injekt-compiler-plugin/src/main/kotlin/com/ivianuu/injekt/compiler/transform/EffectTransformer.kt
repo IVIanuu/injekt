@@ -95,7 +95,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                 .map { it.symbol.owner.constructedClass }
             val effectModule = effectModuleForClass(
                 clazz,
-                "_${clazz.name}\$Effects".asNameId(),
+                "${clazz.name}Effects".asNameId(),
                 effects
             )
 
@@ -108,7 +108,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                 .map { it.symbol.owner.constructedClass }
             val effectModule = effectDeclarationsForFunction(
                 function,
-                "_${function.name}\$Effects".asNameId(),
+                "${function.name}Effects".asNameId(),
                 effects
             )
 
@@ -123,7 +123,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
     ) = buildClass {
         this.name = name
         kind = ClassKind.OBJECT
-        visibility = clazz.visibility
+        visibility = Visibilities.INTERNAL
     }.apply clazz@{
         parent = clazz.file
         createImplicitParameterDeclarationWithWrappedDescriptor()
@@ -199,7 +199,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
     ) = buildClass {
         this.name = moduleName
         kind = ClassKind.OBJECT
-        visibility = function.visibility
+        visibility = Visibilities.INTERNAL
     }.apply clazz@{
         parent = function.file
         createImplicitParameterDeclarationWithWrappedDescriptor()

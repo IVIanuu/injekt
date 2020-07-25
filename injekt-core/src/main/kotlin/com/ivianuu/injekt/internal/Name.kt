@@ -16,4 +16,4 @@
 
 package com.ivianuu.injekt.internal
 
-annotation class Name(val value: String)
+internal annotation class Name(val value: String)

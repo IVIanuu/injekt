@@ -16,6 +16,6 @@
 
 package com.ivianuu.injekt.internal
 
-annotation class Implicit
+internal annotation class Implicit
 
-annotation class Implicits(val indices: IntArray)
+internal annotation class Implicits(val indices: IntArray)

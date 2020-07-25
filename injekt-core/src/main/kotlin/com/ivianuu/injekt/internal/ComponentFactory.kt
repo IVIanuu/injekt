@@ -16,6 +16,6 @@
 
 package com.ivianuu.injekt.internal
 
-annotation class RootComponentFactory
+internal annotation class RootComponentFactory
 
-annotation class ChildComponentFactory
+internal annotation class ChildComponentFactory

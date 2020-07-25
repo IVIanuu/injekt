@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclaration
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -77,9 +78,10 @@ class ComponentFactoryTransformer(
                 val componentFactory = buildClass {
                     // todo naming
                     name = nameProvider.allocateForGroup(
-                        "_${currentScope!!.scope.scopeOwner.name.asString()}\$Factory".asNameId()
+                        "${currentScope!!.scope.scopeOwner.name.asString()}Factory".asNameId()
                     )
                     kind = ClassKind.INTERFACE
+                    visibility = Visibilities.INTERNAL
                 }.apply {
                     parent = currentFile
                     createImplicitParameterDeclarationWithWrappedDescriptor()

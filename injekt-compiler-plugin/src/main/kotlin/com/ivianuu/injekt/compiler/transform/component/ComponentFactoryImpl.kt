@@ -64,8 +64,8 @@ class ComponentFactoryImpl(
         .owner
 
     val clazz: IrClass = buildClass {
-        name = "_${component.name.asString()}\$FactoryImpl".asNameId()
-        if (parent != null) visibility = Visibilities.PRIVATE
+        name = "${component.name.asString()}FactoryImpl".asNameId()
+        if (parent != null) visibility = Visibilities.PRIVATE else Visibilities.INTERNAL
     }.apply clazz@{
         parent = irParent
         createImplicitParameterDeclarationWithWrappedDescriptor()

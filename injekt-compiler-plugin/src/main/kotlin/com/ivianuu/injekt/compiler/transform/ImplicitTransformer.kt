@@ -513,6 +513,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
         givenTypes: Collection<IrType>
     ): IrClass where T : IrDeclarationWithName, T : IrTypeParametersContainer = buildClass {
         name = uniqueName(owner, "Params")
+        visibility = Visibilities.INTERNAL
     }.apply clazz@{
         parent = owner.file
         createImplicitParameterDeclarationWithWrappedDescriptor()
@@ -620,7 +621,8 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
         ownerFunction: IrFunction,
         remapType: (IrType) -> IrType
     ) = buildFun {
-        this.name = uniqueName(owner, "ReaderSignature")
+        this.name = uniqueName(owner, "Signature")
+        visibility = Visibilities.INTERNAL
     }.apply {
         parent = owner.file
         addMetadataIfNotLocal()
@@ -704,7 +706,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
         owner: IrDeclarationWithName,
         suffix: String
     ) = globalNameProvider.allocateForGroup(
-        ("_" + getJoinedName(
+        getJoinedName(
             owner.getPackageFragment()!!.fqName,
             owner.descriptor.fqNameSafe
                 .parent()
@@ -715,7 +717,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                         it.child(owner.name.asString().asNameId())
                     }
                 }
-        ).asString() + "\$" + suffix)
+        ).asString() + suffix
     ).asNameId()
 
     private fun <T> rewriteCalls(

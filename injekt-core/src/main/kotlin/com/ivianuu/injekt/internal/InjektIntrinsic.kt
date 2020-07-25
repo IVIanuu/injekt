@@ -16,5 +16,6 @@
 
 package com.ivianuu.injekt.internal
 
-fun <T> injektIntrinsic(): T =
+@PublishedApi
+internal fun <T> injektIntrinsic(): T =
     throw UnsupportedOperationException("Must be compiled with the injekt compiler")
