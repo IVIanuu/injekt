@@ -128,7 +128,9 @@ class IndexingTransformer(
                     }
                 }
 
-                metadata = MetadataSource.File(listOf(declaration.descriptor))
+                metadata = MetadataSource.File(
+                    this.declarations.map { it.descriptor }
+                )
             }
 
             module.files += file
