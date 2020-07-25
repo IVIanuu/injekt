@@ -28,7 +28,6 @@ import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.getValueArgumentSafe
-import com.ivianuu.injekt.compiler.hiddenDeprecatedAnnotation
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isMarkedAsImplicit
 import com.ivianuu.injekt.compiler.isTypeParameter
@@ -521,8 +520,6 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
 
         annotations += DeclarationIrBuilder(pluginContext, symbol)
             .irCall(symbols.given.constructors.single())
-        annotations += DeclarationIrBuilder(pluginContext, symbol)
-            .hiddenDeprecatedAnnotation(pluginContext)
 
         copyTypeParametersFrom(owner)
 
@@ -661,9 +658,6 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                 }
         }
 
-        annotations += DeclarationIrBuilder(pluginContext, symbol)
-            .hiddenDeprecatedAnnotation(pluginContext)
-
         returnType = remapType(ownerFunction.returnType)
             .remapTypeParameters(owner, this)
 
@@ -710,7 +704,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
         owner: IrDeclarationWithName,
         suffix: String
     ) = globalNameProvider.allocateForGroup(
-        getJoinedName(
+        (getJoinedName(
             owner.getPackageFragment()!!.fqName,
             owner.descriptor.fqNameSafe
                 .parent()
@@ -721,7 +715,8 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                         it.child(owner.name.asString().asNameId())
                     }
                 }
-        ).asString() + "_" + suffix
+        ).asString() + "_" + suffix)
+            .replace("-", "")
     ).asNameId()
 
     private fun <T> rewriteCalls(

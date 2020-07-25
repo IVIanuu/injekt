@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.hiddenDeprecatedAnnotation
 import com.ivianuu.injekt.compiler.readableName
 import com.ivianuu.injekt.compiler.singleClassArgConstructorCall
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
@@ -100,8 +99,6 @@ class EntryPointTransformer(
                                 symbols.entryPoint,
                                 component.classifierOrFail
                             )
-                    annotations += DeclarationIrBuilder(pluginContext, symbol)
-                        .hiddenDeprecatedAnnotation(pluginContext)
                 }
 
                 fun addEntryPointFunction(type: IrType): IrFunction {

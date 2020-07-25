@@ -18,7 +18,6 @@ package com.ivianuu.injekt.internal
 
 import kotlin.reflect.KClass
 
-@Deprecated("internal", level = DeprecationLevel.HIDDEN)
 object RootComponentFactories {
 
     private val factories = mutableMapOf<KClass<*>, Any>()

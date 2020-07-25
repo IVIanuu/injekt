@@ -16,6 +16,5 @@
 
 package com.ivianuu.injekt.internal
 
-@Deprecated("internal", level = DeprecationLevel.HIDDEN)
 @Target(AnnotationTarget.TYPE)
 annotation class Qualifier(val value: String)

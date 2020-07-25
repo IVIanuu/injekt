@@ -52,7 +52,6 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
-import org.jetbrains.kotlin.ir.declarations.IrEnumEntry
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrMetadataSourceOwner
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
@@ -80,7 +79,6 @@ import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrGetEnumValueImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
@@ -617,7 +615,6 @@ fun dexSafeName(name: Name): Name {
     } else name
 }
 
-
 fun IrDeclarationWithName.uniqueFqName() = when (this) {
     is IrClass -> "c_${descriptor.fqNameSafe}"
     is IrFunction -> "f_${descriptor.fqNameSafe}_${
@@ -641,17 +638,6 @@ fun IrAnnotationContainer.isMarkedAsImplicit(): Boolean =
             hasAnnotation(InjektFqNames.Given) ||
             hasAnnotation(InjektFqNames.MapEntries) ||
             hasAnnotation(InjektFqNames.SetElements)
-
-fun IrDeclarationWithName.uniqueName() = when (this) {
-    is IrFunction -> "f_${descriptor.name}_${
-        descriptor.valueParameters
-            .filterNot { it.hasAnnotation(InjektFqNames.Implicit) }
-            .map { it.type }.map {
-                it.constructor.declarationDescriptor!!.fqNameSafe
-            }.hashCode().absoluteValue
-    }${if (visibility == Visibilities.LOCAL) "_$startOffset" else ""}"
-    else -> error("Unsupported declaration ${dump()}")
-}
 
 val IrType.distinctedType: Any
     get() = (this as? IrSimpleType)?.abbreviation
@@ -756,29 +742,6 @@ fun IrBuilderWithScope.jvmNameAnnotation(
     val jvmName = pluginContext.referenceClass(DescriptorUtils.JVM_NAME)!!
     return irCall(jvmName.constructors.single()).apply {
         putValueArgument(0, irString(name))
-    }
-}
-
-fun IrBuilderWithScope.hiddenDeprecatedAnnotation(
-    pluginContext: IrPluginContext
-): IrConstructorCall {
-    val deprecated = pluginContext.referenceClass(FqName("kotlin.Deprecated"))!!
-    val deprecationLevel = pluginContext.referenceClass(FqName("kotlin.DeprecationLevel"))!!
-    return irCall(deprecated.constructors.single()).apply {
-        putValueArgument(0, irString(""))
-        putValueArgument(
-            2,
-            IrGetEnumValueImpl(
-                UNDEFINED_OFFSET,
-                UNDEFINED_OFFSET,
-                deprecationLevel.defaultType,
-                deprecationLevel.owner
-                    .declarations
-                    .filterIsInstance<IrEnumEntry>()
-                    .single { it.name.asString() == "HIDDEN" }
-                    .symbol
-            )
-        )
     }
 }
 

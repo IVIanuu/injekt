@@ -25,7 +25,6 @@ import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.hiddenDeprecatedAnnotation
 import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.tmpFunction
@@ -130,9 +129,6 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
         createImplicitParameterDeclarationWithWrappedDescriptor()
         addMetadataIfNotLocal()
 
-        annotations += DeclarationIrBuilder(pluginContext, symbol)
-            .hiddenDeprecatedAnnotation(pluginContext)
-
         addConstructor {
             returnType = defaultType
             isPrimary = true
@@ -208,9 +204,6 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
         parent = function.file
         createImplicitParameterDeclarationWithWrappedDescriptor()
         addMetadataIfNotLocal()
-
-        annotations += DeclarationIrBuilder(pluginContext, symbol)
-            .hiddenDeprecatedAnnotation(pluginContext)
 
         addConstructor {
             returnType = defaultType

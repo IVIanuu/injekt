@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.hiddenDeprecatedAnnotation
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -42,7 +41,6 @@ import org.jetbrains.kotlin.ir.util.NaiveSourceBasedFileEntryImpl
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -97,7 +95,8 @@ class IndexingTransformer(
         declarations.forEach { declaration ->
             val file = IrFileImpl(
                 fileEntry = NaiveSourceBasedFileEntryImpl(
-                    "<index for ${declaration.descriptor.fqNameSafe}>",
+                    declaration.descriptor.fqNameSafe.pathSegments()
+                        .joinToString("_") + ".kt",
                     intArrayOf()
                 ),
                 symbol = IrFileSymbolImpl(
@@ -112,7 +111,8 @@ class IndexingTransformer(
             ).apply {
                 this.declarations += buildClass {
                     name = declaration.descriptor.fqNameSafe
-                        .pathSegments().joinToString("_")
+                        .pathSegments()
+                        .joinToString("_")
                         .asNameId()
                     kind = ClassKind.INTERFACE
                 }.apply {
@@ -126,8 +126,6 @@ class IndexingTransformer(
                             )
                         }
                     }
-                    annotations += DeclarationIrBuilder(pluginContext, symbol)
-                        .hiddenDeprecatedAnnotation(pluginContext)
                 }
 
                 metadata = MetadataSource.File(
@@ -136,21 +134,6 @@ class IndexingTransformer(
             }
 
             module.files += file
-            /*val file = File(outputDir, index.name.asString() + ".kt")
-            file.parentFile.mkdirs()
-            file.createNewFile()
-            file.writeText(
-                """
-                package ${InjektFqNames.IndexPackage}
-                
-                import com.ivianuu.injekt.internal.Index
-                
-                @Index("${declaration.descriptor.fqNameSafe.asString()}")
-                interface ${index.name}
-            """.trimIndent()
-            )
-*/
-            println("indexed ${file.render()}")
         }
     }
 

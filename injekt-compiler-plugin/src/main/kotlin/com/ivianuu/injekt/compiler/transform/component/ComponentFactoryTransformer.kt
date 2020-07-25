@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.hiddenDeprecatedAnnotation
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -91,8 +90,6 @@ class ComponentFactoryTransformer(
                             (if (isChild) symbols.childComponentFactory else symbols.rootComponentFactory)
                                 .constructors.single()
                         )
-                    annotations += DeclarationIrBuilder(pluginContext, symbol)
-                        .hiddenDeprecatedAnnotation(pluginContext)
 
                     addFunction {
                         this.name = "create".asNameId()

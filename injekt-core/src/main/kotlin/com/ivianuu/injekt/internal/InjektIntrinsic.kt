@@ -16,6 +16,5 @@
 
 package com.ivianuu.injekt.internal
 
-@Deprecated("internal", level = DeprecationLevel.WARNING)
 fun <T> injektIntrinsic(): T =
     throw UnsupportedOperationException("Must be compiled with the injekt compiler")
