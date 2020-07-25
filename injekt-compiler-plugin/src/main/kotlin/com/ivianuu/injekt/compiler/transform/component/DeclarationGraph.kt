@@ -87,12 +87,8 @@ class DeclarationGraph(
     }
 
     private fun collectRootComponentFactories() {
-        println("collect root component factories $indices")
         indices
-            .mapNotNull {
-                pluginContext.referenceClass(it)?.owner
-                    .also { r -> println("c for $it-> $r") }
-            }
+            .mapNotNull { pluginContext.referenceClass(it)?.owner }
             .filter { it.hasAnnotation(InjektFqNames.RootComponentFactory) }
             .forEach { _rootComponentFactories += it }
     }

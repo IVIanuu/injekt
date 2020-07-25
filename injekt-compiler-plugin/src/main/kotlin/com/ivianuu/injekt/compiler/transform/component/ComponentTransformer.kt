@@ -75,8 +75,6 @@ class ComponentTransformer(
 
         declarationGraph.initialize()
 
-        println("decl graph ${declarationGraph.rootComponentFactories.map { it.render() }}")
-
         if (declarationGraph.rootComponentFactories.isEmpty()) return
 
         val callMap = initializeComponentCalls.associateWith {
