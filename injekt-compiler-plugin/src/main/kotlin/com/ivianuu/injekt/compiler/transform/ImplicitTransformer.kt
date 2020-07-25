@@ -716,7 +716,6 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                     }
                 }
         ).asString() + "_" + suffix)
-            .replace("-", "")
     ).asNameId()
 
     private fun <T> rewriteCalls(

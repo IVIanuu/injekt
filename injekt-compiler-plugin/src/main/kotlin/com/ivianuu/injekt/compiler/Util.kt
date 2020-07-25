@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -492,16 +492,16 @@ fun getJoinedName(
     return joinedSegments.joinToString("_").asNameId()
 }
 
-fun nameWithoutIllegalChars(name: String): Name = name
-    .replace(".", "")
-    .replace("<", "")
-    .replace(">", "")
-    .replace(" ", "")
-    .replace("[", "")
-    .replace("]", "")
-    .replace("@", "")
-    .replace(",", "")
-    .asNameId()
+fun String.removeIllegalChars() =
+    replace(".", "")
+        .replace("<", "")
+        .replace(">", "")
+        .replace(" ", "")
+        .replace("[", "")
+        .replace("]", "")
+        .replace("@", "")
+        .replace(",", "")
+        .replace(" ", "")
 
 fun IrType.readableName(): Name = buildString {
     fun IrType.renderName() {
@@ -576,7 +576,7 @@ fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
         fn.valueParameters = valueParameters.map { p ->
             p.copyTo(
                 fn,
-                name = dexSafeName(p.name),
+                name = p.name.asString().removeIllegalChars().asNameId(),
                 type = p.type.remapTypeParameters(this, fn)
             )
         }
@@ -602,17 +602,6 @@ fun IrMemberAccessExpression.getValueArgumentSafe(index: Int) = try {
     getValueArgument(index)
 } catch (t: Throwable) {
     null
-}
-
-fun dexSafeName(name: Name): Name {
-    return if (name.isSpecial && name.asString().contains(' ')) {
-        val sanitized = name
-            .asString()
-            .replace(' ', '$')
-            .replace('<', '$')
-            .replace('>', '$')
-        Name.identifier(sanitized)
-    } else name
 }
 
 fun IrDeclarationWithName.uniqueFqName() = when (this) {
