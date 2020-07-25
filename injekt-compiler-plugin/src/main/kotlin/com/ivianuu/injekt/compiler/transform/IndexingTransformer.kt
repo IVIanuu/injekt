@@ -110,7 +110,7 @@ class IndexingTransformer(
                 InjektFqNames.IndexPackage
             ).apply {
                 this.declarations += buildClass {
-                    name = "${
+                    name = "_${
                         declaration.descriptor.fqNameSafe
                             .pathSegments()
                             .joinToString("_")

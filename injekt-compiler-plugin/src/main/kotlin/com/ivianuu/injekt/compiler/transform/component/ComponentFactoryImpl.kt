@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -44,7 +45,6 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.name.Name
 
 class ComponentFactoryImpl(
     val irParent: IrDeclarationParent,
@@ -64,7 +64,7 @@ class ComponentFactoryImpl(
         .owner
 
     val clazz: IrClass = buildClass {
-        name = Name.identifier(component.name.asString() + "\$FactoryImpl")
+        name = "_${component.name.asString()}\$FactoryImpl".asNameId()
         if (parent != null) visibility = Visibilities.PRIVATE
     }.apply clazz@{
         parent = irParent

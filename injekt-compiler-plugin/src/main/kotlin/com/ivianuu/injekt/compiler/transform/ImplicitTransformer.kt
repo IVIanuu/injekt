@@ -704,7 +704,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
         owner: IrDeclarationWithName,
         suffix: String
     ) = globalNameProvider.allocateForGroup(
-        (getJoinedName(
+        ("_" + getJoinedName(
             owner.getPackageFragment()!!.fqName,
             owner.descriptor.fqNameSafe
                 .parent()
