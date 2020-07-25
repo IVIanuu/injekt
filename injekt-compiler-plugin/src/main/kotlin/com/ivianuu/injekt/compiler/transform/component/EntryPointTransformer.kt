@@ -86,7 +86,7 @@ class EntryPointTransformer(
 
                 val entryPoint = buildClass {
                     name = nameProvider.allocateForGroup(
-                        "${currentScope!!.scope.scopeOwner.name.asString()}EntryPoint".asNameId()
+                        "${currentScope!!.scope.scopeOwner.name.asString()}\$EntryPoint".asNameId()
                     )
                     kind = ClassKind.INTERFACE
                 }.apply {

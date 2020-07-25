@@ -95,7 +95,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                 .map { it.symbol.owner.constructedClass }
             val effectModule = effectModuleForClass(
                 clazz,
-                "${clazz.name}Effects".asNameId(),
+                "${clazz.name}\$Effects".asNameId(),
                 effects
             )
 
@@ -108,7 +108,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                 .map { it.symbol.owner.constructedClass }
             val effectModule = effectDeclarationsForFunction(
                 function,
-                "${function.name}Effects".asNameId(),
+                "${function.name}\$Effects".asNameId(),
                 effects
             )
 

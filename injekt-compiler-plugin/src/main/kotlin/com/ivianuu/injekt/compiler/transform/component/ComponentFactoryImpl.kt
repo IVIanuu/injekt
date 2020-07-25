@@ -64,7 +64,7 @@ class ComponentFactoryImpl(
         .owner
 
     val clazz: IrClass = buildClass {
-        name = Name.identifier(component.name.asString() + "FactoryImpl")
+        name = Name.identifier(component.name.asString() + "\$FactoryImpl")
         if (parent != null) visibility = Visibilities.PRIVATE
     }.apply clazz@{
         parent = irParent

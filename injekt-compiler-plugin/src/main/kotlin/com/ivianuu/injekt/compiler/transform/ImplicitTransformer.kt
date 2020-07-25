@@ -715,7 +715,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                         it.child(owner.name.asString().asNameId())
                     }
                 }
-        ).asString() + "_" + suffix)
+        ).asString() + "\$" + suffix)
     ).asNameId()
 
     private fun <T> rewriteCalls(

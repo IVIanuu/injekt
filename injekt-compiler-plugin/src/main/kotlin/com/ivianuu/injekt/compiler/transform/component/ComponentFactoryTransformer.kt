@@ -77,7 +77,7 @@ class ComponentFactoryTransformer(
                 val componentFactory = buildClass {
                     // todo naming
                     name = nameProvider.allocateForGroup(
-                        "${currentScope!!.scope.scopeOwner.name.asString()}Factory".asNameId()
+                        "${currentScope!!.scope.scopeOwner.name.asString()}\$Factory".asNameId()
                     )
                     kind = ClassKind.INTERFACE
                 }.apply {

@@ -110,10 +110,11 @@ class IndexingTransformer(
                 InjektFqNames.IndexPackage
             ).apply {
                 this.declarations += buildClass {
-                    name = declaration.descriptor.fqNameSafe
-                        .pathSegments()
-                        .joinToString("_")
-                        .asNameId()
+                    name = "${
+                        declaration.descriptor.fqNameSafe
+                            .pathSegments()
+                            .joinToString("_")
+                    }\$Index".asNameId()
                     kind = ClassKind.INTERFACE
                 }.apply {
                     createImplicitParameterDeclarationWithWrappedDescriptor()
