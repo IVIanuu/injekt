@@ -18,7 +18,6 @@ package com.ivianuu.injekt.sample
 
 import android.app.Application
 import com.ivianuu.injekt.android.applicationComponent
-import com.ivianuu.injekt.initializeComponents
 import com.ivianuu.injekt.runReader
 
 class App : Application() {

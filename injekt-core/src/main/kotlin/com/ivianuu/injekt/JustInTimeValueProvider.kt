@@ -14,8 +14,15 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.internal
+package com.ivianuu.injekt
 
-internal annotation class Implicit
+interface JustInTimeValueProvider {
 
-internal annotation class Implicits(val indices: IntArray)
+    @Reader
+    fun <T : Any> get(key: ReaderContext.Key<T>): Result<T>?
+
+    data class Result<T>(val value: T)
+
+}
+
+object JustInTimeValueProvidersKey : ReaderContext.Key<List<JustInTimeValueProvider>>

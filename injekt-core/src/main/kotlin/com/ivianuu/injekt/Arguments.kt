@@ -16,14 +16,13 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.internal.injektIntrinsic
+typealias Arguments = Array<out Any?>?
 
-@Target(AnnotationTarget.CLASS)
-annotation class Component
+operator fun <T> Arguments.get(index: Int) = this!![index] as T
+operator fun <T> Arguments.component0() = get<T>(0)
+operator fun <T> Arguments.component1() = get<T>(1)
+operator fun <T> Arguments.component2() = get<T>(2)
+operator fun <T> Arguments.component3() = get<T>(3)
+operator fun <T> Arguments.component4() = get<T>(4)
 
-fun initializeComponents(): Unit = injektIntrinsic()
-
-fun <T> rootComponent(vararg inputs: Any?): T = injektIntrinsic()
-
-@Reader
-fun <T> childComponent(vararg inputs: Any?): T = injektIntrinsic()
+inline fun emptyArguments() = null

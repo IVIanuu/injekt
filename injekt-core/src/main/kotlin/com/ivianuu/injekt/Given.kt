@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.internal.injektIntrinsic
 import kotlin.reflect.KClass
 
 @Target(
@@ -28,7 +27,42 @@ import kotlin.reflect.KClass
 annotation class Given(val component: KClass<*> = Nothing::class)
 
 @Reader
-fun <T> given(
+inline fun <reified T : Any> given(
+    key: TypeKey<T> = typeKeyOf()
+): T = getFactory(key)(emptyArguments())
+
+@Reader
+inline fun <reified T : Any> given(
     vararg arguments: Any?,
-    lazy: Boolean = false
-): T = injektIntrinsic()
+    key: TypeKey<T> = typeKeyOf()
+): T = getFactory(key)(arguments)
+
+inline fun <reified T : Any> ReaderContextBuilder.given(
+    noinline factory: @Reader (Arguments) -> T
+) {
+    given(key = typeKeyOf(), factory = factory)
+}
+
+fun <T : Any> ReaderContextBuilder.given(
+    key: TypeKey<T>,
+    factory: @Reader (Arguments) -> T
+) {
+    set(FactoryKey(key), factory)
+}
+
+inline fun <reified T : Any> ReaderContextBuilder.memoGiven(
+    noinline factory: @Reader (Arguments) -> T
+) {
+    memoGiven(key = typeKeyOf(), factory = factory)
+}
+
+fun <T : Any> ReaderContextBuilder.memoGiven(
+    key: TypeKey<T>,
+    factory: @Reader (Arguments) -> T
+) {
+    given(key) { arguments ->
+        memo(key) {
+            factory(arguments)
+        }
+    }
+}

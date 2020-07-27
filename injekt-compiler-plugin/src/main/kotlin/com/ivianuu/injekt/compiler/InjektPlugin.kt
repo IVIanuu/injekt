@@ -17,7 +17,9 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
+import com.ivianuu.injekt.compiler.analysis.ImplicitChecker
 import com.ivianuu.injekt.compiler.analysis.InjektStorageContainerContributor
+import com.ivianuu.injekt.compiler.analysis.ReaderTypeInterceptor
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
@@ -25,6 +27,7 @@ import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
+import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 
 @AutoService(ComponentRegistrar::class)
@@ -33,9 +36,10 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project: MockProject,
         configuration: CompilerConfiguration
     ) {
+        val implicitChecker = ImplicitChecker()
         StorageComponentContainerContributor.registerExtension(
             project,
-            InjektStorageContainerContributor()
+            InjektStorageContainerContributor(implicitChecker)
         )
         val irExtensionPoint = Extensions.getArea(project)
             .getExtensionPoint(IrGenerationExtension.extensionPointName)
@@ -58,6 +62,11 @@ class InjektComponentRegistrar : ComponentRegistrar {
         AnalysisHandlerExtension.registerExtension(
             project,
             LookupTrackerProvider()
+        )
+
+        TypeResolutionInterceptor.registerExtension(
+            project,
+            ReaderTypeInterceptor(implicitChecker)
         )
     }
 

@@ -1,16 +1,10 @@
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.Effect
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.initializeComponents
 import kotlinx.coroutines.runBlocking
 
 class Foo
 class Bar(foo: Foo)
-
-@Component
-interface TestComponent
 
 typealias FooFactory = suspend () -> Foo
 

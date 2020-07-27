@@ -16,5 +16,5 @@
 
 package com.ivianuu.injekt
 
-@Component
+//@Component
 interface ApplicationComponent

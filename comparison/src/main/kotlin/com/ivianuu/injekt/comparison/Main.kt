@@ -17,9 +17,7 @@
 package com.ivianuu.injekt.comparison
 
 import com.ivianuu.injekt.comparison.base.runAllInjectionTests
-import com.ivianuu.injekt.initializeComponents
 
 fun main() {
-    initializeComponents()
     runAllInjectionTests()
 }

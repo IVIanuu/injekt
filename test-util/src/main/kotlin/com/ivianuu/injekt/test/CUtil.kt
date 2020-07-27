@@ -37,7 +37,6 @@ fun source(
     contents = buildString {
         if (injektImports) {
             appendLine("import com.ivianuu.injekt.*")
-            appendLine("import com.ivianuu.injekt.internal.*")
             appendLine("import com.ivianuu.injekt.test.*")
             appendLine("import kotlin.reflect.*")
             appendLine("import kotlinx.coroutines.*")

@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.backend.common.ScopeWithIr
+import com.ivianuu.injekt.compiler.analysis.ImplicitChecker
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.ir.copyBodyTo
@@ -57,7 +57,6 @@ import org.jetbrains.kotlin.ir.declarations.IrMetadataSourceOwner
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
-import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
@@ -91,7 +90,6 @@ import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
-import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
@@ -117,6 +115,8 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.AnnotationValue
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
@@ -145,7 +145,6 @@ import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.types.withAbbreviation
-import kotlin.math.absoluteValue
 
 var lookupTracker: LookupTracker? = null
 
@@ -443,12 +442,12 @@ fun KClassValue.getIrClass(
 
 fun String.asNameId(): Name = Name.identifier(this)
 
-fun IrClass.getReaderConstructor(): IrConstructor? {
+fun IrClass.getReaderConstructor(bindingContext: BindingContext): IrConstructor? {
     constructors
         .firstOrNull {
-            it.isMarkedAsImplicit()
+            it.isMarkedAsReader(bindingContext)
         }?.let { return it }
-    if (!isMarkedAsImplicit()) return null
+    if (!isMarkedAsReader(bindingContext)) return null
     return primaryConstructor
 }
 
@@ -461,17 +460,6 @@ fun <T> T.addMetadataIfNotLocal() where T : IrMetadataSourceOwner, T : IrDeclara
     }
 }
 
-fun List<ScopeWithIr>.thisOfClass(declaration: IrClass): IrValueParameter? {
-    for (scope in reversed()) {
-        when (val element = scope.irElement) {
-            is IrFunction ->
-                element.dispatchReceiverParameter?.let { if (it.type.classOrNull == declaration.symbol) return it }
-            is IrClass -> if (element == declaration) return element.thisReceiver
-        }
-    }
-    return null
-}
-
 fun IrDeclaration.isExternalDeclaration() = origin ==
         IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
         origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
@@ -481,6 +469,12 @@ fun IrPluginContext.tmpFunction(n: Int): IrClassSymbol =
 
 fun IrPluginContext.tmpSuspendFunction(n: Int): IrClassSymbol =
     referenceClass(builtIns.getSuspendFunction(n).fqNameSafe)!!
+
+fun IrFunction.getFunctionType(pluginContext: IrPluginContext): IrType {
+    return (if (isSuspend) pluginContext.tmpSuspendFunction(valueParameters.size)
+    else pluginContext.tmpFunction(valueParameters.size))
+        .typeWith(valueParameters.map { it.type } + returnType)
+}
 
 fun getJoinedName(
     packageFqName: FqName,
@@ -598,35 +592,24 @@ fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
     }
 }
 
-fun IrMemberAccessExpression.getValueArgumentSafe(index: Int) = try {
-    getValueArgument(index)
-} catch (t: Throwable) {
-    null
-}
-
-fun IrDeclarationWithName.uniqueFqName() = when (this) {
-    is IrClass -> "c_${descriptor.fqNameSafe}"
-    is IrFunction -> "f_${descriptor.fqNameSafe}_${
-        descriptor.valueParameters
-            .filterNot { it.hasAnnotation(InjektFqNames.Implicit) }
-            .map { it.type }.map {
-                it.constructor.declarationDescriptor!!.fqNameSafe
-            }.hashCode().absoluteValue
-    }${if (visibility == Visibilities.LOCAL) "_$startOffset" else ""}"
-    else -> error("Unsupported declaration ${dump()}")
-}
-
-fun Annotated.isMarkedAsImplicit(): Boolean =
+fun Annotated.isMarkedAsReader(): Boolean =
     hasAnnotation(InjektFqNames.Reader) ||
-            hasAnnotation(InjektFqNames.Given) ||
-            hasAnnotation(InjektFqNames.MapEntries) ||
-            hasAnnotation(InjektFqNames.SetElements)
+            hasAnnotation(InjektFqNames.Given)
 
-fun IrAnnotationContainer.isMarkedAsImplicit(): Boolean =
-    hasAnnotation(InjektFqNames.Reader) ||
-            hasAnnotation(InjektFqNames.Given) ||
-            hasAnnotation(InjektFqNames.MapEntries) ||
-            hasAnnotation(InjektFqNames.SetElements)
+fun IrDeclarationWithName.isMarkedAsReader(bindingContext: BindingContext): Boolean =
+    isReader(bindingContext) ||
+            hasAnnotation(InjektFqNames.Given)
+
+private fun IrDeclarationWithName.isReader(bindingContext: BindingContext): Boolean {
+    if (hasAnnotation(InjektFqNames.Reader)) return true
+    val implicitChecker = ImplicitChecker()
+    val bindingTrace = DelegatingBindingTrace(bindingContext, "Injekt IR")
+    return try {
+        implicitChecker.isReader(descriptor, bindingTrace)
+    } catch (e: Exception) {
+        false
+    }
+}
 
 val IrType.distinctedType: Any
     get() = (this as? IrSimpleType)?.abbreviation
@@ -636,53 +619,12 @@ val IrType.distinctedType: Any
         }
         ?: this
 
-fun compareTypeWithDistinct(
-    a: IrType?,
-    b: IrType?
-): Boolean = a?.hashWithDistinct() == b?.hashWithDistinct()
-
-fun IrType.hashWithDistinct(): Int {
-    var result = 0
-    val distinctedType = distinctedType
-    if (distinctedType is IrSimpleType) {
-        result += 31 * distinctedType.classifier.hashCode()
-        result += 31 * distinctedType.arguments.map { it.typeOrNull?.hashWithDistinct() ?: 0 }
-            .hashCode()
-    } else {
-        result += 31 * distinctedType.hashCode()
-    }
-
-    val qualifier = getAnnotation(InjektFqNames.Qualifier)
-        ?.getValueArgument(0)
-        ?.let { it as IrConst<String> }
-        ?.value
-
-    if (qualifier != null) {
-        result += 31 * qualifier.hashCode()
-    }
-
-    return result
-}
-
-fun IrAnnotationContainer.canUseImplicits(): Boolean = isMarkedAsImplicit() ||
-        (this is IrConstructor && constructedClass.isMarkedAsImplicit()) ||
-        (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsImplicit() == true)
-
-fun IrBuilderWithScope.singleClassArgConstructorCall(
-    clazz: IrClassSymbol,
-    value: IrClassifierSymbol
-): IrConstructorCall =
-    irCall(clazz.constructors.single()).apply {
-        putValueArgument(
-            0,
-            IrClassReferenceImpl(
-                startOffset, endOffset,
-                context.irBuiltIns.kClassClass.typeWith(value.defaultType),
-                value,
-                value.defaultType
-            )
-        )
-    }
+fun IrDeclarationWithName.canUseReader(bindingContext: BindingContext): Boolean =
+    isMarkedAsReader(bindingContext) ||
+            (this is IrConstructor && constructedClass.isMarkedAsReader(bindingContext)) ||
+            (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsReader(
+                bindingContext
+            ) == true)
 
 fun IrBuilderWithScope.irLambda(
     type: IrType,
@@ -740,3 +682,4 @@ fun FunctionDescriptor.getFunctionType(): KotlinType {
         .defaultType
         .replace(newArguments = valueParameters.map { it.type.asTypeProjection() } + returnType!!.asTypeProjection())
 }
+

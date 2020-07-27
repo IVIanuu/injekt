@@ -14,21 +14,10 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.internal
+package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
-internal object RootComponentFactories {
-
-    private val factories = mutableMapOf<KClass<*>, Any>()
-
-    fun register(factoryClass: KClass<*>, factory: Any) {
-        factories[factoryClass] = factory
-    }
-
-    fun <T> get(factoryClass: KClass<*>): T {
-        return factories[factoryClass] as? T
-            ?: error("Couldn't get factory '${factoryClass.java.name}'")
-    }
-
-}
+@Reader
+inline fun <T : Any> memo(
+    key: ReaderContext.Key<T>,
+    init: @Reader () -> T
+): T = readerContext.getOrSet(key) { init() }

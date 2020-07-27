@@ -38,33 +38,8 @@ interface InjektErrors {
         )
 
         @JvmField
-        val COMPONENT_MUST_BE_EMPTY = error(
-            "@Component must be an empty interface"
-        )
-
-        @JvmField
-        val COMPONENT_MUST_BE_AN_INTERFACE = error(
-            "@Component must be an interface"
-        )
-
-        @JvmField
-        val NOT_A_COMPONENT = error(
-            "Must be a @Component type"
-        )
-
-        @JvmField
-        val COMPONENT_WITH_TYPE_PARAMETERS = error(
-            "@Component cannot have type parameters"
-        )
-
-        @JvmField
         val GIVEN_CLASS_CANNOT_BE_ABSTRACT = error(
             "@Given class cannot be an interface or abstract"
-        )
-
-        @JvmField
-        val READER_MUST_BE_FINAL = error(
-            "@Reader must be final"
         )
 
         @JvmField
@@ -105,36 +80,6 @@ interface InjektErrors {
         @JvmField
         val MULTIPLE_IMPLICIT_ANNOTATIONS = error(
             "A declaration can only be annotated with one of @Reader, @Given, @MapEntries or @SetElements"
-        )
-
-        @JvmField
-        val EFFECT_WITHOUT_COMPANION = error(
-            "@Effect annotated class needs a companion object"
-        )
-
-        @JvmField
-        val EFFECT_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS = error(
-            "@Effect functions cannot have value parameters"
-        )
-
-        @JvmField
-        val EFFECT_FUNCTION_NEEDS_ONE_TYPE_PARAMETER = error(
-            "@Effect functions must have 1 type parameter"
-        )
-
-        @JvmField
-        val NOT_IN_EFFECT_BOUNDS = error(
-            "Annotated class is not in @Effect bounds"
-        )
-
-        @JvmField
-        val EFFECT_WITHOUT_GIVEN = error(
-            "@Effect must be combined with @Given"
-        )
-
-        @JvmField
-        val EFFECT_WITH_TYPE_PARAMETERS = error(
-            "@BindingEffect and @Effect annotated declaration cannot have type parameters"
         )
 
         init {

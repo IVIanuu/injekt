@@ -14,6 +14,17 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.internal
+package com.ivianuu.injekt
 
-internal annotation class Name(val value: String)
+object Injekt {
+
+    private val _builderInterceptors = mutableListOf<ReaderContextBuilderInterceptor>()
+    internal val builderInterceptors: List<ReaderContextBuilderInterceptor> get() = _builderInterceptors
+
+    fun builderInterceptor(
+        block: ReaderContextBuilderInterceptor
+    ) {
+        _builderInterceptors += block
+    }
+
+}

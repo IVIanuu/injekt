@@ -20,24 +20,12 @@ import org.jetbrains.kotlin.name.FqName
 
 object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
-    val Component = InjektPackage.child("Component".asNameId())
     val Distinct = InjektPackage.child("Distinct".asNameId())
-    val Effect = InjektPackage.child("Effect".asNameId())
     val Given = InjektPackage.child("Given".asNameId())
-    val MapEntries = InjektPackage.child("MapEntries".asNameId())
     val Reader = InjektPackage.child("Reader".asNameId())
-    val SetElements = InjektPackage.child("SetElements".asNameId())
+    val ReaderContext = InjektPackage.child("ReaderContext".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
-    val ChildComponentFactory = InternalPackage.child("ChildComponentFactory".asNameId())
-    val EntryPoint = InternalPackage.child("EntryPoint".asNameId())
-    val Implicit = InternalPackage.child("Implicit".asNameId())
-    val Implicits = InternalPackage.child("Implicits".asNameId())
-    val Index = InternalPackage.child("Index".asNameId())
-    val Name = InternalPackage.child("Name".asNameId())
-    val Qualifier = InternalPackage.child("Qualifier".asNameId())
-    val RootComponentFactory = InternalPackage.child("RootComponentFactory".asNameId())
-    val RootComponentFactories = InternalPackage.child("RootComponentFactories".asNameId())
 
     val IndexPackage = InternalPackage.child("index".asNameId())
 }

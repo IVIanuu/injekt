@@ -1,0 +1,120 @@
+/*
+ * Copyright 2020 Manuel Wrage
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.ivianuu.injekt
+
+import kotlin.reflect.KClass
+
+class ReaderContext(val backing: MutableMap<Key<*>, Any>) {
+
+    operator fun contains(key: Key<*>): Boolean = key in backing
+
+    operator fun <T : Any> get(key: Key<T>): T {
+        var value = getOrNull(key)
+        if (value == null) {
+            value = key.fallback()
+        }
+        return value
+    }
+
+    inline fun <T : Any> getOrSet(
+        key: Key<T>,
+        init: () -> T
+    ): T = getOrNull(key) ?: init().also { backing[key] = it }
+
+    fun <T : Any> getOrNull(key: Key<T>): T? {
+        var value = backing[key] as? T?
+
+        if (value == null) {
+            val justInTimeValueProviders = getOrNull(JustInTimeValueProvidersKey)
+            if (justInTimeValueProviders != null) {
+                for (provider in justInTimeValueProviders) {
+                    val result = withReaderContext(this) {
+                        provider.get(key)
+                    }
+                    if (result != null) {
+                        value = result.value
+                        break
+                    }
+                }
+            }
+        }
+
+        return value
+    }
+
+    interface Key<T : Any> {
+
+        fun merge(
+            oldValue: T,
+            newValue: T
+        ): T = newValue
+
+        fun fallback(): T = error("No value provided for $this")
+
+    }
+
+}
+
+interface ReaderContextLifecycleListener {
+    fun onAttach(context: ReaderContext)
+    fun onDetach(context: ReaderContext)
+}
+
+typealias ReaderContextBuilderInterceptor = ReaderContextBuilder.() -> Unit
+
+object NameKey : ReaderContext.Key<KClass<*>>
+
+@Reader
+fun <T : Any> getFactory(
+    key: TypeKey<T>
+): @Reader (Arguments) -> T {
+    val factoryKey = FactoryKey(key)
+    return readerContext[factoryKey]
+}
+
+data class FactoryKey<T : Any>(
+    val typeKey: TypeKey<T>
+) : ReaderContext.Key<@Reader (Arguments) -> T>
+
+inline fun <reified T : Any> factoryKeyOf() = FactoryKey<T>(typeKeyOf())
+
+data class TypeKey<T : Any>(val value: KClass<*>) : ReaderContext.Key<T>
+
+inline fun <reified T : Any> typeKeyOf() = TypeKey<T>(T::class)
+
+@Reader
+val readerContext: ReaderContext
+    get() = injektIntrinsic()
+
+inline fun <R> withReaderContext(
+    context: ReaderContext,
+    block: @Reader () -> R
+): R = injektIntrinsic()
+
+internal inline fun <R> internalWithReaderContext(
+    context: ReaderContext,
+    block: (ReaderContext) -> R
+) = block(context)
+
+data class KeyInstancePair<T : Any>(
+    val key: TypeKey<T>,
+    val instance: T
+)
+
+infix fun <T : Any> TypeKey<T>.with(instance: T) =
+    KeyInstancePair(this, instance)
+

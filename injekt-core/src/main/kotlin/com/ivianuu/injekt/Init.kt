@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.internal
+package com.ivianuu.injekt
 
-@PublishedApi
-internal fun <T> injektIntrinsic(): T =
-    throw UnsupportedOperationException("Must be compiled with the injekt compiler")
+fun initializeInjekt(): Unit = injektIntrinsic()

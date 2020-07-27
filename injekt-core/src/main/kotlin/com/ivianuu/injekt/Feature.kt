@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.internal
+package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
-internal annotation class EntryPoint(val component: KClass<*>)
+annotation class Feature

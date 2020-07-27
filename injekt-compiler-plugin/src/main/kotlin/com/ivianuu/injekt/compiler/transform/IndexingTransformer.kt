@@ -17,35 +17,17 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
-import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.buildClass
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.descriptors.impl.PackageFragmentDescriptorImpl
 import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
-import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
-import org.jetbrains.kotlin.ir.declarations.MetadataSource
-import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
-import org.jetbrains.kotlin.ir.symbols.impl.IrFileSymbolImpl
-import org.jetbrains.kotlin.ir.util.NaiveSourceBasedFileEntryImpl
 import org.jetbrains.kotlin.ir.util.constructedClass
-import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.scopes.MemberScope
 
 class IndexingTransformer(
     pluginContext: IrPluginContext
@@ -63,37 +45,28 @@ class IndexingTransformer(
             }
 
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                if ((declaration.hasAnnotation(InjektFqNames.Given) ||
-                            declaration.hasAnnotation(InjektFqNames.MapEntries) ||
-                            declaration.hasAnnotation(InjektFqNames.SetElements)) &&
-                    !declaration.isInEffect()
-                ) {
+                if (declaration.hasAnnotation(InjektFqNames.Given)) {
                     declarations += declaration
                 }
                 return super.visitFunction(declaration)
             }
 
             override fun visitClass(declaration: IrClass): IrStatement {
-                if (declaration.hasAnnotation(InjektFqNames.Given) ||
-                    declaration.hasAnnotation(InjektFqNames.RootComponentFactory) ||
-                    declaration.hasAnnotation(InjektFqNames.EntryPoint)
-                ) {
+                if (declaration.hasAnnotation(InjektFqNames.Given)) {
                     declarations += declaration
                 }
                 return super.visitClass(declaration)
             }
 
             override fun visitProperty(declaration: IrProperty): IrStatement {
-                if (declaration.hasAnnotation(InjektFqNames.Given) &&
-                    !declaration.isInEffect()
-                ) {
+                if (declaration.hasAnnotation(InjektFqNames.Given)) {
                     declarations += declaration
                 }
                 return super.visitProperty(declaration)
             }
         })
 
-        declarations.forEach { declaration ->
+        /*declarations.forEach { declaration ->
             val file = IrFileImpl(
                 fileEntry = NaiveSourceBasedFileEntryImpl(
                     declaration.descriptor.fqNameSafe.pathSegments()
@@ -137,18 +110,7 @@ class IndexingTransformer(
             }
 
             module.files += file
-        }
-    }
-
-    private fun IrDeclaration.isInEffect(): Boolean {
-        var current: IrDeclaration? = parent as? IrDeclaration
-
-        while (current != null) {
-            if (current.hasAnnotation(InjektFqNames.Effect)) return true
-            current = current.parent as? IrDeclaration
-        }
-
-        return false
+        }*/
     }
 
 }

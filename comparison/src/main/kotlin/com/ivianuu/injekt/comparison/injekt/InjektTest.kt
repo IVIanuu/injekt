@@ -16,29 +16,45 @@
 
 package com.ivianuu.injekt.comparison.injekt
 
-import com.ivianuu.injekt.ApplicationComponent
+import com.ivianuu.injekt.ReaderContext
 import com.ivianuu.injekt.comparison.base.InjectionTest
+import com.ivianuu.injekt.comparison.fibonacci.Fib1
+import com.ivianuu.injekt.comparison.fibonacci.Fib2
+import com.ivianuu.injekt.comparison.fibonacci.Fib3
+import com.ivianuu.injekt.comparison.fibonacci.Fib4
+import com.ivianuu.injekt.comparison.fibonacci.Fib5
+import com.ivianuu.injekt.comparison.fibonacci.Fib6
+import com.ivianuu.injekt.comparison.fibonacci.Fib7
 import com.ivianuu.injekt.comparison.fibonacci.Fib8
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.rootComponent
-import com.ivianuu.injekt.runReader
+import com.ivianuu.injekt.readerContext
+import com.ivianuu.injekt.withReaderContext
 
 object InjektTest : InjectionTest {
 
     override val name = "Injekt"
 
-    private var component: ApplicationComponent? = null
+    private var readerContext: ReaderContext? = null
 
     override fun setup() {
-        component = rootComponent()
+        readerContext = readerContext {
+            given { Fib1() }
+            given { Fib2() }
+            given { Fib3(given(), given()) }
+            given { Fib4(given(), given()) }
+            given { Fib5(given(), given()) }
+            given { Fib6(given(), given()) }
+            given { Fib7(given(), given()) }
+            given { Fib8(given(), given()) }
+        }
     }
 
     override fun inject() {
-        component!!.runReader { given<Fib8>() }
+        withReaderContext(readerContext!!) { given<Fib8>() }
     }
 
     override fun shutdown() {
-        component = null
+        readerContext = null
     }
 
 }

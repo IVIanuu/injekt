@@ -14,7 +14,13 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.internal
+package com.ivianuu.injekt.compiler
 
-@Target(AnnotationTarget.TYPE)
-internal annotation class Qualifier(val value: String)
+import org.jetbrains.kotlin.util.slicedMap.BasicWritableSlice
+import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
+import org.jetbrains.kotlin.util.slicedMap.WritableSlice
+
+object InjektWritableSlices {
+    val IS_READER: WritableSlice<Any, Boolean> =
+        BasicWritableSlice(RewritePolicy.DO_NOTHING)
+}

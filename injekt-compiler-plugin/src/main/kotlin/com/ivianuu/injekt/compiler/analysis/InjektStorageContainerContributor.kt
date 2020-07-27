@@ -22,15 +22,15 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.platform.TargetPlatform
 
-class InjektStorageContainerContributor : StorageComponentContainerContributor {
+class InjektStorageContainerContributor(
+    private val implicitChecker: ImplicitChecker
+) : StorageComponentContainerContributor {
     override fun registerModuleComponents(
         container: StorageComponentContainer,
         platform: TargetPlatform,
         moduleDescriptor: ModuleDescriptor
     ) {
-        container.useInstance(EffectChecker())
         container.useInstance(GivenChecker())
-        container.useInstance(ComponentChecker())
-        container.useInstance(ImplicitChecker())
+        container.useInstance(implicitChecker)
     }
 }

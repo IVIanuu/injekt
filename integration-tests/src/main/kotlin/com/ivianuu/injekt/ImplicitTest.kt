@@ -30,6 +30,25 @@ import org.junit.Test
 class ImplicitTest {
 
     @Test
+    fun joo() = codegen(
+        """
+        @Reader
+        inline fun <R> withInstances(
+            vararg pairs: KeyInstancePair<*>,
+            block: @Reader () -> R
+        ): R = withReaderContext(
+            context = readerContext {
+                pairs.forEach { (key, instance) ->
+                    key as TypeKey<Any>
+                    given(key = key) { instance }
+                }
+            },
+            block = block
+        )
+    """
+    )
+
+    @Test
     fun testSimpleReader() = codegen(
         """
         @Given
@@ -39,9 +58,11 @@ class ImplicitTest {
         fun func(): Foo = given<Foo>()
         
         fun invoke(): Foo { 
-            initializeComponents()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { func() }
+            initializeInjekt()
+            val context = readerContext()
+            return withReaderContext(readerContext()) {
+                foo()
+            }
         }
     """
     ) {
