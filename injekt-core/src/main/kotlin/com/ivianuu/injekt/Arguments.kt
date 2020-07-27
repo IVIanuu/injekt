@@ -25,4 +25,4 @@ operator fun <T> Arguments.component2() = get<T>(2)
 operator fun <T> Arguments.component3() = get<T>(3)
 operator fun <T> Arguments.component4() = get<T>(4)
 
-inline fun emptyArguments() = null
+inline fun emptyArguments(): Arguments = null

@@ -30,10 +30,14 @@ class ReaderContext(val backing: MutableMap<Key<*>, Any>) {
         return value
     }
 
+    operator fun <T : Any> set(key: Key<T>, value: T) {
+        backing[key] = value
+    }
+
     inline fun <T : Any> getOrSet(
         key: Key<T>,
         init: () -> T
-    ): T = getOrNull(key) ?: init().also { backing[key] = it }
+    ): T = getOrNull(key) ?: init().also { this[key] = it }
 
     fun <T : Any> getOrNull(key: Key<T>): T? {
         var value = backing[key] as? T?
@@ -117,4 +121,3 @@ data class KeyInstancePair<T : Any>(
 
 infix fun <T : Any> TypeKey<T>.with(instance: T) =
     KeyInstancePair(this, instance)
-
