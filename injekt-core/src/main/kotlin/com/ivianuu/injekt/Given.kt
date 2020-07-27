@@ -24,7 +24,8 @@ import kotlin.reflect.KClass
     AnnotationTarget.CLASS,
     AnnotationTarget.CONSTRUCTOR,
     AnnotationTarget.PROPERTY,
-    AnnotationTarget.VALUE_PARAMETER
+    AnnotationTarget.VALUE_PARAMETER,
+    AnnotationTarget.LOCAL_VARIABLE
 )
 annotation class Given(val component: KClass<*> = Nothing::class)
 

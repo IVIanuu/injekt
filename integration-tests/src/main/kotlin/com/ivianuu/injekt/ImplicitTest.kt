@@ -779,4 +779,25 @@ class ImplicitTest {
         assertSame(foo, invokeSingleFile(foo))
     }
 
+    @Test
+    fun testGivenVariable() = codegen(
+        """
+        @Reader
+        fun fooProvider() = given<Foo>()
+        
+        fun invoke(foo: Foo): Foo {
+            initializeComponents()
+            val component = rootComponent<TestComponent>()
+            return component.runReader {
+                @Given
+                val providedFoo = foo
+                fooProvider()
+            }
+        }
+    """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile(foo))
+    }
+
 }
