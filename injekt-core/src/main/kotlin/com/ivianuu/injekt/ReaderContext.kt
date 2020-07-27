@@ -73,14 +73,7 @@ class ReaderContext(val backing: MutableMap<Key<*>, Any>) {
 
 }
 
-interface ReaderContextLifecycleListener {
-    fun onAttach(context: ReaderContext)
-    fun onDetach(context: ReaderContext)
-}
-
 typealias ReaderContextBuilderInterceptor = ReaderContextBuilder.() -> Unit
-
-object NameKey : ReaderContext.Key<KClass<*>>
 
 @Reader
 fun <T : Any> getFactory(
@@ -108,11 +101,6 @@ inline fun <R> withReaderContext(
     context: ReaderContext,
     block: @Reader () -> R
 ): R = injektIntrinsic()
-
-internal inline fun <R> internalWithReaderContext(
-    context: ReaderContext,
-    block: (ReaderContext) -> R
-) = block(context)
 
 data class KeyInstancePair<T : Any>(
     val key: TypeKey<T>,

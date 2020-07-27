@@ -37,6 +37,7 @@ import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -78,7 +79,6 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.load.java.JvmAbi
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -102,24 +102,6 @@ class ReaderTransformer(
                 transformFunctionIfNeeded(super.visitFunction(declaration) as IrFunction)
         })
 
-        module.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitCall(expression: IrCall): IrExpression {
-                val result = super.visitCall(expression) as IrCall
-                return if (expression.symbol.owner.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.withReaderContext"
-                ) {
-                    DeclarationIrBuilder(pluginContext, expression.symbol).run {
-                        irCall(
-                            pluginContext.referenceFunctions(FqName("com.ivianuu.injekt.internalWithReaderContext"))
-                                .single()
-                        ).apply {
-                            copyTypeAndValueArgumentsFrom(expression)
-                        }
-                    }
-                } else result
-            }
-        })
-
         module.rewriteTransformedFunctionRefs()
 
         module.acceptVoid(symbolRemapper)
@@ -136,6 +118,29 @@ class ReaderTransformer(
                 null
             )
         }
+
+        module.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitFunction(declaration: IrFunction): IrStatement {
+                if (declaration.descriptor.fqNameSafe.asString() ==
+                    "com.ivianuu.injekt.withReaderContext"
+                ) {
+                    declaration.body = DeclarationIrBuilder(pluginContext, declaration.symbol).run {
+                        irExprBody(
+                            irCall(
+                                pluginContext.tmpFunction(1)
+                                    .owner
+                                    .functions
+                                    .first { it.name.asString() == "invoke" }
+                            ).apply {
+                                dispatchReceiver = irGet(declaration.valueParameters[1])
+                                putValueArgument(0, irGet(declaration.valueParameters[0]))
+                            }
+                        )
+                    }
+                }
+                return super.visitFunction(declaration)
+            }
+        })
     }
 
     private fun transformClassIfNeeded(clazz: IrClass): IrClass {
