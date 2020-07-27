@@ -17,16 +17,16 @@
 package com.ivianuu.injekt
 
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.reflect.KClass
 
 class ReaderContextBuilder(
-    val base: ReaderContext? = null
+    val name: KClass<*>?,
+    val parent: ReaderContext?
 ) {
 
-    private val elements: MutableMap<ReaderContext.Key<*>, Any> = ConcurrentHashMap(
-        base?.elements ?: emptyMap()
-    )
+    private val elements: MutableMap<ReaderContext.Key<*>, Any> = ConcurrentHashMap()
 
-    private val lazyElementProviders = mutableListOf<LazyElementProvider>()
+    private val elementFactories = mutableListOf<ElementFactory>()
 
     init {
         Injekt.builderInterceptors.forEach { it(this) }
@@ -42,19 +42,16 @@ class ReaderContextBuilder(
         ) else value) as Any
     }
 
-    fun <T : Any> setOnce(key: ReaderContext.Key<T>, value: () -> T) {
-        if (key !in elements) elements[key] = value
+    fun elementFactory(factory: ElementFactory) {
+        elementFactories += factory
     }
 
-    fun lazyElementProvider(lazyElementProvider: LazyElementProvider) {
-        lazyElementProviders += lazyElementProvider
-    }
-
-    fun build(): ReaderContext = ReaderContext(elements, lazyElementProviders)
+    fun build(): ReaderContext = ReaderContext(name, parent, elements, elementFactories)
 
 }
 
 inline fun readerContext(
-    base: ReaderContext? = null,
+    name: KClass<*>? = null,
+    parent: ReaderContext? = null,
     block: ReaderContextBuilder.() -> Unit = {}
-): ReaderContext = ReaderContextBuilder(base).apply(block).build()
+): ReaderContext = ReaderContextBuilder(name, parent).apply(block).build()

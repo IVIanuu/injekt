@@ -16,11 +16,4 @@
 
 package com.ivianuu.injekt
 
-interface LazyElementProvider {
-
-    @Reader
-    fun <T : Any> get(key: ReaderContext.Key<T>): Result<T>?
-
-    data class Result<T>(val value: T)
-
-}
+typealias ElementFactory = @Reader (ReaderContext.Key<*>) -> Any?

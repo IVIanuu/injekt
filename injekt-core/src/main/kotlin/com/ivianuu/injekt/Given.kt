@@ -28,36 +28,36 @@ annotation class Given(val component: KClass<*> = Nothing::class)
 
 @Reader
 inline fun <reified T : Any> given(
-    key: TypeKey<T> = typeKeyOf()
+    key: FactoryKey<T> = factoryKeyOf()
 ): T = getFactory(key)(emptyArguments())
 
 @Reader
 inline fun <reified T : Any> given(
     vararg arguments: Any?,
-    key: TypeKey<T> = typeKeyOf()
+    key: FactoryKey<T> = factoryKeyOf()
 ): T = getFactory(key)(arguments)
 
 inline fun <reified T : Any> ReaderContextBuilder.given(
     noinline factory: @Reader (Arguments) -> T
 ) {
-    given(key = typeKeyOf(), factory = factory)
+    given(key = factoryKeyOf(), factory = factory)
 }
 
 fun <T : Any> ReaderContextBuilder.given(
-    key: TypeKey<T>,
+    key: FactoryKey<T>,
     factory: @Reader (Arguments) -> T
 ) {
-    set(FactoryKey(key), factory)
+    set(key, factory)
 }
 
 inline fun <reified T : Any> ReaderContextBuilder.memoGiven(
     noinline factory: @Reader (Arguments) -> T
 ) {
-    memoGiven(key = typeKeyOf(), factory = factory)
+    memoGiven(key = factoryKeyOf(), factory = factory)
 }
 
 fun <T : Any> ReaderContextBuilder.memoGiven(
-    key: TypeKey<T>,
+    key: FactoryKey<T>,
     factory: @Reader (Arguments) -> T
 ) {
     given(key) { arguments ->

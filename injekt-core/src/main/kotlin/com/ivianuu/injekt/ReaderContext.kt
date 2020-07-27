@@ -19,16 +19,19 @@ package com.ivianuu.injekt
 import kotlin.reflect.KClass
 
 class ReaderContext internal constructor(
+    val name: KClass<*>?,
+    val parent: ReaderContext?,
     val elements: MutableMap<Key<*>, Any>,
-    private val lazyElementProviders: List<LazyElementProvider>
+    val elementFactories: List<ElementFactory>
 ) {
-
-    operator fun contains(key: Key<*>): Boolean = key in elements
 
     operator fun <T : Any> get(key: Key<T>): T {
         var value = getOrNull(key)
         if (value == null) {
-            value = key.fallback()
+            value = parent?.getOrNull(key)
+            if (value == null) {
+                value = key.fallback()
+            }
         }
         return value
     }
@@ -43,21 +46,14 @@ class ReaderContext internal constructor(
     ): T = getOrNull(key) ?: init().also { this[key] = it }
 
     fun <T : Any> getOrNull(key: Key<T>): T? {
-        var value = elements[key] as? T?
+        elements[key]?.let { return it as T }
 
-        if (value == null) {
-            for (provider in lazyElementProviders) {
-                val result = withReaderContext(this) {
-                    provider.get(key)
-                }
-                if (result != null) {
-                    value = result.value
-                    break
-                }
-            }
+        for (factory in elementFactories) {
+            val element = withReaderContext(this) { factory(key) }
+            if (element != null) return element as T
         }
 
-        return value
+        return null
     }
 
     interface Key<T : Any> {
@@ -77,21 +73,19 @@ typealias ReaderContextBuilderInterceptor = ReaderContextBuilder.() -> Unit
 
 @Reader
 fun <T : Any> getFactory(
-    key: TypeKey<T>
-): @Reader (Arguments) -> T {
-    val factoryKey = FactoryKey(key)
-    return readerContext[factoryKey]
+    key: FactoryKey<T>
+): @Reader (Arguments) -> T = readerContext[key]
+
+class FactoryKey<T : Any>(
+    val type: KClass<*>
+) : ReaderContext.Key<@Reader (Arguments) -> T> {
+    private val hashCode = type.hashCode()
+    override fun hashCode(): Int = hashCode
+    override fun equals(other: Any?): Boolean =
+        other is FactoryKey<*> && other.hashCode == hashCode
 }
 
-data class FactoryKey<T : Any>(
-    val typeKey: TypeKey<T>
-) : ReaderContext.Key<@Reader (Arguments) -> T>
-
-inline fun <reified T : Any> factoryKeyOf() = FactoryKey<T>(typeKeyOf())
-
-data class TypeKey<T : Any>(val value: KClass<*>) : ReaderContext.Key<T>
-
-inline fun <reified T : Any> typeKeyOf() = TypeKey<T>(T::class)
+inline fun <reified T : Any> factoryKeyOf() = FactoryKey<T>(T::class)
 
 @Reader
 val readerContext: ReaderContext
