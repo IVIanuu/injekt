@@ -270,11 +270,4 @@ class EffectTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
-    @Test
-    fun test() = codegen(
-        """
-        enum class Lol { Foo, Bar, Baz }
-    """
-    )
-
 }
