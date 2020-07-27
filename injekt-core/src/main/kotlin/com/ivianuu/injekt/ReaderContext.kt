@@ -101,11 +101,3 @@ inline fun <R> withReaderContext(
     context: ReaderContext,
     block: @Reader () -> R
 ): R = injektIntrinsic()
-
-data class KeyInstancePair<T : Any>(
-    val key: TypeKey<T>,
-    val instance: T
-)
-
-infix fun <T : Any> TypeKey<T>.with(instance: T) =
-    KeyInstancePair(this, instance)
