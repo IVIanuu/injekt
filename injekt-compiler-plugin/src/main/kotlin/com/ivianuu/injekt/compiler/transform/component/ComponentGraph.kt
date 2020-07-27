@@ -20,12 +20,10 @@ import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.flatMapFix
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrField
-import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.render
-import org.jetbrains.kotlin.name.FqName
 
 class ComponentGraph(
     val parent: ComponentGraph?,
@@ -135,27 +133,7 @@ class ComponentGraph(
             "No binding found for '${request.key}'\n" +
                     "required at '${request.requestingKey}' '${request.requestOrigin.orUnknown()}'\n" +
                     "in '${component.origin}'\n" +
-                    "chain '$chain'\n" +
-                    "all providers ${
-                        component.factoryImpl.declarationGraph.bindings.map {
-                            it.function.render()
-                        }.joinToString("\n")
-                    }\n\n\nindices${component.factoryImpl.declarationGraph.indices.joinToString("\n")}\n" +
-                    "files ${component.factoryImpl.declarationGraph.module.files.joinToString("\n") { it.path }}\n\n" +
-                    "${
-                        component.factoryImpl.pluginContext.referenceClass(
-                            FqName(
-                                "com.ivianuu.injekt.internal.index.com_ivianuu_injekt_sample_Repo"
-                            )
-                        )?.owner?.render()
-                    }\n" +
-                    "${
-                        component.factoryImpl.pluginContext.referenceClass(
-                            FqName(
-                                "com.ivianuu.injekt.sample.Repo"
-                            )
-                        )?.owner?.render()
-                    }"
+                    "chain '$chain'\n"
         )
     }
 
