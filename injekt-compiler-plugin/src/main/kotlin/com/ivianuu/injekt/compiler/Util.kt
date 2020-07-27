@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.analysis.ImplicitChecker
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.allParameters
@@ -117,6 +118,8 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.AnnotationValue
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
@@ -443,12 +446,12 @@ fun KClassValue.getIrClass(
 
 fun String.asNameId(): Name = Name.identifier(this)
 
-fun IrClass.getReaderConstructor(): IrConstructor? {
+fun IrClass.getReaderConstructor(bindingContext: BindingContext): IrConstructor? {
     constructors
         .firstOrNull {
-            it.isMarkedAsImplicit()
+            it.isMarkedAsImplicit(bindingContext)
         }?.let { return it }
-    if (!isMarkedAsImplicit()) return null
+    if (!isMarkedAsImplicit(bindingContext)) return null
     return primaryConstructor
 }
 
@@ -481,6 +484,12 @@ fun IrPluginContext.tmpFunction(n: Int): IrClassSymbol =
 
 fun IrPluginContext.tmpSuspendFunction(n: Int): IrClassSymbol =
     referenceClass(builtIns.getSuspendFunction(n).fqNameSafe)!!
+
+fun IrFunction.getFunctionType(pluginContext: IrPluginContext): IrType {
+    return (if (isSuspend) pluginContext.tmpSuspendFunction(valueParameters.size)
+    else pluginContext.tmpFunction(valueParameters.size))
+        .typeWith(valueParameters.map { it.type } + returnType)
+}
 
 fun getJoinedName(
     packageFqName: FqName,
@@ -622,11 +631,22 @@ fun Annotated.isMarkedAsImplicit(): Boolean =
             hasAnnotation(InjektFqNames.MapEntries) ||
             hasAnnotation(InjektFqNames.SetElements)
 
-fun IrAnnotationContainer.isMarkedAsImplicit(): Boolean =
-    hasAnnotation(InjektFqNames.Reader) ||
+fun IrDeclarationWithName.isMarkedAsImplicit(bindingContext: BindingContext): Boolean =
+    isReader(bindingContext) ||
             hasAnnotation(InjektFqNames.Given) ||
             hasAnnotation(InjektFqNames.MapEntries) ||
             hasAnnotation(InjektFqNames.SetElements)
+
+private fun IrDeclarationWithName.isReader(bindingContext: BindingContext): Boolean {
+    if (hasAnnotation(InjektFqNames.Reader)) return true
+    val implicitChecker = ImplicitChecker()
+    val bindingTrace = DelegatingBindingTrace(bindingContext, "Injekt IR")
+    return try {
+        implicitChecker.isImplicit(descriptor, bindingTrace)
+    } catch (e: Exception) {
+        false
+    }
+}
 
 val IrType.distinctedType: Any
     get() = (this as? IrSimpleType)?.abbreviation
@@ -635,6 +655,13 @@ val IrType.distinctedType: Any
             it.descriptor.hasAnnotation(InjektFqNames.Distinct)
         }
         ?: this
+
+fun IrDeclarationWithName.canUseImplicits(bindingContext: BindingContext): Boolean =
+    isMarkedAsImplicit(bindingContext) ||
+            (this is IrConstructor && constructedClass.isMarkedAsImplicit(bindingContext)) ||
+            (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsImplicit(
+                bindingContext
+            ) == true)
 
 fun compareTypeWithDistinct(
     a: IrType?,
@@ -663,10 +690,6 @@ fun IrType.hashWithDistinct(): Int {
 
     return result
 }
-
-fun IrAnnotationContainer.canUseImplicits(): Boolean = isMarkedAsImplicit() ||
-        (this is IrConstructor && constructedClass.isMarkedAsImplicit()) ||
-        (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsImplicit() == true)
 
 fun IrBuilderWithScope.singleClassArgConstructorCall(
     clazz: IrClassSymbol,

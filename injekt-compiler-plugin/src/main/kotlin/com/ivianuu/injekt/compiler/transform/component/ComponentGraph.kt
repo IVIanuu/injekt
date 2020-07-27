@@ -93,10 +93,10 @@ class ComponentGraph(
         if (bindings.filterNot { it is ProviderBindingNode }.size > 1) {
             error(
                 "Multiple bindings found for '${request.key}' at:\n${
-                    bindings
-                        .filterNot { it is ProviderBindingNode }
-                        .joinToString("\n") { "'${it.origin.orUnknown()}'" }
-                } in '${component.origin}'"
+                bindings
+                    .filterNot { it is ProviderBindingNode }
+                    .joinToString("\n") { "'${it.origin.orUnknown()}'" }
+                }\nin '${component.origin}'"
             )
         }
 

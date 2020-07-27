@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -123,6 +124,9 @@ class DeclarationGraph(
                     implicitTransformer.getTransformedFunction(it),
                     implicitTransformer.getReaderSignature(it)
                 )
+            }
+            .onEach {
+                println("found ${it.function} ${it.function.render()}")
             }
             .distinct()
             .forEach { _bindings += it }

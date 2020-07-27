@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform
 
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -26,6 +27,7 @@ import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.IrPropertySymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
+import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -34,7 +36,8 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class InjektPluginContext(
     private val moduleFragment: IrModuleFragment,
-    private val pluginContext: IrPluginContext
+    private val pluginContext: IrPluginContext,
+    private val symbolRemapper: DeepCopySymbolRemapper
 ) : IrPluginContext by pluginContext {
     override fun referenceClass(fqName: FqName): IrClassSymbol? {
         return (pluginContext.referenceClass(fqName)
@@ -50,12 +53,15 @@ class InjektPluginContext(
                 })
                 clazz
             })
+            ?.let { symbolRemapper.getReferencedClass(it) }
+            ?.also { (pluginContext as IrPluginContextImpl).linker.getDeclaration(it) }
     }
 
     override fun referenceConstructors(classFqn: FqName): Collection<IrConstructorSymbol> {
         return (pluginContext.referenceConstructors(classFqn) + run {
             referenceClass(classFqn)?.constructors?.toList() ?: emptyList()
-        }).distinct()
+        }).map { symbolRemapper.getReferencedConstructor(it) }
+            .distinct()
     }
 
     override fun referenceFunctions(fqName: FqName): Collection<IrSimpleFunctionSymbol> {
@@ -70,7 +76,10 @@ class InjektPluginContext(
                 }
             })
             functions
-        }).distinct()
+        })
+            .map { symbolRemapper.getReferencedFunction(it) }
+            .filterIsInstance<IrSimpleFunctionSymbol>()
+            .distinct()
     }
 
     override fun referenceProperties(fqName: FqName): Collection<IrPropertySymbol> {
@@ -85,6 +94,8 @@ class InjektPluginContext(
                 }
             })
             properties
-        }).distinct()
+        })
+            .map { symbolRemapper.getReferencedProperty(it) }
+            .distinct()
     }
 }

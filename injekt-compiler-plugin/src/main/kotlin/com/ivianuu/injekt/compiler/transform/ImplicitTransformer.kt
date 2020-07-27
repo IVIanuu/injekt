@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.copy
 import com.ivianuu.injekt.compiler.distinctedType
 import com.ivianuu.injekt.compiler.flatMapFix
+import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.getValueArgumentSafe
@@ -59,6 +60,7 @@ import org.jetbrains.kotlin.incremental.components.LocationInfo
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.incremental.components.Position
 import org.jetbrains.kotlin.incremental.record
+import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -83,6 +85,8 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrOverridableDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.IrVariable
@@ -95,16 +99,21 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrExpressionBody
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
+import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
+import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
@@ -117,8 +126,10 @@ import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.hasDefaultValue
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.load.java.JvmAbi
@@ -127,10 +138,13 @@ import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ImplicitTransformer(pluginContext: IrPluginContext) :
-    AbstractInjektTransformer(pluginContext) {
+class ImplicitTransformer(
+    pluginContext: IrPluginContext,
+    private val symbolRemapper: DeepCopySymbolRemapper
+) : AbstractInjektTransformer(pluginContext) {
 
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
+    private val remappedTransformedFunctions = mutableMapOf<IrFunction, IrFunction>()
     private val transformedClasses = mutableSetOf<IrClass>()
 
     private val readerSignatures = mutableMapOf<IrFunction, IrFunction>()
@@ -142,7 +156,11 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
         transformFunctionIfNeeded(function)
 
     fun getReaderSignature(function: IrFunction) =
-        readerSignatures[transformFunctionIfNeeded(function)]!!
+        symbolRemapper.getReferencedFunction(
+            readerSignatures[transformFunctionIfNeeded(function)]?.symbol
+                ?: error("No for ${function.dump()}")
+        )
+            .owner
 
     override fun lower() {
         module.transformChildrenVoid(object : IrElementTransformerVoid() {
@@ -186,6 +204,36 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                     parent.addChild(params)
                 }
             }
+
+        module.rewriteTransformedFunctionRefs()
+
+        module.acceptVoid(symbolRemapper)
+
+        val typeRemapper = ReaderTypeRemapper(pluginContext, symbolRemapper)
+        val transformer = DeepCopyIrTreeWithSymbolsPreservingMetadata(
+            pluginContext,
+            symbolRemapper,
+            typeRemapper
+        ).also { typeRemapper.deepCopy = it }
+        module.files.forEach {
+            it.transformChildren(
+                transformer,
+                null
+            )
+        }
+
+        transformedClasses.forEach {
+            val readerConstructor = it.getReaderConstructor(pluginContext.bindingContext)!!
+            val remapped = symbolRemapper.getReferencedConstructor(readerConstructor.symbol).owner
+            readerSignatures[remapped] = readerSignatures[readerConstructor]!!
+        }
+
+        transformedFunctions.forEach { (original, transformed) ->
+            val remapped = symbolRemapper.getReferencedFunction(transformed.symbol).owner
+            remappedTransformedFunctions[original] = remapped
+            remappedTransformedFunctions[transformed] = remapped
+            readerSignatures[transformed]?.let { readerSignatures[remapped] = it }
+        }
     }
 
     private fun transformClassIfNeeded(
@@ -194,9 +242,9 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
     ): IrClass {
         if (clazz in transformedClasses) return clazz
 
-        val readerConstructor = clazz.getReaderConstructor()
+        val readerConstructor = clazz.getReaderConstructor(pluginContext.bindingContext)
 
-        if (!clazz.isMarkedAsImplicit() && readerConstructor == null) return clazz
+        if (!clazz.isMarkedAsImplicit(pluginContext.bindingContext) && readerConstructor == null) return clazz
 
         if (readerConstructor == null) return clazz
 
@@ -265,16 +313,18 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
 
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
         if (function is IrConstructor) {
-            return if (function.canUseImplicits()) {
+            return if (function.canUseImplicits(pluginContext.bindingContext)) {
                 transformClassIfNeeded(function.constructedClass, false)
-                    .getReaderConstructor()!!
+                    .getReaderConstructor(pluginContext.bindingContext)!!
             } else function
         }
 
+        remappedTransformedFunctions[function]?.let { return it }
+        if (function in remappedTransformedFunctions.values) return function
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
 
-        if (!function.canUseImplicits()) return function
+        if (!function.canUseImplicits(pluginContext.bindingContext)) return function
 
         if (function.valueParameters.any { it.hasAnnotation(InjektFqNames.Implicit) }) {
             transformedFunctions[function] = function
@@ -351,7 +401,7 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
             }
 
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                val isReader = declaration.isMarkedAsImplicit()
+                val isReader = declaration.isMarkedAsImplicit(pluginContext.bindingContext)
                 if (isReader) functionStack.push(declaration)
                 return super.visitFunction(declaration)
                     .also { if (isReader) functionStack.pop() }
@@ -359,7 +409,6 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
 
             override fun visitValueParameter(declaration: IrValueParameter): IrStatement {
                 valueParameterStack += declaration
-                println("visit value parameter ${declaration.dump()}")
                 if ((functionStack.isEmpty() || functionStack.last() == owner) &&
                     declaration.hasAnnotation(InjektFqNames.Given)
                 ) {
@@ -381,7 +430,9 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                 if (functionStack.isNotEmpty() &&
                     functionStack.lastOrNull() != owner
                 ) return result
-                if (expression.symbol.owner.canUseImplicits()) {
+                if (expression.symbol.owner.canUseImplicits(pluginContext.bindingContext)
+                        .also { println("visit call ${result.render()} -> $it") }
+                ) {
                     if (result is IrCall && expression.symbol.owner.isGiven) {
                         givenCalls += result
                         valueParameterStack.lastOrNull()
@@ -909,6 +960,14 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                     .jvmNameAnnotation(name, pluginContext)
                 correspondingPropertySymbol?.owner?.setter = this
             }
+
+            if (this@copyAsReader is IrOverridableDeclaration<*>) {
+                overriddenSymbols = this@copyAsReader.overriddenSymbols.map {
+                    val owner = it.owner as IrFunction
+                    val newOwner = transformFunctionIfNeeded(owner)
+                    newOwner.symbol as IrSimpleFunctionSymbol
+                }
+            }
         }
     }
 
@@ -929,6 +988,124 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                     .let { it as IrConst<String> }
                     .value == declaration.uniqueFqName()
             }
+    }
+
+    private fun IrFunctionAccessExpression.isReaderLambdaInvoke(): Boolean {
+        return symbol.owner.name.asString() == "invoke" &&
+                dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Reader) == true
+    }
+
+    private fun IrElement.rewriteTransformedFunctionRefs() {
+        transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitFunctionExpression(expression: IrFunctionExpression): IrExpression {
+                val result = super.visitFunctionExpression(expression) as IrFunctionExpression
+                val transformed = transformFunctionIfNeeded(result.function)
+                return if (transformed in transformedFunctions.values) transformFunctionExpression(
+                    transformed,
+                    result
+                )
+                else result
+            }
+
+            override fun visitFunctionReference(expression: IrFunctionReference): IrExpression {
+                val result = super.visitFunctionReference(expression) as IrFunctionReference
+                val transformed = transformFunctionIfNeeded(result.symbol.owner)
+                return if (transformed in transformedFunctions.values) transformFunctionReference(
+                    transformed,
+                    result
+                )
+                else result
+            }
+
+            override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
+                val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
+                if (result !is IrCall &&
+                    result !is IrConstructorCall &&
+                    result !is IrDelegatingConstructorCall
+                ) return result
+                val transformed = transformFunctionIfNeeded(result.symbol.owner)
+                return if (transformed in transformedFunctions.values) transformCall(
+                    transformed,
+                    result
+                )
+                else result
+            }
+        })
+    }
+
+    private fun transformFunctionExpression(
+        transformedCallee: IrFunction,
+        expression: IrFunctionExpression
+    ): IrFunctionExpression {
+        return IrFunctionExpressionImpl(
+            expression.startOffset,
+            expression.endOffset,
+            transformedCallee.getFunctionType(pluginContext),
+            transformedCallee as IrSimpleFunction,
+            expression.origin
+        )
+    }
+
+    private fun transformFunctionReference(
+        transformedCallee: IrFunction,
+        expression: IrFunctionReference
+    ): IrFunctionReference {
+        return IrFunctionReferenceImpl(
+            expression.startOffset,
+            expression.endOffset,
+            transformedCallee.getFunctionType(pluginContext),
+            transformedCallee.symbol,
+            expression.typeArgumentsCount,
+            null,
+            expression.origin
+        )
+    }
+
+    private fun transformCall(
+        transformedCallee: IrFunction,
+        expression: IrFunctionAccessExpression
+    ): IrFunctionAccessExpression {
+        return when (expression) {
+            is IrConstructorCall -> {
+                IrConstructorCallImpl(
+                    expression.startOffset,
+                    expression.endOffset,
+                    transformedCallee.returnType,
+                    transformedCallee.symbol as IrConstructorSymbol,
+                    expression.typeArgumentsCount,
+                    transformedCallee.typeParameters.size,
+                    transformedCallee.valueParameters.size,
+                    expression.origin
+                ).apply {
+                    copyTypeAndValueArgumentsFrom(expression)
+                }
+            }
+            is IrDelegatingConstructorCall -> {
+                IrDelegatingConstructorCallImpl(
+                    expression.startOffset,
+                    expression.endOffset,
+                    expression.type,
+                    transformedCallee.symbol as IrConstructorSymbol,
+                    expression.typeArgumentsCount,
+                    transformedCallee.valueParameters.size
+                ).apply {
+                    copyTypeAndValueArgumentsFrom(expression)
+                }
+            }
+            else -> {
+                expression as IrCall
+                IrCallImpl(
+                    expression.startOffset,
+                    expression.endOffset,
+                    transformedCallee.returnType,
+                    transformedCallee.symbol,
+                    expression.origin,
+                    expression.superQualifierSymbol
+                ).apply {
+                    copyTypeAndValueArgumentsFrom(expression)
+                }
+            }
+        }
     }
 
 }

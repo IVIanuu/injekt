@@ -25,18 +25,20 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
+import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.SymbolTable
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val injektPluginContext = InjektPluginContext(moduleFragment, pluginContext)
+        val symbolRemapper = DeepCopySymbolRemapper()
+        val injektPluginContext = InjektPluginContext(moduleFragment, pluginContext, symbolRemapper)
 
         EffectTransformer(injektPluginContext).doLower(moduleFragment)
 
         ComponentFactoryTransformer(injektPluginContext).doLower(moduleFragment)
 
-        val implicitTransformer = ImplicitTransformer(injektPluginContext)
+        val implicitTransformer = ImplicitTransformer(injektPluginContext, symbolRemapper)
 
         val declarationGraph = DeclarationGraph(
             moduleFragment,

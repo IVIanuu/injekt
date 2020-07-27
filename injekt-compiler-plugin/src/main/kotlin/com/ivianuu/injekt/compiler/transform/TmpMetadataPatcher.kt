@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.canUseImplicits
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
@@ -34,7 +35,8 @@ class TmpMetadataPatcher(pluginContext: IrPluginContext) :
                 (declaration as IrFileImpl).metadata =
                     MetadataSource.File(
                         ((declaration.metadata as MetadataSource.File).descriptors + (declaration.declarations
-                            .filter { !it.canUseImplicits() })
+                            .filterIsInstance<IrDeclarationWithName>()
+                            .filter { !it.canUseImplicits(pluginContext.bindingContext) })
                             .map { it.descriptor })
                             .distinct()
                     )
