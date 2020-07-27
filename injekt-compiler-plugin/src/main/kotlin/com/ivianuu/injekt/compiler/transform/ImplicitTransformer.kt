@@ -414,7 +414,13 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
             givenTypes.values
                 .none { it.isTypeParameter() }
         )
-            createParams(owner, givenTypes.values)
+            createParams(owner, givenTypes.values
+                .filter { givenType ->
+                    ownerFunction.valueParameters.none {
+                        it.hasAnnotation(InjektFqNames.Given) &&
+                                it.type == givenType
+                    }
+                })
                 .also { transformClassIfNeeded(it, true) }
                 .also { params += it }
         else null
@@ -435,19 +441,31 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
             }
             givenValueParameterAdded(valueParameter)
             givenValueParameters[mergedParamsType] = valueParameter
+
+            ownerFunction.valueParameters
+                .filter { it.hasAnnotation(InjektFqNames.Given) }
+                .forEach {
+                    givenValueParameterAdded(it)
+                    givenValueParameters[it.type.distinctedType] = it
+                }
         } else {
             givenTypes.values.forEach { givenType ->
                 val call = callsByTypes[givenType.distinctedType]
                 val defaultValueParameter = defaultValueParameterByGivenCalls[call]
 
-                val valueParameter = (defaultValueParameter
-                    ?.also { it.defaultValue = null }
+                val valueParameter = (ownerFunction.valueParameters
+                    .filter { it.hasAnnotation(InjektFqNames.Given) }
+                    .lastOrNull { it.type == givenType }
+                    ?: defaultValueParameter
+                        ?.also { it.defaultValue = null }
                     ?: ownerFunction.addValueParameter(
                         name = givenType.readableName().asString(),
                         type = givenType
                     )).apply {
-                    annotations += DeclarationIrBuilder(pluginContext, symbol)
-                        .irCall(symbols.implicit.constructors.single())
+                    if (!hasAnnotation(InjektFqNames.Given)) {
+                        annotations += DeclarationIrBuilder(pluginContext, symbol)
+                            .irCall(symbols.implicit.constructors.single())
+                    }
                 }
                 givenValueParameterAdded(valueParameter)
                 givenValueParameters[givenType.distinctedType] = valueParameter
@@ -477,32 +495,28 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
                 )
                 .distinctedType
 
-            val providerExpression = if (mergedParams != null) {
-                provider(
+            givenValueParameters[finalType]
+                ?.let {
+                    provider(this, finalType, givenValueParameters[finalType]!!, scopes)
+                }
+                ?: provider(
                     this,
                     mergedParamsType!!.distinctedType,
                     givenValueParameters.values.single(),
                     scopes
-                )
-            } else {
-                provider(this, finalType, givenValueParameters[finalType]!!, scopes)
-            }
+                ).let { providerExpression ->
+                    val mergedParamsFunction = mergedParams.functions
+                        .single {
+                            it.dispatchReceiverParameter?.type?.classOrNull == mergedParams.symbol &&
+                                    it.returnType
+                                        .remapTypeParameters(mergedParams, owner)
+                                        .distinctedType == finalType
+                        }
 
-            if (mergedParams != null) {
-                val mergedParamsFunction = mergedParams.functions
-                    .single {
-                        it.dispatchReceiverParameter?.type?.classOrNull == mergedParams.symbol &&
-                                it.returnType
-                                    .remapTypeParameters(mergedParams, owner)
-                                    .distinctedType == finalType
+                    irCall(mergedParamsFunction).apply {
+                        dispatchReceiver = providerExpression
                     }
-
-                irCall(mergedParamsFunction).apply {
-                    dispatchReceiver = providerExpression
                 }
-            } else {
-                providerExpression
-            }
         }
     }
 

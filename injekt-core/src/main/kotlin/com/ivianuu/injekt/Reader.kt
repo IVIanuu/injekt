@@ -22,8 +22,11 @@ import com.ivianuu.injekt.internal.injektIntrinsic
     AnnotationTarget.FUNCTION,
     AnnotationTarget.PROPERTY,
     AnnotationTarget.CLASS,
-    AnnotationTarget.CONSTRUCTOR
+    AnnotationTarget.CONSTRUCTOR,
+    AnnotationTarget.TYPE,
+    AnnotationTarget.TYPEALIAS,
+    AnnotationTarget.TYPE_PARAMETER
 )
 annotation class Reader
 
-inline fun <R> Any.runReader(block: () -> R): R = injektIntrinsic()
+inline fun <R> Any.runReader(block: @Reader () -> R): R = injektIntrinsic()

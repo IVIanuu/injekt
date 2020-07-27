@@ -24,6 +24,7 @@ import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertNotSame
+import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -759,6 +760,23 @@ class ImplicitTest {
         """
     ) {
         assertTrue(invokeSingleFile() is Bar)
+    }
+
+    @Test
+    fun testGivenValueParameter() = codegen(
+        """
+        @Reader
+        fun fooProvider(@Given foo: Foo) = given<Foo>()
+        
+        fun invoke(foo: Foo): Foo {
+            initializeComponents()
+            val component = rootComponent<TestComponent>()
+            return component.runReader { fooProvider(foo) }
+        }
+    """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile(foo))
     }
 
 }
