@@ -18,9 +18,12 @@ package com.ivianuu.injekt
 
 import kotlin.reflect.KClass
 
-class ReaderContext(val backing: MutableMap<Key<*>, Any>) {
+class ReaderContext internal constructor(
+    val elements: MutableMap<Key<*>, Any>,
+    private val lazyElementProviders: List<LazyElementProvider>
+) {
 
-    operator fun contains(key: Key<*>): Boolean = key in backing
+    operator fun contains(key: Key<*>): Boolean = key in elements
 
     operator fun <T : Any> get(key: Key<T>): T {
         var value = getOrNull(key)
@@ -31,7 +34,7 @@ class ReaderContext(val backing: MutableMap<Key<*>, Any>) {
     }
 
     operator fun <T : Any> set(key: Key<T>, value: T) {
-        backing[key] = value
+        elements[key] = value
     }
 
     inline fun <T : Any> getOrSet(
@@ -40,19 +43,16 @@ class ReaderContext(val backing: MutableMap<Key<*>, Any>) {
     ): T = getOrNull(key) ?: init().also { this[key] = it }
 
     fun <T : Any> getOrNull(key: Key<T>): T? {
-        var value = backing[key] as? T?
+        var value = elements[key] as? T?
 
         if (value == null) {
-            val justInTimeValueProviders = getOrNull(JustInTimeValueProvidersKey)
-            if (justInTimeValueProviders != null) {
-                for (provider in justInTimeValueProviders) {
-                    val result = withReaderContext(this) {
-                        provider.get(key)
-                    }
-                    if (result != null) {
-                        value = result.value
-                        break
-                    }
+            for (provider in lazyElementProviders) {
+                val result = withReaderContext(this) {
+                    provider.get(key)
+                }
+                if (result != null) {
+                    value = result.value
+                    break
                 }
             }
         }

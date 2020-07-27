@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt
 
-interface JustInTimeValueProvider {
+interface LazyElementProvider {
 
     @Reader
     fun <T : Any> get(key: ReaderContext.Key<T>): Result<T>?
@@ -24,5 +24,3 @@ interface JustInTimeValueProvider {
     data class Result<T>(val value: T)
 
 }
-
-object JustInTimeValueProvidersKey : ReaderContext.Key<List<JustInTimeValueProvider>>

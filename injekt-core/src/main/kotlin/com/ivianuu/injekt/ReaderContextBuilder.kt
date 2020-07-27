@@ -22,11 +22,11 @@ class ReaderContextBuilder(
     val base: ReaderContext? = null
 ) {
 
-    private val map = ConcurrentHashMap(
-        base?.backing ?: emptyMap()
+    private val elements: MutableMap<ReaderContext.Key<*>, Any> = ConcurrentHashMap(
+        base?.elements ?: emptyMap()
     )
 
-    private val justInTimeValueProviders = mutableListOf<JustInTimeValueProvider>()
+    private val lazyElementProviders = mutableListOf<LazyElementProvider>()
 
     init {
         Injekt.builderInterceptors.forEach { it(this) }
@@ -36,17 +36,21 @@ class ReaderContextBuilder(
         key: ReaderContext.Key<T>,
         value: T
     ) {
-        map[key] = (if (map.containsKey(key)) key.merge(map[key]!! as T, value) else value) as Any
+        elements[key] = (if (elements.containsKey(key)) key.merge(
+            elements[key]!! as T,
+            value
+        ) else value) as Any
     }
 
-    fun justInTimeValueProvider(justInTimeValueProvider: JustInTimeValueProvider) {
-        justInTimeValueProviders += justInTimeValueProvider
+    fun <T : Any> setOnce(key: ReaderContext.Key<T>, value: () -> T) {
+        if (key !in elements) elements[key] = value
     }
 
-    fun build(): ReaderContext {
-        map[JustInTimeValueProvidersKey] = justInTimeValueProviders
-        return ReaderContext(map)
+    fun lazyElementProvider(lazyElementProvider: LazyElementProvider) {
+        lazyElementProviders += lazyElementProvider
     }
+
+    fun build(): ReaderContext = ReaderContext(elements, lazyElementProviders)
 
 }
 
