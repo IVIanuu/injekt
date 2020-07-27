@@ -160,12 +160,10 @@ class ImplicitTransformer(pluginContext: IrPluginContext) :
 
         module.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitClass(declaration: IrClass): IrStatement =
-                transformClassIfNeeded(super.visitClass(declaration) as IrClass, false)
-        })
+                super.visitClass(transformClassIfNeeded(declaration, false))
 
-        module.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFunction(declaration: IrFunction): IrStatement =
-                transformFunctionIfNeeded(super.visitFunction(declaration) as IrFunction)
+                super.visitFunction(transformFunctionIfNeeded(declaration))
         })
 
         readerSignatures
