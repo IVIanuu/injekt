@@ -16,11 +16,13 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.dumpSrc
+import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.transform.component.ComponentFactoryTransformer
+import com.ivianuu.injekt.compiler.transform.component.ComponentIndexingTransformer
 import com.ivianuu.injekt.compiler.transform.component.ComponentTransformer
 import com.ivianuu.injekt.compiler.transform.component.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.component.EntryPointTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitIndexingTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.WithInstancesTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -45,13 +47,21 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         ComponentFactoryTransformer(injektPluginContext).doLower(moduleFragment)
 
-        val implicitTransformer =
-            ImplicitTransformer(
-                injektPluginContext,
-                symbolRemapper
-            )
+        val indexer = Indexer(
+            pluginContext,
+            moduleFragment,
+            InjektSymbols(pluginContext)
+        )
+
+        ImplicitIndexingTransformer(pluginContext, indexer).doLower(moduleFragment)
+
+        val implicitTransformer = ImplicitTransformer(
+            injektPluginContext,
+            symbolRemapper
+        )
 
         val declarationGraph = DeclarationGraph(
+            indexer,
             moduleFragment,
             injektPluginContext,
             implicitTransformer
@@ -61,15 +71,15 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         EntryPointTransformer(injektPluginContext).doLower(moduleFragment)
 
-        IndexingTransformer(injektPluginContext).doLower(moduleFragment)
+        ComponentIndexingTransformer(indexer, injektPluginContext).doLower(moduleFragment)
 
-        ComponentTransformer(injektPluginContext, declarationGraph).doLower(moduleFragment)
+        ComponentTransformer(injektPluginContext, declarationGraph, implicitTransformer).doLower(
+            moduleFragment
+        )
 
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 
         generateSymbols(pluginContext)
-
-        println(moduleFragment.dumpSrc())
     }
 
 }

@@ -707,7 +707,7 @@ class ImplicitTest {
         invokeSingleFile()
     }
 
-    // todo @Test
+    @Test
     fun testReaderCycle() = codegen(
         """
         @Reader
@@ -724,7 +724,7 @@ class ImplicitTest {
     """
     )
 
-    // todo @Test
+    @Test
     fun testIntermediateReaderCycle() = codegen(
         """
         @Reader
@@ -798,6 +798,73 @@ class ImplicitTest {
     ) {
         val foo = Foo()
         assertSame(foo, invokeSingleFile(foo))
+    }
+
+    @Test
+    fun testContextPropagation() = codegen(
+        """
+        fun switch(
+
+        )
+        
+        fun invoke(foo: Foo): Foo {
+            initializeComponents()
+            val component = rootComponent<TestComponent>()
+            return component.runReader {
+                withInstances(foo) {
+                    fooProvider()
+                }
+            }
+        }
+    """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile(foo))
+    }
+
+    @Test
+    fun testAbstractReaderFunction() = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+
+        @Given
+        fun bar() = Bar(given())
+        
+        interface Action {
+            @Reader
+            fun execute()
+        }
+        
+        open class FooAction : Action {
+            @Reader
+            override fun execute() {
+                given<Foo>()
+            }
+        }
+        
+        class BarAction : FooAction() {
+            @Reader
+            override fun execute() {
+                super.execute()
+                given<Bar>()
+            }
+        }
+        
+        fun invoke() {
+            initializeComponents()
+            val component = rootComponent<TestComponent>()
+            component.runReader {
+                val actions = listOf(
+                    FooAction(),
+                    BarAction()
+                )
+                actions.forEach { it.execute() }
+            }
+        }
+    """
+    ) {
+        invokeSingleFile()
     }
 
 }

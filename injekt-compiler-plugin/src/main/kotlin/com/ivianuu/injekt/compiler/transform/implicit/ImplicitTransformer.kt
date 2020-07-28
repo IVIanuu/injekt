@@ -31,9 +31,11 @@ import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isMarkedAsImplicit
+import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
 import com.ivianuu.injekt.compiler.jvmNameAnnotation
 import com.ivianuu.injekt.compiler.readableName
 import com.ivianuu.injekt.compiler.remapTypeParameters
+import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.thisOfClass
 import com.ivianuu.injekt.compiler.tmpFunction
@@ -42,7 +44,7 @@ import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.typeWith
-import com.ivianuu.injekt.compiler.uniqueFqName
+import com.ivianuu.injekt.compiler.uniqueName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -95,6 +97,7 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
+import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
@@ -127,6 +130,7 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.load.java.JvmAbi
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -144,6 +148,28 @@ class ImplicitTransformer(
 
     fun getTransformedFunction(function: IrFunction) =
         transformFunctionIfNeeded(function)
+
+    fun getFunctionForContext(context: IrClass): IrFunction? {
+        val functionName = context.getAnnotation(InjektFqNames.Name)
+            ?.getValueArgument(0)
+            ?.let { it as IrConst<String> }
+            ?.value
+            ?: return null
+
+        val functionFqName = functionName
+            .replaceAfter("__", "")
+            .replace("__", "")
+            .removeIllegalChars()
+
+        return pluginContext.referenceFunctions(FqName(functionFqName))
+            .map { it.owner }
+            .map { getTransformedFunction(it) }
+            .firstOrNull {
+                it.getContext()
+                    ?.let { symbolRemapper.getReferencedClass(it.symbol) } ==
+                        symbolRemapper.getReferencedClass(context.symbol)
+            }
+    }
 
     override fun lower() {
         module.transformChildrenVoid(Transformer())
@@ -341,9 +367,13 @@ class ImplicitTransformer(
         val givenCalls = mutableListOf<IrCall>()
         val readerCalls = mutableListOf<IrFunctionAccessExpression>()
 
+        val componentsByLambdaValueParameter =
+            mutableMapOf<IrValueParameter, MutableSet<IrType>>()
+
         owner.transformChildrenVoid(object : IrElementTransformerVoid() {
 
             private val functionStack = mutableListOf<IrFunction>()
+            private val runReaderStack = mutableListOf<IrCall>()
 
             init {
                 if (owner is IrFunction) functionStack += owner
@@ -356,11 +386,39 @@ class ImplicitTransformer(
                     .also { if (isReader) functionStack.pop() }
             }
 
+            override fun visitCall(expression: IrCall): IrExpression {
+                val isRunReader = expression.symbol.descriptor.fqNameSafe.asString() ==
+                        "com.ivianuu.injekt.runReader"
+                if (isRunReader) runReaderStack.push(expression)
+                return super.visitCall(expression)
+                    .also { if (isRunReader) runReaderStack.pop() }
+            }
+
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
                 if (expression !is IrCall &&
                     expression !is IrConstructorCall &&
                     expression !is IrDelegatingConstructorCall
                 ) return super.visitFunctionAccess(expression)
+
+                if (expression.isReaderLambdaInvoke()) {
+                    if (expression.isReaderLambdaInvoke() && runReaderStack.isNotEmpty()) {
+                        expression as IrCall
+
+                        val lambdaValueParameter = expression.dispatchReceiver!!
+                            .let { it as? IrGetValue }
+                            ?.symbol
+                            ?.let { valueParameterSymbol ->
+                                ownerFunction.valueParameters
+                                    .singleOrNull { it.symbol == valueParameterSymbol }
+                            }
+
+                        if (lambdaValueParameter != null) {
+                            componentsByLambdaValueParameter.getOrPut(lambdaValueParameter) {
+                                mutableSetOf()
+                            } += runReaderStack.last().extensionReceiver!!.type
+                        }
+                    }
+                }
 
                 if (functionStack.isNotEmpty() &&
                     functionStack.lastOrNull() != owner
@@ -405,7 +463,7 @@ class ImplicitTransformer(
                 irCall(symbols.name.constructors.single()).apply {
                     putValueArgument(
                         0,
-                        irString(owner.uniqueFqName())
+                        irString(owner.uniqueName())
                     )
                 }
             }
@@ -852,13 +910,8 @@ class ImplicitTransformer(
                 function.getAnnotation(InjektFqNames.Name)!!
                     .getValueArgument(0)!!
                     .let { it as IrConst<String> }
-                    .value == declaration.uniqueFqName()
+                    .value == declaration.uniqueName()
             }
-    }
-
-    private fun IrFunctionAccessExpression.isReaderLambdaInvoke(): Boolean {
-        return symbol.owner.name.asString() == "invoke" &&
-                dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Reader) == true
     }
 
 }

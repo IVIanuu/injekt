@@ -45,6 +45,8 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
         get() = pluginContext.referenceClass(InjektFqNames.Name)!!
     val qualifier: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.Qualifier)!!
+    val readerImpl: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.ReaderImpl)!!
     val rootComponentFactory: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.RootComponentFactory)!!
     val rootComponentFactories: IrClassSymbol

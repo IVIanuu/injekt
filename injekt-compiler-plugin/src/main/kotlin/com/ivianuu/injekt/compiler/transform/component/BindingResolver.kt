@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
-import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.tmpFunction
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -88,6 +87,7 @@ class ChildComponentFactoryBindingResolver(
                         parentComponent.factoryImpl.pluginContext,
                         parentComponent.factoryImpl.declarationGraph,
                         parentComponent.factoryImpl.symbols,
+                        parentComponent.factoryImpl.implicitTransformer
                     )
 
                     childComponentFactoryImpl.init()
@@ -178,7 +178,7 @@ class GivenBindingResolver(
                 explicitParameters = explicitParameters,
                 owner = component,
                 origin = function.descriptor.fqNameSafe,
-                context = function.getContext()!!
+                function = function
             )
         }
 

@@ -63,11 +63,6 @@ interface InjektErrors {
         )
 
         @JvmField
-        val READER_MUST_BE_FINAL = error(
-            "@Reader must be final"
-        )
-
-        @JvmField
         val EITHER_CLASS_OR_CONSTRUCTOR_GIVEN = error(
             "Either the class or a constructor may be annotated with @Given"
         )

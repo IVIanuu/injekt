@@ -72,6 +72,7 @@ import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstKind
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
@@ -290,6 +291,22 @@ fun IrType.remapTypeParameters(
         }
         else -> this
     }
+
+fun IrClass.getAllClasses(): Set<IrClass> {
+    val classes = mutableSetOf<IrClass>()
+
+    fun collect(clazz: IrClass) {
+        classes += clazz
+        clazz
+            .superTypes
+            .map { it.classOrNull!!.owner }
+            .forEach { collect(it) }
+    }
+
+    collect(this)
+
+    return classes
+}
 
 fun IrType.substitute(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {
     if (this !is IrSimpleType) return this
@@ -607,20 +624,14 @@ fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
     }
 }
 
-fun IrMemberAccessExpression.getValueArgumentSafe(index: Int) = try {
-    getValueArgument(index)
-} catch (t: Throwable) {
-    null
-}
-
-fun IrDeclarationWithName.uniqueFqName() = when (this) {
-    is IrClass -> "c_${descriptor.fqNameSafe}"
-    is IrFunction -> "f_${descriptor.fqNameSafe}_${
-        descriptor.valueParameters
-            .filterNot { it.name.asString() == "_context" }
-            .map { it.type }.map {
-                it.constructor.declarationDescriptor!!.fqNameSafe
-            }.hashCode().absoluteValue
+fun IrDeclarationWithName.uniqueName() = when (this) {
+    is IrClass -> "${descriptor.fqNameSafe}__"
+    is IrFunction -> "${descriptor.fqNameSafe}__${
+    descriptor.valueParameters
+        .filterNot { it.name.asString() == "_context" }
+        .map { it.type }.map {
+            it.constructor.declarationDescriptor!!.fqNameSafe
+        }.hashCode().absoluteValue
     }${if (visibility == Visibilities.LOCAL) "_$startOffset" else ""}"
     else -> error("Unsupported declaration ${dump()}")
 }
@@ -646,6 +657,11 @@ private fun IrDeclarationWithName.isReader(bindingContext: BindingContext): Bool
     } catch (e: Exception) {
         false
     }
+}
+
+fun IrFunctionAccessExpression.isReaderLambdaInvoke(): Boolean {
+    return symbol.owner.name.asString() == "invoke" &&
+            dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Reader) == true
 }
 
 val IrType.distinctedType: Any

@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform.component
 
+import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.lookupTracker
 import com.ivianuu.injekt.compiler.tmpFunction
@@ -34,7 +35,7 @@ import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irTemporary
-import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.classOrNull
@@ -204,7 +205,7 @@ class ComponentExpressions(
         { irNull() }
 
     private fun givenExpression(binding: GivenBindingNode): ComponentExpression {
-        recordLookup(binding.context)
+        recordLookup(binding.function)
         val componentExpression = getBindingExpression(
             BindingRequest(
                 component.clazz.defaultType.asKey(),
@@ -308,7 +309,8 @@ class ComponentExpressions(
         } else return parentExpression
     }
 
-    private fun recordLookup(context: IrClass) {
+    private fun recordLookup(function: IrFunction) {
+        val context = function.getContext()!!
         val location = object : LookupLocation {
             override val location: LocationInfo? = object : LocationInfo {
                 override val filePath: String

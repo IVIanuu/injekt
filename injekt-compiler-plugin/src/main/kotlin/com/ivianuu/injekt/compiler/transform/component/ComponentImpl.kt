@@ -18,6 +18,8 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.flatMapFix
+import com.ivianuu.injekt.compiler.getAllClasses
+import com.ivianuu.injekt.compiler.getContext
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -42,7 +44,9 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
+class ComponentImpl(
+    val factoryImpl: ComponentFactoryImpl
+) {
     val origin: FqName? = factoryImpl.component.descriptor.fqNameSafe
 
     val clazz = buildClass {
@@ -155,9 +159,19 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
         var firstRound = true
 
         while (true) {
-            val entryPoints = (if (firstRound) factoryImpl.entryPoints
-            else graph.resolvedBindings.values.flatMapFix { it.contexts })
-                .filter { it.defaultType !in processedSuperTypes }
+            val entryPoints =
+                (if (firstRound) factoryImpl.entryPoints
+                else graph.resolvedBindings.values
+                    .flatMapFix { it.contexts.map { it.getContext()!! } })
+                    .flatMapFix { it.getAllClasses() }
+                    .flatMapFix {
+                        factoryImpl.implicitTransformer
+                            .getFunctionForContext(it)
+                            ?.let { factoryImpl.declarationGraph.getAllContextsForFunction(it) }
+                            ?: listOf(it)
+                    }
+                    .distinct()
+                    .filter { it.defaultType !in processedSuperTypes }
 
             if (entryPoints.isEmpty()) break
 

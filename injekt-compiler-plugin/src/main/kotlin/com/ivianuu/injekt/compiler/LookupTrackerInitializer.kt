@@ -26,7 +26,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 
-class LookupTrackerProvider : AnalysisHandlerExtension {
+class LookupTrackerInitializer : AnalysisHandlerExtension {
 
     override fun doAnalysis(
         project: Project,

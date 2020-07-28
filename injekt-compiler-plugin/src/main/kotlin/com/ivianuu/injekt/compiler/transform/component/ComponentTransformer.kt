@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform.component
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -37,13 +38,13 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ComponentTransformer(
     pluginContext: IrPluginContext,
-    private val declarationGraph: DeclarationGraph
+    private val declarationGraph: DeclarationGraph,
+    private val implicitTransformer: ImplicitTransformer
 ) : AbstractInjektTransformer(pluginContext) {
 
     private data class InitializeComponentsCall(
@@ -125,7 +126,8 @@ class ComponentTransformer(
                             null,
                             pluginContext,
                             declarationGraph,
-                            symbols
+                            symbols,
+                            implicitTransformer
                         )
 
                         componentFactoryImpl.init()

@@ -27,7 +27,6 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors
@@ -121,13 +120,6 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
             (descriptor !is ConstructorDescriptor ||
                     !descriptor.constructedClass.isMarkedAsImplicit())
         ) return
-
-        if (descriptor.modality != Modality.FINAL) {
-            context.trace.report(
-                InjektErrors.READER_MUST_BE_FINAL
-                    .on(declaration)
-            )
-        }
     }
 
     private fun checkProperty(

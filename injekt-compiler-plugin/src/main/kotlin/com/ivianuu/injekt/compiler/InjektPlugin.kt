@@ -61,7 +61,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
 
         AnalysisHandlerExtension.registerExtension(
             project,
-            LookupTrackerProvider()
+            LookupTrackerInitializer()
         )
 
         TypeResolutionInterceptor.registerExtension(

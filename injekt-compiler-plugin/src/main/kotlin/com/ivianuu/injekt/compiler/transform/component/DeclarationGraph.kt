@@ -19,9 +19,10 @@ package com.ivianuu.injekt.compiler.transform.component
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getContext
+import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitTransformer
+import com.ivianuu.injekt.compiler.uniqueName
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -33,9 +34,9 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class DeclarationGraph(
+    private val indexer: Indexer,
     val module: IrModuleFragment,
     private val pluginContext: IrPluginContext,
     private val implicitTransformer: ImplicitTransformer
@@ -56,27 +57,46 @@ class DeclarationGraph(
     private val _setElements = mutableListOf<IrFunction>()
     val setElements: List<IrFunction> get() = _setElements
 
-    val indices: List<FqName> by lazy {
-        val memberScope = pluginContext.moduleDescriptor.getPackage(InjektFqNames.IndexPackage)
-            .memberScope
+    fun getAllContextsForFunction(function: IrFunction): List<IrClass> {
+        val contexts = mutableListOf<IrClass>()
 
-        ((module.files
-            .filter { it.fqName == InjektFqNames.IndexPackage }
-            .flatMapFix { it.declarations }
-            .filterIsInstance<IrClass>()) + ((memberScope.getClassifierNames()
-            ?: emptySet()).mapNotNull {
-            memberScope.getContributedClassifier(
-                it,
-                NoLookupLocation.FROM_BACKEND
-            )
-        }.map { pluginContext.referenceClass(it.fqNameSafe)!!.owner }))
-            .map {
-                it.getAnnotation(InjektFqNames.Index)!!
-                    .getValueArgument(0)!!
-                    .let { it as IrConst<String> }
-                    .value
-                    .let { FqName(it) }
-            }
+        contexts += function.getContext()!!
+
+        fun collectAllContextsForFunction(function: IrFunction) {
+            indexer.indices
+                .mapNotNull { pluginContext.referenceClass(it)?.owner }
+                .mapNotNull { it.getAnnotation(InjektFqNames.ReaderImpl) }
+                .filter { annotation ->
+                    annotation.getValueArgument(0)
+                        .let { it as IrConst<String> }
+                        .value == function.uniqueName()
+                }
+                .map {
+                    it.getValueArgument(1)
+                        .let { it as IrConst<String> }
+                        .value
+                }
+                .flatMapFix { implName ->
+                    pluginContext.referenceFunctions(
+                        FqName(
+                            implName.replaceAfter("__", "")
+                                .replace("__", "")
+                        )
+                    )
+                        .filter {
+                            it.owner.uniqueName() == implName
+                        }
+                }
+                .map { implicitTransformer.getTransformedFunction(it.owner) }
+                .forEach {
+                    contexts += it.getContext()!!
+                    collectAllContextsForFunction(it)
+                }
+        }
+
+        collectAllContextsForFunction(function)
+
+        return contexts
     }
 
     fun initialize() {
@@ -88,21 +108,21 @@ class DeclarationGraph(
     }
 
     private fun collectRootComponentFactories() {
-        indices
+        indexer.indices
             .mapNotNull { pluginContext.referenceClass(it)?.owner }
             .filter { it.hasAnnotation(InjektFqNames.RootComponentFactory) }
             .forEach { _rootComponentFactories += it }
     }
 
     private fun collectEntryPoints() {
-        indices
+        indexer.indices
             .mapNotNull { pluginContext.referenceClass(it)?.owner }
             .filter { it.hasAnnotation(InjektFqNames.EntryPoint) }
             .forEach { _entryPoints += it }
     }
 
     private fun collectBindings() {
-        indices
+        indexer.indices
             .flatMapFix {
                 pluginContext.referenceFunctions(it)
                     .map { it.owner } +
@@ -126,7 +146,7 @@ class DeclarationGraph(
     }
 
     private fun collectMapEntries() {
-        indices
+        indexer.indices
             .flatMapFix { pluginContext.referenceFunctions(it) }
             .map { it.owner }
             .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
@@ -137,7 +157,7 @@ class DeclarationGraph(
     }
 
     private fun collectSetElements() {
-        indices
+        indexer.indices
             .flatMapFix { pluginContext.referenceFunctions(it) }
             .map { it.owner }
             .filter { it.hasAnnotation(InjektFqNames.SetElements) }
