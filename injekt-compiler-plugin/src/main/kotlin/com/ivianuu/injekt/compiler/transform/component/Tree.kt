@@ -18,13 +18,14 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.compareTypeWithDistinct
 import com.ivianuu.injekt.compiler.distinctedType
+import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.hashWithDistinct
 import com.ivianuu.injekt.compiler.isTypeParameter
-import com.ivianuu.injekt.compiler.typeArguments
-import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
+import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
 import org.jetbrains.kotlin.ir.types.IrErrorType
@@ -36,6 +37,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 sealed class BindingNode(
     val key: Key,
+    val contexts: List<IrClass>,
     val dependencies: List<BindingRequest>,
     val targetComponent: IrType?,
     val scoped: Boolean,
@@ -50,20 +52,26 @@ class ChildComponentFactoryBindingNode(
     val parent: IrClass,
     val childComponentFactoryExpression: ComponentExpression
 ) : BindingNode(
-    key, listOf(
+    key,
+    emptyList(),
+    listOf(
         BindingRequest(
             parent.defaultType.asKey(),
             key,
             null
         )
     ),
-    null, false, owner, origin
+    null,
+    false,
+    owner,
+    origin
 )
 
 class ComponentImplBindingNode(
     val component: ComponentImpl,
 ) : BindingNode(
     component.factoryImpl.component.defaultType.asKey(),
+    emptyList(),
     emptyList(),
     null,
     false,
@@ -78,16 +86,17 @@ class GivenBindingNode(
     scoped: Boolean,
     owner: ComponentImpl,
     origin: FqName?,
-    val createExpression: IrBuilderWithScope.(Map<BindingParameter, () -> IrExpression?>) -> IrExpression,
-    val parameters: List<BindingParameter>,
-    val implicitPair: DeclarationGraph.ImplicitPair
-) : BindingNode(key, dependencies, targetComponent, scoped, owner, origin)
+    val createExpression: IrBuilderWithScope.(Map<IrValueParameter, () -> IrExpression?>, () -> IrExpression) -> IrExpression,
+    val explicitParameters: List<IrValueParameter>,
+    val context: IrClass
+) : BindingNode(key, listOf(context), dependencies, targetComponent, scoped, owner, origin)
 
 class InputBindingNode(
     component: ComponentImpl,
     val inputField: IrField
 ) : BindingNode(
     inputField.type.asKey(),
+    emptyList(),
     emptyList(),
     null,
     false,
@@ -99,9 +108,10 @@ class MapBindingNode(
     key: Key,
     dependencies: List<BindingRequest>,
     owner: ComponentImpl,
-    val functions: List<DeclarationGraph.ImplicitPair>
+    val functions: List<IrFunction>
 ) : BindingNode(
     key,
+    functions.map { it.getContext()!! },
     dependencies,
     null,
     false,
@@ -113,9 +123,10 @@ class SetBindingNode(
     key: Key,
     dependencies: List<BindingRequest>,
     owner: ComponentImpl,
-    val functions: List<DeclarationGraph.ImplicitPair>
+    val functions: List<IrFunction>
 ) : BindingNode(
     key,
+    functions.map { it.getContext()!! },
     dependencies,
     null,
     false,
@@ -129,29 +140,11 @@ class NullBindingNode(
 ) : BindingNode(
     key,
     emptyList(),
+    emptyList(),
     null,
     false,
     owner,
     null
-)
-
-class ProviderBindingNode(
-    key: Key,
-    owner: ComponentImpl,
-    origin: FqName?,
-) : BindingNode(
-    key,
-    listOf(
-        BindingRequest(
-            key.type.typeArguments.single().typeOrFail.asKey(),
-            key,
-            origin
-        )
-    ),
-    null,
-    false,
-    owner,
-    origin
 )
 
 fun IrType.asKey(): Key = Key(this)
@@ -214,10 +207,3 @@ class BindingRequest(
         "BindingRequest(key=$key, requestingKey=$requestingKey, requestOrigin=$requestOrigin)"
 
 }
-
-data class BindingParameter(
-    val name: String,
-    val key: Key,
-    val explicit: Boolean,
-    val origin: FqName?
-)

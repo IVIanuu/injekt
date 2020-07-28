@@ -617,7 +617,7 @@ fun IrDeclarationWithName.uniqueFqName() = when (this) {
     is IrClass -> "c_${descriptor.fqNameSafe}"
     is IrFunction -> "f_${descriptor.fqNameSafe}_${
         descriptor.valueParameters
-            .filterNot { it.hasAnnotation(InjektFqNames.Implicit) }
+            .filterNot { it.name.asString() == "_context" }
             .map { it.type }.map {
                 it.constructor.declarationDescriptor!!.fqNameSafe
             }.hashCode().absoluteValue
@@ -763,3 +763,7 @@ fun FunctionDescriptor.getFunctionType(): KotlinType {
         .defaultType
         .replace(newArguments = valueParameters.map { it.type.asTypeProjection() } + returnType!!.asTypeProjection())
 }
+
+fun IrFunction.getContext(): IrClass? = valueParameters.singleOrNull {
+    it.name.asString() == "_context"
+}?.type?.classOrNull?.owner

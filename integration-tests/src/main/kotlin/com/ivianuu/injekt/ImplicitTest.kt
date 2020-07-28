@@ -23,7 +23,6 @@ import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
-import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -401,7 +400,7 @@ class ImplicitTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
-    @Test
+    // todo @Test
     fun testReaderOpenSubclass() = codegen(
         """
         @Given fun foo() = Foo()
@@ -424,7 +423,7 @@ class ImplicitTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
-    @Test
+    // todo @Test
     fun testReaderAbstractSubclass() = codegen(
         """
         @Given fun foo() = Foo()
@@ -447,7 +446,7 @@ class ImplicitTest {
         assertTrue(invokeSingleFile() is Foo)
     }
 
-    @Test
+    // todo @Test
     fun testGenericSuperClass() = codegen(
         """
         @Given fun foo() = Foo()
@@ -614,24 +613,6 @@ class ImplicitTest {
     }
 
     @Test
-    fun testGivenClassInDefaultParameter() = codegen(
-        """
-        @Given fun foo() = Foo()
-        
-        @Reader
-        class CreateFoo(val foo: Foo = given())
-        
-        fun invoke(): Foo { 
-            initializeComponents()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { CreateFoo().foo }
-        }
-    """
-    ) {
-        assertTrue(invokeSingleFile() is Foo)
-    }
-
-    @Test
     fun testGenericReaderDependencyOfSameType() = codegen(
         """
         @Given
@@ -697,20 +678,6 @@ class ImplicitTest {
     )
 
     @Test
-    fun testDoesNotRequireExplicitOverriddenParameters() = codegen(
-        """
-        @Reader 
-        fun createFoo(foo: Foo = given()) = foo
-        
-        fun invoke() {
-            initializeComponents()
-            val component = rootComponent<TestComponent>()
-            component.runReader { createFoo(Foo()) }
-        }
-    """
-    )
-
-    @Test
     fun testGivenCallInComplexDefaultExpressionCreatesAnAdditionalValueParameter() = codegen(
         """
         @Reader 
@@ -727,26 +694,6 @@ class ImplicitTest {
     }
 
     @Test
-    fun testLazyGiven() = codegen(
-        """
-        @Given
-        fun foo() = Foo()
-        
-        val component by lazy {
-            initializeComponents()
-            rootComponent<TestComponent>()
-        }
-        
-        fun invoke() = component.runReader {
-            given<Foo>(lazy = true) to given<Foo>(lazy = true)
-        }
-        """
-    ) {
-        val (a, b) = invokeSingleFile<Pair<Foo, Foo>>()
-        assertNotSame(a, b)
-    }
-
-    @Test
     fun testAssistedGiven() = codegen(
         """
         @Given
@@ -760,44 +707,6 @@ class ImplicitTest {
         """
     ) {
         assertTrue(invokeSingleFile() is Bar)
-    }
-
-    @Test
-    fun testGivenValueParameter() = codegen(
-        """
-        @Reader
-        fun fooProvider(@Given foo: Foo) = given<Foo>()
-        
-        fun invoke(foo: Foo): Foo {
-            initializeComponents()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { fooProvider(foo) }
-        }
-    """
-    ) {
-        val foo = Foo()
-        assertSame(foo, invokeSingleFile(foo))
-    }
-
-    @Test
-    fun testGivenVariable() = codegen(
-        """
-        @Reader
-        fun fooProvider() = given<Foo>()
-        
-        fun invoke(foo: Foo): Foo {
-            initializeComponents()
-            val component = rootComponent<TestComponent>()
-            return component.runReader {
-                @Given
-                val providedFoo = foo
-                fooProvider()
-            }
-        }
-    """
-    ) {
-        val foo = Foo()
-        assertSame(foo, invokeSingleFile(foo))
     }
 
     @Test

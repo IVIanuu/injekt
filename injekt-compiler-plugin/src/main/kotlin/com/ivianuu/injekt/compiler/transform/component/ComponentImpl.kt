@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.flatMapFix
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -151,44 +152,52 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
     private fun implementRequests() {
         val processedSuperTypes = mutableSetOf<IrType>()
         val declarationNames = mutableSetOf<Name>()
-        val entryPoints = factoryImpl.entryPoints
-        fun collect(superClass: IrClass) {
-            if (superClass.defaultType in processedSuperTypes) return
-            processedSuperTypes += superClass.defaultType
-            for (declaration in superClass.declarations.toList()) {
-                if (declaration !is IrFunction) continue
-                if (declaration is IrConstructor) continue
-                if (declaration.name in declarationNames) continue
-                if (declaration.dispatchReceiverParameter?.type ==
-                    factoryImpl.pluginContext.irBuiltIns.anyType
-                ) break
-                declarationNames += declaration.name
-                val request = BindingRequest(
-                    declaration.returnType.asKey(),
-                    null,
-                    declaration.descriptor.fqNameSafe
-                )
-                dependencyRequests += declaration to request
+        var firstRound = true
+
+        while (true) {
+            val entryPoints = (if (firstRound) factoryImpl.entryPoints
+            else graph.resolvedBindings.values.flatMapFix { it.contexts })
+                .filter { it.defaultType !in processedSuperTypes }
+
+            if (entryPoints.isEmpty()) break
+
+            fun collect(superClass: IrClass) {
+                if (superClass.defaultType in processedSuperTypes) return
+                processedSuperTypes += superClass.defaultType
+                for (declaration in superClass.declarations.toList()) {
+                    if (declaration !is IrFunction) continue
+                    if (declaration is IrConstructor) continue
+                    if (declaration.name in declarationNames) continue
+                    if (declaration.dispatchReceiverParameter?.type ==
+                        factoryImpl.pluginContext.irBuiltIns.anyType
+                    ) break
+                    declarationNames += declaration.name
+                    val request = BindingRequest(
+                        declaration.returnType.asKey(),
+                        null,
+                        declaration.descriptor.fqNameSafe
+                    )
+                    dependencyRequests += declaration to request
+                }
+
+                superClass.superTypes
+                    .map { it.classOrNull!!.owner }
+                    .forEach { collect(it) }
             }
 
-            superClass.superTypes
-                .map { it.classOrNull!!.owner }
-                .forEach { collect(it) }
-        }
-
-        entryPoints.forEach { entryPoint ->
-            clazz.superTypes += entryPoint.defaultType
-            collect(entryPoint)
-        }
-
-        dependencyRequests.forEach { (_, request) ->
-            graph.validate(request)
-            if (request.key !in implementedRequests) {
-                componentExpressions.getBindingExpression(request)
+            entryPoints.forEach { entryPoint ->
+                clazz.superTypes += entryPoint.defaultType
+                collect(entryPoint)
             }
-        }
 
-        componentMembers.initializeFunctionBodies()
+            dependencyRequests.forEach { (_, request) ->
+                if (request.key !in implementedRequests) {
+                    componentExpressions.getBindingExpression(request)
+                }
+            }
+
+            firstRound = false
+        }
     }
 
 }

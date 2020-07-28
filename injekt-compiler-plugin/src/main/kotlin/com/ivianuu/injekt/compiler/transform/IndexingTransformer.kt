@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.addClassFile
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
@@ -25,7 +26,6 @@ import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclaration
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.descriptors.impl.PackageFragmentDescriptorImpl
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
@@ -35,17 +35,12 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
-import org.jetbrains.kotlin.ir.declarations.MetadataSource
-import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
-import org.jetbrains.kotlin.ir.symbols.impl.IrFileSymbolImpl
-import org.jetbrains.kotlin.ir.util.NaiveSourceBasedFileEntryImpl
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.scopes.MemberScope
 
 class IndexingTransformer(
     pluginContext: IrPluginContext
@@ -94,27 +89,14 @@ class IndexingTransformer(
         })
 
         declarations.forEach { declaration ->
-            val file = IrFileImpl(
-                fileEntry = NaiveSourceBasedFileEntryImpl(
-                    declaration.descriptor.fqNameSafe.pathSegments()
-                        .joinToString("_") + ".kt",
-                    intArrayOf()
-                ),
-                symbol = IrFileSymbolImpl(
-                    object : PackageFragmentDescriptorImpl(
-                        pluginContext.moduleDescriptor,
-                        InjektFqNames.IndexPackage
-                    ) {
-                        override fun getMemberScope(): MemberScope = MemberScope.Empty
-                    }
-                ),
-                InjektFqNames.IndexPackage
-            ).apply {
-                this.declarations += buildClass {
+            module.addClassFile(
+                pluginContext,
+                InjektFqNames.IndexPackage,
+                buildClass {
                     name = "${
-                        declaration.descriptor.fqNameSafe
-                            .pathSegments()
-                            .joinToString("_")
+                    declaration.descriptor.fqNameSafe
+                        .pathSegments()
+                        .joinToString("_")
                     }Index".asNameId()
                     kind = ClassKind.INTERFACE
                     visibility = Visibilities.INTERNAL
@@ -130,13 +112,7 @@ class IndexingTransformer(
                         }
                     }
                 }
-
-                metadata = MetadataSource.File(
-                    this.declarations.map { it.descriptor }
-                )
-            }
-
-            module.files += file
+            )
         }
     }
 

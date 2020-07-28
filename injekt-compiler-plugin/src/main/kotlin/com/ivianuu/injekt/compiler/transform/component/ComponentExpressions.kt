@@ -34,11 +34,12 @@ import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irTemporary
-import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
@@ -74,7 +75,6 @@ class ComponentExpressions(
             is InputBindingNode -> inputExpression(binding) to false
             is MapBindingNode -> mapBindingExpression(binding) to true
             is NullBindingNode -> nullExpression(binding) to false
-            is ProviderBindingNode -> providerExpression(binding) to true
             is SetBindingNode -> setBindingExpression(binding) to true
         }.let { (expression, forceWrap) ->
             if (forceWrap || component.dependencyRequests.any {
@@ -113,10 +113,8 @@ class ComponentExpressions(
                 val mapType = pluginContext.referenceClass(
                     FqName("kotlin.collections.Map")
                 )!!
-                bindingNode.functions.forEach {
-                    recordLookup(it.signature)
-                }
-                bindingNode.functions.forEach { (function) ->
+                bindingNode.contexts.forEach { recordLookup(it) }
+                bindingNode.functions.forEach { function ->
                     +irCall(
                         tmpMap.type.classOrNull!!
                             .functions
@@ -133,17 +131,16 @@ class ComponentExpressions(
                                 if (function.dispatchReceiverParameter != null)
                                     dispatchReceiver =
                                         irGetObject(function.dispatchReceiverParameter!!.type.classOrNull!!)
-                                function.valueParameters.forEach { valueParameter ->
-                                    putValueArgument(
-                                        valueParameter.index,
-                                        getBindingExpression(
-                                            bindingNode.dependencies.single {
-                                                it.key == valueParameter.type.asKey()
-                                            }
+                                putValueArgument(
+                                    valueArgumentsCount - 1,
+                                    getBindingExpression(
+                                        BindingRequest(
+                                            component.clazz.defaultType.asKey(),
+                                            bindingNode.key,
+                                            null
                                         )
-                                            .invoke(this@irBlock, c)
-                                    )
-                                }
+                                    )(c)
+                                )
                             }
                         )
                     }
@@ -165,10 +162,8 @@ class ComponentExpressions(
                 val collectionType = pluginContext.referenceClass(
                     FqName("kotlin.collections.Collection")
                 )
-                bindingNode.functions.forEach {
-                    recordLookup(it.signature)
-                }
-                bindingNode.functions.forEach { (function) ->
+                bindingNode.contexts.forEach { recordLookup(it) }
+                bindingNode.functions.forEach { function ->
                     +irCall(
                         tmpSet.type.classOrNull!!
                             .functions
@@ -185,17 +180,16 @@ class ComponentExpressions(
                                 if (function.dispatchReceiverParameter != null)
                                     dispatchReceiver =
                                         irGetObject(function.dispatchReceiverParameter!!.type.classOrNull!!)
-                                function.valueParameters.forEach { valueParameter ->
-                                    putValueArgument(
-                                        valueParameter.index,
-                                        getBindingExpression(
-                                            bindingNode.dependencies.single {
-                                                it.key == valueParameter.type.asKey()
-                                            }
+                                putValueArgument(
+                                    valueArgumentsCount - 1,
+                                    getBindingExpression(
+                                        BindingRequest(
+                                            component.clazz.defaultType.asKey(),
+                                            bindingNode.key,
+                                            null
                                         )
-                                            .invoke(this@irBlock, c)
-                                    )
-                                }
+                                    )(c)
+                                )
                             }
                         )
                     }
@@ -209,55 +203,41 @@ class ComponentExpressions(
     private fun nullExpression(binding: NullBindingNode): ComponentExpression =
         { irNull() }
 
-    private fun providerExpression(binding: ProviderBindingNode): ComponentExpression {
-        return { c ->
-            val dependency = getBindingExpression(binding.dependencies.single())
-            DeclarationIrBuilder(pluginContext, scope.scopeOwnerSymbol)
-                .irLambda(binding.key.type) { dependency(this, c) }
-        }
-    }
-
     private fun givenExpression(binding: GivenBindingNode): ComponentExpression {
-        recordLookup(binding.implicitPair.signature)
-        val dependencies = binding.dependencies
-            .map { getBindingExpression(it) }
+        recordLookup(binding.context)
+        val componentExpression = getBindingExpression(
+            BindingRequest(
+                component.clazz.defaultType.asKey(),
+                binding.key,
+                null
+            )
+        )
 
         val instanceExpression: ComponentExpression = bindingExpression@{ c ->
-            if (binding.parameters.any { it.explicit }) {
+            if (binding.explicitParameters.isNotEmpty()) {
                 irLambda(binding.key.type) { function ->
-                    val (explicitParameters, implicitParameters) = binding.parameters
-                        .partition { it.explicit }
                     binding.createExpression(
                         this,
-                        binding.parameters
+                        binding.explicitParameters
                             .associateWith { parameter ->
-                                if (parameter.explicit) {
-                                    {
-                                        irGet(
-                                            function.valueParameters[explicitParameters.indexOf(
-                                                parameter
-                                            )]
-                                        )
-                                    }
-                                } else {
-                                    {
-                                        dependencies[implicitParameters.indexOf(parameter)](c)
-                                    }
+                                {
+                                    irGet(
+                                        function.valueParameters[parameter.index]
+                                    )
                                 }
-                            }
+                            },
+                        {
+                            componentExpression(this, c)
+                        }
                     )
                 }
             } else {
                 binding.createExpression(
                     this,
-                    binding.parameters
-                        .mapIndexed { index, parameter ->
-                            index to parameter
-                        }
-                        .associateWith { (index, parameter) ->
-                            { dependencies[index](c) }
-                        }
-                        .mapKeys { it.key.second }
+                    emptyMap(),
+                    {
+                        componentExpression(this, c)
+                    }
                 )
             }
         }
@@ -265,11 +245,7 @@ class ComponentExpressions(
         if (!binding.scoped) return instanceExpression
 
         // todo
-        check(
-            binding.parameters
-                .filter { it.explicit }
-                .size <= 1
-        ) {
+        check(binding.explicitParameters.isEmpty()) {
             "Scoped bindings with explicit parameters are unsupported ${binding.key}"
         }
 
@@ -332,7 +308,7 @@ class ComponentExpressions(
         } else return parentExpression
     }
 
-    private fun recordLookup(signature: IrFunction) {
+    private fun recordLookup(context: IrClass) {
         val location = object : LookupLocation {
             override val location: LocationInfo? = object : LocationInfo {
                 override val filePath: String
@@ -343,8 +319,8 @@ class ComponentExpressions(
         }
         lookupTracker!!.record(
             location,
-            signature.getPackageFragment()!!.packageFragmentDescriptor,
-            signature.name
+            context.getPackageFragment()!!.packageFragmentDescriptor,
+            context.name
         )
     }
 }

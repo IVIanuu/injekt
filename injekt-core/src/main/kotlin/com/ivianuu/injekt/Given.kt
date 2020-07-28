@@ -23,14 +23,11 @@ import kotlin.reflect.KClass
     AnnotationTarget.FUNCTION,
     AnnotationTarget.CLASS,
     AnnotationTarget.CONSTRUCTOR,
-    AnnotationTarget.PROPERTY,
-    AnnotationTarget.VALUE_PARAMETER,
-    AnnotationTarget.LOCAL_VARIABLE
+    AnnotationTarget.PROPERTY
 )
 annotation class Given(val component: KClass<*> = Nothing::class)
 
 @Reader
 fun <T> given(
-    vararg arguments: Any?,
-    lazy: Boolean = false
+    vararg arguments: Any?
 ): T = injektIntrinsic()

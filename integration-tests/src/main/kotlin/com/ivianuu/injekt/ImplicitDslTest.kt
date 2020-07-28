@@ -75,7 +75,7 @@ class ImplicitDslTest {
             assertOk()
         }
 
-    @Test
+    // todo @Test
     fun testReaderClassConstructionInReaderAllowed() =
         codegen(
             """

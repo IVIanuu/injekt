@@ -16,25 +16,40 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.Distinct
+import android.app.Application
+import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.android.applicationComponent
 import com.ivianuu.injekt.given
+import com.ivianuu.injekt.runReader
 
-@Distinct
-typealias HelloMsg = String
-@Distinct
-typealias ByeMsg = String
+fun caller1(string: String) {
+    isReaderInvokesLambda {
+        given<String>()
+    }
 
-@Reader
-fun main() {
-    print { "${given<HelloMsg>()}$it" }
-    print { "${given<ByeMsg>()}$it" }
+    val lambda: (String) -> Unit = { it }
+    isReaderInvokesLambda { lambda(string) }
 }
 
 @Reader
-fun print(
-    block: @Reader (String) -> String
+fun isReaderInvokesLambda(
+    block: @Reader () -> Unit
 ) {
-    println(block("a"))
-    println(block("b"))
+    block()
+}
+
+fun caller2() {
+    isReaderUsesRunReader {
+        it.runReader {
+            given<String>()
+        }
+    }
+}
+
+@Reader
+fun isReaderUsesRunReader(
+    block: (ApplicationComponent) -> Unit
+) {
+    block(given<Application>().applicationComponent)
 }

@@ -22,7 +22,6 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.render
 
 class ComponentGraph(
@@ -53,36 +52,10 @@ class ComponentGraph(
         ComponentImplBindingResolver(component),
         ChildComponentFactoryBindingResolver(declarationGraph, component),
         mapBindingResolver,
-        setBindingResolver,
-        ProviderBindingResolver(component)
+        setBindingResolver
     )
 
-    private val resolvedBindings = mutableMapOf<Key, BindingNode>()
-
-    private val chain = mutableSetOf<Key>()
-
-    fun validate(request: BindingRequest) {
-        check(request.key !in chain || chain
-            .toList()
-            .let { it.subList(it.indexOf(request.key), it.size) }
-            .any { it.type.isFunction() }
-        ) {
-            val chain = (chain.toList() + request.key)
-                .let { it.subList(it.indexOf(request.key), it.size) }
-
-            // todo pretty print
-            "Circular dependency for '${request.key}' in '${component.origin}' chain $chain"
-        }
-
-        // we don't have to check further because it's a legal cycle
-        if (request.key in chain) return
-
-        chain += request.key
-        val binding = getBinding(request)
-        binding.dependencies
-            .forEach { validate(it) }
-        chain -= request.key
-    }
+    val resolvedBindings = mutableMapOf<Key, BindingNode>()
 
     fun getBinding(request: BindingRequest): BindingNode {
         var binding = resolvedBindings[request.key]
@@ -90,11 +63,10 @@ class ComponentGraph(
 
         val bindings = bindingsResolvers.flatMapFix { it(request.key) }
 
-        if (bindings.filterNot { it is ProviderBindingNode }.size > 1) {
+        if (bindings.size > 1) {
             error(
                 "Multiple bindings found for '${request.key}' at:\n${
                 bindings
-                    .filterNot { it is ProviderBindingNode }
                     .joinToString("\n") { "'${it.origin.orUnknown()}'" }
                 }\nin '${component.origin}'"
             )
@@ -132,8 +104,7 @@ class ComponentGraph(
         error(
             "No binding found for '${request.key}'\n" +
                     "required at '${request.requestingKey}' '${request.requestOrigin.orUnknown()}'\n" +
-                    "in '${component.origin}'\n" +
-                    "chain '$chain'\n"
+                    "in '${component.origin}'\n"
         )
     }
 

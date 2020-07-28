@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
+import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
@@ -31,7 +32,6 @@ import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -44,17 +44,17 @@ class DeclarationGraph(
     private val _rootComponentFactories = mutableListOf<IrClass>()
     val rootComponentFactories: List<IrClass> get() = _rootComponentFactories
 
-    private val _bindings = mutableListOf<ImplicitPair>()
-    val bindings: List<ImplicitPair> get() = _bindings
+    private val _bindings = mutableListOf<IrFunction>()
+    val bindings: List<IrFunction> get() = _bindings
 
     val entryPoints: List<IrClass> get() = _entryPoints
     private val _entryPoints = mutableListOf<IrClass>()
 
-    private val _mapEntries = mutableListOf<ImplicitPair>()
-    val mapEntries: List<ImplicitPair> get() = _mapEntries
+    private val _mapEntries = mutableListOf<IrFunction>()
+    val mapEntries: List<IrFunction> get() = _mapEntries
 
-    private val _setElements = mutableListOf<ImplicitPair>()
-    val setElements: List<ImplicitPair> get() = _setElements
+    private val _setElements = mutableListOf<IrFunction>()
+    val setElements: List<IrFunction> get() = _setElements
 
     val indices: List<FqName> by lazy {
         val memberScope = pluginContext.moduleDescriptor.getPackage(InjektFqNames.IndexPackage)
@@ -119,15 +119,8 @@ class DeclarationGraph(
                             InjektFqNames.Given
                         ) == true)
             }
-            .map {
-                ImplicitPair(
-                    implicitTransformer.getTransformedFunction(it),
-                    implicitTransformer.getReaderSignature(it)
-                )
-            }
-            .onEach {
-                println("found ${it.function} ${it.function.render()}")
-            }
+            .map { implicitTransformer.getTransformedFunction(it) }
+            .filter { it.getContext() != null }
             .distinct()
             .forEach { _bindings += it }
     }
@@ -137,12 +130,8 @@ class DeclarationGraph(
             .flatMapFix { pluginContext.referenceFunctions(it) }
             .map { it.owner }
             .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
-            .map {
-                ImplicitPair(
-                    implicitTransformer.getTransformedFunction(it),
-                    implicitTransformer.getReaderSignature(it)
-                )
-            }
+            .map { implicitTransformer.getTransformedFunction(it) }
+            .filter { it.getContext() != null }
             .distinct()
             .forEach { _mapEntries += it }
     }
@@ -152,19 +141,10 @@ class DeclarationGraph(
             .flatMapFix { pluginContext.referenceFunctions(it) }
             .map { it.owner }
             .filter { it.hasAnnotation(InjektFqNames.SetElements) }
-            .map {
-                ImplicitPair(
-                    implicitTransformer.getTransformedFunction(it),
-                    implicitTransformer.getReaderSignature(it)
-                )
-            }
+            .map { implicitTransformer.getTransformedFunction(it) }
+            .filter { it.getContext() != null }
             .distinct()
             .forEach { _setElements += it }
     }
-
-    data class ImplicitPair(
-        val function: IrFunction,
-        val signature: IrFunction
-    )
 
 }

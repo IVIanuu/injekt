@@ -17,12 +17,11 @@
 package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.distinctedType
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
+import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.tmpFunction
-import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
@@ -31,6 +30,7 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrField
+import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
@@ -40,7 +40,6 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -117,8 +116,7 @@ class GivenBindingResolver(
 ) : BindingResolver {
 
     private val bindings = declarationGraph.bindings
-        .map { implicitPair ->
-            val (function, signature) = implicitPair
+        .map { function ->
             val targetComponent = function.getClassFromSingleValueAnnotationOrNull(
                 InjektFqNames.Given, pluginContext
             )
@@ -126,36 +124,20 @@ class GivenBindingResolver(
                     InjektFqNames.Given, pluginContext
                 ) else null
 
-            val parameters = mutableListOf<BindingParameter>()
+            val explicitParameters = function.valueParameters
+                .filter { it.name.asString() != "_context" }
 
-            parameters += function.valueParameters
-                .map { valueParameter ->
-                    BindingParameter(
-                        name = valueParameter.name.asString(),
-                        key = valueParameter.type.asKey(),
-                        explicit = !valueParameter.hasAnnotation(InjektFqNames.Implicit),
-                        origin = valueParameter.descriptor.fqNameSafe
-                    )
-                }
-
-            val explicitParameters = parameters.filter { it.explicit }
-
-            val key = if (explicitParameters.isEmpty()) function.returnType
-                .asKey()
+            val key = if (explicitParameters.isEmpty()) function.returnType.asKey()
             else pluginContext.tmpFunction(explicitParameters.size)
-                .typeWith(
-                    explicitParameters.map { it.key.type } + function.returnType
-                )
+                .typeWith(explicitParameters.map { it.type } + function.returnType)
                 .asKey()
 
             GivenBindingNode(
                 key = key,
-                dependencies = parameters
-                    .filterNot { it.explicit }
-                    .map { BindingRequest(it.key, key, it.origin) },
+                dependencies = emptyList(),
                 targetComponent = targetComponent?.defaultType,
                 scoped = targetComponent != null,
-                createExpression = { parametersMap ->
+                createExpression = { parametersMap, context ->
                     val call = if (function is IrConstructor) {
                         IrConstructorCallImpl(
                             UNDEFINED_OFFSET,
@@ -189,38 +171,19 @@ class GivenBindingResolver(
                                 expression()
                             )
                         }
+
+                        putValueArgument(valueArgumentsCount - 1, context())
                     }
                 },
-                parameters = parameters,
+                explicitParameters = explicitParameters,
                 owner = component,
                 origin = function.descriptor.fqNameSafe,
-                implicitPair = implicitPair
+                context = function.getContext()!!
             )
         }
 
     override fun invoke(requestedKey: Key): List<BindingNode> =
         bindings.filter { it.key == requestedKey }
-}
-
-class ProviderBindingResolver(
-    private val component: ComponentImpl
-) : BindingResolver {
-    override fun invoke(requestedKey: Key): List<BindingNode> {
-        val requestedType = requestedKey.type
-        return when {
-            requestedType == requestedType.distinctedType &&
-                    requestedType.isFunction() &&
-                    requestedType.typeArguments.size == 1 ->
-                listOf(
-                    ProviderBindingNode(
-                        requestedKey,
-                        component,
-                        null
-                    )
-                )
-            else -> emptyList()
-        }
-    }
 }
 
 class MapBindingResolver(
@@ -230,18 +193,18 @@ class MapBindingResolver(
     private val component: ComponentImpl
 ) : BindingResolver {
 
-    private val maps: Map<Key, List<DeclarationGraph.ImplicitPair>> =
-        mutableMapOf<Key, List<DeclarationGraph.ImplicitPair>>().also { mergedMap ->
+    private val maps: Map<Key, List<IrFunction>> =
+        mutableMapOf<Key, List<IrFunction>>().also { mergedMap ->
             if (parent != null) mergedMap += parent.maps
 
             val thisMaps = declarationGraph.mapEntries
                 .filter {
-                    it.function.getClassFromSingleValueAnnotation(
+                    it.getClassFromSingleValueAnnotation(
                         InjektFqNames.MapEntries,
                         pluginContext
                     ) == component.factoryImpl.component
                 }
-                .groupBy { it.function.returnType.asKey() }
+                .groupBy { it.returnType.asKey() }
 
             thisMaps.forEach { (mapKey, entries) ->
                 val existingEntries = mergedMap[mapKey] ?: emptyList()
@@ -253,10 +216,9 @@ class MapBindingResolver(
         MapBindingNode(
             key,
             entries
-                .flatMapFix { (function) ->
+                .flatMapFix { function ->
                     function
                         .valueParameters
-                        .filter { it.hasAnnotation(InjektFqNames.Implicit) }
                         .map { it.type }
                         .distinct()
                         .map { BindingRequest(it.asKey(), key, null) }
@@ -292,18 +254,18 @@ class SetBindingResolver(
     private val component: ComponentImpl
 ) : BindingResolver {
 
-    private val sets: Map<Key, List<DeclarationGraph.ImplicitPair>> =
-        mutableMapOf<Key, List<DeclarationGraph.ImplicitPair>>().also { mergedSet ->
+    private val sets: Map<Key, List<IrFunction>> =
+        mutableMapOf<Key, List<IrFunction>>().also { mergedSet ->
             if (parent != null) mergedSet += parent.sets
 
             val thisSets = declarationGraph.setElements
                 .filter {
-                    it.function.getClassFromSingleValueAnnotation(
+                    it.getClassFromSingleValueAnnotation(
                         InjektFqNames.SetElements,
                         pluginContext
                     ) == component.factoryImpl.component
                 }
-                .groupBy { it.function.returnType.asKey() }
+                .groupBy { it.returnType.asKey() }
 
             thisSets.forEach { (mapKey, elements) ->
                 val existingElements = mergedSet[mapKey] ?: emptyList()
@@ -315,10 +277,9 @@ class SetBindingResolver(
         SetBindingNode(
             key,
             elements
-                .flatMapFix { (function) ->
+                .flatMapFix { function ->
                     function
                         .valueParameters
-                        .filter { it.hasAnnotation(InjektFqNames.Implicit) }
                         .map { it.type }
                         .distinct()
                         .map { BindingRequest(it.asKey(), key, null) }
