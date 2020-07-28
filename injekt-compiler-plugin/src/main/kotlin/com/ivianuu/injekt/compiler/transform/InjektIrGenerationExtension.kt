@@ -20,6 +20,8 @@ import com.ivianuu.injekt.compiler.transform.component.ComponentFactoryTransform
 import com.ivianuu.injekt.compiler.transform.component.ComponentTransformer
 import com.ivianuu.injekt.compiler.transform.component.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.component.EntryPointTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.WithInstancesTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
@@ -36,11 +38,17 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         EffectTransformer(injektPluginContext).doLower(moduleFragment)
 
-        WithInstancesTransformer(injektPluginContext).doLower(moduleFragment)
+        WithInstancesTransformer(
+            injektPluginContext
+        ).doLower(moduleFragment)
 
         ComponentFactoryTransformer(injektPluginContext).doLower(moduleFragment)
 
-        val implicitTransformer = ImplicitTransformer(injektPluginContext, symbolRemapper)
+        val implicitTransformer =
+            ImplicitTransformer(
+                injektPluginContext,
+                symbolRemapper
+            )
 
         val declarationGraph = DeclarationGraph(
             moduleFragment,

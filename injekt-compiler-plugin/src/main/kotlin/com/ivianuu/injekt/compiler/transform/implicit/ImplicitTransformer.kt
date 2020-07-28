@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform
+package com.ivianuu.injekt.compiler.transform.implicit
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.NameProvider
@@ -39,6 +39,7 @@ import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.thisOfClass
 import com.ivianuu.injekt.compiler.tmpFunction
+import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.uniqueFqName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
@@ -163,21 +164,6 @@ class ImplicitTransformer(
 
     override fun lower() {
         module.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol.owner.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.runReader"
-                ) {
-                    (expression.getValueArgument(0) as IrFunctionExpression)
-                        .function.annotations += DeclarationIrBuilder(
-                        pluginContext,
-                        expression.symbol
-                    ).irCall(symbols.reader.constructors.single())
-                }
-                return super.visitCall(expression)
-            }
-        })
-
-        module.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitClass(declaration: IrClass): IrStatement =
                 super.visitClass(transformClassIfNeeded(declaration, false))
 
@@ -208,7 +194,11 @@ class ImplicitTransformer(
 
         module.acceptVoid(symbolRemapper)
 
-        val typeRemapper = ReaderTypeRemapper(pluginContext, symbolRemapper)
+        val typeRemapper =
+            ReaderTypeRemapper(
+                pluginContext,
+                symbolRemapper
+            )
         val transformer = DeepCopyIrTreeWithSymbolsPreservingMetadata(
             pluginContext,
             symbolRemapper,
