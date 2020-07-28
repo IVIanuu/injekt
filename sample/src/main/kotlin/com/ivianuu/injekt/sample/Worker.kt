@@ -35,8 +35,6 @@ class TestWorker(
 ) : CoroutineWorker(context, workerParams) {
 
     init {
-        @Given
-        val id = "hello"
         println("hello $context $workerParams ${given<Repo>()}")
     }
 

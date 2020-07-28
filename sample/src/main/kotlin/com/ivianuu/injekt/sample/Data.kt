@@ -31,15 +31,14 @@ typealias DatabaseFile = File
 fun databaseFile(): DatabaseFile = given<ApplicationContext>().cacheDir
 
 @Given(ApplicationComponent::class)
-class Database(
+class Database {
     private val file: DatabaseFile = given()
-)
+}
 
 @Given(ApplicationComponent::class)
-class Repo(
-    private val database: Database = given(),
+class Repo {
+    private val database: Database = given()
     private val api: Api = given()
-) {
     fun refresh() {
     }
 }
