@@ -384,14 +384,26 @@ class ImplicitTransformer(
         val givenCalls = mutableListOf<IrCall>()
         val defaultValueParameterByGivenCalls = mutableMapOf<IrCall, IrValueParameter>()
         val readerCalls = mutableListOf<IrFunctionAccessExpression>()
-
         val givenExpressions =
             mutableMapOf<Any, IrBuilderWithScope.(Any, List<ScopeWithIr>) -> IrExpression>()
+        val unresolvedGivenTypes = mutableMapOf<Any, IrType>()
+        val callsByTypes = mutableMapOf<Any, IrFunctionAccessExpression>()
+
+        fun registerGivenType(
+            type: IrType,
+            call: IrFunctionAccessExpression
+        ) {
+            if (type.distinctedType !in givenExpressions) {
+                unresolvedGivenTypes[type.distinctedType] = type
+                callsByTypes[type.distinctedType] = call
+            }
+        }
 
         owner.transformChildrenVoid(object : IrElementTransformerVoid() {
 
             private val functionStack = mutableListOf<IrFunction>()
             private val valueParameterStack = mutableListOf<IrValueParameter>()
+            private val readerCallStack = mutableListOf<IrCall>()
 
             init {
                 if (owner is IrFunction) functionStack += owner
@@ -432,73 +444,64 @@ class ImplicitTransformer(
                     .also { valueParameterStack -= declaration }
             }
 
+            override fun visitCall(expression: IrCall): IrExpression {
+                val isReader = expression.symbol.owner.canUseImplicits(pluginContext.bindingContext)
+                if (isReader) readerCallStack.push(expression)
+                return super.visitCall(expression)
+                    .also { if (isReader) readerCallStack.pop() }
+            }
+
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
-                val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
-                if (result !is IrCall &&
-                    result !is IrConstructorCall &&
-                    result !is IrDelegatingConstructorCall
-                ) return result
+                if (expression !is IrCall &&
+                    expression !is IrConstructorCall &&
+                    expression !is IrDelegatingConstructorCall
+                ) return super.visitFunctionAccess(expression)
+
                 if (functionStack.isNotEmpty() &&
                     functionStack.lastOrNull() != owner
-                ) return result
+                ) return super.visitFunctionAccess(expression)
+
                 if (expression.symbol.owner.canUseImplicits(pluginContext.bindingContext)) {
-                    if (result is IrCall && expression.symbol.owner.isGiven) {
-                        givenCalls += result
+                    if (expression is IrCall && expression.symbol.owner.isGiven) {
+                        givenCalls += expression
+                        val type = expression.getRealGivenType()
+                            .let(remapType)
+                        registerGivenType(type, expression)
                         valueParameterStack.lastOrNull()
                             ?.takeIf {
                                 it.defaultValue is IrExpressionBody &&
-                                        it.defaultValue!!.statements.single() == result
+                                        it.defaultValue!!.statements.single() == expression
                             }
                             ?.let {
-                                defaultValueParameterByGivenCalls[result] = it
+                                defaultValueParameterByGivenCalls[expression] = it
                             }
                     } else {
-                        readerCalls += result
+                        readerCalls += expression
+                        val transformedCallee = transformFunctionIfNeeded(expression.symbol.owner)
+                        transformedCallee
+                            .valueParameters
+                            .filter { it.hasAnnotation(InjektFqNames.Implicit) }
+                            .filter { expression.getValueArgumentSafe(it.index) == null }
+                            .map { it.type }
+                            .map {
+                                it
+                                    .remapTypeParameters(expression.symbol.owner, transformedCallee)
+                                    .substitute(
+                                        transformedCallee.typeParameters.map { it.symbol }
+                                            .zip(
+                                                expression.typeArguments
+                                                    .map(remapType)
+                                            )
+                                            .toMap()
+                                    )
+                            }
+                            .forEach { registerGivenType(it, expression) }
                     }
                 }
-                return result
+
+                return super.visitFunctionAccess(expression)
             }
         })
-
-        val unresolvedGivenTypes = mutableMapOf<Any, IrType>()
-        val callsByTypes = mutableMapOf<Any, IrFunctionAccessExpression>()
-
-        givenCalls
-            .forEach { givenCall ->
-                val type = givenCall.getRealGivenType()
-                    .let(remapType)
-                if (type.distinctedType !in givenExpressions) {
-                    unresolvedGivenTypes[type.distinctedType] = type
-                    callsByTypes[type.distinctedType] = givenCall
-                }
-            }
-        readerCalls
-            .flatMapFix { readerCall ->
-                val transformedCallee = transformFunctionIfNeeded(readerCall.symbol.owner)
-                transformedCallee
-                    .valueParameters
-                    .filter { it.hasAnnotation(InjektFqNames.Implicit) }
-                    .filter { readerCall.getValueArgumentSafe(it.index) == null }
-                    .map { it.type }
-                    .map {
-                        it
-                            .remapTypeParameters(readerCall.symbol.owner, transformedCallee)
-                            .substitute(
-                                transformedCallee.typeParameters.map { it.symbol }
-                                    .zip(
-                                        readerCall.typeArguments
-                                            .map(remapType)
-                                    )
-                                    .toMap()
-                            )
-                    }
-                    .map { readerCall to it }
-            }.forEach { (call, type) ->
-                if (type.distinctedType !in givenExpressions) {
-                    unresolvedGivenTypes[type.distinctedType] = type
-                    callsByTypes[type.distinctedType] = call
-                }
-            }
 
         val mergedParams = if (
             !isParams &&
