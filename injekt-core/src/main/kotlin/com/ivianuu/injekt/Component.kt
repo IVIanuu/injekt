@@ -27,3 +27,9 @@ fun <T> rootComponent(vararg inputs: Any?): T = injektIntrinsic()
 
 @Reader
 fun <T> childComponent(vararg inputs: Any?): T = injektIntrinsic()
+
+@Reader
+fun <R> withInstances(
+    vararg instances: Any?,
+    block: @Reader () -> R
+): R = injektIntrinsic()
