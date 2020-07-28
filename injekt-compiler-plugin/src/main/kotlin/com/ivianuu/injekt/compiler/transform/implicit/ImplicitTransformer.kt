@@ -403,7 +403,6 @@ class ImplicitTransformer(
 
             private val functionStack = mutableListOf<IrFunction>()
             private val valueParameterStack = mutableListOf<IrValueParameter>()
-            private val readerCallStack = mutableListOf<IrCall>()
 
             init {
                 if (owner is IrFunction) functionStack += owner
@@ -442,13 +441,6 @@ class ImplicitTransformer(
                 }
                 return super.visitValueParameter(declaration)
                     .also { valueParameterStack -= declaration }
-            }
-
-            override fun visitCall(expression: IrCall): IrExpression {
-                val isReader = expression.symbol.owner.canUseImplicits(pluginContext.bindingContext)
-                if (isReader) readerCallStack.push(expression)
-                return super.visitCall(expression)
-                    .also { if (isReader) readerCallStack.pop() }
             }
 
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
