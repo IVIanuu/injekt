@@ -52,8 +52,7 @@ internal class InjektWorkerFactory : WorkerFactory() {
         return given<Workers>()[Class.forName(workerClassName).kotlin]?.invoke(
             appContext,
             workerParameters
-        )
-            ?: error("Could not find a worker for $workerClassName")
+        ) ?: error("Could not find a worker for $workerClassName")
     }
 }
 
