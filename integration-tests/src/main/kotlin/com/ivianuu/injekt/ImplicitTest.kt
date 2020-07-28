@@ -803,9 +803,8 @@ class ImplicitTest {
     @Test
     fun testContextPropagation() = codegen(
         """
-        fun switch(
-
-        )
+        @Given
+        fun fooProvider() = given<Foo>()
         
         fun invoke(foo: Foo): Foo {
             initializeComponents()

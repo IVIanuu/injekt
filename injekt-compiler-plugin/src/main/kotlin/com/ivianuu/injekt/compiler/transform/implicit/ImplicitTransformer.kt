@@ -35,7 +35,6 @@ import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
 import com.ivianuu.injekt.compiler.jvmNameAnnotation
 import com.ivianuu.injekt.compiler.readableName
 import com.ivianuu.injekt.compiler.remapTypeParameters
-import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.thisOfClass
 import com.ivianuu.injekt.compiler.tmpFunction
@@ -61,6 +60,7 @@ import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -159,9 +159,12 @@ class ImplicitTransformer(
         val functionFqName = functionName
             .replaceAfter("__", "")
             .replace("__", "")
-            .removeIllegalChars()
 
-        return pluginContext.referenceFunctions(FqName(functionFqName))
+        return try {
+            pluginContext.referenceFunctions(FqName(functionFqName))
+        } catch (e: Exception) {
+            emptyList()
+        }
             .map { it.owner }
             .map { getTransformedFunction(it) }
             .firstOrNull {
@@ -186,6 +189,8 @@ class ImplicitTransformer(
                     parent.addChild(readerContext)
                 }
             }
+
+        module.rewriteTransformedFunctionRefs()
 
         module.acceptVoid(symbolRemapper)
 
@@ -214,35 +219,11 @@ class ImplicitTransformer(
     }
 
     private inner class Transformer : IrElementTransformerVoid() {
-
         override fun visitClass(declaration: IrClass): IrStatement =
             super.visitClass(transformClassIfNeeded(declaration))
 
         override fun visitFunction(declaration: IrFunction): IrStatement =
             super.visitFunction(transformFunctionIfNeeded(declaration))
-
-        override fun visitFunctionExpression(expression: IrFunctionExpression): IrExpression {
-            val result = super.visitFunctionExpression(expression) as IrFunctionExpression
-            return if (result.function != expression.function) IrFunctionExpressionImpl(
-                result.startOffset,
-                result.endOffset,
-                result.function.getFunctionType(pluginContext),
-                result.function,
-                result.origin
-            ) else result
-        }
-
-        override fun visitFunctionReference(expression: IrFunctionReference): IrExpression {
-            val result = super.visitFunctionReference(expression) as IrFunctionReference
-            return if (result.symbol != expression.symbol) IrFunctionExpressionImpl(
-                result.startOffset,
-                result.endOffset,
-                result.symbol.owner.getFunctionType(pluginContext),
-                result.symbol.owner as IrSimpleFunction,
-                result.origin!!
-            ) else result
-        }
-
     }
 
     private fun transformClassIfNeeded(clazz: IrClass): IrClass {
@@ -912,6 +893,50 @@ class ImplicitTransformer(
                     .let { it as IrConst<String> }
                     .value == declaration.uniqueName()
             }
+    }
+
+    private fun IrElement.rewriteTransformedFunctionRefs() {
+        transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitFunctionExpression(expression: IrFunctionExpression): IrExpression {
+                val result = super.visitFunctionExpression(expression) as IrFunctionExpression
+                val transformed = transformFunctionIfNeeded(result.function)
+                return if (transformed in transformedFunctions.values) IrFunctionExpressionImpl(
+                    result.startOffset,
+                    result.endOffset,
+                    result.function.getFunctionType(pluginContext),
+                    result.function,
+                    result.origin
+                )
+                else result
+            }
+
+            override fun visitFunctionReference(expression: IrFunctionReference): IrExpression {
+                val result = super.visitFunctionReference(expression) as IrFunctionReference
+                val transformed = transformFunctionIfNeeded(result.symbol.owner)
+                return if (transformed in transformedFunctions.values) IrFunctionExpressionImpl(
+                    result.startOffset,
+                    result.endOffset,
+                    result.symbol.owner.getFunctionType(pluginContext),
+                    result.symbol.owner as IrSimpleFunction,
+                    result.origin!!
+                )
+                else result
+            }
+
+            override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
+                val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
+                if (result !is IrCall &&
+                    result !is IrConstructorCall &&
+                    result !is IrDelegatingConstructorCall
+                ) return result
+                val transformed = transformFunctionIfNeeded(result.symbol.owner)
+                return if (transformed in transformedFunctions.values) transformCall(
+                    transformed,
+                    result
+                )
+                else result
+            }
+        })
     }
 
 }

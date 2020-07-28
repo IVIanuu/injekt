@@ -19,7 +19,6 @@ package com.ivianuu.injekt.sample
 import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.android.ActivityComponent
-import com.ivianuu.injekt.internal.ReaderImpl
 import com.ivianuu.injekt.internal.ReaderLambdaInvocation
 import com.ivianuu.injekt.rootComponent
 import com.ivianuu.injekt.runReader
@@ -27,42 +26,6 @@ import com.ivianuu.injekt.runReader
 abstract class AbstractClass {
     abstract fun func(block: @Reader () -> Unit)
     abstract fun func2(block: @Reader () -> Unit)
-}
-
-interface Action {
-    @Reader
-    fun execute()
-}
-
-@ReaderImpl(
-    "com.ivianuu.injekt.sample.Action.execute",
-    "com.ivianuu.injekt.sample.MyAction.execute"
-)
-interface ActionExecuteImpl
-
-@Reader
-fun caller(action: Action) {
-    action.execute()
-}
-
-open class MyAction : Action {
-    @Reader
-    override fun execute() {
-
-    }
-}
-
-@ReaderImpl(
-    "com.ivianuu.injekt.sample.MyAction.execute",
-    "com.ivianuu.injekt.sample.MyOverrideAction.execute"
-)
-interface ActionExecuteImpl2
-
-class MyOverrideAction : MyAction() {
-    @Reader
-    override fun execute() {
-        super.execute()
-    }
 }
 
 @ReaderLambdaInvocation(

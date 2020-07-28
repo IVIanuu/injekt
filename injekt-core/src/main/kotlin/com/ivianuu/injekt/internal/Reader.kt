@@ -24,8 +24,7 @@ annotation class ReaderLambdaInvocation(
     val components: Array<KClass<*>>
 )
 
-// todo internal
-annotation class ReaderImpl(
+internal annotation class ReaderImpl(
     val superName: String,
     val implName: String
 )
