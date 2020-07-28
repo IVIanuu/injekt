@@ -41,6 +41,7 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irImplicitCast
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrBlockBody
@@ -87,7 +88,15 @@ class EntryPointTransformer(
 
                 val entryPoint = buildClass {
                     name = nameProvider.allocateForGroup(
-                        "${currentScope!!.scope.scopeOwner.name.asString()}EntryPoint".asNameId()
+                        allScopes
+                            .last {
+                                val element = it.irElement
+                                element is IrDeclarationWithVisibility &&
+                                        element.visibility != Visibilities.LOCAL
+                            }
+                            .let {
+                                "${it.scope.scopeOwner.name.asString()}EntryPoint".asNameId()
+                            }
                     )
                     kind = ClassKind.INTERFACE
                     visibility = Visibilities.INTERNAL

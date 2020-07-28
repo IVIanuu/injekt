@@ -36,6 +36,8 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         EffectTransformer(injektPluginContext).doLower(moduleFragment)
 
+        WithInstancesTransformer(injektPluginContext).doLower(moduleFragment)
+
         ComponentFactoryTransformer(injektPluginContext).doLower(moduleFragment)
 
         val implicitTransformer = ImplicitTransformer(injektPluginContext, symbolRemapper)

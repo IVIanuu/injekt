@@ -126,7 +126,6 @@ import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.hasDefaultValue
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
@@ -430,9 +429,7 @@ class ImplicitTransformer(
                 if (functionStack.isNotEmpty() &&
                     functionStack.lastOrNull() != owner
                 ) return result
-                if (expression.symbol.owner.canUseImplicits(pluginContext.bindingContext)
-                        .also { println("visit call ${result.render()} -> $it") }
-                ) {
+                if (expression.symbol.owner.canUseImplicits(pluginContext.bindingContext)) {
                     if (result is IrCall && expression.symbol.owner.isGiven) {
                         givenCalls += result
                         valueParameterStack.lastOrNull()
