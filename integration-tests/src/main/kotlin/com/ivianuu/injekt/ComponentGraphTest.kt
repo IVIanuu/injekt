@@ -60,28 +60,6 @@ class ComponentGraphTest {
     }
 
     @Test
-    fun testCircularDependency() = codegen(
-        """
-        @Given
-        class A {
-            val b: B = given()
-        }
-        @Given 
-        class B {
-            val a: A = given()
-        }
-        
-        fun invoke() {
-            initializeComponents()
-            val component = rootComponent<TestComponent>()
-            component.runReader { given<A>() }
-        }
-    """
-    ) {
-        assertInternalError("circular")
-    }
-
-    @Test
     fun testComponentMismatch() = codegen(
         """
         @Given(Any::class) class Dep

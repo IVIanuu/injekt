@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.copy
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getJoinedName
@@ -36,6 +37,7 @@ import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.thisOfClass
 import com.ivianuu.injekt.compiler.tmpFunction
+import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
@@ -115,9 +117,11 @@ import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
+import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
+import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
@@ -199,8 +203,7 @@ class ImplicitTransformer(
                 result.function.getFunctionType(pluginContext),
                 result.function,
                 result.origin
-            )
-            else result
+            ) else result
         }
 
         override fun visitFunctionReference(expression: IrFunctionReference): IrExpression {
@@ -211,8 +214,7 @@ class ImplicitTransformer(
                 result.symbol.owner.getFunctionType(pluginContext),
                 result.symbol.owner as IrSimpleFunction,
                 result.origin!!
-            )
-            else result
+            ) else result
         }
 
     }
@@ -364,7 +366,9 @@ class ImplicitTransformer(
                     functionStack.lastOrNull() != owner
                 ) return super.visitFunctionAccess(expression)
 
-                if (expression.symbol.owner.canUseImplicits(pluginContext.bindingContext)) {
+                if (expression.symbol.owner.canUseImplicits(pluginContext.bindingContext) ||
+                    expression.isReaderLambdaInvoke()
+                ) {
                     if (expression is IrCall && expression.symbol.owner.isGiven) {
                         givenCalls += expression
                     } else {
@@ -465,7 +469,6 @@ class ImplicitTransformer(
         val providerFunctionByGivenCall = givenCalls.associateWith { givenCall ->
             context.addFunction {
                 val type = givenCall.getRealGivenType()
-                name = type
                     .let(remapType)
                     .remapTypeParameters(owner, context)
                     .let {
@@ -473,17 +476,8 @@ class ImplicitTransformer(
                             it.remapTypeParameters(parentFunction, context)
                         } else it
                     }
-                    .readableName()
+                name = type.readableName()
                 returnType = type
-                    .let(remapType)
-                    .remapTypeParameters(owner, context)
-                    .let {
-                        if (parentFunction != null) {
-                            it
-                                .let(remapType)
-                                .remapTypeParameters(parentFunction, context)
-                        } else it
-                    }
                 modality = Modality.ABSTRACT
             }.apply {
                 dispatchReceiverParameter = context.thisReceiver?.copyTo(this)
@@ -493,8 +487,22 @@ class ImplicitTransformer(
 
         readerCalls
             .forEach { call ->
-                val callContext = transformFunctionIfNeeded(call.symbol.owner).getContext()!!
-                handleSubcontext(callContext, call.typeArguments)
+                if (!call.isReaderLambdaInvoke()) {
+                    val callContext = transformFunctionIfNeeded(call.symbol.owner).getContext()!!
+                    handleSubcontext(callContext, call.typeArguments)
+                } else {
+                    /*val transformedLambda =
+                        transformFunctionIfNeeded(lambdaSource.getFunctionArgument())
+                    val lambdaContext = getContextForFunction(transformedLambda)
+                    handleSubcontext(lambdaContext, call, emptyList())*/
+                }
+                call.getReaderLambdaArguments()
+                    .forEach { expr ->
+                        val transformedLambda =
+                            transformFunctionIfNeeded(expr.getFunctionFromArgument())
+                        val lambdaContext = transformedLambda.getContext()!!
+                        handleSubcontext(lambdaContext, emptyList())
+                    }
             }
 
         rewriteCalls(
@@ -578,6 +586,33 @@ class ImplicitTransformer(
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
                 if (expression !in readerCalls) return super.visitFunctionAccess(expression)
                 val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
+
+                if (result.isReaderLambdaInvoke()) {
+                    return DeclarationIrBuilder(pluginContext, result.symbol).run {
+                        IrCallImpl(
+                            result.startOffset,
+                            result.endOffset,
+                            result.type,
+                            if (result.symbol.owner.isSuspend) {
+                                pluginContext.tmpSuspendFunction(result.symbol.owner.valueParameters.size + 1)
+                                    .functions
+                                    .first { it.owner.name.asString() == "invoke" }
+                            } else {
+                                pluginContext.tmpFunction(result.symbol.owner.valueParameters.size + 1)
+                                    .functions
+                                    .first { it.owner.name.asString() == "invoke" }
+                            }
+                        ).apply {
+                            copyTypeAndValueArgumentsFrom(result)
+                            putValueArgument(
+                                valueArgumentsCount - 1,
+                                provideContext(allScopes)
+                            )
+                        }
+                    }
+                }
+
+
                 val transformedCallee = transformFunctionIfNeeded(result.symbol.owner)
                 val transformedCall = transformCall(transformedCallee, result)
                 val contextArgument = getContextArgument(
@@ -592,6 +627,23 @@ class ImplicitTransformer(
         }, null)
     }
 
+    private fun IrFunctionAccessExpression.getReaderLambdaArguments(): List<IrExpression> {
+        return try {
+            getArgumentsWithIr()
+                .filter { (valueParameter, _) ->
+                    valueParameter.type.hasAnnotation(InjektFqNames.Reader)
+                }
+                .map { it.second }
+        } catch (t: Throwable) {
+            emptyList()
+        }
+    }
+
+    private fun IrExpression.getFunctionFromArgument() = when (this) {
+        is IrFunctionExpression -> function
+        else -> error("Cannot extract function from $this ${dumpSrc()}")
+    }
+
     private fun getContextArgument(
         owner: IrDeclarationParent,
         call: IrFunctionAccessExpression,
@@ -599,7 +651,7 @@ class ImplicitTransformer(
         provideContext: IrBuilderWithScope.() -> IrExpression
     ): IrExpression = DeclarationIrBuilder(pluginContext, call.symbol).run {
         val callee = call.symbol.owner
-        if (call.typeArgumentsCount != 0) {
+        if (!call.isReaderLambdaInvoke() && call.typeArgumentsCount != 0) {
             val calleeContext = transformFunctionIfNeeded(callee).getContext()!!
 
             irBlock(origin = IrStatementOrigin.OBJECT_LITERAL) {
@@ -612,6 +664,13 @@ class ImplicitTransformer(
 
                     superTypes += calleeContext.defaultType
                         .typeWith(*call.typeArguments.toTypedArray())
+
+                    call.getReaderLambdaArguments()
+                        .forEach { expr ->
+                            val transformedLambda =
+                                transformFunctionIfNeeded(expr.getFunctionFromArgument())
+                            superTypes += transformedLambda.getContext()!!.defaultType
+                        }
 
                     addConstructor {
                         returnType = defaultType

@@ -49,6 +49,39 @@ class ImplicitTest {
     }
 
     @Test
+    fun testSimpleReaderLambda() = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+        
+        @Reader
+        fun func(foo: Foo = given()): Foo {
+            return foo
+        }
+        
+        @Reader
+        fun other() {
+        }
+        
+        @Reader
+        fun <R> withFoo(block: @Reader (Foo) -> R): R = block(func())
+        
+        fun invoke(): Foo {
+            initializeComponents()
+            val component = rootComponent<TestComponent>()
+            return component.runReader {
+                withFoo {
+                    other()
+                    it
+                }
+            }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
     fun testNestedReader() = codegen(
         """
         @Given
@@ -162,6 +195,43 @@ class ImplicitTest {
     """
     ) {
         //assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testSuspendReaderLambda() = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+        
+        @Reader
+        suspend fun func(foo: Foo = given()): Foo {
+            delay(1000)
+            return foo
+        }
+        
+        @Reader
+        suspend fun other() { 
+            delay(1000)
+        }
+        
+        @Reader
+        suspend fun <R> withFoo(block: @Reader suspend (Foo) -> R): R = block(func())
+        
+        fun invoke(): Foo {
+            initializeComponents()
+            val component = rootComponent<TestComponent>()
+            return runBlocking {
+                component.runReader {
+                    withFoo {
+                        other()
+                        it
+                    }
+                }
+            }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
     }
 
     @Test
