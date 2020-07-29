@@ -324,7 +324,7 @@ class ImplicitContextTransformer(
                     owner.getPackageFragment()!!.fqName,
                     owner.descriptor.fqNameSafe
                         .parent().child(owner.name.asString().asNameId())
-                ).asString() + "Context"
+                ).asString() + "${owner.uniqueName().hashCode()}Context"
             ).asNameId()
             visibility = Visibilities.INTERNAL
         }.apply {
