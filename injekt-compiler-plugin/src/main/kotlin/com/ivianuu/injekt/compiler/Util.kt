@@ -225,7 +225,7 @@ fun IrType.copy(
     )
 }
 
-fun IrType.remapTypeParameters(
+fun IrType.remapTypeParametersByName(
     source: IrTypeParametersContainer,
     target: IrTypeParametersContainer,
     srcToDstParameterMap: Map<IrTypeParameter, IrTypeParameter>? = null
@@ -236,10 +236,13 @@ fun IrType.remapTypeParameters(
             when {
                 classifier is IrTypeParameter -> {
                     val newClassifier =
-                        srcToDstParameterMap?.get(classifier) ?: if (classifier.parent == source)
-                            target.typeParameters[classifier.index]
-                        else
-                            classifier
+                        srcToDstParameterMap?.get(classifier)
+                            ?: if ((classifier.parent as IrDeclarationWithName).descriptor.fqNameSafe ==
+                                (source as IrDeclarationWithName).descriptor.fqNameSafe
+                            )
+                                target.typeParameters[classifier.index]
+                            else
+                                classifier
                     IrSimpleTypeImpl(
                         makeKotlinType(
                             newClassifier.symbol,
@@ -260,7 +263,7 @@ fun IrType.remapTypeParameters(
                     val arguments = arguments.map {
                         when (it) {
                             is IrTypeProjection -> makeTypeProjection(
-                                it.type.remapTypeParameters(
+                                it.type.remapTypeParametersByName(
                                     source,
                                     target,
                                     srcToDstParameterMap
@@ -603,7 +606,7 @@ fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
             p.copyTo(
                 fn,
                 name = p.name.asString().removeIllegalChars().asNameId(),
-                type = p.type.remapTypeParameters(this, fn)
+                type = p.type.remapTypeParametersByName(this, fn)
             )
         }
         fn.annotations = annotations.map { a -> a }
@@ -673,7 +676,8 @@ val IrType.distinctedType: Any
         ?: this
 
 fun IrDeclarationWithName.canUseImplicits(bindingContext: BindingContext): Boolean =
-    isMarkedAsImplicit(bindingContext) ||
+    (this is IrFunction && valueParameters.any { it.name.asString() == "_context" }) ||
+            isMarkedAsImplicit(bindingContext) ||
             (this is IrConstructor && constructedClass.isMarkedAsImplicit(bindingContext)) ||
             (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsImplicit(
                 bindingContext

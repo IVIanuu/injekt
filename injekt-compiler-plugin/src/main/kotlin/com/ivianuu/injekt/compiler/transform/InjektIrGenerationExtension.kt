@@ -17,26 +17,36 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.WrappedClassDescriptor
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.component.ComponentFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.component.ComponentIndexingTransformer
 import com.ivianuu.injekt.compiler.transform.component.ComponentTransformer
 import com.ivianuu.injekt.compiler.transform.component.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.component.EntryPointTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitBodyTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitIndexingTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.WithInstancesTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
+import org.jetbrains.kotlin.ir.util.DescriptorsRemapper
 import org.jetbrains.kotlin.ir.util.SymbolTable
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val symbolRemapper = DeepCopySymbolRemapper()
+        val symbolRemapper = DeepCopySymbolRemapper(
+            object : DescriptorsRemapper {
+                override fun remapDeclaredClass(descriptor: ClassDescriptor): ClassDescriptor =
+                    WrappedClassDescriptor()
+            }
+        )
         val injektPluginContext = InjektPluginContext(moduleFragment, pluginContext, symbolRemapper)
 
         EffectTransformer(injektPluginContext).doLower(moduleFragment)
@@ -53,33 +63,39 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             InjektSymbols(pluginContext)
         )
 
+        val implicitContextParamTransformer =
+            ImplicitContextTransformer(pluginContext, symbolRemapper)
+
+        implicitContextParamTransformer.doLower(moduleFragment)
+
         ImplicitIndexingTransformer(pluginContext, indexer).doLower(moduleFragment)
 
-        val implicitTransformer = ImplicitTransformer(
-            injektPluginContext,
-            symbolRemapper
-        )
+        ImplicitBodyTransformer(injektPluginContext).doLower(moduleFragment)
 
         val declarationGraph = DeclarationGraph(
             indexer,
             moduleFragment,
             injektPluginContext,
-            implicitTransformer
+            implicitContextParamTransformer
         )
-
-        implicitTransformer.doLower(moduleFragment)
 
         EntryPointTransformer(injektPluginContext).doLower(moduleFragment)
 
         ComponentIndexingTransformer(indexer, injektPluginContext).doLower(moduleFragment)
 
-        ComponentTransformer(injektPluginContext, declarationGraph, implicitTransformer).doLower(
+        ComponentTransformer(
+            injektPluginContext,
+            declarationGraph,
+            implicitContextParamTransformer
+        ).doLower(
             moduleFragment
         )
 
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 
         generateSymbols(pluginContext)
+
+        println(moduleFragment.dumpSrc())
     }
 
 }

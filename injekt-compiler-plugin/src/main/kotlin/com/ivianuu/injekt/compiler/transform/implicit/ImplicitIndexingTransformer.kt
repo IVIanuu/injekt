@@ -20,7 +20,9 @@ import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.isMarkedAsImplicit
+import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.uniqueName
@@ -34,11 +36,18 @@ import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
+import org.jetbrains.kotlin.ir.util.render
+import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -50,6 +59,100 @@ class ImplicitIndexingTransformer(
     private val nameProvider = NameProvider()
 
     override fun lower() {
+        indexReaderImpls()
+        collectLambdaInvocations()
+    }
+
+    private sealed class ReaderScope {
+        object Root : ReaderScope()
+        class RunReader(val call: IrCall) : ReaderScope() {
+
+            fun isBlockLambda(function: IrFunction): Boolean {
+                val argument = call.getValueArgument(0)!!
+                return argument is IrFunctionExpression &&
+                        argument.function == function
+            }
+
+            override fun toString(): String {
+                return "RUN READER ${call.render()}"
+            }
+        }
+
+        class ReaderClass(val clazz: IrClass) : ReaderScope() {
+            override fun toString(): String {
+                return "CLASS ${clazz.render()}"
+            }
+        }
+
+        class ReaderFunction(val function: IrFunction) : ReaderScope() {
+            override fun toString(): String {
+                return "FUNCTION ${function.render()}"
+            }
+        }
+    }
+
+    private fun collectLambdaInvocations() {
+        val newDeclarations = mutableListOf<IrDeclaration>()
+
+        module.transformChildrenVoid(object : IrElementTransformerVoid() {
+
+            var currentScope: ReaderScope = ReaderScope.Root
+
+            private inline fun <R> withScope(scope: ReaderScope, block: () -> R): R {
+                val previousScope = currentScope
+                currentScope = scope
+                val result = block()
+                currentScope = previousScope
+                return result
+            }
+
+            override fun visitCall(expression: IrCall): IrExpression {
+                return if (expression.symbol.descriptor.fqNameSafe.asString() ==
+                    "com.ivianuu.injekt.runReader"
+                ) {
+                    withScope(ReaderScope.RunReader(expression)) {
+                        visitCallInScope(expression)
+                        super.visitCall(expression)
+                    }
+                } else {
+                    visitCallInScope(expression)
+                    super.visitCall(expression)
+                }
+            }
+
+            override fun visitClass(declaration: IrClass): IrStatement {
+                return if (declaration.canUseImplicits(pluginContext.bindingContext)) {
+                    withScope(ReaderScope.ReaderClass(declaration)) {
+                        super.visitClass(declaration)
+                    }
+                } else super.visitClass(declaration)
+            }
+
+            override fun visitFunction(declaration: IrFunction): IrStatement {
+                return if (declaration.canUseImplicits(pluginContext.bindingContext) &&
+                    (currentScope !is ReaderScope.RunReader ||
+                            !(currentScope as ReaderScope.RunReader).isBlockLambda(declaration))
+                ) {
+                    withScope(ReaderScope.ReaderFunction(declaration)) {
+                        super.visitFunction(declaration)
+                    }
+                } else super.visitFunction(declaration)
+            }
+
+            private fun visitCallInScope(call: IrCall) {
+                if (call.isReaderLambdaInvoke()) {
+                    println("lambda invoke ${call.dump()} scope -> $currentScope")
+                }
+            }
+        })
+
+        newDeclarations.forEach {
+            it.file.addChild(it)
+            indexer.index(it.descriptor.fqNameSafe)
+        }
+    }
+
+    private fun indexReaderImpls() {
         val newDeclarations = mutableListOf<IrDeclaration>()
 
         module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {

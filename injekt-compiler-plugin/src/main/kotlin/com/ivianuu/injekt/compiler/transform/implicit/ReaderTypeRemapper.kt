@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.implicit
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.WrappedClassDescriptor
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -82,7 +83,12 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
 ) : DeepCopyIrTreeWithSymbols(symbolRemapper, typeRemapper, symbolRenamer) {
 
     override fun visitClass(declaration: IrClass): IrClass {
-        return super.visitClass(declaration).also { it.copyMetadataFrom(declaration) }
+        return super.visitClass(declaration).also { clazz ->
+            (clazz.descriptor as? WrappedClassDescriptor)?.let {
+                if (!it.isBound()) it.bind(clazz)
+            }
+            clazz.copyMetadataFrom(declaration)
+        }
     }
 
     override fun visitFunction(declaration: IrFunction): IrStatement {

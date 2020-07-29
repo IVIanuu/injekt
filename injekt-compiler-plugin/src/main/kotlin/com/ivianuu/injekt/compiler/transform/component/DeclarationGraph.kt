@@ -20,7 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.transform.Indexer
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
 import com.ivianuu.injekt.compiler.uniqueName
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -39,7 +39,7 @@ class DeclarationGraph(
     private val indexer: Indexer,
     val module: IrModuleFragment,
     private val pluginContext: IrPluginContext,
-    private val implicitTransformer: ImplicitTransformer
+    private val implicitTransformer: ImplicitContextTransformer
 ) {
 
     private val _rootComponentFactories = mutableListOf<IrClass>()

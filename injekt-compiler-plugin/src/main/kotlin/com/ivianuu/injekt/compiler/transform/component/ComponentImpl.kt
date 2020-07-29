@@ -39,6 +39,7 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -178,6 +179,9 @@ class ComponentImpl(
             fun collect(superClass: IrClass) {
                 if (superClass.defaultType in processedSuperTypes) return
                 processedSuperTypes += superClass.defaultType
+
+                println("implementesd ${superClass.dump()}")
+
                 for (declaration in superClass.declarations.toList()) {
                     if (declaration !is IrFunction) continue
                     if (declaration is IrConstructor) continue

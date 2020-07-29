@@ -19,7 +19,7 @@ package com.ivianuu.injekt.compiler.transform.component
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -44,7 +44,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class ComponentTransformer(
     pluginContext: IrPluginContext,
     private val declarationGraph: DeclarationGraph,
-    private val implicitTransformer: ImplicitTransformer
+    private val implicitTransformer: ImplicitContextTransformer
 ) : AbstractInjektTransformer(pluginContext) {
 
     private data class InitializeComponentsCall(

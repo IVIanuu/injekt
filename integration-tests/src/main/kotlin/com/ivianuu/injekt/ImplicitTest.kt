@@ -803,7 +803,7 @@ class ImplicitTest {
     @Test
     fun testContextPropagation() = codegen(
         """
-        @Given
+        @Reader
         fun fooProvider() = given<Foo>()
         
         fun invoke(foo: Foo): Foo {
@@ -859,6 +859,30 @@ class ImplicitTest {
                     BarAction()
                 )
                 actions.forEach { it.execute() }
+            }
+        }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testLambdaTracking() = codegen(
+        """
+        val property: @Reader () -> Unit = {  }
+        
+        @Reader
+        fun invoke(block: @Reader () -> Unit) {
+            initializeComponents()
+            val component = rootComponent<TestComponent>()
+            block()
+            val block2: @Reader () -> Unit = {  }
+            block2()
+            property()
+            component.runReader { 
+                block()
+                block2()
+                property()
             }
         }
     """
