@@ -23,6 +23,9 @@ import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.flatMapFix
+import com.ivianuu.injekt.compiler.getJoinedName
+import com.ivianuu.injekt.compiler.removeIllegalChars
+import com.ivianuu.injekt.compiler.uniqueName
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -32,10 +35,15 @@ import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
+import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.getAnnotation
+import org.jetbrains.kotlin.ir.util.getPackageFragment
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -45,37 +53,74 @@ class Indexer(
     private val symbols: InjektSymbols
 ) {
 
-    val indices: List<FqName>
-        get() {
-            val memberScope = pluginContext.moduleDescriptor.getPackage(InjektFqNames.IndexPackage)
-                .memberScope
+    private val indices by lazy {
+        val memberScope = pluginContext.moduleDescriptor.getPackage(InjektFqNames.IndexPackage)
+            .memberScope
 
-            return ((module.files
-                .filter { it.fqName == InjektFqNames.IndexPackage }
-                .flatMapFix { it.declarations }
-                .filterIsInstance<IrClass>()) + ((memberScope.getClassifierNames()
-                ?: emptySet()).mapNotNull {
-                memberScope.getContributedClassifier(
-                    it,
-                    NoLookupLocation.FROM_BACKEND
-                )
-            }.map { pluginContext.referenceClass(it.fqNameSafe)!!.owner }))
-                .map {
-                    it.getAnnotation(InjektFqNames.Index)!!
-                        .getValueArgument(0)!!
+        ((module.files
+            .filter { it.fqName == InjektFqNames.IndexPackage }
+            .flatMapFix { it.declarations }
+            .filterIsInstance<IrClass>()) + ((memberScope.getClassifierNames()
+            ?: emptySet()).mapNotNull {
+            memberScope.getContributedClassifier(
+                it,
+                NoLookupLocation.FROM_BACKEND
+            )
+        }.map { pluginContext.referenceClass(it.fqNameSafe)!!.owner }))
+            .map {
+                val annotation = it.getAnnotation(InjektFqNames.Index)!!
+                Index(
+                    annotation.getValueArgument(0)!!
                         .let { it as IrConst<String> }
                         .value
-                        .let { FqName(it) }
-                }
-        }
+                        .let { FqName(it) },
+                    annotation.getValueArgument(1)!!
+                        .let { it as IrConst<String> }
+                        .value
+                )
+            }
+    }
 
-    fun index(fqName: FqName) {
+    val classIndices: List<IrClass> by lazy {
+        indices
+            .filter { it.type == "class" }
+            .map { pluginContext.referenceClass(it.fqName)!! }
+            .map { it.owner }
+    }
+
+    val functionIndices: List<IrFunction> by lazy {
+        indices
+            .filter { it.type == "function" }
+            .flatMapFix { pluginContext.referenceFunctions(it.fqName) }
+            .map { it.owner }
+    }
+
+    val propertyIndices: List<IrProperty> by lazy {
+        indices
+            .filter { it.type == "property" }
+            .flatMapFix { pluginContext.referenceProperties(it.fqName) }
+            .map { it.owner }
+    }
+
+    private data class Index(
+        val fqName: FqName,
+        val type: String
+    )
+
+    fun index(declaration: IrDeclarationWithName) {
         module.addClassFile(
             pluginContext,
             InjektFqNames.IndexPackage,
             buildClass {
+                name = (getJoinedName(
+                    declaration.getPackageFragment()!!.fqName,
+                    declaration.descriptor.fqNameSafe
+                        .parent().child(declaration.name.asString().asNameId())
+                ).asString() + "${declaration.uniqueName().hashCode()}Index")
+                    .removeIllegalChars()
+                    .asNameId()
                 name = "${
-                fqName
+                declaration.descriptor.fqNameSafe
                     .pathSegments()
                     .joinToString("_")
                 }Index".asNameId()
@@ -88,7 +133,18 @@ class Indexer(
                     irCall(symbols.index.constructors.single()).apply {
                         putValueArgument(
                             0,
-                            irString(fqName.asString())
+                            irString(declaration.descriptor.fqNameSafe.asString())
+                        )
+                        putValueArgument(
+                            1,
+                            irString(
+                                when (declaration) {
+                                    is IrClass -> "class"
+                                    is IrFunction -> "function"
+                                    is IrProperty -> "property"
+                                    else -> error("Unsupported declaration ${declaration.render()}")
+                                }
+                            )
                         )
                     }
                 }

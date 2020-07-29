@@ -84,8 +84,6 @@ class ReaderLambdaTrackingTransformer(pluginContext: IrPluginContext) :
     }
 
     private fun transformReaderLambdaInvoke(call: IrCall): IrExpression {
-        println("reader lambda invoke ${call.dump()}")
-
         return DeclarationIrBuilder(pluginContext, call.symbol).run {
             IrCallImpl(
                 call.startOffset,

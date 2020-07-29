@@ -80,9 +80,7 @@ class ComponentIndexingTransformer(
             }
         })
 
-        declarations.forEach { declaration ->
-            indexer.index(declaration.descriptor.fqNameSafe)
-        }
+        declarations.forEach { indexer.index(it) }
     }
 
     private fun IrDeclaration.isInEffect(): Boolean {

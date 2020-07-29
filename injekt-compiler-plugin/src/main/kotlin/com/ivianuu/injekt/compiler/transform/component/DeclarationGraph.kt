@@ -63,8 +63,7 @@ class DeclarationGraph(
         contexts += function.getContext()!!
 
         fun collectAllContextsForFunction(function: IrFunction) {
-            indexer.indices
-                .mapNotNull { pluginContext.referenceClass(it)?.owner }
+            indexer.classIndices
                 .mapNotNull { it.getAnnotation(InjektFqNames.ReaderImpl) }
                 .filter { annotation ->
                     annotation.getValueArgument(0)
@@ -108,30 +107,21 @@ class DeclarationGraph(
     }
 
     private fun collectRootComponentFactories() {
-        indexer.indices
-            .mapNotNull { pluginContext.referenceClass(it)?.owner }
+        indexer.classIndices
             .filter { it.hasAnnotation(InjektFqNames.RootComponentFactory) }
             .forEach { _rootComponentFactories += it }
     }
 
     private fun collectEntryPoints() {
-        indexer.indices
-            .mapNotNull { pluginContext.referenceClass(it)?.owner }
+        indexer.classIndices
             .filter { it.hasAnnotation(InjektFqNames.EntryPoint) }
             .forEach { _entryPoints += it }
     }
 
     private fun collectBindings() {
-        indexer.indices
-            .flatMapFix {
-                pluginContext.referenceFunctions(it)
-                    .map { it.owner } +
-                        (pluginContext.referenceClass(it)?.constructors
-                            ?.map { it.owner }
-                            ?.toList() ?: emptyList()) +
-                        pluginContext.referenceProperties(it)
-                            .mapNotNull { it.owner.getter }
-            }
+        (indexer.functionIndices + indexer.classIndices
+            .flatMapFix { it.constructors.toList() } +
+                indexer.propertyIndices.mapNotNull { it.getter })
             .filter {
                 it.hasAnnotation(InjektFqNames.Given) ||
                         (it is IrConstructor && it.constructedClass.hasAnnotation(InjektFqNames.Given)) ||
@@ -146,9 +136,7 @@ class DeclarationGraph(
     }
 
     private fun collectMapEntries() {
-        indexer.indices
-            .flatMapFix { pluginContext.referenceFunctions(it) }
-            .map { it.owner }
+        indexer.functionIndices
             .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
             .map { implicitTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
@@ -157,9 +145,7 @@ class DeclarationGraph(
     }
 
     private fun collectSetElements() {
-        indexer.indices
-            .flatMapFix { pluginContext.referenceFunctions(it) }
-            .map { it.owner }
+        indexer.functionIndices
             .filter { it.hasAnnotation(InjektFqNames.SetElements) }
             .map { implicitTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }

@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.util.constructors
@@ -96,7 +97,7 @@ class ImplicitIndexingTransformer(
 
         newDeclarations.forEach {
             it.file.addChild(it)
-            indexer.index(it.descriptor.fqNameSafe)
+            indexer.index(it as IrDeclarationWithName)
         }
     }
 

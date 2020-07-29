@@ -275,30 +275,6 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
 
         val allIrScopes get() = allScopes
 
-        override fun visitFieldNew(declaration: IrField): IrStatement {
-            println(
-                "visit field ${declaration.render()}\n" +
-                        "is reader ${declaration.type.hasAnnotation(InjektFqNames.Reader)}"
-            )
-            return super.visitFieldNew(declaration)
-        }
-
-        override fun visitVariable(declaration: IrVariable): IrStatement {
-            println(
-                "visit var ${declaration.render()}\n" +
-                        "is reader ${declaration.type.hasAnnotation(InjektFqNames.Reader)}"
-            )
-            return super.visitVariable(declaration)
-        }
-
-        override fun visitValueParameterNew(declaration: IrValueParameter): IrStatement {
-            println(
-                "visit value parameter ${declaration.render()}\n" +
-                        "is reader ${declaration.type.hasAnnotation(InjektFqNames.Reader)}"
-            )
-            return super.visitValueParameterNew(declaration)
-        }
-
         override fun visitClassNew(declaration: IrClass): IrStatement {
             return if (declaration.canUseImplicits(pluginContext)) {
                 withScope(ReaderClass(declaration, this@ImplicitCallTransformer)) {
@@ -344,7 +320,6 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
             expression is IrCall &&
                     expression.symbol.owner.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given" ->
                 transformGivenCall(expression)
-                    .also { println("is given $it") }
             expression.isReaderLambdaInvoke(pluginContext) -> transformReaderLambdaInvoke(expression as IrCall)
             expression.symbol.owner.canUseImplicits(pluginContext) ->
                 transformReaderCall(expression)
@@ -389,8 +364,6 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
     }
 
     private fun transformReaderLambdaInvoke(call: IrCall): IrExpression {
-        println("reader lambda invoke ${call.dump()}")
-
         return DeclarationIrBuilder(pluginContext, call.symbol).run {
             IrCallImpl(
                 call.startOffset,

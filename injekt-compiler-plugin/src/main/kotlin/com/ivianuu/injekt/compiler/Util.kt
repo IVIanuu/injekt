@@ -55,6 +55,7 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrMetadataSourceOwner
+import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
@@ -636,14 +637,15 @@ fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
 }
 
 fun IrDeclarationWithName.uniqueName() = when (this) {
-    is IrClass -> "${descriptor.fqNameSafe}__"
-    is IrFunction -> "${descriptor.fqNameSafe}__${
+    is IrClass -> "${descriptor.fqNameSafe}__c"
+    is IrFunction -> "${descriptor.fqNameSafe}__f${
     descriptor.valueParameters
         .filterNot { it.name.asString() == "_context" }
         .map { it.type }.map {
             it.constructor.declarationDescriptor!!.fqNameSafe
         }.hashCode().absoluteValue
     }${if (visibility == Visibilities.LOCAL) "_$startOffset" else ""}"
+    is IrProperty -> "${descriptor.fqNameSafe}__p"
     else -> error("Unsupported declaration ${dump()}")
 }
 
