@@ -20,6 +20,7 @@ import androidx.compose.plugins.kotlin.ComposeComponentRegistrar
 import com.ivianuu.injekt.compiler.InjektComponentRegistrar
 import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
+import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
 import org.junit.Test
@@ -28,20 +29,15 @@ class ComposeTest {
 
     @Test
     fun testComposableBindingEffect() = codegen("""
-        @CompositionComponent 
-        interface TestCompositionComponent
-        
-        @Target(AnnotationTarget.TYPE)
-        @Qualifier
-        annotation class AppUi
+        @Distinct
+        typealias AppUi = @androidx.compose.Composable () -> Unit
 
-        @BindingEffect(TestCompositionComponent::class)
+        @Effect
         annotation class BindAppUi {
             companion object {
-                @Module
-                operator fun <T : @androidx.compose.Composable () -> Unit> invoke() {
-                    alias<T, @AppUi @androidx.compose.Composable () -> Unit>()
-                }
+                @Given
+                operator fun <T : @androidx.compose.Composable () -> Unit> invoke() =
+                    given<T>()
             }
         }
         
@@ -51,31 +47,33 @@ class ComposeTest {
         fun SampleUi() {
             androidx.compose.remember {  }
         }
+        
+        fun invoke(): AppUi {
+            initializeComponents()
+            return rootComponent<TestComponent>().runReader { given<AppUi>() }
+        }
     """,
         config = {
             compilerPlugins = listOf(InjektComponentRegistrar(), ComposeComponentRegistrar())
         }
-    )
+    ) {
+        invokeSingleFile()
+    }
 
     @Test
     fun testComposableBindingEffectMulti() = multiCodegen(
         listOf(
             source(
                 """
-                @CompositionComponent 
-                interface TestCompositionComponent
+                @Distinct
+                typealias AppUi = @androidx.compose.Composable () -> Unit
         
-                @Target(AnnotationTarget.TYPE)
-                @Qualifier
-                annotation class AppUi
-
-                @BindingEffect(TestCompositionComponent::class)
+                @Effect
                 annotation class BindAppUi {
                     companion object {
-                        @Module
-                        operator fun <T : @androidx.compose.Composable () -> Unit> invoke() {
-                            alias<T, @AppUi @androidx.compose.Composable () -> Unit>()
-                        }
+                        @Given
+                        operator fun <T : @androidx.compose.Composable () -> Unit> invoke() =
+                            given<T>() as AppUi
                     }
                 }
                 """
@@ -89,6 +87,11 @@ class ComposeTest {
                 @androidx.compose.Composable
                 fun SampleUi() {
                     androidx.compose.remember {  }
+                }
+                
+                fun invoke(): AppUi {
+                    initializeComponents()
+                    return rootComponent<TestComponent>().runReader { given<AppUi>() }
                 }
                 """
             )
