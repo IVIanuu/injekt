@@ -182,10 +182,9 @@ class ComponentImpl(
                 for (declaration in superClass.declarations.toList()) {
                     if (declaration !is IrFunction) continue
                     if (declaration is IrConstructor) continue
-                    if (declaration.name in declarationNames) continue
                     if (declaration.dispatchReceiverParameter?.type ==
                         factoryImpl.pluginContext.irBuiltIns.anyType
-                    ) break
+                    ) continue
                     declarationNames += declaration.name
                     val request = BindingRequest(
                         declaration.returnType.asKey(),
