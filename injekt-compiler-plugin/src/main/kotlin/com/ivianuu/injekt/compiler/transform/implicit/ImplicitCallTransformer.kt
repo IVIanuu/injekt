@@ -16,13 +16,13 @@
 
 package com.ivianuu.injekt.compiler.transform.implicit
 
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
+import com.ivianuu.injekt.compiler.lookupTracker
 import com.ivianuu.injekt.compiler.readableName
 import com.ivianuu.injekt.compiler.remapTypeParametersByName
 import com.ivianuu.injekt.compiler.substitute
@@ -48,6 +48,11 @@ import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.incremental.KotlinLookupLocation
+import org.jetbrains.kotlin.incremental.components.LocationInfo
+import org.jetbrains.kotlin.incremental.components.LookupLocation
+import org.jetbrains.kotlin.incremental.components.Position
+import org.jetbrains.kotlin.incremental.record
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
@@ -64,11 +69,9 @@ import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
-import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
-import org.jetbrains.kotlin.ir.declarations.IrValueParameter
-import org.jetbrains.kotlin.ir.declarations.IrVariable
+import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrDelegatingConstructorCall
@@ -87,15 +90,17 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
+import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ImplicitCallTransformer(pluginContext: IrPluginContext) :
@@ -148,9 +153,11 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
                     .filterNot { it is IrConstructor }
                     .forEach { genericContextFunction ->
                         val finalType =
-                            genericContextFunction.returnType.substitute(genericContext.typeParameters
-                                .map { it.symbol }
-                                .zip(typeArguments).toMap()
+                            genericContextFunction.returnType.substitute(
+                                genericContext.typeParameters
+                                    .map { it.symbol }
+                                    .zip(typeArguments)
+                                    .toMap()
                             )
                                 .remapTypeParametersByName(
                                     declaration as IrTypeParametersContainer,
@@ -546,6 +553,24 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
             }
 
         transformedCall.putValueArgument(transformedCall.valueArgumentsCount - 1, contextArgument)
+
+        val ownerKtElement = currentReaderScope.declaration.descriptor.findPsi() as? KtElement
+        val location = ownerKtElement?.let { KotlinLookupLocation(it) }
+            ?: object : LookupLocation {
+                override val location: LocationInfo?
+                    get() = object : LocationInfo {
+                        override val filePath: String
+                            get() = currentReaderScope.declaration.file.path
+                        override val position: Position
+                            get() = Position.NO_POSITION
+                    }
+            }
+
+        lookupTracker!!.record(
+            location,
+            calleeContext.getPackageFragment()!!.packageFragmentDescriptor,
+            calleeContext.descriptor.name
+        )
 
         return transformedCall
     }

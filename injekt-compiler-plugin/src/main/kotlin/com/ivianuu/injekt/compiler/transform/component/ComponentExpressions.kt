@@ -70,21 +70,16 @@ class ComponentExpressions(
         }
 
         val expression = when (binding) {
-            is ChildComponentFactoryBindingNode -> childComponentFactoryExpression(binding) to true
-            is ComponentImplBindingNode -> componentExpression(binding) to false
-            is GivenBindingNode -> givenExpression(binding) to true
-            is InputBindingNode -> inputExpression(binding) to false
-            is MapBindingNode -> mapBindingExpression(binding) to true
-            is NullBindingNode -> nullExpression(binding) to false
-            is SetBindingNode -> setBindingExpression(binding) to true
-        }.let { (expression, forceWrap) ->
-            if (forceWrap || component.dependencyRequests.any {
-                    it.second.key == binding.key
-                }) expression.wrapInFunction(binding.key) else expression
-        }
+            is ChildComponentFactoryBindingNode -> childComponentFactoryExpression(binding)
+            is ComponentImplBindingNode -> componentExpression(binding)
+            is GivenBindingNode -> givenExpression(binding)
+            is InputBindingNode -> inputExpression(binding)
+            is MapBindingNode -> mapBindingExpression(binding)
+            is NullBindingNode -> nullExpression(binding)
+            is SetBindingNode -> setBindingExpression(binding)
+        }.wrapInFunction(binding.key)
 
-        return expression
-            .also { bindingExpressions[request] = it }
+        return expression.also { bindingExpressions[request] = it }
     }
 
     private fun childComponentFactoryExpression(binding: ChildComponentFactoryBindingNode): ComponentExpression =
