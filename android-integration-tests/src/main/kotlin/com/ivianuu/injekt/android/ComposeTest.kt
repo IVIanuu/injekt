@@ -36,8 +36,8 @@ class ComposeTest {
         annotation class BindAppUi {
             companion object {
                 @Given
-                operator fun <T : @androidx.compose.Composable () -> Unit> invoke() =
-                    given<T>()
+                operator fun <T : @androidx.compose.Composable () -> Unit> invoke(): AppUi =
+                    given<T>() as @androidx.compose.Composable () -> Unit
             }
         }
         
@@ -72,8 +72,8 @@ class ComposeTest {
                 annotation class BindAppUi {
                     companion object {
                         @Given
-                        operator fun <T : @androidx.compose.Composable () -> Unit> invoke() =
-                            given<T>() as AppUi
+                        operator fun <T : @androidx.compose.Composable () -> Unit> invoke(): AppUi =
+                            given<T>() as @androidx.compose.Composable () -> Unit
                     }
                 }
                 """
@@ -93,13 +93,16 @@ class ComposeTest {
                     initializeComponents()
                     return rootComponent<TestComponent>().runReader { given<AppUi>() }
                 }
-                """
+                """,
+                name = "File.kt"
             )
         ),
         config = {
             compilerPlugins = listOf(InjektComponentRegistrar(), ComposeComponentRegistrar())
         }
-    )
+    ) {
+        it.last().invokeSingleFile()
+    }
 
     @Test
     fun testComposableReaderLambda() = codegen(
@@ -151,151 +154,4 @@ class ComposeTest {
             assertTrue(invokeSingleFile() is Foo)
         }*/
     }
-
-    @Test
-    fun testGetInComposableWithCompilingAfterCompose() =
-        codegen(
-            """
-            val ComponentAmbient = androidx.compose.staticAmbientOf<TestCompositionComponent>()
-            
-            @Module
-            fun module() {
-                installIn<TestCompositionComponent>()
-                unscoped<Foo>()
-            }
-            
-            @androidx.compose.Composable
-            fun <T> inject(): T { 
-                val component = ComponentAmbient.current
-                return androidx.compose.remember(component) { component.given() }
-            }
-            
-            @androidx.compose.Composable
-            fun caller() {
-                initializeCompositions()
-                val foo = inject<Foo>()
-            }
-        """,
-            config = {
-                val other = compilerPlugins.toList()
-                compilerPlugins = listOf(ComposeComponentRegistrar()) + other
-            }
-        ) {
-            assertOk()
-        }
-
-    @Test
-    fun testGetInComposableWithCompilingBeforeCompose() =
-        codegen(
-            """
-            val ComponentAmbient = androidx.compose.staticAmbientOf<TestCompositionComponent>()
-            
-            @Module
-            fun module() {
-                installIn<TestCompositionComponent>()
-                unscoped<Foo>()
-            }
-            
-            @androidx.compose.Composable
-            fun <T> inject(): T { 
-                val component = ComponentAmbient.current
-                return androidx.compose.remember(component) { component.given() }
-            }
-            
-            @androidx.compose.Composable
-            fun caller() {
-                initializeCompositions()
-                val foo = inject<Foo>()
-            }
-        """,
-            config = {
-                val other = compilerPlugins.toList()
-                compilerPlugins = other + listOf(ComposeComponentRegistrar())
-            }
-        ) {
-            assertOk()
-        }
-
-    @Test
-    fun testGetInComposableWithCompilingAfterComposeMulti() = multiCodegen(
-        listOf(
-            source(
-                """
-                val ComponentAmbient = androidx.compose.staticAmbientOf<TestCompositionComponent>()
-                
-                @Module 
-                fun module() {
-                    installIn<TestCompositionComponent>()
-                    unscoped<Foo>()
-                }
-                
-                @androidx.compose.Composable 
-                fun <T> inject(): T { 
-                    val component = ComponentAmbient.current
-                    return androidx.compose.remember(component) { component.given() }
-                }
-        """
-            )
-        ),
-        listOf(
-            source(
-                """
-                @androidx.compose.Composable 
-                fun caller() {
-                    initializeCompositions()
-                    val foo = inject<Foo>()
-                } 
-            """
-            )
-        )
-        ,
-        config = {
-            val other = compilerPlugins.toList()
-            compilerPlugins = listOf(ComposeComponentRegistrar()) + other
-        }
-    ) { results ->
-        results.forEach { it.assertOk() }
-    }
-
-    @Test
-    fun testGetInComposableWithCompilingBeforeComposeMulti() = multiCodegen(
-        listOf(
-            source(
-                """
-                val ComponentAmbient = androidx.compose.staticAmbientOf<TestCompositionComponent>()
-                
-                @Module 
-                fun module() {
-                    installIn<TestCompositionComponent>()
-                    unscoped<Foo>()
-                }
-                
-                @androidx.compose.Composable 
-                fun <T> inject(): T { 
-                    val component = ComponentAmbient.current
-                    return androidx.compose.remember(component) { component.given() }
-                }
-        """
-            )
-        ),
-        listOf(
-            source(
-                """
-                @androidx.compose.Composable 
-                fun caller() {
-                    initializeCompositions()
-                    val foo = inject<Foo>()
-                } 
-            """
-            )
-        )
-        ,
-        config = {
-            val other = compilerPlugins.toList()
-            compilerPlugins = other + listOf(ComposeComponentRegistrar())
-        }
-    ) { results ->
-        results.forEach { it.assertOk() }
-    }
-
 }

@@ -494,7 +494,12 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
                                     declarationNames += declaration.name
                                     addFunction {
                                         name = declaration.name
-                                        returnType = declaration.returnType
+                                        returnType = declaration.returnType.substitute(
+                                            superClass.typeParameters
+                                                .map { it.symbol }
+                                                .zip(typeArguments)
+                                                .toMap()
+                                        )
                                     }.apply {
                                         dispatchReceiverParameter =
                                             thisReceiver!!.copyTo(this)
