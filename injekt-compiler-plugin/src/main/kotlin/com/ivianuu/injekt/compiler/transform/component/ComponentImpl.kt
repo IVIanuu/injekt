@@ -40,6 +40,7 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -67,6 +68,7 @@ class ComponentImpl(
     private lateinit var componentExpressions: ComponentExpressions
 
     fun init() {
+        println("init ${factoryImpl.component.render()}")
         val parentField = if (factoryImpl.parent != null) {
             clazz.addField(
                 "parent",
@@ -173,6 +175,10 @@ class ComponentImpl(
                     .distinct()
                     .filter { it.defaultType !in processedSuperTypes }
 
+            println("${factoryImpl.component.render()} entry points ${entryPoints.map {
+                it.defaultType.render()
+            }}")
+
             if (entryPoints.isEmpty()) break
 
             fun collect(superClass: IrClass) {
@@ -191,6 +197,7 @@ class ComponentImpl(
                         null,
                         declaration.descriptor.fqNameSafe
                     )
+                    println("${factoryImpl.component.render()} collected request $request")
                     dependencyRequests += declaration to request
                 }
 
@@ -206,6 +213,7 @@ class ComponentImpl(
 
             dependencyRequests.forEach { (_, request) ->
                 if (request.key !in implementedRequests) {
+                    println("${factoryImpl.component.render()} implement $request")
                     componentExpressions.getBindingExpression(request)
                 }
             }

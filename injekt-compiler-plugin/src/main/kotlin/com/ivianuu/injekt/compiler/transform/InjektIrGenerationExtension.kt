@@ -33,20 +33,31 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.SymbolTable
+import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.render
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+        println("${moduleFragment.render()} begin")
         val symbolRemapper = DeepCopySymbolRemapper()
         val injektPluginContext = InjektPluginContext(moduleFragment, pluginContext, symbolRemapper)
 
+        println("${moduleFragment.render()} pre effect")
+
         EffectTransformer(injektPluginContext).doLower(moduleFragment)
+
+        println("${moduleFragment.render()} post effect")
 
         WithInstancesTransformer(
             injektPluginContext
         ).doLower(moduleFragment)
 
+        println("${moduleFragment.render()} post with instances")
+
         ComponentFactoryTransformer(injektPluginContext).doLower(moduleFragment)
+
+        println("${moduleFragment.render()} post component factory")
 
         val indexer = Indexer(
             pluginContext,
@@ -59,9 +70,15 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         implicitContextParamTransformer.doLower(moduleFragment)
 
+        println("${moduleFragment.render()} post implicit context param")
+
         ImplicitIndexingTransformer(pluginContext, indexer).doLower(moduleFragment)
 
+        println("${moduleFragment.render()} post implicit indexing")
+
         ImplicitCallTransformer(injektPluginContext).doLower(moduleFragment)
+
+        println("${moduleFragment.render()} post implicit call")
 
         val declarationGraph = DeclarationGraph(
             indexer,
@@ -72,7 +89,11 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         EntryPointTransformer(injektPluginContext).doLower(moduleFragment)
 
+        println("${moduleFragment.render()} post entry point")
+
         ComponentIndexingTransformer(indexer, injektPluginContext).doLower(moduleFragment)
+
+        println("${moduleFragment.render()} post component indexing")
 
         ComponentTransformer(
             injektPluginContext,
@@ -82,9 +103,15 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             moduleFragment
         )
 
+        println("${moduleFragment.render()} post component")
+
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 
+        println("${moduleFragment.render()} post metadata")
+
         generateSymbols(pluginContext)
+
+        println("${moduleFragment.render()} finished transform ${moduleFragment.dump()}")
     }
 
 }

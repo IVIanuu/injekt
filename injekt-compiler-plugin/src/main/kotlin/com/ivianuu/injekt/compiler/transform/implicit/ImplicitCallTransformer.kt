@@ -506,6 +506,7 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
                             }
 
                             val implementedSuperTypes = mutableSetOf<IrType>()
+                            val declarationNames = mutableSetOf<Name>()
 
                             fun implementFunctions(
                                 superClass: IrClass,
@@ -517,11 +518,12 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
                                     if (declaration !is IrFunction) continue
                                     if (declaration is IrConstructor) continue
                                     if (declaration.isFakeOverride) continue
-                                    if (declaration.dispatchReceiverParameter?.type == irBuiltIns.anyType) break
+                                    if (declaration.dispatchReceiverParameter?.type == irBuiltIns.anyType) continue
+                                    if (declaration.name in declarationNames) continue
+                                    declarationNames += declaration.name
                                     addFunction {
                                         name = declaration.name
                                         returnType = declaration.returnType
-                                        visibility = declaration.visibility
                                     }.apply {
                                         dispatchReceiverParameter =
                                             thisReceiver!!.copyTo(this)
