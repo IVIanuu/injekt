@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.implicit
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.WrappedClassDescriptor
+import com.ivianuu.injekt.compiler.makeKotlinType
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -83,12 +83,7 @@ class DeepCopyIrTreeWithSymbolsPreservingMetadata(
 ) : DeepCopyIrTreeWithSymbols(symbolRemapper, typeRemapper, symbolRenamer) {
 
     override fun visitClass(declaration: IrClass): IrClass {
-        return super.visitClass(declaration).also { clazz ->
-            (clazz.descriptor as? WrappedClassDescriptor)?.let {
-                if (!it.isBound()) it.bind(clazz)
-            }
-            clazz.copyMetadataFrom(declaration)
-        }
+        return super.visitClass(declaration).also { it.copyMetadataFrom(declaration) }
     }
 
     override fun visitFunction(declaration: IrFunction): IrStatement {
@@ -339,16 +334,24 @@ class ReaderTypeRemapper(
         )
         val newArguments = newIrArguments.map { remapTypeArgument(it) }
 
+        val newAnnotations = type.annotations
+            .filter {
+                it.type.classOrNull?.owner?.descriptor?.fqNameSafe != InjektFqNames.Reader
+            }
+            .map { it.transform(deepCopy, null) as IrConstructorCall }
+
         return IrSimpleTypeImpl(
-            null,
+            makeKotlinType(
+                classifier,
+                newArguments,
+                type.hasQuestionMark,
+                newAnnotations,
+                type.abbreviation
+            ),
             classifier,
             type.hasQuestionMark,
             newArguments,
-            type.annotations
-                .filter {
-                    it.type.classOrNull?.owner?.descriptor?.fqNameSafe != InjektFqNames.Reader
-                }
-                .map { it.transform(deepCopy, null) as IrConstructorCall },
+            newAnnotations,
             type.abbreviation
         )
     }
@@ -356,13 +359,21 @@ class ReaderTypeRemapper(
     private fun underlyingRemapType(type: IrSimpleType): IrType {
         val classifier = symbolRemapper.getReferencedClassifier(type.classifier)
         val arguments = type.arguments.map { remapTypeArgument(it) }
+        val annotations = type.annotations.map { it.transform(deepCopy, null) as IrConstructorCall }
+        val abbreviation = type.abbreviation?.remapTypeAbbreviation()
         return IrSimpleTypeImpl(
-            null,
+            makeKotlinType(
+                classifier,
+                arguments,
+                type.hasQuestionMark,
+                annotations,
+                abbreviation
+            ),
             classifier,
             type.hasQuestionMark,
             arguments,
             type.annotations.map { it.transform(deepCopy, null) as IrConstructorCall },
-            type.abbreviation?.remapTypeAbbreviation()
+            abbreviation
         )
     }
 

@@ -534,6 +534,15 @@ fun String.removeIllegalChars() =
 
 fun IrType.readableName(): Name = buildString {
     fun IrType.renderName() {
+        val qualifier = getAnnotation(InjektFqNames.Qualifier)
+            ?.getValueArgument(0)
+            ?.let { it as IrConst<String> }
+            ?.value
+
+        if (qualifier != null) {
+            append("${qualifier.removeIllegalChars()}_")
+        }
+
         val fqName = if (this is IrSimpleType && abbreviation != null &&
             abbreviation!!.typeAlias.descriptor.hasAnnotation(InjektFqNames.Distinct)
         ) abbreviation!!.typeAlias.descriptor.fqNameSafe

@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform.implicit
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.NameProvider
+import com.ivianuu.injekt.compiler.WrappedClassDescriptor
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
@@ -187,7 +188,6 @@ class ImplicitContextTransformer(
             val remapped = symbolRemapper.getReferencedFunction(transformed.symbol).owner
             remappedTransformedFunctions[original] = remapped
             remappedTransformedFunctions[transformed] = remapped
-
         }
 
         (transformedClasses
@@ -196,11 +196,13 @@ class ImplicitContextTransformer(
             } + transformedFunctions.values)
             .filterNot { it.isExternalDeclaration() }
             .map { it.getContext()!! }
-            .forEach { readerContext ->
-                symbolRemapper.getReferencedClass(readerContext.symbol).owner.let {
-                    it as IrClassImpl
-                    it.metadata = MetadataSource.Class(it.descriptor)
-                }
+            .map { symbolRemapper.getReferencedClass(it.symbol).owner }
+            .filterIsInstance<IrClassImpl>()
+            .forEach {
+                it.metadata = MetadataSource.Class(
+                    WrappedClassDescriptor()
+                        .apply { bind(it) }
+                )
             }
     }
 
