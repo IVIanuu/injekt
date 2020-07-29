@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.NameProvider
+import com.ivianuu.injekt.compiler.readableName
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -30,8 +31,6 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.types.classifierOrFail
-import org.jetbrains.kotlin.name.Name
 
 class ComponentMembers(
     private val component: ComponentImpl,
@@ -83,14 +82,8 @@ class ComponentMembers(
 
         return buildFun {
             this.name = dependencyRequest?.first?.name
-                ?: Name.identifier(
-                    getFunctionsNameProvider.allocateForGroup(
-                        key.type.classifierOrFail.descriptor.name.asString()
-                    ).decapitalize()
-                )
+                ?: key.type.readableName()
             returnType = key.type
-            visibility =
-                if (dependencyRequest != null) Visibilities.PUBLIC else Visibilities.PRIVATE
         }.apply {
             dispatchReceiverParameter = component.clazz.thisReceiver!!.copyTo(this)
             this.parent = component.clazz

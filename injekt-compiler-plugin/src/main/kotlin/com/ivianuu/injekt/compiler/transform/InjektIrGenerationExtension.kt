@@ -22,7 +22,7 @@ import com.ivianuu.injekt.compiler.transform.component.ComponentIndexingTransfor
 import com.ivianuu.injekt.compiler.transform.component.ComponentTransformer
 import com.ivianuu.injekt.compiler.transform.component.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.component.EntryPointTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitBodyTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitIndexingTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.WithInstancesTransformer
@@ -61,7 +61,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         ImplicitIndexingTransformer(pluginContext, indexer).doLower(moduleFragment)
 
-        ImplicitBodyTransformer(injektPluginContext).doLower(moduleFragment)
+        ImplicitCallTransformer(injektPluginContext).doLower(moduleFragment)
 
         val declarationGraph = DeclarationGraph(
             indexer,

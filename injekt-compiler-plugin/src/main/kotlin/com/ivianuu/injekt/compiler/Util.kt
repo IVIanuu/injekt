@@ -539,7 +539,7 @@ fun IrType.readableName(): Name = buildString {
             ?.value
 
         if (qualifier != null) {
-            append("${qualifier.removeIllegalChars()}_")
+            append("${qualifier}_")
         }
 
         val fqName = if (this is IrSimpleType && abbreviation != null &&
@@ -549,7 +549,6 @@ fun IrType.readableName(): Name = buildString {
         append(
             fqName.pathSegments().map { it.asString() }
                 .joinToString("_")
-                .decapitalize()
         )
 
         typeArguments.forEachIndexed { index, typeArgument ->
@@ -560,7 +559,7 @@ fun IrType.readableName(): Name = buildString {
     }
 
     renderName()
-}.asNameId()
+}.removeIllegalChars().asNameId()
 
 fun wrapDescriptor(descriptor: FunctionDescriptor): WrappedSimpleFunctionDescriptor {
     return when (descriptor) {

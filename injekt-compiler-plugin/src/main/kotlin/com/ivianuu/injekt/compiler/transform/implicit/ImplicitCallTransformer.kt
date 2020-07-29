@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2020 Manuel Wrage
  *
@@ -17,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform.implicit
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.canUseImplicits
@@ -30,11 +30,11 @@ import com.ivianuu.injekt.compiler.thisOfClass
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitBodyTransformer.Scope.ReaderScope
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitBodyTransformer.Scope.ReaderScope.ReaderClass
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitBodyTransformer.Scope.ReaderScope.ReaderFunction
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitBodyTransformer.Scope.Root
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitBodyTransformer.Scope.RunReader
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer.Scope.ReaderScope
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer.Scope.ReaderScope.ReaderClass
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer.Scope.ReaderScope.ReaderFunction
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer.Scope.Root
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer.Scope.RunReader
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.typeWith
@@ -64,8 +64,11 @@ import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
+import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
+import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrDelegatingConstructorCall
@@ -87,6 +90,7 @@ import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.render
@@ -94,7 +98,7 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ImplicitBodyTransformer(pluginContext: IrPluginContext) :
+class ImplicitCallTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
     private sealed class Scope {
@@ -109,7 +113,7 @@ class ImplicitBodyTransformer(pluginContext: IrPluginContext) :
 
         sealed class ReaderScope(
             val declaration: IrDeclaration,
-            val transformer: ImplicitBodyTransformer
+            val transformer: ImplicitCallTransformer
         ) : Scope() {
             abstract val context: IrClass
 
@@ -191,7 +195,7 @@ class ImplicitBodyTransformer(pluginContext: IrPluginContext) :
 
             class ReaderClass(
                 val clazz: IrClass,
-                transformer: ImplicitBodyTransformer
+                transformer: ImplicitCallTransformer
             ) : ReaderScope(clazz, transformer) {
 
                 val readerConstructor = clazz.getReaderConstructor(
@@ -225,7 +229,7 @@ class ImplicitBodyTransformer(pluginContext: IrPluginContext) :
 
             class ReaderFunction(
                 val function: IrFunction,
-                transformer: ImplicitBodyTransformer
+                transformer: ImplicitCallTransformer
             ) : ReaderScope(function, transformer) {
 
                 override val context: IrClass = function.valueParameters.single {
@@ -256,9 +260,8 @@ class ImplicitBodyTransformer(pluginContext: IrPluginContext) :
     private val scopeStack = mutableListOf<Scope>(Root)
     private val currentScope: Scope get() = scopeStack.last()
     private val currentReaderScope: ReaderScope
-        get() =
-            scopeStack.lastOrNull { it is ReaderScope } as? ReaderScope
-                ?: error("Scopes $scopeStack")
+        get() = scopeStack.lastOrNull { it is ReaderScope } as? ReaderScope
+            ?: error("Scopes $scopeStack")
     private val allIrScopes: List<ScopeWithIr> get() = transformer.allIrScopes
 
     private inline fun <R> withScope(scope: Scope, block: () -> R): R {
@@ -272,9 +275,33 @@ class ImplicitBodyTransformer(pluginContext: IrPluginContext) :
 
         val allIrScopes get() = allScopes
 
+        override fun visitFieldNew(declaration: IrField): IrStatement {
+            println(
+                "visit field ${declaration.render()}\n" +
+                        "is reader ${declaration.type.hasAnnotation(InjektFqNames.Reader)}"
+            )
+            return super.visitFieldNew(declaration)
+        }
+
+        override fun visitVariable(declaration: IrVariable): IrStatement {
+            println(
+                "visit var ${declaration.render()}\n" +
+                        "is reader ${declaration.type.hasAnnotation(InjektFqNames.Reader)}"
+            )
+            return super.visitVariable(declaration)
+        }
+
+        override fun visitValueParameterNew(declaration: IrValueParameter): IrStatement {
+            println(
+                "visit value parameter ${declaration.render()}\n" +
+                        "is reader ${declaration.type.hasAnnotation(InjektFqNames.Reader)}"
+            )
+            return super.visitValueParameterNew(declaration)
+        }
+
         override fun visitClassNew(declaration: IrClass): IrStatement {
             return if (declaration.canUseImplicits(pluginContext)) {
-                withScope(ReaderClass(declaration, this@ImplicitBodyTransformer)) {
+                withScope(ReaderClass(declaration, this@ImplicitCallTransformer)) {
                     super.visitClassNew(declaration)
                 }
             } else super.visitClassNew(declaration)
@@ -282,7 +309,7 @@ class ImplicitBodyTransformer(pluginContext: IrPluginContext) :
 
         override fun visitFunctionNew(declaration: IrFunction): IrStatement {
             return if (declaration.canUseImplicits(pluginContext)) {
-                withScope(ReaderFunction(declaration, this@ImplicitBodyTransformer)) {
+                withScope(ReaderFunction(declaration, this@ImplicitCallTransformer)) {
                     super.visitFunctionNew(declaration)
                 }
             } else super.visitFunctionNew(declaration)

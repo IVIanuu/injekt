@@ -57,7 +57,6 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.IrTypeAbbreviation
 import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.ir.types.IrTypeProjection
-import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.IrTypeAbbreviationImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
@@ -72,7 +71,6 @@ import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.Variance
 
 class DeepCopyIrTreeWithSymbolsPreservingMetadata(
@@ -335,9 +333,9 @@ class ReaderTypeRemapper(
         val newArguments = newIrArguments.map { remapTypeArgument(it) }
 
         val newAnnotations = type.annotations
-            .filter {
+            /*.filter {
                 it.type.classOrNull?.owner?.descriptor?.fqNameSafe != InjektFqNames.Reader
-            }
+            }*/
             .map { it.transform(deepCopy, null) as IrConstructorCall }
 
         return IrSimpleTypeImpl(
