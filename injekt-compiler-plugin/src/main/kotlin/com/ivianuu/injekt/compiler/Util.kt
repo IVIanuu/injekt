@@ -530,6 +530,7 @@ fun String.removeIllegalChars() =
         .replace("@", "")
         .replace(",", "")
         .replace(" ", "")
+        .replace("-", "")
 
 fun IrType.readableName(): Name = buildString {
     fun IrType.renderName() {

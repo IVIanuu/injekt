@@ -19,8 +19,19 @@ package com.ivianuu.injekt.internal
 import kotlin.reflect.KClass
 
 // todo internal
+annotation class ReaderLambda(
+    val lambdaName: String
+)
+
+// todo internal
+annotation class ReaderLambdaAssignment(
+    val lambdaName: String,
+    val assignedLambdaName: String
+)
+
+// todo internal
 annotation class ReaderLambdaInvocation(
-    val fqName: String,
+    val lambdaName: String,
     val components: Array<KClass<*>>
 )
 

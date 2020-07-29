@@ -272,6 +272,9 @@ class ImplicitContextTransformer(
             } else function
         }
 
+        if (function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given")
+            return function
+
         remappedTransformedFunctions[function]?.let { return it }
         if (function in remappedTransformedFunctions.values) return function
         transformedFunctions[function]?.let { return it }
@@ -289,14 +292,8 @@ class ImplicitContextTransformer(
         if (function.isExternalDeclaration() || existingContext != null) {
             val transformedFunction = function.copyAsReader()
             transformedFunctions[function] = transformedFunction
-
-            if (transformedFunction.descriptor.fqNameSafe.asString() !=
-                "com.ivianuu.injekt.given"
-            ) {
-                val context = getExternalReaderContext(transformedFunction)!!
-                transformedFunction.addContextParameter(context)
-            }
-
+            val context = getExternalReaderContext(transformedFunction)!!
+            transformedFunction.addContextParameter(context)
             return transformedFunction
         }
 
