@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.irCallAndRecordLookup
 import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.tmpFunction
@@ -174,7 +175,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                             )
                         ),
                     isSuspend = effectFunction.isSuspend
-                ).apply {
+                ).apply function@{
                     dispatchReceiverParameter = thisReceiver!!.copyTo(this)
 
                     annotations += effectFunction.annotations
@@ -182,7 +183,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
 
                     body = DeclarationIrBuilder(pluginContext, symbol).run {
                         irExprBody(
-                            irCall(effectFunction).apply {
+                            irCallAndRecordLookup(this@function, effectFunction.symbol).apply {
                                 dispatchReceiver =
                                     irGetObject(effectFunction.dispatchReceiverParameter!!.type.classOrNull!!)
                                 putTypeArgument(0, clazz.defaultType)
@@ -266,7 +267,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                     )
                 }
 
-        addFunction("function", functionType).apply {
+        addFunction("function", functionType).apply function@{
             addMetadataIfNotLocal()
 
             dispatchReceiverParameter = thisReceiver!!.copyTo(this)
@@ -278,7 +279,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             body = DeclarationIrBuilder(pluginContext, symbol).run {
                 irExprBody(
                     irLambda(functionType) {
-                        irCall(function).apply {
+                        irCallAndRecordLookup(this@function, function.symbol).apply {
                             if (function.dispatchReceiverParameter != null) {
                                 dispatchReceiver =
                                     irGetObject(function.dispatchReceiverParameter!!.type.classOrNull!!)
@@ -317,7 +318,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                             )
                         ),
                     isSuspend = effectFunction.isSuspend
-                ).apply {
+                ).apply function@{
                     dispatchReceiverParameter = thisReceiver!!.copyTo(this)
 
                     annotations += effectFunction.annotations
@@ -325,7 +326,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
 
                     body = DeclarationIrBuilder(pluginContext, symbol).run {
                         irExprBody(
-                            irCall(effectFunction).apply {
+                            irCallAndRecordLookup(this@function, effectFunction.symbol).apply {
                                 dispatchReceiver =
                                     irGetObject(effectFunction.dispatchReceiverParameter!!.type.classOrNull!!)
                                 putTypeArgument(0, functionType)

@@ -90,6 +90,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
+import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
@@ -184,6 +185,13 @@ fun recordLookup(
         lookedUp.getPackageFragment()!!.packageFragmentDescriptor,
         lookedUp.name
     )
+}
+
+fun IrBuilderWithScope.irCallAndRecordLookup(
+    caller: IrDeclarationWithName,
+    symbol: IrFunctionSymbol
+) = irCall(symbol).apply {
+    recordLookup(caller, symbol.owner)
 }
 
 fun Annotated.hasAnnotation(fqName: FqName): Boolean {

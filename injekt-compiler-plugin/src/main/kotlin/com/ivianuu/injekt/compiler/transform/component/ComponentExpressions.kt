@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.getContext
+import com.ivianuu.injekt.compiler.irCallAndRecordLookup
 import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.tmpFunction
@@ -116,7 +117,7 @@ class ComponentExpressions(
                         dispatchReceiver = irGet(tmpMap)
                         putValueArgument(
                             0,
-                            irCall(function).apply {
+                            irCallAndRecordLookup(component.clazz, function.symbol).apply {
                                 if (function.dispatchReceiverParameter != null)
                                     dispatchReceiver =
                                         irGetObject(function.dispatchReceiverParameter!!.type.classOrNull!!)
@@ -165,7 +166,7 @@ class ComponentExpressions(
                         dispatchReceiver = irGet(tmpSet)
                         putValueArgument(
                             0,
-                            irCall(function).apply {
+                            irCallAndRecordLookup(component.clazz, function.symbol).apply {
                                 if (function.dispatchReceiverParameter != null)
                                     dispatchReceiver =
                                         irGetObject(function.dispatchReceiverParameter!!.type.classOrNull!!)
