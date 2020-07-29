@@ -18,15 +18,11 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.irLambda
-import com.ivianuu.injekt.compiler.lookupTracker
+import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.typeWith
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.incremental.components.LocationInfo
-import org.jetbrains.kotlin.incremental.components.LookupLocation
-import org.jetbrains.kotlin.incremental.components.Position
-import org.jetbrains.kotlin.incremental.record
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -36,15 +32,12 @@ import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fields
-import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.name.FqName
 
@@ -302,18 +295,9 @@ class ComponentExpressions(
 
     private fun recordLookup(function: IrFunction) {
         val context = function.getContext()!!
-        val location = object : LookupLocation {
-            override val location: LocationInfo? = object : LocationInfo {
-                override val filePath: String
-                    get() = component.clazz.file.path
-                override val position: Position
-                    get() = Position.NO_POSITION
-            }
-        }
-        lookupTracker!!.record(
-            location,
-            context.getPackageFragment()!!.packageFragmentDescriptor,
-            context.name
+        recordLookup(
+            component.clazz,
+            context
         )
     }
 }
