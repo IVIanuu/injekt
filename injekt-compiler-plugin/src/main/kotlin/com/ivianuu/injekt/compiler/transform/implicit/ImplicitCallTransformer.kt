@@ -72,6 +72,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
+import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
@@ -473,10 +474,16 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
                                     declarationNames += declaration.name
                                     addFunction {
                                         name = declaration.name
-                                        returnType = declaration.returnType
+                                        returnType = declaration.returnType.substitute(
+                                            superClass.typeParameters
+                                                .map { it.symbol }
+                                                .zip(typeArguments)
+                                                .toMap()
+                                        )
                                     }.apply {
                                         dispatchReceiverParameter =
                                             thisReceiver!!.copyTo(this)
+                                        overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
                                         addMetadataIfNotLocal()
                                         body = DeclarationIrBuilder(
                                             pluginContext,
