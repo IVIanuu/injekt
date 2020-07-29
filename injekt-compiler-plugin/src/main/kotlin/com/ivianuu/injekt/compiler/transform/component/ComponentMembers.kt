@@ -39,8 +39,7 @@ class ComponentMembers(
 
     lateinit var constructorBlockBuilder: IrBlockBodyBuilder
 
-    private val getFunctions = mutableListOf<IrFunction>()
-    private val getFunctionsNameProvider = NameProvider()
+    private val getFunctions = mutableMapOf<Key, IrFunction>()
 
     private val membersNameProvider = NameProvider()
 
@@ -73,30 +72,23 @@ class ComponentMembers(
         key: Key,
         body: ComponentExpression
     ): IrFunction {
-        val dependencyRequest = component.dependencyRequests
-            .singleOrNull { it.second.key == key }
-
-        if (dependencyRequest != null) {
-            component.implementedRequests += dependencyRequest.second.key
-        }
-
-        return buildFun {
-            this.name = dependencyRequest?.first?.name
-                ?: key.type.readableName()
-            returnType = key.type
-        }.apply {
-            dispatchReceiverParameter = component.clazz.thisReceiver!!.copyTo(this)
-            this.parent = component.clazz
-            component.clazz.addChild(this)
-            this.body = DeclarationIrBuilder(pluginContext, symbol).run {
-                irExprBody(
-                    body(
-                        this,
-                        ComponentExpressionContext(component) { irGet(dispatchReceiverParameter!!) }
+        return getFunctions.getOrPut(key) {
+            buildFun {
+                this.name = key.type.readableName()
+                returnType = key.type
+            }.apply {
+                dispatchReceiverParameter = component.clazz.thisReceiver!!.copyTo(this)
+                this.parent = component.clazz
+                component.clazz.addChild(this)
+                this.body = DeclarationIrBuilder(pluginContext, symbol).run {
+                    irExprBody(
+                        body(
+                            this,
+                            ComponentExpressionContext(component) { irGet(dispatchReceiverParameter!!) }
+                        )
                     )
-                )
+                }
             }
-            getFunctions += this
         }
     }
 }

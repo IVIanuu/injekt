@@ -40,7 +40,6 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -58,9 +57,6 @@ class ComponentImpl(
         createImplicitParameterDeclarationWithWrappedDescriptor()
         superTypes += factoryImpl.component.defaultType
     }
-
-    val dependencyRequests = mutableListOf<Pair<IrFunction, BindingRequest>>()
-    val implementedRequests = mutableListOf<Key>()
 
     private val componentMembers = ComponentMembers(this, factoryImpl.pluginContext)
 
@@ -192,7 +188,7 @@ class ComponentImpl(
                         null,
                         declaration.descriptor.fqNameSafe
                     )
-                    dependencyRequests += declaration to request
+                    componentExpressions.getBindingExpression(request)
                 }
 
                 superClass.superTypes
@@ -203,12 +199,6 @@ class ComponentImpl(
             entryPoints.forEach { entryPoint ->
                 clazz.superTypes += entryPoint.defaultType
                 collect(entryPoint)
-            }
-
-            dependencyRequests.forEach { (_, request) ->
-                if (request.key !in implementedRequests) {
-                    componentExpressions.getBindingExpression(request)
-                }
             }
 
             firstRound = false

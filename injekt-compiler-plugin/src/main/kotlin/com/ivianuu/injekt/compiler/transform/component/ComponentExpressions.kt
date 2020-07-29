@@ -292,16 +292,12 @@ class ComponentExpressions(
 
     private fun parentExpression(request: BindingRequest): ComponentExpression {
         val parentExpression = parent?.getBindingExpression(request)!!
-        if (component.dependencyRequests.any {
-                it.second.key == request.key
-            }) {
-            val function = members.getFunction(request.key, parentExpression)
-            return { c ->
-                irCall(function).apply {
-                    dispatchReceiver = c[component]
-                }
+        val function = members.getFunction(request.key, parentExpression)
+        return { c ->
+            irCall(function).apply {
+                dispatchReceiver = c[component]
             }
-        } else return parentExpression
+        }
     }
 
     private fun recordLookup(function: IrFunction) {
