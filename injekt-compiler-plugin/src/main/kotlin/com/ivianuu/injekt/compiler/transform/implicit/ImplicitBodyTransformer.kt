@@ -84,6 +84,7 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.isFakeOverride
@@ -194,7 +195,7 @@ class ImplicitBodyTransformer(pluginContext: IrPluginContext) :
             ) : ReaderScope(clazz, transformer) {
 
                 val readerConstructor = clazz.getReaderConstructor(
-                    transformer.pluginContext.bindingContext
+                    transformer.pluginContext
                 )!!
 
                 override val context: IrClass = readerConstructor.valueParameters.single {
@@ -272,7 +273,7 @@ class ImplicitBodyTransformer(pluginContext: IrPluginContext) :
         val allIrScopes get() = allScopes
 
         override fun visitClassNew(declaration: IrClass): IrStatement {
-            return if (declaration.canUseImplicits(pluginContext.bindingContext)) {
+            return if (declaration.canUseImplicits(pluginContext)) {
                 withScope(ReaderClass(declaration, this@ImplicitBodyTransformer)) {
                     super.visitClassNew(declaration)
                 }
@@ -280,7 +281,7 @@ class ImplicitBodyTransformer(pluginContext: IrPluginContext) :
         }
 
         override fun visitFunctionNew(declaration: IrFunction): IrStatement {
-            return if (declaration.canUseImplicits(pluginContext.bindingContext)) {
+            return if (declaration.canUseImplicits(pluginContext)) {
                 withScope(ReaderFunction(declaration, this@ImplicitBodyTransformer)) {
                     super.visitFunctionNew(declaration)
                 }
@@ -316,8 +317,9 @@ class ImplicitBodyTransformer(pluginContext: IrPluginContext) :
             expression is IrCall &&
                     expression.symbol.owner.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given" ->
                 transformGivenCall(expression)
-            expression.isReaderLambdaInvoke() -> transformReaderLambdaInvoke(expression as IrCall)
-            expression.symbol.owner.canUseImplicits(pluginContext.bindingContext) ->
+                    .also { println("is given $it") }
+            expression.isReaderLambdaInvoke(pluginContext) -> transformReaderLambdaInvoke(expression as IrCall)
+            expression.symbol.owner.canUseImplicits(pluginContext) ->
                 transformReaderCall(expression)
             else -> expression
         }
@@ -360,6 +362,8 @@ class ImplicitBodyTransformer(pluginContext: IrPluginContext) :
     }
 
     private fun transformReaderLambdaInvoke(call: IrCall): IrExpression {
+        println("reader lambda invoke ${call.dump()}")
+
         return DeclarationIrBuilder(pluginContext, call.symbol).run {
             IrCallImpl(
                 call.startOffset,
@@ -432,8 +436,8 @@ class ImplicitBodyTransformer(pluginContext: IrPluginContext) :
         }
 
         val contextArgument =
-            if (transformedCall.isReaderLambdaInvoke() || transformedCall.typeArgumentsCount == 0) {
-                if (!transformedCall.isReaderLambdaInvoke())
+            if (transformedCall.isReaderLambdaInvoke(pluginContext) || transformedCall.typeArgumentsCount == 0) {
+                if (!transformedCall.isReaderLambdaInvoke(pluginContext))
                     currentReaderScope.inheritContext(
                         calleeContext.defaultType
                             .typeWith(*transformedCall.typeArguments.toTypedArray())

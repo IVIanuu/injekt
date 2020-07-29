@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.implicit
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.WrappedClassDescriptor
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
@@ -28,8 +29,10 @@ import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.getReaderConstructor
+import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isMarkedAsImplicit
+import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
 import com.ivianuu.injekt.compiler.jvmNameAnnotation
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.uniqueName
@@ -152,7 +155,7 @@ class ImplicitContextTransformer(
 
         (transformedClasses
             .map {
-                it.getReaderConstructor(pluginContext.bindingContext)!!
+                it.getReaderConstructor(pluginContext)!!
             } + transformedFunctions.values)
             .filterNot { it.isExternalDeclaration() }
             .map { it.getContext()!! }
@@ -192,7 +195,7 @@ class ImplicitContextTransformer(
 
         (transformedClasses
             .map {
-                it.getReaderConstructor(pluginContext.bindingContext)!!
+                it.getReaderConstructor(pluginContext)!!
             } + transformedFunctions.values)
             .filterNot { it.isExternalDeclaration() }
             .map { it.getContext()!! }
@@ -209,9 +212,9 @@ class ImplicitContextTransformer(
     private fun transformClassIfNeeded(clazz: IrClass): IrClass {
         if (clazz in transformedClasses) return clazz
 
-        val readerConstructor = clazz.getReaderConstructor(pluginContext.bindingContext)
+        val readerConstructor = clazz.getReaderConstructor(pluginContext)
 
-        if (!clazz.isMarkedAsImplicit(pluginContext.bindingContext) && readerConstructor == null) return clazz
+        if (!clazz.isMarkedAsImplicit(pluginContext) && readerConstructor == null) return clazz
 
         if (readerConstructor == null) return clazz
 
@@ -263,9 +266,9 @@ class ImplicitContextTransformer(
 
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
         if (function is IrConstructor) {
-            return if (function.canUseImplicits(pluginContext.bindingContext)) {
+            return if (function.canUseImplicits(pluginContext)) {
                 transformClassIfNeeded(function.constructedClass)
-                    .getReaderConstructor(pluginContext.bindingContext)!!
+                    .getReaderConstructor(pluginContext)!!
             } else function
         }
 
@@ -274,7 +277,7 @@ class ImplicitContextTransformer(
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
 
-        if (!function.canUseImplicits(pluginContext.bindingContext)) return function
+        if (!function.canUseImplicits(pluginContext)) return function
 
         if (function.valueParameters.any { it.name.asString() == "_context" }) {
             transformedFunctions[function] = function
@@ -489,11 +492,20 @@ class ImplicitContextTransformer(
                     result !is IrDelegatingConstructorCall
                 ) return result
                 val transformed = transformFunctionIfNeeded(result.symbol.owner)
-                return if (transformed in transformedFunctions.values) transformCall(
+                return (if (transformed in transformedFunctions.values) transformCall(
                     transformed,
                     result
                 )
-                else result
+                else result)
+                    .also {
+                        if (it.isReaderLambdaInvoke(pluginContext)) {
+                            pluginContext.irTrace.record(
+                                InjektWritableSlices.IS_READER_LAMBDA_INVOKE,
+                                it,
+                                true
+                            )
+                        }
+                    }
             }
         })
     }

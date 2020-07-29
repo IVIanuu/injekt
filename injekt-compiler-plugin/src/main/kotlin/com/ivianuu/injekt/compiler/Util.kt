@@ -119,7 +119,6 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.AnnotationValue
@@ -466,12 +465,12 @@ fun KClassValue.getIrClass(
 
 fun String.asNameId(): Name = Name.identifier(this)
 
-fun IrClass.getReaderConstructor(bindingContext: BindingContext): IrConstructor? {
+fun IrClass.getReaderConstructor(pluginContext: IrPluginContext): IrConstructor? {
     constructors
         .firstOrNull {
-            it.isMarkedAsImplicit(bindingContext)
+            it.isMarkedAsImplicit(pluginContext)
         }?.let { return it }
-    if (!isMarkedAsImplicit(bindingContext)) return null
+    if (!isMarkedAsImplicit(pluginContext)) return null
     return primaryConstructor
 }
 
@@ -654,16 +653,16 @@ fun Annotated.isMarkedAsImplicit(): Boolean =
             hasAnnotation(InjektFqNames.MapEntries) ||
             hasAnnotation(InjektFqNames.SetElements)
 
-fun IrDeclarationWithName.isMarkedAsImplicit(bindingContext: BindingContext): Boolean =
-    isReader(bindingContext) ||
+fun IrDeclarationWithName.isMarkedAsImplicit(pluginContext: IrPluginContext): Boolean =
+    isReader(pluginContext) ||
             hasAnnotation(InjektFqNames.Given) ||
             hasAnnotation(InjektFqNames.MapEntries) ||
             hasAnnotation(InjektFqNames.SetElements)
 
-private fun IrDeclarationWithName.isReader(bindingContext: BindingContext): Boolean {
+private fun IrDeclarationWithName.isReader(pluginContext: IrPluginContext): Boolean {
     if (hasAnnotation(InjektFqNames.Reader)) return true
     val implicitChecker = ImplicitChecker()
-    val bindingTrace = DelegatingBindingTrace(bindingContext, "Injekt IR")
+    val bindingTrace = DelegatingBindingTrace(pluginContext.bindingContext, "Injekt IR")
     return try {
         implicitChecker.isImplicit(descriptor, bindingTrace)
     } catch (e: Exception) {
@@ -671,9 +670,12 @@ private fun IrDeclarationWithName.isReader(bindingContext: BindingContext): Bool
     }
 }
 
-fun IrFunctionAccessExpression.isReaderLambdaInvoke(): Boolean {
+fun IrFunctionAccessExpression.isReaderLambdaInvoke(
+    pluginContext: IrPluginContext
+): Boolean {
     return symbol.owner.name.asString() == "invoke" &&
-            dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Reader) == true
+            (dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Reader) == true ||
+                    pluginContext.irTrace[InjektWritableSlices.IS_READER_LAMBDA_INVOKE, this] == true)
 }
 
 val IrType.distinctedType: Any
@@ -684,12 +686,14 @@ val IrType.distinctedType: Any
         }
         ?: this
 
-fun IrDeclarationWithName.canUseImplicits(bindingContext: BindingContext): Boolean =
+fun IrDeclarationWithName.canUseImplicits(
+    pluginContext: IrPluginContext
+): Boolean =
     (this is IrFunction && valueParameters.any { it.name.asString() == "_context" }) ||
-            isMarkedAsImplicit(bindingContext) ||
-            (this is IrConstructor && constructedClass.isMarkedAsImplicit(bindingContext)) ||
+            isMarkedAsImplicit(pluginContext) ||
+            (this is IrConstructor && constructedClass.isMarkedAsImplicit(pluginContext)) ||
             (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsImplicit(
-                bindingContext
+                pluginContext
             ) == true)
 
 fun compareTypeWithDistinct(

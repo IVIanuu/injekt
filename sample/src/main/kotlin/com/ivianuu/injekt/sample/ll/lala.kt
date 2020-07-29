@@ -14,29 +14,17 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.sample
+package com.ivianuu.injekt.sample.ll
 
 import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.internal.ReaderLambdaInvocation
-import kotlin.reflect.KClass
-
-annotation class ReaderLambda(
-    val lambdaName: String
-)
-
-annotation class ReaderLambdaAssignment(
-    val lambdaName: String,
-    val assignedLambdaName: String
-)
-
-annotation class ReaderLambdaInvocation(
-    val lambdaName: String,
-    val components: Array<KClass<*>>
-)
 
 val lambda: @Reader () -> Unit = {
 
+}
+
+val lambda_: @Reader () -> Unit = {
 }
 
 @ReaderLambda("com.ivianuu.injekt.sample.lambda")

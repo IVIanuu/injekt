@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.component.ComponentFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.component.ComponentIndexingTransformer
 import com.ivianuu.injekt.compiler.transform.component.ComponentTransformer
@@ -86,8 +85,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 
         generateSymbols(pluginContext)
-
-        println(moduleFragment.dumpSrc())
     }
 
 }

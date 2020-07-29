@@ -866,7 +866,7 @@ class ImplicitTest {
         invokeSingleFile()
     }
 
-    // todo @Test
+    @Test
     fun testLambdaTracking() = codegen(
         """
         val property: @Reader () -> Unit = {  }
@@ -887,7 +887,7 @@ class ImplicitTest {
         }
     """
     ) {
-        invokeSingleFile()
+        //invokeSingleFile()
     }
 
 }

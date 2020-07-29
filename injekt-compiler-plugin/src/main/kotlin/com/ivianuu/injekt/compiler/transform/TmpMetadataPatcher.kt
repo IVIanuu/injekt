@@ -36,7 +36,7 @@ class TmpMetadataPatcher(pluginContext: IrPluginContext) :
                     MetadataSource.File(
                         ((declaration.metadata as MetadataSource.File).descriptors + (declaration.declarations
                             .filterIsInstance<IrDeclarationWithName>()
-                            .filter { !it.canUseImplicits(pluginContext.bindingContext) })
+                            .filter { !it.canUseImplicits(pluginContext) })
                             .map { it.descriptor })
                             .distinct()
                     )
