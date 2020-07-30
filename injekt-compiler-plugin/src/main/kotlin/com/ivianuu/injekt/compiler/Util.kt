@@ -36,7 +36,13 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.descriptors.impl.PackageFragmentDescriptorImpl
+import org.jetbrains.kotlin.incremental.KotlinLookupLocation
+import org.jetbrains.kotlin.incremental.components.LocationInfo
+import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.incremental.components.LookupTracker
+import org.jetbrains.kotlin.incremental.components.Position
+import org.jetbrains.kotlin.incremental.record
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -53,16 +59,23 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
+import org.jetbrains.kotlin.ir.declarations.IrField
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrMetadataSourceOwner
+import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
+import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrPropertyImpl
+import org.jetbrains.kotlin.ir.declarations.impl.IrVariableImpl
+import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.descriptors.WrappedFunctionDescriptorWithContainerSource
 import org.jetbrains.kotlin.ir.descriptors.WrappedPropertyGetterDescriptor
 import org.jetbrains.kotlin.ir.descriptors.WrappedPropertySetterDescriptor
@@ -72,6 +85,7 @@ import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstKind
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
@@ -80,9 +94,12 @@ import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
+import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
+import org.jetbrains.kotlin.ir.symbols.impl.IrFileSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrStarProjection
@@ -92,19 +109,21 @@ import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
-import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.NaiveSourceBasedFileEntryImpl
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.getAnnotation
+import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isAnnotationClass
 import org.jetbrains.kotlin.ir.util.isFakeOverride
@@ -115,10 +134,11 @@ import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.AnnotationValue
@@ -139,6 +159,7 @@ import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DescriptorWithContainerSource
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.SimpleType
@@ -151,6 +172,36 @@ import org.jetbrains.kotlin.types.withAbbreviation
 import kotlin.math.absoluteValue
 
 var lookupTracker: LookupTracker? = null
+
+fun recordLookup(
+    source: IrDeclarationWithName,
+    lookedUp: IrDeclarationWithName
+) {
+    val sourceKtElement = source.descriptor.findPsi() as? KtElement
+    val location = sourceKtElement?.let { KotlinLookupLocation(it) }
+        ?: object : LookupLocation {
+            override val location: LocationInfo?
+                get() = object : LocationInfo {
+                    override val filePath: String
+                        get() = source.file.path
+                    override val position: Position
+                        get() = Position.NO_POSITION
+                }
+        }
+
+    lookupTracker!!.record(
+        location,
+        lookedUp.getPackageFragment()!!.packageFragmentDescriptor,
+        lookedUp.name
+    )
+}
+
+fun IrBuilderWithScope.irCallAndRecordLookup(
+    caller: IrDeclarationWithName,
+    symbol: IrFunctionSymbol
+) = irCall(symbol).apply {
+    recordLookup(caller, symbol.owner)
+}
 
 fun Annotated.hasAnnotation(fqName: FqName): Boolean {
     return annotations.hasAnnotation(fqName)
@@ -224,7 +275,7 @@ fun IrType.copy(
     )
 }
 
-fun IrType.remapTypeParameters(
+fun IrType.remapTypeParametersByName(
     source: IrTypeParametersContainer,
     target: IrTypeParametersContainer,
     srcToDstParameterMap: Map<IrTypeParameter, IrTypeParameter>? = null
@@ -235,10 +286,13 @@ fun IrType.remapTypeParameters(
             when {
                 classifier is IrTypeParameter -> {
                     val newClassifier =
-                        srcToDstParameterMap?.get(classifier) ?: if (classifier.parent == source)
-                            target.typeParameters[classifier.index]
-                        else
-                            classifier
+                        srcToDstParameterMap?.get(classifier)
+                            ?: if ((classifier.parent as IrDeclarationWithName).descriptor.fqNameSafe ==
+                                (source as IrDeclarationWithName).descriptor.fqNameSafe
+                            )
+                                target.typeParameters[classifier.index]
+                            else
+                                classifier
                     IrSimpleTypeImpl(
                         makeKotlinType(
                             newClassifier.symbol,
@@ -259,7 +313,7 @@ fun IrType.remapTypeParameters(
                     val arguments = arguments.map {
                         when (it) {
                             is IrTypeProjection -> makeTypeProjection(
-                                it.type.remapTypeParameters(
+                                it.type.remapTypeParametersByName(
                                     source,
                                     target,
                                     srcToDstParameterMap
@@ -290,6 +344,22 @@ fun IrType.remapTypeParameters(
         }
         else -> this
     }
+
+fun IrClass.getAllClasses(): Set<IrClass> {
+    val classes = mutableSetOf<IrClass>()
+
+    fun collect(clazz: IrClass) {
+        classes += clazz
+        clazz
+            .superTypes
+            .map { it.classOrNull!!.owner }
+            .forEach { collect(it) }
+    }
+
+    collect(this)
+
+    return classes
+}
 
 fun IrType.substitute(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {
     if (this !is IrSimpleType) return this
@@ -410,48 +480,79 @@ fun IrElement.toConstantValue(): ConstantValue<*> {
     }
 }
 
-fun <T> T.getClassFromSingleValueAnnotation(
-    fqName: FqName,
-    pluginContext: IrPluginContext
-): IrClass where T : IrDeclaration, T : IrAnnotationContainer {
-    return getClassFromSingleValueAnnotationOrNull(fqName, pluginContext)
-        ?: error("Cannot get class value for $fqName for ${dump()}")
-}
+fun IrBuilderWithScope.irClassReference(
+    clazz: IrClass
+) = IrClassReferenceImpl(
+    UNDEFINED_OFFSET,
+    UNDEFINED_OFFSET,
+    context.irBuiltIns.kClassClass.typeWith(clazz.defaultType),
+    clazz.symbol,
+    clazz.defaultType
+)
 
-fun <T> T.getClassFromSingleValueAnnotationOrNull(
+fun <T> T.getClassFromAnnotation(
     fqName: FqName,
+    index: Int,
     pluginContext: IrPluginContext
 ): IrClass? where T : IrDeclaration, T : IrAnnotationContainer {
     return getAnnotation(fqName)
-        ?.getValueArgument(0)
-        ?.let { it as IrClassReferenceImpl }
+        ?.getValueArgument(index)
+        ?.let { it as? IrClassReferenceImpl }
         ?.classType
         ?.classOrNull
         ?.owner
         ?: descriptor.annotations.findAnnotation(fqName)
             ?.allValueArguments
             ?.values
-            ?.singleOrNull()
+            ?.toList()
+            ?.getOrNull(index)
             ?.let { it as KClassValue }
-            ?.getIrClass(pluginContext)
+            ?.let { it.value as KClassValue.Value.NormalClass }
+            ?.classId
+            ?.asSingleFqName()
+            ?.let { FqName(it.asString().replace("\$", ".")) }
+            ?.let { pluginContext.referenceClass(it)!!.owner }
 }
 
-fun KClassValue.getIrClass(
+fun <T> T.getClassesFromAnnotation(
+    fqName: FqName,
+    index: Int,
     pluginContext: IrPluginContext
-): IrClass {
-    return (value as KClassValue.Value.NormalClass).classId.asSingleFqName()
-        .let { FqName(it.asString().replace("\$", ".")) }
-        .let { pluginContext.referenceClass(it)!!.owner }
+): List<IrClass> where T : IrDeclaration, T : IrAnnotationContainer {
+    return getAnnotation(fqName)
+        ?.getValueArgument(index)
+        ?.let { it as? IrVarargImpl }
+        ?.elements
+        ?.map {
+            (it as? IrClassReference)
+                ?.classType
+                ?.classOrNull
+                ?.owner!!
+        } ?: descriptor.annotations.findAnnotation(fqName)
+        ?.allValueArguments
+        ?.values
+        ?.toList()
+        ?.getOrNull(index)
+        ?.let { it as ArrayValue }
+        ?.value
+        ?.map {
+            (it as KClassValue)
+                .let { it.value as KClassValue.Value.NormalClass }
+                .classId
+                .asSingleFqName()
+                .let { FqName(it.asString().replace("\$", ".")) }
+                .let { pluginContext.referenceClass(it)!!.owner }
+        } ?: emptyList()
 }
 
 fun String.asNameId(): Name = Name.identifier(this)
 
-fun IrClass.getReaderConstructor(bindingContext: BindingContext): IrConstructor? {
+fun IrClass.getReaderConstructor(pluginContext: IrPluginContext): IrConstructor? {
     constructors
         .firstOrNull {
-            it.isMarkedAsImplicit(bindingContext)
+            it.isMarkedAsImplicit(pluginContext)
         }?.let { return it }
-    if (!isMarkedAsImplicit(bindingContext)) return null
+    if (!isMarkedAsImplicit(pluginContext)) return null
     return primaryConstructor
 }
 
@@ -511,9 +612,19 @@ fun String.removeIllegalChars() =
         .replace("@", "")
         .replace(",", "")
         .replace(" ", "")
+        .replace("-", "")
 
 fun IrType.readableName(): Name = buildString {
     fun IrType.renderName() {
+        val qualifier = getAnnotation(InjektFqNames.Qualifier)
+            ?.getValueArgument(0)
+            ?.let { it as IrConst<String> }
+            ?.value
+
+        if (qualifier != null) {
+            append("${qualifier}_")
+        }
+
         val fqName = if (this is IrSimpleType && abbreviation != null &&
             abbreviation!!.typeAlias.descriptor.hasAnnotation(InjektFqNames.Distinct)
         ) abbreviation!!.typeAlias.descriptor.fqNameSafe
@@ -521,7 +632,6 @@ fun IrType.readableName(): Name = buildString {
         append(
             fqName.pathSegments().map { it.asString() }
                 .joinToString("_")
-                .decapitalize()
         )
 
         typeArguments.forEachIndexed { index, typeArgument ->
@@ -532,7 +642,7 @@ fun IrType.readableName(): Name = buildString {
     }
 
     renderName()
-}.asNameId()
+}.removeIllegalChars().asNameId()
 
 fun wrapDescriptor(descriptor: FunctionDescriptor): WrappedSimpleFunctionDescriptor {
     return when (descriptor) {
@@ -586,7 +696,7 @@ fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
             p.copyTo(
                 fn,
                 name = p.name.asString().removeIllegalChars().asNameId(),
-                type = p.type.remapTypeParameters(this, fn)
+                type = p.type.remapTypeParametersByName(this, fn)
             )
         }
         fn.annotations = annotations.map { a -> a }
@@ -607,21 +717,19 @@ fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
     }
 }
 
-fun IrMemberAccessExpression.getValueArgumentSafe(index: Int) = try {
-    getValueArgument(index)
-} catch (t: Throwable) {
-    null
-}
-
-fun IrDeclarationWithName.uniqueFqName() = when (this) {
-    is IrClass -> "c_${descriptor.fqNameSafe}"
-    is IrFunction -> "f_${descriptor.fqNameSafe}_${
-        descriptor.valueParameters
-            .filterNot { it.name.asString() == "_context" }
-            .map { it.type }.map {
-                it.constructor.declarationDescriptor!!.fqNameSafe
-            }.hashCode().absoluteValue
+fun IrDeclarationWithName.uniqueName() = when (this) {
+    is IrClass -> "${descriptor.fqNameSafe}__class"
+    is IrField -> "${descriptor.fqNameSafe}__field"
+    is IrFunction -> "${descriptor.fqNameSafe}__function${
+    descriptor.valueParameters
+        .filterNot { it.name == getContextValueParameter()?.name }
+        .map { it.type }.map {
+            it.constructor.declarationDescriptor!!.fqNameSafe
+        }.hashCode().absoluteValue
     }${if (visibility == Visibilities.LOCAL) "_$startOffset" else ""}"
+    is IrProperty -> "${descriptor.fqNameSafe}__property"
+    is IrValueParameter -> "${descriptor.fqNameSafe}__valueparameter"
+    is IrVariableImpl -> "${descriptor.fqNameSafe}__variable"
     else -> error("Unsupported declaration ${dump()}")
 }
 
@@ -631,21 +739,29 @@ fun Annotated.isMarkedAsImplicit(): Boolean =
             hasAnnotation(InjektFqNames.MapEntries) ||
             hasAnnotation(InjektFqNames.SetElements)
 
-fun IrDeclarationWithName.isMarkedAsImplicit(bindingContext: BindingContext): Boolean =
-    isReader(bindingContext) ||
+fun IrDeclarationWithName.isMarkedAsImplicit(pluginContext: IrPluginContext): Boolean =
+    isReader(pluginContext) ||
             hasAnnotation(InjektFqNames.Given) ||
             hasAnnotation(InjektFqNames.MapEntries) ||
             hasAnnotation(InjektFqNames.SetElements)
 
-private fun IrDeclarationWithName.isReader(bindingContext: BindingContext): Boolean {
+private fun IrDeclarationWithName.isReader(pluginContext: IrPluginContext): Boolean {
     if (hasAnnotation(InjektFqNames.Reader)) return true
     val implicitChecker = ImplicitChecker()
-    val bindingTrace = DelegatingBindingTrace(bindingContext, "Injekt IR")
+    val bindingTrace = DelegatingBindingTrace(pluginContext.bindingContext, "Injekt IR")
     return try {
         implicitChecker.isImplicit(descriptor, bindingTrace)
     } catch (e: Exception) {
         false
     }
+}
+
+fun IrFunctionAccessExpression.isReaderLambdaInvoke(
+    pluginContext: IrPluginContext
+): Boolean {
+    return symbol.owner.name.asString() == "invoke" &&
+            (dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Reader) == true ||
+                    pluginContext.irTrace[InjektWritableSlices.IS_READER_LAMBDA_INVOKE, this] == true)
 }
 
 val IrType.distinctedType: Any
@@ -656,11 +772,14 @@ val IrType.distinctedType: Any
         }
         ?: this
 
-fun IrDeclarationWithName.canUseImplicits(bindingContext: BindingContext): Boolean =
-    isMarkedAsImplicit(bindingContext) ||
-            (this is IrConstructor && constructedClass.isMarkedAsImplicit(bindingContext)) ||
+fun IrDeclarationWithName.canUseImplicits(
+    pluginContext: IrPluginContext
+): Boolean =
+    (this is IrFunction && getContext() != null) ||
+            isMarkedAsImplicit(pluginContext) ||
+            (this is IrConstructor && constructedClass.isMarkedAsImplicit(pluginContext)) ||
             (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsImplicit(
-                bindingContext
+                pluginContext
             ) == true)
 
 fun compareTypeWithDistinct(
@@ -690,22 +809,6 @@ fun IrType.hashWithDistinct(): Int {
 
     return result
 }
-
-fun IrBuilderWithScope.singleClassArgConstructorCall(
-    clazz: IrClassSymbol,
-    value: IrClassifierSymbol
-): IrConstructorCall =
-    irCall(clazz.constructors.single()).apply {
-        putValueArgument(
-            0,
-            IrClassReferenceImpl(
-                startOffset, endOffset,
-                context.irBuiltIns.kClassClass.typeWith(value.defaultType),
-                value,
-                value.defaultType
-            )
-        )
-    }
 
 fun IrBuilderWithScope.irLambda(
     type: IrType,
@@ -764,6 +867,35 @@ fun FunctionDescriptor.getFunctionType(): KotlinType {
         .replace(newArguments = valueParameters.map { it.type.asTypeProjection() } + returnType!!.asTypeProjection())
 }
 
-fun IrFunction.getContext(): IrClass? = valueParameters.singleOrNull {
-    it.name.asString() == "_context"
-}?.type?.classOrNull?.owner
+fun IrFunction.getContext(): IrClass? = getContextValueParameter()?.type?.classOrNull?.owner;
+
+fun IrFunction.getContextValueParameter() = valueParameters.singleOrNull {
+    it.type.classOrNull?.owner?.hasAnnotation(InjektFqNames.Context) == true
+}
+
+fun IrModuleFragment.addFile(
+    pluginContext: IrPluginContext,
+    fqName: FqName
+): IrFile {
+    val file = IrFileImpl(
+        fileEntry = NaiveSourceBasedFileEntryImpl(
+            fqName.shortName().asString() + ".kt",
+            intArrayOf()
+        ),
+        symbol = IrFileSymbolImpl(
+            object : PackageFragmentDescriptorImpl(
+                pluginContext.moduleDescriptor,
+                fqName.parent()
+            ) {
+                override fun getMemberScope(): MemberScope = MemberScope.Empty
+            }
+        ),
+        fqName = fqName.parent()
+    ).apply {
+        metadata = MetadataSource.File(emptyList())
+    }
+
+    files += file
+
+    return file
+}

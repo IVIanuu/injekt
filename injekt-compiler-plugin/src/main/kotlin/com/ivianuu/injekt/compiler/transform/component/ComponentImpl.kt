@@ -18,6 +18,8 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.flatMapFix
+import com.ivianuu.injekt.compiler.getAllClasses
+import com.ivianuu.injekt.compiler.getContext
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -53,9 +55,6 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
         createImplicitParameterDeclarationWithWrappedDescriptor()
         superTypes += factoryImpl.component.defaultType
     }
-
-    val dependencyRequests = mutableListOf<Pair<IrFunction, BindingRequest>>()
-    val implementedRequests = mutableListOf<Key>()
 
     private val componentMembers = ComponentMembers(this, factoryImpl.pluginContext)
 
@@ -155,29 +154,35 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
         var firstRound = true
 
         while (true) {
-            val entryPoints = (if (firstRound) factoryImpl.entryPoints
-            else graph.resolvedBindings.values.flatMapFix { it.contexts })
-                .filter { it.defaultType !in processedSuperTypes }
+            val entryPoints =
+                (if (firstRound) factoryImpl.entryPoints + factoryImpl.declarationGraph
+                    .getAdditionalContexts(factoryImpl.component)
+                else graph.resolvedBindings.values
+                    .flatMapFix { it.contexts.map { it.getContext()!! } })
+                    .flatMapFix { it.getAllClasses() }
+                    .flatMapFix { factoryImpl.declarationGraph.getAllContextImplementations(it) }
+                    .distinct()
+                    .filter { it.defaultType !in processedSuperTypes }
 
             if (entryPoints.isEmpty()) break
 
             fun collect(superClass: IrClass) {
                 if (superClass.defaultType in processedSuperTypes) return
                 processedSuperTypes += superClass.defaultType
+
                 for (declaration in superClass.declarations.toList()) {
                     if (declaration !is IrFunction) continue
                     if (declaration is IrConstructor) continue
-                    if (declaration.name in declarationNames) continue
                     if (declaration.dispatchReceiverParameter?.type ==
                         factoryImpl.pluginContext.irBuiltIns.anyType
-                    ) break
+                    ) continue
                     declarationNames += declaration.name
                     val request = BindingRequest(
                         declaration.returnType.asKey(),
                         null,
                         declaration.descriptor.fqNameSafe
                     )
-                    dependencyRequests += declaration to request
+                    componentExpressions.getBindingExpression(request)
                 }
 
                 superClass.superTypes
@@ -188,12 +193,6 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
             entryPoints.forEach { entryPoint ->
                 clazz.superTypes += entryPoint.defaultType
                 collect(entryPoint)
-            }
-
-            dependencyRequests.forEach { (_, request) ->
-                if (request.key !in implementedRequests) {
-                    componentExpressions.getBindingExpression(request)
-                }
             }
 
             firstRound = false

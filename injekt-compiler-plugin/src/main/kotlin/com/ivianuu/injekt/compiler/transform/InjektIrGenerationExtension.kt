@@ -16,26 +16,35 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.dumpSrc
+import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.transform.component.ComponentFactoryTransformer
-import com.ivianuu.injekt.compiler.transform.component.ComponentTransformer
-import com.ivianuu.injekt.compiler.transform.component.DeclarationGraph
+import com.ivianuu.injekt.compiler.transform.component.ComponentIndexingTransformer
 import com.ivianuu.injekt.compiler.transform.component.EntryPointTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitTransformer
+import com.ivianuu.injekt.compiler.transform.component.RootComponentFactoryTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.GenericContextTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ReaderLambdaTypeTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ReaderTrackingTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.WithInstancesTransformer
+import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
+import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.ir.builders.irUnit
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
-import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.SymbolTable
+import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val symbolRemapper = DeepCopySymbolRemapper()
-        val injektPluginContext = InjektPluginContext(moduleFragment, pluginContext, symbolRemapper)
+        val injektPluginContext = InjektPluginContext(moduleFragment, pluginContext)
 
         EffectTransformer(injektPluginContext).doLower(moduleFragment)
 
@@ -45,31 +54,57 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         ComponentFactoryTransformer(injektPluginContext).doLower(moduleFragment)
 
-        val implicitTransformer =
-            ImplicitTransformer(
-                injektPluginContext,
-                symbolRemapper
-            )
+        ReaderLambdaTypeTransformer(injektPluginContext).doLower(moduleFragment)
 
-        val declarationGraph = DeclarationGraph(
-            moduleFragment,
+        val implicitContextParamTransformer =
+            ImplicitContextTransformer(injektPluginContext)
+        implicitContextParamTransformer.doLower(moduleFragment)
+
+        val indexer = Indexer(
             injektPluginContext,
-            implicitTransformer
+            moduleFragment,
+            InjektSymbols(injektPluginContext)
         )
+        ImplicitCallTransformer(injektPluginContext, indexer).doLower(moduleFragment)
+        ReaderTrackingTransformer(injektPluginContext, indexer).doLower(moduleFragment)
 
-        implicitTransformer.doLower(moduleFragment)
+        val declarationGraph =
+            DeclarationGraph(
+                indexer,
+                moduleFragment,
+                injektPluginContext,
+                implicitContextParamTransformer
+            )
 
         EntryPointTransformer(injektPluginContext).doLower(moduleFragment)
 
-        IndexingTransformer(injektPluginContext).doLower(moduleFragment)
+        ComponentIndexingTransformer(indexer, injektPluginContext).doLower(moduleFragment)
 
-        ComponentTransformer(injektPluginContext, declarationGraph).doLower(moduleFragment)
+        var hasInitCall = false
+
+        moduleFragment.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
+            override fun visitCall(expression: IrCall): IrExpression {
+                return if (expression.symbol.descriptor.fqNameSafe.asString() ==
+                    "com.ivianuu.injekt.initializeInjekt"
+                ) {
+                    hasInitCall = true
+                    DeclarationIrBuilder(pluginContext, expression.symbol)
+                        .irUnit()
+                } else super.visitCall(expression)
+            }
+        })
+
+        if (hasInitCall) {
+            declarationGraph.initialize()
+            RootComponentFactoryTransformer(pluginContext, declarationGraph)
+                .doLower(moduleFragment)
+            GenericContextTransformer(pluginContext, declarationGraph)
+                .doLower(moduleFragment)
+        }
 
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 
         generateSymbols(pluginContext)
-
-        println(moduleFragment.dumpSrc())
     }
 
 }

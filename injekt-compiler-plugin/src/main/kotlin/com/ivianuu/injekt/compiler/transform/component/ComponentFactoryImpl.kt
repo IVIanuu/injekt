@@ -19,11 +19,13 @@ package com.ivianuu.injekt.compiler.transform.component
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
@@ -64,8 +66,9 @@ class ComponentFactoryImpl(
         .owner
 
     val clazz: IrClass = buildClass {
-        name = "${component.name.asString()}FactoryImpl".asNameId()
+        name = "${factory.name.asString()}Impl".asNameId()
         if (parent != null) visibility = Visibilities.PRIVATE else Visibilities.INTERNAL
+        if (parent == null) kind = ClassKind.OBJECT
     }.apply clazz@{
         parent = irParent
         createImplicitParameterDeclarationWithWrappedDescriptor()

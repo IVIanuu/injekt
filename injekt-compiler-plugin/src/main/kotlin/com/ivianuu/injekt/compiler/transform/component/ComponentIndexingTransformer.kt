@@ -14,21 +14,13 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform
+package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.addClassFile
-import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
-import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
+import com.ivianuu.injekt.compiler.transform.Indexer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
@@ -36,13 +28,12 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.util.constructedClass
-import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class IndexingTransformer(
+class ComponentIndexingTransformer(
+    private val indexer: Indexer,
     pluginContext: IrPluginContext
 ) : AbstractInjektTransformer(pluginContext) {
 
@@ -88,32 +79,7 @@ class IndexingTransformer(
             }
         })
 
-        declarations.forEach { declaration ->
-            module.addClassFile(
-                pluginContext,
-                InjektFqNames.IndexPackage,
-                buildClass {
-                    name = "${
-                    declaration.descriptor.fqNameSafe
-                        .pathSegments()
-                        .joinToString("_")
-                    }Index".asNameId()
-                    kind = ClassKind.INTERFACE
-                    visibility = Visibilities.INTERNAL
-                }.apply {
-                    createImplicitParameterDeclarationWithWrappedDescriptor()
-                    addMetadataIfNotLocal()
-                    annotations += DeclarationIrBuilder(pluginContext, symbol).run {
-                        irCall(symbols.index.constructors.single()).apply {
-                            putValueArgument(
-                                0,
-                                irString(declaration.descriptor.fqNameSafe.asString())
-                            )
-                        }
-                    }
-                }
-            )
-        }
+        declarations.forEach { indexer.index(it) }
     }
 
     private fun IrDeclaration.isInEffect(): Boolean {

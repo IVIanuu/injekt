@@ -16,16 +16,14 @@
 
 package com.ivianuu.injekt.compiler.transform.component
 
+import com.ivianuu.injekt.compiler.getContext
+import com.ivianuu.injekt.compiler.irCallAndRecordLookup
 import com.ivianuu.injekt.compiler.irLambda
-import com.ivianuu.injekt.compiler.lookupTracker
+import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.typeWith
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.incremental.components.LocationInfo
-import org.jetbrains.kotlin.incremental.components.LookupLocation
-import org.jetbrains.kotlin.incremental.components.Position
-import org.jetbrains.kotlin.incremental.record
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -34,16 +32,13 @@ import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irTemporary
-import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.path
+import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fields
-import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.name.FqName
 
@@ -69,21 +64,16 @@ class ComponentExpressions(
         }
 
         val expression = when (binding) {
-            is ChildComponentFactoryBindingNode -> childComponentFactoryExpression(binding) to true
-            is ComponentImplBindingNode -> componentExpression(binding) to false
-            is GivenBindingNode -> givenExpression(binding) to true
-            is InputBindingNode -> inputExpression(binding) to false
-            is MapBindingNode -> mapBindingExpression(binding) to true
-            is NullBindingNode -> nullExpression(binding) to false
-            is SetBindingNode -> setBindingExpression(binding) to true
-        }.let { (expression, forceWrap) ->
-            if (forceWrap || component.dependencyRequests.any {
-                    it.second.key == binding.key
-                }) expression.wrapInFunction(binding.key) else expression
-        }
+            is ChildComponentFactoryBindingNode -> childComponentFactoryExpression(binding)
+            is ComponentImplBindingNode -> componentExpression(binding)
+            is GivenBindingNode -> givenExpression(binding)
+            is InputBindingNode -> inputExpression(binding)
+            is MapBindingNode -> mapBindingExpression(binding)
+            is NullBindingNode -> nullExpression(binding)
+            is SetBindingNode -> setBindingExpression(binding)
+        }.wrapInFunction(binding.key)
 
-        return expression
-            .also { bindingExpressions[request] = it }
+        return expression.also { bindingExpressions[request] = it }
     }
 
     private fun childComponentFactoryExpression(binding: ChildComponentFactoryBindingNode): ComponentExpression =
@@ -127,7 +117,7 @@ class ComponentExpressions(
                         dispatchReceiver = irGet(tmpMap)
                         putValueArgument(
                             0,
-                            irCall(function).apply {
+                            irCallAndRecordLookup(component.clazz, function.symbol).apply {
                                 if (function.dispatchReceiverParameter != null)
                                     dispatchReceiver =
                                         irGetObject(function.dispatchReceiverParameter!!.type.classOrNull!!)
@@ -176,7 +166,7 @@ class ComponentExpressions(
                         dispatchReceiver = irGet(tmpSet)
                         putValueArgument(
                             0,
-                            irCall(function).apply {
+                            irCallAndRecordLookup(component.clazz, function.symbol).apply {
                                 if (function.dispatchReceiverParameter != null)
                                     dispatchReceiver =
                                         irGetObject(function.dispatchReceiverParameter!!.type.classOrNull!!)
@@ -204,7 +194,7 @@ class ComponentExpressions(
         { irNull() }
 
     private fun givenExpression(binding: GivenBindingNode): ComponentExpression {
-        recordLookup(binding.context)
+        recordLookup(binding.function)
         val componentExpression = getBindingExpression(
             BindingRequest(
                 component.clazz.defaultType.asKey(),
@@ -296,31 +286,19 @@ class ComponentExpressions(
 
     private fun parentExpression(request: BindingRequest): ComponentExpression {
         val parentExpression = parent?.getBindingExpression(request)!!
-        if (component.dependencyRequests.any {
-                it.second.key == request.key
-            }) {
-            val function = members.getFunction(request.key, parentExpression)
-            return { c ->
-                irCall(function).apply {
-                    dispatchReceiver = c[component]
-                }
-            }
-        } else return parentExpression
-    }
-
-    private fun recordLookup(context: IrClass) {
-        val location = object : LookupLocation {
-            override val location: LocationInfo? = object : LocationInfo {
-                override val filePath: String
-                    get() = component.clazz.file.path
-                override val position: Position
-                    get() = Position.NO_POSITION
+        val function = members.getFunction(request.key, parentExpression)
+        return { c ->
+            irCall(function).apply {
+                dispatchReceiver = c[component]
             }
         }
-        lookupTracker!!.record(
-            location,
-            context.getPackageFragment()!!.packageFragmentDescriptor,
-            context.name
+    }
+
+    private fun recordLookup(function: IrFunction) {
+        val context = function.getContext()!!
+        recordLookup(
+            component.clazz,
+            context
         )
     }
 }

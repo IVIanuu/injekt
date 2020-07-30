@@ -36,6 +36,8 @@ fun source(
     name = name,
     contents = buildString {
         if (injektImports) {
+            appendLine("package com.ivianuu.injekt.integrationtests")
+            appendLine()
             appendLine("import com.ivianuu.injekt.*")
             appendLine("import com.ivianuu.injekt.internal.*")
             appendLine("import com.ivianuu.injekt.test.*")
@@ -129,7 +131,7 @@ fun <T> KotlinCompilation.Result.invokeSingleFile(vararg args: Any?): T {
 }
 
 private fun KotlinCompilation.Result.getSingleClass(): KClass<*> =
-    classLoader.loadClass("FileKt").kotlin
+    classLoader.loadClass("com.ivianuu.injekt.integrationtests.FileKt").kotlin
 
 fun KotlinCompilation.Result.assertInternalError(
     message: String? = null

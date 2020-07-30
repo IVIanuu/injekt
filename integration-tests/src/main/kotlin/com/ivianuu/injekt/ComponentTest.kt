@@ -41,7 +41,7 @@ class ComponentTest {
         fun bar() = Bar(given())
         
         fun invoke(): Bar {
-            initializeComponents()
+            initializeInjekt()
             val component = rootComponent<MyComponent>()
             return component.runReader { given<Bar>() }
         }
@@ -65,7 +65,7 @@ class ComponentTest {
         fun bar() = Bar(given())
         
         fun invoke(): Bar {
-            initializeComponents()
+            initializeInjekt()
             val childComponent = rootComponent<ParentComponent>().runReader {
                 childComponent<ChildComponent>()
             }
@@ -98,7 +98,7 @@ class ComponentTest {
             source(
                 """
                 fun invoke(): Bar {
-                    initializeComponents()
+                    initializeInjekt()
                     val childComponent = rootComponent<TestParentComponent>().runReader {
                         childComponent<TestChildComponent>()
                     }
@@ -118,7 +118,7 @@ class ComponentTest {
         fun foo() = Foo()
         
         val component by lazy {
-            initializeComponents()
+            initializeInjekt()
             rootComponent<TestComponent>()
         }
         
@@ -138,7 +138,7 @@ class ComponentTest {
         fun foo() = Foo()
         
         val component by lazy {
-            initializeComponents()
+            initializeInjekt()
             rootComponent<TestComponent>()
         }
         
@@ -158,7 +158,7 @@ class ComponentTest {
         fun foo() = Foo()
 
         fun invoke(): Pair<Foo, Foo> {
-            initializeComponents()
+            initializeInjekt()
             val parentComponent = rootComponent<TestParentComponent>()
             return parentComponent.runReader { 
                 given<Foo>() to childComponent<TestChildComponent>().runReader {
@@ -184,7 +184,7 @@ class ComponentTest {
         fun foo(): Foo = Foo()
 
         val component by lazy {
-            initializeComponents()
+            initializeInjekt()
             rootComponent<TestComponent>()
         }
 
@@ -201,7 +201,7 @@ class ComponentTest {
         object AnnotatedFoo
 
         val component by lazy {
-            initializeComponents()
+            initializeInjekt()
             rootComponent<TestComponent>()
         }
 
@@ -218,7 +218,7 @@ class ComponentTest {
         val foo = Foo()
         
         val component by lazy {
-            initializeComponents()
+            initializeInjekt()
             rootComponent<TestComponent>()
         }
 
@@ -235,7 +235,7 @@ class ComponentTest {
         fun bar(foo: Foo) = Bar(foo)
 
         val component by lazy {
-            initializeComponents()
+            initializeInjekt()
             rootComponent<TestComponent>()
         }
 
@@ -253,7 +253,7 @@ class ComponentTest {
         class AnnotatedBar(foo: Foo)
 
         val component by lazy {
-            initializeComponents()
+            initializeInjekt()
             rootComponent<TestComponent>()
         }
 
@@ -268,7 +268,7 @@ class ComponentTest {
     fun testComponentBinding() = codegen(
         """
         fun invoke(): Pair<TestComponent, TestComponent> {
-            initializeComponents()
+            initializeInjekt()
             val component = rootComponent<TestComponent>()
             return component.runReader { 
                 component to given<TestComponent>()
@@ -290,7 +290,7 @@ class ComponentTest {
         @Given fun foo() = Foo() 
         
         fun invoke() {
-            initializeComponents()
+            initializeInjekt()
             rootComponent<TestComponent>().runReader {
                 given<Dep<Foo>>()
             }
@@ -316,7 +316,7 @@ class ComponentTest {
     fun testComponentInput() = codegen(
         """
         fun invoke(): Pair<Foo, Foo> {
-            initializeComponents()
+            initializeInjekt()
             val foo = Foo()
             val component = rootComponent<TestComponent>(foo)
             return foo to component.runReader { given<Foo>() }

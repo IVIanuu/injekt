@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.compareTypeWithDistinct
 import com.ivianuu.injekt.compiler.distinctedType
-import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.hashWithDistinct
 import com.ivianuu.injekt.compiler.isTypeParameter
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -37,7 +36,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 sealed class BindingNode(
     val key: Key,
-    val contexts: List<IrClass>,
+    val contexts: List<IrFunction>,
     val dependencies: List<BindingRequest>,
     val targetComponent: IrType?,
     val scoped: Boolean,
@@ -88,8 +87,8 @@ class GivenBindingNode(
     origin: FqName?,
     val createExpression: IrBuilderWithScope.(Map<IrValueParameter, () -> IrExpression?>, () -> IrExpression) -> IrExpression,
     val explicitParameters: List<IrValueParameter>,
-    val context: IrClass
-) : BindingNode(key, listOf(context), dependencies, targetComponent, scoped, owner, origin)
+    val function: IrFunction
+) : BindingNode(key, listOf(function), dependencies, targetComponent, scoped, owner, origin)
 
 class InputBindingNode(
     component: ComponentImpl,
@@ -111,7 +110,7 @@ class MapBindingNode(
     val functions: List<IrFunction>
 ) : BindingNode(
     key,
-    functions.map { it.getContext()!! },
+    functions,
     dependencies,
     null,
     false,
@@ -126,7 +125,7 @@ class SetBindingNode(
     val functions: List<IrFunction>
 ) : BindingNode(
     key,
-    functions.map { it.getContext()!! },
+    functions,
     dependencies,
     null,
     false,

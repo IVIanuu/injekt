@@ -20,7 +20,7 @@ import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.singleClassArgConstructorCall
+import com.ivianuu.injekt.compiler.irClassReference
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.builders.irBlock
+import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irImplicitCast
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
@@ -41,7 +42,8 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrReturn
-import org.jetbrains.kotlin.ir.types.classifierOrFail
+import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -94,11 +96,14 @@ class EntryPointTransformer(
                     createImplicitParameterDeclarationWithWrappedDescriptor()
                     addMetadataIfNotLocal()
                     annotations +=
-                        DeclarationIrBuilder(pluginContext, symbol)
-                            .singleClassArgConstructorCall(
-                                symbols.entryPoint,
-                                component.classifierOrFail
-                            )
+                        DeclarationIrBuilder(pluginContext, symbol).run {
+                            irCall(symbols.entryPoint.constructors.single()).apply {
+                                putValueArgument(
+                                    0,
+                                    irClassReference(component.classOrNull!!.owner)
+                                )
+                            }
+                        }
                 }
 
                 newDeclarations += entryPoint
@@ -130,6 +135,5 @@ class EntryPointTransformer(
             }
         })
     }
-
 
 }

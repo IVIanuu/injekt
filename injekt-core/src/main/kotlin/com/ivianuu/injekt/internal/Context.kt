@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.internal
 
-import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
-import org.jetbrains.kotlin.util.slicedMap.BasicWritableSlice
-import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
-import org.jetbrains.kotlin.util.slicedMap.WritableSlice
+import kotlin.reflect.KClass
 
-object InjektWritableSlices {
-    val IS_IMPLICIT: WritableSlice<Any, Boolean> =
-        BasicWritableSlice(RewritePolicy.DO_NOTHING)
-    val IS_READER_LAMBDA_INVOKE: WritableSlice<IrFunctionAccessExpression, Boolean> =
-        BasicWritableSlice(RewritePolicy.DO_NOTHING)
-}
+internal annotation class Context(
+    val genericSuperContexts: Array<KClass<*>> = []
+)
+
+internal annotation class GenericContext(
+    val delegateContext: KClass<*>,
+    val implName: String,
+    val functionMap: String
+)

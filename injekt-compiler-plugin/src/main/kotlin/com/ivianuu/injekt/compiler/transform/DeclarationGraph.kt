@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ *  
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -14,31 +14,28 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.component
+package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
+import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getContext
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
-import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class DeclarationGraph(
+    private val indexer: Indexer,
     val module: IrModuleFragment,
     private val pluginContext: IrPluginContext,
-    private val implicitTransformer: ImplicitTransformer
+    private val implicitTransformer: ImplicitContextTransformer
 ) {
 
     private val _rootComponentFactories = mutableListOf<IrClass>()
@@ -56,27 +53,83 @@ class DeclarationGraph(
     private val _setElements = mutableListOf<IrFunction>()
     val setElements: List<IrFunction> get() = _setElements
 
-    val indices: List<FqName> by lazy {
-        val memberScope = pluginContext.moduleDescriptor.getPackage(InjektFqNames.IndexPackage)
-            .memberScope
+    private val _genericContexts = mutableListOf<IrClass>()
+    val genericContexts: List<IrClass> get() = _genericContexts
 
-        ((module.files
-            .filter { it.fqName == InjektFqNames.IndexPackage }
-            .flatMapFix { it.declarations }
-            .filterIsInstance<IrClass>()) + ((memberScope.getClassifierNames()
-            ?: emptySet()).mapNotNull {
-            memberScope.getContributedClassifier(
-                it,
-                NoLookupLocation.FROM_BACKEND
-            )
-        }.map { pluginContext.referenceClass(it.fqNameSafe)!!.owner }))
-            .map {
-                it.getAnnotation(InjektFqNames.Index)!!
-                    .getValueArgument(0)!!
-                    .let { it as IrConst<String> }
-                    .value
-                    .let { FqName(it) }
+    fun getAdditionalContexts(component: IrClass): List<IrClass> {
+        return indexer.classIndices
+            .filter { it.hasAnnotation(InjektFqNames.ReaderInvocation) }
+            .filter { clazz ->
+                clazz.getClassFromAnnotation(
+                    InjektFqNames.ReaderInvocation,
+                    1,
+                    pluginContext
+                ) == component
             }
+            .map {
+                it.getClassFromAnnotation(
+                    InjektFqNames.ReaderInvocation,
+                    0,
+                    pluginContext
+                )!!
+            }
+            .flatMapFix { getAllContextImplementations(it) }
+    }
+
+    fun getAllContextImplementations(
+        context: IrClass
+    ): List<IrClass> {
+        val contexts = mutableListOf<IrClass>()
+
+        contexts += context
+
+        fun collectImplementations(context: IrClass) {
+            indexer.classIndices
+                .filter { it.hasAnnotation(InjektFqNames.ReaderImpl) }
+                .filter { clazz ->
+                    clazz.getClassFromAnnotation(
+                        InjektFqNames.ReaderImpl,
+                        0,
+                        pluginContext
+                    ) == context
+                }
+                .map {
+                    it.getClassFromAnnotation(
+                        InjektFqNames.ReaderImpl,
+                        1,
+                        pluginContext
+                    )!!
+                }
+                .forEach {
+                    contexts += it
+                    collectImplementations(it)
+                }
+
+            indexer.classIndices
+                .filter { it.hasAnnotation(InjektFqNames.ReaderInvocation) }
+                .filter { clazz ->
+                    clazz.getClassFromAnnotation(
+                        InjektFqNames.ReaderInvocation,
+                        1,
+                        pluginContext
+                    ) == context
+                }
+                .map {
+                    it.getClassFromAnnotation(
+                        InjektFqNames.ReaderInvocation,
+                        0,
+                        pluginContext
+                    )!!
+                }
+                .forEach {
+                    contexts += it
+                    collectImplementations(it)
+                }
+        }
+
+        collectImplementations(context)
+
+        return contexts
     }
 
     fun initialize() {
@@ -85,33 +138,25 @@ class DeclarationGraph(
         collectBindings()
         collectMapEntries()
         collectSetElements()
+        collectGenericContexts()
     }
 
     private fun collectRootComponentFactories() {
-        indices
-            .mapNotNull { pluginContext.referenceClass(it)?.owner }
+        indexer.classIndices
             .filter { it.hasAnnotation(InjektFqNames.RootComponentFactory) }
             .forEach { _rootComponentFactories += it }
     }
 
     private fun collectEntryPoints() {
-        indices
-            .mapNotNull { pluginContext.referenceClass(it)?.owner }
+        indexer.classIndices
             .filter { it.hasAnnotation(InjektFqNames.EntryPoint) }
             .forEach { _entryPoints += it }
     }
 
     private fun collectBindings() {
-        indices
-            .flatMapFix {
-                pluginContext.referenceFunctions(it)
-                    .map { it.owner } +
-                        (pluginContext.referenceClass(it)?.constructors
-                            ?.map { it.owner }
-                            ?.toList() ?: emptyList()) +
-                        pluginContext.referenceProperties(it)
-                            .mapNotNull { it.owner.getter }
-            }
+        (indexer.functionIndices + indexer.classIndices
+            .flatMapFix { it.constructors.toList() } +
+                indexer.propertyIndices.mapNotNull { it.getter })
             .filter {
                 it.hasAnnotation(InjektFqNames.Given) ||
                         (it is IrConstructor && it.constructedClass.hasAnnotation(InjektFqNames.Given)) ||
@@ -126,9 +171,7 @@ class DeclarationGraph(
     }
 
     private fun collectMapEntries() {
-        indices
-            .flatMapFix { pluginContext.referenceFunctions(it) }
-            .map { it.owner }
+        indexer.functionIndices
             .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
             .map { implicitTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
@@ -137,14 +180,18 @@ class DeclarationGraph(
     }
 
     private fun collectSetElements() {
-        indices
-            .flatMapFix { pluginContext.referenceFunctions(it) }
-            .map { it.owner }
+        indexer.functionIndices
             .filter { it.hasAnnotation(InjektFqNames.SetElements) }
             .map { implicitTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
             .distinct()
             .forEach { _setElements += it }
+    }
+
+    private fun collectGenericContexts() {
+        indexer.classIndices
+            .filter { it.hasAnnotation(InjektFqNames.GenericContext) }
+            .forEach { _genericContexts += it }
     }
 
 }

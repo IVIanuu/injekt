@@ -18,17 +18,12 @@ package com.ivianuu.injekt.internal
 
 import kotlin.reflect.KClass
 
-internal object RootComponentFactories {
+internal annotation class ReaderImpl(
+    val superContext: KClass<*>,
+    val subContext: KClass<*>
+)
 
-    private val factories = mutableMapOf<KClass<*>, Any>()
-
-    fun register(factoryClass: KClass<*>, factory: Any) {
-        factories[factoryClass] = factory
-    }
-
-    fun <T> get(factoryClass: KClass<*>): T {
-        return factories[factoryClass] as? T
-            ?: error("Couldn't get factory '${factoryClass.java.name}'")
-    }
-
-}
+internal annotation class ReaderInvocation(
+    val readerContext: KClass<*>,
+    val invocationContext: KClass<*>
+)

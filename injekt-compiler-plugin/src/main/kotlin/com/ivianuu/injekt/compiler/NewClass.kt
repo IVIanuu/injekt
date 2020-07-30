@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -24,23 +23,16 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptorVisitor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
-import org.jetbrains.kotlin.descriptors.impl.PackageFragmentDescriptorImpl
 import org.jetbrains.kotlin.ir.builders.declarations.IrClassBuilder
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSymbolOwner
-import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
-import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.descriptors.LazyTypeConstructor
 import org.jetbrains.kotlin.ir.descriptors.WrappedDeclarationDescriptor
 import org.jetbrains.kotlin.ir.symbols.impl.IrClassSymbolImpl
-import org.jetbrains.kotlin.ir.symbols.impl.IrFileSymbolImpl
 import org.jetbrains.kotlin.ir.types.toKotlinType
-import org.jetbrains.kotlin.ir.util.NaiveSourceBasedFileEntryImpl
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
@@ -54,36 +46,6 @@ import org.jetbrains.kotlin.types.TypeSubstitution
 import org.jetbrains.kotlin.types.TypeSubstitutor
 import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.utils.Printer
-
-fun IrModuleFragment.addClassFile(
-    pluginContext: IrPluginContext,
-    fqName: FqName,
-    clazz: IrClass
-) {
-    val file = IrFileImpl(
-        fileEntry = NaiveSourceBasedFileEntryImpl(
-            fqName.child(clazz.name).pathSegments().joinToString("_") + ".kt",
-            intArrayOf()
-        ),
-        symbol = IrFileSymbolImpl(
-            object : PackageFragmentDescriptorImpl(
-                pluginContext.moduleDescriptor,
-                fqName
-            ) {
-                override fun getMemberScope(): MemberScope = MemberScope.Empty
-            }
-        ),
-        fqName = fqName
-    ).apply {
-        this.declarations += clazz
-
-        metadata = MetadataSource.File(
-            this.declarations.map { it.descriptor }
-        )
-    }
-
-    files += file
-}
 
 fun IrClassBuilder.buildClass(): IrClass {
     val wrappedDescriptor = WrappedClassDescriptor()

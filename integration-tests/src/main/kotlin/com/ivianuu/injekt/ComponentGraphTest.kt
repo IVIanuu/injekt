@@ -34,7 +34,7 @@ class ComponentGraphTest {
         """
         @Given class Dep(bar: Bar)
         fun invoke() {
-            initializeComponents()
+            initializeInjekt()
             val component = rootComponent<TestComponent>()
             component.runReader { given<Dep>() }
         }
@@ -50,7 +50,7 @@ class ComponentGraphTest {
         @Given fun foo2() = Foo()
         
         fun invoke() {
-            initializeComponents()
+            initializeInjekt()
             val component = rootComponent<TestComponent>()
             component.runReader { given<Foo>() }
         }
@@ -65,7 +65,7 @@ class ComponentGraphTest {
         @Given(Any::class) class Dep
 
         fun invoke() {
-            initializeComponents()
+            initializeInjekt()
             val component = rootComponent<TestComponent>()
             component.runReader { given<Dep>() }
         }
@@ -81,7 +81,7 @@ class ComponentGraphTest {
         @SetElements(TestComponent::class) fun setB() = setOf(0)
         
         fun invoke(): Pair<Set<String>, Set<Int>> {
-            initializeComponents()
+            initializeInjekt()
             val component = rootComponent<TestComponent>()
             return component.runReader { given<Set<String>>() to given<Set<Int>>() }
         }
@@ -101,7 +101,7 @@ class ComponentGraphTest {
         @Given fun foo2(): Foo2 = Foo()
         
         fun invoke(): Pair<Foo, Foo> {
-            initializeComponents()
+            initializeInjekt()
             val component = rootComponent<TestComponent>()
             return component.runReader { given<Foo1>() to given<Foo2>() }
         }
@@ -133,7 +133,7 @@ class ComponentGraphTest {
             source(
                 """
                 fun invoke(): Pair<Foo, Foo> {
-                    initializeComponents()
+                    initializeInjekt()
                     val component = rootComponent<TestComponent>()
                     return component.runReader { given<Foo1>() to given<Foo2>() }
                 } 
@@ -152,7 +152,7 @@ class ComponentGraphTest {
         @Given fun nullableFoo(): Foo? = null
 
         fun invoke() { 
-            initializeComponents()
+            initializeInjekt()
             val component = rootComponent<TestComponent>()
             component.runReader { given<Foo>() to given<Foo?>() }
         }
@@ -167,7 +167,7 @@ class ComponentGraphTest {
         @Given fun foo(): Foo = Foo()
 
         fun invoke(): Foo? { 
-            initializeComponents()
+            initializeInjekt()
             val component = rootComponent<TestComponent>()
             return component.runReader { given<Foo?>() }
         }
@@ -180,7 +180,7 @@ class ComponentGraphTest {
     fun testReturnsNullOnMissingNullableBinding() = codegen(
         """
         fun invoke(): Foo? { 
-            initializeComponents()
+            initializeInjekt()
             val component = rootComponent<TestComponent>()
             return component.runReader { given<Foo?>() }
         }
@@ -195,7 +195,7 @@ class ComponentGraphTest {
         @Given fun list(): List<*> = emptyList<Any?>()
         
         fun invoke() { 
-            initializeComponents()
+            initializeInjekt()
             val component = rootComponent<TestComponent>()
             component.runReader { given<List<*>>() }
         }

@@ -18,10 +18,10 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
-import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
-import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotationOrNull
-import com.ivianuu.injekt.compiler.getContext
+import com.ivianuu.injekt.compiler.getClassFromAnnotation
+import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.tmpFunction
+import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
@@ -79,15 +79,16 @@ class ChildComponentFactoryBindingResolver(
                         factory,
                         declarationGraph.entryPoints
                             .filter {
-                                it.getClassFromSingleValueAnnotation(
+                                it.getClassFromAnnotation(
                                     InjektFqNames.EntryPoint,
+                                    0,
                                     parentComponent.factoryImpl.pluginContext
                                 ) == component
                             },
                         parentComponent.factoryImpl,
                         parentComponent.factoryImpl.pluginContext,
                         parentComponent.factoryImpl.declarationGraph,
-                        parentComponent.factoryImpl.symbols,
+                        parentComponent.factoryImpl.symbols
                     )
 
                     childComponentFactoryImpl.init()
@@ -117,15 +118,15 @@ class GivenBindingResolver(
 
     private val bindings = declarationGraph.bindings
         .map { function ->
-            val targetComponent = function.getClassFromSingleValueAnnotationOrNull(
-                InjektFqNames.Given, pluginContext
+            val targetComponent = function.getClassFromAnnotation(
+                InjektFqNames.Given, 0, pluginContext
             )
-                ?: if (function is IrConstructor) function.constructedClass.getClassFromSingleValueAnnotationOrNull(
-                    InjektFqNames.Given, pluginContext
+                ?: if (function is IrConstructor) function.constructedClass.getClassFromAnnotation(
+                    InjektFqNames.Given, 0, pluginContext
                 ) else null
 
             val explicitParameters = function.valueParameters
-                .filter { it.name.asString() != "_context" }
+                .filter { it != function.getContextValueParameter() }
 
             val key = if (explicitParameters.isEmpty()) function.returnType.asKey()
             else pluginContext.tmpFunction(explicitParameters.size)
@@ -178,7 +179,7 @@ class GivenBindingResolver(
                 explicitParameters = explicitParameters,
                 owner = component,
                 origin = function.descriptor.fqNameSafe,
-                context = function.getContext()!!
+                function = function
             )
         }
 
@@ -199,8 +200,9 @@ class MapBindingResolver(
 
             val thisMaps = declarationGraph.mapEntries
                 .filter {
-                    it.getClassFromSingleValueAnnotation(
+                    it.getClassFromAnnotation(
                         InjektFqNames.MapEntries,
+                        0,
                         pluginContext
                     ) == component.factoryImpl.component
                 }
@@ -260,8 +262,9 @@ class SetBindingResolver(
 
             val thisSets = declarationGraph.setElements
                 .filter {
-                    it.getClassFromSingleValueAnnotation(
+                    it.getClassFromAnnotation(
                         InjektFqNames.SetElements,
+                        0,
                         pluginContext
                     ) == component.factoryImpl.component
                 }
