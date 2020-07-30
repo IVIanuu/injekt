@@ -19,6 +19,7 @@ package com.ivianuu.injekt
 import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.assertInternalError
+import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
@@ -1000,6 +1001,7 @@ class ImplicitTest {
         """
         val lambdaProperty: @Reader () -> Unit = {}
         
+        @Reader
         fun createLambda(delegate: @Reader () -> Unit): @Reader () -> Unit {
             initializeComponents()
             val component = rootComponent<TestComponent>()
@@ -1008,13 +1010,17 @@ class ImplicitTest {
                 
             }
             
+            block()
+            component.runReader { block() }
+            
             return block
         }
         
+        @Reader
         fun invoke() = createLambda {}
     """
     ) {
-        invokeSingleFile()
+        assertOk()
     }
 
 }

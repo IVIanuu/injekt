@@ -26,6 +26,7 @@ import com.ivianuu.injekt.compiler.transform.component.EntryPointTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitIndexingTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ReaderLambdaInvocationTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ReaderLambdaTypeTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.WithInstancesTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -66,6 +67,8 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         ImplicitIndexingTransformer(pluginContext, indexer).doLower(moduleFragment)
 
         ImplicitCallTransformer(injektPluginContext).doLower(moduleFragment)
+
+        ReaderLambdaInvocationTransformer(pluginContext, indexer).doLower(moduleFragment)
 
         val declarationGraph = DeclarationGraph(
             indexer,
