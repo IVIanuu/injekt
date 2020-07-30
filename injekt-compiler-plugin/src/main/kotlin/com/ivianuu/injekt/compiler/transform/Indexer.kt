@@ -18,10 +18,10 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.addFile
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.createFile
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.removeIllegalChars
@@ -116,7 +116,7 @@ class Indexer(
         ).asString() + "${declaration.uniqueName().hashCode()}Index")
             .removeIllegalChars()
             .asNameId()
-        module.createFile(
+        module.addFile(
             pluginContext,
             InjektFqNames.IndexPackage
                 .child(name)

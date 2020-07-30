@@ -17,8 +17,8 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.addFile
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.createFile
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.transform.component.ComponentFactoryImpl
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
@@ -94,7 +94,7 @@ class InjektInitTransformer(
                     .classOrNull!!
                     .owner
 
-                val file = module.createFile(
+                val file = module.addFile(
                     pluginContext,
                     componentFactory.getPackageFragment()!!.fqName
                         .child((componentFactory.name.asString() + "Impl").asNameId())
