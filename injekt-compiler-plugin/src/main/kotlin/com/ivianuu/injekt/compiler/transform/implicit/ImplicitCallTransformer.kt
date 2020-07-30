@@ -48,7 +48,6 @@ import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.impl.EmptyPackageFragmentDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
@@ -79,7 +78,6 @@ import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrExternalPackageFragmentSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
@@ -115,27 +113,6 @@ class ImplicitCallTransformer(
             if ((declaration as IrDeclarationWithVisibility).visibility == Visibilities.LOCAL && declaration.parent is IrFunction)
                 declaration.parent as IrFunction else null
 
-        private val genericContexts = mutableListOf<IrClass>()
-
-        fun leave() {
-            context.annotations.single { it.type.classOrNull == symbols.context }
-                .putValueArgument(
-                    0,
-                    IrVarargImpl(
-                        UNDEFINED_OFFSET,
-                        UNDEFINED_OFFSET,
-                        irBuiltIns.arrayClass.typeWith(
-                            irBuiltIns.kClassClass.starProjectedType
-                        ),
-                        irBuiltIns.kClassClass.starProjectedType,
-                        genericContexts.map {
-                            DeclarationIrBuilder(pluginContext, it.symbol)
-                                .irClassReference(it)
-                        }
-                    )
-                )
-        }
-
         fun inheritContext(type: IrType) {
             context.superTypes += type
         }
@@ -144,8 +121,6 @@ class ImplicitCallTransformer(
             genericContext: IrClass,
             typeArguments: List<IrType>
         ): Name {
-            genericContexts += genericContext
-
             val name = nameProvider.allocateForGroup(
                 "${declaration.descriptor.name}GenericContextImpl"
             )
@@ -364,8 +339,6 @@ class ImplicitCallTransformer(
                 }
             }
         }, null)
-
-        scope.leave()
     }
 
     private fun transformGivenCall(

@@ -16,12 +16,4 @@
 
 package com.ivianuu.injekt.internal
 
-import kotlin.reflect.KClass
-
-internal annotation class Context
-
-internal annotation class GenericContext(
-    val delegateContext: KClass<*>,
-    val implName: String,
-    val functionMap: String
-)
+annotation class Signature

@@ -84,7 +84,94 @@ class ImplicitTest {
     }
 
     @Test
-    fun testGenericReaderLambda() = codegen(
+    fun testSimpleReaderLambdaMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @Given
+                    fun foo() = Foo()
+                    
+                    @Reader
+                    fun func(foo: Foo = given()): Foo {
+                        return foo
+                    }
+                    
+                    @Reader
+                    fun other() {
+                    }
+                    
+                    @Reader
+                    fun withFoo(block: @Reader (Foo) -> Unit) = block(func())
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun invoke(): Foo {
+                        initializeInjekt()
+                        val component = rootComponent<TestComponent>()
+                        return component.runReader {
+                            withFoo {
+                                other()
+                                it
+                            }
+                            Foo()
+                        }
+                    } 
+                """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        assertTrue(it.last().invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testGenericReaderLambda() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @Given
+                    fun foo() = Foo()
+                    
+                    @Reader
+                    fun func(foo: Foo = given()): Foo {
+                        return foo
+                    }
+                    
+                    @Reader
+                    fun other() {
+                    }
+                    
+                    @Reader
+                    fun <R> withFoo(block: @Reader (Foo) -> R) = block(func())
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun invoke(): Foo {
+                        initializeInjekt()
+                        val component = rootComponent<TestComponent>()
+                        return component.runReader {
+                            withFoo {
+                                other()
+                                it
+                            }
+                        }
+                    }
+                """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        assertTrue(it.last().invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testGenericReaderLambdaMulti() = codegen(
         """
         @Given
         fun foo() = Foo()
@@ -109,28 +196,6 @@ class ImplicitTest {
                     other()
                     it
                 }
-            }
-        }
-    """
-    ) {
-        assertTrue(invokeSingleFile() is Foo)
-    }
-
-    @Test
-    fun testLambda() = codegen(
-        """
-        
-        @Reader
-        fun createStore(block: @Reader () -> Any) = withInstances(Any()) {
-            block()
-        }
-        
-        fun invoke(): Foo {
-            initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader {
-                createStore { given<Any>() }
-                Foo()
             }
         }
     """

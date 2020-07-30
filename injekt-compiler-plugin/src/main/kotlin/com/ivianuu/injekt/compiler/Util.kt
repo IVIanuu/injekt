@@ -721,7 +721,7 @@ fun IrDeclarationWithName.uniqueName() = when (this) {
     is IrClass -> "${descriptor.fqNameSafe}__class"
     is IrField -> "${descriptor.fqNameSafe}__field"
     is IrFunction -> "${descriptor.fqNameSafe}__function${
-    descriptor.valueParameters
+    ((metadata as? MetadataSource.Function)?.descriptor ?: descriptor).valueParameters
         .filterNot { it.name == getContextValueParameter()?.name }
         .map { it.type }.map {
             it.constructor.declarationDescriptor!!.fqNameSafe
@@ -775,12 +775,12 @@ val IrType.distinctedType: Any
 fun IrDeclarationWithName.canUseImplicits(
     pluginContext: IrPluginContext
 ): Boolean =
-    (this is IrFunction && getContext() != null) ||
+    (!hasAnnotation(InjektFqNames.Signature) && (this is IrFunction && getContext() != null) ||
             isMarkedAsImplicit(pluginContext) ||
             (this is IrConstructor && constructedClass.isMarkedAsImplicit(pluginContext)) ||
             (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsImplicit(
                 pluginContext
-            ) == true)
+            ) == true))
 
 fun compareTypeWithDistinct(
     a: IrType?,
