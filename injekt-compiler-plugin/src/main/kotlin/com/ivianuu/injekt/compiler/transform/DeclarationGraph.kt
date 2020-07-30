@@ -84,16 +84,6 @@ class DeclarationGraph(
         contexts += context
 
         fun collectImplementations(context: IrClass) {
-            /*context.getClassesFromAnnotation(
-                InjektFqNames.Context,
-                0,
-                pluginContext
-            )
-                .forEach {
-                    contexts += it
-                    collectImplementations(it)
-                }*/
-
             indexer.classIndices
                 .filter { it.hasAnnotation(InjektFqNames.ReaderImpl) }
                 .filter { clazz ->

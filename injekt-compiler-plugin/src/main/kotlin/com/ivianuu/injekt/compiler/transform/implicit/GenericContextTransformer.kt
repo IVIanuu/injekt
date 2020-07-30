@@ -53,6 +53,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
@@ -167,7 +168,10 @@ class GenericContextTransformer(
             typeArguments: List<IrType>
         ) {
             if (superClass.defaultType in implementedSuperTypes) return
-            implementedSuperTypes += superClass.defaultType
+            implementedSuperTypes += superClass
+                .typeWith(typeArguments)
+            genericContextImpl.superTypes += superClass
+                .typeWith(typeArguments)
             for (declaration in superClass.declarations.toList()) {
                 if (declaration !is IrFunction) continue
                 if (declaration is IrConstructor) continue
@@ -217,12 +221,13 @@ class GenericContextTransformer(
                 }
         }
 
-        declarationGraph.getAllContextImplementations(genericContextImpl).forEach { superType ->
-            implementFunctions(
-                superType,
-                superType.defaultType.typeArguments.map { it.typeOrFail }
-            )
-        }
+        declarationGraph.getAllContextImplementations(genericContextType.classOrNull!!.owner)
+            .forEach { superType ->
+                implementFunctions(
+                    superType,
+                    superType.defaultType.typeArguments.map { it.typeOrFail }
+                )
+            }
     }
 
 }
