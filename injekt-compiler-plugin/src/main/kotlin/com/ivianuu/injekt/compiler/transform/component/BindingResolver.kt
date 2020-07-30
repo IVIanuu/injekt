@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.tmpFunction
+import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET

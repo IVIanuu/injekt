@@ -51,7 +51,7 @@ class MapTest {
         fun commandCIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandC::class to given<CommandC>())
         
         fun invoke(): Map<KClass<out Command>, Command> {
-            initializeComponents()
+            initializeInjekt()
             val component = rootComponent<TestComponent>()
             return component.runReader { given<Map<KClass<out Command>, Command>>() }
         }
@@ -69,7 +69,7 @@ class MapTest {
     fun testEmptyMap() = codegen(
         """
         fun invoke(): Map<KClass<out Command>, Command> {
-            initializeComponents()
+            initializeInjekt()
             val component = rootComponent<TestComponent>()
             return component.runReader { given<Map<KClass<out Command>, Command>>() }
         }
@@ -96,7 +96,7 @@ class MapTest {
         fun commandBIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandB::class to given<CommandB>())
         
         fun invoke(): Pair<Map<KClass<out Command>, Command>, Map<KClass<out Command>, Command>> {
-            initializeComponents()
+            initializeInjekt()
             val parentComponent = rootComponent<TestParentComponent>()
             val childComponent = parentComponent.runReader { childComponent<TestChildComponent>() }
             return parentComponent.runReader {

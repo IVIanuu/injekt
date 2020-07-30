@@ -18,15 +18,16 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.addClassFile
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.createFile
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.compiler.uniqueName
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -108,48 +109,48 @@ class Indexer(
     )
 
     fun index(declaration: IrDeclarationWithName) {
-        module.addClassFile(
+        val name = (getJoinedName(
+            declaration.getPackageFragment()!!.fqName,
+            declaration.descriptor.fqNameSafe
+                .parent().child(declaration.name.asString().asNameId())
+        ).asString() + "${declaration.uniqueName().hashCode()}Index")
+            .removeIllegalChars()
+            .asNameId()
+        module.createFile(
             pluginContext,
-            InjektFqNames.IndexPackage,
-            buildClass {
-                name = (getJoinedName(
-                    declaration.getPackageFragment()!!.fqName,
-                    declaration.descriptor.fqNameSafe
-                        .parent().child(declaration.name.asString().asNameId())
-                ).asString() + "${declaration.uniqueName().hashCode()}Index")
-                    .removeIllegalChars()
-                    .asNameId()
-                name = "${
-                declaration.descriptor.fqNameSafe
-                    .pathSegments()
-                    .joinToString("_")
-                }Index".asNameId()
-                kind = ClassKind.INTERFACE
-                visibility = Visibilities.INTERNAL
-            }.apply {
-                createImplicitParameterDeclarationWithWrappedDescriptor()
-                addMetadataIfNotLocal()
-                annotations += DeclarationIrBuilder(pluginContext, symbol).run {
-                    irCall(symbols.index.constructors.single()).apply {
-                        putValueArgument(
-                            0,
-                            irString(declaration.descriptor.fqNameSafe.asString())
-                        )
-                        putValueArgument(
-                            1,
-                            irString(
-                                when (declaration) {
-                                    is IrClass -> "class"
-                                    is IrFunction -> "function"
-                                    is IrProperty -> "property"
-                                    else -> error("Unsupported declaration ${declaration.render()}")
-                                }
+            InjektFqNames.IndexPackage
+                .child(name)
+        ).apply {
+            addChild(
+                buildClass {
+                    this.name = name
+                    kind = ClassKind.INTERFACE
+                    visibility = Visibilities.INTERNAL
+                }.apply {
+                    createImplicitParameterDeclarationWithWrappedDescriptor()
+                    addMetadataIfNotLocal()
+                    annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+                        irCall(symbols.index.constructors.single()).apply {
+                            putValueArgument(
+                                0,
+                                irString(declaration.descriptor.fqNameSafe.asString())
                             )
-                        )
+                            putValueArgument(
+                                1,
+                                irString(
+                                    when (declaration) {
+                                        is IrClass -> "class"
+                                        is IrFunction -> "function"
+                                        is IrProperty -> "property"
+                                        else -> error("Unsupported declaration ${declaration.render()}")
+                                    }
+                                )
+                            )
+                        }
                     }
                 }
-            }
-        )
+            )
+        }
     }
 
 }

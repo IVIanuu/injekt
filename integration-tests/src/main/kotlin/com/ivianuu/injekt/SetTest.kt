@@ -50,7 +50,7 @@ class SetTest {
         fun commandCIntoSet(): Set<Command> = setOf(given<CommandC>())
         
         fun invoke(): Set<Command> {
-            initializeComponents()
+            initializeInjekt()
             val component = rootComponent<TestComponent>()
             return component.runReader { given<Set<Command>>() }
         }
@@ -67,7 +67,7 @@ class SetTest {
     fun testEmptySet() = codegen(
         """
         fun invoke(): Set<Command> {
-            initializeComponents()
+            initializeInjekt()
             val component = rootComponent<TestComponent>()
             return component.runReader { given<Set<Command>>() }
         }
@@ -93,7 +93,7 @@ class SetTest {
         fun commandBIntoSet(): Set<Command> = setOf(given<CommandB>())
         
         fun invoke(): Pair<Set<Command>, Set<Command>> {
-            initializeComponents()
+            initializeInjekt()
             val parentComponent = rootComponent<TestParentComponent>()
             val childComponent = parentComponent.runReader { childComponent<TestChildComponent>() }
             return parentComponent.runReader {

@@ -27,7 +27,6 @@ import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.IrPropertySymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
-import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -36,8 +35,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class InjektPluginContext(
     private val moduleFragment: IrModuleFragment,
-    private val pluginContext: IrPluginContext,
-    private val symbolRemapper: DeepCopySymbolRemapper
+    private val pluginContext: IrPluginContext
 ) : IrPluginContext by pluginContext {
     override fun referenceClass(fqName: FqName): IrClassSymbol? {
         return (pluginContext.referenceClass(fqName)
@@ -53,15 +51,13 @@ class InjektPluginContext(
                 })
                 clazz
             })
-            ?.let { symbolRemapper.getReferencedClass(it) }
             ?.also { (pluginContext as IrPluginContextImpl).linker.getDeclaration(it) }
     }
 
     override fun referenceConstructors(classFqn: FqName): Collection<IrConstructorSymbol> {
         return (pluginContext.referenceConstructors(classFqn) + run {
             referenceClass(classFqn)?.constructors?.toList() ?: emptyList()
-        }).map { symbolRemapper.getReferencedConstructor(it) }
-            .distinct()
+        }).distinct()
     }
 
     override fun referenceFunctions(fqName: FqName): Collection<IrSimpleFunctionSymbol> {
@@ -76,10 +72,7 @@ class InjektPluginContext(
                 }
             })
             functions
-        })
-            .map { symbolRemapper.getReferencedFunction(it) }
-            .filterIsInstance<IrSimpleFunctionSymbol>()
-            .distinct()
+        }).distinct()
     }
 
     override fun referenceProperties(fqName: FqName): Collection<IrPropertySymbol> {
@@ -94,8 +87,6 @@ class InjektPluginContext(
                 }
             })
             properties
-        })
-            .map { symbolRemapper.getReferencedProperty(it) }
-            .distinct()
+        }).distinct()
     }
 }

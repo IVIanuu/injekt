@@ -21,7 +21,7 @@ import com.ivianuu.injekt.internal.injektIntrinsic
 @Target(AnnotationTarget.CLASS)
 annotation class Component
 
-fun initializeComponents(): Unit = injektIntrinsic()
+fun initializeInjekt(): Unit = injektIntrinsic()
 
 fun <T> rootComponent(vararg inputs: Any?): T = injektIntrinsic()
 

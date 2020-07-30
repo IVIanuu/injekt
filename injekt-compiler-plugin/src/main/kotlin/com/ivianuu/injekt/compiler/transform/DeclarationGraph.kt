@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ *  
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.component
+package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getClassesFromAnnotation
 import com.ivianuu.injekt.compiler.getContext
-import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -54,6 +53,9 @@ class DeclarationGraph(
 
     private val _setElements = mutableListOf<IrFunction>()
     val setElements: List<IrFunction> get() = _setElements
+
+    /*private val _genericContextFactories = mutableListOf<IrClass>()
+    val rootComponentFactories: List<IrClass> get() = _genericContextFactories*/
 
     fun getAdditionalContexts(component: IrClass): List<IrClass> {
         return indexer.classIndices
@@ -147,6 +149,12 @@ class DeclarationGraph(
         collectBindings()
         collectMapEntries()
         collectSetElements()
+    }
+
+    private fun collectGenericContextFactories() {
+        /*indexer.classIndices
+            .filter { it.hasAnnotation(InjektFqNames.Context) && it.typeParameters.isNotEmpty() }
+            .forEach { _genericContextFactories += it }*/
     }
 
     private fun collectRootComponentFactories() {

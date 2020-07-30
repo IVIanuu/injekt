@@ -49,7 +49,7 @@ class ComposeTest {
         }
         
         fun invoke(): AppUi {
-            initializeComponents()
+            initializeInjekt()
             return rootComponent<TestComponent>().runReader { given<AppUi>() }
         }
     """,
@@ -90,7 +90,7 @@ class ComposeTest {
                 }
                 
                 fun invoke(): AppUi {
-                    initializeComponents()
+                    initializeInjekt()
                     return rootComponent<TestComponent>().runReader { given<AppUi>() }
                 }
                 """,
@@ -129,7 +129,7 @@ class ComposeTest {
 
         @androidx.compose.Composable
         fun invoke(): Foo {
-            initializeComponents()
+            initializeInjekt()
             val component = rootComponent<TestComponent>()
             return component.runReader {
                 withFoo { 

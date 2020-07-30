@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.descriptors.impl.PackageFragmentDescriptorImpl
 import org.jetbrains.kotlin.ir.builders.declarations.IrClassBuilder
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSymbolOwner
@@ -55,34 +56,31 @@ import org.jetbrains.kotlin.types.TypeSubstitutor
 import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.utils.Printer
 
-fun IrModuleFragment.addClassFile(
+fun IrModuleFragment.createFile(
     pluginContext: IrPluginContext,
-    fqName: FqName,
-    clazz: IrClass
-) {
+    fqName: FqName
+): IrFile {
     val file = IrFileImpl(
         fileEntry = NaiveSourceBasedFileEntryImpl(
-            fqName.child(clazz.name).pathSegments().joinToString("_") + ".kt",
+            fqName.shortName().asString() + ".kt",
             intArrayOf()
         ),
         symbol = IrFileSymbolImpl(
             object : PackageFragmentDescriptorImpl(
                 pluginContext.moduleDescriptor,
-                fqName
+                fqName.parent()
             ) {
                 override fun getMemberScope(): MemberScope = MemberScope.Empty
             }
         ),
-        fqName = fqName
+        fqName = fqName.parent()
     ).apply {
-        this.declarations += clazz
-
-        metadata = MetadataSource.File(
-            this.declarations.map { it.descriptor }
-        )
+        metadata = MetadataSource.File(emptyList())
     }
 
     files += file
+
+    return file
 }
 
 fun IrClassBuilder.buildClass(): IrClass {

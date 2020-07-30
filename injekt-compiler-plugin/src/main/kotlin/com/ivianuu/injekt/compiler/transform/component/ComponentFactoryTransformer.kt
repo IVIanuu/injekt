@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.irClassReference
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -31,18 +30,23 @@ import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.descriptors.impl.EmptyPackageFragmentDescriptor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrFile
+import org.jetbrains.kotlin.ir.declarations.impl.IrExternalPackageFragmentImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
+import org.jetbrains.kotlin.ir.symbols.impl.IrExternalPackageFragmentSymbolImpl
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -121,17 +125,23 @@ class ComponentFactoryTransformer(
                             putTypeArgument(0, componentFactory.defaultType)
                         }
                     } else {
-                        irCall(
-                            symbols.rootComponentFactories
-                                .functions
-                                .single { it.owner.name.asString() == "get" }
-                        ).apply {
-                            dispatchReceiver = irGetObject(symbols.rootComponentFactories)
-                            putValueArgument(
-                                0,
-                                irClassReference(componentFactory)
+                        val factoryStub = buildClass {
+                            name = "${componentFactory.name}Impl".asNameId()
+                            kind = ClassKind.OBJECT
+                            origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
+                        }.apply {
+                            createImplicitParameterDeclarationWithWrappedDescriptor()
+                            parent = IrExternalPackageFragmentImpl(
+                                IrExternalPackageFragmentSymbolImpl(
+                                    EmptyPackageFragmentDescriptor(
+                                        pluginContext.moduleDescriptor,
+                                        componentFactory.getPackageFragment()!!.fqName
+                                    )
+                                ),
+                                componentFactory.getPackageFragment()!!.fqName
                             )
                         }
+                        irGetObject(factoryStub.symbol)
                     }
 
                     irCall(componentFactory.functions.single { it.name.asString() == "create" }).apply {

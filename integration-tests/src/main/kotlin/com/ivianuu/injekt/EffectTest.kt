@@ -52,7 +52,7 @@ class EffectTest {
         class Dep
         
         fun invoke() {
-            initializeComponents()
+            initializeInjekt()
             val component = rootComponent<TestComponent>()
             component.runReader { 
                 given<Dep>() 
@@ -189,7 +189,7 @@ class EffectTest {
         }
         
         fun invoke(): Foo { 
-            initializeComponents()
+            initializeInjekt()
             val component = rootComponent<TestComponent>()
             return component.runReader { given<FooFactory>()() }
         }
@@ -230,7 +230,7 @@ class EffectTest {
             source(
                 """
                 fun invoke(): Foo { 
-                    initializeComponents()
+                    initializeInjekt()
                     val component = rootComponent<TestComponent>()
                     return component.runReader { given<FooFactory>()() }
                 }
@@ -261,7 +261,7 @@ class EffectTest {
         }
         
         fun invoke(): Foo { 
-            initializeComponents()
+            initializeInjekt()
             val component = rootComponent<TestComponent>()
             return component.runReader { runBlocking { given<FooFactory>()() } }
         }

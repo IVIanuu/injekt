@@ -38,7 +38,6 @@ object InjektFqNames {
     val ReaderImpl = InternalPackage.child("ReaderImpl".asNameId())
     val ReaderInvocation = InternalPackage.child("ReaderInvocation".asNameId())
     val RootComponentFactory = InternalPackage.child("RootComponentFactory".asNameId())
-    val RootComponentFactories = InternalPackage.child("RootComponentFactories".asNameId())
 
     val IndexPackage = InternalPackage.child("index".asNameId())
 }
