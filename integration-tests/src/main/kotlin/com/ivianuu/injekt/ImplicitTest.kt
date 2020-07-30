@@ -65,7 +65,41 @@ class ImplicitTest {
         }
         
         @Reader
-        fun <R> withFoo(block: @Reader (Foo) -> R): R = block(func())
+        fun withFoo(block: @Reader (Foo) -> Unit) = block(func())
+        
+        fun invoke(): Foo {
+            initializeInjekt()
+            val component = rootComponent<TestComponent>()
+            return component.runReader {
+                withFoo {
+                    other()
+                    it
+                }
+                Foo()
+            }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testGenericReaderLambda() = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+        
+        @Reader
+        fun func(foo: Foo = given()): Foo {
+            return foo
+        }
+        
+        @Reader
+        fun other() {
+        }
+        
+        @Reader
+        fun <R> withFoo(block: @Reader (Foo) -> R) = block(func())
         
         fun invoke(): Foo {
             initializeInjekt()
