@@ -33,13 +33,13 @@ import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isMarkedAsImplicit
 import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
 import com.ivianuu.injekt.compiler.jvmNameAnnotation
+import com.ivianuu.injekt.compiler.remapTypeParametersByName
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.uniqueName
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
-import org.jetbrains.kotlin.backend.common.ir.remapTypeParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
@@ -403,13 +403,13 @@ class ImplicitContextTransformer(pluginContext: IrPluginContext) :
         }
 
         returnType = ownerFunction.returnType
-            .remapTypeParameters(owner, this)
+            .remapTypeParametersByName(owner, this)
 
         valueParameters = ownerFunction.valueParameters.map {
             it.copyTo(
                 this,
-                type = it.type.remapTypeParameters(owner, this),
-                varargElementType = it.varargElementType?.remapTypeParameters(owner, this),
+                type = it.type.remapTypeParametersByName(owner, this),
+                varargElementType = it.varargElementType?.remapTypeParametersByName(owner, this),
                 defaultValue = if (it.hasDefaultValue()) DeclarationIrBuilder(
                     pluginContext,
                     it.symbol

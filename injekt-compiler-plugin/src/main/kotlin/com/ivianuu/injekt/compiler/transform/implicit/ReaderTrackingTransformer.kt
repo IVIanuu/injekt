@@ -58,7 +58,6 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -215,8 +214,7 @@ class ReaderTrackingTransformer(
                     .flatMapFix { (parameter, argument) ->
                         argument.collectReaderLambdaContextsInExpression()
                             .map { context ->
-                                (parameter.type.lambdaContext
-                                    ?: error("Cannot get lambda context for ${parameter.type.render()}")) to context
+                                parameter.type.lambdaContext!! to context
                             }
                     }
                     .map { (superContext, subContext) ->
