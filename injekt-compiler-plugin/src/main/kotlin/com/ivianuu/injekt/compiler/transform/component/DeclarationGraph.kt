@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform.component
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
+import com.ivianuu.injekt.compiler.getClassesFromAnnotation
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
@@ -82,6 +83,16 @@ class DeclarationGraph(
         contexts += context
 
         fun collectImplementations(context: IrClass) {
+            context.getClassesFromAnnotation(
+                InjektFqNames.Context,
+                0,
+                pluginContext
+            )
+                .forEach {
+                    contexts += it
+                    collectImplementations(it)
+                }
+
             indexer.classIndices
                 .filter { it.hasAnnotation(InjektFqNames.ReaderImpl) }
                 .filter { clazz ->

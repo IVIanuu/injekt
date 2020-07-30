@@ -16,4 +16,8 @@
 
 package com.ivianuu.injekt.internal
 
-internal annotation class Context
+import kotlin.reflect.KClass
+
+internal annotation class Context(
+    val genericSuperContexts: Array<KClass<*>> = []
+)

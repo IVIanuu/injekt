@@ -205,19 +205,6 @@ class ReaderTrackingTransformer(
         module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
 
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
-                if (expression.symbol.owner.canUseImplicits(pluginContext) &&
-                    expression.symbol.owner.typeParameters.isNotEmpty() &&
-                    expression.symbol.descriptor.fqNameSafe.asString() !=
-                    "com.ivianuu.injekt.given"
-                ) {
-                    //println("found generic call ${expression.dump()}")
-                    /*newDeclarations += readerImplIndex(
-                        currentScope!!.scope.scopeOwner.fqNameSafe,
-                        currentFile
-                    )*/
-                    //val contextArgument = expression.getValueArgument(expression.valueArgumentsCount - 1)!!
-                }
-
                 if (expression.symbol.descriptor.fqNameSafe.asString() ==
                     "com.ivianuu.injekt.runReader"
                 ) return super.visitFunctionAccess(expression)

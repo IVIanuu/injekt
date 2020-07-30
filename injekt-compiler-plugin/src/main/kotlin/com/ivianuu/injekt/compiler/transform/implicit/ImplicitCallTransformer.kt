@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.getReaderConstructor
+import com.ivianuu.injekt.compiler.irClassReference
 import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
 import com.ivianuu.injekt.compiler.readableName
 import com.ivianuu.injekt.compiler.recordLookup
@@ -76,6 +77,7 @@ import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
@@ -105,6 +107,27 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
             if ((declaration as IrDeclarationWithVisibility).visibility == Visibilities.LOCAL && declaration.parent is IrFunction)
                 declaration.parent as IrFunction else null
 
+        private val genericContexts = mutableListOf<IrClass>()
+
+        fun leave() {
+            context.annotations.single { it.type.classOrNull == symbols.context }
+                .putValueArgument(
+                    0,
+                    IrVarargImpl(
+                        UNDEFINED_OFFSET,
+                        UNDEFINED_OFFSET,
+                        irBuiltIns.arrayClass.typeWith(
+                            irBuiltIns.kClassClass.starProjectedType
+                        ),
+                        irBuiltIns.kClassClass.starProjectedType,
+                        genericContexts.map {
+                            DeclarationIrBuilder(pluginContext, it.symbol)
+                                .irClassReference(it)
+                        }
+                    )
+                )
+        }
+
         fun inheritContext(type: IrType) {
             context.superTypes += type
         }
@@ -113,6 +136,7 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
             genericContext: IrClass,
             typeArguments: List<IrType>
         ): Map<IrFunction, IrFunction> {
+            genericContexts += genericContext
             context.superTypes += genericContext.superTypes
                 .map {
                     it.substitute(
@@ -285,6 +309,8 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
                 }
             }
         }, null)
+
+        scope.leave()
     }
 
     private fun transformGivenCall(
