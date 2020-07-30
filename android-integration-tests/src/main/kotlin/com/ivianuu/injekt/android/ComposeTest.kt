@@ -107,14 +107,8 @@ class ComposeTest {
     @Test
     fun testComposableReaderLambda() = codegen(
         """
-        @CompositionComponent 
-        interface TestCompositionComponent
-
-        @CompositionFactory 
-        fun factory(): TestCompositionComponent {
-            unscoped { Foo() }
-            return create() 
-        }
+        @Given
+        fun foo() = Foo()
         
         @Reader 
         @androidx.compose.Composable
@@ -134,15 +128,15 @@ class ComposeTest {
         fun <R> withFoo(block: @Reader @androidx.compose.Composable (Foo) -> R): R = block(func())
 
         @androidx.compose.Composable
-        fun cool(): Foo {
-            initializeCompositions()
+        fun invoke(): Foo {
+            initializeComponents()
             val component = rootComponent<TestComponent>()
             return component.runReader {
-                    withFoo {
-                        other()
-                        it
-                    }
+                withFoo { 
+                    other()
+                    it
                 }
+            }
         }
     """,
         config = {
@@ -150,8 +144,5 @@ class ComposeTest {
         }
     ) {
         assertOk()
-        /*composeTestRule.setContent {
-            assertTrue(invokeSingleFile() is Foo)
-        }*/
     }
 }
