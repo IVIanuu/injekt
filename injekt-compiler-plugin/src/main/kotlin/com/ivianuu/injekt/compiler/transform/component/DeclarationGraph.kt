@@ -54,6 +54,26 @@ class DeclarationGraph(
     private val _setElements = mutableListOf<IrFunction>()
     val setElements: List<IrFunction> get() = _setElements
 
+    fun getAdditionalContexts(component: IrClass): List<IrClass> {
+        return indexer.classIndices
+            .filter { it.hasAnnotation(InjektFqNames.ReaderInvocation) }
+            .filter { clazz ->
+                clazz.getClassFromAnnotation(
+                    InjektFqNames.ReaderInvocation,
+                    1,
+                    pluginContext
+                ) == component
+            }
+            .map {
+                it.getClassFromAnnotation(
+                    InjektFqNames.ReaderInvocation,
+                    0,
+                    pluginContext
+                )!!
+            }
+            .flatMapFix { getAllContextImplementations(it) }
+    }
+
     fun getAllContextImplementations(
         context: IrClass
     ): List<IrClass> {
@@ -75,6 +95,27 @@ class DeclarationGraph(
                     it.getClassFromAnnotation(
                         InjektFqNames.ReaderImpl,
                         1,
+                        pluginContext
+                    )!!
+                }
+                .forEach {
+                    contexts += it
+                    collectImplementations(it)
+                }
+
+            indexer.classIndices
+                .filter { it.hasAnnotation(InjektFqNames.ReaderInvocation) }
+                .filter { clazz ->
+                    clazz.getClassFromAnnotation(
+                        InjektFqNames.ReaderInvocation,
+                        1,
+                        pluginContext
+                    ) == context
+                }
+                .map {
+                    it.getClassFromAnnotation(
+                        InjektFqNames.ReaderInvocation,
+                        0,
                         pluginContext
                     )!!
                 }

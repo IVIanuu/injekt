@@ -25,9 +25,8 @@ import com.ivianuu.injekt.compiler.transform.component.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.component.EntryPointTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitIndexingTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.ReaderLambdaInvocationTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ReaderLambdaTypeTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ReaderTrackingTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.WithInstancesTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -51,25 +50,21 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         ComponentFactoryTransformer(injektPluginContext).doLower(moduleFragment)
 
+        ReaderLambdaTypeTransformer(pluginContext).doLower(moduleFragment)
+
+        val implicitContextParamTransformer =
+            ImplicitContextTransformer(pluginContext)
+        implicitContextParamTransformer.doLower(moduleFragment)
+
+        ImplicitCallTransformer(injektPluginContext).doLower(moduleFragment)
+
         val indexer = Indexer(
             injektPluginContext,
             moduleFragment,
             InjektSymbols(pluginContext)
         )
-
-        val implicitContextParamTransformer =
-            ImplicitContextTransformer(pluginContext, symbolRemapper)
-
-        ReaderLambdaTypeTransformer(pluginContext).doLower(moduleFragment)
-
-        implicitContextParamTransformer.doLower(moduleFragment)
-
-        ImplicitIndexingTransformer(pluginContext, indexer).doLower(moduleFragment)
-
-        ImplicitCallTransformer(injektPluginContext).doLower(moduleFragment)
-
-        ReaderLambdaInvocationTransformer(pluginContext, indexer).doLower(moduleFragment)
-
+        ReaderTrackingTransformer(pluginContext, indexer).doLower(moduleFragment)
+        
         val declarationGraph = DeclarationGraph(
             indexer,
             moduleFragment,

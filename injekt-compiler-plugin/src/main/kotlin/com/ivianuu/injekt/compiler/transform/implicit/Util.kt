@@ -16,12 +16,15 @@
 
 package com.ivianuu.injekt.compiler.transform.implicit
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getJoinedName
+import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.uniqueName
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
@@ -34,9 +37,15 @@ import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
+import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.getPackageFragment
+import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isFunction
+import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 private val nameProvider = NameProvider()
@@ -75,3 +84,16 @@ fun createContext(
         }
     }
 }
+
+fun IrType.isReaderLambda() =
+    (isFunction() || isSuspendFunction()) && hasAnnotation(InjektFqNames.Reader)
+
+fun IrType.isTransformedReaderLambda() =
+    isReaderLambda() && typeArguments
+        .mapNotNull { it.typeOrNull?.classOrNull?.owner }
+        .any { it.hasAnnotation(InjektFqNames.Context) }
+
+val IrType.lambdaContext
+    get() = typeArguments.singleOrNull {
+        it.typeOrNull?.classOrNull?.owner?.hasAnnotation(InjektFqNames.Context) == true
+    }?.typeOrFail?.classOrNull?.owner

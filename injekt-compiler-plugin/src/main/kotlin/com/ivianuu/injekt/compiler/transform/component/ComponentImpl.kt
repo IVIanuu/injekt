@@ -155,7 +155,8 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
 
         while (true) {
             val entryPoints =
-                (if (firstRound) factoryImpl.entryPoints
+                (if (firstRound) factoryImpl.entryPoints + factoryImpl.declarationGraph
+                    .getAdditionalContexts(factoryImpl.component)
                 else graph.resolvedBindings.values
                     .flatMapFix { it.contexts.map { it.getContext()!! } })
                     .flatMapFix { it.getAllClasses() }

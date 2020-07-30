@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.transform.implicit
 
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
@@ -54,17 +53,13 @@ import org.jetbrains.kotlin.ir.symbols.impl.IrValueParameterSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrVariableSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
-import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -109,7 +104,7 @@ class ReaderLambdaTypeTransformer(pluginContext: IrPluginContext) :
 
             override fun visitReturn(expression: IrReturn): IrExpression {
                 val result = super.visitReturn(expression) as IrReturn
-                return if (result.value.type.isTransformedReaderLamdba() &&
+                return if (result.value.type.isTransformedReaderLambda() &&
                     result.value.type != result.type
                 ) IrReturnImpl(
                     expression.startOffset,
@@ -123,7 +118,7 @@ class ReaderLambdaTypeTransformer(pluginContext: IrPluginContext) :
 
             override fun visitCall(expression: IrCall): IrExpression {
                 val result = super.visitCall(expression) as IrCall
-                return if (result.symbol.owner.returnType.isTransformedReaderLamdba() &&
+                return if (result.symbol.owner.returnType.isTransformedReaderLambda() &&
                     result.type != result.symbol.owner.returnType
                 ) IrCallImpl(
                     result.startOffset,
@@ -149,7 +144,8 @@ class ReaderLambdaTypeTransformer(pluginContext: IrPluginContext) :
                             it.symbol,
                             expression.origin
                         )
-                    } ?: super.visitGetValue(expression)
+                    }
+                    ?: super.visitGetValue(expression)
             }
 
             override fun visitGetField(expression: IrGetField): IrExpression {
@@ -197,7 +193,7 @@ class ReaderLambdaTypeTransformer(pluginContext: IrPluginContext) :
     ): IrField {
         val type = declaration.type
         if (!type.isReaderLambda()) return declaration
-        if (type.isTransformedReaderLamdba()) return declaration
+        if (type.isTransformedReaderLambda()) return declaration
 
         transformedFields[declaration]?.let { return it }
         if (declaration in transformedFields.values) return declaration
@@ -231,7 +227,7 @@ class ReaderLambdaTypeTransformer(pluginContext: IrPluginContext) :
     ): IrFunction {
         val returnType = declaration.returnType
         if (!returnType.isReaderLambda()) return declaration
-        if (returnType.isTransformedReaderLamdba()) return declaration
+        if (returnType.isTransformedReaderLambda()) return declaration
 
         transformedFunctions[declaration]?.let { return it }
         if (declaration in transformedFunctions.values) return declaration
@@ -247,7 +243,7 @@ class ReaderLambdaTypeTransformer(pluginContext: IrPluginContext) :
     ): IrVariable {
         val type = declaration.type
         if (!type.isReaderLambda()) return declaration
-        if (type.isTransformedReaderLamdba()) return declaration
+        if (type.isTransformedReaderLambda()) return declaration
 
         transformedVariables[declaration]?.let { return it }
         if (declaration in transformedVariables.values) return declaration
@@ -277,7 +273,7 @@ class ReaderLambdaTypeTransformer(pluginContext: IrPluginContext) :
     ): IrValueParameter {
         val type = declaration.type
         if (!type.isReaderLambda()) return declaration
-        if (type.isTransformedReaderLamdba()) return declaration
+        if (type.isTransformedReaderLambda()) return declaration
 
         transformedValueParameters[declaration]?.let { return it }
         if (declaration in transformedValueParameters.values) return declaration
@@ -298,16 +294,9 @@ class ReaderLambdaTypeTransformer(pluginContext: IrPluginContext) :
             (descriptor as WrappedValueParameterDescriptor).bind(this)
             annotations += declaration.annotations
             defaultValue = declaration.defaultValue
+            transformedValueParameters[declaration] = this
         }
     }
-
-    private fun IrType.isReaderLambda() =
-        (isFunction() || isSuspendFunction()) && hasAnnotation(InjektFqNames.Reader)
-
-    private fun IrType.isTransformedReaderLamdba() =
-        isReaderLambda() && typeArguments
-            .mapNotNull { it.typeOrNull?.classOrNull?.owner }
-            .any { it.hasAnnotation(InjektFqNames.Context) }
 
     private fun createReaderLambdaType(
         oldType: IrType,

@@ -72,7 +72,6 @@ import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
-import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.findAnnotation
@@ -86,10 +85,8 @@ import org.jetbrains.kotlin.load.java.JvmAbi
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ImplicitContextTransformer(
-    pluginContext: IrPluginContext,
-    private val symbolRemapper: DeepCopySymbolRemapper
-) : AbstractInjektTransformer(pluginContext) {
+class ImplicitContextTransformer(pluginContext: IrPluginContext) :
+    AbstractInjektTransformer(pluginContext) {
 
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
     private val remappedTransformedFunctions = mutableMapOf<IrFunction, IrFunction>()

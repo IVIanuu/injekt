@@ -83,6 +83,28 @@ class ImplicitTest {
     }
 
     @Test
+    fun testLambda() = codegen(
+        """
+        
+        @Reader
+        fun createStore(block: @Reader () -> Any) = withInstances(Any()) {
+            block()
+        }
+        
+        fun invoke(): Foo {
+            initializeComponents()
+            val component = rootComponent<TestComponent>()
+            return component.runReader {
+                createStore { given<Any>() }
+                Foo()
+            }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
     fun testNestedReader() = codegen(
         """
         @Given
@@ -1010,8 +1032,12 @@ class ImplicitTest {
                 
             }
             
+            delegate()
             block()
-            component.runReader { block() }
+            component.runReader {
+                block()
+                delegate()
+            }
             
             return block
         }
