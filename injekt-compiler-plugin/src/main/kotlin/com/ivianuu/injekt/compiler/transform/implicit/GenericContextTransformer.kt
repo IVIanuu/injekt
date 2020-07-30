@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
-import com.ivianuu.injekt.compiler.readableName
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
@@ -79,9 +78,28 @@ class GenericContextTransformer(
                 .let { it as IrConst<String> }
                 .value
 
+            val functionMap = genericContextIndex.getAnnotation(InjektFqNames.GenericContext)!!
+                .getValueArgument(2)
+                .let { it as IrConst<String> }
+                .value
+                .let {
+                    if (it.isNotEmpty()) {
+                        it.split("=:=")
+                            .filter { it.isNotEmpty() }
+                            .map {
+                                it.split("===")
+                                    .filter { it.isNotEmpty() }
+                                    .let { it[0] to it[1] }
+                            }
+                    } else emptyList()
+                }
+                .toMap()
+
             generateGenericContext(
-                delegateContext, genericContextIndex
-                    .superTypes.single(), name
+                delegateContext,
+                genericContextIndex.superTypes.single(),
+                name,
+                functionMap
             )
         }
     }
@@ -89,7 +107,8 @@ class GenericContextTransformer(
     private fun generateGenericContext(
         delegateContext: IrClass,
         genericContextType: IrType,
-        name: String
+        name: String,
+        functionMap: Map<String, String>
     ) {
         val genericContextImpl = buildClass {
             this.name = name.asNameId()
@@ -167,7 +186,7 @@ class GenericContextTransformer(
                         irExprBody(
                             irCall(
                                 delegateContext.functions
-                                    .first { it.name == returnType.readableName() }
+                                    .single { it.name.asString() == functionMap[declaration.name.asString()]!! }
                             ).apply {
                                 dispatchReceiver = irGetField(
                                     irGet(dispatchReceiverParameter!!),

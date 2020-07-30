@@ -150,31 +150,6 @@ class ImplicitCallTransformer(
                 "${declaration.descriptor.name}GenericContextImpl"
             )
 
-            val genericContextIndex = buildClass {
-                this.name = "${name}Index".asNameId()
-                kind = ClassKind.INTERFACE
-                visibility = Visibilities.INTERNAL
-            }.apply {
-                parent = declaration.file
-                createImplicitParameterDeclarationWithWrappedDescriptor()
-                addMetadataIfNotLocal()
-                superTypes += genericContext.typeWith(typeArguments)
-                annotations += DeclarationIrBuilder(pluginContext, symbol).run {
-                    irCall(symbols.genericContext.constructors.single()).apply {
-                        putValueArgument(
-                            0,
-                            irClassReference(this@ReaderScope.context)
-                        )
-                        putValueArgument(
-                            1,
-                            irString(name)
-                        )
-                    }
-                }
-            }
-
-            newDeclarations += genericContextIndex
-
             context.superTypes += genericContext.superTypes
                 .map {
                     it.substitute(
@@ -184,6 +159,8 @@ class ImplicitCallTransformer(
                             .toMap()
                     )
                 }
+
+            val functionMap = mutableMapOf<IrFunction, IrFunction>()
 
             genericContext.functions
                 .filterNot { it.isFakeOverride }
@@ -206,7 +183,7 @@ class ImplicitCallTransformer(
                                     it.remapTypeParametersByName(parentFunction, context)
                                 } else it
                             }
-                    context.addFunction {
+                    functionMap[genericContextFunction] = context.addFunction {
                         this.name = finalType.readableName()
                         returnType = finalType
                         modality = Modality.ABSTRACT
@@ -215,6 +192,42 @@ class ImplicitCallTransformer(
                         addMetadataIfNotLocal()
                     }
                 }
+
+            val genericContextIndex = buildClass {
+                this.name = "${name}Index".asNameId()
+                kind = ClassKind.INTERFACE
+                visibility = Visibilities.INTERNAL
+            }.apply {
+                parent = declaration.file
+                createImplicitParameterDeclarationWithWrappedDescriptor()
+                addMetadataIfNotLocal()
+                superTypes += genericContext.typeWith(typeArguments)
+                annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+                    irCall(symbols.genericContext.constructors.single()).apply {
+                        putValueArgument(
+                            0,
+                            irClassReference(this@ReaderScope.context)
+                        )
+                        putValueArgument(
+                            1,
+                            irString(name)
+                        )
+                        putValueArgument(
+                            2,
+                            irString(
+                                if (functionMap.isEmpty()) "" else
+                                    functionMap
+                                        .map { (from, to) ->
+                                            from.name.asString() + "===" + to.name.asString()
+                                        }
+                                        .joinToString("=:=")
+                            )
+                        )
+                    }
+                }
+            }
+
+            newDeclarations += genericContextIndex
 
             return name.asNameId()
         }
