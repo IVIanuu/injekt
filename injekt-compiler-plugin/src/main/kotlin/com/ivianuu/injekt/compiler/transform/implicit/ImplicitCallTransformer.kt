@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt.compiler.transform.implicit
 
+import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.getContext
@@ -32,49 +34,49 @@ import com.ivianuu.injekt.compiler.thisOfClass
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
+import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.typeArguments
-import com.ivianuu.injekt.compiler.typeOrFail
-import com.ivianuu.injekt.compiler.typeWith
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.descriptors.impl.EmptyPackageFragmentDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
-import org.jetbrains.kotlin.ir.builders.irBlock
-import org.jetbrains.kotlin.ir.builders.irBlockBody
+import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
-import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
+import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
+import org.jetbrains.kotlin.ir.declarations.impl.IrExternalPackageFragmentImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
-import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
-import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
+import org.jetbrains.kotlin.ir.symbols.impl.IrExternalPackageFragmentSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.starProjectedType
@@ -83,18 +85,24 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fields
+import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.isFakeOverride
+import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ImplicitCallTransformer(pluginContext: IrPluginContext) :
+class ImplicitCallTransformer(
+    pluginContext: IrPluginContext,
+    private val indexer: Indexer
+) :
     AbstractInjektTransformer(pluginContext) {
 
+    private val nameProvider = NameProvider()
     private val transformedDeclarations = mutableListOf<IrDeclaration>()
+    private val newDeclarations = mutableListOf<IrClass>()
 
     inner class ReaderScope(
         val declaration: IrDeclaration,
@@ -135,8 +143,38 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
         fun inheritGenericContext(
             genericContext: IrClass,
             typeArguments: List<IrType>
-        ): Map<IrFunction, IrFunction> {
+        ): Name {
             genericContexts += genericContext
+
+            val name = nameProvider.allocateForGroup(
+                "${declaration.descriptor.name}GenericContextImpl"
+            )
+
+            val genericContextIndex = buildClass {
+                this.name = "${name}Index".asNameId()
+                kind = ClassKind.INTERFACE
+                visibility = Visibilities.INTERNAL
+            }.apply {
+                parent = declaration.file
+                createImplicitParameterDeclarationWithWrappedDescriptor()
+                addMetadataIfNotLocal()
+                superTypes += genericContext.typeWith(typeArguments)
+                annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+                    irCall(symbols.genericContext.constructors.single()).apply {
+                        putValueArgument(
+                            0,
+                            irClassReference(this@ReaderScope.context)
+                        )
+                        putValueArgument(
+                            1,
+                            irString(name)
+                        )
+                    }
+                }
+            }
+
+            newDeclarations += genericContextIndex
+
             context.superTypes += genericContext.superTypes
                 .map {
                     it.substitute(
@@ -146,7 +184,6 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
                             .toMap()
                     )
                 }
-            val functionMap = mutableMapOf<IrFunction, IrFunction>()
 
             genericContext.functions
                 .filterNot { it.isFakeOverride }
@@ -169,8 +206,8 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
                                     it.remapTypeParametersByName(parentFunction, context)
                                 } else it
                             }
-                    functionMap[genericContextFunction] = context.addFunction {
-                        name = finalType.readableName()
+                    context.addFunction {
+                        this.name = finalType.readableName()
                         returnType = finalType
                         modality = Modality.ABSTRACT
                     }.apply {
@@ -179,7 +216,7 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
                     }
                 }
 
-            return functionMap
+            return name.asNameId()
         }
 
         fun providerFunctionForType(
@@ -214,6 +251,11 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
                 }
             }
         )
+
+        newDeclarations.forEach {
+            (it.parent as IrDeclarationContainer).addChild(it)
+            indexer.index(it)
+        }
     }
 
     private fun transformClassIfNeeded(
@@ -437,114 +479,43 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
         val contextArgument =
             if (transformedCall.isReaderLambdaInvoke(pluginContext) || transformedCall.typeArgumentsCount == 0) {
                 if (!transformedCall.isReaderLambdaInvoke(pluginContext))
-                    scope.inheritContext(
-                        calleeContext.defaultType
-                            .typeWith(*transformedCall.typeArguments.toTypedArray())
-                    )
+                    scope.inheritContext(calleeContext.defaultType)
                 contextExpression()
             } else {
-                val functionMap = scope.inheritGenericContext(
+                val name = scope.inheritGenericContext(
                     calleeContext,
                     transformedCall.typeArguments
                 )
+                val genericContextStub = buildClass {
+                    this.name = name
+                    origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
+                }.apply clazz@{
+                    createImplicitParameterDeclarationWithWrappedDescriptor()
+                    parent = IrExternalPackageFragmentImpl(
+                        IrExternalPackageFragmentSymbolImpl(
+                            EmptyPackageFragmentDescriptor(
+                                pluginContext.moduleDescriptor,
+                                scope.declaration.getPackageFragment()!!.fqName
+                            )
+                        ),
+                        scope.declaration.getPackageFragment()!!.fqName
+                    )
+
+                    addConstructor {
+                        returnType = defaultType
+                        isPrimary = true
+                        visibility = Visibilities.PUBLIC
+                    }.apply {
+                        addValueParameter(
+                            "delegate",
+                            scope.context.defaultType
+                        )
+                    }
+                }
+
                 DeclarationIrBuilder(pluginContext, transformedCall.symbol).run {
-                    irBlock(origin = IrStatementOrigin.OBJECT_LITERAL) {
-                        val contextImpl = buildClass {
-                            name = Name.special("<context>")
-                            visibility = Visibilities.LOCAL
-                        }.apply clazz@{
-                            parent = scope.declaration as IrDeclarationParent
-                            createImplicitParameterDeclarationWithWrappedDescriptor()
-
-                            superTypes += calleeContext.defaultType
-                                .typeWith(*transformedCall.typeArguments.toTypedArray())
-
-                            addConstructor {
-                                returnType = defaultType
-                                isPrimary = true
-                                visibility = Visibilities.PUBLIC
-                            }.apply {
-                                DeclarationIrBuilder(pluginContext, symbol).run {
-                                    body = irBlockBody {
-                                        +irDelegatingConstructorCall(context.irBuiltIns.anyClass.owner.constructors.single())
-                                        +IrInstanceInitializerCallImpl(
-                                            UNDEFINED_OFFSET,
-                                            UNDEFINED_OFFSET,
-                                            this@clazz.symbol,
-                                            irBuiltIns.unitType
-                                        )
-                                    }
-                                }
-                            }
-
-                            val implementedSuperTypes = mutableSetOf<IrType>()
-                            val declarationNames = mutableSetOf<Name>()
-
-                            fun implementFunctions(
-                                superClass: IrClass,
-                                typeArguments: List<IrType>
-                            ) {
-                                if (superClass.defaultType in implementedSuperTypes) return
-                                implementedSuperTypes += superClass.defaultType
-                                for (declaration in superClass.declarations.toList()) {
-                                    if (declaration !is IrFunction) continue
-                                    if (declaration is IrConstructor) continue
-                                    if (declaration.isFakeOverride) continue
-                                    if (declaration.dispatchReceiverParameter?.type == irBuiltIns.anyType) continue
-                                    if (declaration.name in declarationNames) continue
-                                    declarationNames += declaration.name
-                                    addFunction {
-                                        name = declaration.name
-                                        returnType = declaration.returnType.substitute(
-                                            superClass.typeParameters
-                                                .map { it.symbol }
-                                                .zip(typeArguments)
-                                                .toMap()
-                                        )
-                                    }.apply {
-                                        dispatchReceiverParameter =
-                                            thisReceiver!!.copyTo(this)
-                                        overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
-                                        addMetadataIfNotLocal()
-                                        body = DeclarationIrBuilder(
-                                            pluginContext,
-                                            symbol
-                                        ).irExprBody(
-                                            irCall(
-                                                functionMap.toList().firstOrNull { (a, b) ->
-                                                    a == declaration &&
-                                                            a.returnType.substitute(
-                                                                superClass.typeParameters
-                                                                    .map { it.symbol }
-                                                                    .zip(typeArguments)
-                                                                    .toMap()
-                                                            ) == b.returnType
-                                                }?.second?.symbol ?: declaration.symbol
-                                            ).apply {
-                                                dispatchReceiver = contextExpression()
-                                            }
-                                        )
-                                    }
-                                }
-
-                                superClass.superTypes
-                                    .map { it to it.classOrNull?.owner }
-                                    .forEach { (superType, clazz) ->
-                                        if (clazz != null)
-                                            implementFunctions(
-                                                clazz,
-                                                superType.typeArguments.map { it.typeOrFail })
-                                    }
-                            }
-
-                            superTypes.forEach { superType ->
-                                implementFunctions(
-                                    superType.classOrNull!!.owner,
-                                    superType.typeArguments.map { it.typeOrFail })
-                            }
-                        }
-                        +contextImpl
-                        +irCall(contextImpl.constructors.single())
+                    irCall(genericContextStub.constructors.single()).apply {
+                        putValueArgument(0, contextExpression())
                     }
                 }
             }

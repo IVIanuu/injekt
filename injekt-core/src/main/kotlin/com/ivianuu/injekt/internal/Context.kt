@@ -21,3 +21,8 @@ import kotlin.reflect.KClass
 internal annotation class Context(
     val genericSuperContexts: Array<KClass<*>> = []
 )
+
+internal annotation class GenericContext(
+    val delegateContext: KClass<*>,
+    val implName: String
+)

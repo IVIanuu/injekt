@@ -32,6 +32,7 @@ object InjektFqNames {
     val ChildComponentFactory = InternalPackage.child("ChildComponentFactory".asNameId())
     val Context = InternalPackage.child("Context".asNameId())
     val EntryPoint = InternalPackage.child("EntryPoint".asNameId())
+    val GenericContext = InternalPackage.child("GenericContext".asNameId())
     val Index = InternalPackage.child("Index".asNameId())
     val Name = InternalPackage.child("Name".asNameId())
     val Qualifier = InternalPackage.child("Qualifier".asNameId())

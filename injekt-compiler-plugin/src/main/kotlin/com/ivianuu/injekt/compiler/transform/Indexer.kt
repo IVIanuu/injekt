@@ -42,6 +42,7 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.render
@@ -109,6 +110,8 @@ class Indexer(
     )
 
     fun index(declaration: IrDeclarationWithName) {
+        println("index ${declaration.dump()}")
+
         val name = (getJoinedName(
             declaration.getPackageFragment()!!.fqName,
             declaration.descriptor.fqNameSafe

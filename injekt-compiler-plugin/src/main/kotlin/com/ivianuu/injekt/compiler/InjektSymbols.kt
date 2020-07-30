@@ -41,6 +41,8 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
         get() = pluginContext.referenceClass(InjektFqNames.Context)!!
     val entryPoint: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.EntryPoint)!!
+    val genericContext: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.GenericContext)!!
     val index: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.Index)!!
     val name: IrClassSymbol

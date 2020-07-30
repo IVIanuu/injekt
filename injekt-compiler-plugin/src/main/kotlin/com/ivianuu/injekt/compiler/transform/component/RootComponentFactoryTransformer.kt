@@ -14,61 +14,26 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform
+package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.addFile
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
-import com.ivianuu.injekt.compiler.transform.component.ComponentFactoryImpl
-import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
-import org.jetbrains.kotlin.backend.common.ScopeWithIr
+import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
+import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.ir.builders.irUnit
-import org.jetbrains.kotlin.ir.declarations.IrFile
-import org.jetbrains.kotlin.ir.expressions.IrCall
-import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class InjektInitTransformer(
+class RootComponentFactoryTransformer(
     pluginContext: IrPluginContext,
     private val declarationGraph: DeclarationGraph
-) :
-    AbstractInjektTransformer(pluginContext) {
-
-    private data class InitCall(
-        val call: IrCall,
-        val scope: ScopeWithIr,
-        val file: IrFile
-    )
+) : AbstractInjektTransformer(pluginContext) {
 
     override fun lower() {
-        var initCall: InitCall? = null
-
-        module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
-            override fun visitCall(expression: IrCall): IrExpression {
-                return if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.initializeInjekt"
-                ) {
-                    initCall = InitCall(expression, currentScope!!, currentFile)
-                    DeclarationIrBuilder(pluginContext, expression.symbol)
-                        .irUnit()
-                } else super.visitCall(expression)
-            }
-        })
-
-        if (initCall == null) return
-
-        declarationGraph.initialize()
-
-        if (declarationGraph.rootComponentFactories.isEmpty()) return
-
         val rootComponentFactories = declarationGraph.rootComponentFactories.groupBy {
             it.functions
                 .filterNot { it.isFakeOverride }
@@ -115,6 +80,5 @@ class InjektInitTransformer(
                 file.addChild(componentFactoryImpl.clazz)
             }
     }
-
 
 }

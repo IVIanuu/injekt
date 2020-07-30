@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
-import com.ivianuu.injekt.compiler.getClassesFromAnnotation
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -54,8 +53,8 @@ class DeclarationGraph(
     private val _setElements = mutableListOf<IrFunction>()
     val setElements: List<IrFunction> get() = _setElements
 
-    /*private val _genericContextFactories = mutableListOf<IrClass>()
-    val rootComponentFactories: List<IrClass> get() = _genericContextFactories*/
+    private val _genericContexts = mutableListOf<IrClass>()
+    val genericContexts: List<IrClass> get() = _genericContexts
 
     fun getAdditionalContexts(component: IrClass): List<IrClass> {
         return indexer.classIndices
@@ -85,7 +84,7 @@ class DeclarationGraph(
         contexts += context
 
         fun collectImplementations(context: IrClass) {
-            context.getClassesFromAnnotation(
+            /*context.getClassesFromAnnotation(
                 InjektFqNames.Context,
                 0,
                 pluginContext
@@ -93,7 +92,7 @@ class DeclarationGraph(
                 .forEach {
                     contexts += it
                     collectImplementations(it)
-                }
+                }*/
 
             indexer.classIndices
                 .filter { it.hasAnnotation(InjektFqNames.ReaderImpl) }
@@ -149,12 +148,7 @@ class DeclarationGraph(
         collectBindings()
         collectMapEntries()
         collectSetElements()
-    }
-
-    private fun collectGenericContextFactories() {
-        /*indexer.classIndices
-            .filter { it.hasAnnotation(InjektFqNames.Context) && it.typeParameters.isNotEmpty() }
-            .forEach { _genericContextFactories += it }*/
+        collectGenericContexts()
     }
 
     private fun collectRootComponentFactories() {
@@ -202,6 +196,12 @@ class DeclarationGraph(
             .filter { it.getContext() != null }
             .distinct()
             .forEach { _setElements += it }
+    }
+
+    private fun collectGenericContexts() {
+        indexer.classIndices
+            .filter { it.hasAnnotation(InjektFqNames.GenericContext) }
+            .forEach { _genericContexts += it }
     }
 
 }
