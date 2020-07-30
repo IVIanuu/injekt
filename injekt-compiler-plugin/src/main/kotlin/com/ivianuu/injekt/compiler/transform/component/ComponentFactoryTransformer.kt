@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.irClassReference
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -38,9 +39,7 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
-import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
@@ -130,12 +129,7 @@ class ComponentFactoryTransformer(
                             dispatchReceiver = irGetObject(symbols.rootComponentFactories)
                             putValueArgument(
                                 0,
-                                IrClassReferenceImpl(
-                                    startOffset, endOffset,
-                                    context.irBuiltIns.kClassClass.typeWith(componentFactory.defaultType),
-                                    componentFactory.symbol,
-                                    componentFactory.defaultType
-                                )
+                                irClassReference(componentFactory)
                             )
                         }
                     }

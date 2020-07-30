@@ -44,9 +44,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ComponentImpl(
-    val factoryImpl: ComponentFactoryImpl
-) {
+class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
     val origin: FqName? = factoryImpl.component.descriptor.fqNameSafe
 
     val clazz = buildClass {
@@ -161,12 +159,7 @@ class ComponentImpl(
                 else graph.resolvedBindings.values
                     .flatMapFix { it.contexts.map { it.getContext()!! } })
                     .flatMapFix { it.getAllClasses() }
-                    .flatMapFix {
-                        factoryImpl.implicitTransformer
-                            .getFunctionForContext(it)
-                            ?.let { factoryImpl.declarationGraph.getAllContextsForFunction(it) }
-                            ?: listOf(it)
-                    }
+                    .flatMapFix { factoryImpl.declarationGraph.getAllContextImplementations(it) }
                     .distinct()
                     .filter { it.defaultType !in processedSuperTypes }
 

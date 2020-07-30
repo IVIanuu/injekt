@@ -18,22 +18,19 @@ package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
+import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
-import com.ivianuu.injekt.compiler.uniqueName
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
-import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.name.FqName
 
 class DeclarationGraph(
     private val indexer: Indexer,
@@ -57,43 +54,37 @@ class DeclarationGraph(
     private val _setElements = mutableListOf<IrFunction>()
     val setElements: List<IrFunction> get() = _setElements
 
-    fun getAllContextsForFunction(function: IrFunction): List<IrClass> {
+    fun getAllContextImplementations(
+        context: IrClass
+    ): List<IrClass> {
         val contexts = mutableListOf<IrClass>()
 
-        contexts += function.getContext()!!
+        contexts += context
 
-        fun collectAllContextsForFunction(function: IrFunction) {
+        fun collectImplementations(context: IrClass) {
             indexer.classIndices
-                .mapNotNull { it.getAnnotation(InjektFqNames.ReaderImpl) }
-                .filter { annotation ->
-                    annotation.getValueArgument(0)
-                        .let { it as IrConst<String> }
-                        .value == function.uniqueName()
+                .filter { it.hasAnnotation(InjektFqNames.ReaderImpl) }
+                .filter { clazz ->
+                    clazz.getClassFromAnnotation(
+                        InjektFqNames.ReaderImpl,
+                        0,
+                        pluginContext
+                    ) == context
                 }
                 .map {
-                    it.getValueArgument(1)
-                        .let { it as IrConst<String> }
-                        .value
+                    it.getClassFromAnnotation(
+                        InjektFqNames.ReaderImpl,
+                        1,
+                        pluginContext
+                    )!!
                 }
-                .flatMapFix { implName ->
-                    pluginContext.referenceFunctions(
-                        FqName(
-                            implName.replaceAfter("__", "")
-                                .replace("__", "")
-                        )
-                    )
-                        .filter {
-                            it.owner.uniqueName() == implName
-                        }
-                }
-                .map { implicitTransformer.getTransformedFunction(it.owner) }
                 .forEach {
-                    contexts += it.getContext()!!
-                    collectAllContextsForFunction(it)
+                    contexts += it
+                    collectImplementations(it)
                 }
         }
 
-        collectAllContextsForFunction(function)
+        collectImplementations(context)
 
         return contexts
     }

@@ -867,6 +867,111 @@ class ImplicitTest {
     }
 
     @Test
+    fun testAbstractReaderFunctionMulti() = multiCodegen(
+        listOf(
+            source(
+                """ 
+                    @Given
+                    fun foo() = Foo()
+            
+                    @Given
+                    fun bar() = Bar(given())
+                    
+                    interface Action {
+                        @Reader
+                        fun execute()
+                    }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """ 
+                    open class FooAction : Action {
+                        @Reader
+                        override fun execute() {
+                            given<Foo>()
+                        }
+                    }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """ 
+                    class BarAction : FooAction() {
+                        @Reader
+                        override fun execute() {
+                            super.execute()
+                            given<Bar>()
+                        }
+                    }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun invoke() {
+                        initializeComponents()
+                        val component = rootComponent<TestComponent>()
+                        component.runReader {
+                            val actions = listOf(
+                                FooAction(),
+                                BarAction()
+                            )
+                            actions.forEach { it.execute() }
+                        }
+                    }
+                    """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        it.last().invokeSingleFile()
+    }
+
+    @Test
+    fun testAnonymousAbstractReaderFunction() = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+
+        @Given
+        fun bar() = Bar(given())
+        
+        interface Action {
+            @Reader
+            fun execute()
+        }
+        
+        fun invoke() {
+            initializeComponents()
+            val component = rootComponent<TestComponent>()
+            component.runReader {
+                val actions = listOf(
+                    object : Action { 
+                        @Reader
+                        override fun execute() {
+                            given<Foo>()
+                        }
+                    },
+                    object : Action {
+                        @Reader
+                        override fun execute() {
+                            given<Bar>()
+                        }
+                    }
+                )
+                actions.forEach { it.execute() }
+            }
+        }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
     fun testLambdaTracking() = codegen(
         """
         val property: @Reader () -> Unit = {  }

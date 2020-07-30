@@ -36,6 +36,6 @@ annotation class ReaderLambdaInvocation(
 )
 
 internal annotation class ReaderImpl(
-    val superName: String,
-    val implName: String
+    val superContext: Array<KClass<*>>,
+    val subContext: Array<KClass<*>>
 )

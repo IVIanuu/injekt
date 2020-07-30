@@ -99,7 +99,6 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.load.java.JvmAbi
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -116,31 +115,6 @@ class ImplicitContextTransformer(
 
     fun getTransformedFunction(function: IrFunction) =
         transformFunctionIfNeeded(function)
-
-    fun getFunctionForContext(context: IrClass): IrFunction? {
-        val functionName = context.getAnnotation(InjektFqNames.Name)
-            ?.getValueArgument(0)
-            ?.let { it as IrConst<String> }
-            ?.value
-            ?: return null
-
-        val functionFqName = functionName
-            .replaceAfter("__", "")
-            .replace("__", "")
-
-        return try {
-            pluginContext.referenceFunctions(FqName(functionFqName))
-        } catch (e: Exception) {
-            emptyList()
-        }
-            .map { it.owner }
-            .map { getTransformedFunction(it) }
-            .firstOrNull {
-                it.getContext()
-                    ?.let { symbolRemapper.getReferencedClass(it.symbol) } ==
-                        symbolRemapper.getReferencedClass(context.symbol)
-            }
-    }
 
     override fun lower() {
         module.transformChildrenVoid(

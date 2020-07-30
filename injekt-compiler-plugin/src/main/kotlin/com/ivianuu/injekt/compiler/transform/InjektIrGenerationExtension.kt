@@ -76,8 +76,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         ComponentTransformer(
             injektPluginContext,
-            declarationGraph,
-            implicitContextParamTransformer
+            declarationGraph
         ).doLower(
             moduleFragment
         )

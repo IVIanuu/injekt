@@ -101,7 +101,6 @@ import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.ir.types.IrTypeProjection
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
-import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
@@ -471,38 +470,38 @@ fun IrElement.toConstantValue(): ConstantValue<*> {
     }
 }
 
-fun <T> T.getClassFromSingleValueAnnotation(
-    fqName: FqName,
-    pluginContext: IrPluginContext
-): IrClass where T : IrDeclaration, T : IrAnnotationContainer {
-    return getClassFromSingleValueAnnotationOrNull(fqName, pluginContext)
-        ?: error("Cannot get class value for $fqName for ${dump()}")
-}
+fun IrBuilderWithScope.irClassReference(
+    clazz: IrClass
+) = IrClassReferenceImpl(
+    UNDEFINED_OFFSET,
+    UNDEFINED_OFFSET,
+    context.irBuiltIns.kClassClass.typeWith(clazz.defaultType),
+    clazz.symbol,
+    clazz.defaultType
+)
 
-fun <T> T.getClassFromSingleValueAnnotationOrNull(
+fun <T> T.getClassFromAnnotation(
     fqName: FqName,
+    index: Int,
     pluginContext: IrPluginContext
 ): IrClass? where T : IrDeclaration, T : IrAnnotationContainer {
     return getAnnotation(fqName)
-        ?.getValueArgument(0)
-        ?.let { it as IrClassReferenceImpl }
+        ?.getValueArgument(index)
+        ?.let { it as? IrClassReferenceImpl }
         ?.classType
         ?.classOrNull
         ?.owner
         ?: descriptor.annotations.findAnnotation(fqName)
             ?.allValueArguments
             ?.values
-            ?.singleOrNull()
+            ?.toList()
+            ?.getOrNull(index)
             ?.let { it as KClassValue }
-            ?.getIrClass(pluginContext)
-}
-
-fun KClassValue.getIrClass(
-    pluginContext: IrPluginContext
-): IrClass {
-    return (value as KClassValue.Value.NormalClass).classId.asSingleFqName()
-        .let { FqName(it.asString().replace("\$", ".")) }
-        .let { pluginContext.referenceClass(it)!!.owner }
+            ?.let { it.value as KClassValue.Value.NormalClass }
+            ?.classId
+            ?.asSingleFqName()
+            ?.let { FqName(it.asString().replace("\$", ".")) }
+            ?.let { pluginContext.referenceClass(it)!!.owner }
 }
 
 fun String.asNameId(): Name = Name.identifier(this)
@@ -766,22 +765,6 @@ fun IrType.hashWithDistinct(): Int {
 
     return result
 }
-
-fun IrBuilderWithScope.singleClassArgConstructorCall(
-    clazz: IrClassSymbol,
-    value: IrClassifierSymbol
-): IrConstructorCall =
-    irCall(clazz.constructors.single()).apply {
-        putValueArgument(
-            0,
-            IrClassReferenceImpl(
-                startOffset, endOffset,
-                context.irBuiltIns.kClassClass.typeWith(value.defaultType),
-                value,
-                value.defaultType
-            )
-        )
-    }
 
 fun IrBuilderWithScope.irLambda(
     type: IrType,

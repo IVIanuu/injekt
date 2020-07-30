@@ -19,7 +19,6 @@ package com.ivianuu.injekt.compiler.transform.component
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -54,8 +53,7 @@ class ComponentFactoryImpl(
     val parent: ComponentFactoryImpl?,
     val pluginContext: IrPluginContext,
     val declarationGraph: DeclarationGraph,
-    val symbols: InjektSymbols,
-    val implicitTransformer: ImplicitContextTransformer
+    val symbols: InjektSymbols
 ) {
 
     val component = factory.functions

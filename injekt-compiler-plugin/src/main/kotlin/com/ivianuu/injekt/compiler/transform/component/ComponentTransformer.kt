@@ -17,34 +17,29 @@
 package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.getClassFromSingleValueAnnotation
+import com.ivianuu.injekt.compiler.getClassFromAnnotation
+import com.ivianuu.injekt.compiler.irClassReference
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ComponentTransformer(
     pluginContext: IrPluginContext,
-    private val declarationGraph: DeclarationGraph,
-    private val implicitTransformer: ImplicitContextTransformer
+    private val declarationGraph: DeclarationGraph
 ) : AbstractInjektTransformer(pluginContext) {
 
     private data class InitializeComponentsCall(
@@ -101,8 +96,9 @@ class ComponentTransformer(
         }
 
         val entryPoints = declarationGraph.entryPoints.groupBy {
-            it.getClassFromSingleValueAnnotation(
+            it.getClassFromAnnotation(
                 InjektFqNames.EntryPoint,
+                0,
                 pluginContext
             )
         }
@@ -126,8 +122,7 @@ class ComponentTransformer(
                             null,
                             pluginContext,
                             declarationGraph,
-                            symbols,
-                            implicitTransformer
+                            symbols
                         )
 
                         componentFactoryImpl.init()
@@ -143,13 +138,7 @@ class ComponentTransformer(
 
                             putValueArgument(
                                 0,
-                                IrClassReferenceImpl(
-                                    UNDEFINED_OFFSET,
-                                    UNDEFINED_OFFSET,
-                                    irBuiltIns.kClassClass.typeWith(componentFactory.defaultType),
-                                    componentFactory.symbol,
-                                    componentFactory.defaultType
-                                )
+                                irClassReference(componentFactory)
                             )
 
                             putValueArgument(
