@@ -879,6 +879,30 @@ class ImplicitTest {
     }
 
     @Test
+    fun testContextPropagationWithLambda() = codegen(
+        """
+        @Reader
+        fun <R> withProvidedFoo(
+            foo: Foo,
+            block: @Reader () -> R
+        ) = withInstances(foo) { block() }
+        
+        fun invoke(foo: Foo): Foo {
+            initializeInjekt()
+            val component = rootComponent<TestComponent>()
+            return component.runReader {
+                withProvidedFoo(foo) {
+                    given<Foo>()
+                }
+            }
+        }
+    """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile(foo))
+    }
+
+    @Test
     fun testAbstractReaderFunction() = codegen(
         """
         @Given
