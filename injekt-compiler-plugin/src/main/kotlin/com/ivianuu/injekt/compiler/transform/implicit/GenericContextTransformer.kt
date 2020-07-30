@@ -110,9 +110,17 @@ class GenericContextTransformer(
         name: String,
         functionMap: Map<String, String>
     ) {
+        val file = module.addFile(
+            pluginContext,
+            delegateContext.getPackageFragment()!!
+                .fqName
+                .child(name.asNameId())
+        )
         val genericContextImpl = buildClass {
             this.name = name.asNameId()
         }.apply clazz@{
+            parent = file
+            file.addChild(this)
             createImplicitParameterDeclarationWithWrappedDescriptor()
             superTypes += genericContextType
         }
@@ -186,7 +194,8 @@ class GenericContextTransformer(
                         irExprBody(
                             irCall(
                                 delegateContext.functions
-                                    .single { it.name.asString() == functionMap[declaration.name.asString()]!! }
+                                    .singleOrNull { it.name.asString() == functionMap[declaration.name.asString()]!! }
+                                    ?: declaration
                             ).apply {
                                 dispatchReceiver = irGetField(
                                     irGet(dispatchReceiverParameter!!),
@@ -208,19 +217,12 @@ class GenericContextTransformer(
                 }
         }
 
-        genericContextImpl.superTypes.forEach { superType ->
+        declarationGraph.getAllContextImplementations(genericContextImpl).forEach { superType ->
             implementFunctions(
-                superType.classOrNull!!.owner,
-                superType.typeArguments.map { it.typeOrFail }
+                superType,
+                superType.defaultType.typeArguments.map { it.typeOrFail }
             )
         }
-
-        module.addFile(
-            pluginContext,
-            delegateContext.getPackageFragment()!!
-                .fqName
-                .child(genericContextImpl.name)
-        ).apply { addChild(genericContextImpl) }
     }
 
 }

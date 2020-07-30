@@ -39,7 +39,6 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -171,8 +170,6 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
                 if (superClass.defaultType in processedSuperTypes) return
                 processedSuperTypes += superClass.defaultType
 
-                println(superClass.dump())
-
                 for (declaration in superClass.declarations.toList()) {
                     if (declaration !is IrFunction) continue
                     if (declaration is IrConstructor) continue
@@ -180,7 +177,6 @@ class ComponentImpl(val factoryImpl: ComponentFactoryImpl) {
                         factoryImpl.pluginContext.irBuiltIns.anyType
                     ) continue
                     declarationNames += declaration.name
-                    println(declaration.dump())
                     val request = BindingRequest(
                         declaration.returnType.asKey(),
                         null,
