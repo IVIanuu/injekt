@@ -16,14 +16,4 @@
 
 package com.ivianuu.injekt.internal
 
-import kotlin.reflect.KClass
-
-internal annotation class ReaderImpl(
-    val superContext: KClass<*>,
-    val subContext: KClass<*>
-)
-
-internal annotation class ReaderInvocation(
-    val readerContext: KClass<*>,
-    val invocationContext: KClass<*>
-)
+internal annotation class Context

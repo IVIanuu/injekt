@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.component.ComponentFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.component.ComponentIndexingTransformer
 import com.ivianuu.injekt.compiler.transform.component.ComponentTransformer
@@ -25,6 +26,7 @@ import com.ivianuu.injekt.compiler.transform.component.EntryPointTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitIndexingTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ReaderLambdaTypeTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.WithInstancesTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -57,6 +59,8 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         val implicitContextParamTransformer =
             ImplicitContextTransformer(pluginContext, symbolRemapper)
 
+        ReaderLambdaTypeTransformer(pluginContext).doLower(moduleFragment)
+
         implicitContextParamTransformer.doLower(moduleFragment)
 
         ImplicitIndexingTransformer(pluginContext, indexer).doLower(moduleFragment)
@@ -84,6 +88,8 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 
         generateSymbols(pluginContext)
+
+        println(moduleFragment.dumpSrc())
     }
 
 }

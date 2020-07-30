@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform.component
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
+import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.tmpFunction
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -124,7 +125,7 @@ class GivenBindingResolver(
                 ) else null
 
             val explicitParameters = function.valueParameters
-                .filter { it.name.asString() != "_context" }
+                .filter { it != function.getContextValueParameter() }
 
             val key = if (explicitParameters.isEmpty()) function.returnType.asKey()
             else pluginContext.tmpFunction(explicitParameters.size)

@@ -995,4 +995,26 @@ class ImplicitTest {
         //invokeSingleFile()
     }
 
+    @Test
+    fun testReaderTracking() = codegen(
+        """
+        val lambdaProperty: @Reader () -> Unit = {}
+        
+        fun createLambda(delegate: @Reader () -> Unit): @Reader () -> Unit {
+            initializeComponents()
+            val component = rootComponent<TestComponent>()
+            
+            val block: @Reader () -> Unit = {
+                
+            }
+            
+            return block
+        }
+        
+        fun invoke() = createLambda {}
+    """
+    ) {
+        invokeSingleFile()
+    }
+
 }

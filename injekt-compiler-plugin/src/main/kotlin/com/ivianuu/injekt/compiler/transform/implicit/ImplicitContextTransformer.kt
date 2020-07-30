@@ -18,16 +18,10 @@ package com.ivianuu.injekt.compiler.transform.implicit
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.NameProvider
-import com.ivianuu.injekt.compiler.WrappedClassDescriptor
-import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
-import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.copy
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getFunctionType
-import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.isExternalDeclaration
@@ -38,11 +32,8 @@ import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.uniqueName
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
-import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
-import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -51,10 +42,8 @@ import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlockBody
-import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irSetField
-import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
@@ -67,8 +56,6 @@ import org.jetbrains.kotlin.ir.declarations.IrOverridableDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
-import org.jetbrains.kotlin.ir.declarations.MetadataSource
-import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
@@ -87,16 +74,13 @@ import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
 import org.jetbrains.kotlin.ir.util.constructedClass
-import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
-import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.load.java.JvmAbi
 import org.jetbrains.kotlin.resolve.DescriptorUtils
@@ -111,7 +95,7 @@ class ImplicitContextTransformer(
     private val remappedTransformedFunctions = mutableMapOf<IrFunction, IrFunction>()
     private val transformedClasses = mutableSetOf<IrClass>()
 
-    private val globalNameProvider = NameProvider()
+    private val contexts = mutableListOf<IrClass>()
 
     fun getTransformedFunction(function: IrFunction) =
         transformFunctionIfNeeded(function)
@@ -127,60 +111,14 @@ class ImplicitContextTransformer(
             }
         )
 
-        (transformedClasses
-            .map {
-                it.getReaderConstructor(pluginContext)!!
-            } + transformedFunctions.values)
-            .filterNot { it.isExternalDeclaration() }
-            .map { it.getContext()!! }
-            .forEach { readerContext ->
-                val parent = readerContext.parent as IrDeclarationContainer
-                if (readerContext !in parent.declarations) {
-                    parent.addChild(readerContext)
-                }
+        contexts.forEach { context ->
+            val parent = context.parent as IrDeclarationContainer
+            if (context !in parent.declarations) {
+                parent.addChild(context)
             }
+        }
 
         module.rewriteTransformedFunctionRefs()
-
-        module.acceptVoid(symbolRemapper)
-
-        val typeRemapper =
-            ReaderTypeRemapper(
-                pluginContext,
-                symbolRemapper
-            )
-        val transformer = DeepCopyIrTreeWithSymbolsPreservingMetadata(
-            pluginContext,
-            symbolRemapper,
-            typeRemapper
-        ).also { typeRemapper.deepCopy = it }
-        module.files.forEach {
-            it.transformChildren(
-                transformer,
-                null
-            )
-        }
-
-        transformedFunctions.forEach { (original, transformed) ->
-            val remapped = symbolRemapper.getReferencedFunction(transformed.symbol).owner
-            remappedTransformedFunctions[original] = remapped
-            remappedTransformedFunctions[transformed] = remapped
-        }
-
-        (transformedClasses
-            .map {
-                it.getReaderConstructor(pluginContext)!!
-            } + transformedFunctions.values)
-            .filterNot { it.isExternalDeclaration() }
-            .map { it.getContext()!! }
-            .map { symbolRemapper.getReferencedClass(it.symbol).owner }
-            .filterIsInstance<IrClassImpl>()
-            .forEach {
-                it.metadata = MetadataSource.Class(
-                    WrappedClassDescriptor()
-                        .apply { bind(it) }
-                )
-            }
     }
 
     private fun transformClassIfNeeded(clazz: IrClass): IrClass {
@@ -194,8 +132,7 @@ class ImplicitContextTransformer(
 
         transformedClasses += clazz
 
-        if (readerConstructor.valueParameters.any { it.name.asString() == "_context" })
-            return clazz
+        if (readerConstructor.getContext() != null) return clazz
 
         val existingSignature = getExternalReaderContext(clazz)
 
@@ -291,32 +228,8 @@ class ImplicitContextTransformer(
             if (owner.visibility == Visibilities.LOCAL && owner.parent is IrFunction)
                 owner.parent as IrFunction else null
 
-        val context = buildClass {
-            kind = ClassKind.INTERFACE
-            name = globalNameProvider.allocateForGroup(
-                getJoinedName(
-                    owner.getPackageFragment()!!.fqName,
-                    owner.descriptor.fqNameSafe
-                        .parent().child(owner.name.asString().asNameId())
-                ).asString() + "${owner.uniqueName().hashCode()}Context"
-            ).asNameId()
-            visibility = Visibilities.INTERNAL
-        }.apply {
-            parent = owner.file
-            createImplicitParameterDeclarationWithWrappedDescriptor()
-            addMetadataIfNotLocal()
-            copyTypeParametersFrom(owner)
-            parentFunction?.let { copyTypeParametersFrom(it) }
-
-            annotations += DeclarationIrBuilder(pluginContext, symbol).run {
-                irCall(symbols.name.constructors.single()).apply {
-                    putValueArgument(
-                        0,
-                        irString(owner.uniqueName())
-                    )
-                }
-            }
-        }
+        val context = createContext(owner, parentFunction, pluginContext, symbols)
+        contexts += context
 
         val contextParameter = ownerFunction.addContextParameter(context)
         onContextParameterCreated(contextParameter)

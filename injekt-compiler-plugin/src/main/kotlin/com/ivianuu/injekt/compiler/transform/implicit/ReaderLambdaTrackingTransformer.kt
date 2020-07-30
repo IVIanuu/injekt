@@ -16,16 +16,20 @@
 
 package com.ivianuu.injekt.compiler.transform.implicit
 
-import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+
+
+// invocation observations
+// set var
+// set field
+// putValueArgument
 
 class ReaderLambdaTrackingTransformer(pluginContext: IrPluginContext) :
     AbstractInjektTransformer(pluginContext) {
 
-    private val nameProvider = NameProvider()
-
     override fun lower() {
+
     }
 
     /*override fun lower() {

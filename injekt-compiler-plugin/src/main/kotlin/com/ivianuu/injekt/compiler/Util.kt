@@ -58,6 +58,7 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
+import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrMetadataSourceOwner
 import org.jetbrains.kotlin.ir.declarations.IrProperty
@@ -69,6 +70,7 @@ import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrPropertyImpl
+import org.jetbrains.kotlin.ir.declarations.impl.IrVariableImpl
 import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.descriptors.WrappedFunctionDescriptorWithContainerSource
 import org.jetbrains.kotlin.ir.descriptors.WrappedPropertyGetterDescriptor
@@ -677,15 +679,18 @@ fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
 }
 
 fun IrDeclarationWithName.uniqueName() = when (this) {
-    is IrClass -> "${descriptor.fqNameSafe}__c"
-    is IrFunction -> "${descriptor.fqNameSafe}__f${
+    is IrClass -> "${descriptor.fqNameSafe}__class"
+    is IrField -> "${descriptor.fqNameSafe}__field"
+    is IrFunction -> "${descriptor.fqNameSafe}__function${
     descriptor.valueParameters
-        .filterNot { it.name.asString() == "_context" }
+        .filterNot { it.name == getContextValueParameter()?.name }
         .map { it.type }.map {
             it.constructor.declarationDescriptor!!.fqNameSafe
         }.hashCode().absoluteValue
     }${if (visibility == Visibilities.LOCAL) "_$startOffset" else ""}"
-    is IrProperty -> "${descriptor.fqNameSafe}__p"
+    is IrProperty -> "${descriptor.fqNameSafe}__property"
+    is IrValueParameter -> "${descriptor.fqNameSafe}__valueparameter"
+    is IrVariableImpl -> "${descriptor.fqNameSafe}__variable"
     else -> error("Unsupported declaration ${dump()}")
 }
 
@@ -731,7 +736,7 @@ val IrType.distinctedType: Any
 fun IrDeclarationWithName.canUseImplicits(
     pluginContext: IrPluginContext
 ): Boolean =
-    (this is IrFunction && valueParameters.any { it.name.asString() == "_context" }) ||
+    (this is IrFunction && getContext() != null) ||
             isMarkedAsImplicit(pluginContext) ||
             (this is IrConstructor && constructedClass.isMarkedAsImplicit(pluginContext)) ||
             (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsImplicit(
@@ -823,6 +828,8 @@ fun FunctionDescriptor.getFunctionType(): KotlinType {
         .replace(newArguments = valueParameters.map { it.type.asTypeProjection() } + returnType!!.asTypeProjection())
 }
 
-fun IrFunction.getContext(): IrClass? = valueParameters.singleOrNull {
-    it.name.asString() == "_context"
-}?.type?.classOrNull?.owner
+fun IrFunction.getContext(): IrClass? = getContextValueParameter()?.type?.classOrNull?.owner;
+
+fun IrFunction.getContextValueParameter() = valueParameters.singleOrNull {
+    it.type.classOrNull?.owner?.hasAnnotation(InjektFqNames.Context) == true
+}

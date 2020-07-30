@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.getContext
+import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
 import com.ivianuu.injekt.compiler.readableName
@@ -198,9 +199,7 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
 
         val readerConstructor = declaration.getReaderConstructor(pluginContext)!!
 
-        val context = readerConstructor.valueParameters.single {
-            it.name.asString() == "_context"
-        }.type.classOrNull!!.owner
+        val context = readerConstructor.getContext()!!
 
         transformDeclarationIfNeeded(
             declaration = declaration,
@@ -216,9 +215,7 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
                     }
                 } else {
                     DeclarationIrBuilder(pluginContext, readerConstructor.symbol)
-                        .irGet(readerConstructor.valueParameters.single {
-                            it.name.asString() == "_context"
-                        })
+                        .irGet(readerConstructor.getContextValueParameter()!!)
                 }
             }
         )
@@ -235,9 +232,7 @@ class ImplicitCallTransformer(pluginContext: IrPluginContext) :
             context = declaration.getContext()!!,
             contextExpression = {
                 DeclarationIrBuilder(pluginContext, declaration.symbol)
-                    .irGet(declaration.valueParameters.single {
-                        it.name.asString() == "_context"
-                    })
+                    .irGet(declaration.getContextValueParameter()!!)
             }
         )
     }
