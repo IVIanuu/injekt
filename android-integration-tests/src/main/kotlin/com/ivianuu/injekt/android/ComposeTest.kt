@@ -104,7 +104,7 @@ class ComposeTest {
         it.last().invokeSingleFile()
     }
 
-    @Test
+    // todo @Test
     fun testComposableReaderLambda() = codegen(
         """
         @Given

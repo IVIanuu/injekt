@@ -278,7 +278,16 @@ class ImplicitCallTransformer(
                 createImplicitParameterDeclarationWithWrappedDescriptor()
                 addMetadataIfNotLocal()
                 copyTypeParametersFrom(genericContext)
-                superTypes += genericContext.typeWith(typeParameters.map { it.defaultType })
+                superTypes += genericContext.typeWith(
+                    typeArguments
+                        .map {
+                            it
+                                .remapTypeParametersByName(
+                                    declaration as IrTypeParametersContainer,
+                                    this
+                                )
+                        }
+                )
                 annotations += DeclarationIrBuilder(pluginContext, symbol).run {
                     irCall(symbols.genericContext.constructors.single()).apply {
                         putValueArgument(

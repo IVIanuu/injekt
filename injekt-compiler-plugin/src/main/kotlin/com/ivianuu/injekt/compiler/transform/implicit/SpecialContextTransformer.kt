@@ -62,6 +62,7 @@ import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
@@ -228,7 +229,7 @@ class SpecialContextTransformer(
                             }
                         )
                     }
-                }
+                }.also { println("Implment ${it.dump()}") }
             }
 
             superClass.superTypes
@@ -242,11 +243,16 @@ class SpecialContextTransformer(
                 }
         }
 
+        implementFunctions(
+            genericContextType.classOrNull!!.owner,
+            genericContextType.typeArguments.map { it.typeOrFail }
+        )
+
         declarationGraph.getAllContextImplementations(genericContextType.classOrNull!!.owner)
             .forEach { superType ->
                 implementFunctions(
                     superType,
-                    emptyList()
+                    superType.defaultType.typeArguments.map { it.typeOrFail }
                 )
             }
     }
@@ -365,12 +371,7 @@ class SpecialContextTransformer(
                 declarationNames += declaration.name
                 contextImpl.addFunction {
                     this.name = declaration.name
-                    returnType = declaration.returnType.substitute(
-                        superClass.typeParameters
-                            .map { it.symbol }
-                            .zip(typeArguments)
-                            .toMap()
-                    )
+                    returnType = declaration.returnType
                 }.apply {
                     dispatchReceiverParameter = contextImpl.thisReceiver!!.copyTo(this)
                     overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
