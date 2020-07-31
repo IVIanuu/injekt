@@ -28,6 +28,7 @@ import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.typeWith
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -65,7 +66,6 @@ import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.isFakeOverride
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.Name
 
 class SpecialContextTransformer(
@@ -237,9 +237,7 @@ class SpecialContextTransformer(
                     if (clazz != null)
                         implementFunctions(
                             clazz,
-                            superType.typeArguments.map {
-                                irBuiltIns.anyNType
-                            }
+                            superType.typeArguments.map { it.typeOrFail }
                         )
                 }
         }
@@ -248,9 +246,7 @@ class SpecialContextTransformer(
             .forEach { superType ->
                 implementFunctions(
                     superType,
-                    superType.defaultType.typeArguments.map {
-                        irBuiltIns.anyNType
-                    }
+                    emptyList()
                 )
             }
     }
@@ -280,9 +276,7 @@ class SpecialContextTransformer(
                 .map {
                     it.remapTypeParameters(index, this)
                         .typeWith(
-                            *it.typeArguments.map {
-                                irBuiltIns.anyNType
-                            }.toTypedArray()
+                            *it.typeArguments.map { it.typeOrFail }.toTypedArray()
                         )
                 }
         }
@@ -360,9 +354,6 @@ class SpecialContextTransformer(
             if (superClass.defaultType in implementedSuperTypes) return
             implementedSuperTypes += superClass
                 .typeWith(typeArguments)
-                .also {
-                    println("implement ${it.render()}")
-                }
             contextImpl.superTypes += superClass
                 .typeWith(typeArguments)
             for (declaration in superClass.declarations.toList()) {
@@ -411,9 +402,7 @@ class SpecialContextTransformer(
                     if (clazz != null)
                         implementFunctions(
                             clazz,
-                            superType.typeArguments.map {
-                                irBuiltIns.anyNType
-                            }
+                            superType.typeArguments.map { it.typeOrFail }
                         )
                 }
         }
@@ -424,9 +413,7 @@ class SpecialContextTransformer(
             .forEach { superType ->
                 implementFunctions(
                     superType,
-                    superType.defaultType.typeArguments.map {
-                        irBuiltIns.anyNType
-                    }
+                    superType.defaultType.typeArguments.map { it.typeOrFail }
                 )
             }
     }

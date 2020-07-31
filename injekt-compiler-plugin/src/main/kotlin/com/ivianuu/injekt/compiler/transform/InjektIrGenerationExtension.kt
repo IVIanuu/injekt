@@ -37,6 +37,7 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -102,6 +103,8 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 
         generateSymbols(pluginContext)
+
+        println(moduleFragment.dump())
     }
 
 }

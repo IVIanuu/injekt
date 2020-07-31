@@ -93,7 +93,7 @@ class Indexer(
     val classIndices by lazy {
         (externalIndices + internalIndices)
             .filter { it.type == "class" }
-            .map { pluginContext.referenceClass(it.fqName)!! }
+            .mapNotNull { pluginContext.referenceClass(it.fqName) }
             .map { it.owner }
     }
 

@@ -180,8 +180,13 @@ class ImplicitCallTransformer(
         fun inheritContext(type: IrType) {
             if (!isWithInstancesBlock) {
                 context.superTypes += type
+                    .remapTypeParametersByName(declaration as IrTypeParametersContainer, context)
             } else {
                 withInstancesContextIndex!!.superTypes += type
+                    .remapTypeParametersByName(
+                        declaration as IrTypeParametersContainer,
+                        withInstancesContextIndex!!
+                    )
                 fun collect(superClass: IrClass) {
                     if (superClass.defaultType in implementedSuperTypes) return
                     implementedSuperTypes += superClass.defaultType
@@ -665,7 +670,7 @@ class ImplicitCallTransformer(
             withInstancesContext
                 .typeWith(
                     withInstancesContext.typeParameters
-                        .map { irBuiltIns.anyNType }
+                        .map { it.defaultType }
                 )
         )
 
@@ -673,7 +678,8 @@ class ImplicitCallTransformer(
             .annotations
             .single()
             .putValueArgument(
-                0, DeclarationIrBuilder(pluginContext, call.symbol)
+                0,
+                DeclarationIrBuilder(pluginContext, call.symbol)
                     .irClassReference(scope.context)
             )
 

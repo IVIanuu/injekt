@@ -387,7 +387,7 @@ class ImplicitContextTransformer(
         addMetadataIfNotLocal()
 
         copyTypeParametersFrom(owner as IrTypeParametersContainer)
-        parentFunction?.let { copyTypeParametersFrom(it) }
+        //parentFunction?.let { copyTypeParametersFrom(it) }
 
         annotations += DeclarationIrBuilder(pluginContext, symbol)
             .irCall(symbols.signature.constructors.single())
