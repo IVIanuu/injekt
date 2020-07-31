@@ -77,6 +77,35 @@ class ComponentTest {
     }
 
     @Test
+    fun testReoccurringComponents() = codegen(
+        """
+        @Component
+        interface ParentComponent
+        
+        @Component
+        interface ChildComponent
+        
+        @Given(ParentComponent::class)
+        fun foo() = Foo()
+        @Given
+        fun bar() = Bar(given())
+        
+        fun invoke(): Bar {
+            initializeInjekt()
+            return rootComponent<ParentComponent>().runReader {
+                childComponent<ChildComponent>().runReader { 
+                    childComponent<ChildComponent>().runReader {
+                        given<Bar>()
+                    }
+                }
+            }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
+    }
+
+    @Test
     fun testSimpleWithChildMulti() = multiCodegen(
         listOf(
             source(
