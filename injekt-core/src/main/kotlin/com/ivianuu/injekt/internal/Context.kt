@@ -27,5 +27,6 @@ internal annotation class GenericContext(
 )
 
 internal annotation class WithInstancesContext(
+    val implementingContext: KClass<*>,
     val implName: String,
 )

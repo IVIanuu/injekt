@@ -113,6 +113,8 @@ class ImplicitCallTransformer(
     private val transformedDeclarations = mutableListOf<IrDeclaration>()
     private val newDeclarations = mutableListOf<IrClass>()
 
+    private val indexByWithInstancesContext = mutableMapOf<IrClass, IrClass>()
+
     inner class ReaderScope(
         val declaration: IrDeclaration,
         val context: IrClass,
@@ -142,7 +144,7 @@ class ImplicitCallTransformer(
                 annotations += DeclarationIrBuilder(pluginContext, symbol).run {
                     irCall(symbols.withInstancesContext.constructors.single()).apply {
                         putValueArgument(
-                            0,
+                            1,
                             irString(name.asString())
                         )
                     }
@@ -169,7 +171,10 @@ class ImplicitCallTransformer(
         private val declarationNames = mutableSetOf<Name>()
 
         init {
-            withInstancesContextIndex?.let { newDeclarations += it }
+            withInstancesContextIndex?.let {
+                newDeclarations += it
+                indexByWithInstancesContext[context] = it
+            }
         }
 
         fun inheritContext(type: IrType) {
@@ -656,6 +661,14 @@ class ImplicitCallTransformer(
 
         val withInstancesContext = lambda.getContext()!!
         scope.inheritContext(withInstancesContext.defaultType)
+
+        indexByWithInstancesContext.getValue(withInstancesContext)
+            .annotations
+            .single()
+            .putValueArgument(
+                0, DeclarationIrBuilder(pluginContext, call.symbol)
+                    .irClassReference(scope.context)
+            )
 
         val withInstancesContextImplStub = buildClass {
             this.name = "${withInstancesContext.name}WithInstancesContextImpl".asNameId()

@@ -110,12 +110,17 @@ class SpecialContextTransformer(
         }
 
         declarationGraph.withInstancesContexts.forEach { index ->
+            val implementingContext = index.getClassFromAnnotation(
+                InjektFqNames.WithInstancesContext,
+                0,
+                pluginContext
+            )!!
             val name = index.getAnnotation(InjektFqNames.WithInstancesContext)!!
-                .getValueArgument(0)
+                .getValueArgument(1)
                 .let { it as IrConst<String> }
                 .value
 
-            generateWithInstancesContext(index, name)
+            generateWithInstancesContext(index, implementingContext, name)
         }
     }
 
@@ -246,6 +251,7 @@ class SpecialContextTransformer(
 
     private fun generateWithInstancesContext(
         index: IrClass,
+        implementingContext: IrClass,
         name: String
     ) {
         val rawDelegateContextType = index.superTypes.first()
@@ -393,8 +399,9 @@ class SpecialContextTransformer(
                 }
         }
 
-        contextImpl.superTypes
-            .flatMapFix { declarationGraph.getAllContextImplementations(it.classOrNull!!.owner) }
+        (contextImpl.superTypes
+            .map { it.classOrNull!!.owner } + implementingContext)
+            .flatMapFix { declarationGraph.getAllContextImplementations(it) }
             .forEach { superType ->
                 implementFunctions(
                     superType,
