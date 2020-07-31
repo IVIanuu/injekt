@@ -54,50 +54,69 @@ class Indexer(
     private val symbols: InjektSymbols
 ) {
 
-    private val indices by lazy {
+    private val externalIndices by lazy {
         val memberScope = pluginContext.moduleDescriptor.getPackage(InjektFqNames.IndexPackage)
             .memberScope
 
-        ((module.files
-            .filter { it.fqName == InjektFqNames.IndexPackage }
-            .flatMapFix { it.declarations }
-            .filterIsInstance<IrClass>()) + ((memberScope.getClassifierNames()
-            ?: emptySet()).mapNotNull {
-            memberScope.getContributedClassifier(
-                it,
-                NoLookupLocation.FROM_BACKEND
-            )
-        }.map { pluginContext.referenceClass(it.fqNameSafe)!!.owner }))
-            .map {
-                val annotation = it.getAnnotation(InjektFqNames.Index)!!
-                Index(
-                    annotation.getValueArgument(0)!!
-                        .let { it as IrConst<String> }
-                        .value
-                        .let { FqName(it) },
-                    annotation.getValueArgument(1)!!
-                        .let { it as IrConst<String> }
-                        .value
+        (memberScope.getClassifierNames() ?: emptySet())
+            .mapNotNull {
+                memberScope.getContributedClassifier(
+                    it,
+                    NoLookupLocation.FROM_BACKEND
                 )
             }
+            .map { pluginContext.referenceClass(it.fqNameSafe)!!.owner }
+            .map { it.toIndex() }
     }
 
-    val classIndices: List<IrClass> by lazy {
-        indices
+    private val internalIndices by lazy {
+        (module.files
+            .filter { it.fqName == InjektFqNames.IndexPackage }
+            .flatMapFix { it.declarations }
+            .filterIsInstance<IrClass>())
+            .map { it.toIndex() }
+    }
+
+    private fun IrClass.toIndex(): Index {
+        val annotation = getAnnotation(InjektFqNames.Index)!!
+        return Index(
+            annotation.getValueArgument(0)!!
+                .let { it as IrConst<String> }
+                .value
+                .let { FqName(it) },
+            annotation.getValueArgument(1)!!
+                .let { it as IrConst<String> }
+                .value
+        )
+    }
+
+    val classIndices by lazy {
+        (externalIndices + internalIndices)
             .filter { it.type == "class" }
             .map { pluginContext.referenceClass(it.fqName)!! }
             .map { it.owner }
     }
 
-    val functionIndices: List<IrFunction> by lazy {
-        indices
-            .filter { it.type == "function" }
-            .flatMapFix { pluginContext.referenceFunctions(it.fqName) }
+    val internalFunctionIndices by lazy {
+        internalIndices.flatMapFix { it.getFunctions() }
+    }
+
+    val externalFunctionIndices by lazy {
+        externalIndices.flatMapFix { it.getFunctions() }
+    }
+
+    val functionIndices by lazy {
+        internalFunctionIndices + externalFunctionIndices
+    }
+
+    private fun Index.getFunctions(): List<IrFunction> {
+        return if (type == "function") pluginContext.referenceFunctions(fqName)
             .map { it.owner }
+        else emptyList()
     }
 
     val propertyIndices: List<IrProperty> by lazy {
-        indices
+        (externalIndices + internalIndices)
             .filter { it.type == "property" }
             .flatMapFix { pluginContext.referenceProperties(it.fqName) }
             .map { it.owner }

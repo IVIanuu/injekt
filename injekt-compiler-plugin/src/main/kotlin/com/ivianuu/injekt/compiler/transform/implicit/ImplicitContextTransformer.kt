@@ -23,7 +23,6 @@ import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.copy
-import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getJoinedName
@@ -35,13 +34,13 @@ import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
 import com.ivianuu.injekt.compiler.jvmNameAnnotation
 import com.ivianuu.injekt.compiler.remapTypeParametersByName
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
+import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.uniqueName
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -102,7 +101,10 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ImplicitContextTransformer(pluginContext: IrPluginContext) :
+class ImplicitContextTransformer(
+    pluginContext: IrPluginContext,
+    private val indexer: Indexer
+) :
     AbstractInjektTransformer(pluginContext) {
 
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
@@ -130,6 +132,9 @@ class ImplicitContextTransformer(pluginContext: IrPluginContext) :
             val parent = newDeclaration.parent as IrDeclarationContainer
             if (newDeclaration !in parent.declarations) {
                 parent.addChild(newDeclaration)
+                if (newDeclaration is IrFunction) {
+                    indexer.index(newDeclaration)
+                }
             }
         }
 
@@ -341,13 +346,7 @@ class ImplicitContextTransformer(pluginContext: IrPluginContext) :
     private fun getExternalReaderSignature(owner: IrDeclarationWithName): IrFunction? {
         val declaration = if (owner is IrConstructor)
             owner.constructedClass else owner
-
-        return pluginContext.moduleDescriptor.getPackage(declaration.getPackageFragment()!!.fqName)
-            .memberScope
-            .getContributedDescriptors()
-            .filterIsInstance<FunctionDescriptor>()
-            .flatMapFix { pluginContext.referenceFunctions(it.fqNameSafe) }
-            .map { it.owner }
+        return indexer.externalFunctionIndices
             .filter { it.hasAnnotation(InjektFqNames.Signature) }
             .filter { it.hasAnnotation(InjektFqNames.Name) }
             .singleOrNull { function ->

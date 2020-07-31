@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.component.ComponentFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.component.ComponentIndexingTransformer
 import com.ivianuu.injekt.compiler.transform.component.EntryPointTransformer
@@ -45,42 +44,6 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val injektPluginContext = InjektPluginContext(moduleFragment, pluginContext)
-
-        EffectTransformer(injektPluginContext).doLower(moduleFragment)
-
-        WithInstancesTransformer(
-            injektPluginContext
-        ).doLower(moduleFragment)
-
-        ComponentFactoryTransformer(injektPluginContext).doLower(moduleFragment)
-
-        ReaderLambdaTypeTransformer(injektPluginContext).doLower(moduleFragment)
-
-        val implicitContextParamTransformer =
-            ImplicitContextTransformer(injektPluginContext)
-        implicitContextParamTransformer.doLower(moduleFragment)
-
-        val indexer = Indexer(
-            injektPluginContext,
-            moduleFragment,
-            InjektSymbols(injektPluginContext)
-        )
-        ImplicitCallTransformer(injektPluginContext, indexer).doLower(moduleFragment)
-        ReaderTrackingTransformer(injektPluginContext, indexer).doLower(moduleFragment)
-
-        val declarationGraph =
-            DeclarationGraph(
-                indexer,
-                moduleFragment,
-                injektPluginContext,
-                implicitContextParamTransformer
-            )
-
-        EntryPointTransformer(injektPluginContext).doLower(moduleFragment)
-
-        ComponentIndexingTransformer(indexer, injektPluginContext).doLower(moduleFragment)
-
         var hasInitCall = false
 
         moduleFragment.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
@@ -95,7 +58,42 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             }
         })
 
-        println(moduleFragment.dumpSrc())
+        val injektPluginContext = InjektPluginContext(moduleFragment, pluginContext)
+
+        EffectTransformer(injektPluginContext).doLower(moduleFragment)
+
+        WithInstancesTransformer(
+            injektPluginContext
+        ).doLower(moduleFragment)
+
+        ComponentFactoryTransformer(injektPluginContext).doLower(moduleFragment)
+
+        ReaderLambdaTypeTransformer(injektPluginContext).doLower(moduleFragment)
+
+        val indexer = Indexer(
+            injektPluginContext,
+            moduleFragment,
+            InjektSymbols(injektPluginContext)
+        )
+
+        val implicitContextParamTransformer =
+            ImplicitContextTransformer(injektPluginContext, indexer)
+        implicitContextParamTransformer.doLower(moduleFragment)
+
+        ImplicitCallTransformer(injektPluginContext, indexer).doLower(moduleFragment)
+        ReaderTrackingTransformer(injektPluginContext, indexer).doLower(moduleFragment)
+
+        val declarationGraph =
+            DeclarationGraph(
+                indexer,
+                moduleFragment,
+                injektPluginContext,
+                implicitContextParamTransformer
+            )
+
+        EntryPointTransformer(injektPluginContext).doLower(moduleFragment)
+
+        ComponentIndexingTransformer(indexer, injektPluginContext).doLower(moduleFragment)
 
         if (hasInitCall) {
             declarationGraph.initialize()
