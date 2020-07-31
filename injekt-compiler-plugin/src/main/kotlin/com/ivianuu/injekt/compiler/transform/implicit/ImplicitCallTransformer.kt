@@ -155,6 +155,7 @@ class ImplicitCallTransformer(
                     returnType = irBuiltIns.unitType
                     modality = Modality.ABSTRACT
                 }.apply {
+                    dispatchReceiverParameter = thisReceiver!!.copyTo(this)
                     parent = this@clazz
                     addMetadataIfNotLocal()
                     inputs.forEach {
