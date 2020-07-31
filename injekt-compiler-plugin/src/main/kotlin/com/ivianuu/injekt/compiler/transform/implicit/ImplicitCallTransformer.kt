@@ -271,7 +271,8 @@ class ImplicitCallTransformer(
                 parent = declaration.file
                 createImplicitParameterDeclarationWithWrappedDescriptor()
                 addMetadataIfNotLocal()
-                superTypes += genericContext.typeWith(typeArguments)
+                copyTypeParametersFrom(genericContext)
+                superTypes += genericContext.typeWith(typeParameters.map { it.defaultType })
                 annotations += DeclarationIrBuilder(pluginContext, symbol).run {
                     irCall(symbols.genericContext.constructors.single()).apply {
                         putValueArgument(
@@ -660,7 +661,13 @@ class ImplicitCallTransformer(
         transformFunctionIfNeeded(lambda)
 
         val withInstancesContext = lambda.getContext()!!
-        scope.inheritContext(withInstancesContext.defaultType)
+        scope.inheritContext(
+            withInstancesContext
+                .typeWith(
+                    withInstancesContext.typeParameters
+                        .map { irBuiltIns.anyNType }
+                )
+        )
 
         indexByWithInstancesContext.getValue(withInstancesContext)
             .annotations

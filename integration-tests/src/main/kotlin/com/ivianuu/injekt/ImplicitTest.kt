@@ -1172,4 +1172,76 @@ class ImplicitTest {
         assertOk()
     }
 
+    @Test
+    fun testStore() = codegen(
+        """
+        interface Store<S, A>
+        
+        @Reader
+        fun <S, A> store(): Store<S, A> {
+            given<String>()
+            error("")
+        }
+        
+        @Reader
+        fun <S, A> rememberStore(block: @Reader () -> Store<S, A>) = withInstances("") { block() }
+        
+        @Reader
+        fun testStore() = store<Int, Long>()
+        
+        @Reader
+        fun invoke() {
+            initializeInjekt()
+            val component = rootComponent<TestComponent>()
+            component.runReader { rememberStore { testStore() } }
+        }
+    """
+    ) {
+        assertOk()
+    }
+
+    @Test
+    fun testStoreMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                    interface Store<S, A>
+        
+                    @Reader
+                    fun <S, A> store(): Store<S, A> {
+                        given<String>()
+                        error("")
+                    }
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @Reader
+                    fun <S, A> rememberStore(block: @Reader () -> Store<S, A>) = withInstances("") { block() }
+                """
+            )
+        ), listOf(
+            source(
+                """
+                    @Reader
+                    fun testStore() = store<Int, Long>()
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @Reader
+                    fun invoke() {
+                        initializeInjekt()
+                        val component = rootComponent<TestComponent>()
+                        component.runReader { rememberStore { testStore() } }
+                    }
+                """
+            )
+        )
+    )
+
 }

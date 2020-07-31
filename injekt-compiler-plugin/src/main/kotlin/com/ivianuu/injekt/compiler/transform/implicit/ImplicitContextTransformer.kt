@@ -40,6 +40,7 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
+import org.jetbrains.kotlin.backend.common.ir.remapTypeParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
@@ -104,8 +105,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class ImplicitContextTransformer(
     pluginContext: IrPluginContext,
     private val indexer: Indexer
-) :
-    AbstractInjektTransformer(pluginContext) {
+) : AbstractInjektTransformer(pluginContext) {
 
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
     private val remappedTransformedFunctions = mutableMapOf<IrFunction, IrFunction>()
@@ -254,7 +254,7 @@ class ImplicitContextTransformer(
         newDeclarations += context
         val contextParameter = ownerFunction.addContextParameter(context)
         onContextParameterCreated(contextParameter)
-        val signature = createReaderSignature(owner, ownerFunction)
+        val signature = createReaderSignature(owner, ownerFunction, parentFunction)
         newDeclarations += signature
     }
 
@@ -359,9 +359,7 @@ class ImplicitContextTransformer(
             }
     }
 
-    private fun IrFunction.copySignatureFrom(
-        signature: IrFunction
-    ) {
+    private fun IrFunction.copySignatureFrom(signature: IrFunction) {
         valueParameters = signature.valueParameters.map {
             it.copyTo(
                 this,
@@ -373,7 +371,8 @@ class ImplicitContextTransformer(
 
     private fun createReaderSignature(
         owner: IrDeclarationWithName,
-        ownerFunction: IrFunction
+        ownerFunction: IrFunction,
+        parentFunction: IrFunction?
     ) = buildFun {
         this.name = nameProvider.allocateForGroup(
             getJoinedName(
@@ -388,6 +387,7 @@ class ImplicitContextTransformer(
         addMetadataIfNotLocal()
 
         copyTypeParametersFrom(owner as IrTypeParametersContainer)
+        parentFunction?.let { copyTypeParametersFrom(it) }
 
         annotations += DeclarationIrBuilder(pluginContext, symbol)
             .irCall(symbols.signature.constructors.single())
@@ -405,12 +405,29 @@ class ImplicitContextTransformer(
 
         returnType = ownerFunction.returnType
             .remapTypeParametersByName(owner, this)
+            .let {
+                if (parentFunction != null) it.remapTypeParameters(
+                    parentFunction, this
+                ) else it
+            }
 
         valueParameters = ownerFunction.valueParameters.map {
             it.copyTo(
                 this,
-                type = it.type.remapTypeParametersByName(owner, this),
-                varargElementType = it.varargElementType?.remapTypeParametersByName(owner, this),
+                type = it.type
+                    .remapTypeParametersByName(owner, this)
+                    .let {
+                        if (parentFunction != null) it.remapTypeParameters(
+                            parentFunction, this
+                        ) else it
+                    },
+                varargElementType = it.varargElementType
+                    ?.remapTypeParametersByName(owner, this)
+                    ?.let {
+                        if (parentFunction != null) it.remapTypeParameters(
+                            parentFunction, this
+                        ) else it
+                    },
                 defaultValue = if (it.hasDefaultValue()) DeclarationIrBuilder(
                     pluginContext,
                     it.symbol
