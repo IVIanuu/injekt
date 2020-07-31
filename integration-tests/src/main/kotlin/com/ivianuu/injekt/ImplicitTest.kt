@@ -1210,7 +1210,7 @@ class ImplicitTest {
                     @Reader
                     fun <S, A> store(): Store<S, A> {
                         given<String>()
-                        error("")
+                        return object: Store<S, A> {}
                     }
                 """
             )
@@ -1233,15 +1233,17 @@ class ImplicitTest {
         listOf(
             source(
                 """
-                    @Reader
                     fun invoke() {
                         initializeInjekt()
                         val component = rootComponent<TestComponent>()
                         component.runReader { rememberStore { testStore() } }
                     }
-                """
+                """,
+                name = "File.kt"
             )
         )
-    )
+    ) {
+        it.last().invokeSingleFile()
+    }
 
 }
