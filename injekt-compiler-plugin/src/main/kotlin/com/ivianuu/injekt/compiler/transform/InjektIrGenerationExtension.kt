@@ -33,7 +33,7 @@ import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.ir.builders.irUnit
+import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -90,10 +90,12 @@ class InjektIrGenerationExtension : IrGenerationExtension {
                 ) {
                     hasInitCall = true
                     DeclarationIrBuilder(pluginContext, expression.symbol)
-                        .irUnit()
+                        .irNull()
                 } else super.visitCall(expression)
             }
         })
+
+        println(moduleFragment.dumpSrc())
 
         if (hasInitCall) {
             declarationGraph.initialize()
@@ -106,8 +108,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 
         generateSymbols(pluginContext)
-
-        println(moduleFragment.dumpSrc())
     }
 
 }
