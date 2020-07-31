@@ -203,7 +203,9 @@ class ImplicitContextTransformer(
             } else function
         }
 
-        if (function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given")
+        if (function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given" ||
+            function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.withInstances"
+        )
             return function
 
         remappedTransformedFunctions[function]?.let { return it }
@@ -213,7 +215,7 @@ class ImplicitContextTransformer(
 
         if (!function.canUseImplicits(pluginContext)) return function
 
-        if (function.valueParameters.any { it.name.asString() == "_context" }) {
+        if (function.getContext() != null) {
             transformedFunctions[function] = function
             return function
         }

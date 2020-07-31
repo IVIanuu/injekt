@@ -21,7 +21,9 @@ import com.ivianuu.injekt.compiler.addFile
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
+import com.ivianuu.injekt.compiler.readableName
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
@@ -30,7 +32,9 @@ import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
+import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
+import org.jetbrains.kotlin.backend.common.ir.remapTypeParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
@@ -53,6 +57,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -62,24 +67,24 @@ import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.name.Name
 
-class GenericContextTransformer(
+class SpecialContextTransformer(
     pluginContext: IrPluginContext,
     private val declarationGraph: DeclarationGraph
 ) : AbstractInjektTransformer(pluginContext) {
 
     override fun lower() {
-        declarationGraph.genericContexts.forEach { genericContextIndex ->
-            val delegateContext = genericContextIndex.getClassFromAnnotation(
+        declarationGraph.genericContexts.forEach { index ->
+            val delegateContext = index.getClassFromAnnotation(
                 InjektFqNames.GenericContext,
                 0,
                 pluginContext
             )!!
-            val name = genericContextIndex.getAnnotation(InjektFqNames.GenericContext)!!
+            val name = index.getAnnotation(InjektFqNames.GenericContext)!!
                 .getValueArgument(1)
                 .let { it as IrConst<String> }
                 .value
 
-            val functionMap = genericContextIndex.getAnnotation(InjektFqNames.GenericContext)!!
+            val functionMap = index.getAnnotation(InjektFqNames.GenericContext)!!
                 .getValueArgument(2)
                 .let { it as IrConst<String> }
                 .value
@@ -98,10 +103,19 @@ class GenericContextTransformer(
 
             generateGenericContext(
                 delegateContext,
-                genericContextIndex.superTypes.single(),
+                index.superTypes.single(),
                 name,
                 functionMap
             )
+        }
+
+        declarationGraph.withInstancesContexts.forEach { index ->
+            val name = index.getAnnotation(InjektFqNames.WithInstancesContext)!!
+                .getValueArgument(0)
+                .let { it as IrConst<String> }
+                .value
+
+            generateWithInstancesContext(index, name)
         }
     }
 
@@ -117,7 +131,7 @@ class GenericContextTransformer(
                 .fqName
                 .child(name.asNameId())
         )
-        val genericContextImpl = buildClass {
+        val contextImpl = buildClass {
             this.name = name.asNameId()
         }.apply clazz@{
             parent = file
@@ -126,13 +140,13 @@ class GenericContextTransformer(
             superTypes += genericContextType
         }
 
-        val delegateField = genericContextImpl.addField(
+        val delegateField = contextImpl.addField(
             "delegate",
             delegateContext.defaultType
         )
 
-        genericContextImpl.addConstructor {
-            returnType = genericContextImpl.defaultType
+        contextImpl.addConstructor {
+            returnType = contextImpl.defaultType
             isPrimary = true
             visibility = Visibilities.PUBLIC
         }.apply {
@@ -149,11 +163,11 @@ class GenericContextTransformer(
                 +IrInstanceInitializerCallImpl(
                     UNDEFINED_OFFSET,
                     UNDEFINED_OFFSET,
-                    genericContextImpl.symbol,
+                    contextImpl.symbol,
                     context.irBuiltIns.unitType
                 )
                 +irSetField(
-                    irGet(genericContextImpl.thisReceiver!!),
+                    irGet(contextImpl.thisReceiver!!),
                     delegateField,
                     irGet(delegateValueParameter)
                 )
@@ -170,7 +184,7 @@ class GenericContextTransformer(
             if (superClass.defaultType in implementedSuperTypes) return
             implementedSuperTypes += superClass
                 .typeWith(typeArguments)
-            genericContextImpl.superTypes += superClass
+            contextImpl.superTypes += superClass
                 .typeWith(typeArguments)
             for (declaration in superClass.declarations.toList()) {
                 if (declaration !is IrFunction) continue
@@ -179,7 +193,7 @@ class GenericContextTransformer(
                 if (declaration.dispatchReceiverParameter?.type == irBuiltIns.anyType) continue
                 if (declaration.name in declarationNames) continue
                 declarationNames += declaration.name
-                genericContextImpl.addFunction {
+                contextImpl.addFunction {
                     this.name = declaration.name
                     returnType = declaration.returnType.substitute(
                         superClass.typeParameters
@@ -188,7 +202,7 @@ class GenericContextTransformer(
                             .toMap()
                     )
                 }.apply {
-                    dispatchReceiverParameter = genericContextImpl.thisReceiver!!.copyTo(this)
+                    dispatchReceiverParameter = contextImpl.thisReceiver!!.copyTo(this)
                     overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
                     addMetadataIfNotLocal()
                     body = DeclarationIrBuilder(
@@ -222,6 +236,165 @@ class GenericContextTransformer(
         }
 
         declarationGraph.getAllContextImplementations(genericContextType.classOrNull!!.owner)
+            .forEach { superType ->
+                implementFunctions(
+                    superType,
+                    superType.defaultType.typeArguments.map { it.typeOrFail }
+                )
+            }
+    }
+
+    private fun generateWithInstancesContext(
+        index: IrClass,
+        name: String
+    ) {
+        val rawDelegateContextType = index.superTypes.first()
+        val delegateContext = rawDelegateContextType.classOrNull!!.owner
+
+        val file = module.addFile(
+            pluginContext,
+            delegateContext.getPackageFragment()!!
+                .fqName
+                .child(name.asNameId())
+        )
+        val contextImpl = buildClass {
+            this.name = name.asNameId()
+        }.apply clazz@{
+            parent = file
+            file.addChild(this)
+            createImplicitParameterDeclarationWithWrappedDescriptor()
+            copyTypeParametersFrom(delegateContext)
+            superTypes += index.superTypes
+                .map { it.remapTypeParameters(index, this) }
+        }
+
+        val delegateField = contextImpl.addField(
+            "delegate",
+            delegateContext.typeWith(contextImpl.typeParameters.map { it.defaultType })
+        )
+
+        val instances = index.functions
+            .single { it.name.asString() == "instances" }
+            .valueParameters
+            .map {
+                it.type
+                    .remapTypeParameters(index, contextImpl)
+            }
+
+        val instanceFields = instances.associateWith {
+            contextImpl.addField(
+                it.readableName(),
+                it
+            )
+        }
+
+        contextImpl.addConstructor {
+            returnType = contextImpl.defaultType
+            isPrimary = true
+            visibility = Visibilities.PUBLIC
+        }.apply {
+            val delegateValueParameter = addValueParameter(
+                "delegate",
+                delegateContext.typeWith(contextImpl.typeParameters.map { it.defaultType })
+            )
+
+            val instanceValueParameters = instanceFields.values.associateWith {
+                addValueParameter(
+                    it.name.asString(),
+                    it.type
+                )
+            }
+
+            body = DeclarationIrBuilder(
+                pluginContext,
+                symbol
+            ).irBlockBody {
+                +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
+                +IrInstanceInitializerCallImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    contextImpl.symbol,
+                    context.irBuiltIns.unitType
+                )
+                +irSetField(
+                    irGet(contextImpl.thisReceiver!!),
+                    delegateField,
+                    irGet(delegateValueParameter)
+                )
+                instanceValueParameters.forEach { (field, valueParameter) ->
+                    +irSetField(
+                        irGet(contextImpl.thisReceiver!!),
+                        field,
+                        irGet(valueParameter)
+                    )
+                }
+            }
+        }
+
+        val implementedSuperTypes = mutableSetOf<IrType>()
+        val declarationNames = mutableSetOf<Name>()
+
+        fun implementFunctions(
+            superClass: IrClass,
+            typeArguments: List<IrType>
+        ) {
+            if (superClass.defaultType in implementedSuperTypes) return
+            implementedSuperTypes += superClass
+                .typeWith(typeArguments)
+            contextImpl.superTypes += superClass
+                .typeWith(typeArguments)
+            for (declaration in superClass.declarations.toList()) {
+                if (declaration !is IrFunction) continue
+                if (declaration is IrConstructor) continue
+                if (declaration.isFakeOverride) continue
+                if (declaration.dispatchReceiverParameter?.type == irBuiltIns.anyType) continue
+                if (declaration.name in declarationNames) continue
+                declarationNames += declaration.name
+                contextImpl.addFunction {
+                    this.name = declaration.name
+                    returnType = declaration.returnType.substitute(
+                        superClass.typeParameters
+                            .map { it.symbol }
+                            .zip(typeArguments)
+                            .toMap()
+                    )
+                }.apply {
+                    dispatchReceiverParameter = contextImpl.thisReceiver!!.copyTo(this)
+                    overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
+                    addMetadataIfNotLocal()
+                    body = DeclarationIrBuilder(
+                        pluginContext,
+                        symbol
+                    ).run {
+                        irExprBody(
+                            instanceFields[returnType]?.let {
+                                irGetField(
+                                    irGet(dispatchReceiverParameter!!),
+                                    it
+                                )
+                            } ?: irCall(declaration).apply {
+                                dispatchReceiver = irGetField(
+                                    irGet(dispatchReceiverParameter!!),
+                                    delegateField
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+
+            superClass.superTypes
+                .map { it to it.classOrNull?.owner }
+                .forEach { (superType, clazz) ->
+                    if (clazz != null)
+                        implementFunctions(
+                            clazz,
+                            superType.typeArguments.map { it.typeOrFail })
+                }
+        }
+
+        contextImpl.superTypes
+            .flatMapFix { declarationGraph.getAllContextImplementations(it.classOrNull!!.owner) }
             .forEach { superType ->
                 implementFunctions(
                     superType,

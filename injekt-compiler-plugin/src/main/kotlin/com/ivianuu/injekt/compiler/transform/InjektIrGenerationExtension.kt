@@ -17,16 +17,16 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.component.ComponentFactoryTransformer
 import com.ivianuu.injekt.compiler.transform.component.ComponentIndexingTransformer
 import com.ivianuu.injekt.compiler.transform.component.EntryPointTransformer
 import com.ivianuu.injekt.compiler.transform.component.RootComponentFactoryTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.GenericContextTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ReaderLambdaTypeTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ReaderTrackingTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.WithInstancesTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.SpecialContextTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -62,10 +62,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         EffectTransformer(injektPluginContext).doLower(moduleFragment)
 
-        WithInstancesTransformer(
-            injektPluginContext
-        ).doLower(moduleFragment)
-
         ComponentFactoryTransformer(injektPluginContext).doLower(moduleFragment)
 
         ReaderLambdaTypeTransformer(injektPluginContext).doLower(moduleFragment)
@@ -81,6 +77,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         implicitContextParamTransformer.doLower(moduleFragment)
 
         ImplicitCallTransformer(injektPluginContext, indexer).doLower(moduleFragment)
+
         ReaderTrackingTransformer(injektPluginContext, indexer).doLower(moduleFragment)
 
         val declarationGraph =
@@ -99,13 +96,15 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             declarationGraph.initialize()
             RootComponentFactoryTransformer(pluginContext, declarationGraph)
                 .doLower(moduleFragment)
-            GenericContextTransformer(pluginContext, declarationGraph)
+            SpecialContextTransformer(pluginContext, declarationGraph)
                 .doLower(moduleFragment)
         }
 
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 
         generateSymbols(pluginContext)
+
+        println(moduleFragment.dumpSrc())
     }
 
 }

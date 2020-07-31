@@ -56,6 +56,9 @@ class DeclarationGraph(
     private val _genericContexts = mutableListOf<IrClass>()
     val genericContexts: List<IrClass> get() = _genericContexts
 
+    private val _withInstancesContexts = mutableListOf<IrClass>()
+    val withInstancesContexts: List<IrClass> get() = _withInstancesContexts
+
     fun getAdditionalContexts(component: IrClass): List<IrClass> {
         return indexer.classIndices
             .filter { it.hasAnnotation(InjektFqNames.ReaderInvocation) }
@@ -139,6 +142,7 @@ class DeclarationGraph(
         collectMapEntries()
         collectSetElements()
         collectGenericContexts()
+        collectWithInstancesContexts()
     }
 
     private fun collectRootComponentFactories() {
@@ -192,6 +196,12 @@ class DeclarationGraph(
         indexer.classIndices
             .filter { it.hasAnnotation(InjektFqNames.GenericContext) }
             .forEach { _genericContexts += it }
+    }
+
+    private fun collectWithInstancesContexts() {
+        indexer.classIndices
+            .filter { it.hasAnnotation(InjektFqNames.WithInstancesContext) }
+            .forEach { _withInstancesContexts += it }
     }
 
 }

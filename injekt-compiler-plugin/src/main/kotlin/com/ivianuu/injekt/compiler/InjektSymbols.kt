@@ -57,5 +57,7 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
         get() = pluginContext.referenceClass(InjektFqNames.RootComponentFactory)!!
     val signature: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.Signature)!!
+    val withInstancesContext: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.WithInstancesContext)!!
 
 }

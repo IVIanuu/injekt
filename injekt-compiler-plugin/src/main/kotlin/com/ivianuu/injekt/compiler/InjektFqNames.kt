@@ -40,6 +40,7 @@ object InjektFqNames {
     val ReaderInvocation = InternalPackage.child("ReaderInvocation".asNameId())
     val RootComponentFactory = InternalPackage.child("RootComponentFactory".asNameId())
     val Signature = InternalPackage.child("Signature".asNameId())
+    val WithInstancesContext = InternalPackage.child("WithInstancesContext".asNameId())
 
     val IndexPackage = InternalPackage.child("index".asNameId())
 }
