@@ -504,7 +504,10 @@ class ImplicitContextParamTransformer(
     }
 
     private fun IrFunction.copyAsReader(): IrFunction {
-        return copy(pluginContext, IMPLICIT_CONTEXT_PARAM_ORIGIN).apply {
+        return copy(
+            pluginContext,
+            if (isExternalDeclaration()) IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB else IMPLICIT_CONTEXT_PARAM_ORIGIN
+        ).apply {
             val descriptor = descriptor
             if (descriptor is PropertyGetterDescriptor &&
                 annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null

@@ -37,7 +37,7 @@ class ComposeTest {
             companion object {
                 @Given
                 operator fun <T : @androidx.compose.Composable () -> Unit> invoke(): AppUi =
-                    given<T>() as @androidx.compose.Composable () -> Unit
+                    given<T>() as AppUi
             }
         }
         
@@ -73,7 +73,7 @@ class ComposeTest {
                     companion object {
                         @Given
                         operator fun <T : @androidx.compose.Composable () -> Unit> invoke(): AppUi =
-                            given<T>() as @androidx.compose.Composable () -> Unit
+                            given<T>() as AppUi
                     }
                 }
                 """
