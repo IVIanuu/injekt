@@ -54,6 +54,7 @@ import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -71,7 +72,8 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class RunReaderContextImplTransformer(
     pluginContext: IrPluginContext,
     private val declarationGraph: DeclarationGraph,
-    private val implicitContextParamTransformer: ImplicitContextParamTransformer
+    private val implicitContextParamTransformer: ImplicitContextParamTransformer,
+    private val initFile: IrFile
 ) : AbstractInjektTransformer(pluginContext) {
 
     override fun lower() {
@@ -106,7 +108,16 @@ class RunReaderContextImplTransformer(
             file.addChild(this)
             createImplicitParameterDeclarationWithWrappedDescriptor()
             superTypes += index.superTypes.single()
+            recordLookup(
+                this,
+                index.superTypes.single().classOrNull!!.owner
+            )
         }
+
+        recordLookup(
+            initFile,
+            contextImpl
+        )
 
         val inputFields = inputs.associateWith {
             contextImpl.addField(
@@ -201,6 +212,7 @@ class RunReaderContextImplTransformer(
 
             entryPoints.forEach { entryPoint ->
                 contextImpl.superTypes += entryPoint.defaultType
+                recordLookup(contextImpl, entryPoint)
                 collect(entryPoint)
             }
 

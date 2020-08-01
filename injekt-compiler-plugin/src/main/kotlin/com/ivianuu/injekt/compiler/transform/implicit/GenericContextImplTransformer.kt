@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
+import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
@@ -126,6 +127,10 @@ class GenericContextImplTransformer(
             file.addChild(this)
             createImplicitParameterDeclarationWithWrappedDescriptor()
             superTypes += genericContextType
+            recordLookup(
+                this,
+                genericContextType.classOrNull!!.owner
+            )
         }
 
         val delegateField = contextImpl.addField(
@@ -174,6 +179,7 @@ class GenericContextImplTransformer(
                 .typeWith(typeArguments)
             contextImpl.superTypes += superClass
                 .typeWith(typeArguments)
+            recordLookup(contextImpl, superClass)
             for (declaration in superClass.declarations.toList()) {
                 if (declaration !is IrFunction) continue
                 if (declaration is IrConstructor) continue

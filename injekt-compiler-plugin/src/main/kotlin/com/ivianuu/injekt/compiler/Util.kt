@@ -173,16 +173,17 @@ import kotlin.math.absoluteValue
 var lookupTracker: LookupTracker? = null
 
 fun recordLookup(
-    source: IrDeclarationWithName,
+    source: IrElement,
     lookedUp: IrDeclarationWithName
 ) {
-    val sourceKtElement = source.descriptor.findPsi() as? KtElement
+    val sourceKtElement = (source as? IrDeclarationWithName)?.descriptor?.findPsi() as? KtElement
     val location = sourceKtElement?.let { KotlinLookupLocation(it) }
         ?: object : LookupLocation {
             override val location: LocationInfo?
                 get() = object : LocationInfo {
                     override val filePath: String
-                        get() = source.file.path
+                        get() = (source as? IrFile)?.path
+                            ?: (source as IrDeclarationWithName).file.path
                     override val position: Position
                         get() = Position.NO_POSITION
                 }

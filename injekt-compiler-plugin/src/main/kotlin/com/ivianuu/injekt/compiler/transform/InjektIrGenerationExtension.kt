@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.builders.irNull
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -42,6 +43,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         var hasInitCall = false
+        var initFile: IrFile? = null
 
         moduleFragment.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
@@ -49,6 +51,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
                     "com.ivianuu.injekt.initializeInjekt"
                 ) {
                     hasInitCall = true
+                    initFile = currentFile
                     DeclarationIrBuilder(pluginContext, expression.symbol)
                         .irNull()
                 } else super.visitCall(expression)
@@ -94,9 +97,9 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             RunReaderContextImplTransformer(
                 pluginContext,
                 declarationGraph,
-                implicitContextParamTransformer
-            )
-                .doLower(moduleFragment)
+                implicitContextParamTransformer,
+                initFile!!
+            ).doLower(moduleFragment)
             GenericContextImplTransformer(pluginContext, declarationGraph)
                 .doLower(moduleFragment)
         }

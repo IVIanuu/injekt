@@ -138,6 +138,10 @@ class ImplicitCallTransformer(
         fun inheritContext(type: IrType) {
             context.superTypes += type
                 .remapTypeParametersByName(declaration as IrTypeParametersContainer, context)
+            recordLookup(
+                context,
+                type.classOrNull!!.owner
+            )
         }
 
         fun inheritGenericContext(
