@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -53,34 +54,19 @@ class DeclarationGraph(
     private val _genericContexts = mutableListOf<IrClass>()
     val genericContexts: List<IrClass> get() = _genericContexts
 
-    fun getAdditionalContexts(component: IrClass): List<IrClass> {
-        return indexer.classIndices
-            .filter { it.hasAnnotation(InjektFqNames.ReaderInvocation) }
-            .filter { clazz ->
-                clazz.getClassFromAnnotation(
-                    InjektFqNames.ReaderInvocation,
-                    1,
-                    pluginContext
-                ) == component
-            }
-            .map {
-                it.getClassFromAnnotation(
-                    InjektFqNames.ReaderInvocation,
-                    0,
-                    pluginContext
-                )!!
-            }
-            .flatMapFix { getAllContextImplementations(it) }
-    }
-
     fun getAllContextImplementations(
         context: IrClass
-    ): List<IrClass> {
-        val contexts = mutableListOf<IrClass>()
+    ): Set<IrClass> {
+        val contexts = mutableSetOf<IrClass>()
 
         contexts += context
 
+        val processedClasses = mutableSetOf<IrClass>()
+
         fun collectImplementations(context: IrClass) {
+            if (context in processedClasses) return
+            processedClasses += context
+
             indexer.classIndices
                 .filter { it.hasAnnotation(InjektFqNames.ReaderImpl) }
                 .filter { clazz ->
@@ -118,6 +104,13 @@ class DeclarationGraph(
                         pluginContext
                     )!!
                 }
+                .forEach {
+                    contexts += it
+                    collectImplementations(it)
+                }
+
+            context.superTypes
+                .map { it.classOrNull!!.owner }
                 .forEach {
                     contexts += it
                     collectImplementations(it)

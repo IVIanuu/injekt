@@ -332,7 +332,7 @@ class ImplicitTest {
         fun invoke(): Foo {
             initializeInjekt()
             return runBlocking {
-                component.runReader {
+                runReader {
                     withFoo {
                         other()
                         it

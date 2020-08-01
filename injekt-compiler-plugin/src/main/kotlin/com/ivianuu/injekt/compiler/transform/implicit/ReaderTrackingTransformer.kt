@@ -88,10 +88,15 @@ class ReaderTrackingTransformer(
 
         class RunReader(
             val call: IrCall,
-            override val invocationContext: IrClass,
             override val file: IrFile,
             override val fqName: FqName
         ) : Scope() {
+
+            override val invocationContext =
+                (call.getValueArgument(1) as IrFunctionExpression)
+                    .function
+                    .getContext()!!
+
             fun isBlock(function: IrFunction): Boolean =
                 call.getValueArgument(0).let {
                     it is IrFunctionExpression &&
@@ -178,26 +183,25 @@ class ReaderTrackingTransformer(
             }
 
             override fun visitCall(expression: IrCall): IrExpression {
-                /*if (expression.symbol.descriptor.fqNameSafe.asString() ==
+                return if (expression.symbol.descriptor.fqNameSafe.asString() ==
                     "com.ivianuu.injekt.runReader"
                 ) {
                     currentScope!!.scope.scopeOwner.fqNameSafe
                     inScope(
                         Scope.RunReader(
                             expression,
-                            expression.extensionReceiver!!.type.classOrNull!!.owner,
                             currentFile,
                             currentScope!!.scope.scopeOwner.fqNameSafe
                         )
                     ) {
                         super.visitCall(expression)
                     }
-                } else {*/
-                if (expression.isReaderLambdaInvoke(pluginContext)) {
-                    visitReaderLambdaInvoke(expression)
+                } else {
+                    if (expression.isReaderLambdaInvoke(pluginContext)) {
+                        visitReaderLambdaInvoke(expression)
+                    }
+                    super.visitCall(expression)
                 }
-                return super.visitCall(expression)
-                // }
             }
         })
 
