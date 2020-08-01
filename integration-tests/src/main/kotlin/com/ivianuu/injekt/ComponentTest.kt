@@ -20,8 +20,6 @@ import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
-import com.ivianuu.injekt.test.multiCodegen
-import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
@@ -77,41 +75,6 @@ class ComponentTest {
     }
 
     @Test
-    fun testSimpleWithChildMulti() = multiCodegen(
-        listOf(
-            source(
-                """
-                @Given(TestParentComponent::class)
-                fun foo() = Foo()
-            """
-            )
-        ),
-        listOf(
-            source(
-                """
-                @Given
-                fun bar() = Bar(given())
-            """
-            )
-        ),
-        listOf(
-            source(
-                """
-                fun invoke(): Bar {
-                    initializeInjekt()
-                    val childComponent = rootComponent<TestParentComponent>().runReader {
-                        childComponent<TestChildComponent>()
-                    }
-                    return childComponent.runReader { given<Bar>() }
-                } 
-            """, name = "File.kt"
-            )
-        )
-    ) {
-        assertTrue(it.last().invokeSingleFile() is Bar)
-    }
-
-    @Test
     fun testUnscoped() = codegen(
         """
         @Given
@@ -149,27 +112,6 @@ class ComponentTest {
             invokeSingleFile(),
             invokeSingleFile()
         )
-    }
-
-    @Test
-    fun testNestedScoped() = codegen(
-        """
-        @Given(TestParentComponent::class)
-        fun foo() = Foo()
-
-        fun invoke(): Pair<Foo, Foo> {
-            initializeInjekt()
-            val parentComponent = rootComponent<TestParentComponent>()
-            return parentComponent.runReader { 
-                given<Foo>() to childComponent<TestChildComponent>().runReader {
-                    given<Foo>()
-                }
-            }
-        }
-    """
-    ) {
-        val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
-        assertSame(foo1, foo2)
     }
 
     @Test

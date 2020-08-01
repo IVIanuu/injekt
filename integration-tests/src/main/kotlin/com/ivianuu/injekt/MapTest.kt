@@ -80,40 +80,4 @@ class MapTest {
         assertEquals(0, map.size)
     }
 
-    @Test
-    fun testNestedMap() = codegen(
-        """
-        @Given 
-        fun commandA() = CommandA()
-        
-        @MapEntries(TestParentComponent::class) 
-        fun commandAIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandA::class to given<CommandA>())
-        
-        @Given 
-        fun commandB() = CommandB()
-        
-        @MapEntries(TestChildComponent::class) 
-        fun commandBIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandB::class to given<CommandB>())
-        
-        fun invoke(): Pair<Map<KClass<out Command>, Command>, Map<KClass<out Command>, Command>> {
-            initializeInjekt()
-            val parentComponent = rootComponent<TestParentComponent>()
-            val childComponent = parentComponent.runReader { childComponent<TestChildComponent>() }
-            return parentComponent.runReader {
-                given<Map<KClass<out Command>, Command>>() to childComponent.runReader {
-                    given<Map<KClass<out Command>, Command>>()
-                }
-            }
-        }
-    """
-    ) {
-        val (parentMap, childMap) =
-            invokeSingleFile<Pair<Map<KClass<out Command>, Command>, Map<KClass<out Command>, Command>>>()
-        assertEquals(1, parentMap.size)
-        assertTrue(parentMap[CommandA::class] is CommandA)
-        assertEquals(2, childMap.size)
-        assertTrue(childMap[CommandA::class] is CommandA)
-        assertTrue(childMap[CommandB::class] is CommandB)
-    }
-
 }

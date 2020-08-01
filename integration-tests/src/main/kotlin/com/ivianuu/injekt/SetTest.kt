@@ -77,41 +77,4 @@ class SetTest {
         assertEquals(0, set.size)
     }
 
-    @Test
-    fun testNestedSet() = codegen(
-        """
-        @Given 
-        fun commandA() = CommandA()
-        
-        @SetElements(TestParentComponent::class) 
-        fun commandAIntoSet(): Set<Command> = setOf(given<CommandA>())
-        
-        @Given 
-        fun commandB() = CommandB()
-        
-        @SetElements(TestChildComponent::class) 
-        fun commandBIntoSet(): Set<Command> = setOf(given<CommandB>())
-        
-        fun invoke(): Pair<Set<Command>, Set<Command>> {
-            initializeInjekt()
-            val parentComponent = rootComponent<TestParentComponent>()
-            val childComponent = parentComponent.runReader { childComponent<TestChildComponent>() }
-            return parentComponent.runReader {
-                given<Set<Command>>() to childComponent.runReader {
-                    given<Set<Command>>()
-                }
-            }
-        }
-    """
-    ) {
-        val pair = invokeSingleFile<Pair<Set<Command>, Set<Command>>>()
-        val parentSet = pair.first.toList()
-        val childSet = pair.second.toList()
-        assertEquals(1, parentSet.size)
-        assertTrue(parentSet[0] is CommandA)
-        assertEquals(2, childSet.size)
-        assertTrue(childSet[0] is CommandA)
-        assertTrue(childSet[1] is CommandB)
-    }
-
 }
