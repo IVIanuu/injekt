@@ -48,7 +48,20 @@ class RunReaderTest {
     @Test
     fun testScoping() = codegen(
         """
-        @Given(ApplicationScoped::class)
+        
+        private var foo: Foo? = null
+
+        @Scoping
+        object Singleton {
+            @Reader
+            operator fun <T : Foo> invoke(key: Any, init: () -> T): T {
+                foo?.let { return it as T }
+                foo = init()
+                return foo as T
+            }
+        }
+        
+        @Given(Singleton::class)
         fun foo() = Foo()
         
         fun invoke(): Foo {

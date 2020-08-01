@@ -207,7 +207,7 @@ class ImplicitContextParamTransformer(
         lateinit var contextField: IrField
         lateinit var contextParameter: IrValueParameter
 
-        transformDeclaration(
+        transformImplicitFunction(
             owner = clazz,
             ownerFunction = readerConstructor,
             onContextParameterCreated = {
@@ -238,6 +238,9 @@ class ImplicitContextParamTransformer(
     }
 
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
+        if (function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given")
+            return function
+
         if (function is IrConstructor) {
             return if (function.canUseImplicits(pluginContext)) {
                 transformClassIfNeeded(function.constructedClass)
@@ -247,9 +250,6 @@ class ImplicitContextParamTransformer(
 
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
-
-        if (function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given")
-            return function
 
         if (function.getContext() != null) {
             transformedFunctions[function] = function
@@ -267,24 +267,30 @@ class ImplicitContextParamTransformer(
         }
 
         val returnType = function.returnType
-        if (returnType.isReaderLambda() && !returnType.isTransformedReaderLambda()) {
-            function.returnType = createReaderLambdaType(returnType, function)
-        }
-
-        if (!function.canUseImplicits(pluginContext)) return function
+        if ((!returnType.isReaderLambda() || returnType.isTransformedReaderLambda()) &&
+            !function.canUseImplicits(pluginContext)
+        ) return function
 
         val transformedFunction = function.copyAsReader()
         transformedFunctions[function] = transformedFunction
 
-        transformDeclaration(
-            owner = transformedFunction,
-            ownerFunction = transformedFunction
-        )
+        if (function.returnType.isReaderLambda() &&
+            !function.returnType.isTransformedReaderLambda()
+        ) {
+            transformedFunction.returnType = createReaderLambdaType(returnType, transformedFunction)
+        }
+
+        if (function.canUseImplicits(pluginContext)) {
+            transformImplicitFunction(
+                owner = transformedFunction,
+                ownerFunction = transformedFunction
+            )
+        }
 
         return transformedFunction
     }
 
-    private fun <T> transformDeclaration(
+    private fun <T> transformImplicitFunction(
         owner: T,
         ownerFunction: IrFunction,
         onContextParameterCreated: (IrValueParameter) -> Unit = {}

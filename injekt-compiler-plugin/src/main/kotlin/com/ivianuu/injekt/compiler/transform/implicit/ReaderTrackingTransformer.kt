@@ -65,8 +65,7 @@ import org.jetbrains.kotlin.utils.addIfNotNull
 class ReaderTrackingTransformer(
     pluginContext: IrPluginContext,
     private val indexer: Indexer
-) :
-    AbstractInjektTransformer(pluginContext) {
+) : AbstractInjektTransformer(pluginContext) {
 
     private val nameProvider = NameProvider()
     private val newDeclarations = mutableListOf<IrDeclaration>()
@@ -217,7 +216,8 @@ class ReaderTrackingTransformer(
                     .flatMapFix { (parameter, argument) ->
                         argument.collectReaderLambdaContextsInExpression()
                             .map { context ->
-                                parameter.type.lambdaContext!! to context
+                                (parameter.type.lambdaContext
+                                    ?: error("null for ${parameter.dump()}")) to context
                             }
                     }
                     .map { (superContext, subContext) ->
