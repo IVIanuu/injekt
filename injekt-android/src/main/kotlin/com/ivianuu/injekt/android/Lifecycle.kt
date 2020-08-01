@@ -20,27 +20,25 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import com.ivianuu.injekt.Storage
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 
-private val instancesByLifecycle = ConcurrentHashMap<Lifecycle, Any?>()
+private val storageByLifecycle = ConcurrentHashMap<Lifecycle, Storage>()
 
-internal fun <T> Lifecycle.singleton(initializer: () -> T): T {
-    return if (instancesByLifecycle.containsKey(this)) {
-        (instancesByLifecycle[this] as T)
-    } else {
-        val instance = initializer()
-        instancesByLifecycle[this] = instance
-        addObserver(object : LifecycleEventObserver {
-            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-                if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
-                    source.lifecycleScope.launch(NonCancellable) {
-                        instancesByLifecycle -= this@singleton
-                    }
+internal fun Lifecycle.storage(): Storage {
+    storageByLifecycle[this]?.let { return it }
+    val storage = Storage()
+    storageByLifecycle[this] = storage
+    addObserver(object : LifecycleEventObserver {
+        override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+            if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
+                source.lifecycleScope.launch(NonCancellable) {
+                    storageByLifecycle -= this@storage
                 }
             }
-        })
-        instance
-    }
+        }
+    })
+    return storage
 }

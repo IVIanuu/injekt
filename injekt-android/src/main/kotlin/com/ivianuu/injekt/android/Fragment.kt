@@ -78,4 +78,7 @@ object FragmentModule {
     @Given
     fun viewModelStoreOwner(): FragmentViewModelStoreOwner = given<ViewModelStoreOwner>()
 
+    @Given
+    fun fragmentStorage(): FragmentStorage = given<Fragment>().lifecycle.storage()
+
 }

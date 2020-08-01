@@ -78,8 +78,6 @@ object ActivityModule {
     fun viewModelStoreOwner(): ActivityViewModelStoreOwner = given<ComponentActivity>()
 
     @Given
-    fun activityStorage(): ActivityStorage = given<ComponentActivity>().lifecycle.singleton {
-        ActivityStorage()
-    }
+    fun activityStorage(): ActivityStorage = given<ComponentActivity>().lifecycle.storage()
 
 }
