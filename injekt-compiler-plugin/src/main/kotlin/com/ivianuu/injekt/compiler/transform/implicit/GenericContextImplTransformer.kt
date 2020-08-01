@@ -120,6 +120,7 @@ class GenericContextImplTransformer(
         )
         val contextImpl = buildClass {
             this.name = name.asNameId()
+            visibility = Visibilities.INTERNAL
         }.apply clazz@{
             parent = file
             file.addChild(this)

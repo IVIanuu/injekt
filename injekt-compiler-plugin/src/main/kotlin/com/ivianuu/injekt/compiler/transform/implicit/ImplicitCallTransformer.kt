@@ -493,6 +493,7 @@ class ImplicitCallTransformer(
                 val genericContextStub = buildClass {
                     this.name = name
                     origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
+                    visibility = Visibilities.INTERNAL
                 }.apply clazz@{
                     createImplicitParameterDeclarationWithWrappedDescriptor()
                     parent = IrExternalPackageFragmentImpl(

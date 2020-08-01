@@ -103,10 +103,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 
         generateSymbols(pluginContext)
-
-        //println(moduleFragment.dumpSrc())
     }
-
 
 }
 

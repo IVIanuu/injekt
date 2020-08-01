@@ -32,8 +32,8 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
-import org.jetbrains.kotlin.backend.common.ir.remapTypeParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -91,22 +91,22 @@ class RunReaderContextImplTransformer(
             pluginContext,
             fqName
         )
+
+        val inputs = index.functions
+            .single { it.name.asString() == "inputs" }
+            .valueParameters
+            .map { it.type }
+
         val contextImpl = buildClass {
             this.name = fqName.shortName()
+            visibility = Visibilities.INTERNAL
+            if (inputs.isEmpty()) kind = ClassKind.OBJECT
         }.apply clazz@{
             parent = file
             file.addChild(this)
             createImplicitParameterDeclarationWithWrappedDescriptor()
             superTypes += index.superTypes.single()
         }
-
-        val inputs = index.functions
-            .single { it.name.asString() == "inputs" }
-            .valueParameters
-            .map {
-                it.type
-                    .remapTypeParameters(index, contextImpl)
-            }
 
         val inputFields = inputs.associateWith {
             contextImpl.addField(

@@ -41,6 +41,8 @@ import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
+
+import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
@@ -150,6 +152,8 @@ class RunReaderTransformer(
         val contextImplStub = buildClass {
             this.name = name
             origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
+            visibility = Visibilities.INTERNAL
+            if (inputs.isEmpty()) kind = ClassKind.OBJECT
         }.apply clazz@{
             createImplicitParameterDeclarationWithWrappedDescriptor()
             parent = IrExternalPackageFragmentImpl(
@@ -162,38 +166,61 @@ class RunReaderTransformer(
                 scope.getPackageFragment()!!.fqName
             )
 
-            addConstructor {
-                returnType = defaultType
-                isPrimary = true
-                visibility = Visibilities.PUBLIC
-            }.apply {
-                inputs.forEach {
-                    addValueParameter(
-                        it.type.readableName().asString(),
-                        it.type
-                    )
+            if (inputs.isNotEmpty()) {
+                addConstructor {
+                    returnType = defaultType
+                    isPrimary = true
+                    visibility = Visibilities.PUBLIC
+                }.apply {
+                    inputs.forEach {
+                        addValueParameter(
+                            it.type.readableName().asString(),
+                            it.type
+                        )
+                    }
                 }
             }
         }
 
         return DeclarationIrBuilder(pluginContext, call.symbol).run {
             irBlock {
-                val tmpContext = irTemporary(
+                val rawContextExpression = if (inputs.isNotEmpty()) {
                     irCall(contextImplStub.constructors.single()).apply {
                         inputs.forEachIndexed { index, instance ->
                             putValueArgument(index, instance)
                         }
                     }
-                )
+                } else {
+                    irGetObject(contextImplStub.symbol)
+                }
 
-                (lambda.body as IrBlockBody).statements.forEach { stmt ->
-                    +stmt.transform(
-                        object : IrElementTransformerVoid() {
-                            override fun visitGetValue(expression: IrGetValue): IrExpression {
-                                return if (expression.symbol == lambda.valueParameters.last().symbol)
-                                    irGet(tmpContext)
-                                else super.visitGetValue(expression)
-                            }
+                var contextUsageCount = 0
+                lambda.body!!.transformChildrenVoid(object : IrElementTransformerVoid() {
+                    override fun visitGetValue(expression: IrGetValue): IrExpression {
+                        if (expression.symbol == lambda.valueParameters.last().symbol) {
+                            contextUsageCount++
+                        }
+                        return super.visitGetValue(expression)
+                    }
+                })
+
+                val contextExpression: () -> IrExpression = if (contextUsageCount > 1) {
+                    val tmp = irTemporary(rawContextExpression);
+                    { irGet(tmp) }
+                } else {
+                    { rawContextExpression }
+                }
+
+                val tmpContext =
+
+                    (lambda.body as IrBlockBody).statements.forEach { stmt ->
+                        +stmt.transform(
+                            object : IrElementTransformerVoid() {
+                                override fun visitGetValue(expression: IrGetValue): IrExpression {
+                                    return if (expression.symbol == lambda.valueParameters.last().symbol)
+                                        contextExpression()
+                                    else super.visitGetValue(expression)
+                                }
 
                             override fun visitReturn(expression: IrReturn): IrExpression {
                                 val result = super.visitReturn(expression) as IrReturn
