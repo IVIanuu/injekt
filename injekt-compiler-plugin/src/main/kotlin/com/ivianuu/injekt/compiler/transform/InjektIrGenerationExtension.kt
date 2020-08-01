@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.implicit.GenericContextImplTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
@@ -106,7 +105,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         generateSymbols(pluginContext)
 
-        println(moduleFragment.dumpSrc())
+        //println(moduleFragment.dumpSrc())
     }
 
 }

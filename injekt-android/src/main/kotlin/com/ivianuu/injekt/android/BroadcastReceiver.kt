@@ -19,17 +19,23 @@ package com.ivianuu.injekt.android
 import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
 import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.runReader
 
 inline fun <R> BroadcastReceiver.runReceiverReader(
     context: Context,
+    intent: Intent,
     block: @Reader () -> R
 ): R = runReader(
     context.applicationContext as Application,
-    context as ReceiverContext
+    context as ReceiverContext,
+    intent as ReceiverIntent
 ) { block() }
 
 @Distinct
 typealias ReceiverContext = Context
+
+@Distinct
+typealias ReceiverIntent = Intent
