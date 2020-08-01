@@ -20,6 +20,8 @@ import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
+import com.ivianuu.injekt.test.multiCodegen
+import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -59,6 +61,48 @@ class RunReaderTest {
             invokeSingleFile(),
             invokeSingleFile()
         )
+    }
+
+    @Test
+    fun testRunReaderWrapper() = codegen(
+        """
+        fun runApplicationReader(block: @Reader () -> Foo): Foo {
+            return runReader(Foo()) { block() }
+        }
+        
+        fun invoke(): Foo {
+            initializeInjekt()
+            return runApplicationReader { given<Foo>() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testRunReaderWrapperMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                    fun runApplicationReader(block: @Reader () -> Foo): Foo {
+                        return runReader(Foo()) { block() }
+                    }
+                    """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun invoke(): Foo {
+                        initializeInjekt()
+                        return runApplicationReader { given<Foo>() }
+                    } 
+                """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        assertTrue(it.last().invokeSingleFile() is Foo)
     }
 
     @Test
