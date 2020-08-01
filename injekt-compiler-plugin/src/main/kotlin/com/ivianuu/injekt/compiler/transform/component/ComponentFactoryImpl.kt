@@ -135,6 +135,8 @@ class ComponentFactoryImpl(
                 )
             }
 
+            overriddenSymbols += superFactoryFunction.symbol
+
             componentImpl.init()
             clazz.addChild(componentImpl.clazz)
 

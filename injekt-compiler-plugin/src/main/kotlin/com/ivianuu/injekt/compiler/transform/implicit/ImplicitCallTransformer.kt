@@ -115,6 +115,41 @@ class ImplicitCallTransformer(
 
     private val indexByWithInstancesContext = mutableMapOf<IrClass, IrClass>()
 
+    override fun lower() {
+        module.transformChildrenVoid(object : IrElementTransformerVoid() {
+            override fun visitCall(expression: IrCall): IrExpression {
+                if (expression.symbol.descriptor.fqNameSafe.asString() ==
+                    "com.ivianuu.injekt.withInstances"
+                ) {
+                    pluginContext.irTrace.record(
+                        InjektWritableSlices.WITH_INSTANCES_CALL,
+                        (expression.getValueArgument(1) as IrFunctionExpression).function,
+                        expression
+                    )
+                }
+                return super.visitCall(expression)
+            }
+        })
+        module.transformChildrenVoid(
+            object : IrElementTransformerVoid() {
+                override fun visitClass(declaration: IrClass): IrStatement {
+                    transformClassIfNeeded(declaration)
+                    return super.visitClass(declaration)
+                }
+
+                override fun visitFunction(declaration: IrFunction): IrStatement {
+                    transformFunctionIfNeeded(declaration)
+                    return super.visitFunction(declaration)
+                }
+            }
+        )
+
+        newDeclarations.forEach {
+            (it.parent as IrDeclarationContainer).addChild(it)
+            indexer.index(it)
+        }
+    }
+
     inner class ReaderScope(
         val declaration: IrDeclaration,
         val context: IrClass,
@@ -344,41 +379,6 @@ class ImplicitCallTransformer(
                     dispatchReceiver = contextExpression()
                 }
             }
-        }
-    }
-
-    override fun lower() {
-        module.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.withInstances"
-                ) {
-                    pluginContext.irTrace.record(
-                        InjektWritableSlices.WITH_INSTANCES_CALL,
-                        (expression.getValueArgument(1) as IrFunctionExpression).function,
-                        expression
-                    )
-                }
-                return super.visitCall(expression)
-            }
-        })
-        module.transformChildrenVoid(
-            object : IrElementTransformerVoid() {
-                override fun visitClass(declaration: IrClass): IrStatement {
-                    transformClassIfNeeded(declaration)
-                    return super.visitClass(declaration)
-                }
-
-                override fun visitFunction(declaration: IrFunction): IrStatement {
-                    transformFunctionIfNeeded(declaration)
-                    return super.visitFunction(declaration)
-                }
-            }
-        )
-
-        newDeclarations.forEach {
-            (it.parent as IrDeclarationContainer).addChild(it)
-            indexer.index(it)
         }
     }
 

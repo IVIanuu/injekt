@@ -30,9 +30,9 @@ import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclaration
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.ir.builders.irAs
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irImplicitCast
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
 import org.jetbrains.kotlin.ir.declarations.IrFile
@@ -115,7 +115,7 @@ class EntryPointTransformer(
                                 object : IrElementTransformerVoid() {
                                     override fun visitGetValue(expression: IrGetValue): IrExpression {
                                         return if (expression.symbol == lambda.valueParameters.last().symbol)
-                                            irImplicitCast(
+                                            irAs(
                                                 result.extensionReceiver!!.deepCopyWithVariables(),
                                                 expression.type
                                             )

@@ -43,6 +43,7 @@ import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
+import org.jetbrains.kotlin.ir.builders.irAs
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
@@ -62,7 +63,6 @@ import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
@@ -216,20 +216,31 @@ class SpecialContextTransformer(
                         pluginContext,
                         symbol
                     ).run {
+                        val finalCallee = delegateContext.functions
+                            .singleOrNull { it.name.asString() == functionMap[declaration.name.asString()] }
+                            ?: declaration
                         irExprBody(
                             irCall(
-                                delegateContext.functions
-                                    .singleOrNull { it.name.asString() == functionMap[declaration.name.asString()] }
-                                    ?: declaration
+                                finalCallee
                             ).apply {
-                                dispatchReceiver = irGetField(
-                                    irGet(dispatchReceiverParameter!!),
-                                    delegateField
-                                )
+                                dispatchReceiver = if (finalCallee == declaration) {
+                                    irAs(
+                                        irGetField(
+                                            irGet(dispatchReceiverParameter!!),
+                                            delegateField
+                                        ),
+                                        finalCallee.dispatchReceiverParameter!!.type
+                                    )
+                                } else {
+                                    irGetField(
+                                        irGet(dispatchReceiverParameter!!),
+                                        delegateField
+                                    )
+                                }
                             }
                         )
                     }
-                }.also { println("Implment ${it.dump()}") }
+                }
             }
 
             superClass.superTypes
@@ -387,9 +398,12 @@ class SpecialContextTransformer(
                                     it
                                 )
                             } ?: irCall(declaration).apply {
-                                dispatchReceiver = irGetField(
-                                    irGet(dispatchReceiverParameter!!),
-                                    delegateField
+                                dispatchReceiver = irAs(
+                                    irGetField(
+                                        irGet(dispatchReceiverParameter!!),
+                                        delegateField
+                                    ),
+                                    declaration.dispatchReceiverParameter!!.type
                                 )
                             }
                         )
