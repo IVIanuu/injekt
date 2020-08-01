@@ -36,7 +36,7 @@ class DeclarationGraph(
     private val indexer: Indexer,
     val module: IrModuleFragment,
     private val pluginContext: IrPluginContext,
-    private val implicitParamTransformer: ImplicitContextParamTransformer
+    private val implicitContextParamTransformer: ImplicitContextParamTransformer
 ) {
 
     private val _runReaderContexts = mutableListOf<IrClass>()
@@ -147,7 +147,7 @@ class DeclarationGraph(
                             InjektFqNames.Given
                         ) == true)
             }
-            .map { implicitParamTransformer.getTransformedFunction(it) }
+            .map { implicitContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
             .distinct()
             .forEach { _bindings += it }
@@ -156,7 +156,7 @@ class DeclarationGraph(
     private fun collectMapEntries() {
         indexer.functionIndices
             .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
-            .map { implicitParamTransformer.getTransformedFunction(it) }
+            .map { implicitContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
             .distinct()
             .forEach { _mapEntries += it }
@@ -165,7 +165,7 @@ class DeclarationGraph(
     private fun collectSetElements() {
         indexer.functionIndices
             .filter { it.hasAnnotation(InjektFqNames.SetElements) }
-            .map { implicitParamTransformer.getTransformedFunction(it) }
+            .map { implicitContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
             .distinct()
             .forEach { _setElements += it }

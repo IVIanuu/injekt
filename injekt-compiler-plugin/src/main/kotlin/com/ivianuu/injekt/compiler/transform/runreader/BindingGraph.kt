@@ -47,7 +47,7 @@ class BindingGraph(
     declarationGraph: DeclarationGraph,
     val symbols: InjektSymbols,
     inputs: List<IrField>,
-    private val implicitParamTransformer: ImplicitContextParamTransformer
+    private val implicitContextParamTransformer: ImplicitContextParamTransformer
 ) {
 
     private val allBindings = buildList<BindingNode> {
@@ -63,7 +63,7 @@ class BindingGraph(
                 val scopingFunction = scoping
                     ?.functions
                     ?.single { it.canUseImplicits(pluginContext) }
-                    ?.let { implicitParamTransformer.getTransformedFunction(it) }
+                    ?.let { implicitContextParamTransformer.getTransformedFunction(it) }
 
                 val explicitParameters = function.valueParameters
                     .filter { it != function.getContextValueParameter() }

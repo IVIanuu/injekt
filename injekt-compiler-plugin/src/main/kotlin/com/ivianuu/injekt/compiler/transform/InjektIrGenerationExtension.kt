@@ -66,13 +66,17 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             InjektSymbols(injektPluginContext)
         )
 
-        val implicitContextTransformer =
+        val implicitContextParamTransformer =
             ImplicitContextParamTransformer(injektPluginContext, indexer)
-        implicitContextTransformer.doLower(moduleFragment)
+        implicitContextParamTransformer.doLower(moduleFragment)
 
         ImplicitCallTransformer(injektPluginContext, indexer).doLower(moduleFragment)
 
-        ReaderTrackingTransformer(injektPluginContext, indexer).doLower(moduleFragment)
+        ReaderTrackingTransformer(
+            injektPluginContext,
+            indexer,
+            implicitContextParamTransformer
+        ).doLower(moduleFragment)
 
         RunReaderTransformer(pluginContext, indexer).doLower(moduleFragment)
 
@@ -81,7 +85,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
                 indexer,
                 moduleFragment,
                 injektPluginContext,
-                implicitContextTransformer
+                implicitContextParamTransformer
             )
 
         ComponentIndexingTransformer(indexer, injektPluginContext).doLower(moduleFragment)
@@ -91,7 +95,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             RunReaderContextImplTransformer(
                 pluginContext,
                 declarationGraph,
-                implicitContextTransformer
+                implicitContextParamTransformer
             )
                 .doLower(moduleFragment)
             GenericContextImplTransformer(pluginContext, declarationGraph)

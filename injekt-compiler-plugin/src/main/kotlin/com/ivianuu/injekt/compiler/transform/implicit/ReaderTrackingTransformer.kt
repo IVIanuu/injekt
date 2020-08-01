@@ -56,7 +56,6 @@ import org.jetbrains.kotlin.ir.expressions.IrSetVariable
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
-import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -64,7 +63,8 @@ import org.jetbrains.kotlin.utils.addIfNotNull
 
 class ReaderTrackingTransformer(
     pluginContext: IrPluginContext,
-    private val indexer: Indexer
+    private val indexer: Indexer,
+    private val implicitContextParamTransformer: ImplicitContextParamTransformer
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val nameProvider = NameProvider()
@@ -211,13 +211,21 @@ class ReaderTrackingTransformer(
                     "com.ivianuu.injekt.runReader"
                 ) return super.visitFunctionAccess(expression)
 
-                newDeclarations += expression.getArgumentsWithIr()
+                val transformedCallee = implicitContextParamTransformer
+                    .getTransformedFunction(expression.symbol.owner)
+
+                newDeclarations += (0 until expression.valueArgumentsCount)
+                    .mapNotNull { index ->
+                        expression.getValueArgument(index)
+                            ?.let { index to it }
+                    }
+                    .map { transformedCallee.valueParameters[it.first] to it.second }
                     .filter { it.first.type.isReaderLambda() }
                     .flatMapFix { (parameter, argument) ->
                         argument.collectReaderLambdaContextsInExpression()
                             .map { context ->
                                 (parameter.type.lambdaContext
-                                    ?: error("null for ${parameter.dump()}")) to context
+                                    ?: error("null for ${parameter.dump()}\n${expression.symbol.owner.dump()}")) to context
                             }
                     }
                     .map { (superContext, subContext) ->

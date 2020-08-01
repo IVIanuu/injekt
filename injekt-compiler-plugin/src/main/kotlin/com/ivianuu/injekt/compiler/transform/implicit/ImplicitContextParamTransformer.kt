@@ -23,7 +23,6 @@ import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.copy
-import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.getReaderConstructor
@@ -63,6 +62,7 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
@@ -150,26 +150,27 @@ class ImplicitContextParamTransformer(
     fun getTransformedFunction(function: IrFunction) =
         transformFunctionIfNeeded(function)
 
+    private val transformer = object : IrElementTransformerVoid() {
+
+        override fun visitClass(declaration: IrClass): IrStatement =
+            super.visitClass(transformClassIfNeeded(declaration))
+
+        override fun visitField(declaration: IrField): IrStatement =
+            super.visitField(transformFieldIfNeeded(declaration))
+
+        override fun visitFunction(declaration: IrFunction): IrStatement =
+            super.visitFunction(transformFunctionIfNeeded(declaration))
+
+        override fun visitValueParameter(declaration: IrValueParameter): IrStatement =
+            super.visitValueParameter(transformValueParameterIfNeeded(declaration))
+
+        override fun visitVariable(declaration: IrVariable): IrStatement =
+            super.visitVariable(transformVariableIfNeeded(declaration))
+
+    }
+
     override fun lower() {
-        module.transformChildrenVoid(
-            object : IrElementTransformerVoid() {
-
-                override fun visitClass(declaration: IrClass): IrStatement =
-                    super.visitClass(transformClassIfNeeded(declaration))
-
-                override fun visitField(declaration: IrField): IrStatement =
-                    super.visitField(transformFieldIfNeeded(declaration))
-
-                override fun visitFunction(declaration: IrFunction): IrStatement =
-                    super.visitFunction(transformFunctionIfNeeded(declaration))
-
-                override fun visitValueParameter(declaration: IrValueParameter): IrStatement =
-                    super.visitValueParameter(transformValueParameterIfNeeded(declaration))
-
-                override fun visitVariable(declaration: IrVariable): IrStatement =
-                    super.visitVariable(transformVariableIfNeeded(declaration))
-            }
-        )
+        module.transformChildrenVoid(transformer)
 
         module.rewriteTransformedReferences()
 
@@ -195,8 +196,6 @@ class ImplicitContextParamTransformer(
 
         transformedClasses += clazz
 
-        if (readerConstructor.getContext() != null) return clazz
-
         val existingSignature = getExternalReaderSignature(clazz)
 
         if (clazz.isExternalDeclaration() || existingSignature != null) {
@@ -218,6 +217,9 @@ class ImplicitContextParamTransformer(
                 )
             }
         )
+
+        val signature = createReaderSignature(clazz, readerConstructor, null)
+        newDeclarations += signature
 
         readerConstructor.body = DeclarationIrBuilder(pluginContext, clazz.symbol).run {
             irBlockBody {
@@ -244,40 +246,49 @@ class ImplicitContextParamTransformer(
         if (function is IrConstructor) {
             return if (function.canUseImplicits(pluginContext)) {
                 transformClassIfNeeded(function.constructedClass)
-                    .getReaderConstructor(pluginContext)!!
+                function
             } else function
         }
 
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
 
-        if (function.getContext() != null) {
-            transformedFunctions[function] = function
-            return function
-        }
-
         val existingSignature = getExternalReaderSignature(function)
 
         if (function.isExternalDeclaration() || existingSignature != null) {
-            if (!function.canUseImplicits(pluginContext)) return function
+            if (existingSignature == null &&
+                !function.canUseImplicits(pluginContext)
+            ) return function
             val transformedFunction = function.copyAsReader()
             transformedFunctions[function] = transformedFunction
             transformedFunction.copySignatureFrom(existingSignature!!)
             return transformedFunction
         }
 
-        val returnType = function.returnType
-        if ((!returnType.isReaderLambda() || returnType.isTransformedReaderLambda()) &&
-            !function.canUseImplicits(pluginContext)
-        ) return function
+        var needsTransform = function.canUseImplicits(pluginContext)
+
+        if (!needsTransform) {
+            val returnType = function.returnType
+            needsTransform = returnType.isReaderLambda() && !returnType.isTransformedReaderLambda()
+        }
+
+        if (!needsTransform) {
+            needsTransform = function.valueParameters.any {
+                it.type.isReaderLambda() && !it.type.isTransformedReaderLambda()
+            }
+        }
+
+        if (!needsTransform) return function
 
         val transformedFunction = function.copyAsReader()
+            .also { it.transformChildrenVoid(transformer) }
         transformedFunctions[function] = transformedFunction
 
         if (function.returnType.isReaderLambda() &&
             !function.returnType.isTransformedReaderLambda()
         ) {
-            transformedFunction.returnType = createReaderLambdaType(returnType, transformedFunction)
+            transformedFunction.returnType =
+                createReaderLambdaType(transformedFunction.returnType, transformedFunction)
         }
 
         if (function.canUseImplicits(pluginContext)) {
@@ -286,6 +297,9 @@ class ImplicitContextParamTransformer(
                 ownerFunction = transformedFunction
             )
         }
+
+        val signature = createReaderSignature(transformedFunction, transformedFunction, null)
+        newDeclarations += signature
 
         return transformedFunction
     }
@@ -303,8 +317,6 @@ class ImplicitContextParamTransformer(
         newDeclarations += context
         val contextParameter = ownerFunction.addContextParameter(context)
         onContextParameterCreated(contextParameter)
-        val signature = createReaderSignature(owner, ownerFunction, parentFunction)
-        newDeclarations += signature
     }
 
     private fun transformFieldIfNeeded(
@@ -333,6 +345,7 @@ class ImplicitContextParamTransformer(
             declaration.isFakeOverride
         ).apply {
             (descriptor as WrappedFieldDescriptor).bind(this)
+            parent = declaration.parent
             correspondingPropertySymbol = declaration.correspondingPropertySymbol
             correspondingPropertySymbol?.owner?.backingField = this
             annotations += declaration.annotations
@@ -365,6 +378,7 @@ class ImplicitContextParamTransformer(
             declaration.isLateinit
         ).apply {
             (descriptor as WrappedVariableDescriptor).bind(this)
+            parent = declaration.parent
             annotations += declaration.annotations
             initializer = declaration.initializer
             transformedVariables[declaration] = this
@@ -395,6 +409,7 @@ class ImplicitContextParamTransformer(
             declaration.isNoinline
         ).apply {
             (descriptor as WrappedValueParameterDescriptor).bind(this)
+            parent = declaration.parent
             annotations += declaration.annotations
             defaultValue = declaration.defaultValue
             transformedValueParameters[declaration] = this
@@ -489,7 +504,7 @@ class ImplicitContextParamTransformer(
     }
 
     private fun IrFunction.copyAsReader(): IrFunction {
-        return copy(pluginContext).apply {
+        return copy(pluginContext, IMPLICIT_CONTEXT_PARAM_ORIGIN).apply {
             val descriptor = descriptor
             if (descriptor is PropertyGetterDescriptor &&
                 annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
@@ -773,3 +788,5 @@ class ImplicitContextParamTransformer(
     }
 
 }
+
+object IMPLICIT_CONTEXT_PARAM_ORIGIN : IrDeclarationOrigin

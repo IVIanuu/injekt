@@ -124,7 +124,39 @@ class ImplicitTest {
     }
 
     @Test
-    fun testGenericReaderLambda() = multiCodegen(
+    fun testGenericReaderLambda() = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+        
+        @Reader
+        fun func(foo: Foo = given()): Foo {
+            return foo
+        }
+        
+        @Reader
+        fun other() {
+        }
+        
+        @Reader
+        fun <R> withFoo(block: @Reader (Foo) -> R) = block(func())
+        
+        fun invoke(): Foo {
+            initializeInjekt()
+            return runReader {
+                withFoo {
+                    other()
+                    it
+                }
+            }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testGenericReaderLambdaMulti() = multiCodegen(
         listOf(
             source(
                 """
@@ -163,38 +195,6 @@ class ImplicitTest {
         )
     ) {
         assertTrue(it.last().invokeSingleFile() is Foo)
-    }
-
-    @Test
-    fun testGenericReaderLambdaMulti() = codegen(
-        """
-        @Given
-        fun foo() = Foo()
-        
-        @Reader
-        fun func(foo: Foo = given()): Foo {
-            return foo
-        }
-        
-        @Reader
-        fun other() {
-        }
-        
-        @Reader
-        fun <R> withFoo(block: @Reader (Foo) -> R) = block(func())
-        
-        fun invoke(): Foo {
-            initializeInjekt()
-            return runReader {
-                withFoo {
-                    other()
-                    it
-                }
-            }
-        }
-    """
-    ) {
-        assertTrue(invokeSingleFile() is Foo)
     }
 
     @Test

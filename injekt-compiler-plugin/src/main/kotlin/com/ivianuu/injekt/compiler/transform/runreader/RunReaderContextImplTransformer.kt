@@ -71,7 +71,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class RunReaderContextImplTransformer(
     pluginContext: IrPluginContext,
     private val declarationGraph: DeclarationGraph,
-    private val implicitParamTransformer: ImplicitContextParamTransformer
+    private val implicitContextParamTransformer: ImplicitContextParamTransformer
 ) : AbstractInjektTransformer(pluginContext) {
 
     override fun lower() {
@@ -153,7 +153,7 @@ class RunReaderContextImplTransformer(
             declarationGraph = declarationGraph,
             symbols = symbols,
             inputs = inputFields.values.toList(),
-            implicitParamTransformer = implicitParamTransformer
+            implicitContextParamTransformer = implicitContextParamTransformer
         )
 
         val processedSuperTypes = mutableSetOf<IrType>()
