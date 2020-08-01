@@ -27,7 +27,7 @@ import com.ivianuu.injekt.compiler.readableName
 import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -71,7 +71,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class RunReaderContextImplTransformer(
     pluginContext: IrPluginContext,
     private val declarationGraph: DeclarationGraph,
-    private val implicitTransformer: ImplicitContextTransformer
+    private val implicitParamTransformer: ImplicitContextParamTransformer
 ) : AbstractInjektTransformer(pluginContext) {
 
     override fun lower() {
@@ -153,7 +153,7 @@ class RunReaderContextImplTransformer(
             declarationGraph = declarationGraph,
             symbols = symbols,
             inputs = inputFields.values.toList(),
-            implicitTransformer = implicitTransformer
+            implicitParamTransformer = implicitParamTransformer
         )
 
         val processedSuperTypes = mutableSetOf<IrType>()

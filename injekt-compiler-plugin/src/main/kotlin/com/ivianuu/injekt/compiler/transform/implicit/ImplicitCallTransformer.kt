@@ -145,7 +145,8 @@ class ImplicitCallTransformer(
             typeArguments: List<IrType>
         ): Name {
             val name = nameProvider.allocateForGroup(
-                "${declaration.descriptor.name}GenericContextImpl"
+                "${declaration.descriptor.fqNameSafe.pathSegments()
+                    .joinToString("_")}GenericContextImpl"
             )
 
             genericContext.superTypes

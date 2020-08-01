@@ -25,7 +25,7 @@ import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -47,7 +47,7 @@ class BindingGraph(
     declarationGraph: DeclarationGraph,
     val symbols: InjektSymbols,
     inputs: List<IrField>,
-    private val implicitTransformer: ImplicitContextTransformer
+    private val implicitParamTransformer: ImplicitContextParamTransformer
 ) {
 
     private val allBindings = buildList<BindingNode> {
@@ -63,7 +63,7 @@ class BindingGraph(
                 val scopingFunction = scoping
                     ?.functions
                     ?.single { it.canUseImplicits(pluginContext) }
-                    ?.let { implicitTransformer.getTransformedFunction(it) }
+                    ?.let { implicitParamTransformer.getTransformedFunction(it) }
 
                 val explicitParameters = function.valueParameters
                     .filter { it != function.getContextValueParameter() }

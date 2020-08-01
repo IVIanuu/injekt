@@ -108,7 +108,8 @@ class RunReaderTransformer(
         val lambda = (call.getValueArgument(1) as IrFunctionExpression).function
 
         val name = nameProvider.allocateForGroup(
-            "${scope.name}RunReaderContextImpl".asNameId()
+            "${scope.descriptor.fqNameSafe.pathSegments()
+                .joinToString("_")}RunReaderContextImpl".asNameId()
         )
         val index = buildClass {
             this.name = "${name}Index".asNameId()

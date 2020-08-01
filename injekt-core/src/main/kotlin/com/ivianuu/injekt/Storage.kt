@@ -22,8 +22,10 @@ class Storage(
     @PublishedApi
     internal val instances: ConcurrentHashMap<Any, Any?> = ConcurrentHashMap()
 ) {
+
     inline fun <T> scope(
         key: Any,
         init: () -> T
     ) = instances.getOrPut(key, init) as T
+
 }

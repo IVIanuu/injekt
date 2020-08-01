@@ -20,8 +20,7 @@ import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.implicit.GenericContextImplTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.ReaderLambdaTypeTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ReaderTrackingTransformer
 import com.ivianuu.injekt.compiler.transform.runreader.ComponentIndexingTransformer
 import com.ivianuu.injekt.compiler.transform.runreader.RunReaderContextImplTransformer
@@ -67,11 +66,9 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             InjektSymbols(injektPluginContext)
         )
 
-        ReaderLambdaTypeTransformer(injektPluginContext).doLower(moduleFragment)
-
-        val implicitContextParamTransformer =
-            ImplicitContextTransformer(injektPluginContext, indexer)
-        implicitContextParamTransformer.doLower(moduleFragment)
+        val implicitContextTransformer =
+            ImplicitContextParamTransformer(injektPluginContext, indexer)
+        implicitContextTransformer.doLower(moduleFragment)
 
         ImplicitCallTransformer(injektPluginContext, indexer).doLower(moduleFragment)
 
@@ -84,7 +81,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
                 indexer,
                 moduleFragment,
                 injektPluginContext,
-                implicitContextParamTransformer
+                implicitContextTransformer
             )
 
         ComponentIndexingTransformer(indexer, injektPluginContext).doLower(moduleFragment)
@@ -94,7 +91,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             RunReaderContextImplTransformer(
                 pluginContext,
                 declarationGraph,
-                implicitContextParamTransformer
+                implicitContextTransformer
             )
                 .doLower(moduleFragment)
             GenericContextImplTransformer(pluginContext, declarationGraph)
