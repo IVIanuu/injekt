@@ -27,7 +27,6 @@ import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.irClassReference
 import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
 import com.ivianuu.injekt.compiler.readableName
-import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.remapTypeParametersByName
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.thisOfClass
@@ -138,10 +137,6 @@ class ImplicitCallTransformer(
         fun inheritContext(type: IrType) {
             context.superTypes += type
                 .remapTypeParametersByName(declaration as IrTypeParametersContainer, context)
-            recordLookup(
-                context,
-                type.classOrNull!!.owner
-            )
         }
 
         fun inheritGenericContext(
@@ -531,11 +526,6 @@ class ImplicitCallTransformer(
             }
 
         transformedCall.putValueArgument(transformedCall.valueArgumentsCount - 1, contextArgument)
-
-        recordLookup(
-            scope.declaration as IrDeclarationWithName,
-            calleeContext
-        )
 
         return transformedCall
     }
