@@ -17,16 +17,15 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
-import com.ivianuu.injekt.android.applicationComponent
+import com.ivianuu.injekt.android.runApplicationReader
 import com.ivianuu.injekt.initializeInjekt
-import com.ivianuu.injekt.runReader
 
 class App : Application() {
 
     override fun onCreate() {
         initializeInjekt()
         super.onCreate()
-        applicationComponent.runReader {
+        runApplicationReader {
             initializeWorkers()
             startAppServices()
             refreshRepo()

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.internal
+package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
+import com.ivianuu.injekt.internal.injektIntrinsic
 
-internal annotation class EntryPoint(val component: KClass<*>)
+fun initializeInjekt(): Unit = injektIntrinsic()

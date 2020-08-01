@@ -16,34 +16,17 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.transform.component.ComponentFactoryTransformer
-import com.ivianuu.injekt.compiler.transform.component.ComponentIndexingTransformer
-import com.ivianuu.injekt.compiler.transform.component.EntryPointTransformer
-import com.ivianuu.injekt.compiler.transform.component.RootComponentFactoryTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.ReaderLambdaTypeTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.ReaderTrackingTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.SpecialContextTransformer
-import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.expressions.IrCall
-import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        var hasInitCall = false
+        /*var hasInitCall = false
 
         moduleFragment.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
@@ -101,7 +84,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 
-        generateSymbols(pluginContext)
+        generateSymbols(pluginContext)*/
     }
 
 }

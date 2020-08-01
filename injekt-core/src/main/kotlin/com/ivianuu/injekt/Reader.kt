@@ -29,4 +29,7 @@ import com.ivianuu.injekt.internal.injektIntrinsic
 )
 annotation class Reader
 
-inline fun <R> Any.runReader(block: @Reader () -> R): R = injektIntrinsic()
+inline fun <R> runReader(
+    vararg inputs: Any?,
+    block: @Reader () -> R
+): R = injektIntrinsic()

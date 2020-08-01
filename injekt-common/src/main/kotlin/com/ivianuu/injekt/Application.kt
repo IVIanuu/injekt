@@ -14,8 +14,21 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.internal
+package com.ivianuu.injekt
 
-internal annotation class RootComponentFactory
+@Distinct
+typealias ApplicationStorage = Storage
 
-internal annotation class ChildComponentFactory
+object ApplicationModule {
+    @Given
+    val applicationStorage = Storage()
+}
+
+@Scoping
+object ApplicationScoped {
+    @Reader
+    inline operator fun <T> invoke(
+        key: Any,
+        init: () -> T
+    ) = given<ApplicationStorage>().scope(key, init)
+}

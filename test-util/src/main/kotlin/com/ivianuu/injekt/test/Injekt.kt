@@ -16,22 +16,11 @@
 
 package com.ivianuu.injekt.test
 
-import com.ivianuu.injekt.Component
-
 class Foo
 
 class Bar(foo: Foo)
 
 class Baz(foo: Foo, bar: Bar)
-
-@Component
-interface TestComponent
-
-@Component
-interface TestParentComponent
-
-@Component
-interface TestChildComponent
 
 interface Command
 

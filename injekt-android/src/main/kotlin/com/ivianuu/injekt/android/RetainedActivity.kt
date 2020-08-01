@@ -16,37 +16,32 @@
 
 package com.ivianuu.injekt.android
 
-import androidx.activity.ComponentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.childComponent
-import com.ivianuu.injekt.runReader
+import com.ivianuu.injekt.Distinct
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Storage
+import com.ivianuu.injekt.given
 
-@Component
-interface RetainedActivityComponent
+@Distinct
+typealias RetainedActivityStorage = Storage
 
-val ComponentActivity.retainedActivityComponent: RetainedActivityComponent
-    get() {
-        val holder = ViewModelProvider(this, RetainedActivityComponentHolder.Factory)
-            .get(RetainedActivityComponentHolder::class.java)
-
-        synchronized(holder) {
-            if (holder.component == null) {
-                holder.component = application.applicationComponent.runReader {
-                    childComponent()
-                }
-            }
+object RetainedActivityModule {
+    @Given
+    val retainedActivityStorage: RetainedActivityStorage
+        get() {
+            return ViewModelProvider(
+                given<ActivityViewModelStoreOwner>(),
+                RetainedActivityStorageHolder.Factory
+            )[RetainedActivityStorageHolder::class.java].storage
         }
+}
 
-        return holder.component!!
-    }
-
-private class RetainedActivityComponentHolder : ViewModel() {
-    var component: RetainedActivityComponent? = null
+private class RetainedActivityStorageHolder : ViewModel() {
+    val storage = Storage()
 
     companion object Factory : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            RetainedActivityComponentHolder() as T
+            RetainedActivityStorageHolder() as T
     }
 }

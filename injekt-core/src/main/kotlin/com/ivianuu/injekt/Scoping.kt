@@ -16,5 +16,5 @@
 
 package com.ivianuu.injekt
 
-@Component
-interface ApplicationComponent
+@Target(AnnotationTarget.CLASS)
+annotation class Scoping

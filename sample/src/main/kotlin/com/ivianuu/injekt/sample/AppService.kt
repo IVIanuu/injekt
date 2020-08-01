@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Effect
 import com.ivianuu.injekt.Reader
@@ -31,7 +30,7 @@ typealias AppServices = Set<suspend () -> Unit>
 @Effect
 annotation class BindAppService {
     companion object {
-        @SetElements(ApplicationComponent::class)
+        @SetElements
         inline operator fun <reified T : suspend () -> Unit> invoke(): AppServices = setOf(
             given<T>()
         )

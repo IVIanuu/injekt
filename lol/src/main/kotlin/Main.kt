@@ -4,4 +4,3 @@ fun invoke() {
     println()
     initializeInjekt()
 }
-

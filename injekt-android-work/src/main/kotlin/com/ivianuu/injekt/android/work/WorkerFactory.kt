@@ -20,7 +20,6 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Effect
 import com.ivianuu.injekt.Given
@@ -31,7 +30,7 @@ import kotlin.reflect.KClass
 @Effect
 annotation class BindWorker {
     companion object {
-        @MapEntries(ApplicationComponent::class)
+        @MapEntries
         inline operator fun <reified T : ListenableWorker> invoke(): Workers = mapOf(
             T::class to given<(Context, WorkerParameters) -> T>()
         )

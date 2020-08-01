@@ -16,30 +16,23 @@
 
 package com.ivianuu.injekt.android
 
-import android.app.Service
-import android.content.Context
-import android.content.res.Resources
-import com.ivianuu.injekt.Distinct
-import com.ivianuu.injekt.Given
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStoreOwner
 import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.Scoping
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.runReader
 
-inline fun <R> Service.runServiceReader(block: @Reader () -> R): R =
-    runReader(application!!, this) { block() }
-
-@Distinct
-typealias ServiceContext = Context
-
-@Distinct
-typealias ServiceResources = Resources
-
-object ServiceModule {
-
-    @Given
-    fun context(): ServiceContext = given<Service>()
-
-    @Given
-    fun resources(): ServiceResources = given<Service>().resources
-
+@Scoping
+object ViewModelScoped {
+    @Reader
+    inline operator fun <reified T : ViewModel> invoke(
+        key: Any,
+        crossinline init: () -> T
+    ) = ViewModelProvider(
+        given<ViewModelStoreOwner>(),
+        object : ViewModelProvider.Factory {
+            override fun <T : ViewModel?> create(modelClass: Class<T>): T = init() as T
+        }
+    ).get(key.toString(), T::class.java)
 }
