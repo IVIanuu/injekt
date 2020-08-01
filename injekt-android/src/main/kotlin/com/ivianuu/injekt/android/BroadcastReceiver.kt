@@ -19,19 +19,17 @@ package com.ivianuu.injekt.android
 import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
-import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Distinct
-import com.ivianuu.injekt.childComponent
+import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.runReader
 
-@Component
-interface ReceiverComponent
+inline fun <R> BroadcastReceiver.runReceiverReader(
+    context: Context,
+    block: @Reader () -> R
+): R = runReader(
+    context.applicationContext as Application,
+    context as ReceiverContext
+) { block() }
 
 @Distinct
 typealias ReceiverContext = Context
-
-fun BroadcastReceiver.newReceiverComponent(context: Context): ReceiverComponent {
-    return (context.applicationContext as Application).applicationComponent.runReader {
-        childComponent(this, context as ReceiverContext)
-    }
-}

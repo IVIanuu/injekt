@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.transform.implicit
 
-import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
@@ -26,7 +25,6 @@ import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.irClassReference
-import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
 import com.ivianuu.injekt.compiler.readableName
 import com.ivianuu.injekt.compiler.recordLookup
@@ -54,12 +52,10 @@ import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
-import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irString
-import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
@@ -68,18 +64,13 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.impl.IrExternalPackageFragmentImpl
-import org.jetbrains.kotlin.ir.expressions.IrBlockBody
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
-import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
-import org.jetbrains.kotlin.ir.expressions.IrGetValue
-import org.jetbrains.kotlin.ir.expressions.IrReturn
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
@@ -88,7 +79,6 @@ import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrExternalPackageFragmentSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
@@ -113,23 +103,7 @@ class ImplicitCallTransformer(
     private val transformedDeclarations = mutableListOf<IrDeclaration>()
     private val newDeclarations = mutableListOf<IrClass>()
 
-    private val indexByWithInstancesContext = mutableMapOf<IrClass, IrClass>()
-
     override fun lower() {
-        module.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.withInstances"
-                ) {
-                    pluginContext.irTrace.record(
-                        InjektWritableSlices.WITH_INSTANCES_CALL,
-                        (expression.getValueArgument(1) as IrFunctionExpression).function,
-                        expression
-                    )
-                }
-                return super.visitCall(expression)
-            }
-        })
         module.transformChildrenVoid(
             object : IrElementTransformerVoid() {
                 override fun visitClass(declaration: IrClass): IrStatement {
@@ -152,8 +126,7 @@ class ImplicitCallTransformer(
 
     inner class ReaderScope(
         val declaration: IrDeclaration,
-        val context: IrClass,
-        val inputs: List<IrExpression>
+        val context: IrClass
     ) {
 
         private val functionsByType = mutableMapOf<IrType, IrFunction>()
@@ -162,94 +135,9 @@ class ImplicitCallTransformer(
             if ((declaration as IrDeclarationWithVisibility).visibility == Visibilities.LOCAL && declaration.parent is IrFunction)
                 declaration.parent as IrFunction else null
 
-        private val isWithInstancesBlock = inputs.isNotEmpty()
-
-        private val withInstancesContextIndex = if (isWithInstancesBlock) {
-            val name = "${context.name}WithInstancesContextImpl".asNameId()
-            buildClass {
-                this.name = "${name}Index".asNameId()
-                kind = ClassKind.INTERFACE
-                visibility = Visibilities.INTERNAL
-            }.apply clazz@{
-                parent = declaration.file
-                createImplicitParameterDeclarationWithWrappedDescriptor()
-                addMetadataIfNotLocal()
-                copyTypeParametersFrom(declaration as IrTypeParametersContainer)
-                superTypes += context.typeWith(typeParameters.map { it.defaultType })
-                annotations += DeclarationIrBuilder(pluginContext, symbol).run {
-                    irCall(symbols.withInstancesContext.constructors.single()).apply {
-                        putValueArgument(
-                            1,
-                            irString(name.asString())
-                        )
-                    }
-                }
-
-                addFunction {
-                    this.name = "instances".asNameId()
-                    returnType = irBuiltIns.unitType
-                    modality = Modality.ABSTRACT
-                }.apply {
-                    dispatchReceiverParameter = thisReceiver!!.copyTo(this)
-                    parent = this@clazz
-                    addMetadataIfNotLocal()
-                    inputs.forEach {
-                        addValueParameter(
-                            it.type.readableName().asString(),
-                            it.type
-                        )
-                    }
-                }
-            }
-        } else null
-
-        private val implementedSuperTypes = mutableSetOf<IrType>()
-        private val declarationNames = mutableSetOf<Name>()
-
-        init {
-            withInstancesContextIndex?.let {
-                newDeclarations += it
-                indexByWithInstancesContext[context] = it
-            }
-        }
-
         fun inheritContext(type: IrType) {
-            if (!isWithInstancesBlock) {
-                context.superTypes += type
-                    .remapTypeParametersByName(declaration as IrTypeParametersContainer, context)
-            } else {
-                withInstancesContextIndex!!.superTypes += type
-                    .remapTypeParametersByName(
-                        declaration as IrTypeParametersContainer,
-                        withInstancesContextIndex!!
-                    )
-                fun collect(superClass: IrClass) {
-                    if (superClass.defaultType in implementedSuperTypes) return
-                    implementedSuperTypes += superClass.defaultType
-
-                    for (declaration in superClass.declarations.toList()) {
-                        if (declaration !is IrFunction) continue
-                        if (declaration is IrConstructor) continue
-                        if (declaration.dispatchReceiverParameter?.type == irBuiltIns.anyType) continue
-                        if (inputs.any { it.type == declaration.returnType }) continue
-                        declarationNames += declaration.name
-                        context.addFunction {
-                            this.name = declaration.name
-                            returnType = declaration.returnType
-                            modality = Modality.ABSTRACT
-                        }.apply {
-                            dispatchReceiverParameter = context.thisReceiver?.copyTo(this)
-                            addMetadataIfNotLocal()
-                        }
-                    }
-
-                    superClass.superTypes
-                        .map { it.classOrNull!!.owner }
-                        .forEach { collect(it) }
-                }
-
-                collect(type.classOrNull!!.owner)
-            }
+            context.superTypes += type
+                .remapTypeParametersByName(declaration as IrTypeParametersContainer, context)
         }
 
         fun inheritGenericContext(
@@ -257,7 +145,8 @@ class ImplicitCallTransformer(
             typeArguments: List<IrType>
         ): Name {
             val name = nameProvider.allocateForGroup(
-                "${declaration.descriptor.name}GenericContextImpl"
+                "${declaration.descriptor.fqNameSafe.pathSegments()
+                    .joinToString("_")}GenericContextImpl"
             )
 
             genericContext.superTypes
@@ -360,9 +249,6 @@ class ImplicitCallTransformer(
             val finalType = type
                 .remapTypeParametersByName(declaration as IrTypeParametersContainer, context)
 
-            inputs.lastOrNull { it.type == type }
-                ?.let { return it }
-
             val function = functionsByType.getOrPut(finalType) {
                 context.addFunction {
                     name = finalType.readableName()
@@ -395,7 +281,6 @@ class ImplicitCallTransformer(
             declaration = declaration,
             declarationFunction = readerConstructor,
             context = context,
-            inputs = emptyList(),
             contextExpression = { scopes ->
                 if (scopes.none { it.irElement == readerConstructor }) {
                     DeclarationIrBuilder(pluginContext, declaration.symbol).run {
@@ -421,13 +306,6 @@ class ImplicitCallTransformer(
             declaration = declaration,
             declarationFunction = declaration,
             context = declaration.getContext()!!,
-            inputs = (declaration as? IrSimpleFunction)?.let {
-                pluginContext.irTrace[InjektWritableSlices.WITH_INSTANCES_CALL, it]
-                    ?.getValueArgument(0)
-                    ?.let { it as IrVarargImpl }
-                    ?.elements
-                    ?.map { it as IrExpression }
-            } ?: emptyList(),
             contextExpression = {
                 DeclarationIrBuilder(pluginContext, declaration.symbol)
                     .irGet(declaration.getContextValueParameter()!!)
@@ -438,14 +316,13 @@ class ImplicitCallTransformer(
     private fun transformDeclarationIfNeeded(
         declaration: IrDeclarationWithName,
         declarationFunction: IrFunction,
-        inputs: List<IrExpression>,
         context: IrClass,
         contextExpression: (List<ScopeWithIr>) -> IrExpression
     ) {
         if (declaration in transformedDeclarations) return
         transformedDeclarations += declaration
 
-        val scope = ReaderScope(declaration, context, inputs)
+        val scope = ReaderScope(declaration, context)
 
         declaration.transform(object : IrElementTransformerVoidWithContext() {
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
@@ -470,11 +347,6 @@ class ImplicitCallTransformer(
                     expression is IrCall &&
                             expression.symbol.owner.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given" ->
                         transformGivenCall(scope, expression) {
-                            contextExpression(allScopes)
-                        }
-                    expression is IrCall &&
-                            expression.symbol.owner.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.withInstances" ->
-                        transformWithInstancesCall(scope, expression) {
                             contextExpression(allScopes)
                         }
                     expression.isReaderLambdaInvoke(pluginContext) -> transformReaderLambdaInvoke(
@@ -622,6 +494,7 @@ class ImplicitCallTransformer(
                 val genericContextStub = buildClass {
                     this.name = name
                     origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
+                    visibility = Visibilities.INTERNAL
                 }.apply clazz@{
                     createImplicitParameterDeclarationWithWrappedDescriptor()
                     parent = IrExternalPackageFragmentImpl(
@@ -661,101 +534,6 @@ class ImplicitCallTransformer(
         )
 
         return transformedCall
-    }
-
-    private fun transformWithInstancesCall(
-        scope: ReaderScope,
-        call: IrCall,
-        contextExpression: () -> IrExpression
-    ): IrExpression {
-        val instances = (call.getValueArgument(0) as? IrVarargImpl)
-            ?.elements
-            ?.map { it as IrExpression } ?: emptyList()
-
-        val lambda = (call.getValueArgument(1) as IrFunctionExpression).function
-        transformFunctionIfNeeded(lambda)
-
-        val withInstancesContext = lambda.getContext()!!
-        scope.inheritContext(
-            withInstancesContext
-                .typeWith(
-                    withInstancesContext.typeParameters
-                        .map { it.defaultType }
-                )
-        )
-
-        indexByWithInstancesContext.getValue(withInstancesContext)
-            .annotations
-            .single()
-            .putValueArgument(
-                0,
-                DeclarationIrBuilder(pluginContext, call.symbol)
-                    .irClassReference(scope.context)
-            )
-
-        val withInstancesContextImplStub = buildClass {
-            this.name = "${withInstancesContext.name}WithInstancesContextImpl".asNameId()
-            origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
-        }.apply clazz@{
-            createImplicitParameterDeclarationWithWrappedDescriptor()
-            parent = IrExternalPackageFragmentImpl(
-                IrExternalPackageFragmentSymbolImpl(
-                    EmptyPackageFragmentDescriptor(
-                        pluginContext.moduleDescriptor,
-                        scope.declaration.getPackageFragment()!!.fqName
-                    )
-                ),
-                scope.declaration.getPackageFragment()!!.fqName
-            )
-
-            addConstructor {
-                returnType = defaultType
-                isPrimary = true
-                visibility = Visibilities.PUBLIC
-            }.apply {
-                addValueParameter(
-                    "delegate",
-                    withInstancesContext.defaultType
-                )
-                instances.forEach {
-                    addValueParameter(
-                        it.type.readableName().asString(),
-                        it.type
-                    )
-                }
-            }
-        }
-
-        return DeclarationIrBuilder(pluginContext, call.symbol).run {
-            irBlock {
-                val tmpContext = irTemporary(
-                    irCall(withInstancesContextImplStub.constructors.single()).apply {
-                        putValueArgument(0, contextExpression())
-                        instances.forEachIndexed { index, instance ->
-                            putValueArgument(index + 1, instance)
-                        }
-                    }
-                )
-
-                (lambda.body as IrBlockBody).statements.forEach { stmt ->
-                    +stmt.transform(
-                        object : IrElementTransformerVoid() {
-                            override fun visitGetValue(expression: IrGetValue): IrExpression {
-                                return if (expression.symbol == lambda.valueParameters.last().symbol)
-                                    irGet(tmpContext)
-                                else super.visitGetValue(expression)
-                            }
-
-                            override fun visitReturn(expression: IrReturn): IrExpression {
-                                val result = super.visitReturn(expression) as IrReturn
-                                return if (result.returnTargetSymbol == lambda.symbol) result.value else result
-                            }
-                        },
-                        null
-                    )
-                }
-            }
-        }
     }
 
 }

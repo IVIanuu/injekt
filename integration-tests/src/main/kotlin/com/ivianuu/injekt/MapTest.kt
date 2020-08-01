@@ -20,6 +20,7 @@ import com.ivianuu.injekt.test.Command
 import com.ivianuu.injekt.test.CommandA
 import com.ivianuu.injekt.test.CommandB
 import com.ivianuu.injekt.test.CommandC
+import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertEquals
@@ -35,25 +36,24 @@ class MapTest {
         @Given 
         fun commandA() = CommandA()
         
-        @MapEntries(TestComponent::class) 
+        @MapEntries
         fun commandAIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandA::class to given<CommandA>())
         
         @Given 
         fun commandB() = CommandB()
 
-        @MapEntries(TestComponent::class) 
+        @MapEntries 
         fun commandBIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandB::class to given<CommandB>())
         
         @Given 
         fun commandC() = CommandC()
         
-        @MapEntries(TestComponent::class)
+        @MapEntries
         fun commandCIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandC::class to given<CommandC>())
         
         fun invoke(): Map<KClass<out Command>, Command> {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { given<Map<KClass<out Command>, Command>>() }
+            return runReader { given<Map<KClass<out Command>, Command>>() }
         }
         """
     ) {
@@ -66,54 +66,15 @@ class MapTest {
     }
 
     @Test
-    fun testEmptyMap() = codegen(
+    fun testUndeclaredMap() = codegen(
         """
         fun invoke(): Map<KClass<out Command>, Command> {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { given<Map<KClass<out Command>, Command>>() }
+            return runReader { given<Map<KClass<out Command>, Command>>() }
         }
         """
     ) {
-        val map =
-            invokeSingleFile<Map<KClass<out Command>, Command>>()
-        assertEquals(0, map.size)
-    }
-
-    @Test
-    fun testNestedMap() = codegen(
-        """
-        @Given 
-        fun commandA() = CommandA()
-        
-        @MapEntries(TestParentComponent::class) 
-        fun commandAIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandA::class to given<CommandA>())
-        
-        @Given 
-        fun commandB() = CommandB()
-        
-        @MapEntries(TestChildComponent::class) 
-        fun commandBIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandB::class to given<CommandB>())
-        
-        fun invoke(): Pair<Map<KClass<out Command>, Command>, Map<KClass<out Command>, Command>> {
-            initializeInjekt()
-            val parentComponent = rootComponent<TestParentComponent>()
-            val childComponent = parentComponent.runReader { childComponent<TestChildComponent>() }
-            return parentComponent.runReader {
-                given<Map<KClass<out Command>, Command>>() to childComponent.runReader {
-                    given<Map<KClass<out Command>, Command>>()
-                }
-            }
-        }
-    """
-    ) {
-        val (parentMap, childMap) =
-            invokeSingleFile<Pair<Map<KClass<out Command>, Command>, Map<KClass<out Command>, Command>>>()
-        assertEquals(1, parentMap.size)
-        assertTrue(parentMap[CommandA::class] is CommandA)
-        assertEquals(2, childMap.size)
-        assertTrue(childMap[CommandA::class] is CommandA)
-        assertTrue(childMap[CommandB::class] is CommandB)
+        assertInternalError("no binding")
     }
 
 }

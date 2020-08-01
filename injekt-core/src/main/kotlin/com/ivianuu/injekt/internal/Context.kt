@@ -25,8 +25,3 @@ internal annotation class GenericContext(
     val implName: String,
     val functionMap: String
 )
-
-internal annotation class WithInstancesContext(
-    val implementingContext: KClass<*>,
-    val implName: String,
-)

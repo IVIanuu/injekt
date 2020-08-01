@@ -22,22 +22,28 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
-import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.childComponent
+import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.Scoping
+import com.ivianuu.injekt.Storage
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 
-@Component
-interface ActivityComponent
+inline fun <R> ComponentActivity.runActivityReader(block: @Reader () -> R): R =
+    runReader(this, application!!) { block() }
 
-val ComponentActivity.activityComponent: ActivityComponent
-    get() = lifecycle.singleton {
-        retainedActivityComponent.runReader {
-            childComponent(this)
-        }
-    }
+@Scoping
+object ActivityScoped {
+    @Reader
+    inline operator fun <T> invoke(
+        key: Any,
+        init: () -> T
+    ) = given<ActivityStorage>().scope(key, init)
+}
+
+@Distinct
+typealias ActivityStorage = Storage
 
 @Distinct
 typealias ActivityContext = Context
@@ -70,5 +76,8 @@ object ActivityModule {
 
     @Given
     fun viewModelStoreOwner(): ActivityViewModelStoreOwner = given<ComponentActivity>()
+
+    @Given
+    fun activityStorage(): ActivityStorage = given<ComponentActivity>().lifecycle.storage()
 
 }

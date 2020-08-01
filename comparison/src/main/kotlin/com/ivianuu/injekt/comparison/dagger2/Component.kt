@@ -18,9 +18,6 @@ package com.ivianuu.injekt.comparison.dagger2
 
 import com.ivianuu.injekt.comparison.fibonacci.Fib8
 import dagger.Component
-import dagger.Lazy
-import dagger.Module
-import javax.inject.Inject
 
 @Component
 interface Dagger2Component {

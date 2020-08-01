@@ -17,15 +17,14 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.transform.component.ComponentFactoryTransformer
-import com.ivianuu.injekt.compiler.transform.component.ComponentIndexingTransformer
-import com.ivianuu.injekt.compiler.transform.component.EntryPointTransformer
-import com.ivianuu.injekt.compiler.transform.component.RootComponentFactoryTransformer
+import com.ivianuu.injekt.compiler.dumpSrc
+import com.ivianuu.injekt.compiler.transform.implicit.GenericContextImplTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.ReaderLambdaTypeTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ReaderTrackingTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.SpecialContextTransformer
+import com.ivianuu.injekt.compiler.transform.runreader.ComponentIndexingTransformer
+import com.ivianuu.injekt.compiler.transform.runreader.RunReaderContextImplTransformer
+import com.ivianuu.injekt.compiler.transform.runreader.RunReaderTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -61,10 +60,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         EffectTransformer(injektPluginContext).doLower(moduleFragment)
 
-        ComponentFactoryTransformer(injektPluginContext).doLower(moduleFragment)
-
-        ReaderLambdaTypeTransformer(injektPluginContext).doLower(moduleFragment)
-
         val indexer = Indexer(
             injektPluginContext,
             moduleFragment,
@@ -72,12 +67,18 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         )
 
         val implicitContextParamTransformer =
-            ImplicitContextTransformer(injektPluginContext, indexer)
+            ImplicitContextParamTransformer(injektPluginContext, indexer)
         implicitContextParamTransformer.doLower(moduleFragment)
 
         ImplicitCallTransformer(injektPluginContext, indexer).doLower(moduleFragment)
 
-        ReaderTrackingTransformer(injektPluginContext, indexer).doLower(moduleFragment)
+        ReaderTrackingTransformer(
+            injektPluginContext,
+            indexer,
+            implicitContextParamTransformer
+        ).doLower(moduleFragment)
+
+        RunReaderTransformer(pluginContext, indexer).doLower(moduleFragment)
 
         val declarationGraph =
             DeclarationGraph(
@@ -87,21 +88,25 @@ class InjektIrGenerationExtension : IrGenerationExtension {
                 implicitContextParamTransformer
             )
 
-        EntryPointTransformer(injektPluginContext).doLower(moduleFragment)
-
         ComponentIndexingTransformer(indexer, injektPluginContext).doLower(moduleFragment)
 
         if (hasInitCall) {
             declarationGraph.initialize()
-            RootComponentFactoryTransformer(pluginContext, declarationGraph)
+            RunReaderContextImplTransformer(
+                pluginContext,
+                declarationGraph,
+                implicitContextParamTransformer
+            )
                 .doLower(moduleFragment)
-            SpecialContextTransformer(pluginContext, declarationGraph)
+            GenericContextImplTransformer(pluginContext, declarationGraph)
                 .doLower(moduleFragment)
         }
 
         TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
 
         generateSymbols(pluginContext)
+
+        println(moduleFragment.dumpSrc())
     }
 
 }

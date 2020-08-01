@@ -53,8 +53,7 @@ class EffectTest {
         
         fun invoke() {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            component.runReader { 
+            runReader { 
                 given<Dep>() 
                 given<String>()
                 given<Any>()
@@ -170,7 +169,7 @@ class EffectTest {
     }
 
     @Test
-    fun testFunctionEffect() = codegen(
+    fun testFxyunctionEffect() = codegen(
         """
         @Distinct typealias FooFactory = () -> Foo
         
@@ -190,8 +189,7 @@ class EffectTest {
         
         fun invoke(): Foo { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { given<FooFactory>()() }
+            return runReader { given<FooFactory>()() }
         }
     """
     ) {
@@ -231,8 +229,7 @@ class EffectTest {
                 """
                 fun invoke(): Foo { 
                     initializeInjekt()
-                    val component = rootComponent<TestComponent>()
-                    return component.runReader { given<FooFactory>()() }
+                    return runReader { given<FooFactory>()() }
                 }
             """, name = "File.kt"
             )
@@ -262,8 +259,7 @@ class EffectTest {
         
         fun invoke(): Foo { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { runBlocking { given<FooFactory>()() } }
+            return runReader { runBlocking { given<FooFactory>()() } }
         }
     """
     ) {

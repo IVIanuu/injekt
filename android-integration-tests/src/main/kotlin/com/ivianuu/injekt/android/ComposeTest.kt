@@ -37,7 +37,7 @@ class ComposeTest {
             companion object {
                 @Given
                 operator fun <T : @androidx.compose.Composable () -> Unit> invoke(): AppUi =
-                    given<T>() as @androidx.compose.Composable () -> Unit
+                    given<T>() as AppUi
             }
         }
         
@@ -50,7 +50,7 @@ class ComposeTest {
         
         fun invoke(): AppUi {
             initializeInjekt()
-            return rootComponent<TestComponent>().runReader { given<AppUi>() }
+            return runReader { given<AppUi>() }
         }
     """,
         config = {
@@ -73,7 +73,7 @@ class ComposeTest {
                     companion object {
                         @Given
                         operator fun <T : @androidx.compose.Composable () -> Unit> invoke(): AppUi =
-                            given<T>() as @androidx.compose.Composable () -> Unit
+                            given<T>() as AppUi
                     }
                 }
                 """
@@ -91,7 +91,7 @@ class ComposeTest {
                 
                 fun invoke(): AppUi {
                     initializeInjekt()
-                    return rootComponent<TestComponent>().runReader { given<AppUi>() }
+                    return runReader { given<AppUi>() }
                 }
                 """,
                 name = "File.kt"
@@ -130,8 +130,7 @@ class ComposeTest {
         @androidx.compose.Composable
         fun invoke(): Foo {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader {
+            return runReader {
                 withFoo { 
                     other()
                     it

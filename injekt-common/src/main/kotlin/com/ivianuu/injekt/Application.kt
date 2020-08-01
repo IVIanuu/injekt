@@ -14,8 +14,21 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.internal
+package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
+@Distinct
+typealias ApplicationStorage = Storage
 
-internal annotation class EntryPoint(val component: KClass<*>)
+object ApplicationModule {
+    @Given
+    val applicationStorage: ApplicationStorage = Storage()
+}
+
+@Scoping
+object ApplicationScoped {
+    @Reader
+    inline operator fun <T> invoke(
+        key: Any,
+        init: () -> T
+    ) = given<ApplicationStorage>().scope(key, init)
+}

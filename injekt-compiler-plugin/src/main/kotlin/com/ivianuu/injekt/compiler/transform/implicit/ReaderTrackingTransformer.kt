@@ -53,11 +53,9 @@ import org.jetbrains.kotlin.ir.expressions.IrGetField
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrSetField
 import org.jetbrains.kotlin.ir.expressions.IrSetVariable
-import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
-import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -65,9 +63,9 @@ import org.jetbrains.kotlin.utils.addIfNotNull
 
 class ReaderTrackingTransformer(
     pluginContext: IrPluginContext,
-    private val indexer: Indexer
-) :
-    AbstractInjektTransformer(pluginContext) {
+    private val indexer: Indexer,
+    private val implicitContextParamTransformer: ImplicitContextParamTransformer
+) : AbstractInjektTransformer(pluginContext) {
 
     private val nameProvider = NameProvider()
     private val newDeclarations = mutableListOf<IrDeclaration>()
@@ -89,10 +87,15 @@ class ReaderTrackingTransformer(
 
         class RunReader(
             val call: IrCall,
-            override val invocationContext: IrClass,
             override val file: IrFile,
             override val fqName: FqName
         ) : Scope() {
+
+            override val invocationContext =
+                (call.getValueArgument(1) as IrFunctionExpression)
+                    .function
+                    .getContext()!!
+
             fun isBlock(function: IrFunction): Boolean =
                 call.getValueArgument(0).let {
                     it is IrFunctionExpression &&
@@ -186,7 +189,6 @@ class ReaderTrackingTransformer(
                     inScope(
                         Scope.RunReader(
                             expression,
-                            expression.extensionReceiver!!.type.classOrNull!!.owner,
                             currentFile,
                             currentScope!!.scope.scopeOwner.fqNameSafe
                         )
@@ -209,12 +211,21 @@ class ReaderTrackingTransformer(
                     "com.ivianuu.injekt.runReader"
                 ) return super.visitFunctionAccess(expression)
 
-                newDeclarations += expression.getArgumentsWithIr()
+                val transformedCallee = implicitContextParamTransformer
+                    .getTransformedFunction(expression.symbol.owner)
+
+                newDeclarations += (0 until expression.valueArgumentsCount)
+                    .mapNotNull { index ->
+                        expression.getValueArgument(index)
+                            ?.let { index to it }
+                    }
+                    .map { transformedCallee.valueParameters[it.first] to it.second }
                     .filter { it.first.type.isReaderLambda() }
                     .flatMapFix { (parameter, argument) ->
                         argument.collectReaderLambdaContextsInExpression()
                             .map { context ->
-                                parameter.type.lambdaContext!! to context
+                                (parameter.type.lambdaContext
+                                    ?: error("null for ${parameter.dump()}\n${expression.symbol.owner.dump()}")) to context
                             }
                     }
                     .map { (superContext, subContext) ->

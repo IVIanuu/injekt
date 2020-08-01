@@ -20,13 +20,14 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getContext
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -35,17 +36,14 @@ class DeclarationGraph(
     private val indexer: Indexer,
     val module: IrModuleFragment,
     private val pluginContext: IrPluginContext,
-    private val implicitTransformer: ImplicitContextTransformer
+    private val implicitContextParamTransformer: ImplicitContextParamTransformer
 ) {
 
-    private val _rootComponentFactories = mutableListOf<IrClass>()
-    val rootComponentFactories: List<IrClass> get() = _rootComponentFactories
+    private val _runReaderContexts = mutableListOf<IrClass>()
+    val runReaderContexts: List<IrClass> get() = _runReaderContexts
 
     private val _bindings = mutableListOf<IrFunction>()
     val bindings: List<IrFunction> get() = _bindings
-
-    val entryPoints: List<IrClass> get() = _entryPoints
-    private val _entryPoints = mutableListOf<IrClass>()
 
     private val _mapEntries = mutableListOf<IrFunction>()
     val mapEntries: List<IrFunction> get() = _mapEntries
@@ -56,37 +54,19 @@ class DeclarationGraph(
     private val _genericContexts = mutableListOf<IrClass>()
     val genericContexts: List<IrClass> get() = _genericContexts
 
-    private val _withInstancesContexts = mutableListOf<IrClass>()
-    val withInstancesContexts: List<IrClass> get() = _withInstancesContexts
-
-    fun getAdditionalContexts(component: IrClass): List<IrClass> {
-        return indexer.classIndices
-            .filter { it.hasAnnotation(InjektFqNames.ReaderInvocation) }
-            .filter { clazz ->
-                clazz.getClassFromAnnotation(
-                    InjektFqNames.ReaderInvocation,
-                    1,
-                    pluginContext
-                ) == component
-            }
-            .map {
-                it.getClassFromAnnotation(
-                    InjektFqNames.ReaderInvocation,
-                    0,
-                    pluginContext
-                )!!
-            }
-            .flatMapFix { getAllContextImplementations(it) }
-    }
-
     fun getAllContextImplementations(
         context: IrClass
-    ): List<IrClass> {
-        val contexts = mutableListOf<IrClass>()
+    ): Set<IrClass> {
+        val contexts = mutableSetOf<IrClass>()
 
         contexts += context
 
+        val processedClasses = mutableSetOf<IrClass>()
+
         fun collectImplementations(context: IrClass) {
+            if (context in processedClasses) return
+            processedClasses += context
+
             indexer.classIndices
                 .filter { it.hasAnnotation(InjektFqNames.ReaderImpl) }
                 .filter { clazz ->
@@ -128,6 +108,13 @@ class DeclarationGraph(
                     contexts += it
                     collectImplementations(it)
                 }
+
+            context.superTypes
+                .map { it.classOrNull!!.owner }
+                .forEach {
+                    contexts += it
+                    collectImplementations(it)
+                }
         }
 
         collectImplementations(context)
@@ -136,25 +123,17 @@ class DeclarationGraph(
     }
 
     fun initialize() {
-        collectRootComponentFactories()
-        collectEntryPoints()
+        collectRunReaderContexts()
         collectBindings()
         collectMapEntries()
         collectSetElements()
         collectGenericContexts()
-        collectWithInstancesContexts()
     }
 
-    private fun collectRootComponentFactories() {
+    private fun collectRunReaderContexts() {
         indexer.classIndices
-            .filter { it.hasAnnotation(InjektFqNames.RootComponentFactory) }
-            .forEach { _rootComponentFactories += it }
-    }
-
-    private fun collectEntryPoints() {
-        indexer.classIndices
-            .filter { it.hasAnnotation(InjektFqNames.EntryPoint) }
-            .forEach { _entryPoints += it }
+            .filter { it.hasAnnotation(InjektFqNames.RunReaderContext) }
+            .forEach { _runReaderContexts += it }
     }
 
     private fun collectBindings() {
@@ -168,7 +147,7 @@ class DeclarationGraph(
                             InjektFqNames.Given
                         ) == true)
             }
-            .map { implicitTransformer.getTransformedFunction(it) }
+            .map { implicitContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
             .distinct()
             .forEach { _bindings += it }
@@ -177,7 +156,7 @@ class DeclarationGraph(
     private fun collectMapEntries() {
         indexer.functionIndices
             .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
-            .map { implicitTransformer.getTransformedFunction(it) }
+            .map { implicitContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
             .distinct()
             .forEach { _mapEntries += it }
@@ -186,7 +165,7 @@ class DeclarationGraph(
     private fun collectSetElements() {
         indexer.functionIndices
             .filter { it.hasAnnotation(InjektFqNames.SetElements) }
-            .map { implicitTransformer.getTransformedFunction(it) }
+            .map { implicitContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
             .distinct()
             .forEach { _setElements += it }
@@ -196,12 +175,6 @@ class DeclarationGraph(
         indexer.classIndices
             .filter { it.hasAnnotation(InjektFqNames.GenericContext) }
             .forEach { _genericContexts += it }
-    }
-
-    private fun collectWithInstancesContexts() {
-        indexer.classIndices
-            .filter { it.hasAnnotation(InjektFqNames.WithInstancesContext) }
-            .forEach { _withInstancesContexts += it }
     }
 
 }

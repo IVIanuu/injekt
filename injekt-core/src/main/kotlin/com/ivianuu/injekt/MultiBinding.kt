@@ -16,10 +16,8 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
+@Target(AnnotationTarget.FUNCTION)
+annotation class MapEntries
 
 @Target(AnnotationTarget.FUNCTION)
-annotation class MapEntries(val component: KClass<*>)
-
-@Target(AnnotationTarget.FUNCTION)
-annotation class SetElements(val component: KClass<*>)
+annotation class SetElements

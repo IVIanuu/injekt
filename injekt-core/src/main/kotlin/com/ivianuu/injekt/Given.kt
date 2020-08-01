@@ -25,7 +25,7 @@ import kotlin.reflect.KClass
     AnnotationTarget.CONSTRUCTOR,
     AnnotationTarget.PROPERTY
 )
-annotation class Given(val component: KClass<*> = Nothing::class)
+annotation class Given(val scoping: KClass<*> = Nothing::class)
 
 @Reader
 fun <T> given(

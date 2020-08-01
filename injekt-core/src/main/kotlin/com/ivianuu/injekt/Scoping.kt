@@ -16,20 +16,5 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.internal.injektIntrinsic
-
 @Target(AnnotationTarget.CLASS)
-annotation class Component
-
-fun initializeInjekt(): Unit = injektIntrinsic()
-
-fun <T> rootComponent(vararg inputs: Any?): T = injektIntrinsic()
-
-@Reader
-fun <T> childComponent(vararg inputs: Any?): T = injektIntrinsic()
-
-@Reader
-inline fun <R> withInstances(
-    vararg instances: Any?,
-    block: @Reader () -> R
-): R = injektIntrinsic()
+annotation class Scoping

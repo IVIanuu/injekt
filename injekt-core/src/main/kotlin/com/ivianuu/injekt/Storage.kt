@@ -14,8 +14,18 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.internal
+package com.ivianuu.injekt
 
-internal annotation class RootComponentFactory
+import java.util.concurrent.ConcurrentHashMap
 
-internal annotation class ChildComponentFactory
+class Storage(
+    @PublishedApi
+    internal val instances: ConcurrentHashMap<Any, Any?> = ConcurrentHashMap()
+) {
+
+    inline fun <T> scope(
+        key: Any,
+        init: () -> T
+    ) = instances.getOrPut(key, init) as T
+
+}

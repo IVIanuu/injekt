@@ -1,7 +1,10 @@
-import com.ivianuu.injekt.initializeInjekt
+package com.ivianuu.injekt.lol
 
-fun invoke() {
-    println()
-    initializeInjekt()
+import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.runReader
+
+class Foo
+
+fun runApplicationReader(block: @Reader () -> Foo): Foo {
+    return runReader(Foo()) { block() }
 }
-

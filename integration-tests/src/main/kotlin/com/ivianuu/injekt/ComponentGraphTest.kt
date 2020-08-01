@@ -35,8 +35,7 @@ class ComponentGraphTest {
         @Given class Dep(bar: Bar)
         fun invoke() {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            component.runReader { given<Dep>() }
+            runReader { given<Dep>() }
         }
         """
     ) {
@@ -51,8 +50,7 @@ class ComponentGraphTest {
         
         fun invoke() {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            component.runReader { given<Foo>() }
+            runReader { given<Foo>() }
         }
         """
     ) {
@@ -60,30 +58,14 @@ class ComponentGraphTest {
     }
 
     @Test
-    fun testComponentMismatch() = codegen(
-        """
-        @Given(Any::class) class Dep
-
-        fun invoke() {
-            initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            component.runReader { given<Dep>() }
-        }
-        """
-    ) {
-        assertInternalError("component mismatch")
-    }
-
-    @Test
     fun testDistinctTypeParameter() = codegen(
         """
-        @SetElements(TestComponent::class) fun setA() = setOf("a")
-        @SetElements(TestComponent::class) fun setB() = setOf(0)
+        @SetElements fun setA() = setOf("a")
+        @SetElements fun setB() = setOf(0)
         
         fun invoke(): Pair<Set<String>, Set<Int>> {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { given<Set<String>>() to given<Set<Int>>() }
+            return runReader { given<Set<String>>() to given<Set<Int>>() }
         }
     """
     ) {
@@ -102,8 +84,7 @@ class ComponentGraphTest {
         
         fun invoke(): Pair<Foo, Foo> {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { given<Foo1>() to given<Foo2>() }
+            return runReader { given<Foo1>() to given<Foo2>() }
         }
     """
     ) {
@@ -134,8 +115,7 @@ class ComponentGraphTest {
                 """
                 fun invoke(): Pair<Foo, Foo> {
                     initializeInjekt()
-                    val component = rootComponent<TestComponent>()
-                    return component.runReader { given<Foo1>() to given<Foo2>() }
+                    return runReader { given<Foo1>() to given<Foo2>() }
                 } 
             """, name = "File.kt"
             )
@@ -153,8 +133,7 @@ class ComponentGraphTest {
 
         fun invoke() { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            component.runReader { given<Foo>() to given<Foo?>() }
+            runReader { given<Foo>() to given<Foo?>() }
         }
     """
     ) {
@@ -168,8 +147,7 @@ class ComponentGraphTest {
 
         fun invoke(): Foo? { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { given<Foo?>() }
+            return runReader { given<Foo?>() }
         }
         """
     ) {
@@ -181,8 +159,7 @@ class ComponentGraphTest {
         """
         fun invoke(): Foo? { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { given<Foo?>() }
+            return runReader { given<Foo?>() }
         }
         """
     ) {
@@ -196,8 +173,7 @@ class ComponentGraphTest {
         
         fun invoke() { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            component.runReader { given<List<*>>() }
+            runReader { given<List<*>>() }
         }
     """
     )
