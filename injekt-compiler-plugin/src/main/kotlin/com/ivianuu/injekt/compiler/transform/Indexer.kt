@@ -67,6 +67,7 @@ class Indexer(
             }
             .map { pluginContext.referenceClass(it.fqNameSafe)!!.owner }
             .map { it.toIndex() }
+            .distinct()
     }
 
     private val internalIndices by lazy {
@@ -75,6 +76,7 @@ class Indexer(
             .flatMapFix { it.declarations }
             .filterIsInstance<IrClass>())
             .map { it.toIndex() }
+            .distinct()
     }
 
     private fun IrClass.toIndex(): Index {
@@ -95,6 +97,7 @@ class Indexer(
             .filter { it.type == "class" }
             .mapNotNull { pluginContext.referenceClass(it.fqName) }
             .map { it.owner }
+            .distinct()
     }
 
     val internalFunctionIndices by lazy {

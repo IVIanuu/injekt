@@ -53,7 +53,6 @@ import org.jetbrains.kotlin.ir.expressions.IrGetField
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrSetField
 import org.jetbrains.kotlin.ir.expressions.IrSetVariable
-import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
@@ -179,7 +178,7 @@ class ReaderTrackingTransformer(
             }
 
             override fun visitCall(expression: IrCall): IrExpression {
-                return if (expression.symbol.descriptor.fqNameSafe.asString() ==
+                /*if (expression.symbol.descriptor.fqNameSafe.asString() ==
                     "com.ivianuu.injekt.runReader"
                 ) {
                     currentScope!!.scope.scopeOwner.fqNameSafe
@@ -193,12 +192,12 @@ class ReaderTrackingTransformer(
                     ) {
                         super.visitCall(expression)
                     }
-                } else {
-                    if (expression.isReaderLambdaInvoke(pluginContext)) {
-                        visitReaderLambdaInvoke(expression)
-                    }
-                    super.visitCall(expression)
+                } else {*/
+                if (expression.isReaderLambdaInvoke(pluginContext)) {
+                    visitReaderLambdaInvoke(expression)
                 }
+                return super.visitCall(expression)
+                // }
             }
         })
 

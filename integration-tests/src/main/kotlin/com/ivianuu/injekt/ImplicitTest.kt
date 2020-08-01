@@ -24,7 +24,6 @@ import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
-import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
@@ -41,8 +40,7 @@ class ImplicitTest {
         
         fun invoke(): Foo { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { func() }
+            return runReader { func() }
         }
     """
     ) {
@@ -69,8 +67,7 @@ class ImplicitTest {
         
         fun invoke(): Foo {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader {
+            return runReader {
                 withFoo {
                     other()
                     it
@@ -110,8 +107,7 @@ class ImplicitTest {
                 """
                     fun invoke(): Foo {
                         initializeInjekt()
-                        val component = rootComponent<TestComponent>()
-                        return component.runReader {
+                        return runReader {
                             withFoo {
                                 other()
                                 it
@@ -154,8 +150,7 @@ class ImplicitTest {
                 """
                     fun invoke(): Foo {
                         initializeInjekt()
-                        val component = rootComponent<TestComponent>()
-                        return component.runReader {
+                        return runReader {
                             withFoo {
                                 other()
                                 it
@@ -190,8 +185,7 @@ class ImplicitTest {
         
         fun invoke(): Foo {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader {
+            return runReader {
                 withFoo {
                     other()
                     it
@@ -216,8 +210,7 @@ class ImplicitTest {
         
         fun invoke(): Foo {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader {
+            return runReader {
                 nonReader { 
                     createFoo()
                 }
@@ -242,8 +235,7 @@ class ImplicitTest {
         
         fun invoke(): Foo { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader {
+            return runReader {
                 runBlocking { 
                     func()
                 }
@@ -268,9 +260,8 @@ class ImplicitTest {
         
         fun invoke(): Foo { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
             return runBlocking {
-                component.runReader {
+                runReader {
                     func()
                 }
             }
@@ -299,8 +290,7 @@ class ImplicitTest {
         
         fun invoke() {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            component.runReader {
+            runReader {
                 nonReader { 
                     Reader { 
                         nonReader { 
@@ -341,7 +331,6 @@ class ImplicitTest {
         
         fun invoke(): Foo {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
             return runBlocking {
                 component.runReader {
                     withFoo {
@@ -370,8 +359,7 @@ class ImplicitTest {
         
         fun invoke(): Foo { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { withDefault() }
+            return runReader { withDefault() }
         }
     """
     ) {
@@ -389,8 +377,7 @@ class ImplicitTest {
         
         fun invoke(): Foo { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { withDefault() }
+            return runReader { withDefault() }
         }
     """
     ) {
@@ -427,10 +414,8 @@ class ImplicitTest {
         ),
         listOf(
             source(
-                """
-                lateinit var component: TestComponent
-                
-                fun getFoo() = component.runReader {
+                """ 
+                fun getFoo() = runReader {
                     withBar {
                         foo()
                     }
@@ -443,7 +428,6 @@ class ImplicitTest {
                 """
                 fun invoke(): Foo {
                     initializeInjekt()
-                    component = rootComponent<TestComponent>()
                     return getFoo()
                 }
                 """,
@@ -465,8 +449,7 @@ class ImplicitTest {
         
         fun invoke(): Foo { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { foo }
+            return runReader { foo }
         }
     """
     ) {
@@ -491,8 +474,7 @@ class ImplicitTest {
                 """
                 fun invoke(): Foo { 
                     initializeInjekt()
-                    val component = rootComponent<TestComponent>()
-                    return component.runReader { foo }
+                    return runReader { foo }
                 }
                 """,
                 name = "File.kt"
@@ -515,8 +497,7 @@ class ImplicitTest {
         
         fun invoke(): Foo { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { FooFactory().getFoo() }
+            return runReader { FooFactory().getFoo() }
         }
     """
     ) {
@@ -543,8 +524,7 @@ class ImplicitTest {
                 """ 
                 fun invoke(): Foo { 
                     initializeInjekt()
-                    val component = rootComponent<TestComponent>()
-                    return component.runReader { FooFactory().getFoo() }
+                    return runReader { FooFactory().getFoo() }
                 }
             """, name = "File.kt"
             )
@@ -564,8 +544,7 @@ class ImplicitTest {
         
         fun invoke(): Foo { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { FooFactory().getFoo() }
+            return runReader { FooFactory().getFoo() }
         }
     """
     ) {
@@ -584,8 +563,7 @@ class ImplicitTest {
         
         fun invoke(): Foo { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { given<FooFactory>().getFoo() }
+            return runReader { given<FooFactory>().getFoo() }
         }
     """
     ) {
@@ -607,8 +585,7 @@ class ImplicitTest {
         
         fun invoke(): Foo { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { FooFactory().getFoo() }
+            return runReader { FooFactory().getFoo() }
         }
     """
     ) {
@@ -630,8 +607,7 @@ class ImplicitTest {
         
         fun invoke(): Foo { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { FooFactory().getFoo() }
+            return runReader { FooFactory().getFoo() }
         }
     """
     ) {
@@ -653,8 +629,7 @@ class ImplicitTest {
         
         fun invoke(): Foo { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { FooFactory().getFoo() }
+            return runReader { FooFactory().getFoo() }
         }
     """
     ) {
@@ -673,8 +648,7 @@ class ImplicitTest {
         
         fun invoke(): Foo {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { given<FooFactory>().foo }
+            return runReader { given<FooFactory>().foo }
         }
     """
     ) {
@@ -704,8 +678,7 @@ class ImplicitTest {
         
         fun invoke(): Foo { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { provide() }
+            return runReader { provide() }
         }
     """
     ) {
@@ -729,8 +702,7 @@ class ImplicitTest {
                 """
                 fun invoke(): Foo { 
                     initializeInjekt()
-                    val component = rootComponent<TestComponent>()
-                    return component.runReader { provide() }
+                    return runReader { provide() }
                 }
             """, name = "File.kt"
             )
@@ -742,20 +714,16 @@ class ImplicitTest {
     @Test
     fun testNestedRunReader() = codegen(
         """
-        @Given(TestParentComponent::class)
+        @Given
         fun foo() = Foo()
         
-        @Given(TestChildComponent::class)
+        @Given
         fun bar() = Bar(given())
         
         fun invoke(): Bar { 
             initializeInjekt()
-            val parentComponent = rootComponent<TestParentComponent>()
-            val childComponent = parentComponent.runReader {
-                childComponent<TestChildComponent>()
-            }
-            return parentComponent.runReader {
-                childComponent.runReader {
+            return runReader {
+                runReader {
                     given<Bar>()
                 }
             }
@@ -775,8 +743,7 @@ class ImplicitTest {
         
         fun invoke(): Foo { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { createFoo() }
+            return runReader { createFoo() }
         }
     """
     ) {
@@ -796,8 +763,7 @@ class ImplicitTest {
         
         fun invoke(): Foo { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { createFoo() }
+            return runReader { createFoo() }
         }
     """
     ) {
@@ -813,16 +779,15 @@ class ImplicitTest {
             val set2: Set<Int> = given()
         }
         
-        @SetElements(TestComponent::class)
+        @SetElements
         fun set1() = emptySet<String>()
         
-        @SetElements(TestComponent::class)
+        @SetElements
         fun set2() = emptySet<Int>()
         
         fun invoke() { 
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            component.runReader { given<MyClass>() }
+            runReader { given<MyClass>() }
         }
     """
     ) {
@@ -877,8 +842,7 @@ class ImplicitTest {
         
         fun invoke() {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            component.runReader { createFoo(Foo()) }
+            runReader { createFoo(Foo()) }
         }
     """
     ) {
@@ -893,78 +857,11 @@ class ImplicitTest {
         
         fun invoke(): Bar {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { given<Bar>(Foo()) }
+            return runReader { given<Bar>(Foo()) }
         }
         """
     ) {
         assertTrue(invokeSingleFile() is Bar)
-    }
-
-    @Test
-    fun testWithInstances() = codegen(
-        """
-        @Reader
-        fun fooProvider() = given<Foo>()
-        
-        fun invoke(foo: Foo): Foo {
-            initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader {
-                withInstances(foo) {
-                    fooProvider()
-                }
-            }
-        }
-    """
-    ) {
-        val foo = Foo()
-        assertSame(foo, invokeSingleFile(foo))
-    }
-
-    @Test
-    fun testContextPropagation() = codegen(
-        """
-        @Reader
-        fun fooProvider() = given<Foo>()
-        
-        fun invoke(foo: Foo): Foo {
-            initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader {
-                withInstances(foo) {
-                    fooProvider()
-                }
-            }
-        }
-    """
-    ) {
-        val foo = Foo()
-        assertSame(foo, invokeSingleFile(foo))
-    }
-
-    @Test
-    fun testContextPropagationWithLambda() = codegen(
-        """
-        @Reader
-        fun <R> withProvidedFoo(
-            foo: Foo,
-            block: @Reader () -> R
-        ) = withInstances(foo) { block() }
-        
-        fun invoke(foo: Foo): Foo {
-            initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader {
-                withProvidedFoo(foo) {
-                    given<Foo>()
-                }
-            }
-        }
-    """
-    ) {
-        val foo = Foo()
-        assertSame(foo, invokeSingleFile(foo))
     }
 
     @Test
@@ -998,8 +895,7 @@ class ImplicitTest {
         
         fun invoke() {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            component.runReader {
+            runReader {
                 val actions = listOf(
                     FooAction(),
                     BarAction()
@@ -1060,8 +956,7 @@ class ImplicitTest {
                 """
                     fun invoke() {
                         initializeInjekt()
-                        val component = rootComponent<TestComponent>()
-                        component.runReader {
+                        runReader {
                             val actions = listOf(
                                 FooAction(),
                                 BarAction()
@@ -1093,8 +988,7 @@ class ImplicitTest {
         
         fun invoke() {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            component.runReader {
+            runReader {
                 val actions = listOf(
                     object : Action { 
                         @Reader
@@ -1125,12 +1019,11 @@ class ImplicitTest {
         @Reader
         fun invoke(block: @Reader () -> Unit) {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
             block()
             val block2: @Reader () -> Unit = {  }
             block2()
             property()
-            component.runReader { 
+            runReader { 
                 block()
                 block2()
                 property()
@@ -1149,15 +1042,13 @@ class ImplicitTest {
         @Reader
         fun createLambda(delegate: @Reader () -> Unit): @Reader () -> Unit {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            
             val block: @Reader () -> Unit = {
                 
             }
             
             delegate()
             block()
-            component.runReader {
+            runReader {
                 block()
                 delegate()
             }
@@ -1170,80 +1061,6 @@ class ImplicitTest {
     """
     ) {
         assertOk()
-    }
-
-    @Test
-    fun testStore() = codegen(
-        """
-        interface Store<S, A>
-        
-        @Reader
-        fun <S, A> store(): Store<S, A> {
-            given<String>()
-            error("")
-        }
-        
-        @Reader
-        fun <S, A> rememberStore(block: @Reader () -> Store<S, A>) = withInstances("") { block() }
-        
-        @Reader
-        fun testStore() = store<Int, Long>()
-        
-        @Reader
-        fun invoke() {
-            initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            component.runReader { rememberStore { testStore() } }
-        }
-    """
-    ) {
-        assertOk()
-    }
-
-    @Test
-    fun testStoreMulti() = multiCodegen(
-        listOf(
-            source(
-                """
-                    interface Store<S, A>
-        
-                    @Reader
-                    fun <S, A> store(): Store<S, A> {
-                        given<String>()
-                        return object: Store<S, A> {}
-                    }
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    @Reader
-                    fun <S, A> rememberStore(block: @Reader () -> Store<S, A>) = withInstances("") { block() }
-                """
-            )
-        ), listOf(
-            source(
-                """
-                    @Reader
-                    fun testStore() = store<Int, Long>()
-                """
-            )
-        ),
-        listOf(
-            source(
-                """
-                    fun invoke() {
-                        initializeInjekt()
-                        val component = rootComponent<TestComponent>()
-                        component.runReader { rememberStore { testStore() } }
-                    }
-                """,
-                name = "File.kt"
-            )
-        )
-    ) {
-        it.last().invokeSingleFile()
     }
 
 }

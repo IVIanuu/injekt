@@ -20,6 +20,7 @@ import com.ivianuu.injekt.test.Command
 import com.ivianuu.injekt.test.CommandA
 import com.ivianuu.injekt.test.CommandB
 import com.ivianuu.injekt.test.CommandC
+import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertEquals
@@ -34,25 +35,24 @@ class SetTest {
         @Given 
         fun commandA() = CommandA()
         
-        @SetElements(TestComponent::class) 
+        @SetElements
         fun commandAIntoSet(): Set<Command> = setOf(given<CommandA>())
         
         @Given 
         fun commandB() = CommandB()
         
-        @SetElements(TestComponent::class) 
+        @SetElements
         fun commandBIntoSet(): Set<Command> = setOf(given<CommandB>())
         
         @Given 
         fun commandC() = CommandC()
         
-        @SetElements(TestComponent::class)
+        @SetElements
         fun commandCIntoSet(): Set<Command> = setOf(given<CommandC>())
         
         fun invoke(): Set<Command> {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { given<Set<Command>>() }
+            return runReader { given<Set<Command>>() }
         }
         """
     ) {
@@ -64,17 +64,15 @@ class SetTest {
     }
 
     @Test
-    fun testEmptySet() = codegen(
+    fun testUndeclaredSet() = codegen(
         """
         fun invoke(): Set<Command> {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { given<Set<Command>>() }
+            return runReader { given<Set<Command>>() }
         }
         """
     ) {
-        val set = invokeSingleFile<Set<Command>>().toList()
-        assertEquals(0, set.size)
+        assertInternalError("no binding")
     }
 
 }

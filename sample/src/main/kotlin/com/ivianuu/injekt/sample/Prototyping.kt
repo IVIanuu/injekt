@@ -16,12 +16,12 @@
 
 package com.ivianuu.injekt.sample
 
-/*
 import android.app.Application
-import androidx.activity.ComponentActivity
+import com.ivianuu.injekt.ApplicationModule.applicationStorage
+import com.ivianuu.injekt.ApplicationScoped
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.applicationStorage
+import com.ivianuu.injekt.android.runApplicationReader
 import com.ivianuu.injekt.given
 
 annotation class RunReaderInvocation
@@ -38,7 +38,7 @@ class runApplicationReaderContextImpl(
 }
 
 @RunReaderInvocation
-interface runApplicationReader {
+interface runApplicationReaderContext {
     fun inputs(application: Application)
 }
 
@@ -76,4 +76,3 @@ fun activityMain(application: Application) {
         })
     }
 }
-*/

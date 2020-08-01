@@ -18,7 +18,10 @@ package com.ivianuu.injekt
 
 import java.util.concurrent.ConcurrentHashMap
 
-class Storage(val instances: ConcurrentHashMap<Any, Any?> = ConcurrentHashMap()) {
+class Storage(
+    @PublishedApi
+    internal val instances: ConcurrentHashMap<Any, Any?> = ConcurrentHashMap()
+) {
     inline fun <T> scope(
         key: Any,
         init: () -> T

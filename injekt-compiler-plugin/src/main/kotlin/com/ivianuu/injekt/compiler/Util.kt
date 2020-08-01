@@ -94,7 +94,6 @@ import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
@@ -512,37 +511,6 @@ fun <T> T.getClassFromAnnotation(
             ?.asSingleFqName()
             ?.let { FqName(it.asString().replace("\$", ".")) }
             ?.let { pluginContext.referenceClass(it)!!.owner }
-}
-
-fun <T> T.getClassesFromAnnotation(
-    fqName: FqName,
-    index: Int,
-    pluginContext: IrPluginContext
-): List<IrClass> where T : IrDeclaration, T : IrAnnotationContainer {
-    return getAnnotation(fqName)
-        ?.getValueArgument(index)
-        ?.let { it as? IrVarargImpl }
-        ?.elements
-        ?.map {
-            (it as? IrClassReference)
-                ?.classType
-                ?.classOrNull
-                ?.owner!!
-        } ?: descriptor.annotations.findAnnotation(fqName)
-        ?.allValueArguments
-        ?.values
-        ?.toList()
-        ?.getOrNull(index)
-        ?.let { it as ArrayValue }
-        ?.value
-        ?.map {
-            (it as KClassValue)
-                .let { it.value as KClassValue.Value.NormalClass }
-                .classId
-                .asSingleFqName()
-                .let { FqName(it.asString().replace("\$", ".")) }
-                .let { pluginContext.referenceClass(it)!!.owner }
-        } ?: emptyList()
 }
 
 fun String.asNameId(): Name = Name.identifier(this)

@@ -38,14 +38,11 @@ class DeclarationGraph(
     private val implicitTransformer: ImplicitContextTransformer
 ) {
 
-    private val _rootComponentFactories = mutableListOf<IrClass>()
-    val rootComponentFactories: List<IrClass> get() = _rootComponentFactories
+    private val _runReaderContexts = mutableListOf<IrClass>()
+    val runReaderContexts: List<IrClass> get() = _runReaderContexts
 
     private val _bindings = mutableListOf<IrFunction>()
     val bindings: List<IrFunction> get() = _bindings
-
-    val entryPoints: List<IrClass> get() = _entryPoints
-    private val _entryPoints = mutableListOf<IrClass>()
 
     private val _mapEntries = mutableListOf<IrFunction>()
     val mapEntries: List<IrFunction> get() = _mapEntries
@@ -55,9 +52,6 @@ class DeclarationGraph(
 
     private val _genericContexts = mutableListOf<IrClass>()
     val genericContexts: List<IrClass> get() = _genericContexts
-
-    private val _withInstancesContexts = mutableListOf<IrClass>()
-    val withInstancesContexts: List<IrClass> get() = _withInstancesContexts
 
     fun getAdditionalContexts(component: IrClass): List<IrClass> {
         return indexer.classIndices
@@ -136,25 +130,17 @@ class DeclarationGraph(
     }
 
     fun initialize() {
-        collectRootComponentFactories()
-        collectEntryPoints()
+        collectRunReaderContexts()
         collectBindings()
         collectMapEntries()
         collectSetElements()
         collectGenericContexts()
-        collectWithInstancesContexts()
     }
 
-    private fun collectRootComponentFactories() {
+    private fun collectRunReaderContexts() {
         indexer.classIndices
-            .filter { it.hasAnnotation(InjektFqNames.RootComponentFactory) }
-            .forEach { _rootComponentFactories += it }
-    }
-
-    private fun collectEntryPoints() {
-        indexer.classIndices
-            .filter { it.hasAnnotation(InjektFqNames.EntryPoint) }
-            .forEach { _entryPoints += it }
+            .filter { it.hasAnnotation(InjektFqNames.RunReaderContext) }
+            .forEach { _runReaderContexts += it }
     }
 
     private fun collectBindings() {
@@ -196,12 +182,6 @@ class DeclarationGraph(
         indexer.classIndices
             .filter { it.hasAnnotation(InjektFqNames.GenericContext) }
             .forEach { _genericContexts += it }
-    }
-
-    private fun collectWithInstancesContexts() {
-        indexer.classIndices
-            .filter { it.hasAnnotation(InjektFqNames.WithInstancesContext) }
-            .forEach { _withInstancesContexts += it }
     }
 
 }

@@ -20,6 +20,7 @@ import com.ivianuu.injekt.test.Command
 import com.ivianuu.injekt.test.CommandA
 import com.ivianuu.injekt.test.CommandB
 import com.ivianuu.injekt.test.CommandC
+import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertEquals
@@ -35,25 +36,24 @@ class MapTest {
         @Given 
         fun commandA() = CommandA()
         
-        @MapEntries(TestComponent::class) 
+        @MapEntries
         fun commandAIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandA::class to given<CommandA>())
         
         @Given 
         fun commandB() = CommandB()
 
-        @MapEntries(TestComponent::class) 
+        @MapEntries 
         fun commandBIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandB::class to given<CommandB>())
         
         @Given 
         fun commandC() = CommandC()
         
-        @MapEntries(TestComponent::class)
+        @MapEntries
         fun commandCIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandC::class to given<CommandC>())
         
         fun invoke(): Map<KClass<out Command>, Command> {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { given<Map<KClass<out Command>, Command>>() }
+            return runReader { given<Map<KClass<out Command>, Command>>() }
         }
         """
     ) {
@@ -66,18 +66,15 @@ class MapTest {
     }
 
     @Test
-    fun testEmptyMap() = codegen(
+    fun testUndeclaredMap() = codegen(
         """
         fun invoke(): Map<KClass<out Command>, Command> {
             initializeInjekt()
-            val component = rootComponent<TestComponent>()
-            return component.runReader { given<Map<KClass<out Command>, Command>>() }
+            return runReader { given<Map<KClass<out Command>, Command>>() }
         }
         """
     ) {
-        val map =
-            invokeSingleFile<Map<KClass<out Command>, Command>>()
-        assertEquals(0, map.size)
+        assertInternalError("no binding")
     }
 
 }

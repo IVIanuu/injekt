@@ -21,7 +21,7 @@ typealias ApplicationStorage = Storage
 
 object ApplicationModule {
     @Given
-    val applicationStorage = Storage()
+    val applicationStorage: ApplicationStorage = Storage()
 }
 
 @Scoping

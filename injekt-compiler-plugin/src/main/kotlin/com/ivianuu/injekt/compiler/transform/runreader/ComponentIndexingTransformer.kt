@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.component
+package com.ivianuu.injekt.compiler.transform.runreader
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
@@ -61,8 +61,7 @@ class ComponentIndexingTransformer(
 
             override fun visitClass(declaration: IrClass): IrStatement {
                 if (declaration.hasAnnotation(InjektFqNames.Given) ||
-                    declaration.hasAnnotation(InjektFqNames.RootComponentFactory) ||
-                    declaration.hasAnnotation(InjektFqNames.EntryPoint)
+                    declaration.hasAnnotation(InjektFqNames.RunReaderContext)
                 ) {
                     declarations += declaration
                 }

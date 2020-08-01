@@ -27,3 +27,5 @@ internal annotation class ReaderInvocation(
     val readerContext: KClass<*>,
     val invocationContext: KClass<*>
 )
+
+annotation class RunReaderContext(val fqName: String)

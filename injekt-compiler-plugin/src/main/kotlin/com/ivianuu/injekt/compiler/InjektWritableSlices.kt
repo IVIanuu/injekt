@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
-import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.util.slicedMap.BasicWritableSlice
 import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
@@ -27,7 +25,5 @@ object InjektWritableSlices {
     val IS_IMPLICIT: WritableSlice<Any, Boolean> =
         BasicWritableSlice(RewritePolicy.DO_NOTHING)
     val IS_READER_LAMBDA_INVOKE: WritableSlice<IrFunctionAccessExpression, Boolean> =
-        BasicWritableSlice(RewritePolicy.DO_NOTHING)
-    val WITH_INSTANCES_CALL: WritableSlice<IrSimpleFunction, IrCall> =
         BasicWritableSlice(RewritePolicy.DO_NOTHING)
 }

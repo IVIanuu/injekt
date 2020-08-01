@@ -48,7 +48,6 @@ import org.jetbrains.kotlin.resolve.calls.context.ResolutionContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.inline.InlineUtil
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
@@ -56,7 +55,6 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.types.lowerIfFlexible
 import org.jetbrains.kotlin.types.typeUtil.builtIns
-import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.types.upperIfFlexible
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
@@ -151,19 +149,6 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         context: CallCheckerContext
     ) {
         val resulting = resolvedCall.resultingDescriptor
-
-        if (resulting.fqNameSafe.asString() == "com.ivianuu.injekt.runReader") {
-            val receiver = resolvedCall.extensionReceiver!!.type
-            if (receiver.constructor.declarationDescriptor?.annotations
-                    ?.hasAnnotation(InjektFqNames.Component) != true &&
-                !receiver.isTypeParameter()
-            ) {
-                context.trace.report(
-                    InjektErrors.NOT_A_COMPONENT
-                        .on(reportOn)
-                )
-            }
-        }
 
         if (resulting !is FunctionDescriptor) return
 
