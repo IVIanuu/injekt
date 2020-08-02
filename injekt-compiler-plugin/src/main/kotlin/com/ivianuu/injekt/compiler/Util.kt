@@ -632,10 +632,7 @@ fun wrapDescriptor(descriptor: FunctionDescriptor): WrappedSimpleFunctionDescrip
     }
 }
 
-fun IrFunction.copy(
-    pluginContext: IrPluginContext,
-    origin: IrDeclarationOrigin = this.origin
-): IrSimpleFunction {
+fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
     val descriptor = descriptor
     val newDescriptor = wrapDescriptor(descriptor)
 

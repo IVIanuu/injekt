@@ -259,7 +259,12 @@ class EffectTest {
         
         fun invoke(): Foo { 
             initializeInjekt()
-            return runReader { runBlocking { given<FooFactory>()() } }
+            return runReader { 
+                runBlocking { 
+                    delay(1)
+                    given<FooFactory>()() 
+                }
+            }
         }
     """
     ) {

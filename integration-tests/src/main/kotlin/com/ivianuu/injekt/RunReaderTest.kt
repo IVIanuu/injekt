@@ -46,6 +46,52 @@ class RunReaderTest {
     }
 
     @Test
+    fun testRunReaderInsideSuspend() = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+        @Given
+        fun bar() = Bar(given())
+        
+        fun invoke(): Bar {
+            initializeInjekt()
+            return runBlocking {
+                runReader { 
+                    delay(1)
+                    given<Bar>()
+                }
+            }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
+    }
+
+    @Test
+    fun testRunReaderWrapperInsideSuspend() = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+        @Given
+        fun bar() = Bar(given())
+        
+        inline fun <R> runBarReader(block: @Reader () -> R) = runReader("hello world") { block() }
+        
+        fun invoke(): Bar {
+            initializeInjekt()
+            return runBlocking {
+                runBarReader {
+                    delay(1)
+                    given<Bar>()
+                }
+            }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
+    }
+
+    @Test
     fun testScoping() = codegen(
         """
         

@@ -229,14 +229,15 @@ class ImplicitTest {
         
         @Reader
         suspend fun func(): Foo {
-            delay(1000)
+            delay(1)
             return given()
         }
         
         fun invoke(): Foo { 
             initializeInjekt()
             return runReader {
-                runBlocking { 
+                runBlocking {
+                    delay(1)
                     func()
                 }
             }
@@ -254,7 +255,7 @@ class ImplicitTest {
         
         @Reader
         suspend fun func(): Foo {
-            delay(1000)
+            delay(1)
             return given()
         }
         
@@ -262,6 +263,7 @@ class ImplicitTest {
             initializeInjekt()
             return runBlocking {
                 runReader {
+                    delay(1)
                     func()
                 }
             }
@@ -279,7 +281,7 @@ class ImplicitTest {
         
         @Reader
         suspend fun createFoo(foo: Foo): Foo {
-            delay(1000)
+            delay(1)
             return given()
         }
         
@@ -317,13 +319,13 @@ class ImplicitTest {
         
         @Reader
         suspend fun func(foo: Foo = given()): Foo {
-            delay(1000)
+            delay(1)
             return foo
         }
         
         @Reader
         suspend fun other() { 
-            delay(1000)
+            delay(1)
         }
         
         @Reader
@@ -333,7 +335,9 @@ class ImplicitTest {
             initializeInjekt()
             return runBlocking {
                 runReader {
+                    delay(1)
                     withFoo {
+                        delay(1)
                         other()
                         it
                     }

@@ -16,10 +16,12 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.transform.implicit.IMPLICIT_CONTEXT_PARAM_ORIGIN
+import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.irTrace
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFile
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.MetadataSource
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -36,7 +38,10 @@ class TmpMetadataPatcher(pluginContext: IrPluginContext) :
                     MetadataSource.File(
                         ((declaration.metadata as MetadataSource.File).descriptors + (declaration.declarations
                             .filterIsInstance<IrDeclarationWithName>()
-                            .filterNot { it.origin == IMPLICIT_CONTEXT_PARAM_ORIGIN })
+                            .filter {
+                                (it !is IrSimpleFunction ||
+                                        pluginContext.irTrace[InjektWritableSlices.IS_IMPLICIT_CONTEXT_PARAM, it] != true)
+                            })
                             .map { it.descriptor })
                             .distinct()
                     )

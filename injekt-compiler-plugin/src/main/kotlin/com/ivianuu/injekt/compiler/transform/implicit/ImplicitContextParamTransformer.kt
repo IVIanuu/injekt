@@ -62,7 +62,6 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
@@ -505,9 +504,13 @@ class ImplicitContextParamTransformer(
 
     private fun IrFunction.copyAsReader(): IrFunction {
         return copy(
-            pluginContext,
-            if (isExternalDeclaration()) IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB else IMPLICIT_CONTEXT_PARAM_ORIGIN
+            pluginContext
         ).apply {
+            pluginContext.irTrace.record(
+                InjektWritableSlices.IS_IMPLICIT_CONTEXT_PARAM,
+                this,
+                true
+            )
             val descriptor = descriptor
             if (descriptor is PropertyGetterDescriptor &&
                 annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
@@ -791,5 +794,3 @@ class ImplicitContextParamTransformer(
     }
 
 }
-
-object IMPLICIT_CONTEXT_PARAM_ORIGIN : IrDeclarationOrigin
