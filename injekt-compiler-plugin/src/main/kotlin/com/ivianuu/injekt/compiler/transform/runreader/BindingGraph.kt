@@ -51,6 +51,8 @@ class BindingGraph(
 ) {
 
     private val allBindings = buildList<BindingNode> {
+        this += inputs.map { InputBindingNode(it) }
+
         this += declarationGraph.bindings
             .map { function ->
                 val scoping = function.getClassFromAnnotation(
@@ -165,8 +167,6 @@ class BindingGraph(
                     elements
                 )
             }
-
-        this += inputs.map { InputBindingNode(it) }
     }
 
     val resolvedBindings = mutableMapOf<Key, BindingNode>()
@@ -178,7 +178,7 @@ class BindingGraph(
         val bindings = allBindings
             .filter { it.key == request.key }
 
-        if (bindings.size > 1) {
+        if (bindings.filterNot { it is InputBindingNode }.size > 1) {
             error(
                 "Multiple bindings found for '${request.key}' at:\n${
                 bindings
@@ -187,7 +187,7 @@ class BindingGraph(
             )
         }
 
-        binding = bindings.singleOrNull()
+        binding = bindings.firstOrNull()
 
         binding?.let {
             resolvedBindings[request.key] = it
