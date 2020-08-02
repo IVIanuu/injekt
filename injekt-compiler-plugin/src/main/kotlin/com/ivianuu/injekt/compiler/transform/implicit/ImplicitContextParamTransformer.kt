@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.copy
 import com.ivianuu.injekt.compiler.getFunctionType
@@ -42,16 +43,19 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
+import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.ir.remapTypeParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.addField
+import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
-import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
@@ -60,7 +64,6 @@ import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
-import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
@@ -118,6 +121,7 @@ import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
+import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -143,7 +147,7 @@ class ImplicitContextParamTransformer(
     private val transformedValueParameters = mutableMapOf<IrValueParameter, IrValueParameter>()
     private val transformedVariables = mutableMapOf<IrVariable, IrVariable>()
 
-    private val newDeclarations = mutableListOf<IrDeclaration>()
+    private val newDeclarations = mutableListOf<Pair<IrDeclarationWithName, Boolean>>()
     private val nameProvider = NameProvider()
 
     fun getTransformedFunction(function: IrFunction) =
@@ -173,13 +177,11 @@ class ImplicitContextParamTransformer(
 
         module.rewriteTransformedReferences()
 
-        newDeclarations.forEach { newDeclaration ->
+        newDeclarations.forEach { (newDeclaration, index) ->
             val parent = newDeclaration.parent as IrDeclarationContainer
             if (newDeclaration !in parent.declarations) {
                 parent.addChild(newDeclaration)
-                if (newDeclaration is IrFunction) {
-                    indexer.index(newDeclaration)
-                }
+                if (index) indexer.index(newDeclaration)
             }
         }
     }
@@ -218,7 +220,7 @@ class ImplicitContextParamTransformer(
         )
 
         val signature = createReaderSignature(clazz, readerConstructor, null)
-        newDeclarations += signature
+        newDeclarations += signature to true
 
         readerConstructor.body = DeclarationIrBuilder(pluginContext, clazz.symbol).run {
             irBlockBody {
@@ -298,7 +300,7 @@ class ImplicitContextParamTransformer(
         }
 
         val signature = createReaderSignature(transformedFunction, transformedFunction, null)
-        newDeclarations += signature
+        newDeclarations += signature to true
 
         return transformedFunction
     }
@@ -313,7 +315,7 @@ class ImplicitContextParamTransformer(
                 owner.parent as IrFunction else null
 
         val context = createContext(owner, parentFunction, pluginContext, symbols)
-        newDeclarations += context
+        newDeclarations += context to false
         val contextParameter = ownerFunction.addContextParameter(context)
         onContextParameterCreated(contextParameter)
     }
@@ -425,7 +427,7 @@ class ImplicitContextParamTransformer(
             pluginContext,
             symbols
         )
-        newDeclarations += context
+        newDeclarations += context to false
 
         val oldTypeArguments = oldType.typeArguments
 
@@ -543,15 +545,17 @@ class ImplicitContextParamTransformer(
     private fun getExternalReaderSignature(owner: IrDeclarationWithName): IrFunction? {
         val declaration = if (owner is IrConstructor)
             owner.constructedClass else owner
-        return indexer.externalFunctionIndices
+        return indexer.externalClassIndices
             .filter { it.hasAnnotation(InjektFqNames.Signature) }
             .filter { it.hasAnnotation(InjektFqNames.Name) }
-            .singleOrNull { function ->
-                function.getAnnotation(InjektFqNames.Name)!!
+            .singleOrNull { clazz ->
+                clazz.getAnnotation(InjektFqNames.Name)!!
                     .getValueArgument(0)!!
                     .let { it as IrConst<String> }
                     .value == declaration.uniqueName()
             }
+            ?.functions
+            ?.single { it.name.asString() == "signature" }
     }
 
     private fun IrFunction.copySignatureFrom(signature: IrFunction) {
@@ -568,7 +572,7 @@ class ImplicitContextParamTransformer(
         owner: IrDeclarationWithName,
         ownerFunction: IrFunction,
         parentFunction: IrFunction?
-    ) = buildFun {
+    ) = buildClass {
         this.name = nameProvider.allocateForGroup(
             getJoinedName(
                 owner.getPackageFragment()!!.fqName,
@@ -577,12 +581,11 @@ class ImplicitContextParamTransformer(
             ).asString() + "${owner.uniqueName().hashCode()}Signature"
         ).asNameId()
         visibility = Visibilities.INTERNAL
-    }.apply {
+        kind = ClassKind.INTERFACE
+    }.apply clazz@{
         parent = owner.file
+        createImplicitParameterDeclarationWithWrappedDescriptor()
         addMetadataIfNotLocal()
-
-        copyTypeParametersFrom(owner as IrTypeParametersContainer)
-        //parentFunction?.let { copyTypeParametersFrom(it) }
 
         annotations += DeclarationIrBuilder(pluginContext, symbol)
             .irCall(symbols.signature.constructors.single())
@@ -598,60 +601,57 @@ class ImplicitContextParamTransformer(
             }
         }
 
-        returnType = ownerFunction.returnType
-            .remapTypeParametersByName(owner, this)
-            .let {
-                if (parentFunction != null) it.remapTypeParametersByName(
-                    parentFunction, this
-                ) else it
-            }
+        addFunction {
+            name = "signature".asNameId()
+            modality = Modality.ABSTRACT
+        }.apply {
+            addMetadataIfNotLocal()
 
-        valueParameters = ownerFunction.valueParameters.map {
-            it.copyTo(
-                this,
-                type = it.type
-                    .remapTypeParametersByName(owner, this)
-                    .let {
-                        if (parentFunction != null) it.remapTypeParameters(
-                            parentFunction, this
-                        ) else it
-                    },
-                varargElementType = it.varargElementType
-                    ?.remapTypeParametersByName(owner, this)
-                    ?.let {
-                        if (parentFunction != null) it.remapTypeParameters(
-                            parentFunction, this
-                        ) else it
-                    },
-                defaultValue = if (it.hasDefaultValue()) DeclarationIrBuilder(
-                    pluginContext,
-                    it.symbol
-                ).run {
-                    irExprBody(
-                        irCall(
-                            pluginContext.referenceFunctions(
-                                FqName("com.ivianuu.injekt.internal.injektIntrinsic")
-                            )
-                                .single()
-                        ).apply {
-                            putTypeArgument(0, it.type)
-                        }
-                    )
-                } else null
-            )
-        }
+            copyTypeParametersFrom(owner as IrTypeParametersContainer)
+            //parentFunction?.let { copyTypeParametersFrom(it) }
 
-        body = DeclarationIrBuilder(pluginContext, symbol).run {
-            irExprBody(
-                irCall(
-                    pluginContext.referenceFunctions(
-                        FqName("com.ivianuu.injekt.internal.injektIntrinsic")
-                    )
-                        .single()
-                ).apply {
-                    putTypeArgument(0, returnType)
+            returnType = ownerFunction.returnType
+                .remapTypeParametersByName(owner, this)
+                .let {
+                    if (parentFunction != null) it.remapTypeParametersByName(
+                        parentFunction, this
+                    ) else it
                 }
-            )
+
+            valueParameters = ownerFunction.valueParameters.map {
+                it.copyTo(
+                    this,
+                    type = it.type
+                        .remapTypeParametersByName(owner, this)
+                        .let {
+                            if (parentFunction != null) it.remapTypeParameters(
+                                parentFunction, this
+                            ) else it
+                        },
+                    varargElementType = it.varargElementType
+                        ?.remapTypeParametersByName(owner, this)
+                        ?.let {
+                            if (parentFunction != null) it.remapTypeParameters(
+                                parentFunction, this
+                            ) else it
+                        },
+                    defaultValue = if (it.hasDefaultValue()) DeclarationIrBuilder(
+                        pluginContext,
+                        it.symbol
+                    ).run {
+                        irExprBody(
+                            irCall(
+                                pluginContext.referenceFunctions(
+                                    FqName("com.ivianuu.injekt.internal.injektIntrinsic")
+                                )
+                                    .single()
+                            ).apply {
+                                putTypeArgument(0, it.type)
+                            }
+                        )
+                    } else null
+                )
+            }
         }
     }
 

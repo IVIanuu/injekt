@@ -92,13 +92,21 @@ class Indexer(
         )
     }
 
-    val classIndices by lazy {
-        (externalIndices + internalIndices)
-            .filter { it.type == "class" }
-            .mapNotNull { pluginContext.referenceClass(it.fqName) }
-            .map { it.owner }
-            .distinct()
+    val classIndices by lazy { internalClassIndices + externalClassIndices }
+
+    val internalClassIndices by lazy {
+        internalIndices.mapNotNull { it.toClassOrNull() }
     }
+
+    val externalClassIndices by lazy {
+        externalIndices
+            .mapNotNull { it.toClassOrNull() }
+    }
+
+    private fun Index.toClassOrNull() =
+        takeIf { it.type == "class" }
+            ?.let { pluginContext.referenceClass(it.fqName) }
+            ?.owner
 
     val internalFunctionIndices by lazy {
         internalIndices.flatMapFix { it.getFunctions() }
