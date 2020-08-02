@@ -25,7 +25,7 @@ import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.removeIllegalChars
-import com.ivianuu.injekt.compiler.uniqueName
+import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
@@ -132,7 +132,7 @@ class Indexer(
             declaration.getPackageFragment()!!.fqName,
             declaration.descriptor.fqNameSafe
                 .parent().child(declaration.name.asString().asNameId())
-        ).asString() + "${declaration.uniqueName().hashCode()}Index")
+        ).asString() + "${declaration.uniqueKey().hashCode()}Index")
             .removeIllegalChars()
             .asNameId()
         module.addFile(

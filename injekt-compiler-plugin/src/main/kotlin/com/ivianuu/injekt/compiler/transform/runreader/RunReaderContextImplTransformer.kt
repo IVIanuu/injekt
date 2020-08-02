@@ -23,11 +23,11 @@ import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getAllClasses
 import com.ivianuu.injekt.compiler.irCallAndRecordLookup
 import com.ivianuu.injekt.compiler.irLambda
-import com.ivianuu.injekt.compiler.readableName
 import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
+import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -121,7 +121,7 @@ class RunReaderContextImplTransformer(
 
         val inputFields = inputs.associateWith {
             contextImpl.addField(
-                it.readableName(),
+                it.uniqueTypeName(),
                 it
             )
         }
@@ -234,7 +234,7 @@ class RunReaderContextImplTransformer(
         }
 
         val function = buildFun {
-            this.name = request.key.type.readableName()
+            this.name = request.key.type.uniqueTypeName()
             returnType = request.key.type
         }.apply {
             dispatchReceiverParameter = context.thisReceiver!!.copyTo(this)

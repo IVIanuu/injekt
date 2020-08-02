@@ -30,7 +30,7 @@ import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
-import com.ivianuu.injekt.compiler.uniqueName
+import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -260,7 +260,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                             irCall(symbols.qualifier.constructors.single()).apply {
                                 putValueArgument(
                                     0,
-                                    irString(function.uniqueName())
+                                    irString(function.uniqueKey())
                                 )
                             }
                         }

@@ -536,32 +536,42 @@ fun String.removeIllegalChars() =
         .replace(" ", "")
         .replace("-", "")
 
-fun IrType.readableName(): Name = buildString {
-    fun IrType.renderName() {
-        val qualifier = getAnnotation(InjektFqNames.Qualifier)
-            ?.getValueArgument(0)
-            ?.let { it as IrConst<String> }
-            ?.value
+fun IrType.uniqueTypeName(): Name {
+    fun IrType.renderName(includeArguments: Boolean = true): String {
+        return buildString {
+            val qualifier = getAnnotation(InjektFqNames.Qualifier)
+                ?.getValueArgument(0)
+                ?.let { it as IrConst<String> }
+                ?.value
 
-        if (qualifier != null) {
-            append("${qualifier}_")
-        }
+            if (qualifier != null) {
+                append("${qualifier}_")
+            }
 
-        val fqName = if (this is IrSimpleType && abbreviation != null &&
-            abbreviation!!.typeAlias.descriptor.hasAnnotation(InjektFqNames.Distinct)
-        ) abbreviation!!.typeAlias.descriptor.fqNameSafe
-        else classifierOrFail.descriptor.fqNameSafe
-        append(fqName.pathSegments().joinToString("_") { it.asString() })
+            val fqName = if (this@renderName is IrSimpleType && abbreviation != null &&
+                abbreviation!!.typeAlias.descriptor.hasAnnotation(InjektFqNames.Distinct)
+            ) abbreviation!!.typeAlias.descriptor.fqNameSafe
+            else classifierOrFail.descriptor.fqNameSafe
+            append(fqName.pathSegments().joinToString("_") { it.asString() })
 
-        typeArguments.forEachIndexed { index, typeArgument ->
-            if (index == 0) append("_")
-            typeArgument.typeOrNull?.renderName() ?: append("star")
-            if (index != typeArguments.lastIndex) append("_")
+            if (includeArguments) {
+                typeArguments.forEachIndexed { index, typeArgument ->
+                    if (index == 0) append("_")
+                    append(typeArgument.typeOrNull?.renderName() ?: "star")
+                    if (index != typeArguments.lastIndex) append("_")
+                }
+            }
         }
     }
 
-    renderName()
-}.removeIllegalChars().asNameId()
+    val fullTypeName = renderName()
+
+    // Conservatively shorten the name if the length exceeds 128
+    return (if (fullTypeName.length <= 128) fullTypeName
+    else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}"))
+        .removeIllegalChars()
+        .asNameId()
+}
 
 fun wrapDescriptor(descriptor: FunctionDescriptor): WrappedSimpleFunctionDescriptor {
     return when (descriptor) {
@@ -636,7 +646,7 @@ fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
     }
 }
 
-fun IrDeclarationWithName.uniqueName() = when (this) {
+fun IrDeclarationWithName.uniqueKey() = when (this) {
     is IrClass -> "${descriptor.fqNameSafe}__class"
     is IrField -> "${descriptor.fqNameSafe}__field"
     is IrFunction -> "${descriptor.fqNameSafe}__function${

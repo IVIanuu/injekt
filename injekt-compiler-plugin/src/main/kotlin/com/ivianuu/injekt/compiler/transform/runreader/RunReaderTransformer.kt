@@ -21,9 +21,9 @@ import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getContext
-import com.ivianuu.injekt.compiler.readableName
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.Indexer
+import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -41,7 +41,6 @@ import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
-
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.builders.irTemporary
@@ -141,7 +140,7 @@ class RunReaderTransformer(
                 addMetadataIfNotLocal()
                 inputs.forEach {
                     addValueParameter(
-                        it.type.readableName().asString(),
+                        it.type.uniqueTypeName().asString(),
                         it.type
                     )
                 }
@@ -175,7 +174,7 @@ class RunReaderTransformer(
                 }.apply {
                     inputs.forEach {
                         addValueParameter(
-                            it.type.readableName().asString(),
+                            it.type.uniqueTypeName().asString(),
                             it.type
                         )
                     }

@@ -25,7 +25,7 @@ import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
-import com.ivianuu.injekt.compiler.uniqueName
+import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
@@ -62,7 +62,7 @@ fun createContext(
             owner.getPackageFragment()!!.fqName,
             owner.descriptor.fqNameSafe
                 .parent().child(owner.name.asString().asNameId())
-        ).asString() + "${owner.uniqueName().hashCode()}Context"
+        ).asString() + "${owner.uniqueKey().hashCode()}Context"
     ).asNameId()
     visibility = Visibilities.INTERNAL
 }.apply {
@@ -79,7 +79,7 @@ fun createContext(
         irCall(symbols.name.constructors.single()).apply {
             putValueArgument(
                 0,
-                irString(owner.uniqueName())
+                irString(owner.uniqueKey())
             )
         }
     }

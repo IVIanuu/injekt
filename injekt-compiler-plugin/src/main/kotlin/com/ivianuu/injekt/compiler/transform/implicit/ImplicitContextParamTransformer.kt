@@ -38,7 +38,7 @@ import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.typeArguments
-import com.ivianuu.injekt.compiler.uniqueName
+import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -552,10 +552,14 @@ class ImplicitContextParamTransformer(
                 clazz.getAnnotation(InjektFqNames.Name)!!
                     .getValueArgument(0)!!
                     .let { it as IrConst<String> }
-                    .value == declaration.uniqueName()
+                    .value == declaration.uniqueKey()
             }
             ?.functions
-            ?.single { it.name.asString() == "signature" }
+            ?.single {
+                // we use startsWith because in case of inline class return types the name
+                // changes to something like signature-dj39
+                it.name.asString().startsWith("signature")
+            }
     }
 
     private fun IrFunction.copySignatureFrom(signature: IrFunction) {
@@ -578,7 +582,7 @@ class ImplicitContextParamTransformer(
                 owner.getPackageFragment()!!.fqName,
                 owner.descriptor.fqNameSafe
                     .parent().child(owner.name.asString().asNameId())
-            ).asString() + "${owner.uniqueName().hashCode()}Signature"
+            ).asString() + "${owner.uniqueKey().hashCode()}Signature"
         ).asNameId()
         visibility = Visibilities.INTERNAL
         kind = ClassKind.INTERFACE
@@ -596,7 +600,7 @@ class ImplicitContextParamTransformer(
             ).apply {
                 putValueArgument(
                     0,
-                    irString(owner.uniqueName())
+                    irString(owner.uniqueKey())
                 )
             }
         }

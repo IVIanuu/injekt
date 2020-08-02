@@ -26,7 +26,6 @@ import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.irClassReference
 import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
-import com.ivianuu.injekt.compiler.readableName
 import com.ivianuu.injekt.compiler.remapTypeParametersByName
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.thisOfClass
@@ -35,6 +34,7 @@ import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -183,7 +183,7 @@ class ImplicitCallTransformer(
                                 } else it
                             }
                     functionMap[genericContextFunction] = context.addFunction {
-                        this.name = finalType.readableName()
+                        this.name = finalType.uniqueTypeName()
                         returnType = finalType
                         modality = Modality.ABSTRACT
                     }.apply {
@@ -250,7 +250,7 @@ class ImplicitCallTransformer(
 
             val function = functionsByType.getOrPut(finalType) {
                 context.addFunction {
-                    name = finalType.readableName()
+                    name = finalType.uniqueTypeName()
                     returnType = finalType
                     modality = Modality.ABSTRACT
                 }.apply {
