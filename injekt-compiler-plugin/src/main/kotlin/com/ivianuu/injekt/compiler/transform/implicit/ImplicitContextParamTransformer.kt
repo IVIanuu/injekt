@@ -605,6 +605,7 @@ class ImplicitContextParamTransformer(
             name = "signature".asNameId()
             modality = Modality.ABSTRACT
         }.apply {
+            dispatchReceiverParameter = thisReceiver!!.copyTo(this)
             addMetadataIfNotLocal()
 
             copyTypeParametersFrom(owner as IrTypeParametersContainer)
