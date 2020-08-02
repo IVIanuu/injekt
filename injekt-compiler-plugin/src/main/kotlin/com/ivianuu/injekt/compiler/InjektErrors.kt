@@ -112,6 +112,16 @@ interface InjektErrors {
             "@BindingEffect and @Effect annotated declaration cannot have type parameters"
         )
 
+        @JvmField
+        val SCOPING_MUST_BE_AN_OBJECT = error(
+            "@Scoping must be an object"
+        )
+
+        @JvmField
+        val SCOPING_EXACT_ONE_FUNCTION = error(
+            "@Scoping must declare exact 1 function with the following signature @Reader fun <T> scope(key: Any, init: () -> T): T"
+        )
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,

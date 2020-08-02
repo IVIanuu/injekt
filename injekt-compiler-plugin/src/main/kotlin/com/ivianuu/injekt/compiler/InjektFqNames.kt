@@ -26,6 +26,7 @@ object InjektFqNames {
     val InitializeInjekt = InjektPackage.child("InitializeInjekt".asNameId())
     val MapEntries = InjektPackage.child("MapEntries".asNameId())
     val Reader = InjektPackage.child("Reader".asNameId())
+    val Scoping = InjektPackage.child("Scoping".asNameId())
     val SetElements = InjektPackage.child("SetElements".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())

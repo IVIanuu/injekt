@@ -30,6 +30,8 @@ class InjektSymbols(val pluginContext: IrPluginContext) {
         get() = pluginContext.referenceClass(InjektFqNames.MapEntries)!!
     val reader: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.Reader)!!
+    val scoping: IrClassSymbol
+        get() = pluginContext.referenceClass(InjektFqNames.Scoping)!!
     val setElements: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.SetElements)!!
 
