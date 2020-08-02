@@ -16,16 +16,23 @@
 
 package com.ivianuu.injekt
 
-import java.util.concurrent.ConcurrentHashMap
-
 class Storage(
     @PublishedApi
-    internal val instances: ConcurrentHashMap<Any, Any?> = ConcurrentHashMap()
+    internal val backing: MutableMap<Any, Any?> = mutableMapOf()
 ) {
 
     inline fun <T> scope(
         key: Any,
         init: () -> T
-    ) = instances.getOrPut(key, init) as T
+    ): T = synchronized(this) {
+        var value: Any? = if (key in backing) backing[key] else this
+
+        if (value === this) {
+            value = init()
+            backing[key] = value
+        }
+
+        return value as T
+    }
 
 }
