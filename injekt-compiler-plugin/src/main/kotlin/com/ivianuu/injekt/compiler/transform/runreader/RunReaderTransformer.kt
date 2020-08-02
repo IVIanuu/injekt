@@ -212,16 +212,14 @@ class RunReaderTransformer(
                     { rawContextExpression }
                 }
 
-                val tmpContext =
-
-                    (lambda.body as IrBlockBody).statements.forEach { stmt ->
-                        +stmt.transform(
-                            object : IrElementTransformerVoid() {
-                                override fun visitGetValue(expression: IrGetValue): IrExpression {
-                                    return if (expression.symbol == lambda.valueParameters.last().symbol)
-                                        contextExpression()
-                                    else super.visitGetValue(expression)
-                                }
+                (lambda.body as IrBlockBody).statements.forEach { stmt ->
+                    +stmt.transform(
+                        object : IrElementTransformerVoid() {
+                            override fun visitGetValue(expression: IrGetValue): IrExpression {
+                                return if (expression.symbol == lambda.valueParameters.last().symbol)
+                                    contextExpression()
+                                else super.visitGetValue(expression)
+                            }
 
                             override fun visitReturn(expression: IrReturn): IrExpression {
                                 val result = super.visitReturn(expression) as IrReturn
