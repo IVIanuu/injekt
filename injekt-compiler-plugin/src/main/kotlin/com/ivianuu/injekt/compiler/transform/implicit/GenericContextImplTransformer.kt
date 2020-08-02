@@ -72,8 +72,7 @@ class GenericContextImplTransformer(
         declarationGraph.genericContexts.forEach { index ->
             val delegateContext = index.getClassFromAnnotation(
                 InjektFqNames.GenericContext,
-                0,
-                pluginContext
+                0
             )!!
             val name = index.getAnnotation(InjektFqNames.GenericContext)!!
                 .getValueArgument(1)

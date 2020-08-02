@@ -72,15 +72,13 @@ class DeclarationGraph(
                 .filter { clazz ->
                     clazz.getClassFromAnnotation(
                         InjektFqNames.ReaderImpl,
-                        0,
-                        pluginContext
+                        0
                     ) == context
                 }
                 .map {
                     it.getClassFromAnnotation(
                         InjektFqNames.ReaderImpl,
-                        1,
-                        pluginContext
+                        1
                     )!!
                 }
                 .forEach {
@@ -93,15 +91,13 @@ class DeclarationGraph(
                 .filter { clazz ->
                     clazz.getClassFromAnnotation(
                         InjektFqNames.ReaderInvocation,
-                        1,
-                        pluginContext
+                        1
                     ) == context
                 }
                 .map {
                     it.getClassFromAnnotation(
                         InjektFqNames.ReaderInvocation,
-                        0,
-                        pluginContext
+                        0
                     )!!
                 }
                 .forEach {

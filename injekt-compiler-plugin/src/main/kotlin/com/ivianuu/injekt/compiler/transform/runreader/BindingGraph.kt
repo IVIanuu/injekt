@@ -56,10 +56,10 @@ class BindingGraph(
         this += declarationGraph.bindings
             .map { function ->
                 val scoping = function.getClassFromAnnotation(
-                    InjektFqNames.Given, 0, pluginContext
+                    InjektFqNames.Given, 0
                 )
                     ?: if (function is IrConstructor) function.constructedClass.getClassFromAnnotation(
-                        InjektFqNames.Given, 0, pluginContext
+                        InjektFqNames.Given, 0
                     ) else null
 
                 val scopingFunction = scoping

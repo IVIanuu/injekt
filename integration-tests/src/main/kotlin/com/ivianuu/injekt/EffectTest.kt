@@ -168,7 +168,7 @@ class EffectTest {
     }
 
     @Test
-    fun testFxyunctionEffect() = codegen(
+    fun testFunctionEffect() = codegen(
         """
         @Distinct typealias FooFactory = () -> Foo
         

@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.runreader
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.distinctedType
+import com.ivianuu.injekt.compiler.analysis.hasAnnotation
 import com.ivianuu.injekt.compiler.isTypeParameter
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -104,7 +104,6 @@ class Key(val type: IrType) {
     }
 
     override fun hashCode(): Int = type.hashWithDistinct()
-    import com.ivianuu.injekt.compiler.hashWithDistinct
 
     override fun toString(): String {
         return when (val distinctedType = type.distinctedType) {
@@ -113,12 +112,20 @@ class Key(val type: IrType) {
         }.toString()
     }
 
-    fun compareTypeWithDistinct(
+    private val IrType.distinctedType: Any
+        get() = (this as? IrSimpleType)?.abbreviation
+            ?.typeAlias
+            ?.takeIf {
+                it.descriptor.hasAnnotation(InjektFqNames.Distinct)
+            }
+            ?: this
+
+    private fun compareTypeWithDistinct(
         a: IrType?,
         b: IrType?
     ): Boolean = a?.hashWithDistinct() == b?.hashWithDistinct()
 
-    fun IrType.hashWithDistinct(): Int {
+    private fun IrType.hashWithDistinct(): Int {
         var result = 0
         val distinctedType = distinctedType
         if (distinctedType is IrSimpleType) {

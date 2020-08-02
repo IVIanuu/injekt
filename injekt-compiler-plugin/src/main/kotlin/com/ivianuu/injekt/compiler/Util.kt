@@ -462,8 +462,7 @@ fun IrBuilderWithScope.irClassReference(
 
 fun <T> T.getClassFromAnnotation(
     fqName: FqName,
-    index: Int,
-    pluginContext: IrPluginContext
+    index: Int
 ): IrClass? where T : IrDeclaration, T : IrAnnotationContainer {
     return getAnnotation(fqName)
         ?.getValueArgument(index)
@@ -471,17 +470,6 @@ fun <T> T.getClassFromAnnotation(
         ?.classType
         ?.classOrNull
         ?.owner
-        ?: descriptor.annotations.findAnnotation(fqName)
-            ?.allValueArguments
-            ?.values
-            ?.toList()
-            ?.getOrNull(index)
-            ?.let { it as KClassValue }
-            ?.let { it.value as KClassValue.Value.NormalClass }
-            ?.classId
-            ?.asSingleFqName()
-            ?.let { FqName(it.asString().replace("\$", ".")) }
-            ?.let { pluginContext.referenceClass(it)!!.owner }
 }
 
 fun String.asNameId(): Name = Name.identifier(this)
@@ -696,14 +684,6 @@ fun IrFunctionAccessExpression.isReaderLambdaInvoke(
             (dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Reader) == true ||
                     pluginContext.irTrace[InjektWritableSlices.IS_READER_LAMBDA_INVOKE, this] == true)
 }
-
-val IrType.distinctedType: Any
-    get() = (this as? IrSimpleType)?.abbreviation
-        ?.typeAlias
-        ?.takeIf {
-            it.descriptor.hasAnnotation(InjektFqNames.Distinct)
-        }
-        ?: this
 
 fun IrDeclarationWithName.canUseImplicits(
     pluginContext: IrPluginContext
