@@ -52,7 +52,6 @@ class MapTest {
         fun commandCIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandC::class to given<CommandC>())
         
         fun invoke(): Map<KClass<out Command>, Command> {
-            initializeInjekt()
             return runReader { given<Map<KClass<out Command>, Command>>() }
         }
         """
@@ -69,7 +68,6 @@ class MapTest {
     fun testUndeclaredMap() = codegen(
         """
         fun invoke(): Map<KClass<out Command>, Command> {
-            initializeInjekt()
             return runReader { given<Map<KClass<out Command>, Command>>() }
         }
         """

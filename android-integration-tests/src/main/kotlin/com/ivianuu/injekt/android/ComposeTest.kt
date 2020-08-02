@@ -49,7 +49,6 @@ class ComposeTest {
         }
         
         fun invoke(): AppUi {
-            initializeInjekt()
             return runReader { given<AppUi>() }
         }
     """,
@@ -90,7 +89,6 @@ class ComposeTest {
                 }
                 
                 fun invoke(): AppUi {
-                    initializeInjekt()
                     return runReader { given<AppUi>() }
                 }
                 """,
@@ -129,7 +127,6 @@ class ComposeTest {
 
         @androidx.compose.Composable
         fun invoke(): Foo {
-            initializeInjekt()
             return runReader {
                 withFoo { 
                     other()

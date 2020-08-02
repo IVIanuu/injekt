@@ -24,6 +24,7 @@ object InjektFqNames {
     val Distinct = InjektPackage.child("Distinct".asNameId())
     val Effect = InjektPackage.child("Effect".asNameId())
     val Given = InjektPackage.child("Given".asNameId())
+    val InitializeInjekt = InjektPackage.child("InitializeInjekt".asNameId())
     val MapEntries = InjektPackage.child("MapEntries".asNameId())
     val Reader = InjektPackage.child("Reader".asNameId())
     val SetElements = InjektPackage.child("SetElements".asNameId())

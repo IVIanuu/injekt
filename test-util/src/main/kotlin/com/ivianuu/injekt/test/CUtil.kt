@@ -31,7 +31,8 @@ var fileIndex = 0
 fun source(
     @Language("kotlin") source: String,
     name: String = "File${fileIndex++}.kt",
-    injektImports: Boolean = true
+    injektImports: Boolean = true,
+    initializeInjekt: Boolean = true
 ) = SourceFile.kotlin(
     name = name,
     contents = buildString {
@@ -44,6 +45,10 @@ fun source(
             appendLine("import kotlin.reflect.*")
             appendLine("import kotlinx.coroutines.*")
             appendLine()
+            if (initializeInjekt) {
+                appendLine("@InitializeInjekt interface InjektInitializer")
+                appendLine()
+            }
         }
 
         append(source)

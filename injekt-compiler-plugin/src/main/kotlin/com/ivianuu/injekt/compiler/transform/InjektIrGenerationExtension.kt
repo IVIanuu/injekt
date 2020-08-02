@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.transform.implicit.GenericContextImplTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
@@ -28,33 +29,28 @@ import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.ir.builders.irNull
+import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.expressions.IrCall
-import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        var hasInitCall = false
+        var initializeInjekt = false
         var initFile: IrFile? = null
 
         moduleFragment.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
-            override fun visitCall(expression: IrCall): IrExpression {
-                return if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.initializeInjekt"
-                ) {
-                    hasInitCall = true
+            override fun visitDeclaration(declaration: IrDeclaration): IrStatement {
+                if (declaration.hasAnnotation(InjektFqNames.InitializeInjekt)) {
+                    initializeInjekt = true
                     initFile = currentFile
-                    DeclarationIrBuilder(pluginContext, expression.symbol)
-                        .irNull()
-                } else super.visitCall(expression)
+                }
+                return super.visitDeclaration(declaration)
             }
         })
 
@@ -92,7 +88,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         ComponentIndexingTransformer(indexer, injektPluginContext).doLower(moduleFragment)
 
-        if (hasInitCall) {
+        if (initializeInjekt) {
             declarationGraph.initialize()
             RunReaderContextImplTransformer(
                 pluginContext,

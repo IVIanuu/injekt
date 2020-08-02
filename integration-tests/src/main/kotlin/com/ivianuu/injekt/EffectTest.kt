@@ -52,7 +52,6 @@ class EffectTest {
         class Dep
         
         fun invoke() {
-            initializeInjekt()
             runReader { 
                 given<Dep>() 
                 given<String>()
@@ -188,7 +187,6 @@ class EffectTest {
         }
         
         fun invoke(): Foo { 
-            initializeInjekt()
             return runReader { given<FooFactory>()() }
         }
     """
@@ -228,7 +226,6 @@ class EffectTest {
             source(
                 """
                 fun invoke(): Foo { 
-                    initializeInjekt()
                     return runReader { given<FooFactory>()() }
                 }
             """, name = "File.kt"
@@ -258,7 +255,6 @@ class EffectTest {
         }
         
         fun invoke(): Foo { 
-            initializeInjekt()
             return runReader { 
                 runBlocking { 
                     delay(1)

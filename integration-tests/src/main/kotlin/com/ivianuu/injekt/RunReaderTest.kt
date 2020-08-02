@@ -37,7 +37,6 @@ class RunReaderTest {
         fun bar() = Bar(given())
         
         fun invoke(): Bar {
-            initializeInjekt()
             return runReader { given<Bar>() }
         }
     """
@@ -54,7 +53,6 @@ class RunReaderTest {
         fun bar() = Bar(given())
         
         fun invoke(): Bar {
-            initializeInjekt()
             return runBlocking {
                 runReader { 
                     delay(1)
@@ -78,7 +76,6 @@ class RunReaderTest {
         inline fun <R> runBarReader(block: @Reader () -> R) = runReader("hello world") { block() }
         
         fun invoke(): Bar {
-            initializeInjekt()
             return runBlocking {
                 runBarReader {
                     delay(1)
@@ -111,7 +108,6 @@ class RunReaderTest {
         fun foo() = Foo()
         
         fun invoke(): Foo {
-            initializeInjekt()
             return runReader { given<Foo>() }
         }
     """
@@ -130,7 +126,6 @@ class RunReaderTest {
         }
         
         fun invoke(): Foo {
-            initializeInjekt()
             return runApplicationReader { given<Foo>() }
         }
     """
@@ -146,14 +141,14 @@ class RunReaderTest {
                     fun runApplicationReader(block: @Reader () -> Foo): Foo {
                         return runReader(Foo()) { block() }
                     }
-                    """
+                    """,
+                initializeInjekt = false
             )
         ),
         listOf(
             source(
                 """
                     fun invoke(): Foo {
-                        initializeInjekt()
                         return runApplicationReader { given<Foo>() }
                     } 
                 """,
@@ -176,7 +171,6 @@ class RunReaderTest {
         fun foo(): Foo = Foo()
 
         fun invoke(): Any { 
-            initializeInjekt()
             return runReader { given<AnnotatedBar>() }
         }
     """
@@ -190,7 +184,6 @@ class RunReaderTest {
         @Given object AnnotatedFoo
 
         fun invoke() = {
-            initializeInjekt()
             return runReader { given<AnnotatedFoo>() }
         }
     """
@@ -204,7 +197,6 @@ class RunReaderTest {
         @Given val foo = Foo()
         
         fun invoke(): Foo {
-            initializeInjekt()
             return runReader { given<Foo>() }
         }
     """
@@ -219,7 +211,6 @@ class RunReaderTest {
         fun bar(foo: Foo) = Bar(foo)
 
         fun invoke(foo: Foo): Bar { 
-            initializeInjekt()
             return runReader { given<Bar>(foo) }
         }
     """
@@ -234,7 +225,6 @@ class RunReaderTest {
         class AnnotatedBar(foo: Foo)
 
         fun invoke(foo: Foo): Any {
-            initializeInjekt()
             return runReader { given<AnnotatedBar>(foo) }
         }
     """
@@ -252,7 +242,6 @@ class RunReaderTest {
         @Given fun foo() = Foo() 
         
         fun invoke() {
-            initializeInjekt()
             runReader {
                 given<Dep<Foo>>()
             }
@@ -264,7 +253,6 @@ class RunReaderTest {
     fun testRunReaderInput() = codegen(
         """
         fun invoke(): Pair<Foo, Foo> {
-            initializeInjekt()
             val foo = Foo()
             return foo to runReader(foo) { given<Foo>() }
         }

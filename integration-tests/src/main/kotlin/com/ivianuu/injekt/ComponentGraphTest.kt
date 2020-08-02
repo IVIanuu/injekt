@@ -34,7 +34,6 @@ class ComponentGraphTest {
         """
         @Given class Dep(bar: Bar)
         fun invoke() {
-            initializeInjekt()
             runReader { given<Dep>() }
         }
         """
@@ -49,7 +48,6 @@ class ComponentGraphTest {
         @Given fun foo2() = Foo()
         
         fun invoke() {
-            initializeInjekt()
             runReader { given<Foo>() }
         }
         """
@@ -64,7 +62,6 @@ class ComponentGraphTest {
         @SetElements fun setB() = setOf(0)
         
         fun invoke(): Pair<Set<String>, Set<Int>> {
-            initializeInjekt()
             return runReader { given<Set<String>>() to given<Set<Int>>() }
         }
     """
@@ -83,7 +80,6 @@ class ComponentGraphTest {
         @Given fun foo2(): Foo2 = Foo()
         
         fun invoke(): Pair<Foo, Foo> {
-            initializeInjekt()
             return runReader { given<Foo1>() to given<Foo2>() }
         }
     """
@@ -114,7 +110,6 @@ class ComponentGraphTest {
             source(
                 """
                 fun invoke(): Pair<Foo, Foo> {
-                    initializeInjekt()
                     return runReader { given<Foo1>() to given<Foo2>() }
                 } 
             """, name = "File.kt"
@@ -132,7 +127,6 @@ class ComponentGraphTest {
         @Given fun nullableFoo(): Foo? = null
 
         fun invoke() { 
-            initializeInjekt()
             runReader { given<Foo>() to given<Foo?>() }
         }
     """
@@ -146,7 +140,6 @@ class ComponentGraphTest {
         @Given fun foo(): Foo = Foo()
 
         fun invoke(): Foo? { 
-            initializeInjekt()
             return runReader { given<Foo?>() }
         }
         """
@@ -158,7 +151,6 @@ class ComponentGraphTest {
     fun testReturnsNullOnMissingNullableBinding() = codegen(
         """
         fun invoke(): Foo? { 
-            initializeInjekt()
             return runReader { given<Foo?>() }
         }
         """
@@ -172,7 +164,6 @@ class ComponentGraphTest {
         @Given fun list(): List<*> = emptyList<Any?>()
         
         fun invoke() { 
-            initializeInjekt()
             runReader { given<List<*>>() }
         }
     """

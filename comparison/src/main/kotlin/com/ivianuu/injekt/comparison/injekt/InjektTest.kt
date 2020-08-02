@@ -16,11 +16,13 @@
 
 package com.ivianuu.injekt.comparison.injekt
 
+import com.ivianuu.injekt.InitializeInjekt
 import com.ivianuu.injekt.comparison.base.InjectionTest
 import com.ivianuu.injekt.comparison.fibonacci.Fib8
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 
+@InitializeInjekt
 object InjektTest : InjectionTest {
 
     override val name = "Injekt"

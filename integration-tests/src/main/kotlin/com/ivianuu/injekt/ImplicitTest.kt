@@ -39,7 +39,6 @@ class ImplicitTest {
         fun func(): Foo = given<Foo>()
         
         fun invoke(): Foo { 
-            initializeInjekt()
             return runReader { func() }
         }
     """
@@ -66,7 +65,6 @@ class ImplicitTest {
         fun withFoo(block: @Reader (Foo) -> Unit) = block(func())
         
         fun invoke(): Foo {
-            initializeInjekt()
             return runReader {
                 withFoo {
                     other()
@@ -106,7 +104,6 @@ class ImplicitTest {
             source(
                 """
                     fun invoke(): Foo {
-                        initializeInjekt()
                         return runReader {
                             withFoo {
                                 other()
@@ -142,7 +139,6 @@ class ImplicitTest {
         fun <R> withFoo(block: @Reader (Foo) -> R) = block(func())
         
         fun invoke(): Foo {
-            initializeInjekt()
             return runReader {
                 withFoo {
                     other()
@@ -181,7 +177,6 @@ class ImplicitTest {
             source(
                 """
                     fun invoke(): Foo {
-                        initializeInjekt()
                         return runReader {
                             withFoo {
                                 other()
@@ -209,7 +204,6 @@ class ImplicitTest {
         fun <R> nonReader(block: () -> R) = block()
         
         fun invoke(): Foo {
-            initializeInjekt()
             return runReader {
                 nonReader { 
                     createFoo()
@@ -234,7 +228,6 @@ class ImplicitTest {
         }
         
         fun invoke(): Foo { 
-            initializeInjekt()
             return runReader {
                 runBlocking {
                     delay(1)
@@ -260,7 +253,6 @@ class ImplicitTest {
         }
         
         fun invoke(): Foo { 
-            initializeInjekt()
             return runBlocking {
                 runReader {
                     delay(1)
@@ -291,7 +283,6 @@ class ImplicitTest {
         fun <R> Reader(block: @Reader () -> R) = block()
         
         fun invoke() {
-            initializeInjekt()
             runReader {
                 nonReader { 
                     Reader { 
@@ -332,7 +323,6 @@ class ImplicitTest {
         suspend fun <R> withFoo(block: @Reader suspend (Foo) -> R): R = block(func())
         
         fun invoke(): Foo {
-            initializeInjekt()
             return runBlocking {
                 runReader {
                     delay(1)
@@ -362,7 +352,6 @@ class ImplicitTest {
         fun withDefault(foo: Foo = func()): Foo = foo
         
         fun invoke(): Foo { 
-            initializeInjekt()
             return runReader { withDefault() }
         }
     """
@@ -380,7 +369,6 @@ class ImplicitTest {
         fun withDefault(foo: Foo = given(), foo2: Foo = foo): Foo = foo
         
         fun invoke(): Foo { 
-            initializeInjekt()
             return runReader { withDefault() }
         }
     """
@@ -431,7 +419,6 @@ class ImplicitTest {
             source(
                 """
                 fun invoke(): Foo {
-                    initializeInjekt()
                     return getFoo()
                 }
                 """,
@@ -452,7 +439,6 @@ class ImplicitTest {
         val foo: Foo get() = given()
         
         fun invoke(): Foo { 
-            initializeInjekt()
             return runReader { foo }
         }
     """
@@ -477,7 +463,6 @@ class ImplicitTest {
             source(
                 """
                 fun invoke(): Foo { 
-                    initializeInjekt()
                     return runReader { foo }
                 }
                 """,
@@ -500,7 +485,6 @@ class ImplicitTest {
         }
         
         fun invoke(): Foo { 
-            initializeInjekt()
             return runReader { FooFactory().getFoo() }
         }
     """
@@ -527,7 +511,6 @@ class ImplicitTest {
             source(
                 """ 
                 fun invoke(): Foo { 
-                    initializeInjekt()
                     return runReader { FooFactory().getFoo() }
                 }
             """, name = "File.kt"
@@ -547,7 +530,6 @@ class ImplicitTest {
         }
         
         fun invoke(): Foo { 
-            initializeInjekt()
             return runReader { FooFactory().getFoo() }
         }
     """
@@ -566,7 +548,6 @@ class ImplicitTest {
         }
         
         fun invoke(): Foo { 
-            initializeInjekt()
             return runReader { given<FooFactory>().getFoo() }
         }
     """
@@ -588,7 +569,6 @@ class ImplicitTest {
         class FooFactory : SuperClass()
         
         fun invoke(): Foo { 
-            initializeInjekt()
             return runReader { FooFactory().getFoo() }
         }
     """
@@ -610,7 +590,6 @@ class ImplicitTest {
         class FooFactory : SuperClass()
         
         fun invoke(): Foo { 
-            initializeInjekt()
             return runReader { FooFactory().getFoo() }
         }
     """
@@ -632,7 +611,6 @@ class ImplicitTest {
         class FooFactory : SuperClass<String>("hello")
         
         fun invoke(): Foo { 
-            initializeInjekt()
             return runReader { FooFactory().getFoo() }
         }
     """
@@ -651,7 +629,6 @@ class ImplicitTest {
         }
         
         fun invoke(): Foo {
-            initializeInjekt()
             return runReader { given<FooFactory>().foo }
         }
     """
@@ -681,7 +658,6 @@ class ImplicitTest {
         fun <T> provide() = given<T>()
         
         fun invoke(): Foo { 
-            initializeInjekt()
             return runReader { provide() }
         }
     """
@@ -705,7 +681,6 @@ class ImplicitTest {
             source(
                 """
                 fun invoke(): Foo { 
-                    initializeInjekt()
                     return runReader { provide() }
                 }
             """, name = "File.kt"
@@ -725,7 +700,6 @@ class ImplicitTest {
         fun bar() = Bar(given())
         
         fun invoke(): Bar { 
-            initializeInjekt()
             return runReader {
                 runReader {
                     given<Bar>()
@@ -746,7 +720,6 @@ class ImplicitTest {
         fun createFoo(foo: Foo = given()): Foo = foo
         
         fun invoke(): Foo { 
-            initializeInjekt()
             return runReader { createFoo() }
         }
     """
@@ -766,7 +739,6 @@ class ImplicitTest {
         fun createFoo(foo: Foo2 = given()): Foo2 = foo
         
         fun invoke(): Foo { 
-            initializeInjekt()
             return runReader { createFoo() }
         }
     """
@@ -790,7 +762,6 @@ class ImplicitTest {
         fun set2() = emptySet<Int>()
         
         fun invoke() { 
-            initializeInjekt()
             runReader { given<MyClass>() }
         }
     """
@@ -845,7 +816,6 @@ class ImplicitTest {
         fun createFoo(foo: Foo = "lol".run { given() }) = foo
         
         fun invoke() {
-            initializeInjekt()
             runReader { createFoo(Foo()) }
         }
     """
@@ -860,7 +830,6 @@ class ImplicitTest {
         fun bar(foo: Foo) = Bar(foo)
         
         fun invoke(): Bar {
-            initializeInjekt()
             return runReader { given<Bar>(Foo()) }
         }
         """
@@ -898,7 +867,6 @@ class ImplicitTest {
         }
         
         fun invoke() {
-            initializeInjekt()
             runReader {
                 val actions = listOf(
                     FooAction(),
@@ -959,7 +927,6 @@ class ImplicitTest {
             source(
                 """
                     fun invoke() {
-                        initializeInjekt()
                         runReader {
                             val actions = listOf(
                                 FooAction(),
@@ -991,7 +958,6 @@ class ImplicitTest {
         }
         
         fun invoke() {
-            initializeInjekt()
             runReader {
                 val actions = listOf(
                     object : Action { 
@@ -1022,7 +988,6 @@ class ImplicitTest {
         
         @Reader
         fun invoke(block: @Reader () -> Unit) {
-            initializeInjekt()
             block()
             val block2: @Reader () -> Unit = {  }
             block2()
@@ -1045,7 +1010,6 @@ class ImplicitTest {
         
         @Reader
         fun createLambda(delegate: @Reader () -> Unit): @Reader () -> Unit {
-            initializeInjekt()
             val block: @Reader () -> Unit = {
                 
             }
