@@ -333,8 +333,7 @@ class ImplicitCallTransformer(
 
                 if (allScopes
                         .mapNotNull { it.irElement as? IrDeclarationWithName }
-                        .filter { it.canUseImplicits(pluginContext) }
-                        .last()
+                        .last { it.canUseImplicits(pluginContext) }
                         .let {
                             it != declaration && it != declarationFunction
                         }

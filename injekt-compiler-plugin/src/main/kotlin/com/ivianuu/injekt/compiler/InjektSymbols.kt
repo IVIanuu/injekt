@@ -20,8 +20,6 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 
 class InjektSymbols(val pluginContext: IrPluginContext) {
-    val component: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.Component)!!
     val distinct: IrClassSymbol
         get() = pluginContext.referenceClass(InjektFqNames.Distinct)!!
     val effect: IrClassSymbol

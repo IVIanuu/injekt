@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -35,7 +34,6 @@ import org.jetbrains.kotlin.ir.util.hasAnnotation
 class DeclarationGraph(
     private val indexer: Indexer,
     val module: IrModuleFragment,
-    private val pluginContext: IrPluginContext,
     private val implicitContextParamTransformer: ImplicitContextParamTransformer
 ) {
 

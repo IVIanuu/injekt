@@ -18,10 +18,6 @@ package com.ivianuu.injekt.compiler.analysis
 
 import com.ivianuu.injekt.compiler.InjektErrors
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.getFunctionType
-import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.hasAnnotation
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor

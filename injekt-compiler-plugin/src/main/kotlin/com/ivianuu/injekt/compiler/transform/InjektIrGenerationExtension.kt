@@ -82,7 +82,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             DeclarationGraph(
                 indexer,
                 moduleFragment,
-                injektPluginContext,
                 implicitContextParamTransformer
             )
 

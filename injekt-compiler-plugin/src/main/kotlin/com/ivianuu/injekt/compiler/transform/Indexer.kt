@@ -94,7 +94,7 @@ class Indexer(
 
     val classIndices by lazy { internalClassIndices + externalClassIndices }
 
-    val internalClassIndices by lazy {
+    private val internalClassIndices by lazy {
         internalIndices.mapNotNull { it.toClassOrNull() }
     }
 
@@ -108,22 +108,11 @@ class Indexer(
             ?.let { pluginContext.referenceClass(it.fqName) }
             ?.owner
 
-    val internalFunctionIndices by lazy {
-        internalIndices.flatMapFix { it.getFunctions() }
-    }
-
-    val externalFunctionIndices by lazy {
-        externalIndices.flatMapFix { it.getFunctions() }
-    }
-
     val functionIndices by lazy {
-        internalFunctionIndices + externalFunctionIndices
-    }
-
-    private fun Index.getFunctions(): List<IrFunction> {
-        return if (type == "function") pluginContext.referenceFunctions(fqName)
+        (externalIndices + internalIndices)
+            .filter { it.type == "function" }
+            .flatMapFix { pluginContext.referenceFunctions(it.fqName) }
             .map { it.owner }
-        else emptyList()
     }
 
     val propertyIndices: List<IrProperty> by lazy {

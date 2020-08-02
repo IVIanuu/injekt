@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.name.Name
 
 class NameProvider {
@@ -31,10 +30,6 @@ class NameProvider {
         val index = indicesByName[group]
         indicesByName[group] = (index ?: 0) + 1
         return "${group}${index?.toString().orEmpty()}".removeIllegalChars()
-    }
-
-    fun allocateForType(type: IrType): Name {
-        return allocateForGroup(type.readableName())
     }
 
 }

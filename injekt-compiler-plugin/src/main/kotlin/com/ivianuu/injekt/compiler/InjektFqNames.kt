@@ -20,7 +20,6 @@ import org.jetbrains.kotlin.name.FqName
 
 object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
-    val Component = InjektPackage.child("Component".asNameId())
     val Distinct = InjektPackage.child("Distinct".asNameId())
     val Effect = InjektPackage.child("Effect".asNameId())
     val Given = InjektPackage.child("Given".asNameId())

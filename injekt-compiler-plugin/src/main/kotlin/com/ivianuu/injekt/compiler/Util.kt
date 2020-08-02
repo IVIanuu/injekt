@@ -218,8 +218,6 @@ val IrType.typeArguments: List<IrTypeArgument>
 val IrTypeArgument.typeOrFail: IrType
     get() = typeOrNull ?: error("Type is null for ${render()}")
 
-fun IrType.typeWith(vararg arguments: IrType): IrType = classifierOrFail.typeWith(*arguments)
-
 fun IrType.isTypeParameter() = toKotlinType().isTypeParameter()
 
 fun IrTypeArgument.hasAnnotation(fqName: FqName): Boolean =
@@ -252,9 +250,8 @@ fun IrType.remapTypeParametersByName(
 ): IrType =
     when (this) {
         is IrSimpleType -> {
-            val classifier = classifier.owner
-            when {
-                classifier is IrTypeParameter -> {
+            when (val classifier = classifier.owner) {
+                is IrTypeParameter -> {
                     val newClassifier =
                         srcToDstParameterMap?.get(classifier)
                             ?: if ((classifier.parent as IrDeclarationWithName).descriptor.fqNameSafe ==
@@ -278,8 +275,7 @@ fun IrType.remapTypeParametersByName(
                         abbreviation
                     )
                 }
-
-                classifier is IrClass -> {
+                is IrClass -> {
                     val arguments = arguments.map {
                         when (it) {
                             is IrTypeProjection -> makeTypeProjection(
@@ -308,7 +304,6 @@ fun IrType.remapTypeParametersByName(
                         abbreviation
                     )
                 }
-
                 else -> this
             }
         }
@@ -556,10 +551,7 @@ fun IrType.readableName(): Name = buildString {
             abbreviation!!.typeAlias.descriptor.hasAnnotation(InjektFqNames.Distinct)
         ) abbreviation!!.typeAlias.descriptor.fqNameSafe
         else classifierOrFail.descriptor.fqNameSafe
-        append(
-            fqName.pathSegments().map { it.asString() }
-                .joinToString("_")
-        )
+        append(fqName.pathSegments().joinToString("_") { it.asString() })
 
         typeArguments.forEachIndexed { index, typeArgument ->
             if (index == 0) append("_")
@@ -745,7 +737,7 @@ fun IrBuilderWithScope.jvmNameAnnotation(
     }
 }
 
-fun IrFunction.getContext(): IrClass? = getContextValueParameter()?.type?.classOrNull?.owner;
+fun IrFunction.getContext(): IrClass? = getContextValueParameter()?.type?.classOrNull?.owner
 
 fun IrFunction.getContextValueParameter() = valueParameters.singleOrNull {
     it.type.classOrNull?.owner?.hasAnnotation(InjektFqNames.Context) == true
