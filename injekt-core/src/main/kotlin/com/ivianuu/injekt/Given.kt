@@ -28,6 +28,4 @@ import kotlin.reflect.KClass
 annotation class Given(val scoping: KClass<*> = Nothing::class)
 
 @Reader
-fun <T> given(
-    vararg arguments: Any?
-): T = injektIntrinsic()
+fun <T> given(vararg arguments: Any?): T = injektIntrinsic()

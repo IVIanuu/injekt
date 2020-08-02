@@ -16,19 +16,22 @@
 
 package com.ivianuu.injekt.compiler.transform.runreader
 
-import com.ivianuu.injekt.compiler.compareTypeWithDistinct
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.distinctedType
-import com.ivianuu.injekt.compiler.hashWithDistinct
 import com.ivianuu.injekt.compiler.isTypeParameter
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
+import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
 import org.jetbrains.kotlin.ir.types.IrErrorType
+import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.typeOrNull
+import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -101,12 +104,41 @@ class Key(val type: IrType) {
     }
 
     override fun hashCode(): Int = type.hashWithDistinct()
+    import com.ivianuu.injekt.compiler.hashWithDistinct
 
     override fun toString(): String {
         return when (val distinctedType = type.distinctedType) {
             is IrTypeAliasSymbol -> distinctedType
             else -> type.render()
         }.toString()
+    }
+
+    fun compareTypeWithDistinct(
+        a: IrType?,
+        b: IrType?
+    ): Boolean = a?.hashWithDistinct() == b?.hashWithDistinct()
+
+    fun IrType.hashWithDistinct(): Int {
+        var result = 0
+        val distinctedType = distinctedType
+        if (distinctedType is IrSimpleType) {
+            result += 31 * distinctedType.classifier.hashCode()
+            result += 31 * distinctedType.arguments.map { it.typeOrNull?.hashWithDistinct() ?: 0 }
+                .hashCode()
+        } else {
+            result += 31 * distinctedType.hashCode()
+        }
+
+        val qualifier = getAnnotation(InjektFqNames.Qualifier)
+            ?.getValueArgument(0)
+            ?.let { it as IrConst<String> }
+            ?.value
+
+        if (qualifier != null) {
+            result += 31 * qualifier.hashCode()
+        }
+
+        return result
     }
 
 }

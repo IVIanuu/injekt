@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.ImplicitChecker
+import com.ivianuu.injekt.compiler.analysis.hasAnnotation
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.allParameters
@@ -26,16 +27,13 @@ import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.impl.PackageFragmentDescriptorImpl
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.incremental.components.LocationInfo
@@ -134,7 +132,6 @@ import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
-import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtElement
@@ -155,17 +152,14 @@ import org.jetbrains.kotlin.resolve.constants.LongValue
 import org.jetbrains.kotlin.resolve.constants.NullValue
 import org.jetbrains.kotlin.resolve.constants.ShortValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
-import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DescriptorWithContainerSource
-import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjectionImpl
 import org.jetbrains.kotlin.types.replace
-import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.types.withAbbreviation
 import kotlin.math.absoluteValue
@@ -202,30 +196,6 @@ fun IrBuilderWithScope.irCallAndRecordLookup(
 ) = irCall(symbol).apply {
     recordLookup(caller, symbol.owner)
 }
-
-fun Annotated.hasAnnotation(fqName: FqName): Boolean {
-    return annotations.hasAnnotation(fqName)
-}
-
-fun AnnotationDescriptor.hasAnnotation(annotation: FqName, module: ModuleDescriptor): Boolean {
-    val thisFqName = this.fqName ?: return false
-    val descriptor =
-        module.findClassAcrossModuleDependencies(ClassId.topLevel(thisFqName)) ?: return false
-    return descriptor.hasAnnotation(annotation)
-}
-
-fun Annotated.hasAnnotatedAnnotations(
-    annotation: FqName,
-    module: ModuleDescriptor
-): Boolean = annotations.any { it.hasAnnotation(annotation, module) }
-
-fun Annotated.getAnnotatedAnnotations(
-    annotation: FqName,
-    module: ModuleDescriptor
-): List<AnnotationDescriptor> =
-    annotations.filter {
-        it.hasAnnotation(annotation, module)
-    }
 
 fun IrAnnotationContainer.hasAnnotatedAnnotations(
     annotation: FqName
@@ -702,12 +672,6 @@ fun IrDeclarationWithName.uniqueName() = when (this) {
     else -> error("Unsupported declaration ${dump()}")
 }
 
-fun Annotated.isMarkedAsImplicit(): Boolean =
-    hasAnnotation(InjektFqNames.Reader) ||
-            hasAnnotation(InjektFqNames.Given) ||
-            hasAnnotation(InjektFqNames.MapEntries) ||
-            hasAnnotation(InjektFqNames.SetElements)
-
 fun IrDeclarationWithName.isMarkedAsImplicit(pluginContext: IrPluginContext): Boolean =
     isReader(pluginContext) ||
             hasAnnotation(InjektFqNames.Given) ||
@@ -750,34 +714,6 @@ fun IrDeclarationWithName.canUseImplicits(
             (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsImplicit(
                 pluginContext
             ) == true))
-
-fun compareTypeWithDistinct(
-    a: IrType?,
-    b: IrType?
-): Boolean = a?.hashWithDistinct() == b?.hashWithDistinct()
-
-fun IrType.hashWithDistinct(): Int {
-    var result = 0
-    val distinctedType = distinctedType
-    if (distinctedType is IrSimpleType) {
-        result += 31 * distinctedType.classifier.hashCode()
-        result += 31 * distinctedType.arguments.map { it.typeOrNull?.hashWithDistinct() ?: 0 }
-            .hashCode()
-    } else {
-        result += 31 * distinctedType.hashCode()
-    }
-
-    val qualifier = getAnnotation(InjektFqNames.Qualifier)
-        ?.getValueArgument(0)
-        ?.let { it as IrConst<String> }
-        ?.value
-
-    if (qualifier != null) {
-        result += 31 * qualifier.hashCode()
-    }
-
-    return result
-}
 
 fun IrBuilderWithScope.irLambda(
     type: IrType,
@@ -827,13 +763,6 @@ fun IrBuilderWithScope.jvmNameAnnotation(
     return irCall(jvmName.constructors.single()).apply {
         putValueArgument(0, irString(name))
     }
-}
-
-fun FunctionDescriptor.getFunctionType(): KotlinType {
-    return (if (isSuspend) builtIns.getSuspendFunction(valueParameters.size)
-    else builtIns.getFunction(valueParameters.size))
-        .defaultType
-        .replace(newArguments = valueParameters.map { it.type.asTypeProjection() } + returnType!!.asTypeProjection())
 }
 
 fun IrFunction.getContext(): IrClass? = getContextValueParameter()?.type?.classOrNull?.owner;
