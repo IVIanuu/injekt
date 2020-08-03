@@ -21,6 +21,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.ivianuu.injekt.Storage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 
@@ -36,7 +37,7 @@ internal fun Lifecycle.storage(): Storage {
                 if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
                     // schedule clean up to the next frame
                     // to allow users to access bindings in their onDestroy()
-                    source.lifecycleScope.launch(NonCancellable) {
+                    source.lifecycleScope.launch(Dispatchers.Main + NonCancellable) {
                         synchronized(storageByLifecycle) {
                             storageByLifecycle -= this@storage
                         }
@@ -47,4 +48,3 @@ internal fun Lifecycle.storage(): Storage {
         return storage
     }
 }
-
