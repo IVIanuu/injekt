@@ -56,7 +56,9 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         val injektPluginContext = InjektPluginContext(moduleFragment, pluginContext)
 
-        EffectTransformer(injektPluginContext).doLower(moduleFragment)
+        if (injektPluginContext.referenceClass(InjektFqNames.Effect) != null) {
+            EffectTransformer(injektPluginContext).doLower(moduleFragment)
+        }
 
         val indexer = Indexer(
             injektPluginContext,
