@@ -23,22 +23,28 @@ import androidx.lifecycle.lifecycleScope
 import com.ivianuu.injekt.Storage
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
-import java.util.concurrent.ConcurrentHashMap
 
-private val storageByLifecycle = ConcurrentHashMap<Lifecycle, Storage>()
+private val storageByLifecycle = mutableMapOf<Lifecycle, Storage>()
 
 internal fun Lifecycle.storage(): Storage {
-    storageByLifecycle[this]?.let { return it }
-    val storage = Storage()
-    storageByLifecycle[this] = storage
-    addObserver(object : LifecycleEventObserver {
-        override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-            if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
-                source.lifecycleScope.launch(NonCancellable) {
-                    storageByLifecycle -= this@storage
+    synchronized(storageByLifecycle) {
+        storageByLifecycle[this]?.let { return it }
+        val storage = Storage()
+        storageByLifecycle[this] = storage
+        addObserver(object : LifecycleEventObserver {
+            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+                if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
+                    // schedule clean up to the next frame
+                    // to allow users to access bindings in their onDestroy()
+                    source.lifecycleScope.launch(NonCancellable) {
+                        synchronized(storageByLifecycle) {
+                            storageByLifecycle -= this@storage
+                        }
+                    }
                 }
             }
-        }
-    })
-    return storage
+        })
+        return storage
+    }
 }
+
