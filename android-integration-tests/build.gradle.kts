@@ -43,7 +43,7 @@ dependencies {
     implementation(Deps.AndroidX.Compose.runtime)
     implementation(Deps.AndroidX.Compose.compiler)
 
-    //implementation(project(":injekt-android"))
+    implementation(project(":injekt-common"))
 
     implementation(project(":test-util"))
     kapt(project(":test-util"))

@@ -25,6 +25,7 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 
 dependencies {
     implementation(project(":injekt-core"))
+    implementation(project(":injekt-common"))
     implementation(project(":test-util"))
     kapt(project(":test-util"))
 }
