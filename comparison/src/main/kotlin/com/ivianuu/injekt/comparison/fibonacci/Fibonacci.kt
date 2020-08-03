@@ -27,50 +27,64 @@ fun fib1() = Fib1()
 
 class Fib2 @Inject constructor()
 
-@Given
+@Given(ApplicationScoped::class)
 fun fib2() = Fib2()
+
+@Singleton
 class Fib3 @Inject constructor(
     val fibM1: Fib2,
     val fibM2: Fib1
 )
 
-@Given
+@Given(ApplicationScoped::class)
 fun fib3() = Fib3(given(), given())
+
+@Singleton
 class Fib4 @Inject constructor(
     val fibM1: Fib3,
     val fibM2: Fib2
 )
 
-@Given
+@Given(ApplicationScoped::class)
 fun fib4() = Fib4(given(), given())
+
+@Singleton
 class Fib5 @Inject constructor(
     val fibM1: Fib4,
     val fibM2: Fib3
 )
 
-@Given
+@Given(ApplicationScoped::class)
 fun fib5() = Fib5(given(), given())
+
+@Singleton
 class Fib6 @Inject constructor(
     val fibM1: Fib5,
     val fibM2: Fib4
 )
 
-@Given
+@Given(ApplicationScoped::class)
 fun fib6() = Fib6(given(), given())
+
+@Singleton
 class Fib7 @Inject constructor(
     val fibM1: Fib6,
     val fibM2: Fib5
 )
 
-@Given
+@Given(ApplicationScoped::class)
 fun fib7() = Fib7(given(), given())
+
+@Singleton
 class Fib8 @Inject constructor(
     val fibM1: Fib7,
     val fibM2: Fib6
 )
 
-@Given
+@Given(ApplicationScoped::class)
 fun fib8() = Fib8(given(), given())
+
+@Singleton
 class Fib9 @Inject constructor(
     val fibM1: Fib8,
     val fibM2: Fib7

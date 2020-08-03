@@ -16,31 +16,15 @@
 
 package com.ivianuu.injekt.android
 
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.ivianuu.injekt.Distinct
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Scoping
 import com.ivianuu.injekt.Storage
-import com.ivianuu.injekt.given
 
-@Scoping
-object RetainedActivityScoped {
-    inline operator fun <T> invoke(
-        key: String,
-        init: () -> T
-    ) = given<RetainedActivityStorage>().scope(key, init)
-}
+internal class RetainedStorageHolder : ViewModel() {
+    val storage = Storage()
 
-@Distinct
-typealias RetainedActivityStorage = Storage
-
-object RetainedActivityModule {
-    @Given
-    val retainedActivityStorage: RetainedActivityStorage
-        get() {
-            return ViewModelProvider(
-                given<ActivityViewModelStoreOwner>(),
-                RetainedStorageHolder.Factory
-            )[RetainedStorageHolder::class.java].storage
-        }
+    companion object Factory : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            RetainedStorageHolder() as T
+    }
 }
