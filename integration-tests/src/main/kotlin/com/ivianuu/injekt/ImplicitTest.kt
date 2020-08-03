@@ -447,6 +447,22 @@ class ImplicitTest {
     }
 
     @Test
+    fun testFunctionReturnsReaderLambda() = codegen(
+        """
+        @Given
+        fun provideFoo() = Foo()
+        
+        fun getFooProvider(): @Reader () -> Foo = { given() }
+         
+        fun invoke(): Foo { 
+            return runReader { getFooProvider()() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
     fun testReaderLambdaProperty() = codegen(
         """
         @Given
