@@ -82,29 +82,39 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrVariableImpl
 import org.jetbrains.kotlin.ir.descriptors.WrappedFieldDescriptor
 import org.jetbrains.kotlin.ir.descriptors.WrappedValueParameterDescriptor
 import org.jetbrains.kotlin.ir.descriptors.WrappedVariableDescriptor
+import org.jetbrains.kotlin.ir.expressions.IrBlock
+import org.jetbrains.kotlin.ir.expressions.IrBlockBody
+import org.jetbrains.kotlin.ir.expressions.IrBody
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrExpressionBody
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
 import org.jetbrains.kotlin.ir.expressions.IrGetField
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrReturn
+import org.jetbrains.kotlin.ir.expressions.IrReturnableBlock
 import org.jetbrains.kotlin.ir.expressions.IrSetField
+import org.jetbrains.kotlin.ir.expressions.impl.IrBlockBodyImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrBlockImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrExpressionBodyImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrGetFieldImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrGetValueImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrReturnImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrReturnableBlockImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrSetFieldImpl
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrFieldSymbolImpl
+import org.jetbrains.kotlin.ir.symbols.impl.IrReturnableBlockSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrValueParameterSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrVariableSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
@@ -270,12 +280,13 @@ class ImplicitContextParamTransformer(
 
         if (!needsTransform) {
             val returnType = function.returnType
-            needsTransform = returnType.isReaderLambda() && !returnType.isTransformedReaderLambda()
+            needsTransform =
+                returnType.isNotTransformedReaderLambda() && !returnType.isTransformedReaderLambda()
         }
 
         if (!needsTransform) {
             needsTransform = function.valueParameters.any {
-                it.type.isReaderLambda() && !it.type.isTransformedReaderLambda()
+                it.type.isNotTransformedReaderLambda() && !it.type.isTransformedReaderLambda()
             }
         }
 
@@ -285,7 +296,7 @@ class ImplicitContextParamTransformer(
             .also { it.transformChildrenVoid(transformer) }
         transformedFunctions[function] = transformedFunction
 
-        if (function.returnType.isReaderLambda() &&
+        if (function.returnType.isNotTransformedReaderLambda() &&
             !function.returnType.isTransformedReaderLambda()
         ) {
             transformedFunction.returnType =
@@ -324,7 +335,7 @@ class ImplicitContextParamTransformer(
         declaration: IrField
     ): IrField {
         val type = declaration.type
-        if (!type.isReaderLambda()) return declaration
+        if (!type.isNotTransformedReaderLambda()) return declaration
         if (type.isTransformedReaderLambda()) return declaration
 
         transformedFields[declaration]?.let { return it }
@@ -359,7 +370,7 @@ class ImplicitContextParamTransformer(
         declaration: IrVariable
     ): IrVariable {
         val type = declaration.type
-        if (!type.isReaderLambda()) return declaration
+        if (!type.isNotTransformedReaderLambda()) return declaration
         if (type.isTransformedReaderLambda()) return declaration
 
         transformedVariables[declaration]?.let { return it }
@@ -390,7 +401,7 @@ class ImplicitContextParamTransformer(
         declaration: IrValueParameter
     ): IrValueParameter {
         val type = declaration.type
-        if (!type.isReaderLambda()) return declaration
+        if (!type.isNotTransformedReaderLambda()) return declaration
         if (type.isTransformedReaderLambda()) return declaration
 
         transformedValueParameters[declaration]?.let { return it }
@@ -729,6 +740,55 @@ class ImplicitContextParamTransformer(
                     result.returnTargetSymbol,
                     result.value
                 ).copyAttributes(result)
+                else result
+            }
+
+            override fun visitExpressionBody(body: IrExpressionBody): IrBody {
+                val result = super.visitExpressionBody(body) as IrExpressionBody
+                return if (result.expression.type.isTransformedReaderLambda() &&
+                    result.expression.type != body.expression.type
+                ) IrExpressionBodyImpl(
+                    body.startOffset,
+                    body.endOffset,
+                    result.expression
+                )
+                else result
+            }
+
+            override fun visitBlockBody(body: IrBlockBody): IrBody {
+                val lastStatement = body.statements.lastOrNull() as? IrExpression
+                val result = super.visitBlockBody(body) as IrBlockBody
+                val resultLastStatement = result.statements.lastOrNull() as? IrExpression
+                return if (resultLastStatement != null &&
+                    resultLastStatement.type.isTransformedReaderLambda() &&
+                    resultLastStatement.type != lastStatement?.type
+                ) IrBlockBodyImpl(
+                    result.startOffset, result.endOffset,
+                    result.statements
+                )
+                else result
+            }
+
+            override fun visitBlock(expression: IrBlock): IrExpression {
+                val result = super.visitBlock(expression) as IrBlock
+                return if (result.type.isTransformedReaderLambda() &&
+                    result.type != expression.type
+                ) if (expression is IrReturnableBlock)
+                    IrReturnableBlockImpl(
+                        result.startOffset, result.endOffset,
+                        result.type,
+                        IrReturnableBlockSymbolImpl(expression.symbol.descriptor),
+                        result.origin,
+                        result.statements.map { it.transform(this, null) },
+                        expression.inlineFunctionSymbol
+                    ).copyAttributes(expression)
+                else
+                    IrBlockImpl(
+                        result.startOffset, result.endOffset,
+                        result.type,
+                        result.origin,
+                        result.statements.map { it.transform(this, null) }
+                    ).copyAttributes(expression)
                 else result
             }
 

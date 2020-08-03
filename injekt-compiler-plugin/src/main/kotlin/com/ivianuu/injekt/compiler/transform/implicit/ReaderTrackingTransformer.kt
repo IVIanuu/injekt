@@ -41,9 +41,11 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
+import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -117,8 +119,42 @@ class ReaderTrackingTransformer(
     override fun lower() {
         module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
 
+            override fun visitValueParameterNew(declaration: IrValueParameter): IrStatement {
+                val defaultValue = declaration.defaultValue
+                if (defaultValue != null && defaultValue.expression.type.isTransformedReaderLambda()) {
+                    newDeclarations += defaultValue.expression
+                        .collectReaderLambdaContextsInExpression()
+                        .map { subContext ->
+                            readerImplIndex(
+                                currentScope!!.scope.scopeOwner.fqNameSafe,
+                                currentFile,
+                                declaration.type.lambdaContext!!,
+                                subContext
+                            )
+                        }
+                }
+                return super.visitValueParameterNew(declaration)
+            }
+
+            override fun visitFieldNew(declaration: IrField): IrStatement {
+                val initializer = declaration.initializer
+                if (initializer != null && initializer.expression.type.isTransformedReaderLambda()) {
+                    newDeclarations += initializer.expression
+                        .collectReaderLambdaContextsInExpression()
+                        .map { subContext ->
+                            readerImplIndex(
+                                currentScope!!.scope.scopeOwner.fqNameSafe,
+                                currentFile,
+                                declaration.type.lambdaContext!!,
+                                subContext
+                            )
+                        }
+                }
+                return super.visitFieldNew(declaration)
+            }
+
             override fun visitSetField(expression: IrSetField): IrExpression {
-                if (expression.symbol.owner.type.isReaderLambda()) {
+                if (expression.symbol.owner.type.isTransformedReaderLambda()) {
                     newDeclarations += expression.value
                         .collectReaderLambdaContextsInExpression()
                         .map { subContext ->
@@ -134,7 +170,7 @@ class ReaderTrackingTransformer(
             }
 
             override fun visitSetVariable(expression: IrSetVariable): IrExpression {
-                if (expression.symbol.owner.type.isReaderLambda()) {
+                if (expression.symbol.owner.type.isTransformedReaderLambda()) {
                     newDeclarations += expression.value
                         .collectReaderLambdaContextsInExpression()
                         .map { subContext ->
@@ -164,6 +200,20 @@ class ReaderTrackingTransformer(
             }
 
             override fun visitFunctionNew(declaration: IrFunction): IrStatement {
+                if (declaration is IrSimpleFunction &&
+                    declaration.returnType.isTransformedReaderLambda()
+                ) {
+                    val field = declaration.correspondingPropertySymbol?.owner?.backingField
+                    if (field != null && field.type.isTransformedReaderLambda()) {
+                        newDeclarations += readerImplIndex(
+                            currentScope!!.scope.scopeOwner.fqNameSafe,
+                            currentFile,
+                            declaration.returnType.lambdaContext!!,
+                            field.type.lambdaContext!!
+                        )
+                    }
+                }
+
                 return if (declaration.canUseImplicits(pluginContext) &&
                     currentReaderScope.let {
                         it == null || it !is Scope.RunReader ||
@@ -220,7 +270,7 @@ class ReaderTrackingTransformer(
                             ?.let { index to it }
                     }
                     .map { transformedCallee.valueParameters[it.first] to it.second }
-                    .filter { it.first.type.isReaderLambda() }
+                    .filter { it.first.type.isTransformedReaderLambda() }
                     .flatMapFix { (parameter, argument) ->
                         argument.collectReaderLambdaContextsInExpression()
                             .map { context ->
@@ -354,23 +404,22 @@ class ReaderTrackingTransformer(
 
         when (this) {
             is IrGetField -> {
-                if (symbol.owner.type.isReaderLambda()) {
+                if (symbol.owner.type.isTransformedReaderLambda()) {
                     contexts.addIfNotNull(symbol.owner.type.lambdaContext)
                 }
             }
             is IrGetValue -> {
-                if (symbol.owner.type.isReaderLambda()) {
+                if (symbol.owner.type.isTransformedReaderLambda()) {
                     contexts.addIfNotNull(symbol.owner.type.lambdaContext)
                 }
             }
             is IrFunctionExpression -> {
                 contexts.addIfNotNull(function.getContext())
             }
-            is IrCall -> {
-                if (type.isReaderLambda()) {
-                    contexts.addIfNotNull(type.lambdaContext)
-                }
-            }
+        }
+
+        if (type.isTransformedReaderLambda()) {
+            contexts.addIfNotNull(type.lambdaContext)
         }
 
         return contexts

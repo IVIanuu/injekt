@@ -85,11 +85,11 @@ fun createContext(
     }
 }
 
-fun IrType.isReaderLambda() =
+fun IrType.isNotTransformedReaderLambda() =
     (isFunction() || isSuspendFunction()) && hasAnnotation(InjektFqNames.Reader)
 
 fun IrType.isTransformedReaderLambda() =
-    isReaderLambda() && typeArguments
+    (isFunction() || isSuspendFunction()) && typeArguments
         .mapNotNull { it.typeOrNull?.classOrNull?.owner }
         .any { it.hasAnnotation(InjektFqNames.Context) }
 

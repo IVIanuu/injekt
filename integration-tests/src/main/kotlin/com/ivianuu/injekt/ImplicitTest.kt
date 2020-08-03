@@ -447,6 +447,55 @@ class ImplicitTest {
     }
 
     @Test
+    fun testReaderLambdaProperty() = codegen(
+        """
+        @Given
+        fun provideFoo() = Foo()
+        
+        val foo: @Reader () -> Foo get() = { given() }
+        
+        fun invoke(): Foo { 
+            return runReader { foo() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testReaderLambdaPropertyInPropertyInitializer() = codegen(
+        """
+        @Given
+        fun provideFoo() = Foo()
+        
+        val foo: @Reader () -> Foo = { given() }
+        
+        fun invoke(): Foo { 
+            return runReader { foo() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testReaderLambdaInValueParameterDefaultExpression() = codegen(
+        """
+        @Given
+        fun provideFoo() = Foo()
+        
+        @Reader
+        fun foo(provider: @Reader () -> Foo = { given() }) = provider()
+         
+        fun invoke(): Foo { 
+            return runReader { foo() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
     fun testMultiCompileReaderProperty() = multiCodegen(
         listOf(
             source(
