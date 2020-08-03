@@ -44,3 +44,9 @@ fun startAppServices() {
         GlobalScope.launch { service() }
     }
 }
+
+@BindAppService
+@Reader
+suspend fun userAppWorker() {
+    println("run")
+}
