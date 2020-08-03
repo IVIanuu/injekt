@@ -509,7 +509,7 @@ class ImplicitContextParamTransformer(
             pluginContext
         ).apply {
             pluginContext.irTrace.record(
-                InjektWritableSlices.IS_IMPLICIT_CONTEXT_PARAM,
+                InjektWritableSlices.IS_TRANSFORMED_IMPLICIT_FUNCTION,
                 this,
                 true
             )

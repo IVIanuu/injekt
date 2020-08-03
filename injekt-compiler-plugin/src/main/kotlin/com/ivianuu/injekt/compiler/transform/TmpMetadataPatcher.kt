@@ -40,7 +40,7 @@ class TmpMetadataPatcher(pluginContext: IrPluginContext) :
                             .filterIsInstance<IrDeclarationWithName>()
                             .filter {
                                 (it !is IrSimpleFunction ||
-                                        pluginContext.irTrace[InjektWritableSlices.IS_IMPLICIT_CONTEXT_PARAM, it] != true)
+                                        pluginContext.irTrace[InjektWritableSlices.IS_TRANSFORMED_IMPLICIT_FUNCTION, it] != true)
                             })
                             .map { it.descriptor })
                             .distinct()

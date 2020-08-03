@@ -41,6 +41,9 @@ class InjektComponentRegistrar : ComponentRegistrar {
             project,
             InjektStorageContainerContributor(implicitChecker)
         )
+
+        // make sure that our plugin always runs before the Compose plugin
+        // otherwise it will break @Reader @Composable
         val irExtensionPoint = Extensions.getArea(project)
             .getExtensionPoint(IrGenerationExtension.extensionPointName)
 

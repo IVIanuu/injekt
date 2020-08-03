@@ -27,6 +27,6 @@ object InjektWritableSlices {
         BasicWritableSlice(RewritePolicy.DO_NOTHING)
     val IS_READER_LAMBDA_INVOKE: WritableSlice<IrFunctionAccessExpression, Boolean> =
         BasicWritableSlice(RewritePolicy.DO_NOTHING)
-    val IS_IMPLICIT_CONTEXT_PARAM: WritableSlice<IrSimpleFunction, Boolean> =
+    val IS_TRANSFORMED_IMPLICIT_FUNCTION: WritableSlice<IrSimpleFunction, Boolean> =
         BasicWritableSlice(RewritePolicy.DO_NOTHING)
 }
