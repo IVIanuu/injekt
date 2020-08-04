@@ -39,6 +39,7 @@ import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.uniqueKey
+import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -99,6 +100,8 @@ import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrReturn
 import org.jetbrains.kotlin.ir.expressions.IrReturnableBlock
 import org.jetbrains.kotlin.ir.expressions.IrSetField
+import org.jetbrains.kotlin.ir.expressions.IrTypeOperatorCall
+import org.jetbrains.kotlin.ir.expressions.IrWhen
 import org.jetbrains.kotlin.ir.expressions.impl.IrBlockBodyImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrBlockImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
@@ -111,6 +114,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrGetValueImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrReturnImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrReturnableBlockImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrSetFieldImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrWhenImpl
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrFieldSymbolImpl
@@ -156,6 +160,7 @@ class ImplicitContextParamTransformer(
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
     private val transformedValueParameters = mutableMapOf<IrValueParameter, IrValueParameter>()
     private val transformedVariables = mutableMapOf<IrVariable, IrVariable>()
+    private val transformedWhens = mutableMapOf<IrWhen, IrWhen>()
 
     private val newDeclarations = mutableListOf<Pair<IrDeclarationWithName, Boolean>>()
     private val nameProvider = NameProvider()
@@ -163,22 +168,30 @@ class ImplicitContextParamTransformer(
     fun getTransformedFunction(function: IrFunction) =
         transformFunctionIfNeeded(function)
 
-    private val transformer = object : IrElementTransformerVoid() {
+    private val transformer = object : IrElementTransformerVoidWithContext() {
 
-        override fun visitClass(declaration: IrClass): IrStatement =
-            super.visitClass(transformClassIfNeeded(declaration))
+        override fun visitClassNew(declaration: IrClass): IrStatement =
+            super.visitClassNew(transformClassIfNeeded(declaration))
 
-        override fun visitField(declaration: IrField): IrStatement =
-            super.visitField(transformFieldIfNeeded(declaration))
+        override fun visitFieldNew(declaration: IrField): IrStatement =
+            super.visitFieldNew(transformFieldIfNeeded(declaration))
 
-        override fun visitFunction(declaration: IrFunction): IrStatement =
-            super.visitFunction(transformFunctionIfNeeded(declaration))
+        override fun visitFunctionNew(declaration: IrFunction): IrStatement =
+            super.visitFunctionNew(transformFunctionIfNeeded(declaration))
 
-        override fun visitValueParameter(declaration: IrValueParameter): IrStatement =
-            super.visitValueParameter(transformValueParameterIfNeeded(declaration))
+        override fun visitValueParameterNew(declaration: IrValueParameter): IrStatement =
+            super.visitValueParameterNew(transformValueParameterIfNeeded(declaration))
 
         override fun visitVariable(declaration: IrVariable): IrStatement =
             super.visitVariable(transformVariableIfNeeded(declaration))
+
+        override fun visitWhen(expression: IrWhen): IrExpression =
+            super.visitWhen(
+                transformWhenIfNeeded(
+                    expression,
+                    currentScope!!.irElement as IrDeclarationWithName
+                )
+            )
 
     }
 
@@ -300,7 +313,7 @@ class ImplicitContextParamTransformer(
             !function.returnType.isTransformedReaderLambda()
         ) {
             transformedFunction.returnType =
-                createReaderLambdaType(transformedFunction.returnType, transformedFunction)
+                createNewReaderLambdaType(transformedFunction.returnType, transformedFunction)
         }
 
         if (function.canUseImplicits(pluginContext)) {
@@ -341,7 +354,7 @@ class ImplicitContextParamTransformer(
         transformedFields[declaration]?.let { return it }
         if (declaration in transformedFields.values) return declaration
 
-        val newType = createReaderLambdaType(declaration.type, declaration)
+        val newType = createNewReaderLambdaType(declaration.type, declaration)
 
         return IrFieldImpl(
             declaration.startOffset,
@@ -376,7 +389,7 @@ class ImplicitContextParamTransformer(
         transformedVariables[declaration]?.let { return it }
         if (declaration in transformedVariables.values) return declaration
 
-        val newType = createReaderLambdaType(declaration.type, declaration)
+        val newType = createNewReaderLambdaType(declaration.type, declaration)
 
         return IrVariableImpl(
             declaration.startOffset,
@@ -397,6 +410,28 @@ class ImplicitContextParamTransformer(
         }
     }
 
+    private fun transformWhenIfNeeded(
+        expression: IrWhen,
+        scopeElement: IrDeclarationWithName
+    ): IrWhen {
+        val type = expression.type
+        if (!type.isNotTransformedReaderLambda()) return expression
+        if (type.isTransformedReaderLambda()) return expression
+
+        transformedWhens[expression]?.let { return it }
+        if (expression in transformedWhens.values) return expression
+
+        val newType = createNewReaderLambdaType(type, scopeElement)
+
+        return IrWhenImpl(
+            expression.startOffset,
+            expression.endOffset,
+            newType,
+            expression.origin,
+            expression.branches
+        ).copyAttributes(expression)
+    }
+
     private fun transformValueParameterIfNeeded(
         declaration: IrValueParameter
     ): IrValueParameter {
@@ -407,7 +442,7 @@ class ImplicitContextParamTransformer(
         transformedValueParameters[declaration]?.let { return it }
         if (declaration in transformedValueParameters.values) return declaration
 
-        val newType = createReaderLambdaType(type, declaration)
+        val newType = createNewReaderLambdaType(type, declaration)
 
         return IrValueParameterImpl(
             declaration.startOffset, declaration.endOffset,
@@ -428,7 +463,7 @@ class ImplicitContextParamTransformer(
         }
     }
 
-    private fun createReaderLambdaType(
+    private fun createNewReaderLambdaType(
         oldType: IrType,
         declaration: IrDeclarationWithName
     ): IrType {
@@ -771,25 +806,32 @@ class ImplicitContextParamTransformer(
 
             override fun visitBlock(expression: IrBlock): IrExpression {
                 val result = super.visitBlock(expression) as IrBlock
-                return if (result.type.isTransformedReaderLambda() &&
-                    result.type != expression.type
+                val lastStatement = result.statements.lastOrNull() as? IrExpression
+                return if (lastStatement != null &&
+                    lastStatement.type.isTransformedReaderLambda()
                 ) if (expression is IrReturnableBlock)
                     IrReturnableBlockImpl(
                         result.startOffset, result.endOffset,
-                        result.type,
+                        lastStatement.type,
                         IrReturnableBlockSymbolImpl(expression.symbol.descriptor),
                         result.origin,
-                        result.statements.map { it.transform(this, null) },
+                        result.statements,
                         expression.inlineFunctionSymbol
                     ).copyAttributes(expression)
                 else
                     IrBlockImpl(
                         result.startOffset, result.endOffset,
-                        result.type,
+                        lastStatement.type,
                         result.origin,
-                        result.statements.map { it.transform(this, null) }
+                        result.statements
                     ).copyAttributes(expression)
                 else result
+            }
+
+            override fun visitTypeOperator(expression: IrTypeOperatorCall): IrExpression {
+                // todo check if this has negative side effects
+                val result = super.visitTypeOperator(expression) as IrTypeOperatorCall
+                return if (result.argument.type.isTransformedReaderLambda()) result.argument else result
             }
 
             override fun visitCall(expression: IrCall): IrExpression {

@@ -479,7 +479,7 @@ class ImplicitTest {
     }
 
     @Test
-    fun testReaderLambdaPropertyInPropertyInitializer() = codegen(
+    fun testReaderLambdaInPropertyInitializer() = codegen(
         """
         @Given
         fun provideFoo() = Foo()
@@ -509,6 +509,45 @@ class ImplicitTest {
     """
     ) {
         assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testReaderLambdaInVariableInitializer() = codegen(
+        """
+        @Given
+        fun provideFoo() = Foo()
+        
+        fun invoke(): Foo { 
+            val foo: @Reader () -> Foo = { given() }
+            return runReader { foo() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testSimpleConditionalLambda() = codegen(
+        """
+            @Given
+            fun provideFoo() = Foo()
+            
+            @Given
+            fun provideBar() = Bar(given())
+            
+            fun invoke(clazz: KClass<*>): Any {
+                val provider: @Reader () -> Any = when (clazz) {
+                    Foo::class -> { { given<Foo>() } }
+                    Bar::class -> { { given<Bar>() } }
+                    else -> error("Unexpected clazz")
+                }
+                
+                return runReader { provider() }
+            }
+        """
+    ) {
+        assertTrue(invokeSingleFile(Foo::class) is Foo)
+        assertTrue(invokeSingleFile(Bar::class) is Bar)
     }
 
     @Test
