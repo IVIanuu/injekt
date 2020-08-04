@@ -39,32 +39,38 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 sealed class BindingNode(
     val key: Key,
     val contexts: List<IrClass>,
-    val origin: FqName?
+    val origin: FqName?,
+    val external: Boolean
 )
 
 class GivenBindingNode(
     key: Key,
     contexts: List<IrClass>,
     origin: FqName?,
+    external: Boolean,
     val createExpression: IrBuilderWithScope.(Map<IrValueParameter, () -> IrExpression?>, () -> IrExpression) -> IrExpression,
     val explicitParameters: List<IrValueParameter>,
     val function: IrFunction
-) : BindingNode(key, contexts, origin)
+) : BindingNode(key, contexts, origin, external)
 
-class InputBindingNode(val inputField: IrField) : BindingNode(
+class InputBindingNode(
+    val inputField: IrField
+) : BindingNode(
     inputField.type.asKey(),
     emptyList(),
-    inputField.descriptor.fqNameSafe
+    inputField.descriptor.fqNameSafe,
+    false
 )
 
 class MapBindingNode(
     key: Key,
     contexts: List<IrClass>,
-    val functions: List<IrFunction>
+    val functions: List<IrFunction>,
 ) : BindingNode(
     key,
     contexts,
-    null
+    null,
+    false
 )
 
 class SetBindingNode(
@@ -74,13 +80,15 @@ class SetBindingNode(
 ) : BindingNode(
     key,
     contexts,
-    null
+    null,
+    false
 )
 
 class NullBindingNode(key: Key) : BindingNode(
     key,
     emptyList(),
-    null
+    null,
+    true
 )
 
 fun IrType.asKey(): Key = Key(this)

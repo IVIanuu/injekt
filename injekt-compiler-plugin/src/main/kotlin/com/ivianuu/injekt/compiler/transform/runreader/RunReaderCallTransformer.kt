@@ -65,7 +65,7 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class RunReaderTransformer(
+class RunReaderCallTransformer(
     pluginContext: IrPluginContext,
     private val indexer: Indexer
 ) : AbstractInjektTransformer(pluginContext) {
@@ -138,9 +138,10 @@ class RunReaderTransformer(
                 dispatchReceiverParameter = thisReceiver!!.copyTo(this)
                 parent = this@clazz
                 addMetadataIfNotLocal()
+                val parameterNameProvider = NameProvider()
                 inputs.forEach {
                     addValueParameter(
-                        it.type.uniqueTypeName().asString(),
+                        parameterNameProvider.allocateForGroup(it.type.uniqueTypeName()).asString(),
                         it.type
                     )
                 }

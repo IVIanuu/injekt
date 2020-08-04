@@ -23,8 +23,8 @@ import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ReaderTrackingTransformer
 import com.ivianuu.injekt.compiler.transform.runreader.ComponentIndexingTransformer
+import com.ivianuu.injekt.compiler.transform.runreader.RunReaderCallTransformer
 import com.ivianuu.injekt.compiler.transform.runreader.RunReaderContextImplTransformer
-import com.ivianuu.injekt.compiler.transform.runreader.RunReaderTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -35,7 +35,6 @@ import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
@@ -79,7 +78,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             implicitContextParamTransformer
         ).doLower(moduleFragment)
 
-        RunReaderTransformer(pluginContext, indexer).doLower(moduleFragment)
+        RunReaderCallTransformer(pluginContext, indexer).doLower(moduleFragment)
 
         val declarationGraph =
             DeclarationGraph(
@@ -106,7 +105,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         generateSymbols(pluginContext)
 
-        println(moduleFragment.dump())
+        //println(moduleFragment.dump())
     }
 
 }

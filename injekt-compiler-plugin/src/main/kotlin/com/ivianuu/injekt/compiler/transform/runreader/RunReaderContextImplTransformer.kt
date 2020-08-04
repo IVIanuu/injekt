@@ -97,7 +97,6 @@ class RunReaderContextImplTransformer(
         val inputs = index.functions
             .single { it.name.asString() == "inputs" }
             .valueParameters
-            .map { it.type }
 
         val contextImpl = buildClass {
             this.name = fqName.shortName()
@@ -121,8 +120,8 @@ class RunReaderContextImplTransformer(
 
         val inputFields = inputs.associateWith {
             contextImpl.addField(
-                it.uniqueTypeName(),
-                it
+                it.name,
+                it.type
             )
         }
 

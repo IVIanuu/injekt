@@ -25,6 +25,7 @@ import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertNotSame
 import junit.framework.Assert.assertNull
+import junit.framework.Assert.assertSame
 import org.junit.Test
 
 class ComponentGraphTest {
@@ -39,20 +40,6 @@ class ComponentGraphTest {
         """
     ) {
         assertInternalError("no binding")
-    }
-
-    @Test
-    fun testDuplicatedBindingFails() = codegen(
-        """
-        @Given fun foo1() = Foo()
-        @Given fun foo2() = Foo()
-        
-        fun invoke() {
-            runReader { given<Foo>() }
-        }
-        """
-    ) {
-        assertInternalError("multiple")
     }
 
     @Test
@@ -168,5 +155,112 @@ class ComponentGraphTest {
         }
     """
     )
+
+    @Test
+    fun testPrefersInputsOverGiven() = codegen(
+        """
+            @Given
+            fun provideFoo() = Foo()
+            
+            fun invoke(foo: Foo): Foo {
+                return runReader(foo) { given() }
+            }
+        """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile(foo))
+    }
+
+    @Test
+    fun testPrefersInternalOverExternal() = multiCodegen(
+        listOf(
+            source(
+                """
+                    // todo remove once reader vars are supported
+                    var externalFooField: Foo? = null
+                    @Given
+                    val externalFoo: Foo get() = externalFooField!!
+                """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    // todo remove once reader vars are supported
+                    var internalFooField: Foo? = null
+                    @Given
+                    val internalFoo: Foo get() = internalFooField!!
+                    
+                    fun invoke(
+                        internalFoo: Foo,
+                        externalFoo: Foo
+                    ): Foo {
+                        externalFooField = externalFoo
+                        internalFooField = internalFoo
+                        return runReader { given<Foo>() }
+                    }
+                """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        val externalFoo = Foo()
+        val internalFoo = Foo()
+        assertSame(internalFoo, it.last().invokeSingleFile(internalFoo, externalFoo))
+    }
+
+    @Test
+    fun testDuplicatedInputsFails() = codegen(
+        """
+        fun invoke() {
+            runReader(Foo(), Foo()) { given<Foo>() }
+        }
+        """
+    ) {
+        assertInternalError("multiple inputs")
+    }
+
+    @Test
+    fun testDuplicatedInternalBindingsFails() = codegen(
+        """
+        @Given fun foo1() = Foo()
+        @Given fun foo2() = Foo()
+        
+        fun invoke() {
+            runReader { given<Foo>() }
+        }
+        """
+    ) {
+        assertInternalError("multiple internal bindings")
+    }
+
+    @Test
+    fun testDuplicatedExternalBindingsFails() = multiCodegen(
+        listOf(
+            source(
+                """
+                    @Given fun foo1() = Foo()
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    @Given fun foo2() = Foo()
+            """
+            )
+        ),
+        listOf(
+            source(
+                """
+                    fun invoke() { 
+                        runReader { given<Foo>() }
+                    }
+                """
+            )
+        )
+    ) {
+        it.last().assertInternalError("multiple external bindings")
+    }
 
 }
