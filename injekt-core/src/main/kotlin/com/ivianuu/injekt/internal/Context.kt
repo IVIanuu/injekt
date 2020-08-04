@@ -25,3 +25,5 @@ internal annotation class GenericContext(
     val implName: String,
     val functionMap: String
 )
+
+annotation class RunReaderContext(val fqName: String)
