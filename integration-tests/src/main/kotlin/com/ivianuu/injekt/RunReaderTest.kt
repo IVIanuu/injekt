@@ -45,6 +45,53 @@ class RunReaderTest {
     }
 
     @Test
+    fun testWithChild() = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+        @Given
+        fun bar() = Bar(given())
+        
+        fun invoke(foo: Foo): Foo {
+            return runReader(42, "hello world") { overriddingFoo(foo) }
+        }
+        
+        fun otherInvoke() = runReader { overriddingFoo(Foo()) }
+        
+        @Reader
+        private fun overriddingFoo(foo: Foo) = runChildReader(foo) {
+            given<Bar>().foo
+        }
+    """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile(foo))
+    }
+
+    @Test
+    fun testAppActReader() = codegen(
+        """
+        class App
+        class Activity {
+            val app = App()
+        }
+         
+        inline fun <R> App.runApplicationReader(block: @Reader () -> R) = runReader(this) {
+            block()
+        }
+        
+        inline fun <R> Activity.runActivityReader(block: @Reader () -> R) = app.runApplicationReader {
+            runChildReader(this) {
+                block()
+            }
+        }
+    """
+    ) {
+        //val foo = Foo()
+        //assertSame(foo, invokeSingleFile(foo))
+    }
+
+    @Test
     fun testRunReaderInsideSuspend() = codegen(
         """
         @Given

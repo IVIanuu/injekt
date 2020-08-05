@@ -32,7 +32,7 @@ import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
-class ComponentIndexingTransformer(
+class BindingIndexingTransformer(
     private val indexer: Indexer,
     pluginContext: IrPluginContext
 ) : AbstractInjektTransformer(pluginContext) {

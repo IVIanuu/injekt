@@ -23,10 +23,14 @@ import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.runReader
+import com.ivianuu.injekt.runChildReader
 
 inline fun <R> Service.runServiceReader(block: @Reader () -> R): R =
-    runReader(application!!, this) { block() }
+    application.runApplicationReader {
+        runChildReader(this) {
+            block()
+        }
+    }
 
 @Distinct
 typealias ServiceContext = Context

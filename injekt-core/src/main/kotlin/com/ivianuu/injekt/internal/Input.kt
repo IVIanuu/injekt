@@ -14,18 +14,6 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.test
+package com.ivianuu.injekt.internal
 
-class Foo
-
-class Bar(val foo: Foo)
-
-class Baz(val foo: Foo, val bar: Bar)
-
-interface Command
-
-class CommandA : Command
-
-class CommandB : Command
-
-class CommandC : Command
+internal annotation class Input

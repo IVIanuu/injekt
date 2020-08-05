@@ -19,14 +19,16 @@ package com.ivianuu.injekt.android
 import androidx.lifecycle.ViewModelProvider
 import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.Scoping
 import com.ivianuu.injekt.Storage
 import com.ivianuu.injekt.given
 
 @Scoping
 object RetainedFragmentScoped {
+    @Reader
     inline operator fun <T> invoke(
-        key: String,
+        key: Any,
         init: () -> T
     ) = given<RetainedFragmentStorage>().scope(key, init)
 }

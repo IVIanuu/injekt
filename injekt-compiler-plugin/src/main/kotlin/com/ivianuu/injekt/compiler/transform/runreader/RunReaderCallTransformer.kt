@@ -16,11 +16,13 @@
 
 package com.ivianuu.injekt.compiler.transform.runreader
 
+import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getContext
+import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.uniqueTypeName
@@ -35,10 +37,10 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.impl.EmptyPackageFragmentDescriptor
-import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlock
+import org.jetbrains.kotlin.ir.builders.irBoolean
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
@@ -78,7 +80,9 @@ class RunReaderCallTransformer(
             override fun visitCall(expression: IrCall): IrExpression {
                 expression.transformChildrenVoid(this)
                 return if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.runReader"
+                    "com.ivianuu.injekt.runReader" ||
+                    expression.symbol.descriptor.fqNameSafe.asString() ==
+                    "com.ivianuu.injekt.runChildReader"
                 ) {
                     transformRunReaderCall(
                         expression,
@@ -106,9 +110,15 @@ class RunReaderCallTransformer(
 
         val lambda = (call.getValueArgument(1) as IrFunctionExpression).function
 
+        val isChild = call.symbol.owner.descriptor.fqNameSafe.asString() ==
+                "com.ivianuu.injekt.runChildReader"
+
+        val metadata = if (isChild)
+            pluginContext.irTrace[InjektWritableSlices.RUN_CHILD_READER_METADATA, call]!! else null
+
         val name = nameProvider.allocateForGroup(
             "${scope.descriptor.fqNameSafe.pathSegments()
-                .joinToString("_")}RunReaderContextImpl".asNameId()
+                .joinToString("_")}RunReaderContextFactory".asNameId()
         )
         val index = buildClass {
             this.name = "${name}Index".asNameId()
@@ -118,6 +128,7 @@ class RunReaderCallTransformer(
             parent = file
             createImplicitParameterDeclarationWithWrappedDescriptor()
             superTypes += lambda.getContext()!!.defaultType
+            if (metadata != null) superTypes += metadata.callingContext.defaultType
             addMetadataIfNotLocal()
             if (scope is IrTypeParametersContainer)
                 copyTypeParametersFrom(scope as IrTypeParametersContainer)
@@ -127,7 +138,24 @@ class RunReaderCallTransformer(
                         0,
                         irString(file.fqName.child(name).asString())
                     )
+                    putValueArgument(
+                        1,
+                        irBoolean(isChild)
+                    )
                 }
+            }
+
+            if (isChild) {
+                addFunction {
+                    this.name = "parent".asNameId()
+                    returnType = metadata!!.callingContext.defaultType
+                    modality = Modality.ABSTRACT
+                }.apply {
+                    dispatchReceiverParameter = thisReceiver!!.copyTo(this)
+                    parent = this@clazz
+                    addMetadataIfNotLocal()
+                }
+
             }
 
             addFunction {
@@ -150,11 +178,11 @@ class RunReaderCallTransformer(
 
         newDeclarations += index
 
-        val contextImplStub = buildClass {
+        val contextFactoryStub = buildClass {
             this.name = name
             origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
+            kind = ClassKind.OBJECT
             visibility = Visibilities.INTERNAL
-            if (inputs.isEmpty()) kind = ClassKind.OBJECT
         }.apply clazz@{
             createImplicitParameterDeclarationWithWrappedDescriptor()
             parent = IrExternalPackageFragmentImpl(
@@ -166,33 +194,42 @@ class RunReaderCallTransformer(
                 ),
                 scope.getPackageFragment()!!.fqName
             )
+        }
 
-            if (inputs.isNotEmpty()) {
-                addConstructor {
-                    returnType = defaultType
-                    isPrimary = true
-                    visibility = Visibilities.PUBLIC
-                }.apply {
-                    inputs.forEach {
-                        addValueParameter(
-                            it.type.uniqueTypeName().asString(),
-                            it.type
-                        )
-                    }
-                }
+        val createFunctionStub = contextFactoryStub.addFunction {
+            this.name = "create".asNameId()
+            returnType = lambda.getContext()!!.defaultType
+            origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
+        }.apply {
+            dispatchReceiverParameter = contextFactoryStub.thisReceiver!!.copyTo(this)
+
+            if (isChild) {
+                addValueParameter(
+                    "parent",
+                    metadata!!.callingContext.defaultType
+                )
+            }
+
+            inputs.forEach { input ->
+                addValueParameter(
+                    input.type.uniqueTypeName().asString(),
+                    input.type
+                )
             }
         }
 
         return DeclarationIrBuilder(pluginContext, call.symbol).run {
             irBlock {
-                val rawContextExpression = if (inputs.isNotEmpty()) {
-                    irCall(contextImplStub.constructors.single()).apply {
-                        inputs.forEachIndexed { index, instance ->
-                            putValueArgument(index, instance)
-                        }
+                val rawContextExpression = irCall(createFunctionStub).apply {
+                    dispatchReceiver = irGetObject(contextFactoryStub.symbol)
+
+                    if (isChild) {
+                        putValueArgument(0, metadata!!.contextExpression)
                     }
-                } else {
-                    irGetObject(contextImplStub.symbol)
+
+                    inputs.forEachIndexed { index, input ->
+                        putValueArgument(index + if (isChild) 1 else 0, input)
+                    }
                 }
 
                 var contextUsageCount = 0

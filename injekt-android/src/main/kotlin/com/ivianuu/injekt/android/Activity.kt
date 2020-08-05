@@ -28,10 +28,14 @@ import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.Scoping
 import com.ivianuu.injekt.Storage
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.runReader
+import com.ivianuu.injekt.runChildReader
 
 inline fun <R> ComponentActivity.runActivityReader(block: @Reader () -> R): R =
-    runReader(application!!, this) { block() }
+    application.runApplicationReader {
+        runChildReader(this) {
+            block()
+        }
+    }
 
 @Scoping
 object ActivityScoped {

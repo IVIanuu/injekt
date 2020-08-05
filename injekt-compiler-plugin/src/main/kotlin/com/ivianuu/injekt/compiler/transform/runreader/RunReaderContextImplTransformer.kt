@@ -17,7 +17,10 @@
 package com.ivianuu.injekt.compiler.transform.runreader
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addFile
+import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getAllClasses
@@ -39,21 +42,29 @@ import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
+import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
+import org.jetbrains.kotlin.ir.builders.irAs
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBlockBody
+import org.jetbrains.kotlin.ir.builders.irBranch
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
+import org.jetbrains.kotlin.ir.builders.irElseBranch
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irIs
 import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irSetField
+import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.builders.irTemporary
+import org.jetbrains.kotlin.ir.builders.irWhen
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrConst
@@ -65,6 +76,8 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
+import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isObject
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -76,52 +89,230 @@ class RunReaderContextImplTransformer(
     private val initFile: IrFile
 ) : AbstractInjektTransformer(pluginContext) {
 
+    private val generatedContexts = mutableMapOf<IrClass, Set<IrClass>>()
+
     override fun lower() {
-        declarationGraph.runReaderContexts.forEach { index ->
-            generateRunReaderContext(index)
+        while (true) {
+            val roundContexts = declarationGraph.runReaderContexts
+                .filter { it.superTypes.first().classOrNull!!.owner !in generatedContexts }
+
+            if (roundContexts.isEmpty()) break
+
+            for (index in roundContexts) {
+                val context = index.superTypes.first().classOrNull!!.owner
+                if (index in generatedContexts) continue
+
+                val parents = declarationGraph.getParentRunReaderContexts(context)
+
+                val unimplementedParents =
+                    parents
+                        .filter { it !in generatedContexts }
+
+                if (unimplementedParents.isNotEmpty()) continue
+
+                generatedContexts[context] = generateRunReaderContextWithFactory(
+                    index,
+                    parents
+                        .flatMapFix { generatedContexts[it]!! }
+                        .toSet()
+                )
+            }
         }
     }
 
-    private fun generateRunReaderContext(index: IrClass) {
+    private fun generateRunReaderContextWithFactory(
+        index: IrClass,
+        parents: Set<IrClass>
+    ): Set<IrClass> {
+        val thisInputs = index.functions
+            .single { it.name.asString() == "inputs" }
+            .valueParameters
+            .map { it.type }
+
         val fqName = index.getAnnotation(InjektFqNames.RunReaderContext)!!
             .getValueArgument(0)
             .let { it as IrConst<String> }
             .value
             .let { FqName(it) }
+        val isChild = index.getAnnotation(InjektFqNames.RunReaderContext)!!
+            .getValueArgument(1)
+            .let { it as IrConst<Boolean> }
+            .value
 
-        val file = module.addFile(
-            pluginContext,
-            fqName
-        )
+        val file = module.addFile(pluginContext, fqName)
 
-        val inputs = index.functions
-            .single { it.name.asString() == "inputs" }
-            .valueParameters
+        val thisContext = index.superTypes[0].classOrNull!!.owner
+        val callingContext = if (isChild) index.superTypes[1].classOrNull!!.owner else null
 
-        val contextImpl = buildClass {
+        val implNameProvider = NameProvider()
+
+        val contextImplsWithParents: List<Pair<IrClass, IrClass?>> = parents
+            .takeIf { it.isNotEmpty() }
+            .let { it ?: listOf(null) }
+            .map { parent ->
+                val parentInputs = parent?.functions
+                    ?.filter { it.hasAnnotation(InjektFqNames.Input) }
+                    ?.map { it.returnType }
+                    ?.toSet() ?: emptySet()
+
+                val combinedInputs = parentInputs.toMutableSet()
+                combinedInputs += thisInputs
+
+                val contextImpl = generateRunReaderContext(
+                    implNameProvider.allocateForGroup("Impl").asNameId(),
+                    thisContext,
+                    combinedInputs,
+                    file
+                )
+
+                if (parent != null) recordLookup(contextImpl, parent)
+
+                contextImpl to parent
+            }
+
+        val factory = buildClass {
             this.name = fqName.shortName()
+            kind = ClassKind.OBJECT
+            visibility = Visibilities.INTERNAL
+        }.apply clazz@{
+            createImplicitParameterDeclarationWithWrappedDescriptor()
+
+            addConstructor {
+                returnType = defaultType
+                isPrimary = true
+                visibility = Visibilities.PUBLIC
+            }.apply {
+                body = DeclarationIrBuilder(
+                    pluginContext,
+                    symbol
+                ).irBlockBody {
+                    +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
+                    +IrInstanceInitializerCallImpl(
+                        UNDEFINED_OFFSET,
+                        UNDEFINED_OFFSET,
+                        this@clazz.symbol,
+                        context.irBuiltIns.unitType
+                    )
+                }
+            }
+
+            addFunction {
+                name = "create".asNameId()
+                returnType = thisContext.defaultType
+            }.apply {
+                dispatchReceiverParameter = thisReceiver!!.copyTo(this)
+
+                val parentValueParameter = if (isChild) {
+                    addValueParameter(
+                        "parent",
+                        callingContext!!.defaultType
+                    )
+                } else null
+
+                val inputNameProvider = NameProvider()
+                thisInputs.forEach {
+                    addValueParameter(
+                        inputNameProvider.allocateForGroup(it.uniqueTypeName()).asString(),
+                        it
+                    )
+                }
+
+                body = DeclarationIrBuilder(pluginContext, symbol).run {
+                    fun createContextImpl(contextImpl: IrClass, parent: IrClass?): IrExpression {
+                        return if (contextImpl.isObject) {
+                            irGetObject(contextImpl.symbol)
+                        } else {
+                            val contextImplInputs = contextImpl.constructors.single()
+                                .valueParameters
+                                .map { it.type }
+                            irCall(contextImpl.constructors.single()).apply {
+                                contextImplInputs.forEachIndexed { index, type ->
+                                    putValueArgument(
+                                        index,
+                                        valueParameters.firstOrNull {
+                                            it.type == type
+                                        }?.let { irGet(it) }
+                                            ?: parent!!.functions
+                                                .filter { it.hasAnnotation(InjektFqNames.Input) }
+                                                .single { it.returnType == type }
+                                                .let { parentInput ->
+                                                    irCall(parentInput).apply {
+                                                        dispatchReceiver = irAs(
+                                                            irGet(parentValueParameter!!),
+                                                            parent.defaultType
+                                                        )
+                                                    }
+                                                }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    irExprBody(
+                        if (contextImplsWithParents.size == 1) {
+                            val (contextImpl, parent) = contextImplsWithParents.single()
+                            createContextImpl(contextImpl, parent)
+                        } else {
+                            irWhen(
+                                thisContext.defaultType,
+                                contextImplsWithParents.map { (contextImpl, parent) ->
+                                    parent!!
+                                    irBranch(
+                                        irIs(irGet(parentValueParameter!!), parent.defaultType),
+                                        createContextImpl(contextImpl, parent)
+                                    )
+                                } + irElseBranch(
+                                    irCall(
+                                        pluginContext.referenceFunctions(
+                                            FqName("kotlin.error")
+                                        ).single()
+                                    ).apply {
+                                        putValueArgument(
+                                            0,
+                                            irString("Unexpected parent")
+                                        )
+                                    }
+                                )
+                            )
+                        }
+                    )
+                }
+            }
+
+            contextImplsWithParents.forEach { addChild(it.first) }
+        }
+
+        file.addChild(factory)
+
+        return contextImplsWithParents
+            .map { it.first }
+            .toSet()
+    }
+
+    private fun generateRunReaderContext(
+        name: Name,
+        thisContext: IrClass,
+        inputs: Set<IrType>,
+        irParent: IrDeclarationParent
+    ): IrClass {
+        val contextImpl = buildClass {
+            this.name = name
             visibility = Visibilities.INTERNAL
             if (inputs.isEmpty()) kind = ClassKind.OBJECT
         }.apply clazz@{
-            parent = file
-            file.addChild(this)
+            this.parent = irParent
             createImplicitParameterDeclarationWithWrappedDescriptor()
-            superTypes += index.superTypes.single()
-            recordLookup(
-                this,
-                index.superTypes.single().classOrNull!!.owner
-            )
+            superTypes += thisContext.defaultType
+            recordLookup(this, thisContext)
         }
 
-        recordLookup(
-            initFile,
-            contextImpl
-        )
+        recordLookup(initFile, contextImpl)
 
+        val inputFieldNameProvider = NameProvider()
         val inputFields = inputs.associateWith {
             contextImpl.addField(
-                it.name,
-                it.type
+                inputFieldNameProvider.allocateForGroup(it.uniqueTypeName()),
+                it
             )
         }
 
@@ -173,7 +364,7 @@ class RunReaderContextImplTransformer(
 
         while (true) {
             val entryPoints =
-                (if (firstRound) listOf(index.superTypes.single().classOrNull!!.owner)
+                (if (firstRound) listOf(thisContext)
                 else graph.resolvedBindings.values
                     .flatMapFix { it.contexts }
                     .flatMapFix { it.getAllClasses() })
@@ -217,6 +408,22 @@ class RunReaderContextImplTransformer(
 
             firstRound = false
         }
+
+        // include expressions for inputs so that we can access them from children
+        // todo maybe only do this if we have children
+        inputs.forEach {
+            bindingExpressions.getOrPut(it.asKey()) {
+                createBindingExpression(
+                    contextImpl, graph, BindingRequest(
+                        it.asKey(),
+                        null,
+                        null
+                    )
+                )
+            }
+        }
+
+        return contextImpl
     }
 
     private fun createBindingExpression(
@@ -224,7 +431,8 @@ class RunReaderContextImplTransformer(
         graph: BindingGraph,
         request: BindingRequest
     ): ContextBindingExpression {
-        val rawExpression = when (val binding = graph.getBinding(request)) {
+        val binding = graph.getBinding(request)
+        val rawExpression = when (binding) {
             is GivenBindingNode -> givenExpression(context, binding)
             is InputBindingNode -> inputExpression(binding)
             is MapBindingNode -> mapBindingExpression(context, binding)
@@ -236,11 +444,16 @@ class RunReaderContextImplTransformer(
             this.name = request.key.type.uniqueTypeName()
             returnType = request.key.type
         }.apply {
+            addMetadataIfNotLocal()
             dispatchReceiverParameter = context.thisReceiver!!.copyTo(this)
             this.parent = context
             context.addChild(this)
             this.body = DeclarationIrBuilder(pluginContext, symbol).run {
                 irExprBody(rawExpression(this) { irGet(dispatchReceiverParameter!!) })
+            }
+            if (binding is InputBindingNode) {
+                annotations += DeclarationIrBuilder(pluginContext, symbol)
+                    .irCall(symbols.input.constructors.single())
             }
         }
 
