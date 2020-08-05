@@ -18,11 +18,12 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.implicit.GenericContextImplTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ReaderTrackingTransformer
-import com.ivianuu.injekt.compiler.transform.runreader.ComponentIndexingTransformer
+import com.ivianuu.injekt.compiler.transform.runreader.BindingIndexingTransformer
 import com.ivianuu.injekt.compiler.transform.runreader.RunReaderCallTransformer
 import com.ivianuu.injekt.compiler.transform.runreader.RunReaderContextImplTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
@@ -87,7 +88,9 @@ class InjektIrGenerationExtension : IrGenerationExtension {
                 implicitContextParamTransformer
             )
 
-        ComponentIndexingTransformer(indexer, injektPluginContext).doLower(moduleFragment)
+        BindingIndexingTransformer(indexer, injektPluginContext).doLower(moduleFragment)
+
+        println(moduleFragment.dumpSrc())
 
         if (initializeInjekt) {
             declarationGraph.initialize()
@@ -105,7 +108,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         generateSymbols(pluginContext)
 
-        //println(moduleFragment.dump())
+        println(moduleFragment.dumpSrc())
     }
 
 }

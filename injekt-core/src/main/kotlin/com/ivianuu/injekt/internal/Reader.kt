@@ -25,5 +25,7 @@ internal annotation class ReaderImpl(
 
 internal annotation class ReaderInvocation(
     val readerContext: KClass<*>,
-    val invocationContext: KClass<*>
+    val invocationContext: KClass<*>,
+    val isLambda: Boolean,
+    val isRunChildReader: Boolean
 )

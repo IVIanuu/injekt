@@ -33,6 +33,7 @@ object InjektFqNames {
     val Context = InternalPackage.child("Context".asNameId())
     val GenericContext = InternalPackage.child("GenericContext".asNameId())
     val Index = InternalPackage.child("Index".asNameId())
+    val Input = InternalPackage.child("Input".asNameId())
     val Name = InternalPackage.child("Name".asNameId())
     val Qualifier = InternalPackage.child("Qualifier".asNameId())
     val ReaderImpl = InternalPackage.child("ReaderImpl".asNameId())

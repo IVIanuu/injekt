@@ -37,6 +37,7 @@ import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.builders.irBoolean
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
@@ -285,9 +286,15 @@ class ReaderTrackingTransformer(
 
             override fun visitCall(expression: IrCall): IrExpression {
                 return if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.runReader"
+                    "com.ivianuu.injekt.runReader" ||
+                    expression.symbol.descriptor.fqNameSafe.asString() ==
+                    "com.ivianuu.injekt.runChildReader"
                 ) {
-                    currentScope!!.scope.scopeOwner.fqNameSafe
+                    if (expression.symbol.descriptor.fqNameSafe.asString() ==
+                        "com.ivianuu.injekt.runChildReader"
+                    ) {
+                        visitPossibleReaderCall(expression)
+                    }
                     inScope(
                         Scope.RunReader(
                             expression,
@@ -298,9 +305,7 @@ class ReaderTrackingTransformer(
                         super.visitCall(expression)
                     }
                 } else {
-                    if (expression.isReaderLambdaInvoke(pluginContext)) {
-                        visitReaderLambdaInvoke(expression)
-                    }
+                    visitPossibleReaderCall(expression)
                     super.visitCall(expression)
                 }
             }
@@ -310,7 +315,9 @@ class ReaderTrackingTransformer(
 
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
                 if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.runReader"
+                    "com.ivianuu.injekt.runReader" ||
+                    expression.symbol.descriptor.fqNameSafe.asString() ==
+                    "com.ivianuu.injekt.runChildReader"
                 ) return super.visitFunctionAccess(expression)
 
                 val transformedCallee = implicitContextParamTransformer
@@ -370,41 +377,75 @@ class ReaderTrackingTransformer(
         }
     }
 
-    private fun visitReaderLambdaInvoke(call: IrCall) {
-        val scope = currentReaderScope!!
-
-        val lambdaContext = try {
-            call.dispatchReceiver!!.type.lambdaContext!!
-        } catch (e: Exception) {
-            error("Failed to get context from lambda ${call.dump()}")
+    private fun visitPossibleReaderCall(call: IrCall) {
+        val index = when {
+            call.isReaderLambdaInvoke(pluginContext) -> {
+                val lambdaContext = call.dispatchReceiver!!.type.lambdaContext!!
+                val scope = currentReaderScope!!
+                readerInvocationIndex(
+                    scope.fqName,
+                    scope.file,
+                    lambdaContext,
+                    scope.invocationContext,
+                    true,
+                    false
+                )
+            }
+            call.symbol.owner.canUseImplicits(pluginContext) -> {
+                val isRunChildReader = call.symbol.descriptor.fqNameSafe.asString() ==
+                        "com.ivianuu.injekt.runChildReader"
+                val calleeContext = if (isRunChildReader) {
+                    (call.getValueArgument(1) as IrFunctionExpression)
+                        .function.getContext()!!
+                } else {
+                    call.symbol.owner.getContext()!!
+                }
+                val scope = currentReaderScope!!
+                readerInvocationIndex(
+                    scope.fqName,
+                    scope.file,
+                    calleeContext,
+                    scope.invocationContext,
+                    false,
+                    isRunChildReader
+                )
+            }
+            else -> null
         }
-
-        newDeclarations += readerInvocationIndex(
-            scope.fqName,
-            scope.file,
-            lambdaContext,
-            scope.invocationContext
-        )
+        index?.let { newDeclarations += it }
     }
 
     private fun readerInvocationIndex(
         fqName: FqName,
         file: IrFile,
-        lambdaContext: IrClass,
-        invocationContext: IrClass
+        calleeContext: IrClass,
+        invocationContext: IrClass,
+        isLambda: Boolean,
+        isRunChildReader: Boolean
     ) = baseIndex(
         fqName,
         "ReaderInvocation",
         file,
         DeclarationIrBuilder(pluginContext, invocationContext.symbol).run {
-            irCall(symbols.readerInvocation.constructors.single()).apply {
+            irCall(
+                (if (isLambda) symbols.readerInvocation else
+                    symbols.readerInvocation).constructors.single()
+            ).apply {
                 putValueArgument(
                     0,
-                    irClassReference(lambdaContext)
+                    irClassReference(calleeContext)
                 )
                 putValueArgument(
                     1,
                     irClassReference(invocationContext)
+                )
+                putValueArgument(
+                    2,
+                    irBoolean(isLambda)
+                )
+                putValueArgument(
+                    3,
+                    irBoolean(isRunChildReader)
                 )
             }
         }

@@ -54,8 +54,6 @@ class BindingGraph(
     private val allBindings = buildList<BindingNode> {
         this += inputs.map { InputBindingNode(it) }
 
-        println("inputs $inputs")
-
         this += declarationGraph.bindings
             .map { function ->
                 val scoping = function.getClassFromAnnotation(

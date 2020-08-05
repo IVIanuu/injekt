@@ -29,10 +29,14 @@ import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.Scoping
 import com.ivianuu.injekt.Storage
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.runReader
+import com.ivianuu.injekt.runChildReader
 
 inline fun <R> Fragment.runFragmentReader(block: @Reader () -> R): R =
-    runReader(activity!!.application!!, activity!! as ComponentActivity, this) { block() }
+    activity!!.runActivityReader {
+        runChildReader(this) {
+            block()
+        }
+    }
 
 @Scoping
 object FragmentScoped {

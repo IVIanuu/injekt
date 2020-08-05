@@ -26,9 +26,12 @@ import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 
 class DeclarationGraph(
@@ -51,6 +54,77 @@ class DeclarationGraph(
 
     private val _genericContexts = mutableListOf<IrClass>()
     val genericContexts: List<IrClass> get() = _genericContexts
+
+    fun getParentRunReaderContexts(context: IrClass): Set<IrClass> {
+        val parents = mutableSetOf<IrClass>()
+
+        val processedClasses = mutableSetOf<IrClass>()
+
+        val invokers = getInvokers(context)
+
+        fun collectParents(invoker: IrClass) {
+            if (invoker in processedClasses) return
+            processedClasses += invoker
+
+            if (isRunReaderContext(invoker)) {
+                parents += invoker
+                return
+            }
+
+            getInvokers(invoker)
+                .forEach { collectParents(it) }
+        }
+
+        invokers.forEach { collectParents(it) }
+
+        return parents
+    }
+
+    private fun isRunReaderContext(context: IrClass): Boolean {
+        return runReaderContexts
+            .map { it.superTypes.first() }
+            .any { it == context.defaultType }
+    }
+
+    private fun getInvokers(context: IrClass): Set<IrClass> {
+        val allContexts = listOf(context) + getAllSuperContexts(context)
+        return indexer.classIndices
+            .filter { it.hasAnnotation(InjektFqNames.ReaderInvocation) }
+            .filter { clazz ->
+                clazz.getClassFromAnnotation(
+                    InjektFqNames.ReaderInvocation,
+                    0
+                ) in allContexts
+            }
+            .map {
+                it.getClassFromAnnotation(
+                    InjektFqNames.ReaderInvocation,
+                    1
+                )!!
+            }
+            .filter { it != context }
+            .toSet()
+    }
+
+    private fun getAllSuperContexts(
+        context: IrClass
+    ): Set<IrClass> {
+        return indexer.classIndices
+            .filter { it.hasAnnotation(InjektFqNames.ReaderImpl) }
+            .filter { clazz ->
+                clazz.getClassFromAnnotation(
+                    InjektFqNames.ReaderImpl,
+                    1
+                ) == context
+            }
+            .map {
+                it.getClassFromAnnotation(
+                    InjektFqNames.ReaderImpl,
+                    0
+                )!!
+            }
+            .toSet()
+    }
 
     fun getAllContextImplementations(
         context: IrClass
@@ -90,7 +164,10 @@ class DeclarationGraph(
                     clazz.getClassFromAnnotation(
                         InjektFqNames.ReaderInvocation,
                         1
-                    ) == context
+                    ) == context && clazz.getAnnotation(InjektFqNames.ReaderInvocation)!!
+                        .getValueArgument(2)
+                        .let { it as IrConst<Boolean> }
+                        .value
                 }
                 .map {
                     it.getClassFromAnnotation(
