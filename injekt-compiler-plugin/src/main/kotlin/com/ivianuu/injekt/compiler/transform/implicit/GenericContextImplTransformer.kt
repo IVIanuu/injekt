@@ -17,14 +17,17 @@
 package com.ivianuu.injekt.compiler.transform.implicit
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addFile
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
+import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
+import com.ivianuu.injekt.compiler.transform.runreader.RunReaderContextImplTransformer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -32,6 +35,7 @@ import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
@@ -40,16 +44,22 @@ import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irAs
 import org.jetbrains.kotlin.ir.builders.irBlockBody
+import org.jetbrains.kotlin.ir.builders.irBranch
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
+import org.jetbrains.kotlin.ir.builders.irElseBranch
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
+import org.jetbrains.kotlin.ir.builders.irIs
 import org.jetbrains.kotlin.ir.builders.irSetField
+import org.jetbrains.kotlin.ir.builders.irString
+import org.jetbrains.kotlin.ir.builders.irWhen
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.expressions.IrConst
+import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
@@ -58,14 +68,15 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.isFakeOverride
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 class GenericContextImplTransformer(
     pluginContext: IrPluginContext,
-    private val declarationGraph: DeclarationGraph
+    private val declarationGraph: DeclarationGraph,
+    private val runReaderContextImplTransformer: RunReaderContextImplTransformer
 ) : AbstractInjektTransformer(pluginContext) {
 
     override fun lower() {
@@ -74,38 +85,48 @@ class GenericContextImplTransformer(
                 InjektFqNames.GenericContext,
                 0
             )!!
-            val name = index.getAnnotation(InjektFqNames.GenericContext)!!
-                .getValueArgument(1)
-                .let { it as IrConst<String> }
-                .value
+            val name =
+                index.getConstantFromAnnotationOrNull<String>(InjektFqNames.GenericContext, 1)!!
 
-            val functionMap = index.getAnnotation(InjektFqNames.GenericContext)!!
-                .getValueArgument(2)
-                .let { it as IrConst<String> }
-                .value
-                .let {
-                    if (it.isNotEmpty()) {
-                        it.split("=:=")
-                            .filter { it.isNotEmpty() }
-                            .map {
-                                it.split("===")
-                                    .filter { it.isNotEmpty() }
-                                    .let { it[0] to it[1] }
-                            }
-                    } else emptyList()
+            val functionMap =
+                index.getConstantFromAnnotationOrNull<String>(InjektFqNames.GenericContext, 2)!!
+                    .let {
+                        if (it.isNotEmpty()) {
+                            it.split("=:=")
+                                .filter { it.isNotEmpty() }
+                                .map {
+                                    it.split("===")
+                                        .filter { it.isNotEmpty() }
+                                        .let { it[0] to it[1] }
+                                }
+                        } else emptyList()
+                    }
+                    .toMap()
+
+            val genericContextType = index.superTypes.single()
+
+            val allParentInputs = runReaderContextImplTransformer.generatedContexts
+                .values
+                .flatten()
+                .filter {
+                    delegateContext in
+                            it.superTypes.map { it.classOrNull!!.owner }
                 }
-                .toMap()
+                .map { runReaderContextImplTransformer.inputsByContext[it]!! }
+                .toSet()
 
-            generateGenericContext(
+            generateGenericContextFactory(
+                allParentInputs,
                 delegateContext,
-                index.superTypes.single(),
+                genericContextType,
                 name,
                 functionMap
             )
         }
     }
 
-    private fun generateGenericContext(
+    private fun generateGenericContextFactory(
+        allParentInputs: Set<IrClass>,
         delegateContext: IrClass,
         genericContextType: IrType,
         name: String,
@@ -117,14 +138,116 @@ class GenericContextImplTransformer(
                 .fqName
                 .child(name.asNameId())
         )
+
+        val factory = buildClass {
+            this.name = name.asNameId()
+            kind = ClassKind.OBJECT
+            visibility = Visibilities.INTERNAL
+        }.apply clazz@{
+            createImplicitParameterDeclarationWithWrappedDescriptor()
+
+            addConstructor {
+                returnType = defaultType
+                isPrimary = true
+                visibility = Visibilities.PUBLIC
+            }.apply {
+                body = DeclarationIrBuilder(
+                    pluginContext,
+                    symbol
+                ).irBlockBody {
+                    +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
+                    +IrInstanceInitializerCallImpl(
+                        UNDEFINED_OFFSET,
+                        UNDEFINED_OFFSET,
+                        this@clazz.symbol,
+                        context.irBuiltIns.unitType
+                    )
+                }
+            }
+        }
+
+        file.addChild(factory)
+
+        val implNameProvider = NameProvider()
+
+        val contextImplsWithParentInputs = allParentInputs.map { parentInputs ->
+            generateGenericContextImpl(
+                delegateContext,
+                genericContextType,
+                implNameProvider.allocateForGroup("Impl"),
+                factory,
+                functionMap,
+                parentInputs
+            ) to parentInputs
+        }
+
+        contextImplsWithParentInputs.forEach { factory.addChild(it.first) }
+
+        factory.addFunction {
+            this.name = "create".asNameId()
+            returnType = genericContextType
+        }.apply {
+            dispatchReceiverParameter = factory.thisReceiver!!.copyTo(this)
+
+            val delegateValueParameter = addValueParameter(
+                "delegate",
+                delegateContext.defaultType
+            )
+
+            body = DeclarationIrBuilder(pluginContext, symbol).run {
+                fun createContextImpl(contextImpl: IrClass, parent: IrClass): IrExpression {
+                    return irCall(contextImpl.constructors.single()).apply {
+                        putValueArgument(
+                            0,
+                            irGet(delegateValueParameter)
+                        )
+                    }
+                }
+                irExprBody(
+                    if (contextImplsWithParentInputs.size == 1) {
+                        val (contextImpl, parentInputs) = contextImplsWithParentInputs.single()
+                        createContextImpl(contextImpl, parentInputs)
+                    } else {
+                        irWhen(
+                            genericContextType,
+                            contextImplsWithParentInputs.map { (contextImpl, parentInputs) ->
+                                irBranch(
+                                    irIs(irGet(delegateValueParameter), parentInputs.defaultType),
+                                    createContextImpl(contextImpl, parentInputs)
+                                )
+                            } + irElseBranch(
+                                irCall(
+                                    pluginContext.referenceFunctions(
+                                        FqName("kotlin.error")
+                                    ).single()
+                                ).apply {
+                                    putValueArgument(
+                                        0,
+                                        irString("Unexpected parent")
+                                    )
+                                }
+                            )
+                        )
+                    }
+                )
+            }
+        }
+    }
+
+    private fun generateGenericContextImpl(
+        delegateContext: IrClass,
+        genericContextType: IrType,
+        name: String,
+        irParent: IrDeclarationParent,
+        functionMap: Map<String, String>,
+        parentInputs: IrClass
+    ): IrClass {
         val contextImpl = buildClass {
             this.name = name.asNameId()
             visibility = Visibilities.INTERNAL
         }.apply clazz@{
-            parent = file
-            file.addChild(this)
+            parent = irParent
             createImplicitParameterDeclarationWithWrappedDescriptor()
-            superTypes += genericContextType
         }
 
         val delegateField = contextImpl.addField(
@@ -234,18 +357,15 @@ class GenericContextImplTransformer(
                 }
         }
 
-        implementFunctions(
-            genericContextType.classOrNull!!.owner,
-            genericContextType.typeArguments.map { it.typeOrFail }
-        )
-
-        declarationGraph.getAllContextImplementations(genericContextType.classOrNull!!.owner)
+        (declarationGraph.getAllContextImplementations(genericContextType.classOrNull!!.owner) + parentInputs)
             .forEach { superType ->
                 implementFunctions(
                     superType,
                     superType.defaultType.typeArguments.map { it.typeOrFail }
                 )
             }
+
+        return contextImpl
     }
 
 }

@@ -326,6 +326,41 @@ fun IrClass.getAllClasses(): Set<IrClass> {
     return classes
 }
 
+fun IrClass.getAllFunctions(): List<IrFunction> {
+    val functions = mutableListOf<IrFunction>()
+    val processedSuperTypes = mutableSetOf<IrType>()
+    fun collectFunctions(superClass: IrClass) {
+        if (superClass.defaultType in processedSuperTypes) return
+        processedSuperTypes += superClass.defaultType
+
+        for (declaration in superClass.declarations.toList()) {
+            if (declaration !is IrFunction) continue
+            if (declaration is IrConstructor) continue
+            if (declaration.dispatchReceiverParameter?.type?.classOrNull?.descriptor?.fqNameSafe?.asString() ==
+                "kotlin.Any"
+            ) continue
+            functions += declaration
+        }
+
+        superClass.superTypes
+            .map { it.classOrNull!!.owner }
+            .forEach { collectFunctions(it) }
+    }
+
+    collectFunctions(this)
+
+    return functions
+}
+
+
+fun <T> IrAnnotationContainer.getConstantFromAnnotationOrNull(
+    fqName: FqName,
+    index: Int
+) = getAnnotation(fqName)
+    ?.getValueArgument(index)
+    ?.let { it as IrConst<T> }
+    ?.value
+
 fun IrType.substitute(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {
     if (this !is IrSimpleType) return this
 
@@ -539,14 +574,8 @@ fun String.removeIllegalChars() =
 fun IrType.uniqueTypeName(): Name {
     fun IrType.renderName(includeArguments: Boolean = true): String {
         return buildString {
-            val qualifier = getAnnotation(InjektFqNames.Qualifier)
-                ?.getValueArgument(0)
-                ?.let { it as IrConst<String> }
-                ?.value
-
-            if (qualifier != null) {
-                append("${qualifier}_")
-            }
+            val qualifier = getConstantFromAnnotationOrNull<String>(InjektFqNames.Qualifier, 0)
+            if (qualifier != null) append("${qualifier}_")
 
             val fqName = if (this@renderName is IrSimpleType && abbreviation != null &&
                 abbreviation!!.typeAlias.descriptor.hasAnnotation(InjektFqNames.Distinct)
@@ -690,7 +719,7 @@ fun IrFunctionAccessExpression.isReaderLambdaInvoke(
 fun IrDeclarationWithName.canUseImplicits(
     pluginContext: IrPluginContext
 ): Boolean =
-    (!hasAnnotation(InjektFqNames.Signature) && (this is IrFunction && getContext() != null) ||
+    (!hasAnnotation(InjektFqNames.Signature) && (this is IrFunction && !isExternalDeclaration() && getContext() != null) ||
             isMarkedAsImplicit(pluginContext) ||
             (this is IrConstructor && constructedClass.isMarkedAsImplicit(pluginContext)) ||
             (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsImplicit(

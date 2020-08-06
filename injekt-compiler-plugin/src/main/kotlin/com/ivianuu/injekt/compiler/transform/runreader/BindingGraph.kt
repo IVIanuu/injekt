@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.transform.runreader
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getContext
@@ -32,6 +31,7 @@ import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irInt
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
@@ -41,12 +41,13 @@ import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class BindingGraph(
     pluginContext: IrPluginContext,
     declarationGraph: DeclarationGraph,
-    val symbols: InjektSymbols,
+    private val contextImpl: IrClass,
     inputs: List<IrField>,
     private val implicitContextParamTransformer: ImplicitContextParamTransformer
 ) {
@@ -239,7 +240,9 @@ class BindingGraph(
 
         error(
             "No binding found for '${request.key}'\n" +
-                    "required at '${request.requestingKey}' '${request.requestOrigin.orUnknown()}'\n"
+                    "required at '${request.requestingKey}' '${request.requestOrigin.orUnknown()}'\n" +
+                    "in ${contextImpl.superTypes.first().render()}\n" +
+                    "inputs ${inputBindings.map { it.inputField.render() }}"
         )
     }
 

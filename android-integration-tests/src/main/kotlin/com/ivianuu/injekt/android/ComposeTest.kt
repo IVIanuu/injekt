@@ -75,7 +75,8 @@ class ComposeTest {
                             given<T>() as AppUi
                     }
                 }
-                """
+                """,
+                initializeInjekt = false
             )
         ),
         listOf(

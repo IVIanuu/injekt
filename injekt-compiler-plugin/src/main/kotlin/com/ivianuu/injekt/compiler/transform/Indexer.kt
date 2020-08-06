@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.flatMapFix
+import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.compiler.uniqueKey
@@ -40,9 +41,7 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrProperty
-import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
@@ -80,15 +79,9 @@ class Indexer(
     }
 
     private fun IrClass.toIndex(): Index {
-        val annotation = getAnnotation(InjektFqNames.Index)!!
         return Index(
-            annotation.getValueArgument(0)!!
-                .let { it as IrConst<String> }
-                .value
-                .let { FqName(it) },
-            annotation.getValueArgument(1)!!
-                .let { it as IrConst<String> }
-                .value
+            FqName(getConstantFromAnnotationOrNull<String>(InjektFqNames.Index, 0)!!),
+            getConstantFromAnnotationOrNull<String>(InjektFqNames.Index, 1)!!
         )
     }
 

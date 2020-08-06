@@ -145,19 +145,6 @@ class RunReaderCallTransformer(
                 }
             }
 
-            if (isChild) {
-                addFunction {
-                    this.name = "parent".asNameId()
-                    returnType = metadata!!.callingContext.defaultType
-                    modality = Modality.ABSTRACT
-                }.apply {
-                    dispatchReceiverParameter = thisReceiver!!.copyTo(this)
-                    parent = this@clazz
-                    addMetadataIfNotLocal()
-                }
-
-            }
-
             addFunction {
                 this.name = "inputs".asNameId()
                 returnType = irBuiltIns.unitType

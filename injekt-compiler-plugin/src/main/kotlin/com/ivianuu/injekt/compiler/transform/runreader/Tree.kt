@@ -18,20 +18,19 @@ package com.ivianuu.injekt.compiler.transform.runreader
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.analysis.hasAnnotation
+import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.isTypeParameter
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
-import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
 import org.jetbrains.kotlin.ir.types.IrErrorType
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.typeOrNull
-import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -144,14 +143,8 @@ class Key(val type: IrType) {
             result += 31 * distinctedType.hashCode()
         }
 
-        val qualifier = getAnnotation(InjektFqNames.Qualifier)
-            ?.getValueArgument(0)
-            ?.let { it as IrConst<String> }
-            ?.value
-
-        if (qualifier != null) {
-            result += 31 * qualifier.hashCode()
-        }
+        val qualifier = getConstantFromAnnotationOrNull<String>(InjektFqNames.Qualifier, 0)
+        if (qualifier != null) result += 31 * qualifier.hashCode()
 
         return result
     }

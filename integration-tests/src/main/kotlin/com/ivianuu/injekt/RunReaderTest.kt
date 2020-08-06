@@ -18,10 +18,12 @@ package com.ivianuu.injekt
 
 import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo
+import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
 import com.ivianuu.injekt.test.source
+import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
@@ -69,26 +71,213 @@ class RunReaderTest {
     }
 
     @Test
-    fun testAppActReader() = codegen(
+    fun testWithGenericChild() = codegen(
         """
-        class App
-        class Activity {
-            val app = App()
-        }
-         
-        inline fun <R> App.runApplicationReader(block: @Reader () -> R) = runReader(this) {
-            block()
+        @Given
+        fun foo() = Foo()
+        @Given
+        fun bar() = Bar(given())
+        
+        fun invoke(foo: Foo): Foo {
+            return runReader(42, "hello world") { overriding<Bar>(foo) }
         }
         
-        inline fun <R> Activity.runActivityReader(block: @Reader () -> R) = app.runApplicationReader {
-            runChildReader(this) {
-                block()
-            }
+        fun otherInvoke() = runReader { overriding<Bar>(Foo()) }
+        
+        @Reader
+        private fun <T> overriding(value: Foo) = runChildReader(value) {
+            given<Bar>().foo
         }
     """
     ) {
-        //val foo = Foo()
-        //assertSame(foo, invokeSingleFile(foo))
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile(foo))
+    }
+
+    @Test
+    fun testComplexGenericChild() = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+        @Given
+        fun bar() = Bar(given())
+        
+        fun invoke(foo: Foo): Foo {
+            return runReader(42, true) { genericA<Bar>(foo) }
+        }
+        
+        @Reader
+        fun <T> genericA(foo: Foo) = runChildReader(foo, "") {
+            nonGeneric(foo)
+        }
+        
+        @Reader
+        private fun nonGeneric(foo: Foo) = genericB<String>(foo)
+
+        @Reader
+        private fun <S> genericB(foo: Foo) = runChildReader(foo, 0L) {
+            given<Bar>().foo
+        }
+    """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile(foo))
+    }
+
+    @Test
+    fun testDeeplyNested() = codegen(
+        """
+            fun invoke(
+                string: String,
+                int: Int,
+                long: Long,
+                boolean: Boolean
+            ) = runReader {
+                withString(string) {
+                    withInt(int) {
+                        withLong(long) {
+                            withBoolean(boolean) {
+                                listOf(given<String>(), given<Int>(), given<Long>(), given<Boolean>())
+                            }
+                        }
+                    }
+                }
+            }
+            
+            @Reader
+            private fun <R> withString(
+                value: String,
+                block: @Reader () -> R
+            ) = runChildReader(value) { block() }
+            
+            @Reader
+            private fun <R> withInt(
+                value: Int,
+                block: @Reader () -> R
+            ) = runChildReader(value) { block() }
+            
+            @Reader
+            private fun <R> withLong(
+                value: Long,
+                block: @Reader () -> R
+            ) = runChildReader(value) { block() }
+            
+            @Reader
+            private fun <R> withBoolean(
+                value: Boolean,
+                block: @Reader () -> R
+            ) = runChildReader(value) { block() }
+        """
+    ) {
+        val string = "hello world"
+        val int = 1
+        val long = 4L
+        val boolean = true
+        val result = invokeSingleFile(string, int, long, boolean) as List<Any>
+        assertEquals(string, result[0])
+        assertEquals(int, result[1])
+        assertEquals(long, result[2])
+        assertEquals(boolean, result[3])
+    }
+
+    @Test
+    fun testAppActReader() = multiCodegen(
+        listOf(
+            source(
+                """
+                    class App
+                    class Activity {
+                        val app = App()
+                    }
+                """,
+                initializeInjekt = false
+            )
+        ),
+        listOf(
+            source(
+                """
+                    inline fun <R> App.runApplicationReader(block: @Reader () -> R) = runReader(this) { 
+                        block()
+                    }
+        
+                    inline fun <R> Activity.runActivityReader(block: @Reader () -> R) = app.runApplicationReader {
+                        runChildReader(this) {
+                            block()
+                        }
+                    }
+            
+                    @Reader
+                    fun <S, A> rememberStore(
+                        vararg inputs: Any?,
+                        init: @Reader () -> Store<S, A>
+                    ): Store<S, A> {
+                        return runChildReader(CoroutineScope()) {
+                                init()
+                            }
+                    }
+                    
+                    interface Store<S, A> {
+                    }
+                    
+                    interface StoreScope<S, A> {
+                    }
+                    
+                    class CoroutineScope
+                    
+                    fun <S, A> CoroutineScope.store(
+                        initial: S,
+                        block: suspend StoreScope<S, A>.() -> Unit
+                    ): Store<S, A> = StoreImpl()
+                    
+                    @Reader
+                    inline fun <S, A> store(
+                        initial: S,
+                        noinline block: suspend StoreScope<S, A>.() -> Unit
+                    ): Store<S, A> = given<CoroutineScope>().store(initial) {
+                        block()
+                    }
+                    
+                    internal class StoreImpl<S, A>(
+                    ) : Store<S, A>, StoreScope<S, A> {
+                    }
+                            """,
+                initializeInjekt = false
+            )
+        ),
+        listOf(
+            source(
+                """
+                @Reader
+                fun storeA(): Store<String, Int> = store("") {
+                }
+            """,
+                initializeInjekt = false
+            )
+        ),
+        listOf(
+            source(
+                """
+                @Reader
+                fun storeB(): Store<Int, String> = store(0) {
+                    storeA()
+                }
+            """,
+                initializeInjekt = false
+            )
+        ),
+        listOf(
+            source(
+                """
+               fun main() {
+                    App().runApplicationReader {
+                        rememberStore { storeB() }
+                    }
+                } 
+            """
+            )
+        )
+    ) {
+        it.last().assertOk()
     }
 
     @Test

@@ -97,7 +97,8 @@ class ImplicitTest {
                     
                     @Reader
                     fun withFoo(block: @Reader (Foo) -> Unit) = block(func())
-                """
+                """,
+                initializeInjekt = false
             )
         ),
         listOf(
@@ -170,7 +171,8 @@ class ImplicitTest {
                     
                     @Reader
                     fun <R> withFoo(block: @Reader (Foo) -> R) = block(func())
-                """
+                """,
+                initializeInjekt = false
             )
         ),
         listOf(
@@ -383,7 +385,8 @@ class ImplicitTest {
                 """
                 @Given
                 fun foo() = Foo()
-            """
+            """,
+                initializeInjekt = false
             ),
         ),
         listOf(
@@ -393,7 +396,8 @@ class ImplicitTest {
                 fun bar(): Bar {
                     return Bar(foo())
                 }
-            """
+            """,
+                initializeInjekt = false
             )
         ),
         listOf(
@@ -401,7 +405,8 @@ class ImplicitTest {
                 """
                     @Reader
                     fun <R> withBar(block: (Bar) -> R): R = block(bar()) 
-                """
+                """,
+                initializeInjekt = false
             )
         ),
         listOf(
@@ -412,7 +417,8 @@ class ImplicitTest {
                         foo()
                     }
                 }
-            """
+            """,
+                initializeInjekt = false
             )
         ),
         listOf(
@@ -560,7 +566,8 @@ class ImplicitTest {
         
                 @Reader
                 val foo: Foo get() = given()
-            """
+            """,
+                initializeInjekt = false
             )
         ),
         listOf(
@@ -608,7 +615,8 @@ class ImplicitTest {
                 class FooFactory {
                     fun getFoo() = given<Foo>()
                 } 
-            """
+            """,
+                initializeInjekt = false
             )
         ),
         listOf(
@@ -778,7 +786,8 @@ class ImplicitTest {
 
                 @Reader 
                 fun <T> provide() = given<T>()
-                """
+                """,
+                initializeInjekt = false
             )
         ),
         listOf(
@@ -999,7 +1008,8 @@ class ImplicitTest {
                         @Reader
                         fun execute()
                     }
-                """
+                """,
+                initializeInjekt = false
             )
         ),
         listOf(
@@ -1011,7 +1021,8 @@ class ImplicitTest {
                             given<Foo>()
                         }
                     }
-                """
+                """,
+                initializeInjekt = false
             )
         ),
         listOf(
@@ -1024,7 +1035,8 @@ class ImplicitTest {
                             given<Bar>()
                         }
                     }
-                """
+                """,
+                initializeInjekt = false
             )
         ),
         listOf(

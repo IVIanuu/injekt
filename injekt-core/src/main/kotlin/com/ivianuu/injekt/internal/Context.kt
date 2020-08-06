@@ -22,7 +22,7 @@ internal annotation class Context
 
 internal annotation class GenericContext(
     val delegateContext: KClass<*>,
-    val implName: String,
+    val factoryName: String,
     val functionMap: String
 )
 

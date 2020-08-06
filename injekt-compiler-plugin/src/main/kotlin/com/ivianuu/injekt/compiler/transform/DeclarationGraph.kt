@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
+import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -26,13 +27,12 @@ import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
-import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class DeclarationGraph(
     private val indexer: Indexer,
@@ -78,6 +78,9 @@ class DeclarationGraph(
         invokers.forEach { collectParents(it) }
 
         return parents
+            .also {
+                println("${context.descriptor.fqNameSafe} parents ${it.map { it.descriptor.fqNameSafe }}")
+            }
     }
 
     private fun isRunReaderContext(context: IrClass): Boolean {
@@ -88,22 +91,34 @@ class DeclarationGraph(
 
     private fun getInvokers(context: IrClass): Set<IrClass> {
         val allContexts = listOf(context) + getAllSuperContexts(context)
-        return indexer.classIndices
-            .filter { it.hasAnnotation(InjektFqNames.ReaderInvocation) }
-            .filter { clazz ->
-                clazz.getClassFromAnnotation(
-                    InjektFqNames.ReaderInvocation,
-                    0
-                ) in allContexts
-            }
-            .map {
-                it.getClassFromAnnotation(
-                    InjektFqNames.ReaderInvocation,
-                    1
-                )!!
-            }
-            .filter { it != context }
-            .toSet()
+
+        val invokerIfRunChildReader = runReaderContexts
+            .singleOrNull { it.superTypes[0] == context.defaultType }
+            ?.superTypes
+            ?.getOrNull(1)
+            ?.classOrNull
+            ?.owner
+
+        return setOfNotNull(
+            *indexer.classIndices
+                .filter { it.hasAnnotation(InjektFqNames.ReaderInvocation) }
+                .filter { clazz ->
+                    clazz.getClassFromAnnotation(
+                        InjektFqNames.ReaderInvocation,
+                        0
+                    ) in allContexts
+                }
+                .map {
+                    it.getClassFromAnnotation(
+                        InjektFqNames.ReaderInvocation,
+                        1
+                    )!!
+                }
+                .filter { it != context }
+                .toTypedArray(),
+            invokerIfRunChildReader/*,
+            invokerIfGeneric*/
+        )
     }
 
     private fun getAllSuperContexts(
@@ -164,10 +179,9 @@ class DeclarationGraph(
                     clazz.getClassFromAnnotation(
                         InjektFqNames.ReaderInvocation,
                         1
-                    ) == context && clazz.getAnnotation(InjektFqNames.ReaderInvocation)!!
-                        .getValueArgument(2)
-                        .let { it as IrConst<Boolean> }
-                        .value
+                    ) == context && clazz.getConstantFromAnnotationOrNull<Boolean>(
+                        InjektFqNames.ReaderInvocation, 2
+                    )!!
                 }
                 .map {
                     it.getClassFromAnnotation(
@@ -204,6 +218,7 @@ class DeclarationGraph(
     private fun collectRunReaderContexts() {
         indexer.classIndices
             .filter { it.hasAnnotation(InjektFqNames.RunReaderContext) }
+            .distinct()
             .forEach { _runReaderContexts += it }
     }
 
@@ -245,6 +260,7 @@ class DeclarationGraph(
     private fun collectGenericContexts() {
         indexer.classIndices
             .filter { it.hasAnnotation(InjektFqNames.GenericContext) }
+            .distinct()
             .forEach { _genericContexts += it }
     }
 

@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.copy
+import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.getReaderConstructor
@@ -87,7 +88,6 @@ import org.jetbrains.kotlin.ir.expressions.IrBlock
 import org.jetbrains.kotlin.ir.expressions.IrBlockBody
 import org.jetbrains.kotlin.ir.expressions.IrBody
 import org.jetbrains.kotlin.ir.expressions.IrCall
-import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -136,7 +136,6 @@ import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.hasDefaultValue
@@ -597,10 +596,8 @@ class ImplicitContextParamTransformer(
             .filter { it.hasAnnotation(InjektFqNames.Signature) }
             .filter { it.hasAnnotation(InjektFqNames.Name) }
             .singleOrNull { clazz ->
-                clazz.getAnnotation(InjektFqNames.Name)!!
-                    .getValueArgument(0)!!
-                    .let { it as IrConst<String> }
-                    .value == declaration.uniqueKey()
+                clazz.getConstantFromAnnotationOrNull<String>(InjektFqNames.Name, 0)!! ==
+                        declaration.uniqueKey()
             }
             ?.functions
             ?.single {

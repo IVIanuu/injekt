@@ -51,12 +51,12 @@ import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.impl.EmptyPackageFragmentDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
+import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
@@ -148,7 +148,7 @@ class ImplicitCallTransformer(
         ): Name {
             val name = nameProvider.allocateForGroup(
                 "${declaration.descriptor.fqNameSafe.pathSegments()
-                    .joinToString("_")}GenericContextImpl"
+                    .joinToString("_")}GenericContextFactory"
             )
 
             genericContext.superTypes
@@ -497,9 +497,10 @@ class ImplicitCallTransformer(
                     calleeContext,
                     transformedCall.typeArguments
                 )
-                val genericContextStub = buildClass {
+                val contextFactoryStub = buildClass {
                     this.name = name
                     origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
+                    kind = ClassKind.OBJECT
                     visibility = Visibilities.INTERNAL
                 }.apply clazz@{
                     createImplicitParameterDeclarationWithWrappedDescriptor()
@@ -512,21 +513,23 @@ class ImplicitCallTransformer(
                         ),
                         scope.declaration.getPackageFragment()!!.fqName
                     )
+                }
 
-                    addConstructor {
-                        returnType = defaultType
-                        isPrimary = true
-                        visibility = Visibilities.PUBLIC
-                    }.apply {
-                        addValueParameter(
-                            "delegate",
-                            scope.context.defaultType
-                        )
-                    }
+                val createFunctionStub = contextFactoryStub.addFunction {
+                    this.name = "create".asNameId()
+                    returnType = calleeContext.typeWith(call.typeArguments)
+                    origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
+                }.apply {
+                    dispatchReceiverParameter = contextFactoryStub.thisReceiver!!.copyTo(this)
+                    addValueParameter(
+                        "delegate",
+                        scope.context.defaultType
+                    )
                 }
 
                 DeclarationIrBuilder(pluginContext, transformedCall.symbol).run {
-                    irCall(genericContextStub.constructors.single()).apply {
+                    irCall(createFunctionStub).apply {
+                        dispatchReceiver = irGetObject(contextFactoryStub!!.symbol)
                         putValueArgument(0, contextExpression())
                     }
                 }
