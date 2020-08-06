@@ -125,6 +125,51 @@ class RunReaderTest {
     }
 
     @Test
+    fun testCircular() = codegen(
+        """
+            @Reader
+            fun a(foo: Foo) = childRunner(Foo()) { b(foo) }
+            
+            @Reader
+            fun b(foo: Foo) = childRunner(foo) { given<Foo>() }
+            
+            @Reader
+            fun <R> childRunner(foo: Foo, block: @Reader () -> R) = runChildReader(foo) {
+                block()
+            }
+            
+            fun invoke(foo: Foo) = runReader { a(foo) }
+        """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile(foo))
+    }
+
+    @Test
+    fun testCircular2() = codegen(
+        """
+            @Reader
+            fun a(foo: Foo) = childRunner(Foo()) { b(foo) }
+            
+            @Reader
+            fun b(foo: Foo) = c(foo)
+            
+            @Reader
+            fun c(foo: Foo) = childRunner(foo) { given<Foo>() }
+            
+            @Reader
+            fun <R> childRunner(foo: Foo, block: @Reader () -> R) = runChildReader(foo) {
+                block()
+            }
+            
+            fun invoke(foo: Foo) = runReader { a(foo) }
+        """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile(foo))
+    }
+
+    @Test
     fun testDeeplyNested() = codegen(
         """
             fun invoke(
@@ -205,17 +250,13 @@ class RunReaderTest {
                             block()
                         }
                     }
-            
-                    @Reader
-                    fun <S, A> rememberStore(
-                        vararg inputs: Any?,
-                        init: @Reader () -> Store<S, A>
-                    ): Store<S, A> {
-                        return runChildReader(CoroutineScope()) {
-                                init()
-                            }
-                    }
-                    
+                """,
+                initializeInjekt = false
+            )
+        ),
+        listOf(
+            source(
+                """
                     interface Store<S, A> {
                     }
                     
@@ -247,6 +288,28 @@ class RunReaderTest {
         listOf(
             source(
                 """
+                    // todo remove overload once compiler is fixed
+                    @Reader
+                    fun <S, A> rememberStore(
+                        init: @Reader () -> Store<S, A>
+                    ): Store<S, A> = rememberStore(inputs = *emptyArray(), init = init)
+
+                    @Reader
+                    fun <S, A> rememberStore(
+                        vararg inputs: Any?,
+                        init: @Reader () -> Store<S, A>
+                    ): Store<S, A> {
+                        return runChildReader(CoroutineScope()) {
+                                init()
+                        }
+                    } 
+                """,
+                initializeInjekt = false
+            )
+        ),
+        listOf(
+            source(
+                """
                 @Reader
                 fun storeA(): Store<String, Int> = store("") {
                 }
@@ -259,7 +322,6 @@ class RunReaderTest {
                 """
                 @Reader
                 fun storeB(): Store<Int, String> = store(0) {
-                    storeA()
                 }
             """,
                 initializeInjekt = false
@@ -268,9 +330,14 @@ class RunReaderTest {
         listOf(
             source(
                 """
-               fun main() {
+                fun main() {
                     App().runApplicationReader {
-                        rememberStore { storeB() }
+                        rememberStore { 
+                            storeB()
+                            rememberStore {
+                                storeA()
+                            }
+                        }
                     }
                 } 
             """

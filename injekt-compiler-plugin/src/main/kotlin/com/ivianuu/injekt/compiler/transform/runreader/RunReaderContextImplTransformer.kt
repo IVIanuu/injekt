@@ -107,6 +107,7 @@ class RunReaderContextImplTransformer(
 
                 val unimplementedParents =
                     parents
+                        .filter { it != context }
                         .filter { it !in generatedContexts }
 
                 if (unimplementedParents.isNotEmpty()) continue
@@ -114,6 +115,7 @@ class RunReaderContextImplTransformer(
                 generatedContexts[context] = generateRunReaderContextWithFactory(
                     index,
                     parents
+                        .filter { it != context }
                         .flatMapFix { generatedContexts[it]!! }
                         .map { inputsByContext[it]!! }
                         .toSet()

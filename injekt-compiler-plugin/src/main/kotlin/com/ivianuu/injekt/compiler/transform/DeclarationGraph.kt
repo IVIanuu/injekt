@@ -116,8 +116,7 @@ class DeclarationGraph(
                 }
                 .filter { it != context }
                 .toTypedArray(),
-            invokerIfRunChildReader/*,
-            invokerIfGeneric*/
+            invokerIfRunChildReader
         )
     }
 
