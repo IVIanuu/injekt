@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getJoinedName
+import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -133,6 +134,8 @@ class Indexer(
             InjektFqNames.IndexPackage
                 .child(name)
         ).apply {
+            recordLookup(this, declaration)
+
             addChild(
                 buildClass {
                     this.name = name

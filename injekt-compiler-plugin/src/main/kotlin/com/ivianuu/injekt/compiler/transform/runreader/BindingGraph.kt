@@ -241,8 +241,7 @@ class BindingGraph(
         error(
             "No binding found for '${request.key}'\n" +
                     "required at '${request.requestingKey}' '${request.requestOrigin.orUnknown()}'\n" +
-                    "in ${contextImpl.superTypes.first().render()}\n" +
-                    "inputs ${inputBindings.map { it.inputField.render() }}"
+                    "in ${contextImpl.superTypes.first().render()}\n"
         )
     }
 
