@@ -175,6 +175,8 @@ class RunReaderContextImplTransformer(
             }
         }
 
+        allParentInputs.forEach { recordLookup(file, it) }
+
         val childrenNameProvider = NameProvider()
 
         val inputsByParent = allParentInputs

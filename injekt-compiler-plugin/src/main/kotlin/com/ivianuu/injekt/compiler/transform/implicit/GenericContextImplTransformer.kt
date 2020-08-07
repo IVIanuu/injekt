@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
+import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
@@ -167,6 +168,8 @@ class GenericContextImplTransformer(
         }
 
         file.addChild(factory)
+
+        allParentInputs.forEach { recordLookup(file, it) }
 
         val implNameProvider = NameProvider()
 
