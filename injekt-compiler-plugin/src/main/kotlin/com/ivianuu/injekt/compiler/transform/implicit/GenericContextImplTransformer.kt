@@ -360,6 +360,13 @@ class GenericContextImplTransformer(
                 }
         }
 
+        // It's important to implement the functions of the generic context type
+        // with the correct type arguments to prevent abstract method errors
+        implementFunctions(
+            genericContextType.classOrNull!!.owner,
+            genericContextType.typeArguments.map { it.typeOrFail }
+        )
+
         (declarationGraph.getAllContextImplementations(genericContextType.classOrNull!!.owner) + parentInputs)
             .forEach { superType ->
                 implementFunctions(
