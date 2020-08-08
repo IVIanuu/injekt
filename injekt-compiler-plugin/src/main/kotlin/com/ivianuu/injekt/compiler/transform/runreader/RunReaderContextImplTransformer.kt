@@ -94,27 +94,34 @@ class RunReaderContextImplTransformer(
 
     override fun lower() {
         while (true) {
-            val roundContexts = declarationGraph.runReaderContexts
+            val roundContextIndices = declarationGraph.runReaderContexts
                 .filter { it.superTypes.first().classOrNull!!.owner !in generatedContexts }
 
-            if (roundContexts.isEmpty()) break
+            if (roundContextIndices.isEmpty()) break
 
-            for (index in roundContexts) {
+            for (index in roundContextIndices) {
                 val context = index.superTypes.first().classOrNull!!.owner
                 if (index in generatedContexts) continue
 
                 val parents = declarationGraph.getParentRunReaderContexts(context)
 
+                println("c ${context.descriptor.fqNameSafe}\n$parents")
+
                 val unimplementedParents =
                     parents
                         .filter { it != context }
-                        .filter { it !in generatedContexts }
+                        .filter {
+                            it is DeclarationGraph.ParentRunReaderContext.Unknown ||
+                                    (it is DeclarationGraph.ParentRunReaderContext.Known && it.clazz !in generatedContexts)
+                        }
 
                 if (unimplementedParents.isNotEmpty()) continue
 
                 generatedContexts[context] = generateRunReaderContextWithFactory(
                     index,
                     parents
+                        .filterIsInstance<DeclarationGraph.ParentRunReaderContext.Known>()
+                        .map { it.clazz }
                         .filter { it != context }
                         .flatMapFix { generatedContexts[it]!! }
                         .map { inputsByContext[it]!! }

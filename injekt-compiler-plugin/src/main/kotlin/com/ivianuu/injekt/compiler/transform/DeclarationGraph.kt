@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
+import com.ivianuu.injekt.compiler.transform.runreader.RunReaderContextImplTransformer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -32,7 +33,6 @@ import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class DeclarationGraph(
     private val indexer: Indexer,
@@ -55,8 +55,15 @@ class DeclarationGraph(
     private val _genericContexts = mutableListOf<IrClass>()
     val genericContexts: List<IrClass> get() = _genericContexts
 
-    fun getParentRunReaderContexts(context: IrClass): Set<IrClass> {
-        val parents = mutableSetOf<IrClass>()
+    lateinit var runReaderContextImplTransformer: RunReaderContextImplTransformer
+
+    sealed class ParentRunReaderContext {
+        data class Known(val clazz: IrClass) : ParentRunReaderContext()
+        object Unknown : ParentRunReaderContext()
+    }
+
+    fun getParentRunReaderContexts(context: IrClass): Set<ParentRunReaderContext> {
+        val parents = mutableSetOf<ParentRunReaderContext>()
 
         val processedClasses = mutableSetOf<IrClass>()
 
@@ -67,7 +74,24 @@ class DeclarationGraph(
             processedClasses += invoker
 
             if (isRunReaderContext(invoker)) {
-                parents += invoker
+                parents += ParentRunReaderContext.Known(invoker)
+                return
+            }
+
+            if (isContextOfGivenDeclaration(invoker)) {
+                val generatedContextsWithInvokerSuperType = runReaderContextImplTransformer
+                    .generatedContexts
+                    .values
+                    .flatten()
+                    .filter { invoker.defaultType in it.superTypes }
+                    .map { it.superTypes.first().classOrNull!!.owner }
+
+                if (generatedContextsWithInvokerSuperType.isNotEmpty()) {
+                    parents += generatedContextsWithInvokerSuperType
+                        .map { ParentRunReaderContext.Known(it) }
+                } else {
+                    parents += ParentRunReaderContext.Unknown
+                }
                 return
             }
 
@@ -78,15 +102,17 @@ class DeclarationGraph(
         invokers.forEach { collectParents(it) }
 
         return parents
-            .also {
-                println("${context.descriptor.fqNameSafe} parents ${it.map { it.descriptor.fqNameSafe }}")
-            }
     }
 
     private fun isRunReaderContext(context: IrClass): Boolean {
         return runReaderContexts
             .map { it.superTypes.first() }
             .any { it == context.defaultType }
+    }
+
+    private fun isContextOfGivenDeclaration(context: IrClass): Boolean {
+        return (_bindings + _mapEntries + _setElements)
+            .any { it.getContext()?.defaultType == context.defaultType }
     }
 
     private fun getInvokers(context: IrClass): Set<IrClass> {

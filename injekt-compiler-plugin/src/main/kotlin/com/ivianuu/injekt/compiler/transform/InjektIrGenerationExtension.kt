@@ -97,6 +97,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
                 implicitContextParamTransformer,
                 initFile!!
             )
+            declarationGraph.runReaderContextImplTransformer = runReaderContextImplTransformer
             runReaderContextImplTransformer.doLower(moduleFragment)
             GenericContextImplTransformer(
                 pluginContext,

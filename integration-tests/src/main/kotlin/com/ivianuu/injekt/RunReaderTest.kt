@@ -226,125 +226,33 @@ class RunReaderTest {
     }
 
     @Test
-    fun testAppActReader() = multiCodegen(
-        listOf(
-            source(
-                """
-                    class App
-                    class Activity {
-                        val app = App()
-                    }
-                """,
-                initializeInjekt = false
-            )
-        ),
-        listOf(
-            source(
-                """
-                    inline fun <R> App.runApplicationReader(block: @Reader () -> R) = runReader(this) { 
-                        block()
-                    }
-        
-                    inline fun <R> Activity.runActivityReader(block: @Reader () -> R) = app.runApplicationReader {
-                        runChildReader(this) {
-                            block()
-                        }
-                    }
-                """,
-                initializeInjekt = false
-            )
-        ),
-        listOf(
-            source(
-                """
-                    interface Store<S, A> {
-                    }
-                    
-                    interface StoreScope<S, A> {
-                    }
-                    
-                    class CoroutineScope
-                    
-                    fun <S, A> CoroutineScope.store(
-                        initial: S,
-                        block: suspend StoreScope<S, A>.() -> Unit
-                    ): Store<S, A> = StoreImpl()
-                    
-                    @Reader
-                    inline fun <S, A> store(
-                        initial: S,
-                        noinline block: suspend StoreScope<S, A>.() -> Unit
-                    ): Store<S, A> = given<CoroutineScope>().store(initial) {
-                        block()
-                    }
-                    
-                    internal class StoreImpl<S, A>(
-                    ) : Store<S, A>, StoreScope<S, A> {
-                    }
-                            """,
-                initializeInjekt = false
-            )
-        ),
-        listOf(
-            source(
-                """
-                    // todo remove overload once compiler is fixed
-                    @Reader
-                    fun <S, A> rememberStore(
-                        init: @Reader () -> Store<S, A>
-                    ): Store<S, A> = rememberStore(inputs = *emptyArray(), init = init)
+    fun testRunChildReaderWithEffect() = codegen(
+        """ 
+            @Effect
+            annotation class AppUi {
+                companion object {
+                    @Given
+                    fun <T : () -> Unit> invoke(): AppUiMarker = given<T>()
+                }
+            }
 
-                    @Reader
-                    fun <S, A> rememberStore(
-                        vararg inputs: Any?,
-                        init: @Reader () -> Store<S, A>
-                    ): Store<S, A> {
-                        return runChildReader(CoroutineScope()) {
-                                init()
-                        }
-                    } 
-                """,
-                initializeInjekt = false
-            )
-        ),
-        listOf(
-            source(
-                """
-                @Reader
-                fun storeA(): Store<String, Int> = store("") {
+            @Distinct
+            typealias AppUiMarker = () -> Unit
+            
+            @AppUi
+            @Reader
+            fun SampleUi() { 
+                runChildReader { given<Foo>() }
+            }
+            
+            fun main() {
+                runReader(Foo()) {
+                    given<AppUiMarker>()()
                 }
-            """,
-                initializeInjekt = false
-            )
-        ),
-        listOf(
-            source(
-                """
-                @Reader
-                fun storeB(): Store<Int, String> = store(0) {
-                }
-            """,
-                initializeInjekt = false
-            )
-        ),
-        listOf(
-            source(
-                """
-                fun main() {
-                    App().runApplicationReader {
-                        rememberStore { 
-                            storeB()
-                            rememberStore {
-                                storeA()
-                            }
-                        }
-                    }
-                } 
-            """
-            )
-        )
+            }
+        """
     ) {
-        it.last().assertOk()
+        assertOk()
     }
 
     @Test
