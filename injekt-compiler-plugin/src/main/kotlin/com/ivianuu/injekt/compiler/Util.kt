@@ -329,11 +329,11 @@ fun IrClass.getAllClasses(): Set<IrClass> {
 fun IrClass.getAllFunctions(): List<IrFunction> {
     val functions = mutableListOf<IrFunction>()
     val processedSuperTypes = mutableSetOf<IrType>()
-    fun collectFunctions(superClass: IrClass) {
-        if (superClass.defaultType in processedSuperTypes) return
-        processedSuperTypes += superClass.defaultType
+    fun collectFunctions(superType: IrClass) {
+        if (superType.defaultType in processedSuperTypes) return
+        processedSuperTypes += superType.defaultType
 
-        for (declaration in superClass.declarations.toList()) {
+        for (declaration in superType.declarations.toList()) {
             if (declaration !is IrFunction) continue
             if (declaration is IrConstructor) continue
             if (declaration.dispatchReceiverParameter?.type?.classOrNull?.descriptor?.fqNameSafe?.asString() ==
@@ -342,7 +342,7 @@ fun IrClass.getAllFunctions(): List<IrFunction> {
             functions += declaration
         }
 
-        superClass.superTypes
+        superType.superTypes
             .map { it.classOrNull!!.owner }
             .forEach { collectFunctions(it) }
     }

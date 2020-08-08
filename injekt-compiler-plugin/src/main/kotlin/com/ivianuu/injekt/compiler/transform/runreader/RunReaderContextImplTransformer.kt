@@ -301,12 +301,12 @@ class RunReaderContextImplTransformer(
     }
 
     private fun IrClass.getInputForType(type: IrType): IrFunction {
-        val processedSuperTypes = mutableSetOf<IrType>()
-        fun findIn(superClass: IrClass): IrFunction? {
-            if (superClass.defaultType in processedSuperTypes) return null
-            processedSuperTypes += superClass.defaultType
+        val processedSuperTypes = mutableSetOf<IrClass>()
+        fun findIn(superType: IrClass): IrFunction? {
+            if (superType in processedSuperTypes) return null
+            processedSuperTypes += superType
 
-            for (declaration in superClass.declarations.toList()) {
+            for (declaration in superType.declarations.toList()) {
                 if (declaration !is IrFunction) continue
                 if (declaration is IrConstructor) continue
                 if (declaration.dispatchReceiverParameter?.type ==
@@ -316,8 +316,8 @@ class RunReaderContextImplTransformer(
                 return declaration
             }
 
-            for (superType in superClass.superTypes.map { it.classOrNull!!.owner }) {
-                findIn(superType)?.let { return it }
+            for (innerSuperType in superType.superTypes.map { it.classOrNull!!.owner }) {
+                findIn(innerSuperType)?.let { return it }
             }
 
             return null
@@ -434,7 +434,7 @@ class RunReaderContextImplTransformer(
             implicitContextParamTransformer = implicitContextParamTransformer
         )
 
-        val processedSuperTypes = mutableSetOf<IrType>()
+        val processedSuperTypes = mutableSetOf<IrClass>()
         val declarationNames = mutableSetOf<Name>()
         var firstRound = true
         val bindingExpressions = mutableMapOf<Key, ContextBindingExpression>()
@@ -447,15 +447,15 @@ class RunReaderContextImplTransformer(
                     .flatMapFix { it.getAllClasses() })
                     .flatMapFix { declarationGraph.getAllContextImplementations(it) }
                     .distinct()
-                    .filter { it.defaultType !in processedSuperTypes }
+                    .filter { it !in processedSuperTypes }
 
             if (entryPoints.isEmpty()) break
 
-            fun collect(superClass: IrClass) {
-                if (superClass.defaultType in processedSuperTypes) return
-                processedSuperTypes += superClass.defaultType
+            fun collect(superType: IrClass) {
+                if (superType in processedSuperTypes) return
+                processedSuperTypes += superType
 
-                for (declaration in superClass.declarations.toList()) {
+                for (declaration in superType.declarations.toList()) {
                     if (declaration !is IrFunction) continue
                     if (declaration is IrConstructor) continue
                     if (declaration.dispatchReceiverParameter?.type ==
@@ -473,7 +473,7 @@ class RunReaderContextImplTransformer(
                     }
                 }
 
-                superClass.superTypes
+                superType.superTypes
                     .map { it.classOrNull!!.owner }
                     .forEach { collect(it) }
             }

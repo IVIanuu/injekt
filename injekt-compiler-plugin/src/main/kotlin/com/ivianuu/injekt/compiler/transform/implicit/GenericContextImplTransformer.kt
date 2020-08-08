@@ -287,19 +287,17 @@ class GenericContextImplTransformer(
             }
         }
 
-        val implementedSuperTypes = mutableSetOf<IrType>()
+        val implementedSuperTypes = mutableSetOf<IrClass>()
         val declarationNames = mutableSetOf<Name>()
 
         fun implementFunctions(
-            superClass: IrClass,
+            superType: IrClass,
             typeArguments: List<IrType>
         ) {
-            if (superClass.defaultType in implementedSuperTypes) return
-            implementedSuperTypes += superClass
-                .typeWith(typeArguments)
-            contextImpl.superTypes += superClass
-                .typeWith(typeArguments)
-            for (declaration in superClass.declarations.toList()) {
+            if (superType in implementedSuperTypes) return
+            implementedSuperTypes += superType
+            contextImpl.superTypes += superType.typeWith(typeArguments)
+            for (declaration in superType.declarations.toList()) {
                 if (declaration !is IrFunction) continue
                 if (declaration is IrConstructor) continue
                 if (declaration.isFakeOverride) continue
@@ -309,7 +307,7 @@ class GenericContextImplTransformer(
                 contextImpl.addFunction {
                     this.name = declaration.name
                     returnType = declaration.returnType.substitute(
-                        superClass.typeParameters
+                        superType.typeParameters
                             .map { it.symbol }
                             .zip(typeArguments)
                             .toMap()
@@ -349,7 +347,7 @@ class GenericContextImplTransformer(
                 }
             }
 
-            superClass.superTypes
+            superType.superTypes
                 .map { it to it.classOrNull?.owner }
                 .forEach { (superType, clazz) ->
                     if (clazz != null)
