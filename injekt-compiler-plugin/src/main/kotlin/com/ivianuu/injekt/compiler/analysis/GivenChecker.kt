@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
 class GivenChecker : DeclarationChecker {
+
     override fun check(
         declaration: KtDeclaration,
         descriptor: DeclarationDescriptor,

@@ -841,9 +841,8 @@ class ImplicitTest {
     }
 
     @Test
-    fun testGivenWithDistinctType() = codegen(
+    fun testGivenWithTypeAlias() = codegen(
         """
-        @Distinct 
         typealias Foo2 = Foo
         
         @Given fun foo(): Foo2 = Foo()

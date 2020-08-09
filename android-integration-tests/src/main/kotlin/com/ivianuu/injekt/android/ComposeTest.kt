@@ -29,7 +29,6 @@ class ComposeTest {
 
     @Test
     fun testComposableBindingEffect() = codegen("""
-        @Distinct
         typealias AppUi = @androidx.compose.Composable () -> Unit
 
         @Effect
@@ -64,7 +63,6 @@ class ComposeTest {
         listOf(
             source(
                 """
-                @Distinct
                 typealias AppUi = @androidx.compose.Composable () -> Unit
         
                 @Effect

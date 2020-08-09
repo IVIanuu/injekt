@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Effect
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.SetElements
@@ -24,7 +23,6 @@ import com.ivianuu.injekt.given
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
-@Distinct
 typealias AppServices = Set<suspend () -> Unit>
 
 @Effect

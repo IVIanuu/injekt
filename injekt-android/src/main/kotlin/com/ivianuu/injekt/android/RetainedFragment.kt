@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.android
 
 import androidx.lifecycle.ViewModelProvider
-import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.Scoping
@@ -33,7 +32,6 @@ object RetainedFragmentScoped {
     ) = given<RetainedFragmentStorage>().scope(key, init)
 }
 
-@Distinct
 typealias RetainedFragmentStorage = Storage
 
 object RetainedFragmentModule {

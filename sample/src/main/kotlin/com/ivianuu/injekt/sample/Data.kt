@@ -17,14 +17,12 @@
 package com.ivianuu.injekt.sample
 
 import com.ivianuu.injekt.ApplicationScoped
-import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.android.ApplicationContext
 import com.ivianuu.injekt.given
 import java.io.File
 
-@Distinct
 typealias DatabaseFile = File
 
 @Given

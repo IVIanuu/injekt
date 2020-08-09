@@ -170,7 +170,7 @@ class EffectTest {
     @Test
     fun testFunctionEffect() = codegen(
         """
-        @Distinct typealias FooFactory = () -> Foo
+        typealias FooFactory = () -> Foo
         
         @Effect
         annotation class BindFooFactory {

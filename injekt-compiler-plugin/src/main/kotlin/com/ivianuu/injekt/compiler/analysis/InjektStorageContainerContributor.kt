@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.platform.TargetPlatform
 class InjektStorageContainerContributor(
     private val implicitChecker: ImplicitChecker
 ) : StorageComponentContainerContributor {
+
     override fun registerModuleComponents(
         container: StorageComponentContainer,
         platform: TargetPlatform,
@@ -35,4 +36,5 @@ class InjektStorageContainerContributor(
         container.useInstance(implicitChecker)
         container.useInstance(ScopingChecker())
     }
+
 }

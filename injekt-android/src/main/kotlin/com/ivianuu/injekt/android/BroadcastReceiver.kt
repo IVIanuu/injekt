@@ -20,7 +20,6 @@ import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.runChildReader
 
@@ -35,8 +34,6 @@ inline fun <R> BroadcastReceiver.runReceiverReader(
     ) { block() }
 }
 
-@Distinct
 typealias ReceiverContext = Context
 
-@Distinct
 typealias ReceiverIntent = Intent

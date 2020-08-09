@@ -23,7 +23,6 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
-import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.Scoping
@@ -47,22 +46,16 @@ object FragmentScoped {
     ) = given<FragmentStorage>().scope(key, init)
 }
 
-@Distinct
 typealias FragmentStorage = Storage
 
-@Distinct
 typealias FragmentContext = Context
 
-@Distinct
 typealias FragmentResources = Resources
 
-@Distinct
 typealias FragmentLifecycleOwner = LifecycleOwner
 
-@Distinct
 typealias FragmentSavedStateRegistryOwner = SavedStateRegistryOwner
 
-@Distinct
 typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
 
 object FragmentModule {

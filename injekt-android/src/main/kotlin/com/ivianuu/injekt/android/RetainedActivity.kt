@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.android
 
 import androidx.lifecycle.ViewModelProvider
-import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.Scoping
@@ -33,7 +32,6 @@ object RetainedActivityScoped {
     ) = given<RetainedActivityStorage>().scope(key, init)
 }
 
-@Distinct
 typealias RetainedActivityStorage = Storage
 
 object RetainedActivityModule {

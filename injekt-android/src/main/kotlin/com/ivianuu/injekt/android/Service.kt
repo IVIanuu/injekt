@@ -19,7 +19,6 @@ package com.ivianuu.injekt.android
 import android.app.Service
 import android.content.Context
 import android.content.res.Resources
-import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
@@ -32,10 +31,8 @@ inline fun <R> Service.runServiceReader(block: @Reader () -> R): R =
         }
     }
 
-@Distinct
 typealias ServiceContext = Context
 
-@Distinct
 typealias ServiceResources = Resources
 
 object ServiceModule {

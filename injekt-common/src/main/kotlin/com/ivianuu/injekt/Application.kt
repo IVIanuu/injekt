@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt
 
-@Distinct
 typealias ApplicationStorage = Storage
 
 object ApplicationModule {

@@ -22,7 +22,6 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
-import com.ivianuu.injekt.Distinct
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.Scoping
@@ -46,22 +45,16 @@ object ActivityScoped {
     ) = given<ActivityStorage>().scope(key, init)
 }
 
-@Distinct
 typealias ActivityStorage = Storage
 
-@Distinct
 typealias ActivityContext = Context
 
-@Distinct
 typealias ActivityResources = Resources
 
-@Distinct
 typealias ActivityLifecycleOwner = LifecycleOwner
 
-@Distinct
 typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
 
-@Distinct
 typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 
 object ActivityModule {

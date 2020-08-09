@@ -60,8 +60,8 @@ class ComponentGraphTest {
     @Test
     fun testDistinctTypeAlias() = codegen(
         """
-        @Distinct typealias Foo1 = Foo
-        @Distinct typealias Foo2 = Foo
+        typealias Foo1 = Foo
+        typealias Foo2 = Foo
         
         @Given fun foo1(): Foo1 = Foo()
         @Given fun foo2(): Foo2 = Foo()
@@ -80,7 +80,7 @@ class ComponentGraphTest {
         listOf(
             source(
                 """
-                @Distinct typealias Foo1 = Foo
+                typealias Foo1 = Foo
                 @Given fun foo1(): Foo1 = Foo()
             """
             )
@@ -88,7 +88,7 @@ class ComponentGraphTest {
         listOf(
             source(
                 """
-                @Distinct typealias Foo2 = Foo
+                typealias Foo2 = Foo
                 @Given fun foo2(): Foo2 = Foo() 
             """
             )

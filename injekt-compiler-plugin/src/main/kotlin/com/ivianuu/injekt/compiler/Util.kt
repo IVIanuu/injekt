@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.ImplicitChecker
-import com.ivianuu.injekt.compiler.analysis.hasAnnotation
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.allParameters
@@ -577,9 +576,8 @@ fun IrType.uniqueTypeName(): Name {
             val qualifier = getConstantFromAnnotationOrNull<String>(InjektFqNames.Qualifier, 0)
             if (qualifier != null) append("${qualifier}_")
 
-            val fqName = if (this@renderName is IrSimpleType && abbreviation != null &&
-                abbreviation!!.typeAlias.descriptor.hasAnnotation(InjektFqNames.Distinct)
-            ) abbreviation!!.typeAlias.descriptor.fqNameSafe
+            val fqName = if (this@renderName is IrSimpleType && abbreviation != null)
+                abbreviation!!.typeAlias.descriptor.fqNameSafe
             else classifierOrFail.descriptor.fqNameSafe
             append(fqName.pathSegments().joinToString("_") { it.asString() })
 
