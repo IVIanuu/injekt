@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class DeclarationGraph(
     private val indexer: Indexer,
@@ -58,48 +59,59 @@ class DeclarationGraph(
     lateinit var runReaderContextImplTransformer: RunReaderContextImplTransformer
 
     sealed class ParentRunReaderContext {
-        data class Known(val clazz: IrClass) : ParentRunReaderContext()
-        object Unknown : ParentRunReaderContext()
+        data class Known(val clazz: IrClass) : ParentRunReaderContext() {
+            override fun toString(): String {
+                return "Known(context=${clazz.descriptor.fqNameSafe})"
+            }
+        }
+
+        data class Unknown(
+            val origin: IrFunction
+        ) : ParentRunReaderContext() {
+            override fun toString(): String {
+                return "Unknown(origin=${origin.descriptor.fqNameSafe})"
+            }
+        }
     }
 
-    fun getParentRunReaderContexts(context: IrClass): Set<ParentRunReaderContext> {
-        val parents = mutableSetOf<ParentRunReaderContext>()
+    fun getParentRunReaderContexts(context: IrClass): List<ParentRunReaderContext> {
+        val parents = mutableListOf<ParentRunReaderContext>()
 
         val processedClasses = mutableSetOf<IrClass>()
 
-        val invokers = getInvokers(context)
+        val invokingContexts = getInvokingContexts(context)
 
-        fun collectParents(invoker: IrClass) {
-            if (invoker in processedClasses) return
-            processedClasses += invoker
+        fun collectParents(invokingContext: IrClass) {
+            if (invokingContext in processedClasses) return
+            processedClasses += invokingContext
 
-            if (isRunReaderContext(invoker)) {
-                parents += ParentRunReaderContext.Known(invoker)
+            if (isRunReaderContext(invokingContext)) {
+                parents += ParentRunReaderContext.Known(invokingContext)
                 return
             }
 
-            if (isContextOfGivenDeclaration(invoker)) {
-                val generatedContextsWithInvokerSuperType = runReaderContextImplTransformer
-                    .generatedContexts
-                    .values
-                    .flatten()
-                    .filter { invoker.defaultType in it.superTypes }
-                    .map { it.superTypes.first().classOrNull!!.owner }
+            parents += getGivenDeclarationsForContext(invokingContext)
+                .flatMapFix { declaration ->
+                    val generatedContextsWithInvokerSuperType = runReaderContextImplTransformer
+                        .generatedContexts
+                        .values
+                        .flatten()
+                        .filter { invokingContext.defaultType in it.superTypes }
+                        .map { it.superTypes.first().classOrNull!!.owner }
 
-                if (generatedContextsWithInvokerSuperType.isNotEmpty()) {
-                    parents += generatedContextsWithInvokerSuperType
-                        .map { ParentRunReaderContext.Known(it) }
-                } else {
-                    parents += ParentRunReaderContext.Unknown
+                    if (generatedContextsWithInvokerSuperType.isNotEmpty()) {
+                        generatedContextsWithInvokerSuperType
+                            .map { ParentRunReaderContext.Known(it) }
+                    } else {
+                        listOf(ParentRunReaderContext.Unknown(declaration))
+                    }
                 }
-                return
-            }
 
-            getInvokers(invoker)
+            getInvokingContexts(invokingContext)
                 .forEach { collectParents(it) }
         }
 
-        invokers.forEach { collectParents(it) }
+        invokingContexts.forEach { collectParents(it) }
 
         return parents
     }
@@ -110,12 +122,12 @@ class DeclarationGraph(
             .any { it == context.defaultType }
     }
 
-    private fun isContextOfGivenDeclaration(context: IrClass): Boolean {
+    private fun getGivenDeclarationsForContext(context: IrClass): List<IrFunction> {
         return (_bindings + _mapEntries + _setElements)
-            .any { it.getContext()?.defaultType == context.defaultType }
+            .filter { it.getContext()?.defaultType == context.defaultType }
     }
 
-    private fun getInvokers(context: IrClass): Set<IrClass> {
+    private fun getInvokingContexts(context: IrClass): Set<IrClass> {
         val allContexts = listOf(context) + getAllSuperContexts(context)
 
         val invokerIfRunChildReader = runReaderContexts

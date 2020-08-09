@@ -229,6 +229,68 @@ class RunReaderTest {
     fun testRunChildReaderWithEffect() = codegen(
         """ 
             @Effect
+            annotation class FooFactory {
+                companion object {
+                    @Given
+                    fun <T : () -> Foo> invoke(): FooFactoryMarker = given<T>()
+                }
+            }
+
+            @Distinct
+            typealias FooFactoryMarker = () -> Foo
+            
+            @FooFactory
+            @Reader
+            fun FooFactoryImpl() = runChildReader { given<Foo>() }
+            
+            fun invoke(foo: Foo): Foo {
+                return runReader(foo) {
+                    given<FooFactoryMarker>()()
+                }
+            }
+        """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile(foo))
+    }
+
+    // todo simplify this test
+    @Test
+    fun testRunChildReaderWithEffectAndGenerics() = codegen(
+        """
+            class App
+            
+            class Activity {
+                val app = App()
+            }
+            
+            class Service {
+                val app = App()
+            }
+            
+            class Fragment {
+                val activity = Activity()
+            }
+            
+            inline fun <T> App.runAppReader(block: @Reader () -> T): T =
+                runReader(this) { block() }
+                
+            inline fun <T> Activity.runActivityReader(block: @Reader () -> T): T =
+                app.runAppReader {
+                    runChildReader(this) { block() }
+                }
+                
+            inline fun <T> Service.runServiceReader(block: @Reader () -> T): T =
+                app.runAppReader {
+                    runChildReader(this) { block() }
+                }
+                
+            inline fun <T> Fragment.runFragmentReader(block: @Reader () -> T): T =
+                activity.runActivityReader {
+                    runChildReader(this) { block() }
+                }
+            
+            @Effect
             annotation class AppUi {
                 companion object {
                     @Given
@@ -241,18 +303,56 @@ class RunReaderTest {
             
             @AppUi
             @Reader
-            fun SampleUi() { 
-                runChildReader { given<Foo>() }
+            fun AppUiImpl() {
+                remember { 
+                    given<App>()
+                    ActionPickerPage()
+                }
+            }
+
+            @Reader
+            fun ActionPickerPage() {
+                remember { given<Activity>() }
             }
             
-            fun main() {
-                runReader(Foo()) {
+            interface ActionPickerDelegate
+            
+            @Effect
+            annotation class BindActionPickerDelegate {
+                companion object {
+                    @SetElements
+                    fun <T : ActionPickerDelegate> invoke(): Set<ActionPickerDelegate> = setOf(given<T>())
+                }
+            }
+            
+            @BindActionPickerDelegate
+            @Given
+            class AppActionPickerDelegate : ActionPickerDelegate {
+                init {
+                    remember { given<App>() }
+                    AppPickerPage()
+                }
+            }
+            
+            @Given
+            fun AppPickerPage() {
+                remember { given<Activity>() }
+            }
+            
+            fun invoke() { 
+                Activity().runActivityReader {
                     given<AppUiMarker>()()
                 }
+            }
+            
+            @Reader
+            fun <T> remember(block: @Reader () -> T): T {
+                return runChildReader(Foo()) { block() }
             }
         """
     ) {
         assertOk()
+        invokeSingleFile()
     }
 
     @Test

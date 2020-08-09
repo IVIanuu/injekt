@@ -77,6 +77,7 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.isObject
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -93,11 +94,20 @@ class RunReaderContextImplTransformer(
     val inputsByContext = mutableMapOf<IrClass, IrClass>()
 
     override fun lower() {
+        var lastParentsByIndex =
+            emptyMap<IrClass, List<DeclarationGraph.ParentRunReaderContext>>()
+        val roundInfos = mutableListOf<String>()
         while (true) {
+            val roundNumber = roundInfos.size
+            val currentParentsByIndex =
+                mutableMapOf<IrClass, List<DeclarationGraph.ParentRunReaderContext>>()
             val roundContextIndices = declarationGraph.runReaderContexts
                 .filter { it.superTypes.first().classOrNull!!.owner !in generatedContexts }
 
-            if (roundContextIndices.isEmpty()) break
+            if (roundContextIndices.isEmpty()) {
+                roundInfos += "$roundNumber: all indices processed"
+                break
+            }
 
             for (index in roundContextIndices) {
                 val context = index.superTypes.first().classOrNull!!.owner
@@ -105,17 +115,28 @@ class RunReaderContextImplTransformer(
 
                 val parents = declarationGraph.getParentRunReaderContexts(context)
 
-                println("c ${context.descriptor.fqNameSafe}\n$parents")
-
                 val unimplementedParents =
                     parents
-                        .filter { it != context }
+                        .filter {
+                            it is DeclarationGraph.ParentRunReaderContext.Unknown ||
+                                    (it is DeclarationGraph.ParentRunReaderContext.Known && it.clazz != context)
+                        }
                         .filter {
                             it is DeclarationGraph.ParentRunReaderContext.Unknown ||
                                     (it is DeclarationGraph.ParentRunReaderContext.Known && it.clazz !in generatedContexts)
                         }
 
-                if (unimplementedParents.isNotEmpty()) continue
+                val allUnknown = unimplementedParents.all {
+                    it is DeclarationGraph.ParentRunReaderContext.Unknown
+                }
+
+                currentParentsByIndex[index] = parents
+
+                if ((!allUnknown && unimplementedParents.isNotEmpty()) ||
+                    (allUnknown && lastParentsByIndex[index] == null)
+                ) {
+                    continue
+                }
 
                 generatedContexts[context] = generateRunReaderContextWithFactory(
                     index,
@@ -128,6 +149,24 @@ class RunReaderContextImplTransformer(
                         .toSet()
                 )
             }
+
+            roundInfos += "$roundNumber: round indices ${roundContextIndices.joinToString("\n") {
+                it.descriptor.fqNameSafe.asString()
+            }}\n" +
+                    "generated contexts ${generatedContexts.values.flatten()
+                        .joinToString("\n") { it.render() }}\n" +
+                    "last parents ${lastParentsByIndex.mapKeys { it.key.descriptor.fqNameSafe }
+                        .mapValues { it.value.joinToString("\n") }}\n" +
+                    "all indices ${declarationGraph.runReaderContexts.joinToString("\n") { it.descriptor.fqNameSafe.asString() }}"
+
+            if (lastParentsByIndex.isNotEmpty() &&
+                lastParentsByIndex == currentParentsByIndex
+            ) {
+                roundInfos += "$roundNumber: nothing has changed"
+                break
+            }
+
+            lastParentsByIndex = currentParentsByIndex
         }
     }
 
