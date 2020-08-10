@@ -24,15 +24,11 @@ import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.transform.runreader.RunReaderContextImplTransformer
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import kotlin.system.measureTimeMillis
 
@@ -286,7 +282,6 @@ class DeclarationGraph(
 
     private fun collectRunReaderContexts() {
         indexer.classIndices(RUN_READER_CONTEXT_TAG)
-            .filter { it.hasAnnotation(InjektFqNames.RunReaderContext) }
             .distinct()
             .forEach { _runReaderContexts += it }
     }
@@ -295,13 +290,6 @@ class DeclarationGraph(
         (indexer.functionIndices(BINDING_TAG) + indexer.classIndices(BINDING_TAG)
             .flatMapFix { it.constructors.toList() } +
                 indexer.propertyIndices(BINDING_TAG).mapNotNull { it.getter })
-            .filter {
-                it.hasAnnotation(InjektFqNames.Given) ||
-                        (it is IrConstructor && it.constructedClass.hasAnnotation(InjektFqNames.Given)) ||
-                        (it is IrSimpleFunction && it.correspondingPropertySymbol?.owner?.hasAnnotation(
-                            InjektFqNames.Given
-                        ) == true)
-            }
             .map { implicitContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
             .distinct()
@@ -310,7 +298,6 @@ class DeclarationGraph(
 
     private fun collectMapEntries() {
         indexer.functionIndices(MAP_ENTRIES_TAG)
-            .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
             .map { implicitContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
             .distinct()
@@ -319,7 +306,6 @@ class DeclarationGraph(
 
     private fun collectSetElements() {
         indexer.functionIndices(SET_ELEMENTS_TAG)
-            .filter { it.hasAnnotation(InjektFqNames.SetElements) }
             .map { implicitContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
             .distinct()
@@ -328,7 +314,6 @@ class DeclarationGraph(
 
     private fun collectGenericContexts() {
         indexer.classIndices(GENERIC_CONTEXT_TAG)
-            .filter { it.hasAnnotation(InjektFqNames.GenericContext) }
             .distinct()
             .forEach { _genericContexts += it }
     }
