@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.android
 
-import androidx.compose.plugins.kotlin.ComposeComponentRegistrar
+import androidx.compose.compiler.plugins.kotlin.ComposeComponentRegistrar
 import com.ivianuu.injekt.compiler.InjektComponentRegistrar
 import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
@@ -29,22 +29,22 @@ class ComposeTest {
 
     @Test
     fun testComposableBindingEffect() = codegen("""
-        typealias AppUi = @androidx.compose.Composable () -> Unit
+        typealias AppUi = @androidx.compose.runtime.Composable () -> Unit
 
         @Effect
         annotation class BindAppUi {
             companion object {
                 @Given
-                operator fun <T : @androidx.compose.Composable () -> Unit> invoke(): AppUi =
+                operator fun <T : @androidx.compose.runtime.Composable () -> Unit> invoke(): AppUi =
                     given<T>() as AppUi
             }
         }
         
         @BindAppUi
         @Reader
-        @androidx.compose.Composable
+        @androidx.compose.runtime.Composable
         fun SampleUi() {
-            androidx.compose.remember {  }
+            androidx.compose.runtime.remember {  }
         }
         
         fun invoke(): AppUi {
@@ -63,13 +63,13 @@ class ComposeTest {
         listOf(
             source(
                 """
-                typealias AppUi = @androidx.compose.Composable () -> Unit
+                typealias AppUi = @androidx.compose.runtime.Composable () -> Unit
         
                 @Effect
                 annotation class BindAppUi {
                     companion object {
                         @Given
-                        operator fun <T : @androidx.compose.Composable () -> Unit> invoke(): AppUi =
+                        operator fun <T : @androidx.compose.runtime.Composable () -> Unit> invoke(): AppUi =
                             given<T>() as AppUi
                     }
                 }
@@ -82,9 +82,9 @@ class ComposeTest {
                 """
                 @BindAppUi
                 @Reader
-                @androidx.compose.Composable
+                @androidx.compose.runtime.Composable
                 fun SampleUi() {
-                    androidx.compose.remember {  }
+                    androidx.compose.runtime.remember {  }
                 }
                 
                 fun invoke(): AppUi {
@@ -108,23 +108,23 @@ class ComposeTest {
         fun foo() = Foo()
         
         @Reader 
-        @androidx.compose.Composable
+        @androidx.compose.runtime.Composable
         fun func(foo: Foo = given()): Foo {
             androidx.compose.currentComposer
             return foo
         }
         
         @Reader 
-        @androidx.compose.Composable
+        @androidx.compose.runtime.Composable
         fun other() { 
             androidx.compose.currentComposer
         }
         
         @Reader
-        @androidx.compose.Composable
-        fun <R> withFoo(block: @Reader @androidx.compose.Composable (Foo) -> R): R = block(func())
+        @androidx.compose.runtime.Composable
+        fun <R> withFoo(block: @Reader @androidx.compose.runtime.Composable (Foo) -> R): R = block(func())
 
-        @androidx.compose.Composable
+        @androidx.compose.runtime.Composable
         fun invoke(): Foo {
             return runReader {
                 withFoo { 

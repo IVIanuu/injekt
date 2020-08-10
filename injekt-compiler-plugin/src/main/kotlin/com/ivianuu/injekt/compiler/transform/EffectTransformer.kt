@@ -237,13 +237,13 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                         .map { it.type } + function.returnType
                 )
                 .let {
-                    if (function.hasAnnotation(FqName("androidx.compose.Composable"))) {
+                    if (function.hasAnnotation(FqName("androidx.compose.runtime.Composable"))) {
                         it.copy(
                             annotations = it.annotations + DeclarationIrBuilder(
                                 pluginContext,
                                 function.symbol
                             ).irCall(
-                                pluginContext.referenceConstructors(FqName("androidx.compose.Composable"))
+                                pluginContext.referenceConstructors(FqName("androidx.compose.runtime.Composable"))
                                     .single()
                             )
                         )

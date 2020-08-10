@@ -48,7 +48,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
             .getExtensionPoint(IrGenerationExtension.extensionPointName)
 
         val composeIrExtensionClass = try {
-            Class.forName("androidx.compose.plugins.kotlin.ComposeIrGenerationExtension")
+            Class.forName("androidx.compose.compiler.plugins.kotlin.ComposeIrGenerationExtension")
         } catch (t: Throwable) {
             null
         }
