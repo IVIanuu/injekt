@@ -77,7 +77,6 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.isObject
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -96,18 +95,13 @@ class RunReaderContextImplTransformer(
     override fun lower() {
         var lastParentsByIndex =
             emptyMap<IrClass, List<DeclarationGraph.ParentRunReaderContext>>()
-        val roundInfos = mutableListOf<String>()
         while (true) {
-            val roundNumber = roundInfos.size
             val currentParentsByIndex =
                 mutableMapOf<IrClass, List<DeclarationGraph.ParentRunReaderContext>>()
             val roundContextIndices = declarationGraph.runReaderContexts
                 .filter { it.superTypes.first().classOrNull!!.owner !in generatedContexts }
 
-            if (roundContextIndices.isEmpty()) {
-                roundInfos += "$roundNumber: all indices processed"
-                break
-            }
+            if (roundContextIndices.isEmpty()) break
 
             for (index in roundContextIndices) {
                 val context = index.superTypes.first().classOrNull!!.owner
@@ -129,9 +123,7 @@ class RunReaderContextImplTransformer(
                 // defer generation until all parent's are generated
                 if (unimplementedParents.isNotEmpty() &&
                     currentParentsByIndex != lastParentsByIndex
-                ) {
-                    continue
-                }
+                ) continue
 
                 generatedContexts[context] = generateRunReaderContextWithFactory(
                     index,
@@ -145,21 +137,9 @@ class RunReaderContextImplTransformer(
                 )
             }
 
-            roundInfos += "$roundNumber: round indices ${roundContextIndices.joinToString("\n") {
-                it.descriptor.fqNameSafe.asString()
-            }}\n" +
-                    "generated contexts ${generatedContexts.values.flatten()
-                        .joinToString("\n") { it.render() }}\n" +
-                    "last parents ${lastParentsByIndex.mapKeys { it.key.descriptor.fqNameSafe }
-                        .mapValues { it.value.joinToString("\n") }}\n" +
-                    "all indices ${declarationGraph.runReaderContexts.joinToString("\n") { it.descriptor.fqNameSafe.asString() }}"
-
             if (lastParentsByIndex.isNotEmpty() &&
                 lastParentsByIndex == currentParentsByIndex
-            ) {
-                roundInfos += "$roundNumber: nothing has changed"
-                break
-            }
+            ) break
 
             lastParentsByIndex = currentParentsByIndex
         }
