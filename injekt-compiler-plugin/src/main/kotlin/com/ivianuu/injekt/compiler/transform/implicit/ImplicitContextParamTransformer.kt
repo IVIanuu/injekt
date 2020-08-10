@@ -595,7 +595,7 @@ class ImplicitContextParamTransformer(
         return indexer.externalClassIndices
             .filter { it.hasAnnotation(InjektFqNames.Signature) }
             .filter { it.hasAnnotation(InjektFqNames.Name) }
-            .singleOrNull { clazz ->
+            .firstOrNull { clazz ->
                 clazz.getConstantFromAnnotationOrNull<String>(InjektFqNames.Name, 0)!! ==
                         declaration.uniqueKey()
             }

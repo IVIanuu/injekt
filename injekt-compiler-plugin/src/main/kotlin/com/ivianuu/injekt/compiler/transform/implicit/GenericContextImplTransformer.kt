@@ -22,6 +22,7 @@ import com.ivianuu.injekt.compiler.addFile
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.getAllFunctions
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.recordLookup
@@ -72,7 +73,6 @@ import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 
 class GenericContextImplTransformer(
     pluginContext: IrPluginContext,
@@ -293,8 +293,6 @@ class GenericContextImplTransformer(
             }
         }
 
-        val declarationNames = mutableSetOf<Name>()
-
         fun implementFunctions(
             superType: IrClass,
             typeArguments: List<IrType>
@@ -307,8 +305,13 @@ class GenericContextImplTransformer(
                 if (declaration is IrConstructor) continue
                 if (declaration.isFakeOverride) continue
                 if (declaration.dispatchReceiverParameter?.type == irBuiltIns.anyType) continue
-                if (declaration.name in declarationNames) continue
-                declarationNames += declaration.name
+                val existingDeclaration = contextImpl.functions.firstOrNull {
+                    it.name == declaration.name
+                }
+                if (existingDeclaration != null) {
+                    existingDeclaration.overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
+                    continue
+                }
                 contextImpl.addFunction {
                     this.name = declaration.name
                     returnType = declaration.returnType.substitute(
@@ -325,8 +328,8 @@ class GenericContextImplTransformer(
                         pluginContext,
                         symbol
                     ).run {
-                        val finalCallee = delegateContext.functions
-                            .singleOrNull { it.name.asString() == functionMap[declaration.name.asString()] }
+                        val finalCallee = delegateContext.getAllFunctions()
+                            .firstOrNull { it.name.asString() == functionMap[declaration.name.asString()] }
                             ?: declaration
                         irExprBody(
                             irCall(

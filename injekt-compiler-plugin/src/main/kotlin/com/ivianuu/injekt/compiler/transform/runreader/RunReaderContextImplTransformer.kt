@@ -71,6 +71,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
+import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
@@ -454,7 +455,6 @@ class RunReaderContextImplTransformer(
             implicitContextParamTransformer = implicitContextParamTransformer
         )
 
-        val declarationNames = mutableSetOf<Name>()
         var firstRound = true
         val bindingExpressions = mutableMapOf<Key, ContextBindingExpression>()
 
@@ -480,8 +480,13 @@ class RunReaderContextImplTransformer(
                     if (declaration.dispatchReceiverParameter?.type ==
                         pluginContext.irBuiltIns.anyType
                     ) continue
-                    if (declaration.name in declarationNames) continue
-                    declarationNames += declaration.name
+                    val existingDeclaration = contextImpl.functions.singleOrNull {
+                        it.name == declaration.name
+                    }
+                    if (existingDeclaration != null) {
+                        existingDeclaration.overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
+                        continue
+                    }
                     val request = BindingRequest(
                         declaration.returnType.asKey(),
                         null,
