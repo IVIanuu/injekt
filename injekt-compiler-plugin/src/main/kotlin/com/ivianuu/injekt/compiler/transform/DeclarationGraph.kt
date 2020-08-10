@@ -58,6 +58,14 @@ class DeclarationGraph(
 
     lateinit var runReaderContextImplTransformer: RunReaderContextImplTransformer
 
+    init {
+        collectRunReaderContexts()
+        collectBindings()
+        collectMapEntries()
+        collectSetElements()
+        collectGenericContexts()
+    }
+
     sealed class ParentRunReaderContext {
         data class Known(val clazz: IrClass) : ParentRunReaderContext() {
             override fun toString(): String {
@@ -242,14 +250,6 @@ class DeclarationGraph(
         collectImplementations(context)
 
         return contexts
-    }
-
-    fun initialize() {
-        collectRunReaderContexts()
-        collectBindings()
-        collectMapEntries()
-        collectSetElements()
-        collectGenericContexts()
     }
 
     private fun collectRunReaderContexts() {

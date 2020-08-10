@@ -80,17 +80,15 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         RunReaderCallTransformer(pluginContext, indexer).doLower(moduleFragment)
 
-        val declarationGraph =
-            DeclarationGraph(
-                indexer,
-                moduleFragment,
-                implicitContextParamTransformer
-            )
-
         BindingIndexingTransformer(indexer, injektPluginContext).doLower(moduleFragment)
 
         if (initializeInjekt) {
-            declarationGraph.initialize()
+            val declarationGraph =
+                DeclarationGraph(
+                    indexer,
+                    moduleFragment,
+                    implicitContextParamTransformer
+                )
             val runReaderContextImplTransformer = RunReaderContextImplTransformer(
                 pluginContext,
                 declarationGraph,
