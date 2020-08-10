@@ -247,6 +247,16 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                                     .single()
                             )
                         )
+                    } else if (function.hasAnnotation(FqName("androidx.compose.Composable"))) {
+                        it.copy(
+                            annotations = it.annotations + DeclarationIrBuilder(
+                                pluginContext,
+                                function.symbol
+                            ).irCall(
+                                pluginContext.referenceConstructors(FqName("androidx.compose.Composable"))
+                                    .single()
+                            )
+                        )
                     } else {
                         it
                     }

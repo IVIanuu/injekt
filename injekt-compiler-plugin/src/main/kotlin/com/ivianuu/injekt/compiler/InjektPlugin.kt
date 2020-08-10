@@ -50,7 +50,11 @@ class InjektComponentRegistrar : ComponentRegistrar {
         val composeIrExtensionClass = try {
             Class.forName("androidx.compose.compiler.plugins.kotlin.ComposeIrGenerationExtension")
         } catch (t: Throwable) {
-            null
+            try {
+                Class.forName("androidx.compose.plugins.kotlin.ComposeIrGenerationExtension")
+            } catch (t: Throwable) {
+                null
+            }
         }
         val composeExtension = if (composeIrExtensionClass != null) {
             irExtensionPoint.extensionList.singleOrNull {
