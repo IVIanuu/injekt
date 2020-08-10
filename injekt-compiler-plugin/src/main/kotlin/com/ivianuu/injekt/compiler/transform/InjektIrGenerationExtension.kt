@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.implicit.GenericContextImplTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
@@ -37,12 +38,19 @@ import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.utils.addToStdlib.measureTimeMillisWithResult
+import kotlin.system.measureTimeMillis
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         var initializeInjekt = false
         var initFile: IrFile? = null
+
+        fun AbstractInjektTransformer.doLowerAndMeasure() {
+            val duration = measureTimeMillis { doLower(moduleFragment) }
+            println("${javaClass.name} took $duration ms")
+        }
 
         moduleFragment.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitDeclaration(declaration: IrDeclaration): IrStatement {
@@ -54,41 +62,42 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             }
         })
 
-        val injektPluginContext = InjektPluginContext(moduleFragment, pluginContext)
-
-        if (injektPluginContext.referenceClass(InjektFqNames.Effect) != null) {
-            EffectTransformer(injektPluginContext).doLower(moduleFragment)
+        if (pluginContext.referenceClass(InjektFqNames.Effect) != null) {
+            EffectTransformer(pluginContext).doLowerAndMeasure()
         }
 
         val indexer = Indexer(
-            injektPluginContext,
+            pluginContext,
             moduleFragment,
-            InjektSymbols(injektPluginContext)
+            InjektSymbols(pluginContext)
         )
 
         val implicitContextParamTransformer =
-            ImplicitContextParamTransformer(injektPluginContext, indexer)
-        implicitContextParamTransformer.doLower(moduleFragment)
+            ImplicitContextParamTransformer(pluginContext, indexer)
+        implicitContextParamTransformer.doLowerAndMeasure()
 
-        ImplicitCallTransformer(injektPluginContext, indexer).doLower(moduleFragment)
+        ImplicitCallTransformer(pluginContext, indexer).doLowerAndMeasure()
 
         ReaderTrackingTransformer(
-            injektPluginContext,
+            pluginContext,
             indexer,
             implicitContextParamTransformer
-        ).doLower(moduleFragment)
+        ).doLowerAndMeasure()
 
-        RunReaderCallTransformer(pluginContext, indexer).doLower(moduleFragment)
+        RunReaderCallTransformer(pluginContext, indexer).doLowerAndMeasure()
 
-        BindingIndexingTransformer(indexer, injektPluginContext).doLower(moduleFragment)
+        BindingIndexingTransformer(indexer, pluginContext).doLowerAndMeasure()
 
         if (initializeInjekt) {
-            val declarationGraph =
-                DeclarationGraph(
-                    indexer,
-                    moduleFragment,
-                    implicitContextParamTransformer
-                )
+            val (initTime, declarationGraph) =
+                measureTimeMillisWithResult {
+                    DeclarationGraph(
+                        indexer,
+                        moduleFragment,
+                        implicitContextParamTransformer
+                    )
+                }
+            println("Initializing graph took $initTime ms")
             val runReaderContextImplTransformer = RunReaderContextImplTransformer(
                 pluginContext,
                 declarationGraph,
@@ -96,18 +105,20 @@ class InjektIrGenerationExtension : IrGenerationExtension {
                 initFile!!
             )
             declarationGraph.runReaderContextImplTransformer = runReaderContextImplTransformer
-            runReaderContextImplTransformer.doLower(moduleFragment)
+            runReaderContextImplTransformer.doLowerAndMeasure()
             GenericContextImplTransformer(
                 pluginContext,
                 declarationGraph,
                 runReaderContextImplTransformer
             )
-                .doLower(moduleFragment)
+                .doLowerAndMeasure()
         }
 
-        TmpMetadataPatcher(injektPluginContext).doLower(moduleFragment)
+        TmpMetadataPatcher(pluginContext).doLowerAndMeasure()
 
         generateSymbols(pluginContext)
+
+        println(moduleFragment.dumpSrc())
     }
 
 }

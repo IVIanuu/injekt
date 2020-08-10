@@ -17,40 +17,22 @@
 package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 
 class InjektSymbols(val pluginContext: IrPluginContext) {
+    val effect = pluginContext.referenceClass(InjektFqNames.Effect)!!
+    val given = pluginContext.referenceClass(InjektFqNames.Given)!!
+    val mapEntries = pluginContext.referenceClass(InjektFqNames.MapEntries)!!
+    val reader = pluginContext.referenceClass(InjektFqNames.Reader)!!
+    val scoping = pluginContext.referenceClass(InjektFqNames.Scoping)!!
+    val setElements = pluginContext.referenceClass(InjektFqNames.SetElements)!!
 
-    val effect: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.Effect)!!
-    val given: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.Given)!!
-    val mapEntries: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.MapEntries)!!
-    val reader: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.Reader)!!
-    val scoping: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.Scoping)!!
-    val setElements: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.SetElements)!!
-
-    val context: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.Context)!!
-    val genericContext: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.GenericContext)!!
-    val index: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.Index)!!
-    val name: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.Name)!!
-    val qualifier: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.Qualifier)!!
-    val readerImpl: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.ReaderImpl)!!
-    val readerInvocation: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.ReaderInvocation)!!
-    val runReaderContext: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.RunReaderContext)!!
-    val signature: IrClassSymbol
-        get() = pluginContext.referenceClass(InjektFqNames.Signature)!!
-
+    val context = pluginContext.referenceClass(InjektFqNames.Context)!!
+    val genericContext = pluginContext.referenceClass(InjektFqNames.GenericContext)!!
+    val index = pluginContext.referenceClass(InjektFqNames.Index)!!
+    val name = pluginContext.referenceClass(InjektFqNames.Name)!!
+    val qualifier = pluginContext.referenceClass(InjektFqNames.Qualifier)!!
+    val readerImpl = pluginContext.referenceClass(InjektFqNames.ReaderImpl)!!
+    val readerInvocation = pluginContext.referenceClass(InjektFqNames.ReaderInvocation)!!
+    val runReaderContext = pluginContext.referenceClass(InjektFqNames.RunReaderContext)!!
+    val signature = pluginContext.referenceClass(InjektFqNames.Signature)!!
 }

@@ -38,6 +38,7 @@ import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -47,6 +48,7 @@ import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.utils.addToStdlib.measureTimeMillisWithResult
 
 class Indexer(
     private val pluginContext: IrPluginContext,
@@ -66,54 +68,80 @@ class Indexer(
                 )
             }
             .map { pluginContext.referenceClass(it.fqNameSafe)!!.owner }
-            .map { it.toIndex() }
+            .map {
+                Index(
+                    FqName(it.getConstantFromAnnotationOrNull<String>(InjektFqNames.Index, 0)!!),
+                    it.getConstantFromAnnotationOrNull<String>(InjektFqNames.Index, 1)!!
+                )
+            }
             .distinct()
-    }
-
-    private val internalIndices by lazy {
-        (module.files
-            .filter { it.fqName == InjektFqNames.IndexPackage }
-            .flatMapFix { it.declarations }
-            .filterIsInstance<IrClass>())
-            .map { it.toIndex() }
-            .distinct()
-    }
-
-    private fun IrClass.toIndex(): Index {
-        return Index(
-            FqName(getConstantFromAnnotationOrNull<String>(InjektFqNames.Index, 0)!!),
-            getConstantFromAnnotationOrNull<String>(InjektFqNames.Index, 1)!!
-        )
     }
 
     val classIndices by lazy { internalClassIndices + externalClassIndices }
 
     private val internalClassIndices by lazy {
-        internalIndices.mapNotNull { it.toClassOrNull() }
+        measureTimeMillisWithResult {
+            internalDeclarationsByIndices.keys
+                .filter { it.type == "class" }
+                .map { internalDeclarationsByIndices[it]!! as IrClass }
+        }.let {
+            println("computing internal classes took ${it.first} ms")
+            it.second
+        }
     }
 
     val externalClassIndices by lazy {
-        externalIndices
-            .mapNotNull { it.toClassOrNull() }
+        measureTimeMillisWithResult {
+            externalIndices
+                .filter { it.type == "class" }
+                .mapNotNull { pluginContext.referenceClass(it.fqName)?.owner }
+        }.let {
+            println("computing external classes took ${it.first} ms")
+            it.second
+        }
     }
-
-    private fun Index.toClassOrNull() =
-        takeIf { it.type == "class" }
-            ?.let { pluginContext.referenceClass(it.fqName) }
-            ?.owner
 
     val functionIndices by lazy {
-        (externalIndices + internalIndices)
-            .filter { it.type == "function" }
-            .flatMapFix { pluginContext.referenceFunctions(it.fqName) }
-            .map { it.owner }
+        measureTimeMillisWithResult {
+            internalDeclarationsByIndices.keys
+                .filter { it.type == "function" }
+                .map { internalDeclarationsByIndices[it]!! }
+                .filterIsInstance<IrFunction>()
+        }.let {
+            println("computing internal functions took ${it.first} ms")
+            it.second
+        } + measureTimeMillisWithResult {
+            externalIndices
+                .flatMapFix { index ->
+                    pluginContext.referenceFunctions(index.fqName)
+                        .map { it.owner }
+                }
+        }.let {
+            println("computing external functions took ${it.first} ms")
+            it.second
+        }
     }
 
-    val propertyIndices: List<IrProperty> by lazy {
-        (externalIndices + internalIndices)
-            .filter { it.type == "property" }
-            .flatMapFix { pluginContext.referenceProperties(it.fqName) }
-            .map { it.owner }
+    val propertyIndices by lazy {
+        measureTimeMillisWithResult {
+            internalDeclarationsByIndices.keys
+                .filter { it.type == "property" }
+                .map { internalDeclarationsByIndices[it]!! }
+                .filterIsInstance<IrProperty>()
+        }.let {
+            println("computing internal properties took ${it.first} ms")
+            it.second
+        } + measureTimeMillisWithResult {
+            externalIndices
+                .filter { it.type == "property" }
+                .flatMapFix { index ->
+                    pluginContext.referenceProperties(index.fqName)
+                        .map { it.owner }
+                }
+        }.let {
+            println("computing external properties took ${it.first} ms")
+            it.second
+        }
     }
 
     private data class Index(
@@ -121,7 +149,21 @@ class Indexer(
         val type: String
     )
 
+    private val internalDeclarationsByIndices = mutableMapOf<Index, IrDeclaration>()
+
     fun index(declaration: IrDeclarationWithName) {
+        val index = Index(
+            declaration.descriptor.fqNameSafe,
+            when (declaration) {
+                is IrClass -> "class"
+                is IrFunction -> "function"
+                is IrProperty -> "property"
+                else -> error("Unsupported declaration ${declaration.render()}")
+            }
+        )
+
+        internalDeclarationsByIndices[index] = declaration
+
         val name = (getJoinedName(
             declaration.getPackageFragment()!!.fqName,
             declaration.descriptor.fqNameSafe
@@ -148,18 +190,11 @@ class Indexer(
                         irCall(symbols.index.constructors.single()).apply {
                             putValueArgument(
                                 0,
-                                irString(declaration.descriptor.fqNameSafe.asString())
+                                irString(index.fqName.asString())
                             )
                             putValueArgument(
                                 1,
-                                irString(
-                                    when (declaration) {
-                                        is IrClass -> "class"
-                                        is IrFunction -> "function"
-                                        is IrProperty -> "property"
-                                        else -> error("Unsupported declaration ${declaration.render()}")
-                                    }
-                                )
+                                irString(index.type)
                             )
                         }
                     }

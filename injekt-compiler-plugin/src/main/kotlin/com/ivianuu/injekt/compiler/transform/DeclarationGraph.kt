@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import kotlin.system.measureTimeMillis
 
 class DeclarationGraph(
     private val indexer: Indexer,
@@ -59,11 +60,21 @@ class DeclarationGraph(
     lateinit var runReaderContextImplTransformer: RunReaderContextImplTransformer
 
     init {
-        collectRunReaderContexts()
-        collectBindings()
-        collectMapEntries()
-        collectSetElements()
-        collectGenericContexts()
+        measureTimeMillis {
+            collectRunReaderContexts()
+        }.also { println("collecting run reader contexts took $it ms") }
+        measureTimeMillis {
+            collectBindings()
+        }.also { println("collecting bindings took $it ms") }
+        measureTimeMillis {
+            collectMapEntries()
+        }.also { println("collecting map entries took $it ms") }
+        measureTimeMillis {
+            collectSetElements()
+        }.also { println("collecting set elements took $it ms") }
+        measureTimeMillis {
+            collectGenericContexts()
+        }.also { println("collecting generic contexts took $it ms") }
     }
 
     sealed class ParentRunReaderContext {

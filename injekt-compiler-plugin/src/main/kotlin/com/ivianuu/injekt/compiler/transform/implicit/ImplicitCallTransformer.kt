@@ -98,8 +98,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class ImplicitCallTransformer(
     pluginContext: IrPluginContext,
     private val indexer: Indexer
-) :
-    AbstractInjektTransformer(pluginContext) {
+) : AbstractInjektTransformer(pluginContext) {
 
     private val nameProvider = NameProvider()
     private val transformedDeclarations = mutableListOf<IrDeclaration>()
