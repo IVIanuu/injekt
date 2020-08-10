@@ -182,8 +182,7 @@ class DeclarationGraph(
             ?.owner
 
         return setOfNotNull(
-            *indexer.classIndices
-                .filter { it.hasAnnotation(InjektFqNames.ReaderInvocation) }
+            *indexer.classIndices("reader_invocation")
                 .filter { clazz ->
                     clazz.getClassFromAnnotation(
                         InjektFqNames.ReaderInvocation,
@@ -205,8 +204,7 @@ class DeclarationGraph(
     private fun getAllSuperContexts(
         context: IrClass
     ): Set<IrClass> {
-        return indexer.classIndices
-            .filter { it.hasAnnotation(InjektFqNames.ReaderImpl) }
+        return indexer.classIndices(READER_IMPL_TAG)
             .filter { clazz ->
                 clazz.getClassFromAnnotation(
                     InjektFqNames.ReaderImpl,
@@ -235,8 +233,7 @@ class DeclarationGraph(
             if (context in processedClasses) return
             processedClasses += context
 
-            indexer.classIndices
-                .filter { it.hasAnnotation(InjektFqNames.ReaderImpl) }
+            indexer.classIndices(READER_IMPL_TAG)
                 .filter { clazz ->
                     clazz.getClassFromAnnotation(
                         InjektFqNames.ReaderImpl,
@@ -254,8 +251,7 @@ class DeclarationGraph(
                     collectImplementations(it)
                 }
 
-            indexer.classIndices
-                .filter { it.hasAnnotation(InjektFqNames.ReaderInvocation) }
+            indexer.classIndices(READER_INVOCATION_TAG)
                 .filter { clazz ->
                     clazz.getClassFromAnnotation(
                         InjektFqNames.ReaderInvocation,
@@ -289,16 +285,16 @@ class DeclarationGraph(
     }
 
     private fun collectRunReaderContexts() {
-        indexer.classIndices
+        indexer.classIndices(RUN_READER_CONTEXT_TAG)
             .filter { it.hasAnnotation(InjektFqNames.RunReaderContext) }
             .distinct()
             .forEach { _runReaderContexts += it }
     }
 
     private fun collectBindings() {
-        (indexer.functionIndices + indexer.classIndices
+        (indexer.functionIndices(BINDING_TAG) + indexer.classIndices(BINDING_TAG)
             .flatMapFix { it.constructors.toList() } +
-                indexer.propertyIndices.mapNotNull { it.getter })
+                indexer.propertyIndices(BINDING_TAG).mapNotNull { it.getter })
             .filter {
                 it.hasAnnotation(InjektFqNames.Given) ||
                         (it is IrConstructor && it.constructedClass.hasAnnotation(InjektFqNames.Given)) ||
@@ -313,7 +309,7 @@ class DeclarationGraph(
     }
 
     private fun collectMapEntries() {
-        indexer.functionIndices
+        indexer.functionIndices(MAP_ENTRIES_TAG)
             .filter { it.hasAnnotation(InjektFqNames.MapEntries) }
             .map { implicitContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
@@ -322,7 +318,7 @@ class DeclarationGraph(
     }
 
     private fun collectSetElements() {
-        indexer.functionIndices
+        indexer.functionIndices(SET_ELEMENTS_TAG)
             .filter { it.hasAnnotation(InjektFqNames.SetElements) }
             .map { implicitContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
@@ -331,10 +327,21 @@ class DeclarationGraph(
     }
 
     private fun collectGenericContexts() {
-        indexer.classIndices
+        indexer.classIndices(GENERIC_CONTEXT_TAG)
             .filter { it.hasAnnotation(InjektFqNames.GenericContext) }
             .distinct()
             .forEach { _genericContexts += it }
+    }
+
+    companion object {
+        const val READER_INVOCATION_TAG = "reader_invocation"
+        const val READER_IMPL_TAG = "reader_impl"
+        const val RUN_READER_CONTEXT_TAG = "run_reader_context"
+        const val BINDING_TAG = "binding"
+        const val GENERIC_CONTEXT_TAG = "generic_context"
+        const val MAP_ENTRIES_TAG = "map_entries"
+        const val SET_ELEMENTS_TAG = "set_elements"
+        const val SIGNATURE_TAG = "signature"
     }
 
 }

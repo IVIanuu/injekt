@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
+import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
@@ -95,7 +96,7 @@ class RunReaderCallTransformer(
 
         newDeclarations.forEach {
             (it.parent as IrDeclarationContainer).addChild(it)
-            indexer.index(it)
+            indexer.index(it, DeclarationGraph.RUN_READER_CONTEXT_TAG)
         }
     }
 

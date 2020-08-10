@@ -70,19 +70,23 @@ class Indexer(
             .map { pluginContext.referenceClass(it.fqNameSafe)!!.owner }
             .map {
                 Index(
-                    FqName(it.getConstantFromAnnotationOrNull<String>(InjektFqNames.Index, 0)!!),
-                    it.getConstantFromAnnotationOrNull<String>(InjektFqNames.Index, 1)!!
+                    it.getConstantFromAnnotationOrNull<String>(InjektFqNames.Index, 0)!!,
+                    it.getConstantFromAnnotationOrNull<String>(InjektFqNames.Index, 1)!!,
+                    FqName(it.getConstantFromAnnotationOrNull<String>(InjektFqNames.Index, 2)!!)
                 )
             }
             .distinct()
     }
 
-    val classIndices by lazy { internalClassIndices + externalClassIndices }
+    fun classIndices(tag: String) =
+        internalClassIndices(tag) + externalClassIndices(tag)
 
-    private val internalClassIndices by lazy {
+    private val internalClassIndicesByTag = mutableMapOf<String, List<IrClass>>()
+    private fun internalClassIndices(tag: String) = internalClassIndicesByTag.getOrPut(tag) {
         measureTimeMillisWithResult {
             internalDeclarationsByIndices.keys
                 .filter { it.type == "class" }
+                .filter { it.tag == tag }
                 .map { internalDeclarationsByIndices[it]!! as IrClass }
         }.let {
             println("computing internal classes took ${it.first} ms")
@@ -90,10 +94,12 @@ class Indexer(
         }
     }
 
-    val externalClassIndices by lazy {
+    private val externalClassIndicesByTag = mutableMapOf<String, List<IrClass>>()
+    fun externalClassIndices(tag: String) = externalClassIndicesByTag.getOrPut(tag) {
         measureTimeMillisWithResult {
             externalIndices
                 .filter { it.type == "class" }
+                .filter { it.tag == tag }
                 .mapNotNull { pluginContext.referenceClass(it.fqName)?.owner }
         }.let {
             println("computing external classes took ${it.first} ms")
@@ -101,10 +107,12 @@ class Indexer(
         }
     }
 
-    val functionIndices by lazy {
+    private val functionIndicesByTag = mutableMapOf<String, List<IrFunction>>()
+    fun functionIndices(tag: String) = functionIndicesByTag.getOrPut(tag) {
         measureTimeMillisWithResult {
             internalDeclarationsByIndices.keys
                 .filter { it.type == "function" }
+                .filter { it.tag == tag }
                 .map { internalDeclarationsByIndices[it]!! }
                 .filterIsInstance<IrFunction>()
         }.let {
@@ -112,6 +120,8 @@ class Indexer(
             it.second
         } + measureTimeMillisWithResult {
             externalIndices
+                .filter { it.type == "function" }
+                .filter { it.tag == tag }
                 .flatMapFix { index ->
                     pluginContext.referenceFunctions(index.fqName)
                         .map { it.owner }
@@ -122,10 +132,12 @@ class Indexer(
         }
     }
 
-    val propertyIndices by lazy {
+    private val propertyIndicesByTag = mutableMapOf<String, List<IrProperty>>()
+    fun propertyIndices(tag: String) = propertyIndicesByTag.getOrPut(tag) {
         measureTimeMillisWithResult {
             internalDeclarationsByIndices.keys
                 .filter { it.type == "property" }
+                .filter { it.tag == tag }
                 .map { internalDeclarationsByIndices[it]!! }
                 .filterIsInstance<IrProperty>()
         }.let {
@@ -134,6 +146,7 @@ class Indexer(
         } + measureTimeMillisWithResult {
             externalIndices
                 .filter { it.type == "property" }
+                .filter { it.tag == tag }
                 .flatMapFix { index ->
                     pluginContext.referenceProperties(index.fqName)
                         .map { it.owner }
@@ -145,21 +158,26 @@ class Indexer(
     }
 
     private data class Index(
-        val fqName: FqName,
-        val type: String
+        val type: String,
+        val tag: String,
+        val fqName: FqName
     )
 
     private val internalDeclarationsByIndices = mutableMapOf<Index, IrDeclaration>()
 
-    fun index(declaration: IrDeclarationWithName) {
+    fun index(
+        declaration: IrDeclarationWithName,
+        tag: String
+    ) {
         val index = Index(
-            declaration.descriptor.fqNameSafe,
             when (declaration) {
                 is IrClass -> "class"
                 is IrFunction -> "function"
                 is IrProperty -> "property"
                 else -> error("Unsupported declaration ${declaration.render()}")
-            }
+            },
+            tag,
+            declaration.descriptor.fqNameSafe
         )
 
         internalDeclarationsByIndices[index] = declaration
@@ -190,11 +208,15 @@ class Indexer(
                         irCall(symbols.index.constructors.single()).apply {
                             putValueArgument(
                                 0,
-                                irString(index.fqName.asString())
+                                irString(index.type)
                             )
                             putValueArgument(
                                 1,
-                                irString(index.type)
+                                irString(index.tag)
+                            )
+                            putValueArgument(
+                                2,
+                                irString(index.fqName.asString())
                             )
                         }
                     }

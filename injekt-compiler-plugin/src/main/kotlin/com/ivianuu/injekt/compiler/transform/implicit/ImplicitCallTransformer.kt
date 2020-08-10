@@ -35,6 +35,7 @@ import com.ivianuu.injekt.compiler.thisOfClass
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
+import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.uniqueTypeName
@@ -102,7 +103,7 @@ class ImplicitCallTransformer(
 
     private val nameProvider = NameProvider()
     private val transformedDeclarations = mutableListOf<IrDeclaration>()
-    private val newDeclarations = mutableListOf<IrClass>()
+    private val newGenericContexts = mutableListOf<IrClass>()
 
     override fun lower() {
         module.transformChildrenVoid(
@@ -119,9 +120,9 @@ class ImplicitCallTransformer(
             }
         )
 
-        newDeclarations.forEach {
+        newGenericContexts.forEach {
             (it.parent as IrDeclarationContainer).addChild(it)
-            indexer.index(it)
+            indexer.index(it, DeclarationGraph.GENERIC_CONTEXT_TAG)
         }
     }
 
@@ -238,7 +239,7 @@ class ImplicitCallTransformer(
                 }
             }
 
-            newDeclarations += genericContextIndex
+            newGenericContexts += genericContextIndex
 
             return name.asNameId()
         }

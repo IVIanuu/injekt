@@ -37,6 +37,7 @@ import com.ivianuu.injekt.compiler.remapTypeParametersByName
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
+import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.uniqueKey
@@ -137,7 +138,6 @@ import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
-import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.hasDefaultValue
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.statements
@@ -161,7 +161,8 @@ class ImplicitContextParamTransformer(
     private val transformedVariables = mutableMapOf<IrVariable, IrVariable>()
     private val transformedWhens = mutableMapOf<IrWhen, IrWhen>()
 
-    private val newDeclarations = mutableListOf<Pair<IrDeclarationWithName, Boolean>>()
+    private val newContexts = mutableListOf<IrClass>()
+    private val newSignatures = mutableListOf<IrClass>()
     private val nameProvider = NameProvider()
 
     fun getTransformedFunction(function: IrFunction) =
@@ -199,11 +200,18 @@ class ImplicitContextParamTransformer(
 
         module.rewriteTransformedReferences()
 
-        newDeclarations.forEach { (newDeclaration, index) ->
-            val parent = newDeclaration.parent as IrDeclarationContainer
-            if (newDeclaration !in parent.declarations) {
-                parent.addChild(newDeclaration)
-                if (index) indexer.index(newDeclaration)
+        newSignatures.forEach { newSignature ->
+            val parent = newSignature.parent as IrDeclarationContainer
+            if (newSignature !in parent.declarations) {
+                parent.addChild(newSignature)
+                indexer.index(newSignature, DeclarationGraph.SIGNATURE_TAG)
+            }
+        }
+
+        newContexts.forEach { newContext ->
+            val parent = newContext.parent as IrDeclarationContainer
+            if (newContext !in parent.declarations) {
+                parent.addChild(newContext)
             }
         }
     }
@@ -242,7 +250,7 @@ class ImplicitContextParamTransformer(
         )
 
         val signature = createReaderSignature(clazz, readerConstructor, null)
-        newDeclarations += signature to true
+        newSignatures += signature
 
         readerConstructor.body = DeclarationIrBuilder(pluginContext, clazz.symbol).run {
             irBlockBody {
@@ -325,7 +333,7 @@ class ImplicitContextParamTransformer(
         }
 
         val signature = createReaderSignature(transformedFunction, transformedFunction, null)
-        newDeclarations += signature to true
+        newSignatures += signature
 
         return transformedFunction
     }
@@ -340,7 +348,7 @@ class ImplicitContextParamTransformer(
                 owner.parent as IrFunction else null
 
         val context = createContext(owner, parentFunction, pluginContext, symbols)
-        newDeclarations += context to false
+        newContexts += context
         val contextParameter = ownerFunction.addContextParameter(context)
         onContextParameterCreated(contextParameter)
     }
@@ -474,7 +482,7 @@ class ImplicitContextParamTransformer(
             pluginContext,
             symbols
         )
-        newDeclarations += context to false
+        newSignatures += context
 
         val oldTypeArguments = oldType.typeArguments
 
@@ -592,9 +600,7 @@ class ImplicitContextParamTransformer(
     private fun getExternalReaderSignature(owner: IrDeclarationWithName): IrFunction? {
         val declaration = if (owner is IrConstructor)
             owner.constructedClass else owner
-        return indexer.externalClassIndices
-            .filter { it.hasAnnotation(InjektFqNames.Signature) }
-            .filter { it.hasAnnotation(InjektFqNames.Name) }
+        return indexer.externalClassIndices(DeclarationGraph.SIGNATURE_TAG)
             .firstOrNull { clazz ->
                 clazz.getConstantFromAnnotationOrNull<String>(InjektFqNames.Name, 0)!! ==
                         declaration.uniqueKey()

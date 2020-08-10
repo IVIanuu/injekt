@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform.runreader
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
+import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.IrStatement
@@ -38,32 +39,36 @@ class BindingIndexingTransformer(
 ) : AbstractInjektTransformer(pluginContext) {
 
     override fun lower() {
-        val declarations = mutableSetOf<IrDeclarationWithName>()
+        val declarations = mutableSetOf<Pair<IrDeclarationWithName, String>>()
 
         module.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitConstructor(declaration: IrConstructor): IrStatement {
                 if (declaration.hasAnnotation(InjektFqNames.Given)) {
-                    declarations += declaration.constructedClass
+                    declarations += declaration.constructedClass to DeclarationGraph.BINDING_TAG
                 }
                 return super.visitConstructor(declaration)
             }
 
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                if ((declaration.hasAnnotation(InjektFqNames.Given) ||
-                            declaration.hasAnnotation(InjektFqNames.MapEntries) ||
-                            declaration.hasAnnotation(InjektFqNames.SetElements)) &&
-                    !declaration.isInEffect()
-                ) {
-                    declarations += declaration
+                if (!declaration.isInEffect()) {
+                    when {
+                        declaration.hasAnnotation(InjektFqNames.Given) ->
+                            declarations += declaration to DeclarationGraph.BINDING_TAG
+                        declaration.hasAnnotation(InjektFqNames.MapEntries) ->
+                            declarations += declaration to DeclarationGraph.MAP_ENTRIES_TAG
+                        declaration.hasAnnotation(InjektFqNames.SetElements) ->
+                            declarations += declaration to DeclarationGraph.SET_ELEMENTS_TAG
+                    }
                 }
                 return super.visitFunction(declaration)
             }
 
             override fun visitClass(declaration: IrClass): IrStatement {
-                if (declaration.hasAnnotation(InjektFqNames.Given) ||
-                    declaration.hasAnnotation(InjektFqNames.RunReaderContext)
-                ) {
-                    declarations += declaration
+                when {
+                    declaration.hasAnnotation(InjektFqNames.Given) ->
+                        declarations += declaration to DeclarationGraph.BINDING_TAG
+                    declaration.hasAnnotation(InjektFqNames.RunReaderContext) ->
+                        declarations += declaration to DeclarationGraph.RUN_READER_CONTEXT_TAG
                 }
                 return super.visitClass(declaration)
             }
@@ -72,13 +77,13 @@ class BindingIndexingTransformer(
                 if (declaration.hasAnnotation(InjektFqNames.Given) &&
                     !declaration.isInEffect()
                 ) {
-                    declarations += declaration
+                    declarations += declaration to DeclarationGraph.BINDING_TAG
                 }
                 return super.visitProperty(declaration)
             }
         })
 
-        declarations.forEach { indexer.index(it) }
+        declarations.forEach { indexer.index(it.first, it.second) }
     }
 
     private fun IrDeclaration.isInEffect(): Boolean {
