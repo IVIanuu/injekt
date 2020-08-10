@@ -287,16 +287,15 @@ class GenericContextImplTransformer(
             }
         }
 
-        val implementedSuperTypes = mutableSetOf<IrClass>()
         val declarationNames = mutableSetOf<Name>()
 
         fun implementFunctions(
             superType: IrClass,
             typeArguments: List<IrType>
         ) {
-            if (superType in implementedSuperTypes) return
-            implementedSuperTypes += superType
+            if (superType.typeWith(typeArguments) in contextImpl.superTypes) return
             contextImpl.superTypes += superType.typeWith(typeArguments)
+
             for (declaration in superType.declarations.toList()) {
                 if (declaration !is IrFunction) continue
                 if (declaration is IrConstructor) continue

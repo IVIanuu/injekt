@@ -220,7 +220,7 @@ class RunReaderContextImplTransformer(
 
         val childrenNameProvider = NameProvider()
 
-        val inputsByParent = allParentInputs
+        val thisInputsByParentInputs = allParentInputs
             .takeIf { it.isNotEmpty() }
             .let { it ?: listOf(null) }
             .associateWith { parent ->
@@ -239,11 +239,11 @@ class RunReaderContextImplTransformer(
                 val contextImpl = generateRunReaderContext(
                     childrenNameProvider.allocateForGroup("Impl").asNameId(),
                     thisContext,
-                    inputsByParent[parentInputs]!!,
+                    thisInputsByParentInputs[parentInputs]!!,
                     factory
                 )
 
-                inputsByContext[contextImpl] = inputsByParent[parentInputs]!!
+                inputsByContext[contextImpl] = thisInputsByParentInputs[parentInputs]!!
 
                 if (parentInputs != null) recordLookup(contextImpl, parentInputs)
 
@@ -331,7 +331,7 @@ class RunReaderContextImplTransformer(
             }
         }
 
-        inputsByParent.values.forEach { factory.addChild(it) }
+        thisInputsByParentInputs.values.forEach { factory.addChild(it) }
         contextImplsWithParentInputs.forEach { factory.addChild(it.first) }
 
         file.addChild(factory)
@@ -419,7 +419,6 @@ class RunReaderContextImplTransformer(
         }.apply clazz@{
             parent = irParent
             createImplicitParameterDeclarationWithWrappedDescriptor()
-            superTypes += thisContext.defaultType
             recordLookup(this, thisContext)
         }
 
@@ -475,26 +474,25 @@ class RunReaderContextImplTransformer(
             implicitContextParamTransformer = implicitContextParamTransformer
         )
 
-        val processedSuperTypes = mutableSetOf<IrClass>()
         val declarationNames = mutableSetOf<Name>()
         var firstRound = true
         val bindingExpressions = mutableMapOf<Key, ContextBindingExpression>()
 
         while (true) {
-            val entryPoints =
+            val superTypes =
                 (if (firstRound) listOf(thisContext, inputs)
                 else graph.resolvedBindings.values
                     .flatMapFix { it.contexts }
                     .flatMapFix { it.getAllClasses() })
                     .flatMapFix { declarationGraph.getAllContextImplementations(it) }
                     .distinct()
-                    .filter { it !in processedSuperTypes }
+                    .filter { it !in contextImpl.superTypes.map { it.classOrNull!!.owner } }
 
-            if (entryPoints.isEmpty()) break
+            if (superTypes.isEmpty()) break
 
-            fun collect(superType: IrClass) {
-                if (superType in processedSuperTypes) return
-                processedSuperTypes += superType
+            fun implementFunctions(superType: IrClass) {
+                if (superType.defaultType in contextImpl.superTypes) return
+                contextImpl.superTypes += superType.defaultType
 
                 for (declaration in superType.declarations.toList()) {
                     if (declaration !is IrFunction) continue
@@ -516,13 +514,12 @@ class RunReaderContextImplTransformer(
 
                 superType.superTypes
                     .map { it.classOrNull!!.owner }
-                    .forEach { collect(it) }
+                    .forEach { implementFunctions(it) }
             }
 
-            entryPoints.forEach { entryPoint ->
-                contextImpl.superTypes += entryPoint.defaultType
-                recordLookup(contextImpl, entryPoint)
-                collect(entryPoint)
+            superTypes.forEach { superType ->
+                recordLookup(contextImpl, superType)
+                implementFunctions(superType)
             }
 
             firstRound = false
