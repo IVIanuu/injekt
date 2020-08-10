@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Command
 import com.ivianuu.injekt.test.CommandA
@@ -26,47 +26,49 @@ import com.ivianuu.injekt.test.invokeSingleFile
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.junit.Test
+import kotlin.reflect.KClass
 
-class SetTest {
+class MapTest {
 
     @Test
-    fun testSimpleSet() = codegen(
+    fun testSimpleMap() = codegen(
         """
         @Given 
         fun commandA() = CommandA()
         
-        @SetElements
-        fun commandAIntoSet(): Set<Command> = setOf(given<CommandA>())
+        @MapEntries
+        fun commandAIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandA::class to given<CommandA>())
         
         @Given 
         fun commandB() = CommandB()
-        
-        @SetElements
-        fun commandBIntoSet(): Set<Command> = setOf(given<CommandB>())
+
+        @MapEntries 
+        fun commandBIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandB::class to given<CommandB>())
         
         @Given 
         fun commandC() = CommandC()
         
-        @SetElements
-        fun commandCIntoSet(): Set<Command> = setOf(given<CommandC>())
+        @MapEntries
+        fun commandCIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandC::class to given<CommandC>())
         
-        fun invoke(): Set<Command> {
-            return runReader { given<Set<Command>>() }
+        fun invoke(): Map<KClass<out Command>, Command> {
+            return runReader { given<Map<KClass<out Command>, Command>>() }
         }
         """
     ) {
-        val set = invokeSingleFile<Set<Command>>().toList()
-        assertEquals(3, set.size)
-        assertTrue(set[0] is CommandA)
-        assertTrue(set[1] is CommandB)
-        assertTrue(set[2] is CommandC)
+        val map =
+            invokeSingleFile<Map<KClass<out Command>, Command>>()
+        assertEquals(3, map.size)
+        assertTrue(map[CommandA::class] is CommandA)
+        assertTrue(map[CommandB::class] is CommandB)
+        assertTrue(map[CommandC::class] is CommandC)
     }
 
     @Test
-    fun testUndeclaredSet() = codegen(
+    fun testUndeclaredMap() = codegen(
         """
-        fun invoke(): Set<Command> {
-            return runReader { given<Set<Command>>() }
+        fun invoke(): Map<KClass<out Command>, Command> {
+            return runReader { given<Map<KClass<out Command>, Command>>() }
         }
         """
     ) {

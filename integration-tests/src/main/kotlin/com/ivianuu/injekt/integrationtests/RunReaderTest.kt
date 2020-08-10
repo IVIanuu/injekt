@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Bar
 import com.ivianuu.injekt.test.Foo

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Foo
 import com.ivianuu.injekt.test.assertCompileError
