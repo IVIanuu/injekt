@@ -43,7 +43,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
         )
 
         // make sure that our plugin always runs before the Compose plugin
-        // otherwise it will break @Reader @Composable
+        // otherwise it will break @Reader @Composable functions
         val irExtensionPoint = Extensions.getArea(project)
             .getExtensionPoint(IrGenerationExtension.extensionPointName)
 

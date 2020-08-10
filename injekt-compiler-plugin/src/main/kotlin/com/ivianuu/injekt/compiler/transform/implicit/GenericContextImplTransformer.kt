@@ -299,7 +299,7 @@ class GenericContextImplTransformer(
             superType: IrClass,
             typeArguments: List<IrType>
         ) {
-            if (superType.typeWith(typeArguments) in contextImpl.superTypes) return
+            if (superType in contextImpl.superTypes.map { it.classOrNull!!.owner }) return
             contextImpl.superTypes += superType.typeWith(typeArguments)
 
             for (declaration in superType.declarations.toList()) {

@@ -471,7 +471,7 @@ class RunReaderContextImplTransformer(
             if (superTypes.isEmpty()) break
 
             fun implementFunctions(superType: IrClass) {
-                if (superType.defaultType in contextImpl.superTypes) return
+                if (superType in contextImpl.superTypes.map { it.classOrNull!!.owner }) return
                 contextImpl.superTypes += superType.defaultType
 
                 for (declaration in superType.declarations.toList()) {
