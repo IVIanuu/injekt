@@ -345,6 +345,11 @@ class RunReaderTest {
             
             @Reader
             fun <T> remember(block: @Reader () -> T): T {
+                return remember(*emptyArray()) { block() }
+            }
+            
+            @Reader
+            fun <T> remember(vararg inputs: Any?, block: @Reader () -> T): T {
                 return runChildReader(Foo()) { block() }
             }
         """

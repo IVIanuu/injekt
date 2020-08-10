@@ -124,6 +124,31 @@ class DeclarationGraph(
         return parents
     }
 
+    fun getNonGenericParentContext(context: IrClass): List<IrClass> {
+        val parents = mutableListOf<IrClass>()
+
+        val processedClasses = mutableSetOf<IrClass>()
+
+        val invokingContexts = getInvokingContexts(context)
+
+        fun collectParents(invokingContext: IrClass) {
+            if (invokingContext in processedClasses) return
+            processedClasses += invokingContext
+
+            if (invokingContext.typeParameters.isEmpty()) {
+                parents += invokingContext
+                return
+            }
+
+            getInvokingContexts(invokingContext)
+                .forEach { collectParents(it) }
+        }
+
+        invokingContexts.forEach { collectParents(it) }
+
+        return parents
+    }
+
     private fun isRunReaderContext(context: IrClass): Boolean {
         return runReaderContexts
             .map { it.superTypes.first() }

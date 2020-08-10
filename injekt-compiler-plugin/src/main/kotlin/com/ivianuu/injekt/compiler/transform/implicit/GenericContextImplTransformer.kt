@@ -106,12 +106,18 @@ class GenericContextImplTransformer(
 
             val genericContextType = index.superTypes.single()
 
+            val resolvedParentContexts = declarationGraph.getNonGenericParentContext(
+                genericContextType.classOrNull!!.owner
+            )
+
             val allParentInputs = runReaderContextImplTransformer.generatedContexts
                 .values
                 .flatten()
-                .filter {
-                    delegateContext in
-                            it.superTypes.map { it.classOrNull!!.owner }
+                .filter { generatedContext ->
+                    resolvedParentContexts.any { resolvedParentContext ->
+                        resolvedParentContext in generatedContext.superTypes
+                            .map { it.classOrNull!!.owner }
+                    }
                 }
                 .map { runReaderContextImplTransformer.inputsByContext[it]!! }
                 .toSet()
