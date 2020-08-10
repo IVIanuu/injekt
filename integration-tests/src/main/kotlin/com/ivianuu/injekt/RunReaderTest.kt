@@ -358,6 +358,106 @@ class RunReaderTest {
         invokeSingleFile()
     }
 
+    // todo simplify this test
+    @Test
+    fun testRunChildReaderWithEffectAndGenerics2() = codegen(
+        """
+            class App
+            
+            class Activity {
+                val app = App()
+            }
+            
+            class Service {
+                val app = App()
+            }
+            
+            class Fragment {
+                val activity = Activity()
+            }
+            
+            inline fun <T> App.runAppReader(block: @Reader () -> T): T =
+                runReader(this) { block() }
+                
+            inline fun <T> Activity.runActivityReader(block: @Reader () -> T): T =
+                app.runAppReader {
+                    runChildReader(this) { block() }
+                }
+                
+            inline fun <T> Service.runServiceReader(block: @Reader () -> T): T =
+                app.runAppReader {
+                    runChildReader(this) { block() }
+                }
+                
+            inline fun <T> Fragment.runFragmentReader(block: @Reader () -> T): T =
+                activity.runActivityReader {
+                    runChildReader(this) { block() }
+                }
+            
+            @Effect
+            annotation class AppUi {
+                companion object {
+                    @Given
+                    fun <T : () -> Unit> invoke(): AppUiMarker = given<T>()
+                }
+            }
+
+            typealias AppUiMarker = () -> Unit
+            
+            @AppUi
+            @Reader
+            fun AppUiImpl() {
+                remember { 
+                    given<App>()
+                    ActionPickerPage()
+                }
+            }
+
+            @Reader
+            fun ActionPickerPage() {
+                remember { given<Activity>() }
+            }
+            
+            interface ActionPickerDelegate
+            
+            @Effect
+            annotation class BindActionPickerDelegate {
+                companion object {
+                    @SetElements
+                    fun <T : ActionPickerDelegate> invoke(): Set<ActionPickerDelegate> = setOf(given<T>())
+                }
+            }
+            
+            @BindActionPickerDelegate
+            @Given
+            class AppActionPickerDelegate : ActionPickerDelegate {
+                init {
+                    remember { given<App>() }
+                    AppPickerPage()
+                }
+            }
+            
+            @Given
+            fun AppPickerPage() {
+                remember { given<Activity>() }
+            }
+            
+            fun invoke() { 
+                Activity().runActivityReader {
+                    given<AppUiMarker>()()
+                }
+            }
+            
+            @Reader
+            fun <T> remember(block: @Reader () -> T): T {
+                return runChildReader(Foo()) { block() }
+            }
+        """
+    ) {
+        assertOk()
+        invokeSingleFile()
+    }
+
     @Test
     fun testRunReaderInsideSuspend() = codegen(
         """
