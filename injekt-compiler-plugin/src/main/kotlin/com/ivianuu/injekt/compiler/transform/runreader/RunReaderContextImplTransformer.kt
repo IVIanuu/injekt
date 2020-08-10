@@ -115,25 +115,20 @@ class RunReaderContextImplTransformer(
 
                 val parents = declarationGraph.getParentRunReaderContexts(context)
 
-                val unimplementedParents =
-                    parents
-                        .filter {
-                            it is DeclarationGraph.ParentRunReaderContext.Unknown ||
-                                    (it is DeclarationGraph.ParentRunReaderContext.Known && it.clazz != context)
-                        }
-                        .filter {
-                            it is DeclarationGraph.ParentRunReaderContext.Unknown ||
-                                    (it is DeclarationGraph.ParentRunReaderContext.Known && it.clazz !in generatedContexts)
-                        }
-
-                val allUnknown = unimplementedParents.all {
-                    it is DeclarationGraph.ParentRunReaderContext.Unknown
-                }
+                val unimplementedParents = parents
+                    .filter {
+                        it is DeclarationGraph.ParentRunReaderContext.Unknown ||
+                                (it is DeclarationGraph.ParentRunReaderContext.Known && (
+                                        it.clazz != context &&
+                                                it.clazz !in generatedContexts
+                                        ))
+                    }
 
                 currentParentsByIndex[index] = parents
 
-                if ((!allUnknown && unimplementedParents.isNotEmpty()) ||
-                    (allUnknown && lastParentsByIndex[index] == null)
+                // defer generation until all parent's are generated
+                if (unimplementedParents.isNotEmpty() &&
+                    currentParentsByIndex != lastParentsByIndex
                 ) {
                     continue
                 }

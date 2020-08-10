@@ -236,7 +236,6 @@ class RunReaderTest {
                 }
             }
 
-            @Distinct
             typealias FooFactoryMarker = () -> Foo
             
             @FooFactory
@@ -298,7 +297,6 @@ class RunReaderTest {
                 }
             }
 
-            @Distinct
             typealias AppUiMarker = () -> Unit
             
             @AppUi
