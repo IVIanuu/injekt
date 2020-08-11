@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getJoinedName
+import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
@@ -68,6 +69,7 @@ fun createContext(
     addMetadataIfNotLocal()
     if (owner is IrTypeParametersContainer) copyTypeParametersFrom(owner)
     //parentFunction?.let { copyTypeParametersFrom(it) }
+    recordLookup(this, owner)
 
     annotations += DeclarationIrBuilder(injektContext, symbol)
         .irCall(injektContext.injektSymbols.context.constructors.single())

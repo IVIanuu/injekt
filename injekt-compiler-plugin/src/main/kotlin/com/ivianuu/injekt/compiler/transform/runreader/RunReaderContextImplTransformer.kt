@@ -25,7 +25,6 @@ import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getAllClasses
 import com.ivianuu.injekt.compiler.getAllFunctions
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
-import com.ivianuu.injekt.compiler.irCallAndRecordLookup
 import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
@@ -197,7 +196,7 @@ class RunReaderContextImplTransformer(
             }
         }
 
-        allParentInputs.forEach { recordLookup(file, it) }
+        recordLookup(initFile, factory)
 
         val childrenNameProvider = SimpleUniqueNameProvider()
 
@@ -225,8 +224,6 @@ class RunReaderContextImplTransformer(
                 )
 
                 inputsByContext[contextImpl] = thisInputsByParentInputs[parentInputs]!!
-
-                if (parentInputs != null) recordLookup(contextImpl, parentInputs)
 
                 contextImpl to parentInputs
             }
@@ -400,10 +397,7 @@ class RunReaderContextImplTransformer(
         }.apply clazz@{
             parent = irParent
             createImplicitParameterDeclarationWithWrappedDescriptor()
-            recordLookup(this, thisContext)
         }
-
-        recordLookup(initFile, contextImpl)
 
         val inputFieldNameProvider = SimpleUniqueNameProvider()
         val inputFields = inputTypes
@@ -470,9 +464,10 @@ class RunReaderContextImplTransformer(
 
             if (superTypes.isEmpty()) break
 
-            fun implementFunctions(superType: IrClass) {
+            fun implement(superType: IrClass) {
                 if (superType in contextImpl.superTypes.map { it.classOrNull!!.owner }) return
                 contextImpl.superTypes += superType.defaultType
+                recordLookup(contextImpl, superType)
 
                 for (declaration in superType.declarations.toList()) {
                     if (declaration !is IrFunction) continue
@@ -499,13 +494,10 @@ class RunReaderContextImplTransformer(
 
                 superType.superTypes
                     .map { it.classOrNull!!.owner }
-                    .forEach { implementFunctions(it) }
+                    .forEach { implement(it) }
             }
 
-            superTypes.forEach { superType ->
-                recordLookup(contextImpl, superType)
-                implementFunctions(superType)
-            }
+            superTypes.forEach { implement(it) }
 
             firstRound = false
         }
@@ -565,7 +557,6 @@ class RunReaderContextImplTransformer(
                 val mapType = injektContext.referenceClass(
                     FqName("kotlin.collections.Map")
                 )!!
-                bindingNode.contexts.forEach { recordLookup(context, it) }
                 bindingNode.functions.forEach { function ->
                     +irCall(
                         tmpMap.type.classOrNull!!
@@ -579,7 +570,7 @@ class RunReaderContextImplTransformer(
                         dispatchReceiver = irGet(tmpMap)
                         putValueArgument(
                             0,
-                            irCallAndRecordLookup(context, function.symbol).apply {
+                            irCall(function.symbol).apply {
                                 if (function.dispatchReceiverParameter != null)
                                     dispatchReceiver =
                                         irGetObject(function.dispatchReceiverParameter!!.type.classOrNull!!)
@@ -609,7 +600,6 @@ class RunReaderContextImplTransformer(
                 val collectionType = injektContext.referenceClass(
                     FqName("kotlin.collections.Collection")
                 )
-                bindingNode.contexts.forEach { recordLookup(context, it) }
                 bindingNode.functions.forEach { function ->
                     +irCall(
                         tmpSet.type.classOrNull!!
@@ -623,7 +613,7 @@ class RunReaderContextImplTransformer(
                         dispatchReceiver = irGet(tmpSet)
                         putValueArgument(
                             0,
-                            irCallAndRecordLookup(context, function.symbol).apply {
+                            irCall(function.symbol).apply {
                                 if (function.dispatchReceiverParameter != null)
                                     dispatchReceiver =
                                         irGetObject(function.dispatchReceiverParameter!!.type.classOrNull!!)
@@ -645,7 +635,6 @@ class RunReaderContextImplTransformer(
         context: IrClass,
         binding: GivenBindingNode
     ): ContextBindingExpression {
-        recordLookup(context, binding.function)
         return { c ->
             if (binding.explicitParameters.isNotEmpty()) {
                 irLambda(binding.key.type) { function ->

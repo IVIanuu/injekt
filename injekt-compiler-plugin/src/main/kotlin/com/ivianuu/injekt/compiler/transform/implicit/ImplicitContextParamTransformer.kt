@@ -223,9 +223,8 @@ class ImplicitContextParamTransformer(
 
         transformedClasses += clazz
 
-        val existingSignature = getExternalReaderSignature(clazz)
-
-        if (clazz.isExternalDeclaration() || existingSignature != null) {
+        if (clazz.isExternalDeclaration()) {
+            val existingSignature = getExternalReaderSignature(clazz)
             readerConstructor.copySignatureFrom(existingSignature!!)
             return clazz
         }
@@ -282,9 +281,8 @@ class ImplicitContextParamTransformer(
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
 
-        val existingSignature = getExternalReaderSignature(function)
-
-        if (function.isExternalDeclaration() || existingSignature != null) {
+        if (function.isExternalDeclaration()) {
+            val existingSignature = getExternalReaderSignature(function)
             if (existingSignature == null &&
                 !function.canUseImplicits(injektContext)
             ) return function

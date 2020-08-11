@@ -199,7 +199,7 @@ class ImplicitCallTransformer(
                     }
                 }
 
-            newIndexBuilders += NewIndexBuilder(genericContext) {
+            newIndexBuilders += NewIndexBuilder(context) {
                 copyTypeParametersFrom(genericContext)
                 superTypes += genericContext.typeWith(
                     typeArguments

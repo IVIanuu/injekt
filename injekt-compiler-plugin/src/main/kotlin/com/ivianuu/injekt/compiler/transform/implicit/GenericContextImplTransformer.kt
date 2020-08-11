@@ -60,6 +60,7 @@ import org.jetbrains.kotlin.ir.builders.irWhen
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
@@ -78,7 +79,8 @@ import org.jetbrains.kotlin.name.Name
 class GenericContextImplTransformer(
     injektContext: InjektContext,
     private val declarationGraph: DeclarationGraph,
-    private val runReaderContextImplTransformer: RunReaderContextImplTransformer
+    private val runReaderContextImplTransformer: RunReaderContextImplTransformer,
+    private val initFile: IrFile
 ) : AbstractInjektTransformer(injektContext) {
 
     override fun lower() {
@@ -152,6 +154,7 @@ class GenericContextImplTransformer(
             kind = ClassKind.OBJECT
             visibility = Visibilities.INTERNAL
         }.apply clazz@{
+            parent = file
             createImplicitParameterDeclarationWithWrappedDescriptor()
 
             addConstructor {
@@ -174,9 +177,9 @@ class GenericContextImplTransformer(
             }
         }
 
-        file.addChild(factory)
+        recordLookup(initFile, factory)
 
-        allParentInputs.forEach { recordLookup(file, it) }
+        file.addChild(factory)
 
         val implNameProvider = SimpleUniqueNameProvider()
 
@@ -294,12 +297,13 @@ class GenericContextImplTransformer(
             }
         }
 
-        fun implementFunctions(
+        fun implement(
             superType: IrClass,
             typeArguments: List<IrType>
         ) {
             if (superType in contextImpl.superTypes.map { it.classOrNull!!.owner }) return
             contextImpl.superTypes += superType.typeWith(typeArguments)
+            recordLookup(contextImpl, superType)
 
             for (declaration in superType.declarations.toList()) {
                 if (declaration !is IrFunction) continue
@@ -360,7 +364,7 @@ class GenericContextImplTransformer(
                 .map { it to it.classOrNull?.owner }
                 .forEach { (superType, clazz) ->
                     if (clazz != null)
-                        implementFunctions(
+                        implement(
                             clazz,
                             superType.typeArguments.map { it.typeOrFail }
                         )
@@ -369,14 +373,14 @@ class GenericContextImplTransformer(
 
         // It's important to implement the functions of the generic context type
         // with the correct type arguments to prevent abstract method errors
-        implementFunctions(
+        implement(
             genericContextType.classOrNull!!.owner,
             genericContextType.typeArguments.map { it.typeOrFail }
         )
 
         (declarationGraph.getAllContextImplementations(genericContextType.classOrNull!!.owner) + parentInputs)
             .forEach { superType ->
-                implementFunctions(
+                implement(
                     superType,
                     superType.defaultType.typeArguments.map { it.typeOrFail }
                 )
