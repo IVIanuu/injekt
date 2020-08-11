@@ -18,15 +18,12 @@ package com.ivianuu.injekt.compiler.transform.implicit
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.copy
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getFunctionType
-import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.isExternalDeclaration
@@ -46,10 +43,8 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
-import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.ir.remapTypeParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
@@ -134,10 +129,8 @@ import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasDefaultValue
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.statements
@@ -162,8 +155,12 @@ class ImplicitContextParamTransformer(
     private val transformedWhens = mutableMapOf<IrWhen, IrWhen>()
 
     private val newContexts = mutableListOf<IrClass>()
-    private val newSignatures = mutableListOf<IrClass>()
-    private val nameProvider = NameProvider()
+    private val newSignatureIndexBuilders = mutableListOf<NewIndexBuilder>()
+
+    private data class NewIndexBuilder(
+        val owner: IrDeclarationWithName,
+        val classBuilder: IrClass.() -> Unit
+    )
 
     fun getTransformedFunction(function: IrFunction) =
         transformFunctionIfNeeded(function)
@@ -200,12 +197,12 @@ class ImplicitContextParamTransformer(
 
         module.rewriteTransformedReferences()
 
-        newSignatures.forEach { newSignature ->
-            val parent = newSignature.parent as IrDeclarationContainer
-            if (newSignature !in parent.declarations) {
-                parent.addChild(newSignature)
-                indexer.index(newSignature, DeclarationGraph.SIGNATURE_TAG)
-            }
+        newSignatureIndexBuilders.forEach { newIndexBuilder ->
+            indexer.index(
+                newIndexBuilder.owner,
+                DeclarationGraph.SIGNATURE_TAG,
+                newIndexBuilder.classBuilder
+            )
         }
 
         newContexts.forEach { newContext ->
@@ -249,8 +246,9 @@ class ImplicitContextParamTransformer(
             }
         )
 
-        val signature = createReaderSignature(clazz, readerConstructor, null)
-        newSignatures += signature
+        newSignatureIndexBuilders += NewIndexBuilder(clazz) {
+            addReaderSignature(clazz, readerConstructor, null)
+        }
 
         readerConstructor.body = DeclarationIrBuilder(pluginContext, clazz.symbol).run {
             irBlockBody {
@@ -273,8 +271,7 @@ class ImplicitContextParamTransformer(
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
         if (function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given" ||
             function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runChildReader"
-        )
-            return function
+        ) return function
 
         if (function is IrConstructor) {
             return if (function.canUseImplicits(pluginContext)) {
@@ -332,8 +329,9 @@ class ImplicitContextParamTransformer(
             )
         }
 
-        val signature = createReaderSignature(transformedFunction, transformedFunction, null)
-        newSignatures += signature
+        newSignatureIndexBuilders += NewIndexBuilder(transformedFunction) {
+            addReaderSignature(transformedFunction, transformedFunction, null)
+        }
 
         return transformedFunction
     }
@@ -482,7 +480,7 @@ class ImplicitContextParamTransformer(
             pluginContext,
             symbols
         )
-        newSignatures += context
+        newContexts += context
 
         val oldTypeArguments = oldType.typeArguments
 
@@ -600,15 +598,18 @@ class ImplicitContextParamTransformer(
     private fun getExternalReaderSignature(owner: IrDeclarationWithName): IrFunction? {
         val declaration = if (owner is IrConstructor)
             owner.constructedClass else owner
-        return indexer.externalClassIndices(DeclarationGraph.SIGNATURE_TAG)
+        return indexer.externalClassIndex(
+            DeclarationGraph.SIGNATURE_TAG,
+            owner.descriptor.fqNameSafe
+        )
             .firstOrNull { clazz ->
                 clazz.getConstantFromAnnotationOrNull<String>(InjektFqNames.Name, 0)!! ==
                         declaration.uniqueKey()
             }
             ?.functions
             ?.single {
-                // we use startsWith because in case of inline class return types the name
-                // changes to something like signature-dj39
+                // we use startsWith because inline class function names get mangled
+                // to something like signature-dj39
                 it.name.asString().startsWith("signature")
             }
     }
@@ -623,25 +624,11 @@ class ImplicitContextParamTransformer(
         }
     }
 
-    private fun createReaderSignature(
+    private fun IrClass.addReaderSignature(
         owner: IrDeclarationWithName,
         ownerFunction: IrFunction,
         parentFunction: IrFunction?
-    ) = buildClass {
-        this.name = nameProvider.allocateForGroup(
-            getJoinedName(
-                owner.getPackageFragment()!!.fqName,
-                owner.descriptor.fqNameSafe
-                    .parent().child(owner.name.asString().asNameId())
-            ).asString() + "${owner.uniqueKey().hashCode()}Signature"
-        ).asNameId()
-        visibility = Visibilities.INTERNAL
-        kind = ClassKind.INTERFACE
-    }.apply clazz@{
-        parent = owner.file
-        createImplicitParameterDeclarationWithWrappedDescriptor()
-        addMetadataIfNotLocal()
-
+    ) {
         annotations += DeclarationIrBuilder(pluginContext, symbol)
             .irCall(symbols.signature.constructors.single())
 

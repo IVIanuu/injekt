@@ -67,8 +67,6 @@ class BindingIndexingTransformer(
                 when {
                     declaration.hasAnnotation(InjektFqNames.Given) ->
                         declarations += declaration to DeclarationGraph.BINDING_TAG
-                    declaration.hasAnnotation(InjektFqNames.RunReaderContext) ->
-                        declarations += declaration to DeclarationGraph.RUN_READER_CONTEXT_TAG
                 }
                 return super.visitClass(declaration)
             }

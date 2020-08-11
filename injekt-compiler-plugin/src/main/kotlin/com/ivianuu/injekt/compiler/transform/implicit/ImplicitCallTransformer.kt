@@ -42,7 +42,6 @@ import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
@@ -62,7 +61,6 @@ import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
@@ -87,7 +85,6 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fields
-import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.isSuspend
@@ -103,7 +100,12 @@ class ImplicitCallTransformer(
 
     private val nameProvider = NameProvider()
     private val transformedDeclarations = mutableListOf<IrDeclaration>()
-    private val newGenericContexts = mutableListOf<IrClass>()
+    private val newIndexBuilders = mutableListOf<NewIndexBuilder>()
+
+    private data class NewIndexBuilder(
+        val originatingDeclaration: IrDeclarationWithName,
+        val classBuilder: IrClass.() -> Unit
+    )
 
     override fun lower() {
         module.transformChildrenVoid(
@@ -120,9 +122,12 @@ class ImplicitCallTransformer(
             }
         )
 
-        newGenericContexts.forEach {
-            (it.parent as IrDeclarationContainer).addChild(it)
-            indexer.index(it, DeclarationGraph.GENERIC_CONTEXT_TAG)
+        newIndexBuilders.forEach {
+            indexer.index(
+                it.originatingDeclaration,
+                DeclarationGraph.GENERIC_CONTEXT_TAG,
+                it.classBuilder
+            )
         }
     }
 
@@ -195,14 +200,7 @@ class ImplicitCallTransformer(
                     }
                 }
 
-            val genericContextIndex = buildClass {
-                this.name = "${name}Index".asNameId()
-                kind = ClassKind.INTERFACE
-                visibility = Visibilities.INTERNAL
-            }.apply {
-                parent = declaration.file
-                createImplicitParameterDeclarationWithWrappedDescriptor()
-                addMetadataIfNotLocal()
+            newIndexBuilders += NewIndexBuilder(genericContext) {
                 copyTypeParametersFrom(genericContext)
                 superTypes += genericContext.typeWith(
                     typeArguments
@@ -238,8 +236,6 @@ class ImplicitCallTransformer(
                     }
                 }
             }
-
-            newGenericContexts += genericContextIndex
 
             return name.asNameId()
         }

@@ -19,5 +19,6 @@ package com.ivianuu.injekt.internal
 internal annotation class Index(
     val type: String,
     val tag: String,
-    val fqName: String
+    val fqName: String,
+    val indexIsDeclaration: Boolean
 )

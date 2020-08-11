@@ -29,7 +29,6 @@ import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
@@ -47,7 +46,7 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.builders.irTemporary
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFile
@@ -74,7 +73,12 @@ class RunReaderCallTransformer(
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val nameProvider = NameProvider()
-    private val newDeclarations = mutableListOf<IrDeclarationWithName>()
+    private val newIndexBuilders = mutableListOf<NewIndexBuilder>()
+
+    private data class NewIndexBuilder(
+        val originatingDeclaration: IrDeclarationWithName,
+        val classBuilder: IrClass.() -> Unit
+    )
 
     override fun lower() {
         module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
@@ -94,9 +98,12 @@ class RunReaderCallTransformer(
             }
         })
 
-        newDeclarations.forEach {
-            (it.parent as IrDeclarationContainer).addChild(it)
-            indexer.index(it, DeclarationGraph.RUN_READER_CONTEXT_TAG)
+        newIndexBuilders.forEach {
+            indexer.index(
+                it.originatingDeclaration,
+                DeclarationGraph.RUN_READER_CONTEXT_TAG,
+                it.classBuilder
+            )
         }
     }
 
@@ -121,13 +128,8 @@ class RunReaderCallTransformer(
             "${scope.descriptor.fqNameSafe.pathSegments()
                 .joinToString("_")}RunReaderContextFactory".asNameId()
         )
-        val index = buildClass {
-            this.name = "${name}Index".asNameId()
-            kind = ClassKind.INTERFACE
-            visibility = Visibilities.INTERNAL
-        }.apply clazz@{
-            parent = file
-            createImplicitParameterDeclarationWithWrappedDescriptor()
+
+        newIndexBuilders += NewIndexBuilder(scope) clazz@{
             superTypes += lambda.getContext()!!.defaultType
             if (metadata != null) superTypes += metadata.callingContext.defaultType
             addMetadataIfNotLocal()
@@ -163,8 +165,6 @@ class RunReaderCallTransformer(
                 }
             }
         }
-
-        newDeclarations += index
 
         val contextFactoryStub = buildClass {
             this.name = name

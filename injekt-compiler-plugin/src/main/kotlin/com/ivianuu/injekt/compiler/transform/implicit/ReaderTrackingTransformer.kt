@@ -17,9 +17,6 @@
 package com.ivianuu.injekt.compiler.transform.implicit
 
 import com.ivianuu.injekt.compiler.NameProvider
-import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
-import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getContext
@@ -32,11 +29,7 @@ import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.ir.addChild
-import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irBoolean
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -50,7 +43,6 @@ import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.expressions.IrCall
-import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
@@ -75,8 +67,13 @@ class ReaderTrackingTransformer(
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val nameProvider = NameProvider()
-    private val newReaderImpls = mutableListOf<IrClass>()
-    private val newReaderInvocations = mutableListOf<IrClass>()
+    private val newIndexBuilders = mutableListOf<NewIndexBuilder>()
+
+    private data class NewIndexBuilder(
+        val tag: String,
+        val originatingDeclaration: IrDeclarationWithName,
+        val classBuilder: IrClass.() -> Unit
+    )
 
     private sealed class Scope {
         abstract val file: IrFile
@@ -128,12 +125,10 @@ class ReaderTrackingTransformer(
             override fun visitValueParameterNew(declaration: IrValueParameter): IrStatement {
                 val defaultValue = declaration.defaultValue
                 if (defaultValue != null && defaultValue.expression.type.isTransformedReaderLambda()) {
-                    newReaderImpls += defaultValue.expression
+                    newIndexBuilders += defaultValue.expression
                         .collectReaderLambdaContextsInExpression()
                         .map { subContext ->
-                            readerImplIndex(
-                                currentScope!!.scope.scopeOwner.fqNameSafe,
-                                currentFile,
+                            readerImplIndexBuilder(
                                 declaration.type.lambdaContext!!,
                                 subContext
                             )
@@ -145,12 +140,10 @@ class ReaderTrackingTransformer(
             override fun visitFieldNew(declaration: IrField): IrStatement {
                 val initializer = declaration.initializer
                 if (initializer != null && initializer.expression.type.isTransformedReaderLambda()) {
-                    newReaderImpls += initializer.expression
+                    newIndexBuilders += initializer.expression
                         .collectReaderLambdaContextsInExpression()
                         .map { subContext ->
-                            readerImplIndex(
-                                currentScope!!.scope.scopeOwner.fqNameSafe,
-                                currentFile,
+                            readerImplIndexBuilder(
                                 declaration.type.lambdaContext!!,
                                 subContext
                             )
@@ -162,12 +155,10 @@ class ReaderTrackingTransformer(
             override fun visitVariable(declaration: IrVariable): IrStatement {
                 val initializer = declaration.initializer
                 if (initializer != null && initializer.type.isTransformedReaderLambda()) {
-                    newReaderImpls += initializer
+                    newIndexBuilders += initializer
                         .collectReaderLambdaContextsInExpression()
                         .map { subContext ->
-                            readerImplIndex(
-                                currentScope!!.scope.scopeOwner.fqNameSafe,
-                                currentFile,
+                            readerImplIndexBuilder(
                                 declaration.type.lambdaContext!!,
                                 subContext
                             )
@@ -178,12 +169,10 @@ class ReaderTrackingTransformer(
 
             override fun visitSetField(expression: IrSetField): IrExpression {
                 if (expression.symbol.owner.type.isTransformedReaderLambda()) {
-                    newReaderImpls += expression.value
+                    newIndexBuilders += expression.value
                         .collectReaderLambdaContextsInExpression()
                         .map { subContext ->
-                            readerImplIndex(
-                                currentScope!!.scope.scopeOwner.fqNameSafe,
-                                currentFile,
+                            readerImplIndexBuilder(
                                 expression.symbol.owner.type.lambdaContext!!,
                                 subContext
                             )
@@ -194,12 +183,10 @@ class ReaderTrackingTransformer(
 
             override fun visitSetVariable(expression: IrSetVariable): IrExpression {
                 if (expression.symbol.owner.type.isTransformedReaderLambda()) {
-                    newReaderImpls += expression.value
+                    newIndexBuilders += expression.value
                         .collectReaderLambdaContextsInExpression()
                         .map { subContext ->
-                            readerImplIndex(
-                                currentScope!!.scope.scopeOwner.fqNameSafe,
-                                currentFile,
+                            readerImplIndexBuilder(
                                 expression.symbol.owner.type.lambdaContext!!,
                                 subContext
                             )
@@ -211,12 +198,10 @@ class ReaderTrackingTransformer(
             override fun visitWhen(expression: IrWhen): IrExpression {
                 val result = super.visitWhen(expression) as IrWhen
                 if (expression.type.isTransformedReaderLambda()) {
-                    newReaderImpls += expression.branches
+                    newIndexBuilders += expression.branches
                         .flatMapFix { it.result.collectReaderLambdaContextsInExpression() }
                         .map { subContext ->
-                            readerImplIndex(
-                                currentScope!!.scope.scopeOwner.fqNameSafe,
-                                currentFile,
+                            readerImplIndexBuilder(
                                 expression.type.lambdaContext!!,
                                 subContext
                             )
@@ -244,12 +229,10 @@ class ReaderTrackingTransformer(
                     val lastBodyStatement =
                         declaration.body?.statements?.lastOrNull() as? IrExpression
                     if (lastBodyStatement != null && lastBodyStatement.type.isTransformedReaderLambda()) {
-                        newReaderImpls += lastBodyStatement
+                        newIndexBuilders += lastBodyStatement
                             .collectReaderLambdaContextsInExpression()
                             .map { subContext ->
-                                readerImplIndex(
-                                    currentScope!!.scope.scopeOwner.fqNameSafe,
-                                    currentFile,
+                                readerImplIndexBuilder(
                                     declaration.returnType.lambdaContext!!,
                                     subContext
                                 )
@@ -259,9 +242,7 @@ class ReaderTrackingTransformer(
                     if (declaration is IrSimpleFunction) {
                         val field = declaration.correspondingPropertySymbol?.owner?.backingField
                         if (field != null && field.type.isTransformedReaderLambda()) {
-                            newReaderImpls += readerImplIndex(
-                                currentScope!!.scope.scopeOwner.fqNameSafe,
-                                currentFile,
+                            newIndexBuilders += readerImplIndexBuilder(
                                 declaration.returnType.lambdaContext!!,
                                 field.type.lambdaContext!!
                             )
@@ -325,7 +306,7 @@ class ReaderTrackingTransformer(
                 val transformedCallee = implicitContextParamTransformer
                     .getTransformedFunction(expression.symbol.owner)
 
-                newReaderImpls += (0 until expression.valueArgumentsCount)
+                newIndexBuilders += (0 until expression.valueArgumentsCount)
                     .mapNotNull { index ->
                         expression.getValueArgument(index)
                             ?.let { index to it }
@@ -340,9 +321,7 @@ class ReaderTrackingTransformer(
                             }
                     }
                     .map { (superContext, subContext) ->
-                        readerImplIndex(
-                            currentScope!!.scope.scopeOwner.fqNameSafe,
-                            currentFile,
+                        readerImplIndexBuilder(
                             superContext,
                             subContext
                         )
@@ -356,9 +335,7 @@ class ReaderTrackingTransformer(
                     declaration.isMarkedAsImplicit(pluginContext) &&
                     declaration.overriddenSymbols.isNotEmpty()
                 ) {
-                    newReaderImpls += readerImplIndex(
-                        declaration.descriptor.fqNameSafe,
-                        currentFile,
+                    newIndexBuilders += readerImplIndexBuilder(
                         declaration.overriddenSymbols
                             .single()
                             .owner
@@ -373,25 +350,17 @@ class ReaderTrackingTransformer(
 
         })
 
-        newReaderImpls.forEach {
-            it.file.addChild(it)
-            indexer.index(it as IrDeclarationWithName, DeclarationGraph.READER_IMPL_TAG)
-        }
-
-        newReaderInvocations.forEach {
-            it.file.addChild(it)
-            indexer.index(it as IrDeclarationWithName, DeclarationGraph.READER_INVOCATION_TAG)
+        newIndexBuilders.forEach {
+            indexer.index(it.originatingDeclaration, it.tag, it.classBuilder)
         }
     }
 
     private fun visitPossibleReaderCall(call: IrCall) {
-        val index = when {
+        val indexBuilder = when {
             call.isReaderLambdaInvoke(pluginContext) -> {
                 val lambdaContext = call.dispatchReceiver!!.type.lambdaContext!!
                 val scope = currentReaderScope!!
-                readerInvocationIndex(
-                    scope.fqName,
-                    scope.file,
+                readerInvocationIndexBuilder(
                     lambdaContext,
                     scope.invocationContext,
                     true,
@@ -408,9 +377,7 @@ class ReaderTrackingTransformer(
                     call.symbol.owner.getContext()!!
                 }
                 val scope = currentReaderScope!!
-                readerInvocationIndex(
-                    scope.fqName,
-                    scope.file,
+                readerInvocationIndexBuilder(
                     calleeContext,
                     scope.invocationContext,
                     false,
@@ -419,21 +386,19 @@ class ReaderTrackingTransformer(
             }
             else -> null
         }
-        index?.let { newReaderInvocations += it }
+        indexBuilder?.let { newIndexBuilders += it }
     }
 
-    private fun readerInvocationIndex(
-        fqName: FqName,
-        file: IrFile,
+    private fun readerInvocationIndexBuilder(
         calleeContext: IrClass,
         invocationContext: IrClass,
         isLambda: Boolean,
         isRunChildReader: Boolean
-    ) = baseIndex(
-        fqName,
-        "ReaderInvocation",
-        file,
-        DeclarationIrBuilder(pluginContext, invocationContext.symbol).run {
+    ) = NewIndexBuilder(
+        DeclarationGraph.READER_INVOCATION_TAG,
+        invocationContext
+    ) {
+        annotations += DeclarationIrBuilder(pluginContext, invocationContext.symbol).run {
             irCall(
                 (if (isLambda) symbols.readerInvocation else
                     symbols.readerInvocation).constructors.single()
@@ -456,18 +421,16 @@ class ReaderTrackingTransformer(
                 )
             }
         }
-    )
+    }
 
-    private fun readerImplIndex(
-        fqName: FqName,
-        file: IrFile,
+    private fun readerImplIndexBuilder(
         superContext: IrClass,
         subContext: IrClass
-    ) = baseIndex(
-        fqName,
-        "ReaderImpl",
-        file,
-        DeclarationIrBuilder(pluginContext, subContext.symbol).run {
+    ) = NewIndexBuilder(
+        DeclarationGraph.READER_IMPL_TAG,
+        subContext
+    ) {
+        annotations += DeclarationIrBuilder(pluginContext, subContext.symbol).run {
             irCall(symbols.readerImpl.constructors.single()).apply {
                 putValueArgument(
                     0,
@@ -479,24 +442,6 @@ class ReaderTrackingTransformer(
                 )
             }
         }
-    )
-
-    private fun baseIndex(
-        fqName: FqName,
-        nameSuffix: String,
-        file: IrFile,
-        annotation: IrConstructorCall
-    ) = buildClass {
-        name = nameProvider.allocateForGroup(
-            "${fqName.pathSegments().joinToString("_")}$nameSuffix".asNameId()
-        )
-        kind = ClassKind.INTERFACE
-        visibility = Visibilities.INTERNAL
-    }.apply {
-        parent = file
-        createImplicitParameterDeclarationWithWrappedDescriptor()
-        addMetadataIfNotLocal()
-        annotations += annotation
     }
 
     private fun IrExpression.collectReaderLambdaContextsInExpression(): Set<IrClass> {
