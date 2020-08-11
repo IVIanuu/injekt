@@ -25,7 +25,6 @@ import com.ivianuu.injekt.compiler.copy
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getReaderConstructor
-import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isMarkedAsImplicit
 import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
@@ -36,10 +35,10 @@ import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
+import com.ivianuu.injekt.compiler.transform.InjektIrContext
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
@@ -143,9 +142,9 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.Variance
 
 class ImplicitContextParamTransformer(
-    pluginContext: IrPluginContext,
+    context: InjektIrContext,
     private val indexer: Indexer
-) : AbstractInjektTransformer(pluginContext) {
+) : AbstractInjektTransformer(context) {
 
     private val transformedClasses = mutableSetOf<IrClass>()
     private val transformedFields = mutableMapOf<IrField, IrField>()
@@ -193,9 +192,9 @@ class ImplicitContextParamTransformer(
     }
 
     override fun lower() {
-        module.transformChildrenVoid(transformer)
+        context.module.transformChildrenVoid(transformer)
 
-        module.rewriteTransformedReferences()
+        context.module.rewriteTransformedReferences()
 
         newSignatureIndexBuilders.forEach { newIndexBuilder ->
             indexer.index(
@@ -216,9 +215,9 @@ class ImplicitContextParamTransformer(
     private fun transformClassIfNeeded(clazz: IrClass): IrClass {
         if (clazz in transformedClasses) return clazz
 
-        val readerConstructor = clazz.getReaderConstructor(pluginContext)
+        val readerConstructor = clazz.getReaderConstructor(context)
 
-        if (!clazz.isMarkedAsImplicit(pluginContext) && readerConstructor == null) return clazz
+        if (!clazz.isMarkedAsImplicit(context) && readerConstructor == null) return clazz
 
         if (readerConstructor == null) return clazz
 
@@ -250,7 +249,7 @@ class ImplicitContextParamTransformer(
             addReaderSignature(clazz, readerConstructor, null)
         }
 
-        readerConstructor.body = DeclarationIrBuilder(pluginContext, clazz.symbol).run {
+        readerConstructor.body = DeclarationIrBuilder(context, clazz.symbol).run {
             irBlockBody {
                 readerConstructor.body?.statements?.forEach {
                     +it
@@ -274,7 +273,7 @@ class ImplicitContextParamTransformer(
         ) return function
 
         if (function is IrConstructor) {
-            return if (function.canUseImplicits(pluginContext)) {
+            return if (function.canUseImplicits(context)) {
                 transformClassIfNeeded(function.constructedClass)
                 function
             } else function
@@ -287,7 +286,7 @@ class ImplicitContextParamTransformer(
 
         if (function.isExternalDeclaration() || existingSignature != null) {
             if (existingSignature == null &&
-                !function.canUseImplicits(pluginContext)
+                !function.canUseImplicits(context)
             ) return function
             val transformedFunction = function.copyAsReader()
             transformedFunctions[function] = transformedFunction
@@ -295,7 +294,7 @@ class ImplicitContextParamTransformer(
             return transformedFunction
         }
 
-        var needsTransform = function.canUseImplicits(pluginContext)
+        var needsTransform = function.canUseImplicits(context)
 
         if (!needsTransform) {
             val returnType = function.returnType
@@ -322,7 +321,7 @@ class ImplicitContextParamTransformer(
                 createNewReaderLambdaType(transformedFunction.returnType, transformedFunction)
         }
 
-        if (function.canUseImplicits(pluginContext)) {
+        if (function.canUseImplicits(context)) {
             transformImplicitFunction(
                 owner = transformedFunction,
                 ownerFunction = transformedFunction
@@ -345,7 +344,7 @@ class ImplicitContextParamTransformer(
             if (owner.visibility == Visibilities.LOCAL && owner.parent is IrFunction)
                 owner.parent as IrFunction else null
 
-        val context = createContext(owner, parentFunction, pluginContext, symbols)
+        val context = createContext(owner, parentFunction, context)
         newContexts += context
         val contextParameter = ownerFunction.addContextParameter(context)
         onContextParameterCreated(contextParameter)
@@ -477,16 +476,15 @@ class ImplicitContextParamTransformer(
         val context = createContext(
             declaration,
             null,
-            pluginContext,
-            symbols
+            context
         )
         newContexts += context
 
         val oldTypeArguments = oldType.typeArguments
 
         return (if (oldType.isSuspendFunction())
-            pluginContext.tmpSuspendFunction(oldTypeArguments.size) else
-            pluginContext.tmpFunction(oldTypeArguments.size))
+            this.context.tmpSuspendFunction(oldTypeArguments.size) else
+            this.context.tmpFunction(oldTypeArguments.size))
             .defaultType
             .let {
                 IrSimpleTypeImpl(
@@ -559,9 +557,9 @@ class ImplicitContextParamTransformer(
 
     private fun IrFunction.copyAsReader(): IrFunction {
         return copy(
-            pluginContext
+            context
         ).apply {
-            pluginContext.irTrace.record(
+            context.irTrace.record(
                 InjektWritableSlices.IS_TRANSFORMED_IMPLICIT_FUNCTION,
                 this,
                 true
@@ -571,8 +569,8 @@ class ImplicitContextParamTransformer(
                 annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
             ) {
                 val name = JvmAbi.getterName(descriptor.correspondingProperty.name.identifier)
-                annotations += DeclarationIrBuilder(pluginContext, symbol)
-                    .jvmNameAnnotation(name, pluginContext)
+                annotations += DeclarationIrBuilder(context, symbol)
+                    .jvmNameAnnotation(name, context)
                 correspondingPropertySymbol?.owner?.getter = this
             }
 
@@ -580,8 +578,8 @@ class ImplicitContextParamTransformer(
                 annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
             ) {
                 val name = JvmAbi.setterName(descriptor.correspondingProperty.name.identifier)
-                annotations += DeclarationIrBuilder(pluginContext, symbol)
-                    .jvmNameAnnotation(name, pluginContext)
+                annotations += DeclarationIrBuilder(context, symbol)
+                    .jvmNameAnnotation(name, context)
                 correspondingPropertySymbol?.owner?.setter = this
             }
 
@@ -629,12 +627,12 @@ class ImplicitContextParamTransformer(
         ownerFunction: IrFunction,
         parentFunction: IrFunction?
     ) {
-        annotations += DeclarationIrBuilder(pluginContext, symbol)
-            .irCall(symbols.signature.constructors.single())
+        annotations += DeclarationIrBuilder(context, symbol)
+            .irCall(context.injektSymbols.signature.constructors.single())
 
-        annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+        annotations += DeclarationIrBuilder(context, symbol).run {
             irCall(
-                symbols.name.constructors.single()
+                this@ImplicitContextParamTransformer.context.injektSymbols.name.constructors.single()
             ).apply {
                 putValueArgument(
                     0,
@@ -679,12 +677,12 @@ class ImplicitContextParamTransformer(
                             ) else it
                         },
                     defaultValue = if (it.hasDefaultValue()) DeclarationIrBuilder(
-                        pluginContext,
+                        context,
                         it.symbol
                     ).run {
                         irExprBody(
                             irCall(
-                                pluginContext.referenceFunctions(
+                                this@ImplicitContextParamTransformer.context.referenceFunctions(
                                     FqName("com.ivianuu.injekt.internal.injektIntrinsic")
                                 )
                                     .single()
@@ -713,7 +711,7 @@ class ImplicitContextParamTransformer(
                 return if (transformed in transformedFunctions.values) IrFunctionExpressionImpl(
                     result.startOffset,
                     result.endOffset,
-                    result.function.getFunctionType(pluginContext),
+                    result.function.getFunctionType(context),
                     result.function,
                     result.origin
                 )
@@ -726,7 +724,7 @@ class ImplicitContextParamTransformer(
                 return if (transformed in transformedFunctions.values) IrFunctionExpressionImpl(
                     result.startOffset,
                     result.endOffset,
-                    result.symbol.owner.getFunctionType(pluginContext),
+                    result.symbol.owner.getFunctionType(context),
                     result.symbol.owner as IrSimpleFunction,
                     result.origin!!
                 )
@@ -746,8 +744,8 @@ class ImplicitContextParamTransformer(
                 )
                 else result)
                     .also {
-                        if (it.isReaderLambdaInvoke(pluginContext)) {
-                            pluginContext.irTrace.record(
+                        if (it.isReaderLambdaInvoke(context)) {
+                            context.irTrace.record(
                                 InjektWritableSlices.IS_READER_LAMBDA_INVOKE,
                                 it,
                                 true

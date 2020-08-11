@@ -31,7 +31,6 @@ import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import com.ivianuu.injekt.compiler.uniqueKey
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
@@ -69,13 +68,13 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransformer(pluginContext) {
+class EffectTransformer(context: InjektIrContext) : AbstractInjektTransformer(context) {
 
     override fun lower() {
         val classes = mutableListOf<IrClass>()
         val functions = mutableListOf<IrFunction>()
 
-        module.transformChildrenVoid(object : IrElementTransformerVoid() {
+        context.module.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitClass(declaration: IrClass): IrStatement {
                 if (declaration.hasAnnotatedAnnotations(InjektFqNames.Effect)) {
                     classes += declaration
@@ -137,7 +136,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             visibility = Visibilities.PUBLIC
         }.apply {
             body = DeclarationIrBuilder(
-                pluginContext,
+                context,
                 symbol
             ).irBlockBody {
                 +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
@@ -181,7 +180,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                     annotations += effectFunction.annotations
                         .map { it.deepCopyWithSymbols() }
 
-                    body = DeclarationIrBuilder(pluginContext, symbol).run {
+                    body = DeclarationIrBuilder(context, symbol).run {
                         irExprBody(
                             irCallAndRecordLookup(this@function, effectFunction.symbol).apply {
                                 dispatchReceiver =
@@ -213,7 +212,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
             visibility = Visibilities.PUBLIC
         }.apply {
             body = DeclarationIrBuilder(
-                pluginContext,
+                context,
                 symbol
             ).irBlockBody {
                 +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
@@ -229,8 +228,8 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
         val parametersSize = function.valueParameters.size
 
         val functionType =
-            (if (function.isSuspend) pluginContext.tmpSuspendFunction(parametersSize)
-            else pluginContext.tmpFunction(parametersSize))
+            (if (function.isSuspend) context.tmpSuspendFunction(parametersSize)
+            else context.tmpFunction(parametersSize))
                 .typeWith(
                     function.valueParameters
                         .take(parametersSize)
@@ -240,20 +239,20 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                     if (function.hasAnnotation(FqName("androidx.compose.runtime.Composable"))) {
                         it.copy(
                             annotations = it.annotations + DeclarationIrBuilder(
-                                pluginContext,
+                                context,
                                 function.symbol
                             ).irCall(
-                                pluginContext.referenceConstructors(FqName("androidx.compose.runtime.Composable"))
+                                context.referenceConstructors(FqName("androidx.compose.runtime.Composable"))
                                     .single()
                             )
                         )
                     } else if (function.hasAnnotation(FqName("androidx.compose.Composable"))) {
                         it.copy(
                             annotations = it.annotations + DeclarationIrBuilder(
-                                pluginContext,
+                                context,
                                 function.symbol
                             ).irCall(
-                                pluginContext.referenceConstructors(FqName("androidx.compose.Composable"))
+                                context.referenceConstructors(FqName("androidx.compose.Composable"))
                                     .single()
                             )
                         )
@@ -264,10 +263,10 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                 .let {
                     it.copy(
                         annotations = it.annotations + DeclarationIrBuilder(
-                            pluginContext,
+                            context,
                             function.symbol
                         ).run {
-                            irCall(symbols.qualifier.constructors.single()).apply {
+                            irCall(this@EffectTransformer.context.injektSymbols.qualifier.constructors.single()).apply {
                                 putValueArgument(
                                     0,
                                     irString(function.uniqueKey())
@@ -282,11 +281,11 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
 
             dispatchReceiverParameter = thisReceiver!!.copyTo(this)
 
-            DeclarationIrBuilder(pluginContext, symbol).run {
-                annotations += irCall(symbols.given.constructors.single())
+            DeclarationIrBuilder(context, symbol).run {
+                annotations += irCall(this@EffectTransformer.context.injektSymbols.given.constructors.single())
             }
 
-            body = DeclarationIrBuilder(pluginContext, symbol).run {
+            body = DeclarationIrBuilder(context, symbol).run {
                 irExprBody(
                     irLambda(functionType) {
                         irCallAndRecordLookup(this@function, function.symbol).apply {
@@ -334,7 +333,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                     annotations += effectFunction.annotations
                         .map { it.deepCopyWithSymbols() }
 
-                    body = DeclarationIrBuilder(pluginContext, symbol).run {
+                    body = DeclarationIrBuilder(context, symbol).run {
                         irExprBody(
                             irCallAndRecordLookup(this@function, effectFunction.symbol).apply {
                                 dispatchReceiver =

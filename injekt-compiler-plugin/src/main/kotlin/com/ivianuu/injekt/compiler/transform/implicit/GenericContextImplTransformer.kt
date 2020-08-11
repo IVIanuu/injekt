@@ -17,7 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.implicit
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.NameProvider
+import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
 import com.ivianuu.injekt.compiler.addFile
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
@@ -29,10 +29,10 @@ import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
+import com.ivianuu.injekt.compiler.transform.InjektIrContext
 import com.ivianuu.injekt.compiler.transform.runreader.RunReaderContextImplTransformer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
@@ -73,12 +73,13 @@ import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 
 class GenericContextImplTransformer(
-    pluginContext: IrPluginContext,
+    context: InjektIrContext,
     private val declarationGraph: DeclarationGraph,
     private val runReaderContextImplTransformer: RunReaderContextImplTransformer
-) : AbstractInjektTransformer(pluginContext) {
+) : AbstractInjektTransformer(context) {
 
     override fun lower() {
         declarationGraph.genericContexts.forEach { index ->
@@ -139,8 +140,8 @@ class GenericContextImplTransformer(
         name: String,
         functionMap: Map<String, String>
     ) {
-        val file = module.addFile(
-            pluginContext,
+        val file = context.module.addFile(
+            context,
             delegateContext.getPackageFragment()!!
                 .fqName
                 .child(name.asNameId())
@@ -159,7 +160,7 @@ class GenericContextImplTransformer(
                 visibility = Visibilities.PUBLIC
             }.apply {
                 body = DeclarationIrBuilder(
-                    pluginContext,
+                    context,
                     symbol
                 ).irBlockBody {
                     +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
@@ -177,13 +178,13 @@ class GenericContextImplTransformer(
 
         allParentInputs.forEach { recordLookup(file, it) }
 
-        val implNameProvider = NameProvider()
+        val implNameProvider = SimpleUniqueNameProvider()
 
         val contextImplsWithParentInputs = allParentInputs.map { parentInputs ->
             generateGenericContextImpl(
                 delegateContext,
                 genericContextType,
-                implNameProvider.allocateForGroup("Impl"),
+                implNameProvider("Impl".asNameId()),
                 factory,
                 functionMap,
                 parentInputs
@@ -203,7 +204,7 @@ class GenericContextImplTransformer(
                 delegateContext.defaultType
             )
 
-            body = DeclarationIrBuilder(pluginContext, symbol).run {
+            body = DeclarationIrBuilder(context, symbol).run {
                 fun createContextImpl(contextImpl: IrClass, parent: IrClass): IrExpression {
                     return irCall(contextImpl.constructors.single()).apply {
                         putValueArgument(
@@ -226,7 +227,7 @@ class GenericContextImplTransformer(
                                 )
                             } + irElseBranch(
                                 irCall(
-                                    pluginContext.referenceFunctions(
+                                    this@GenericContextImplTransformer.context.referenceFunctions(
                                         FqName("kotlin.error")
                                     ).single()
                                 ).apply {
@@ -246,13 +247,13 @@ class GenericContextImplTransformer(
     private fun generateGenericContextImpl(
         delegateContext: IrClass,
         genericContextType: IrType,
-        name: String,
+        name: Name,
         irParent: IrDeclarationParent,
         functionMap: Map<String, String>,
         parentInputs: IrClass
     ): IrClass {
         val contextImpl = buildClass {
-            this.name = name.asNameId()
+            this.name = name
             visibility = Visibilities.INTERNAL
         }.apply clazz@{
             parent = irParent
@@ -275,7 +276,7 @@ class GenericContextImplTransformer(
             )
 
             body = DeclarationIrBuilder(
-                pluginContext,
+                context,
                 symbol
             ).irBlockBody {
                 +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
@@ -304,7 +305,7 @@ class GenericContextImplTransformer(
                 if (declaration !is IrFunction) continue
                 if (declaration is IrConstructor) continue
                 if (declaration.isFakeOverride) continue
-                if (declaration.dispatchReceiverParameter?.type == irBuiltIns.anyType) continue
+                if (declaration.dispatchReceiverParameter?.type == context.irBuiltIns.anyType) continue
                 val existingDeclaration = contextImpl.functions.firstOrNull {
                     it.name == declaration.name
                 }
@@ -325,7 +326,7 @@ class GenericContextImplTransformer(
                     overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
                     addMetadataIfNotLocal()
                     body = DeclarationIrBuilder(
-                        pluginContext,
+                        context,
                         symbol
                     ).run {
                         val finalCallee = delegateContext.getAllFunctions()

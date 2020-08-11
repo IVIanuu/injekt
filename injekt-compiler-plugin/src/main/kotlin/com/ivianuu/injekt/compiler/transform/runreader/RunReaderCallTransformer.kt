@@ -17,18 +17,17 @@
 package com.ivianuu.injekt.compiler.transform.runreader
 
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.NameProvider
+import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getContext
-import com.ivianuu.injekt.compiler.irTrace
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
+import com.ivianuu.injekt.compiler.transform.InjektIrContext
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
@@ -68,11 +67,10 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class RunReaderCallTransformer(
-    pluginContext: IrPluginContext,
+    context: InjektIrContext,
     private val indexer: Indexer
-) : AbstractInjektTransformer(pluginContext) {
+) : AbstractInjektTransformer(context) {
 
-    private val nameProvider = NameProvider()
     private val newIndexBuilders = mutableListOf<NewIndexBuilder>()
 
     private data class NewIndexBuilder(
@@ -81,7 +79,7 @@ class RunReaderCallTransformer(
     )
 
     override fun lower() {
-        module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
+        context.module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
                 expression.transformChildrenVoid(this)
                 return if (expression.symbol.descriptor.fqNameSafe.asString() ==
@@ -122,11 +120,12 @@ class RunReaderCallTransformer(
                 "com.ivianuu.injekt.runChildReader"
 
         val metadata = if (isChild)
-            pluginContext.irTrace[InjektWritableSlices.RUN_CHILD_READER_METADATA, call]!! else null
+            context.irTrace[InjektWritableSlices.RUN_CHILD_READER_METADATA, call]!! else null
 
-        val name = nameProvider.allocateForGroup(
+        val name = context.uniqueClassNameProvider(
             "${scope.descriptor.fqNameSafe.pathSegments()
-                .joinToString("_")}RunReaderContextFactory".asNameId()
+                .joinToString("_")}RunReaderContextFactory".asNameId(),
+            file.fqName
         )
 
         newIndexBuilders += NewIndexBuilder(scope) clazz@{
@@ -135,8 +134,8 @@ class RunReaderCallTransformer(
             addMetadataIfNotLocal()
             if (scope is IrTypeParametersContainer)
                 copyTypeParametersFrom(scope as IrTypeParametersContainer)
-            annotations += DeclarationIrBuilder(pluginContext, symbol).run {
-                irCall(symbols.runReaderContext.constructors.single()).apply {
+            annotations += DeclarationIrBuilder(context, symbol).run {
+                irCall(this@RunReaderCallTransformer.context.injektSymbols.runReaderContext.constructors.single()).apply {
                     putValueArgument(
                         0,
                         irString(file.fqName.child(name).asString())
@@ -150,16 +149,16 @@ class RunReaderCallTransformer(
 
             addFunction {
                 this.name = "inputs".asNameId()
-                returnType = irBuiltIns.unitType
+                returnType = this@RunReaderCallTransformer.context.irBuiltIns.unitType
                 modality = Modality.ABSTRACT
             }.apply {
                 dispatchReceiverParameter = thisReceiver!!.copyTo(this)
                 parent = this@clazz
                 addMetadataIfNotLocal()
-                val parameterNameProvider = NameProvider()
+                val parameterUniqueNameProvider = SimpleUniqueNameProvider()
                 inputs.forEach {
                     addValueParameter(
-                        parameterNameProvider.allocateForGroup(it.type.uniqueTypeName()).asString(),
+                        parameterUniqueNameProvider(it.type.uniqueTypeName()).asString(),
                         it.type
                     )
                 }
@@ -176,7 +175,7 @@ class RunReaderCallTransformer(
             parent = IrExternalPackageFragmentImpl(
                 IrExternalPackageFragmentSymbolImpl(
                     EmptyPackageFragmentDescriptor(
-                        pluginContext.moduleDescriptor,
+                        context.moduleDescriptor,
                         scope.getPackageFragment()!!.fqName
                     )
                 ),
@@ -206,7 +205,7 @@ class RunReaderCallTransformer(
             }
         }
 
-        return DeclarationIrBuilder(pluginContext, call.symbol).run {
+        return DeclarationIrBuilder(context, call.symbol).run {
             irBlock {
                 val rawContextExpression = irCall(createFunctionStub).apply {
                     dispatchReceiver = irGetObject(contextFactoryStub.symbol)

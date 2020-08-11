@@ -17,8 +17,6 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.irTrace
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
@@ -28,11 +26,11 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
 // todo once we can use FIR
-class TmpMetadataPatcher(pluginContext: IrPluginContext) :
-    AbstractInjektTransformer(pluginContext) {
+class TmpMetadataPatcher(context: InjektIrContext) :
+    AbstractInjektTransformer(context) {
 
     override fun lower() {
-        module.transformChildrenVoid(object : IrElementTransformerVoid() {
+        context.module.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFile(declaration: IrFile): IrFile {
                 (declaration as IrFileImpl).metadata =
                     MetadataSource.File(
@@ -40,7 +38,7 @@ class TmpMetadataPatcher(pluginContext: IrPluginContext) :
                             .filterIsInstance<IrDeclarationWithName>()
                             .filter {
                                 (it !is IrSimpleFunction ||
-                                        pluginContext.irTrace[InjektWritableSlices.IS_TRANSFORMED_IMPLICIT_FUNCTION, it] != true)
+                                        context.irTrace[InjektWritableSlices.IS_TRANSFORMED_IMPLICIT_FUNCTION, it] != true)
                             })
                             .map { it.descriptor })
                             .distinct()

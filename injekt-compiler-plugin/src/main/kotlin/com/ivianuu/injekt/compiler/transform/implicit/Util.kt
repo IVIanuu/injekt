@@ -17,16 +17,14 @@
 package com.ivianuu.injekt.compiler.transform.implicit
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getJoinedName
+import com.ivianuu.injekt.compiler.transform.InjektIrContext
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.uniqueKey
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -48,22 +46,21 @@ import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-private val nameProvider = NameProvider()
-
 fun createContext(
     owner: IrDeclarationWithName,
     parentFunction: IrFunction?,
-    pluginContext: IrPluginContext,
-    symbols: InjektSymbols
+    context: InjektIrContext
 ) = buildClass {
     kind = ClassKind.INTERFACE
-    name = nameProvider.allocateForGroup(
-        getJoinedName(
+    name = context.uniqueClassNameProvider(
+        (getJoinedName(
             owner.getPackageFragment()!!.fqName,
             owner.descriptor.fqNameSafe
                 .parent().child(owner.name.asString().asNameId())
-        ).asString() + "${owner.uniqueKey().hashCode()}Context"
-    ).asNameId()
+        ).asString() + "${owner.uniqueKey().hashCode()}Context")
+            .asNameId(),
+        owner.getPackageFragment()!!.fqName
+    )
     visibility = Visibilities.INTERNAL
 }.apply {
     parent = owner.file
@@ -72,11 +69,11 @@ fun createContext(
     if (owner is IrTypeParametersContainer) copyTypeParametersFrom(owner)
     //parentFunction?.let { copyTypeParametersFrom(it) }
 
-    annotations += DeclarationIrBuilder(pluginContext, symbol)
-        .irCall(symbols.context.constructors.single())
+    annotations += DeclarationIrBuilder(context, symbol)
+        .irCall(context.injektSymbols.context.constructors.single())
 
-    annotations += DeclarationIrBuilder(pluginContext, symbol).run {
-        irCall(symbols.name.constructors.single()).apply {
+    annotations += DeclarationIrBuilder(context, symbol).run {
+        irCall(context.injektSymbols.name.constructors.single()).apply {
             putValueArgument(
                 0,
                 irString(owner.uniqueKey())

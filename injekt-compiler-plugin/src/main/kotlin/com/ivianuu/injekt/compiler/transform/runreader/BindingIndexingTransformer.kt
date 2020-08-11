@@ -20,7 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import com.ivianuu.injekt.compiler.transform.InjektIrContext
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
@@ -35,13 +35,13 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
 class BindingIndexingTransformer(
     private val indexer: Indexer,
-    pluginContext: IrPluginContext
-) : AbstractInjektTransformer(pluginContext) {
+    context: InjektIrContext
+) : AbstractInjektTransformer(context) {
 
     override fun lower() {
         val declarations = mutableSetOf<Pair<IrDeclarationWithName, String>>()
 
-        module.transformChildrenVoid(object : IrElementTransformerVoid() {
+        context.module.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitConstructor(declaration: IrConstructor): IrStatement {
                 if (declaration.hasAnnotation(InjektFqNames.Given)) {
                     declarations += declaration.constructedClass to DeclarationGraph.BINDING_TAG

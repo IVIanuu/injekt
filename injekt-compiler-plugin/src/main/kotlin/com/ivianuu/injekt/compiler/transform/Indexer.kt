@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.NameProvider
 import com.ivianuu.injekt.compiler.addFile
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
@@ -27,9 +26,7 @@ import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.recordLookup
-import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.compiler.uniqueKey
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -53,13 +50,13 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.measureTimeMillisWithResult
 
 class Indexer(
-    private val pluginContext: IrPluginContext,
+    private val context: InjektIrContext,
     private val module: IrModuleFragment,
     private val symbols: InjektSymbols
 ) {
 
     private val externalIndices by lazy {
-        val memberScope = pluginContext.moduleDescriptor.getPackage(InjektFqNames.IndexPackage)
+        val memberScope = context.moduleDescriptor.getPackage(InjektFqNames.IndexPackage)
             .memberScope
 
         (memberScope.getClassifierNames() ?: emptySet())
@@ -69,7 +66,7 @@ class Indexer(
                     NoLookupLocation.FROM_BACKEND
                 )
             }
-            .map { pluginContext.referenceClass(it.fqNameSafe)!!.owner }
+            .map { context.referenceClass(it.fqNameSafe)!!.owner }
             .map {
                 Index(
                     it,
@@ -105,7 +102,7 @@ class Indexer(
                 .filter { it.type == "class" }
                 .filter { it.tag == tag }
                 .mapNotNull {
-                    if (it.indexIsDeclaration) it.indexClass else pluginContext.referenceClass(it.fqName)?.owner
+                    if (it.indexIsDeclaration) it.indexClass else context.referenceClass(it.fqName)?.owner
                 }
         }.let {
             println("computing external classes took ${it.first} ms")
@@ -122,7 +119,7 @@ class Indexer(
             .filter { it.tag == tag }
             .filter { it.fqName == fqName }
             .mapNotNull {
-                if (it.indexIsDeclaration) it.indexClass else pluginContext.referenceClass(it.fqName)?.owner
+                if (it.indexIsDeclaration) it.indexClass else context.referenceClass(it.fqName)?.owner
             }
     }
 
@@ -142,7 +139,7 @@ class Indexer(
                 .filter { it.type == "function" }
                 .filter { it.tag == tag }
                 .flatMapFix { index ->
-                    pluginContext.referenceFunctions(index.fqName)
+                    context.referenceFunctions(index.fqName)
                         .map { it.owner }
                 }
         }.let {
@@ -167,7 +164,7 @@ class Indexer(
                 .filter { it.type == "property" }
                 .filter { it.tag == tag }
                 .flatMapFix { index ->
-                    pluginContext.referenceProperties(index.fqName)
+                    context.referenceProperties(index.fqName)
                         .map { it.owner }
                 }
         }.let {
@@ -186,24 +183,22 @@ class Indexer(
 
     private val internalDeclarationsByIndices = mutableMapOf<Index, IrDeclaration>()
 
-    private val nameProvider = NameProvider()
-
     fun index(
         originatingDeclaration: IrDeclarationWithName,
         tag: String,
         classBuilder: IrClass.() -> Unit
     ) {
-        val name = nameProvider.allocateForGroup(
+        val name = context.uniqueClassNameProvider(
             (getJoinedName(
                 originatingDeclaration.getPackageFragment()!!.fqName,
                 originatingDeclaration.descriptor.fqNameSafe
                     .parent().child(originatingDeclaration.name.asString().asNameId())
-            ).asString() + "${originatingDeclaration.uniqueKey().hashCode()}${tag}Index")
-                .removeIllegalChars()
-                .asNameId()
+            ).asString() + "${originatingDeclaration.uniqueKey().hashCode()}Index")
+                .asNameId(),
+            InjektFqNames.IndexPackage
         )
         module.addFile(
-            pluginContext,
+            context,
             InjektFqNames.IndexPackage
                 .child(name)
         ).apply file@{
@@ -225,7 +220,7 @@ class Indexer(
                         originatingDeclaration.descriptor.fqNameSafe,
                         true
                     )
-                    annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+                    annotations += DeclarationIrBuilder(context, symbol).run {
                         irCall(symbols.index.constructors.single()).apply {
                             putValueArgument(
                                 0,
@@ -257,17 +252,17 @@ class Indexer(
         declaration: IrDeclarationWithName,
         tag: String
     ) {
-        val name = nameProvider.allocateForGroup(
+        val name = context.uniqueClassNameProvider(
             (getJoinedName(
                 declaration.getPackageFragment()!!.fqName,
                 declaration.descriptor.fqNameSafe
                     .parent().child(declaration.name.asString().asNameId())
             ).asString() + "${declaration.uniqueKey().hashCode()}Index")
-                .removeIllegalChars()
-                .asNameId()
+                .asNameId(),
+            InjektFqNames.IndexPackage
         )
         module.addFile(
-            pluginContext,
+            context,
             InjektFqNames.IndexPackage
                 .child(name)
         ).apply {
@@ -295,7 +290,7 @@ class Indexer(
 
                     createImplicitParameterDeclarationWithWrappedDescriptor()
                     addMetadataIfNotLocal()
-                    annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+                    annotations += DeclarationIrBuilder(context, symbol).run {
                         irCall(symbols.index.constructors.single()).apply {
                             putValueArgument(
                                 0,
