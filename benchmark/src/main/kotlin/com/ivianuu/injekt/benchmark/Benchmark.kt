@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.benchmark
 
 import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
