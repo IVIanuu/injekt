@@ -238,8 +238,6 @@ class Indexer(
             packageFqName
         )
 
-        println("index tag '$finalTag' key '$finalKey' p '$packageFqName' name '$name'")
-
         module.addFile(
             injektContext,
             packageFqName
