@@ -21,25 +21,15 @@ import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getContextValueParameter
-import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.isExternalDeclaration
-import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.uniqueTypeName
-import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
-import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irGetObject
-import org.jetbrains.kotlin.ir.builders.irInt
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrField
-import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
-import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
-import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.render
@@ -159,70 +149,11 @@ class BindingGraph(
                         scopingFunction?.getContext()
                     ),
                     external = function.isExternalDeclaration(),
-                    createExpression = { parametersMap, context ->
-                        val call = if (function is IrConstructor) {
-                            IrConstructorCallImpl(
-                                UNDEFINED_OFFSET,
-                                UNDEFINED_OFFSET,
-                                function.returnType,
-                                function.symbol,
-                                function.constructedClass.typeParameters.size,
-                                function.typeParameters.size,
-                                function.valueParameters.size
-                            )
-                        } else {
-                            IrCallImpl(
-                                UNDEFINED_OFFSET,
-                                UNDEFINED_OFFSET,
-                                function.returnType,
-                                function.symbol,
-                                function.typeParameters.size,
-                                function.valueParameters.size
-                            )
-                        }
-                        call.apply {
-                            if (function.dispatchReceiverParameter != null) {
-                                dispatchReceiver = irGetObject(
-                                    function.dispatchReceiverParameter!!.type.classOrNull!!
-                                )
-                            }
-
-                            parametersMap.values.forEachIndexed { index, expression ->
-                                putValueArgument(
-                                    index,
-                                    expression()
-                                )
-                            }
-
-                            putValueArgument(valueArgumentsCount - 1, context())
-                        }
-
-                        if (scopingFunction != null) {
-                            irCall(scopingFunction).apply {
-                                dispatchReceiver = irGetObject(scoping.symbol)
-                                putValueArgument(
-                                    0,
-                                    irInt(key.hashCode())
-                                )
-                                putValueArgument(
-                                    1,
-                                    irLambda(
-                                        this@BindingGraph.injektContext.tmpFunction(0)
-                                            .typeWith(key.type)
-                                    ) { call }
-                                )
-                                putValueArgument(
-                                    2,
-                                    context()
-                                )
-                            }
-                        } else {
-                            call
-                        }
-                    },
                     explicitParameters = explicitParameters,
                     origin = function.descriptor.fqNameSafe,
-                    function = function
+                    function = function,
+                    scopingFunction = scopingFunction,
+                    scoping = scoping
                 )
             }
 

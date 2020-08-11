@@ -27,6 +27,7 @@ import com.ivianuu.injekt.compiler.getAllFunctions
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.recordLookup
+import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
@@ -57,6 +58,7 @@ import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irInt
 import org.jetbrains.kotlin.ir.builders.irIs
 import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irSetField
@@ -68,11 +70,16 @@ import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
@@ -636,23 +643,83 @@ class RunReaderContextImplTransformer(
         binding: GivenBindingNode
     ): ContextBindingExpression {
         return { c ->
-            if (binding.explicitParameters.isNotEmpty()) {
-                irLambda(binding.key.type) { function ->
-                    binding.createExpression(
-                        this,
-                        binding.explicitParameters
-                            .associateWith { parameter ->
-                                {
-                                    irGet(
-                                        function.valueParameters[parameter.index]
-                                    )
-                                }
-                            },
-                        c
+            fun createExpression(parametersMap: Map<IrValueParameter, () -> IrExpression?>): IrExpression {
+                val call = if (binding.function is IrConstructor) {
+                    IrConstructorCallImpl(
+                        UNDEFINED_OFFSET,
+                        UNDEFINED_OFFSET,
+                        binding.function.returnType,
+                        binding.function.symbol,
+                        binding.function.constructedClass.typeParameters.size,
+                        binding.function.typeParameters.size,
+                        binding.function.valueParameters.size
+                    )
+                } else {
+                    IrCallImpl(
+                        UNDEFINED_OFFSET,
+                        UNDEFINED_OFFSET,
+                        binding.function.returnType,
+                        binding.function.symbol,
+                        binding.function.typeParameters.size,
+                        binding.function.valueParameters.size
                     )
                 }
+                call.apply {
+                    if (binding.function.dispatchReceiverParameter != null) {
+                        dispatchReceiver = irGetObject(
+                            binding.function.dispatchReceiverParameter!!.type.classOrNull!!
+                        )
+                    }
+
+                    parametersMap.values.forEachIndexed { index, expression ->
+                        putValueArgument(
+                            index,
+                            expression()
+                        )
+                    }
+
+                    putValueArgument(valueArgumentsCount - 1, c())
+                }
+
+                return if (binding.scopingFunction != null) {
+                    irCall(binding.scopingFunction).apply {
+                        dispatchReceiver = irGetObject(binding.scoping!!.symbol)
+                        putValueArgument(
+                            0,
+                            irInt(binding.key.hashCode())
+                        )
+                        putValueArgument(
+                            1,
+                            irLambda(
+                                injektContext.tmpFunction(0)
+                                    .typeWith(binding.key.type)
+                            ) { call }
+                        )
+                        putValueArgument(
+                            2,
+                            c()
+                        )
+                    }
+                } else {
+                    call
+                }
+            }
+
+            if (binding.explicitParameters.isNotEmpty()) {
+                irLambda(binding.key.type) { function ->
+                    val parametersMap = binding.explicitParameters
+                        .associateWith { parameter ->
+                            {
+                                irGet(
+                                    function.valueParameters[parameter.index]
+                                )
+                            }
+                        }
+
+                    createExpression(parametersMap)
+                }
             } else {
-                binding.createExpression(this, emptyMap(), c)
+                createExpression(emptyMap())
             }
         }
     }

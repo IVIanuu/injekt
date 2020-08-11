@@ -19,12 +19,10 @@ package com.ivianuu.injekt.compiler.transform.runreader
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.isTypeParameter
-import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
-import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
 import org.jetbrains.kotlin.ir.types.IrErrorType
 import org.jetbrains.kotlin.ir.types.IrSimpleType
@@ -46,9 +44,10 @@ class GivenBindingNode(
     contexts: List<IrClass>,
     origin: FqName?,
     external: Boolean,
-    val createExpression: IrBuilderWithScope.(Map<IrValueParameter, () -> IrExpression?>, () -> IrExpression) -> IrExpression,
     val explicitParameters: List<IrValueParameter>,
-    val function: IrFunction
+    val function: IrFunction,
+    val scopingFunction: IrFunction?,
+    val scoping: IrClass?
 ) : BindingNode(key, contexts, origin, external)
 
 class InputBindingNode(
