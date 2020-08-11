@@ -27,6 +27,7 @@ import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
+import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
@@ -46,16 +47,95 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class BindingGraph(
     private val injektContext: InjektContext,
-    declarationGraph: DeclarationGraph,
+    private val declarationGraph: DeclarationGraph,
     private val contextImpl: IrClass,
-    inputs: List<IrField>,
+    val inputs: List<IrField>,
     private val implicitContextParamTransformer: ImplicitContextParamTransformer
 ) {
 
-    private val allBindings = buildList<BindingNode> {
-        this += inputs.map { InputBindingNode(it) }
+    private val inputBindingNodes = inputs
+        .map { InputBindingNode(it) }
+        .groupBy { it.key }
 
-        this += declarationGraph.bindings
+    val resolvedBindings = mutableMapOf<Key, BindingNode>()
+
+    fun getBinding(request: BindingRequest): BindingNode {
+        var binding = resolvedBindings[request.key]
+        if (binding != null) return binding
+
+        val allBindings = bindingsForKey(request.key)
+
+        val inputBindings = allBindings
+            .filterIsInstance<InputBindingNode>()
+            .filter { it.key == request.key }
+
+        if (inputBindings.size > 1) {
+            error(
+                "Multiple inputs found for '${request.key}' at:\n${
+                inputBindings
+                    .joinToString("\n") { "'${it.origin.orUnknown()}'" }
+                }"
+            )
+        }
+
+        binding = inputBindings.singleOrNull()
+        binding?.let {
+            resolvedBindings[request.key] = it
+            return it
+        }
+
+        val (internalBindings, externalBindings) = allBindings
+            .filterNot { it is InputBindingNode }
+            .filter { it.key == request.key }
+            .partition { !it.external }
+
+        if (internalBindings.size > 1) {
+            error(
+                "Multiple internal bindings found for '${request.key}' at:\n${
+                internalBindings
+                    .joinToString("\n") { "'${it.origin.orUnknown()}'" }
+                }"
+            )
+        }
+
+        binding = internalBindings.singleOrNull()
+        binding?.let {
+            resolvedBindings[request.key] = it
+            return it
+        }
+
+        if (externalBindings.size > 1) {
+            error(
+                "Multiple external bindings found for '${request.key}' at:\n${
+                externalBindings
+                    .joinToString("\n") { "'${it.origin.orUnknown()}'" }
+                }.\nPlease specify a binding for the requested type in this module."
+            )
+        }
+
+        binding = externalBindings.singleOrNull()
+        binding?.let {
+            resolvedBindings[request.key] = it
+            return it
+        }
+
+        if (request.key.type.isMarkedNullable()) {
+            binding = NullBindingNode(request.key)
+            resolvedBindings[request.key] = binding
+            return binding
+        }
+
+        error(
+            "No binding found for '${request.key}'\n" +
+                    "required at '${request.requestingKey}' '${request.requestOrigin.orUnknown()}'\n" +
+                    "in ${contextImpl.superTypes.first().render()}\n"
+        )
+    }
+
+    private fun bindingsForKey(key: Key): List<BindingNode> = buildList<BindingNode> {
+        inputBindingNodes[key]?.let { this += it }
+
+        this += declarationGraph.bindings(key.type.uniqueTypeName().asString())
             .map { function ->
                 val scoping = function.getClassFromAnnotation(
                     InjektFqNames.Given, 0
@@ -71,11 +151,6 @@ class BindingGraph(
 
                 val explicitParameters = function.valueParameters
                     .filter { it != function.getContextValueParameter() }
-
-                val key = if (explicitParameters.isEmpty()) function.returnType.asKey()
-                else injektContext.tmpFunction(explicitParameters.size)
-                    .typeWith(explicitParameters.map { it.type } + function.returnType)
-                    .asKey()
 
                 GivenBindingNode(
                     key = key,
@@ -151,98 +226,26 @@ class BindingGraph(
                 )
             }
 
-        this += declarationGraph.mapEntries
-            .groupBy { it.returnType.asKey() }
-            .map { (key, entries) ->
+        declarationGraph.mapEntries(key.type.uniqueTypeName().asString())
+            .takeIf { it.isNotEmpty() }
+            ?.let { entries ->
                 MapBindingNode(
                     key,
                     entries.map { it.getContext()!! },
                     entries
                 )
             }
+            ?.let { this += it }
 
-        this += declarationGraph.setElements
-            .groupBy { it.returnType.asKey() }
-            .map { (key, elements) ->
+        declarationGraph.setElements(key.type.uniqueTypeName().asString())
+            .takeIf { it.isNotEmpty() }
+            ?.let { elements ->
                 SetBindingNode(
                     key,
                     elements.map { it.getContext()!! },
                     elements
                 )
             }
+            ?.let { this += it }
     }
-
-    val resolvedBindings = mutableMapOf<Key, BindingNode>()
-
-    fun getBinding(request: BindingRequest): BindingNode {
-        var binding = resolvedBindings[request.key]
-        if (binding != null) return binding
-
-        val inputBindings = allBindings
-            .filterIsInstance<InputBindingNode>()
-            .filter { it.key == request.key }
-
-        if (inputBindings.size > 1) {
-            error(
-                "Multiple inputs found for '${request.key}' at:\n${
-                inputBindings
-                    .joinToString("\n") { "'${it.origin.orUnknown()}'" }
-                }"
-            )
-        }
-
-        binding = inputBindings.singleOrNull()
-        binding?.let {
-            resolvedBindings[request.key] = it
-            return it
-        }
-
-        val (internalBindings, externalBindings) = allBindings
-            .filterNot { it is InputBindingNode }
-            .filter { it.key == request.key }
-            .partition { !it.external }
-
-        if (internalBindings.size > 1) {
-            error(
-                "Multiple internal bindings found for '${request.key}' at:\n${
-                internalBindings
-                    .joinToString("\n") { "'${it.origin.orUnknown()}'" }
-                }"
-            )
-        }
-
-        binding = internalBindings.singleOrNull()
-        binding?.let {
-            resolvedBindings[request.key] = it
-            return it
-        }
-
-        if (externalBindings.size > 1) {
-            error(
-                "Multiple external bindings found for '${request.key}' at:\n${
-                externalBindings
-                    .joinToString("\n") { "'${it.origin.orUnknown()}'" }
-                }.\nPlease specify a binding for the requested type in this module."
-            )
-        }
-
-        binding = externalBindings.singleOrNull()
-        binding?.let {
-            resolvedBindings[request.key] = it
-            return it
-        }
-
-        if (request.key.type.isMarkedNullable()) {
-            binding = NullBindingNode(request.key)
-            resolvedBindings[request.key] = binding
-            return binding
-        }
-
-        error(
-            "No binding found for '${request.key}'\n" +
-                    "required at '${request.requestingKey}' '${request.requestOrigin.orUnknown()}'\n" +
-                    "in ${contextImpl.superTypes.first().render()}\n"
-        )
-    }
-
 }

@@ -37,7 +37,6 @@ import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.utils.addToStdlib.measureTimeMillisWithResult
 import kotlin.system.measureTimeMillis
 
 class InjektIrGenerationExtension : IrGenerationExtension {
@@ -89,15 +88,11 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         BindingIndexingTransformer(indexer, injektContext).doLowerAndMeasure()
 
         if (initializeInjekt) {
-            val (initTime, declarationGraph) =
-                measureTimeMillisWithResult {
-                    DeclarationGraph(
-                        indexer,
-                        moduleFragment,
-                        implicitContextParamTransformer
-                    )
-                }
-            println("Initializing graph took $initTime ms")
+            val declarationGraph = DeclarationGraph(
+                indexer,
+                moduleFragment,
+                implicitContextParamTransformer
+            )
             val runReaderContextImplTransformer = RunReaderContextImplTransformer(
                 injektContext,
                 declarationGraph,

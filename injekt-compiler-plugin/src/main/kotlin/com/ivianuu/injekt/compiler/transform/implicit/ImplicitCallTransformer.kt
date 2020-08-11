@@ -123,6 +123,7 @@ class ImplicitCallTransformer(
             indexer.index(
                 it.originatingDeclaration,
                 DeclarationGraph.GENERIC_CONTEXT_TAG,
+                "indices",
                 it.classBuilder
             )
         }

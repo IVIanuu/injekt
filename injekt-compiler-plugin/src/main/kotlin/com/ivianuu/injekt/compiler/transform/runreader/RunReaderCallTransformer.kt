@@ -100,6 +100,7 @@ class RunReaderCallTransformer(
             indexer.index(
                 it.originatingDeclaration,
                 DeclarationGraph.RUN_READER_CONTEXT_TAG,
+                "indices",
                 it.classBuilder
             )
         }

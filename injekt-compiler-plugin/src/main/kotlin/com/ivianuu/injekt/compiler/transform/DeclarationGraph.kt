@@ -30,7 +30,6 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import kotlin.system.measureTimeMillis
 
 class DeclarationGraph(
     private val indexer: Indexer,
@@ -38,40 +37,42 @@ class DeclarationGraph(
     private val implicitContextParamTransformer: ImplicitContextParamTransformer
 ) {
 
-    private val _runReaderContexts = mutableListOf<IrClass>()
-    val runReaderContexts: List<IrClass> get() = _runReaderContexts
+    val runReaderContexts: List<IrClass> by lazy {
+        indexer.classIndices(RUN_READER_CONTEXT_TAG, "indices")
+    }
 
-    private val _bindings = mutableListOf<IrFunction>()
-    val bindings: List<IrFunction> get() = _bindings
+    val genericContexts: List<IrClass> by lazy {
+        indexer.classIndices(GENERIC_CONTEXT_TAG, "indices")
+    }
 
-    private val _mapEntries = mutableListOf<IrFunction>()
-    val mapEntries: List<IrFunction> get() = _mapEntries
+    private val bindingsByKey = mutableMapOf<String, List<IrFunction>>()
+    fun bindings(key: String) = bindingsByKey.getOrPut(key) {
+        (indexer.functionIndices(GIVEN_TAG, key) +
+                indexer.classIndices(GIVEN_TAG, key)
+                    .flatMapFix { it.constructors.toList() } +
+                indexer.propertyIndices(GIVEN_TAG, key)
+                    .mapNotNull { it.getter }
+                )
+            .map { implicitContextParamTransformer.getTransformedFunction(it) }
+            .filter { it.getContext() != null }
+            .distinct()
+    }
 
-    private val _setElements = mutableListOf<IrFunction>()
-    val setElements: List<IrFunction> get() = _setElements
+    private val mapEntriesByKey = mutableMapOf<String, List<IrFunction>>()
+    fun mapEntries(key: String) = mapEntriesByKey.getOrPut(key) {
+        indexer.functionIndices(MAP_ENTRIES_TAG, key)
+            .map { implicitContextParamTransformer.getTransformedFunction(it) }
+            .filter { it.getContext() != null }
+    }
 
-    private val _genericContexts = mutableListOf<IrClass>()
-    val genericContexts: List<IrClass> get() = _genericContexts
+    private val setElementsByKey = mutableMapOf<String, List<IrFunction>>()
+    fun setElements(key: String) = setElementsByKey.getOrPut(key) {
+        indexer.functionIndices(SET_ELEMENTS_TAG, key)
+            .map { implicitContextParamTransformer.getTransformedFunction(it) }
+            .filter { it.getContext() != null }
+    }
 
     lateinit var runReaderContextImplTransformer: RunReaderContextImplTransformer
-
-    init {
-        measureTimeMillis {
-            collectRunReaderContexts()
-        }.also { println("collecting run reader contexts took $it ms") }
-        measureTimeMillis {
-            collectBindings()
-        }.also { println("collecting bindings took $it ms") }
-        measureTimeMillis {
-            collectMapEntries()
-        }.also { println("collecting map entries took $it ms") }
-        measureTimeMillis {
-            collectSetElements()
-        }.also { println("collecting set elements took $it ms") }
-        measureTimeMillis {
-            collectGenericContexts()
-        }.also { println("collecting generic contexts took $it ms") }
-    }
 
     sealed class ParentRunReaderContext {
         data class Known(val clazz: IrClass) : ParentRunReaderContext() {
@@ -163,8 +164,12 @@ class DeclarationGraph(
     }
 
     private fun getGivenDeclarationsForContext(context: IrClass): List<IrFunction> {
-        return (_bindings + _mapEntries + _setElements)
-            .filter { it.getContext()?.defaultType == context.defaultType }
+        return indexer.classIndices(GIVEN_CONTEXTS, context.descriptor.fqNameSafe.asString())
+            .flatMapFix {
+                val key =
+                    it.getConstantFromAnnotationOrNull<String>(InjektFqNames.GivenContext, 0)!!
+                bindings(key) + mapEntries(key) + setElements(key)
+            }
     }
 
     private fun getInvokingContexts(context: IrClass): Set<IrClass> {
@@ -178,17 +183,17 @@ class DeclarationGraph(
             ?.owner
 
         return setOfNotNull(
-            *indexer.classIndices("reader_invocation")
-                .filter { clazz ->
-                    clazz.getClassFromAnnotation(
-                        InjektFqNames.ReaderInvocation,
-                        0
-                    ) in allContexts
+            *allContexts
+                .flatMapFix {
+                    indexer.classIndices(
+                        READER_INVOCATION_CALLEE_TO_CALLER_TAG,
+                        it.descriptor.fqNameSafe.asString()
+                    )
                 }
                 .map {
                     it.getClassFromAnnotation(
                         InjektFqNames.ReaderInvocation,
-                        1
+                        0
                     )!!
                 }
                 .filter { it != context }
@@ -197,16 +202,11 @@ class DeclarationGraph(
         )
     }
 
+    private val superContextsByContext = mutableMapOf<IrClass, Set<IrClass>>()
     private fun getAllSuperContexts(
         context: IrClass
-    ): Set<IrClass> {
-        return indexer.classIndices(READER_IMPL_TAG)
-            .filter { clazz ->
-                clazz.getClassFromAnnotation(
-                    InjektFqNames.ReaderImpl,
-                    1
-                ) == context
-            }
+    ): Set<IrClass> = superContextsByContext.getOrPut(context) {
+        indexer.classIndices(READER_IMPL_SUB_TO_SUPER_TAG, context.descriptor.fqNameSafe.asString())
             .map {
                 it.getClassFromAnnotation(
                     InjektFqNames.ReaderImpl,
@@ -216,9 +216,10 @@ class DeclarationGraph(
             .toSet()
     }
 
+    private val implementationsByContext = mutableMapOf<IrClass, Set<IrClass>>()
     fun getAllContextImplementations(
         context: IrClass
-    ): Set<IrClass> {
+    ): Set<IrClass> = implementationsByContext.getOrPut(context) {
         val contexts = mutableSetOf<IrClass>()
 
         contexts += context
@@ -229,17 +230,14 @@ class DeclarationGraph(
             if (context in processedClasses) return
             processedClasses += context
 
-            indexer.classIndices(READER_IMPL_TAG)
-                .filter { clazz ->
-                    clazz.getClassFromAnnotation(
-                        InjektFqNames.ReaderImpl,
-                        0
-                    ) == context
-                }
+            indexer.classIndices(
+                READER_IMPL_SUPER_TO_SUB_TAG,
+                context.descriptor.fqNameSafe.asString()
+            )
                 .map {
                     it.getClassFromAnnotation(
                         InjektFqNames.ReaderImpl,
-                        1
+                        0
                     )!!
                 }
                 .forEach {
@@ -247,21 +245,17 @@ class DeclarationGraph(
                     collectImplementations(it)
                 }
 
-            indexer.classIndices(READER_INVOCATION_TAG)
-                .filter { clazz ->
-                    clazz.getClassFromAnnotation(
+            indexer.classIndices(
+                READER_INVOCATION_CALLER_TO_CALLEE_TAG,
+                context.descriptor.fqNameSafe.asString()
+            )
+                .filter {
+                    it.getConstantFromAnnotationOrNull<Boolean>(
                         InjektFqNames.ReaderInvocation,
                         1
-                    ) == context && clazz.getConstantFromAnnotationOrNull<Boolean>(
-                        InjektFqNames.ReaderInvocation, 2
                     )!!
                 }
-                .map {
-                    it.getClassFromAnnotation(
-                        InjektFqNames.ReaderInvocation,
-                        0
-                    )!!
-                }
+                .map { it.getClassFromAnnotation(InjektFqNames.ReaderInvocation, 0)!! }
                 .forEach {
                     contexts += it
                     collectImplementations(it)
@@ -277,55 +271,20 @@ class DeclarationGraph(
 
         collectImplementations(context)
 
-        return contexts
-    }
-
-    private fun collectRunReaderContexts() {
-        indexer.classIndices(RUN_READER_CONTEXT_TAG)
-            .distinct()
-            .forEach { _runReaderContexts += it }
-    }
-
-    private fun collectBindings() {
-        (indexer.functionIndices(BINDING_TAG) + indexer.classIndices(BINDING_TAG)
-            .flatMapFix { it.constructors.toList() } +
-                indexer.propertyIndices(BINDING_TAG).mapNotNull { it.getter })
-            .map { implicitContextParamTransformer.getTransformedFunction(it) }
-            .filter { it.getContext() != null }
-            .distinct()
-            .forEach { _bindings += it }
-    }
-
-    private fun collectMapEntries() {
-        indexer.functionIndices(MAP_ENTRIES_TAG)
-            .map { implicitContextParamTransformer.getTransformedFunction(it) }
-            .filter { it.getContext() != null }
-            .distinct()
-            .forEach { _mapEntries += it }
-    }
-
-    private fun collectSetElements() {
-        indexer.functionIndices(SET_ELEMENTS_TAG)
-            .map { implicitContextParamTransformer.getTransformedFunction(it) }
-            .filter { it.getContext() != null }
-            .distinct()
-            .forEach { _setElements += it }
-    }
-
-    private fun collectGenericContexts() {
-        indexer.classIndices(GENERIC_CONTEXT_TAG)
-            .distinct()
-            .forEach { _genericContexts += it }
+        contexts
     }
 
     companion object {
-        const val READER_INVOCATION_TAG = "reader_invocation"
-        const val READER_IMPL_TAG = "reader_impl"
-        const val RUN_READER_CONTEXT_TAG = "run_reader_context"
-        const val BINDING_TAG = "binding"
-        const val GENERIC_CONTEXT_TAG = "generic_context"
-        const val MAP_ENTRIES_TAG = "map_entries"
-        const val SET_ELEMENTS_TAG = "set_elements"
+        const val READER_INVOCATION_CALLEE_TO_CALLER_TAG = "readerinvocationcalleetocaller"
+        const val READER_INVOCATION_CALLER_TO_CALLEE_TAG = "readerinvocationcallertocallee"
+        const val READER_IMPL_SUPER_TO_SUB_TAG = "readerimplsupertosub"
+        const val READER_IMPL_SUB_TO_SUPER_TAG = "readerimplsubtosuper"
+        const val RUN_READER_CONTEXT_TAG = "runreadercontext"
+        const val GIVEN_TAG = "given"
+        const val GIVEN_CONTEXTS = "givencontexts"
+        const val GENERIC_CONTEXT_TAG = "genericcontext"
+        const val MAP_ENTRIES_TAG = "mapentries"
+        const val SET_ELEMENTS_TAG = "setelements"
         const val SIGNATURE_TAG = "signature"
     }
 

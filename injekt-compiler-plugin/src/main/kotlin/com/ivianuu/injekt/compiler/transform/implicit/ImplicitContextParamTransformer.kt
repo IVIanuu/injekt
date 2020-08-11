@@ -16,13 +16,11 @@
 
 package com.ivianuu.injekt.compiler.transform.implicit
 
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.copy
-import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.isExternalDeclaration
@@ -58,7 +56,6 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irSetField
-import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
@@ -200,6 +197,7 @@ class ImplicitContextParamTransformer(
             indexer.index(
                 newIndexBuilder.owner,
                 DeclarationGraph.SIGNATURE_TAG,
+                newIndexBuilder.owner.uniqueKey(),
                 newIndexBuilder.classBuilder
             )
         }
@@ -592,16 +590,10 @@ class ImplicitContextParamTransformer(
     }
 
     private fun getExternalReaderSignature(owner: IrDeclarationWithName): IrFunction? {
-        val declaration = if (owner is IrConstructor)
-            owner.constructedClass else owner
-        return indexer.externalClassIndex(
+        return indexer.externalClassIndices(
             DeclarationGraph.SIGNATURE_TAG,
-            owner.descriptor.fqNameSafe
-        )
-            .firstOrNull { clazz ->
-                clazz.getConstantFromAnnotationOrNull<String>(InjektFqNames.Name, 0)!! ==
-                        declaration.uniqueKey()
-            }
+            owner.uniqueKey()
+        ).firstOrNull()
             ?.functions
             ?.single {
                 // we use startsWith because inline class function names get mangled
@@ -627,17 +619,6 @@ class ImplicitContextParamTransformer(
     ) {
         annotations += DeclarationIrBuilder(injektContext, symbol)
             .irCall(injektContext.injektSymbols.signature.constructors.single())
-
-        annotations += DeclarationIrBuilder(injektContext, symbol).run {
-            irCall(
-                injektContext.injektSymbols.name.constructors.single()
-            ).apply {
-                putValueArgument(
-                    0,
-                    irString(owner.uniqueKey())
-                )
-            }
-        }
 
         addFunction {
             name = "signature".asNameId()
