@@ -48,7 +48,6 @@ class EffectTest {
         
         @Effect1
         @Effect2
-        @Given
         class Dep
         
         fun invoke() {
@@ -181,7 +180,6 @@ class EffectTest {
         }
         
         @BindFooFactory
-        @Reader
         fun fooFactory(): Foo {
             return Foo()
         }
@@ -216,7 +214,6 @@ class EffectTest {
             source(
                 """
                 @BindFooFactory
-                @Reader
                 fun fooFactory(): Foo {
                     return Foo()
                 }
@@ -252,7 +249,6 @@ class EffectTest {
         }
         
         @BindFooFactory
-        @Reader
         suspend fun fooFactory(): Foo {
             return Foo()
         }

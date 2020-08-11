@@ -692,7 +692,8 @@ fun IrDeclarationWithName.isMarkedAsImplicit(injektContext: InjektContext): Bool
     isReader(injektContext) ||
             hasAnnotation(InjektFqNames.Given) ||
             hasAnnotation(InjektFqNames.MapEntries) ||
-            hasAnnotation(InjektFqNames.SetElements)
+            hasAnnotation(InjektFqNames.SetElements) ||
+            hasAnnotatedAnnotations(InjektFqNames.Effect)
 
 private fun IrDeclarationWithName.isReader(injektContext: InjektContext): Boolean {
     if (hasAnnotation(InjektFqNames.Reader)) return true

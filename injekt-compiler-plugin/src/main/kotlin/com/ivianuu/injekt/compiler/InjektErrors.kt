@@ -79,7 +79,7 @@ interface InjektErrors {
 
         @JvmField
         val MULTIPLE_IMPLICIT_ANNOTATIONS = error(
-            "A declaration can only be annotated with one of @Reader, @Given, @MapEntries or @SetElements"
+            "A declaration can only be annotated with one of @Reader, @Given, @MapEntries, @SetElements or @Effect annotated annotations"
         )
 
         @JvmField
@@ -100,11 +100,6 @@ interface InjektErrors {
         @JvmField
         val NOT_IN_EFFECT_BOUNDS = error(
             "Annotated class is not in @Effect bounds"
-        )
-
-        @JvmField
-        val EFFECT_WITHOUT_GIVEN = error(
-            "@Effect must be combined with @Given"
         )
 
         @JvmField

@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.getReaderConstructor
+import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
@@ -56,7 +57,9 @@ class BindingIndexingTransformer(
 
         injektContext.module.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitConstructor(declaration: IrConstructor): IrStatement {
-                if (declaration.hasAnnotation(InjektFqNames.Given)) {
+                if (declaration.hasAnnotation(InjektFqNames.Given) ||
+                    declaration.hasAnnotatedAnnotations(InjektFqNames.Effect)
+                ) {
                     runnables += {
                         indexer.index(
                             DeclarationGraph.GIVEN_TAG,
@@ -91,7 +94,8 @@ class BindingIndexingTransformer(
             override fun visitFunction(declaration: IrFunction): IrStatement {
                 if (!declaration.isInEffect()) {
                     when {
-                        declaration.hasAnnotation(InjektFqNames.Given) ->
+                        declaration.hasAnnotation(InjektFqNames.Given) ||
+                                declaration.hasAnnotatedAnnotations(InjektFqNames.Effect) ->
                             runnables += {
                                 val explicitParameters = declaration.valueParameters
                                     .filter { it != declaration.getContextValueParameter() }
@@ -188,7 +192,8 @@ class BindingIndexingTransformer(
 
             override fun visitClass(declaration: IrClass): IrStatement {
                 when {
-                    declaration.hasAnnotation(InjektFqNames.Given) ->
+                    declaration.hasAnnotation(InjektFqNames.Given) ||
+                            declaration.hasAnnotatedAnnotations(InjektFqNames.Effect) ->
                         runnables += {
                             val readerConstructor =
                                 declaration.getReaderConstructor(injektContext)!!

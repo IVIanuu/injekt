@@ -85,18 +85,6 @@ class EffectChecker : DeclarationChecker {
     ) {
         if (!descriptor.hasAnnotatedAnnotations(InjektFqNames.Effect, descriptor.module)) return
 
-        if (descriptor is ClassDescriptor &&
-            descriptor.hasAnnotatedAnnotations(
-                InjektFqNames.Effect,
-                descriptor.module
-            ) && !descriptor.hasAnnotation(InjektFqNames.Given)
-        ) {
-            context.trace.report(
-                InjektErrors.EFFECT_WITHOUT_GIVEN
-                    .on(declaration)
-            )
-        }
-
         if ((descriptor is ClassDescriptor && descriptor.declaredTypeParameters.isNotEmpty()) ||
             (descriptor is FunctionDescriptor && descriptor.typeParameters.isNotEmpty())
         ) {

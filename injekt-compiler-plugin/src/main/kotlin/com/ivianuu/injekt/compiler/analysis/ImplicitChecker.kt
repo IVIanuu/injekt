@@ -46,6 +46,7 @@ import org.jetbrains.kotlin.resolve.calls.context.ResolutionContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.inline.InlineUtil
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
@@ -75,7 +76,10 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         if (descriptor.hasAnnotation(InjektFqNames.MapEntries)) implicitAnnotations += 1
         if (descriptor.hasAnnotation(InjektFqNames.SetElements)) implicitAnnotations += 1
 
-        if (implicitAnnotations > 1) {
+        if (implicitAnnotations > 1 || (implicitAnnotations == 1 &&
+                    descriptor.getAnnotatedAnnotations(InjektFqNames.Effect, descriptor.module)
+                        .isNotEmpty())
+        ) {
             context.trace.report(
                 InjektErrors.MULTIPLE_IMPLICIT_ANNOTATIONS
                     .on(declaration)
@@ -88,8 +92,8 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         descriptor: ClassDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (!descriptor.isMarkedAsImplicit() &&
-            descriptor.constructors.none { it.isMarkedAsImplicit() }
+        if (!descriptor.isMarkedAsImplicit(descriptor.module) &&
+            descriptor.constructors.none { it.isMarkedAsImplicit(descriptor.module) }
         ) return
 
         if (descriptor.kind == ClassKind.INTERFACE) {
@@ -114,7 +118,7 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
     ) {
         if (!isImplicit(descriptor, context.trace) &&
             (descriptor !is ConstructorDescriptor ||
-                    !descriptor.constructedClass.isMarkedAsImplicit())
+                    !descriptor.constructedClass.isMarkedAsImplicit(descriptor.module))
         ) return
     }
 
@@ -155,7 +159,7 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         }
 
         if (resulting is ConstructorDescriptor &&
-            (resulting.constructedClass.isMarkedAsImplicit())
+            (resulting.constructedClass.isMarkedAsImplicit(resulting.module))
         ) {
             checkInvocations(reportOn, context)
         }
@@ -200,21 +204,21 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
             }
         }
 
-        var isImplicit = descriptor.isMarkedAsImplicit()
+        var isImplicit = descriptor.isMarkedAsImplicit(descriptor.module)
 
         if (!isImplicit && descriptor is PropertyGetterDescriptor) {
-            isImplicit = descriptor.correspondingProperty.isMarkedAsImplicit()
+            isImplicit = descriptor.correspondingProperty.isMarkedAsImplicit(descriptor.module)
         }
 
         if (!isImplicit && descriptor is ConstructorDescriptor) {
-            isImplicit = descriptor.constructedClass.isMarkedAsImplicit() ||
+            isImplicit = descriptor.constructedClass.isMarkedAsImplicit(descriptor.module) ||
                     descriptor.constructedClass.constructors.any {
-                        it.isMarkedAsImplicit()
+                        it.isMarkedAsImplicit(descriptor.module)
                     }
         }
 
         if (!isImplicit && descriptor is ClassDescriptor) {
-            isImplicit = descriptor.constructors.any { it.isMarkedAsImplicit() }
+            isImplicit = descriptor.constructors.any { it.isMarkedAsImplicit(descriptor.module) }
         }
 
         if (!isImplicit) {

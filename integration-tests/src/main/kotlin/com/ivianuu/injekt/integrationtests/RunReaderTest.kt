@@ -239,7 +239,6 @@ class RunReaderTest {
             typealias FooFactoryMarker = () -> Foo
             
             @FooFactory
-            @Reader
             fun FooFactoryImpl() = runChildReader { given<Foo>() }
             
             fun invoke(foo: Foo): Foo {
@@ -300,7 +299,6 @@ class RunReaderTest {
             typealias AppUiMarker = () -> Unit
             
             @AppUi
-            @Reader
             fun AppUiImpl() {
                 remember { 
                     given<App>()
@@ -324,7 +322,6 @@ class RunReaderTest {
             }
             
             @BindActionPickerDelegate
-            @Given
             class AppActionPickerDelegate : ActionPickerDelegate {
                 init {
                     remember { given<App>() }
@@ -405,7 +402,6 @@ class RunReaderTest {
             typealias AppUiMarker = () -> Unit
             
             @AppUi
-            @Reader
             fun AppUiImpl() {
                 remember { 
                     given<App>()
@@ -429,7 +425,6 @@ class RunReaderTest {
             }
             
             @BindActionPickerDelegate
-            @Given
             class AppActionPickerDelegate : ActionPickerDelegate {
                 init {
                     remember { given<App>() }

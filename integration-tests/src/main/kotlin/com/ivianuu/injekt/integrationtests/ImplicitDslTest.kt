@@ -75,7 +75,7 @@ class ImplicitDslTest {
             assertOk()
         }
 
-    // todo @Test
+    @Test
     fun testReaderClassConstructionInReaderAllowed() =
         codegen(
             """
@@ -87,7 +87,7 @@ class ImplicitDslTest {
         }
 
     @Test
-    fun testReaderClassConstructionInReaderNotAllowed() =
+    fun testReaderClassConstructionInNonReaderNotAllowed() =
         codegen(
             """
             @Reader class ReaderClass
@@ -143,6 +143,16 @@ class ImplicitDslTest {
     """
     ) {
         assertCompileError("var")
+    }
+
+    @Test
+    fun testMultipleImplicitAnnotationsFails() = codegen(
+        """
+            @Reader @Given
+            var property = ""
+    """
+    ) {
+        assertCompileError("one of")
     }
 
 }

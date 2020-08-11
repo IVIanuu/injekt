@@ -29,12 +29,14 @@ class GivenTest {
     """
     )
 
-    // todo @Test
-    fun testGivenObjectOk() = codegen(
+    @Test
+    fun testGivenObjectFails() = codegen(
         """ 
         @Given object Dep
     """
-    )
+    ) {
+        assertCompileError("object")
+    }
 
     @Test
     fun testGivenAbstractClassFails() = codegen(
