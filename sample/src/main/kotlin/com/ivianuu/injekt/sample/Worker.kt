@@ -21,14 +21,12 @@ import androidx.work.Configuration
 import androidx.work.CoroutineWorker
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.android.ApplicationContext
-import com.ivianuu.injekt.android.work.BindWorker
+import com.ivianuu.injekt.android.work.GivenWorker
 import com.ivianuu.injekt.given
 
-@BindWorker
-@Given
+@GivenWorker
 class TestWorker(
     context: Context,
     workerParams: WorkerParameters

@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 typealias AppServices = Set<suspend () -> Unit>
 
 @Effect
-annotation class BindAppService {
+annotation class GivenAppService {
     companion object {
         @SetElements
         inline operator fun <reified T : suspend () -> Unit> invoke(): AppServices = setOf(
@@ -43,8 +43,7 @@ fun startAppServices() {
     }
 }
 
-@BindAppService
-@Reader
-suspend fun userAppWorker() {
+@GivenAppService
+suspend fun userAppService() {
     println("run")
 }

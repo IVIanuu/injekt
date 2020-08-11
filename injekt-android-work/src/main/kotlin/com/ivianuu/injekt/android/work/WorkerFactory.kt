@@ -27,7 +27,7 @@ import com.ivianuu.injekt.given
 import kotlin.reflect.KClass
 
 @Effect
-annotation class BindWorker {
+annotation class GivenWorker {
     companion object {
         @MapEntries
         inline operator fun <reified T : ListenableWorker> invoke(): Workers = mapOf(

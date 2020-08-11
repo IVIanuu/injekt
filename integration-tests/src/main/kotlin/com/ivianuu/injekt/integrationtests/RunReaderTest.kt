@@ -229,7 +229,7 @@ class RunReaderTest {
     fun testRunChildReaderWithEffect() = codegen(
         """ 
             @Effect
-            annotation class FooFactory {
+            annotation class GivenFooFactory {
                 companion object {
                     @Given
                     fun <T : () -> Foo> invoke(): FooFactoryMarker = given<T>()
@@ -238,7 +238,7 @@ class RunReaderTest {
 
             typealias FooFactoryMarker = () -> Foo
             
-            @FooFactory
+            @GivenFooFactory
             fun FooFactoryImpl() = runChildReader { given<Foo>() }
             
             fun invoke(foo: Foo): Foo {
@@ -289,7 +289,7 @@ class RunReaderTest {
                 }
             
             @Effect
-            annotation class AppUi {
+            annotation class GivenAppUi {
                 companion object {
                     @Given
                     fun <T : () -> Unit> invoke(): AppUiMarker = given<T>()
@@ -298,7 +298,7 @@ class RunReaderTest {
 
             typealias AppUiMarker = () -> Unit
             
-            @AppUi
+            @GivenAppUi
             fun AppUiImpl() {
                 remember { 
                     given<App>()
@@ -392,7 +392,7 @@ class RunReaderTest {
                 }
             
             @Effect
-            annotation class AppUi {
+            annotation class GivenAppUi {
                 companion object {
                     @Given
                     fun <T : () -> Unit> invoke(): AppUiMarker = given<T>()
@@ -401,7 +401,7 @@ class RunReaderTest {
 
             typealias AppUiMarker = () -> Unit
             
-            @AppUi
+            @GivenAppUi
             fun AppUiImpl() {
                 remember { 
                     given<App>()
@@ -417,14 +417,14 @@ class RunReaderTest {
             interface ActionPickerDelegate
             
             @Effect
-            annotation class BindActionPickerDelegate {
+            annotation class GivenActionPickerDelegate {
                 companion object {
                     @SetElements
                     fun <T : ActionPickerDelegate> invoke(): Set<ActionPickerDelegate> = setOf(given<T>())
                 }
             }
             
-            @BindActionPickerDelegate
+            @GivenActionPickerDelegate
             class AppActionPickerDelegate : ActionPickerDelegate {
                 init {
                     remember { given<App>() }

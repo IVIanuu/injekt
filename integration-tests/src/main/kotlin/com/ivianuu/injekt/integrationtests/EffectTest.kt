@@ -153,7 +153,6 @@ class EffectTest {
         annotation class MyEffect {
             companion object {
                 @EffectFunction(MyEffect::class)
-                @Given
                 fun <T : () -> Unit> bind() {
                 }
             }
@@ -172,14 +171,14 @@ class EffectTest {
         typealias FooFactory = () -> Foo
         
         @Effect
-        annotation class BindFooFactory {
+        annotation class GivenFooFactory {
             companion object {
                 @Given
                 operator fun <T : FooFactory> invoke(): FooFactory = given<T>()
             }
         }
         
-        @BindFooFactory
+        @GivenFooFactory
         fun fooFactory(): Foo {
             return Foo()
         }
@@ -200,7 +199,7 @@ class EffectTest {
                 typealias FooFactory = () -> Foo
         
                 @Effect
-                annotation class BindFooFactory {
+                annotation class GivenFooFactory {
                     companion object {
                         @Given
                         operator fun <T : FooFactory> invoke(): FooFactory = given<T>()
@@ -213,7 +212,7 @@ class EffectTest {
         listOf(
             source(
                 """
-                @BindFooFactory
+                @GivenFooFactory
                 fun fooFactory(): Foo {
                     return Foo()
                 }
@@ -241,14 +240,14 @@ class EffectTest {
         typealias FooFactory = suspend () -> Foo
         
         @Effect
-        annotation class BindFooFactory {
+        annotation class GivenFooFactory {
             companion object {
                 @Given
                 operator fun <T : FooFactory> invoke(): FooFactory = given<T>()
             }
         }
         
-        @BindFooFactory
+        @GivenFooFactory
         suspend fun fooFactory(): Foo {
             return Foo()
         }

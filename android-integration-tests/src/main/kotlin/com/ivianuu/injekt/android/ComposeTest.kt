@@ -32,7 +32,7 @@ class ComposeTest {
         typealias AppUi = @androidx.compose.runtime.Composable () -> Unit
 
         @Effect
-        annotation class BindAppUi {
+        annotation class GivenAppUi {
             companion object {
                 @Given
                 operator fun <T : @androidx.compose.runtime.Composable () -> Unit> invoke(): AppUi =
@@ -40,7 +40,7 @@ class ComposeTest {
             }
         }
         
-        @BindAppUi
+        @GivenAppUi
         @Reader
         @androidx.compose.runtime.Composable
         fun SampleUi() {
@@ -66,7 +66,7 @@ class ComposeTest {
                 typealias AppUi = @androidx.compose.runtime.Composable () -> Unit
         
                 @Effect
-                annotation class BindAppUi {
+                annotation class GivenAppUi {
                     companion object {
                         @Given
                         operator fun <T : @androidx.compose.runtime.Composable () -> Unit> invoke(): AppUi =
@@ -80,8 +80,7 @@ class ComposeTest {
         listOf(
             source(
                 """
-                @BindAppUi
-                @Reader
+                @GivenAppUi
                 @androidx.compose.runtime.Composable
                 fun SampleUi() {
                     androidx.compose.runtime.remember {  }
