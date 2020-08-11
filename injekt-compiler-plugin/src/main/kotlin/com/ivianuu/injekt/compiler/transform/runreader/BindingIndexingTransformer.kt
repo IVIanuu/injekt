@@ -41,7 +41,7 @@ class BindingIndexingTransformer(
     override fun lower() {
         val declarations = mutableSetOf<Pair<IrDeclarationWithName, String>>()
 
-        context.module.transformChildrenVoid(object : IrElementTransformerVoid() {
+        injektContext.module.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitConstructor(declaration: IrConstructor): IrStatement {
                 if (declaration.hasAnnotation(InjektFqNames.Given)) {
                     declarations += declaration.constructedClass to DeclarationGraph.BINDING_TAG

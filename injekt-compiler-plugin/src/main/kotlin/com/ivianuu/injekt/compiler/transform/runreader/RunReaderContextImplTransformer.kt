@@ -164,7 +164,7 @@ class RunReaderContextImplTransformer(
             InjektFqNames.RunReaderContext, 1
         )!!
 
-        val file = context.module.addFile(context, fqName)
+        val file = injektContext.module.addFile(injektContext, fqName)
 
         val thisContext = index.superTypes[0].classOrNull!!.owner
         val callingContext = if (isChild) index.superTypes[1].classOrNull!!.owner else null
@@ -183,7 +183,7 @@ class RunReaderContextImplTransformer(
                 visibility = Visibilities.PUBLIC
             }.apply {
                 body = DeclarationIrBuilder(
-                    context,
+                    injektContext,
                     symbol
                 ).irBlockBody {
                     +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
@@ -252,7 +252,7 @@ class RunReaderContextImplTransformer(
                 )
             }
 
-            body = DeclarationIrBuilder(context, symbol).run {
+            body = DeclarationIrBuilder(injektContext, symbol).run {
                 fun createContextImpl(contextImpl: IrClass, parent: IrClass?): IrExpression {
                     return if (contextImpl.isObject) {
                         irGetObject(contextImpl.symbol)
@@ -296,7 +296,7 @@ class RunReaderContextImplTransformer(
                                 )
                             } + irElseBranch(
                                 irCall(
-                                    this@RunReaderContextImplTransformer.context.referenceFunctions(
+                                    injektContext.referenceFunctions(
                                         FqName("kotlin.error")
                                     ).single()
                                 ).apply {
@@ -332,7 +332,7 @@ class RunReaderContextImplTransformer(
                 if (declaration !is IrFunction) continue
                 if (declaration is IrConstructor) continue
                 if (declaration.dispatchReceiverParameter?.type ==
-                    context.irBuiltIns.anyType
+                    injektContext.irBuiltIns.anyType
                 ) continue
                 if (declaration.returnType != type) continue
                 return declaration
@@ -427,7 +427,7 @@ class RunReaderContextImplTransformer(
             }
 
             body = DeclarationIrBuilder(
-                context,
+                injektContext,
                 symbol
             ).irBlockBody {
                 +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
@@ -448,7 +448,7 @@ class RunReaderContextImplTransformer(
         }
 
         val graph = BindingGraph(
-            context = context,
+            context = injektContext,
             declarationGraph = declarationGraph,
             contextImpl = contextImpl,
             inputs = inputFields,
@@ -478,7 +478,7 @@ class RunReaderContextImplTransformer(
                     if (declaration !is IrFunction) continue
                     if (declaration is IrConstructor) continue
                     if (declaration.dispatchReceiverParameter?.type ==
-                        context.irBuiltIns.anyType
+                        injektContext.irBuiltIns.anyType
                     ) continue
                     val existingDeclaration = contextImpl.functions.singleOrNull {
                         it.name == declaration.name
@@ -534,7 +534,7 @@ class RunReaderContextImplTransformer(
             this.parent = context
             context.addChild(this)
             this.body =
-                DeclarationIrBuilder(this@RunReaderContextImplTransformer.context, symbol).run {
+                DeclarationIrBuilder(injektContext, symbol).run {
                     irExprBody(rawExpression(this) { irGet(dispatchReceiverParameter!!) })
                 }
         }
@@ -557,11 +557,11 @@ class RunReaderContextImplTransformer(
         return { c ->
             irBlock {
                 val tmpMap = irTemporary(
-                    irCall(this@RunReaderContextImplTransformer.context.referenceFunctions(
+                    irCall(injektContext.referenceFunctions(
                         FqName("kotlin.collections.mutableMapOf")
                     ).first { it.owner.valueParameters.isEmpty() })
                 )
-                val mapType = this@RunReaderContextImplTransformer.context.referenceClass(
+                val mapType = injektContext.referenceClass(
                     FqName("kotlin.collections.Map")
                 )!!
                 bindingNode.contexts.forEach { recordLookup(context, it) }
@@ -600,11 +600,11 @@ class RunReaderContextImplTransformer(
         return { c ->
             irBlock {
                 val tmpSet = irTemporary(
-                    irCall(this@RunReaderContextImplTransformer.context.referenceFunctions(
+                    irCall(injektContext.referenceFunctions(
                         FqName("kotlin.collections.mutableSetOf")
                     ).first { it.owner.valueParameters.isEmpty() })
                 )
-                val collectionType = this@RunReaderContextImplTransformer.context.referenceClass(
+                val collectionType = injektContext.referenceClass(
                     FqName("kotlin.collections.Collection")
                 )
                 bindingNode.contexts.forEach { recordLookup(context, it) }

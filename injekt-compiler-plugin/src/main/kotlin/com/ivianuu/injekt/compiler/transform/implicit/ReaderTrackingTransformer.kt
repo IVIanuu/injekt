@@ -118,7 +118,7 @@ class ReaderTrackingTransformer(
     }
 
     override fun lower() {
-        context.module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
+        injektContext.module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
 
             override fun visitValueParameterNew(declaration: IrValueParameter): IrStatement {
                 val defaultValue = declaration.defaultValue
@@ -209,11 +209,11 @@ class ReaderTrackingTransformer(
             }
 
             override fun visitClassNew(declaration: IrClass): IrStatement {
-                return if (declaration.canUseImplicits(context)) {
+                return if (declaration.canUseImplicits(injektContext)) {
                     inScope(
                         Scope.Reader(
                             declaration,
-                            declaration.getReaderConstructor(context)!!
+                            declaration.getReaderConstructor(injektContext)!!
                                 .getContext()!!
                         )
                     ) {
@@ -248,7 +248,7 @@ class ReaderTrackingTransformer(
                     }
                 }
 
-                return if (declaration.canUseImplicits(context) &&
+                return if (declaration.canUseImplicits(injektContext) &&
                     currentReaderScope.let {
                         it == null || it !is Scope.RunReader ||
                                 !it.isBlock(declaration)
@@ -292,7 +292,7 @@ class ReaderTrackingTransformer(
             }
         })
 
-        context.module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
+        injektContext.module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
 
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
                 if (expression.symbol.descriptor.fqNameSafe.asString() ==
@@ -330,7 +330,7 @@ class ReaderTrackingTransformer(
 
             override fun visitFunctionNew(declaration: IrFunction): IrStatement {
                 if (declaration is IrSimpleFunction &&
-                    declaration.isMarkedAsImplicit(context) &&
+                    declaration.isMarkedAsImplicit(injektContext) &&
                     declaration.overriddenSymbols.isNotEmpty()
                 ) {
                     newIndexBuilders += readerImplIndexBuilder(
@@ -355,7 +355,7 @@ class ReaderTrackingTransformer(
 
     private fun visitPossibleReaderCall(call: IrCall) {
         val indexBuilder = when {
-            call.isReaderLambdaInvoke(context) -> {
+            call.isReaderLambdaInvoke(injektContext) -> {
                 val lambdaContext = call.dispatchReceiver!!.type.lambdaContext!!
                 val scope = currentReaderScope!!
                 readerInvocationIndexBuilder(
@@ -365,7 +365,7 @@ class ReaderTrackingTransformer(
                     false
                 )
             }
-            call.symbol.owner.canUseImplicits(context) -> {
+            call.symbol.owner.canUseImplicits(injektContext) -> {
                 val isRunChildReader = call.symbol.descriptor.fqNameSafe.asString() ==
                         "com.ivianuu.injekt.runChildReader"
                 val calleeContext = if (isRunChildReader) {
@@ -396,8 +396,8 @@ class ReaderTrackingTransformer(
         DeclarationGraph.READER_INVOCATION_TAG,
         invocationContext
     ) {
-        annotations += DeclarationIrBuilder(context, invocationContext.symbol).run {
-            irCall(this@ReaderTrackingTransformer.context.injektSymbols.readerInvocation.constructors.single()).apply {
+        annotations += DeclarationIrBuilder(injektContext, invocationContext.symbol).run {
+            irCall(injektContext.injektSymbols.readerInvocation.constructors.single()).apply {
                 putValueArgument(
                     0,
                     irClassReference(calleeContext)
@@ -425,8 +425,8 @@ class ReaderTrackingTransformer(
         DeclarationGraph.READER_IMPL_TAG,
         subContext
     ) {
-        annotations += DeclarationIrBuilder(context, subContext.symbol).run {
-            irCall(this@ReaderTrackingTransformer.context.injektSymbols.readerImpl.constructors.single()).apply {
+        annotations += DeclarationIrBuilder(injektContext, subContext.symbol).run {
+            irCall(injektContext.injektSymbols.readerImpl.constructors.single()).apply {
                 putValueArgument(
                     0,
                     irClassReference(superContext)

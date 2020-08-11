@@ -79,7 +79,7 @@ class RunReaderCallTransformer(
     )
 
     override fun lower() {
-        context.module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
+        injektContext.module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
                 expression.transformChildrenVoid(this)
                 return if (expression.symbol.descriptor.fqNameSafe.asString() ==
@@ -120,9 +120,9 @@ class RunReaderCallTransformer(
                 "com.ivianuu.injekt.runChildReader"
 
         val metadata = if (isChild)
-            context.irTrace[InjektWritableSlices.RUN_CHILD_READER_METADATA, call]!! else null
+            injektContext.irTrace[InjektWritableSlices.RUN_CHILD_READER_METADATA, call]!! else null
 
-        val name = context.uniqueClassNameProvider(
+        val name = injektContext.uniqueClassNameProvider(
             "${scope.descriptor.fqNameSafe.pathSegments()
                 .joinToString("_")}RunReaderContextFactory".asNameId(),
             file.fqName
@@ -134,8 +134,8 @@ class RunReaderCallTransformer(
             addMetadataIfNotLocal()
             if (scope is IrTypeParametersContainer)
                 copyTypeParametersFrom(scope as IrTypeParametersContainer)
-            annotations += DeclarationIrBuilder(context, symbol).run {
-                irCall(this@RunReaderCallTransformer.context.injektSymbols.runReaderContext.constructors.single()).apply {
+            annotations += DeclarationIrBuilder(injektContext, symbol).run {
+                irCall(injektContext.injektSymbols.runReaderContext.constructors.single()).apply {
                     putValueArgument(
                         0,
                         irString(file.fqName.child(name).asString())
@@ -149,7 +149,7 @@ class RunReaderCallTransformer(
 
             addFunction {
                 this.name = "inputs".asNameId()
-                returnType = this@RunReaderCallTransformer.context.irBuiltIns.unitType
+                returnType = injektContext.irBuiltIns.unitType
                 modality = Modality.ABSTRACT
             }.apply {
                 dispatchReceiverParameter = thisReceiver!!.copyTo(this)
@@ -175,7 +175,7 @@ class RunReaderCallTransformer(
             parent = IrExternalPackageFragmentImpl(
                 IrExternalPackageFragmentSymbolImpl(
                     EmptyPackageFragmentDescriptor(
-                        context.moduleDescriptor,
+                        injektContext.moduleDescriptor,
                         scope.getPackageFragment()!!.fqName
                     )
                 ),
@@ -205,7 +205,7 @@ class RunReaderCallTransformer(
             }
         }
 
-        return DeclarationIrBuilder(context, call.symbol).run {
+        return DeclarationIrBuilder(injektContext, call.symbol).run {
             irBlock {
                 val rawContextExpression = irCall(createFunctionStub).apply {
                     dispatchReceiver = irGetObject(contextFactoryStub.symbol)

@@ -30,7 +30,7 @@ class TmpMetadataPatcher(context: InjektIrContext) :
     AbstractInjektTransformer(context) {
 
     override fun lower() {
-        context.module.transformChildrenVoid(object : IrElementTransformerVoid() {
+        injektContext.module.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFile(declaration: IrFile): IrFile {
                 (declaration as IrFileImpl).metadata =
                     MetadataSource.File(
@@ -38,7 +38,7 @@ class TmpMetadataPatcher(context: InjektIrContext) :
                             .filterIsInstance<IrDeclarationWithName>()
                             .filter {
                                 (it !is IrSimpleFunction ||
-                                        context.irTrace[InjektWritableSlices.IS_TRANSFORMED_IMPLICIT_FUNCTION, it] != true)
+                                        injektContext.irTrace[InjektWritableSlices.IS_TRANSFORMED_IMPLICIT_FUNCTION, it] != true)
                             })
                             .map { it.descriptor })
                             .distinct()

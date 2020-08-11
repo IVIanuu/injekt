@@ -20,7 +20,7 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 
 abstract class AbstractInjektTransformer(
-    val context: InjektIrContext
+    val injektContext: InjektIrContext
 ) {
 
     protected abstract fun lower()

@@ -140,8 +140,8 @@ class GenericContextImplTransformer(
         name: String,
         functionMap: Map<String, String>
     ) {
-        val file = context.module.addFile(
-            context,
+        val file = injektContext.module.addFile(
+            injektContext,
             delegateContext.getPackageFragment()!!
                 .fqName
                 .child(name.asNameId())
@@ -160,7 +160,7 @@ class GenericContextImplTransformer(
                 visibility = Visibilities.PUBLIC
             }.apply {
                 body = DeclarationIrBuilder(
-                    context,
+                    injektContext,
                     symbol
                 ).irBlockBody {
                     +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
@@ -204,7 +204,7 @@ class GenericContextImplTransformer(
                 delegateContext.defaultType
             )
 
-            body = DeclarationIrBuilder(context, symbol).run {
+            body = DeclarationIrBuilder(injektContext, symbol).run {
                 fun createContextImpl(contextImpl: IrClass, parent: IrClass): IrExpression {
                     return irCall(contextImpl.constructors.single()).apply {
                         putValueArgument(
@@ -227,7 +227,7 @@ class GenericContextImplTransformer(
                                 )
                             } + irElseBranch(
                                 irCall(
-                                    this@GenericContextImplTransformer.context.referenceFunctions(
+                                    injektContext.referenceFunctions(
                                         FqName("kotlin.error")
                                     ).single()
                                 ).apply {
@@ -276,7 +276,7 @@ class GenericContextImplTransformer(
             )
 
             body = DeclarationIrBuilder(
-                context,
+                injektContext,
                 symbol
             ).irBlockBody {
                 +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
@@ -305,7 +305,7 @@ class GenericContextImplTransformer(
                 if (declaration !is IrFunction) continue
                 if (declaration is IrConstructor) continue
                 if (declaration.isFakeOverride) continue
-                if (declaration.dispatchReceiverParameter?.type == context.irBuiltIns.anyType) continue
+                if (declaration.dispatchReceiverParameter?.type == injektContext.irBuiltIns.anyType) continue
                 val existingDeclaration = contextImpl.functions.firstOrNull {
                     it.name == declaration.name
                 }
@@ -326,7 +326,7 @@ class GenericContextImplTransformer(
                     overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
                     addMetadataIfNotLocal()
                     body = DeclarationIrBuilder(
-                        context,
+                        injektContext,
                         symbol
                     ).run {
                         val finalCallee = delegateContext.getAllFunctions()
