@@ -77,6 +77,7 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         if (descriptor.hasAnnotation(InjektFqNames.SetElements)) implicitAnnotations += 1
 
         if (implicitAnnotations > 1 || (implicitAnnotations == 1 &&
+                    descriptor.hasAnnotation(InjektFqNames.Reader) &&
                     descriptor.getAnnotatedAnnotations(InjektFqNames.Effect, descriptor.module)
                         .isNotEmpty())
         ) {
