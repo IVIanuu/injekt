@@ -50,13 +50,13 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addToStdlib.measureTimeMillisWithResult
 
 class Indexer(
-    private val context: InjektIrContext,
+    private val injektContext: InjektContext,
     private val module: IrModuleFragment,
     private val symbols: InjektSymbols
 ) {
 
     private val externalIndices by lazy {
-        val memberScope = context.moduleDescriptor.getPackage(InjektFqNames.IndexPackage)
+        val memberScope = injektContext.moduleDescriptor.getPackage(InjektFqNames.IndexPackage)
             .memberScope
 
         (memberScope.getClassifierNames() ?: emptySet())
@@ -66,7 +66,7 @@ class Indexer(
                     NoLookupLocation.FROM_BACKEND
                 )
             }
-            .map { context.referenceClass(it.fqNameSafe)!!.owner }
+            .map { injektContext.referenceClass(it.fqNameSafe)!!.owner }
             .map {
                 Index(
                     it,
@@ -102,7 +102,7 @@ class Indexer(
                 .filter { it.type == "class" }
                 .filter { it.tag == tag }
                 .mapNotNull {
-                    if (it.indexIsDeclaration) it.indexClass else context.referenceClass(it.fqName)?.owner
+                    if (it.indexIsDeclaration) it.indexClass else injektContext.referenceClass(it.fqName)?.owner
                 }
         }.let {
             println("computing external classes took ${it.first} ms")
@@ -119,7 +119,7 @@ class Indexer(
             .filter { it.tag == tag }
             .filter { it.fqName == fqName }
             .mapNotNull {
-                if (it.indexIsDeclaration) it.indexClass else context.referenceClass(it.fqName)?.owner
+                if (it.indexIsDeclaration) it.indexClass else injektContext.referenceClass(it.fqName)?.owner
             }
     }
 
@@ -139,7 +139,7 @@ class Indexer(
                 .filter { it.type == "function" }
                 .filter { it.tag == tag }
                 .flatMapFix { index ->
-                    context.referenceFunctions(index.fqName)
+                    injektContext.referenceFunctions(index.fqName)
                         .map { it.owner }
                 }
         }.let {
@@ -164,7 +164,7 @@ class Indexer(
                 .filter { it.type == "property" }
                 .filter { it.tag == tag }
                 .flatMapFix { index ->
-                    context.referenceProperties(index.fqName)
+                    injektContext.referenceProperties(index.fqName)
                         .map { it.owner }
                 }
         }.let {
@@ -188,7 +188,7 @@ class Indexer(
         tag: String,
         classBuilder: IrClass.() -> Unit
     ) {
-        val name = context.uniqueClassNameProvider(
+        val name = injektContext.uniqueClassNameProvider(
             (getJoinedName(
                 originatingDeclaration.getPackageFragment()!!.fqName,
                 originatingDeclaration.descriptor.fqNameSafe
@@ -198,7 +198,7 @@ class Indexer(
             InjektFqNames.IndexPackage
         )
         module.addFile(
-            context,
+            injektContext,
             InjektFqNames.IndexPackage
                 .child(name)
         ).apply file@{
@@ -220,7 +220,7 @@ class Indexer(
                         originatingDeclaration.descriptor.fqNameSafe,
                         true
                     )
-                    annotations += DeclarationIrBuilder(context, symbol).run {
+                    annotations += DeclarationIrBuilder(injektContext, symbol).run {
                         irCall(symbols.index.constructors.single()).apply {
                             putValueArgument(
                                 0,
@@ -252,7 +252,7 @@ class Indexer(
         declaration: IrDeclarationWithName,
         tag: String
     ) {
-        val name = context.uniqueClassNameProvider(
+        val name = injektContext.uniqueClassNameProvider(
             (getJoinedName(
                 declaration.getPackageFragment()!!.fqName,
                 declaration.descriptor.fqNameSafe
@@ -262,7 +262,7 @@ class Indexer(
             InjektFqNames.IndexPackage
         )
         module.addFile(
-            context,
+            injektContext,
             InjektFqNames.IndexPackage
                 .child(name)
         ).apply {
@@ -290,7 +290,7 @@ class Indexer(
 
                     createImplicitParameterDeclarationWithWrappedDescriptor()
                     addMetadataIfNotLocal()
-                    annotations += DeclarationIrBuilder(context, symbol).run {
+                    annotations += DeclarationIrBuilder(injektContext, symbol).run {
                         irCall(symbols.index.constructors.single()).apply {
                             putValueArgument(
                                 0,

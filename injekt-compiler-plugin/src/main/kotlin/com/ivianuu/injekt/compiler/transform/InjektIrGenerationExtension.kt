@@ -44,7 +44,7 @@ import kotlin.system.measureTimeMillis
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val injektContext = InjektIrContext(pluginContext, moduleFragment)
+        val injektContext = InjektContext(pluginContext, moduleFragment)
         var initializeInjekt = false
         var initFile: IrFile? = null
 

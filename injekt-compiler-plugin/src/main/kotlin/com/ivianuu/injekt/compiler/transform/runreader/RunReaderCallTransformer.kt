@@ -25,7 +25,7 @@ import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
-import com.ivianuu.injekt.compiler.transform.InjektIrContext
+import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -67,9 +67,9 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class RunReaderCallTransformer(
-    context: InjektIrContext,
+    injektContext: InjektContext,
     private val indexer: Indexer
-) : AbstractInjektTransformer(context) {
+) : AbstractInjektTransformer(injektContext) {
 
     private val newIndexBuilders = mutableListOf<NewIndexBuilder>()
 

@@ -26,8 +26,8 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
 // todo once we can use FIR
-class TmpMetadataPatcher(context: InjektIrContext) :
-    AbstractInjektTransformer(context) {
+class TmpMetadataPatcher(injektContext: InjektContext) :
+    AbstractInjektTransformer(injektContext) {
 
     override fun lower() {
         injektContext.module.transformChildrenVoid(object : IrElementTransformerVoid() {

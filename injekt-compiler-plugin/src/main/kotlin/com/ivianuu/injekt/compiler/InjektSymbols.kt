@@ -16,23 +16,23 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.transform.InjektIrContext
+import com.ivianuu.injekt.compiler.transform.InjektContext
 
-class InjektSymbols(private val _context: InjektIrContext) {
-    val effect = _context.referenceClass(InjektFqNames.Effect)!!
-    val given = _context.referenceClass(InjektFqNames.Given)!!
-    val mapEntries = _context.referenceClass(InjektFqNames.MapEntries)!!
-    val reader = _context.referenceClass(InjektFqNames.Reader)!!
-    val scoping = _context.referenceClass(InjektFqNames.Scoping)!!
-    val setElements = _context.referenceClass(InjektFqNames.SetElements)!!
+class InjektSymbols(private val injektContext: InjektContext) {
+    val effect = injektContext.referenceClass(InjektFqNames.Effect)!!
+    val given = injektContext.referenceClass(InjektFqNames.Given)!!
+    val mapEntries = injektContext.referenceClass(InjektFqNames.MapEntries)!!
+    val reader = injektContext.referenceClass(InjektFqNames.Reader)!!
+    val scoping = injektContext.referenceClass(InjektFqNames.Scoping)!!
+    val setElements = injektContext.referenceClass(InjektFqNames.SetElements)!!
 
-    val context = _context.referenceClass(InjektFqNames.Context)!!
-    val genericContext = _context.referenceClass(InjektFqNames.GenericContext)!!
-    val index = _context.referenceClass(InjektFqNames.Index)!!
-    val name = _context.referenceClass(InjektFqNames.Name)!!
-    val qualifier = _context.referenceClass(InjektFqNames.Qualifier)!!
-    val readerImpl = _context.referenceClass(InjektFqNames.ReaderImpl)!!
-    val readerInvocation = _context.referenceClass(InjektFqNames.ReaderInvocation)!!
-    val runReaderContext = _context.referenceClass(InjektFqNames.RunReaderContext)!!
-    val signature = _context.referenceClass(InjektFqNames.Signature)!!
+    val context = injektContext.referenceClass(InjektFqNames.Context)!!
+    val genericContext = injektContext.referenceClass(InjektFqNames.GenericContext)!!
+    val index = injektContext.referenceClass(InjektFqNames.Index)!!
+    val name = injektContext.referenceClass(InjektFqNames.Name)!!
+    val qualifier = injektContext.referenceClass(InjektFqNames.Qualifier)!!
+    val readerImpl = injektContext.referenceClass(InjektFqNames.ReaderImpl)!!
+    val readerInvocation = injektContext.referenceClass(InjektFqNames.ReaderInvocation)!!
+    val runReaderContext = injektContext.referenceClass(InjektFqNames.RunReaderContext)!!
+    val signature = injektContext.referenceClass(InjektFqNames.Signature)!!
 }

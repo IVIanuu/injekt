@@ -16,8 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.ImplicitChecker
-import com.ivianuu.injekt.compiler.transform.InjektIrContext
+import com.ivianuu.injekt.compiler.transform.InjektContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.allParameters
@@ -135,7 +134,6 @@ import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtElement
-import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.AnnotationValue
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
@@ -504,12 +502,12 @@ fun <T> T.getClassFromAnnotation(
 
 fun String.asNameId(): Name = Name.identifier(this)
 
-fun IrClass.getReaderConstructor(context: InjektIrContext): IrConstructor? {
+fun IrClass.getReaderConstructor(injektContext: InjektContext): IrConstructor? {
     constructors
         .firstOrNull {
-            it.isMarkedAsImplicit(context)
+            it.isMarkedAsImplicit(injektContext)
         }?.let { return it }
-    if (!isMarkedAsImplicit(context)) return null
+    if (!isMarkedAsImplicit(injektContext)) return null
     return primaryConstructor
 }
 
@@ -543,9 +541,9 @@ fun IrPluginContext.tmpFunction(n: Int): IrClassSymbol =
 fun IrPluginContext.tmpSuspendFunction(n: Int): IrClassSymbol =
     referenceClass(builtIns.getSuspendFunction(n).fqNameSafe)!!
 
-fun IrFunction.getFunctionType(context: InjektIrContext): IrType {
-    return (if (isSuspend) context.tmpSuspendFunction(valueParameters.size)
-    else context.tmpFunction(valueParameters.size))
+fun IrFunction.getFunctionType(injektContext: InjektContext): IrType {
+    return (if (isSuspend) injektContext.tmpSuspendFunction(valueParameters.size)
+    else injektContext.tmpFunction(valueParameters.size))
         .typeWith(valueParameters.map { it.type } + returnType)
 }
 
@@ -620,7 +618,7 @@ fun wrapDescriptor(descriptor: FunctionDescriptor): WrappedSimpleFunctionDescrip
     }
 }
 
-fun IrFunction.copy(context: InjektIrContext): IrSimpleFunction {
+fun IrFunction.copy(injektContext: InjektContext): IrSimpleFunction {
     val descriptor = descriptor
     val newDescriptor = wrapDescriptor(descriptor)
 
@@ -666,7 +664,7 @@ fun IrFunction.copy(context: InjektIrContext): IrSimpleFunction {
                         .mapIndexed { index, valueParameter -> valueParameter to index }
                         .singleOrNull { it.first.symbol == expression.symbol }
                         ?.let { fn.allParameters[it.second] }
-                        ?.let { DeclarationIrBuilder(context, fn.symbol).irGet(it) }
+                        ?.let { DeclarationIrBuilder(injektContext, fn.symbol).irGet(it) }
                         ?: super.visitGetValue(expression)
                 }
             })
@@ -690,39 +688,37 @@ fun IrDeclarationWithName.uniqueKey() = when (this) {
     else -> error("Unsupported declaration ${dump()}")
 }
 
-fun IrDeclarationWithName.isMarkedAsImplicit(context: InjektIrContext): Boolean =
-    isReader(context) ||
+fun IrDeclarationWithName.isMarkedAsImplicit(injektContext: InjektContext): Boolean =
+    isReader(injektContext) ||
             hasAnnotation(InjektFqNames.Given) ||
             hasAnnotation(InjektFqNames.MapEntries) ||
             hasAnnotation(InjektFqNames.SetElements)
 
-private fun IrDeclarationWithName.isReader(context: InjektIrContext): Boolean {
+private fun IrDeclarationWithName.isReader(injektContext: InjektContext): Boolean {
     if (hasAnnotation(InjektFqNames.Reader)) return true
-    val implicitChecker = ImplicitChecker()
-    val bindingTrace = DelegatingBindingTrace(context.bindingContext, "Injekt IR")
     return try {
-        implicitChecker.isImplicit(descriptor, bindingTrace)
+        injektContext.implicitChecker.isImplicit(descriptor, injektContext.bindingTrace)
     } catch (e: Exception) {
         false
     }
 }
 
 fun IrFunctionAccessExpression.isReaderLambdaInvoke(
-    context: InjektIrContext
+    injektContext: InjektContext
 ): Boolean {
     return symbol.owner.name.asString() == "invoke" &&
             (dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Reader) == true ||
-                    context.irTrace[InjektWritableSlices.IS_READER_LAMBDA_INVOKE, this] == true)
+                    injektContext.irTrace[InjektWritableSlices.IS_READER_LAMBDA_INVOKE, this] == true)
 }
 
 fun IrDeclarationWithName.canUseImplicits(
-    context: InjektIrContext
+    injektContext: InjektContext
 ): Boolean =
     (!hasAnnotation(InjektFqNames.Signature) && (this is IrFunction && !isExternalDeclaration() && getContext() != null) ||
-            isMarkedAsImplicit(context) ||
-            (this is IrConstructor && constructedClass.isMarkedAsImplicit(context)) ||
+            isMarkedAsImplicit(injektContext) ||
+            (this is IrConstructor && constructedClass.isMarkedAsImplicit(injektContext)) ||
             (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsImplicit(
-                context
+                injektContext
             ) == true))
 
 fun IrBuilderWithScope.irLambda(
@@ -767,9 +763,9 @@ fun IrBuilderWithScope.irLambda(
 
 fun IrBuilderWithScope.jvmNameAnnotation(
     name: String,
-    context: InjektIrContext
+    injektContext: InjektContext
 ): IrConstructorCall {
-    val jvmName = context.referenceClass(DescriptorUtils.JVM_NAME)!!
+    val jvmName = injektContext.referenceClass(DescriptorUtils.JVM_NAME)!!
     return irCall(jvmName.constructors.single()).apply {
         putValueArgument(0, irString(name))
     }
@@ -782,7 +778,7 @@ fun IrFunction.getContextValueParameter() = valueParameters.singleOrNull {
 }
 
 fun IrModuleFragment.addFile(
-    context: InjektIrContext,
+    injektContext: InjektContext,
     fqName: FqName
 ): IrFile {
     val file = IrFileImpl(
@@ -792,7 +788,7 @@ fun IrModuleFragment.addFile(
         ),
         symbol = IrFileSymbolImpl(
             object : PackageFragmentDescriptorImpl(
-                context.moduleDescriptor,
+                injektContext.moduleDescriptor,
                 fqName.parent()
             ) {
                 override fun getMemberScope(): MemberScope = MemberScope.Empty

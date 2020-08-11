@@ -26,7 +26,7 @@ import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
-import com.ivianuu.injekt.compiler.transform.InjektIrContext
+import com.ivianuu.injekt.compiler.transform.InjektContext
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.IrStatement
@@ -60,10 +60,10 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.utils.addIfNotNull
 
 class ReaderTrackingTransformer(
-    context: InjektIrContext,
+    injektContext: InjektContext,
     private val indexer: Indexer,
     private val implicitContextParamTransformer: ImplicitContextParamTransformer
-) : AbstractInjektTransformer(context) {
+) : AbstractInjektTransformer(injektContext) {
 
     private val newIndexBuilders = mutableListOf<NewIndexBuilder>()
 

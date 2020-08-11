@@ -29,7 +29,7 @@ import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
-import com.ivianuu.injekt.compiler.transform.InjektIrContext
+import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.runreader.RunReaderContextImplTransformer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
@@ -76,10 +76,10 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 class GenericContextImplTransformer(
-    context: InjektIrContext,
+    injektContext: InjektContext,
     private val declarationGraph: DeclarationGraph,
     private val runReaderContextImplTransformer: RunReaderContextImplTransformer
-) : AbstractInjektTransformer(context) {
+) : AbstractInjektTransformer(injektContext) {
 
     override fun lower() {
         declarationGraph.genericContexts.forEach { index ->

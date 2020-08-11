@@ -30,7 +30,7 @@ import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
-import com.ivianuu.injekt.compiler.transform.InjektIrContext
+import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -83,11 +83,11 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class RunReaderContextImplTransformer(
-    context: InjektIrContext,
+    injektContext: InjektContext,
     private val declarationGraph: DeclarationGraph,
     private val implicitContextParamTransformer: ImplicitContextParamTransformer,
     private val initFile: IrFile
-) : AbstractInjektTransformer(context) {
+) : AbstractInjektTransformer(injektContext) {
 
     // todo do not expose internals
     val generatedContexts = mutableMapOf<IrClass, Set<IrClass>>()
@@ -557,9 +557,10 @@ class RunReaderContextImplTransformer(
         return { c ->
             irBlock {
                 val tmpMap = irTemporary(
-                    irCall(injektContext.referenceFunctions(
-                        FqName("kotlin.collections.mutableMapOf")
-                    ).first { it.owner.valueParameters.isEmpty() })
+                    irCall(
+                        injektContext.referenceFunctions(
+                            FqName("kotlin.collections.mutableMapOf")
+                        ).first { it.owner.valueParameters.isEmpty() })
                 )
                 val mapType = injektContext.referenceClass(
                     FqName("kotlin.collections.Map")
@@ -600,9 +601,10 @@ class RunReaderContextImplTransformer(
         return { c ->
             irBlock {
                 val tmpSet = irTemporary(
-                    irCall(injektContext.referenceFunctions(
-                        FqName("kotlin.collections.mutableSetOf")
-                    ).first { it.owner.valueParameters.isEmpty() })
+                    irCall(
+                        injektContext.referenceFunctions(
+                            FqName("kotlin.collections.mutableSetOf")
+                        ).first { it.owner.valueParameters.isEmpty() })
                 )
                 val collectionType = injektContext.referenceClass(
                     FqName("kotlin.collections.Collection")

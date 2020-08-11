@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.transform.InjektIrContext
+import com.ivianuu.injekt.compiler.transform.InjektContext
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -46,12 +46,12 @@ fun SimpleUniqueNameProvider(): UniqueNameProvider {
 }
 
 fun ClassUniqueNameProvider(
-    context: InjektIrContext
+    injektContext: InjektContext
 ): UniqueNameProvider {
     val uniqueNames = mutableSetOf<FqName>()
     return UniqueNameProvider { base, fqName ->
         val fullFqName = fqName.child(base)
-        (context.referenceClass(fullFqName) != null) or
+        (injektContext.referenceClass(fullFqName) != null) or
                 !uniqueNames.add(fullFqName)
     }
 }

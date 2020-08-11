@@ -35,7 +35,7 @@ import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
-import com.ivianuu.injekt.compiler.transform.InjektIrContext
+import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
@@ -142,9 +142,9 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.Variance
 
 class ImplicitContextParamTransformer(
-    context: InjektIrContext,
+    injektContext: InjektContext,
     private val indexer: Indexer
-) : AbstractInjektTransformer(context) {
+) : AbstractInjektTransformer(injektContext) {
 
     private val transformedClasses = mutableSetOf<IrClass>()
     private val transformedFields = mutableMapOf<IrField, IrField>()

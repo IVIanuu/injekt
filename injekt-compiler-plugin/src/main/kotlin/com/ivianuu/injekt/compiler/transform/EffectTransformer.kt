@@ -68,7 +68,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class EffectTransformer(context: InjektIrContext) : AbstractInjektTransformer(context) {
+class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransformer(injektContext) {
 
     override fun lower() {
         val classes = mutableListOf<IrClass>()

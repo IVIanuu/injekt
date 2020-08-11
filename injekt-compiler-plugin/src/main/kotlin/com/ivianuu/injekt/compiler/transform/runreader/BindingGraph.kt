@@ -25,7 +25,7 @@ import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
-import com.ivianuu.injekt.compiler.transform.InjektIrContext
+import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -45,7 +45,7 @@ import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class BindingGraph(
-    private val context: InjektIrContext,
+    private val injektContext: InjektContext,
     declarationGraph: DeclarationGraph,
     private val contextImpl: IrClass,
     inputs: List<IrField>,
@@ -66,14 +66,14 @@ class BindingGraph(
 
                 val scopingFunction = scoping
                     ?.functions
-                    ?.single { it.canUseImplicits(context) }
+                    ?.single { it.canUseImplicits(injektContext) }
                     ?.let { implicitContextParamTransformer.getTransformedFunction(it) }
 
                 val explicitParameters = function.valueParameters
                     .filter { it != function.getContextValueParameter() }
 
                 val key = if (explicitParameters.isEmpty()) function.returnType.asKey()
-                else context.tmpFunction(explicitParameters.size)
+                else injektContext.tmpFunction(explicitParameters.size)
                     .typeWith(explicitParameters.map { it.type } + function.returnType)
                     .asKey()
 
@@ -132,7 +132,7 @@ class BindingGraph(
                                 putValueArgument(
                                     1,
                                     irLambda(
-                                        this@BindingGraph.context.tmpFunction(0)
+                                        this@BindingGraph.injektContext.tmpFunction(0)
                                             .typeWith(key.type)
                                     ) { call }
                                 )
