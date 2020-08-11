@@ -30,8 +30,9 @@ inline fun <R> BroadcastReceiver.runReceiverReader(
 ): R = (context.applicationContext as Application).runApplicationReader {
     runChildReader(
         context as ReceiverContext,
-        intent as ReceiverIntent
-    ) { block() }
+        intent as ReceiverIntent,
+        block = block
+    )
 }
 
 typealias ReceiverContext = Context

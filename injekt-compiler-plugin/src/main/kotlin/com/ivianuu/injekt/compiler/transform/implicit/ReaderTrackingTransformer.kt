@@ -50,9 +50,12 @@ import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrSetField
 import org.jetbrains.kotlin.ir.expressions.IrSetVariable
 import org.jetbrains.kotlin.ir.expressions.IrWhen
+import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
+import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
@@ -95,16 +98,23 @@ class ReaderTrackingTransformer(
             override val fqName: FqName
         ) : Scope() {
 
-            override val invocationContext =
-                (call.getValueArgument(1) as IrFunctionExpression)
-                    .function
-                    .getContext()!!
+            override val invocationContext = call.getValueArgument(1)!!
+                .type
+                .lambdaContext!!
 
             fun isBlock(function: IrFunction): Boolean =
-                call.getValueArgument(0).let {
+                call.getValueArgument(1).let {
                     it is IrFunctionExpression &&
                             it.function == function
                 }
+
+            fun isInput(expression: IrExpression): Boolean =
+                call.getValueArgument(0)
+                    ?.let { it as IrVarargImpl }
+                    ?.elements
+                    ?.map { it as IrExpression }
+                    ?.any { it == expression } ?: false
+
         }
     }
 
@@ -251,8 +261,7 @@ class ReaderTrackingTransformer(
 
                 return if (declaration.canUseImplicits(injektContext) &&
                     currentReaderScope.let {
-                        it == null || it !is Scope.RunReader ||
-                                !it.isBlock(declaration)
+                        it == null || it !is Scope.RunReader || !it.isBlock(declaration)
                     }
                 ) {
                     inScope(
@@ -272,11 +281,10 @@ class ReaderTrackingTransformer(
                     expression.symbol.descriptor.fqNameSafe.asString() ==
                     "com.ivianuu.injekt.runChildReader"
                 ) {
-                    if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                        "com.ivianuu.injekt.runChildReader"
-                    ) {
-                        visitPossibleReaderCall(expression)
-                    }
+                    // every possible reader call which is used for inputs
+                    // should be recorded on the parent scope
+                    expression.getValueArgument(0)?.transformChildrenVoid()
+
                     inScope(
                         Scope.RunReader(
                             expression,
@@ -284,7 +292,22 @@ class ReaderTrackingTransformer(
                             currentScope!!.scope.scopeOwner.fqNameSafe
                         )
                     ) {
-                        super.visitCall(expression)
+                        val blockExpression = expression.getValueArgument(1)!!
+                        blockExpression.transformChildrenVoid()
+                        visitPossibleReaderCall(
+                            // we fake the invoke call here because otherwise
+                            // the call would get recorded in the parent scope
+                            DeclarationIrBuilder(injektContext, expression.symbol).run {
+                                irCall(
+                                    blockExpression.type.classOrNull!!.owner
+                                        .functions
+                                        .first { it.name.asString() == "invoke" }
+                                ).apply {
+                                    dispatchReceiver = blockExpression
+                                }
+                            }
+                        )
+                        expression
                     }
                 } else {
                     visitPossibleReaderCall(expression)
@@ -296,12 +319,6 @@ class ReaderTrackingTransformer(
         injektContext.module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
 
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
-                if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.runReader" ||
-                    expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.runChildReader"
-                ) return super.visitFunctionAccess(expression)
-
                 val transformedCallee = implicitContextParamTransformer
                     .getTransformedFunction(expression.symbol.owner)
 
@@ -359,7 +376,7 @@ class ReaderTrackingTransformer(
         }
     }
 
-    private fun visitPossibleReaderCall(call: IrCall) {
+    private fun visitPossibleReaderCall(call: IrFunctionAccessExpression) {
         newIndexBuilders += when {
             call.isReaderLambdaInvoke(injektContext) -> {
                 val lambdaContext = call.dispatchReceiver!!.type.lambdaContext!!
@@ -375,8 +392,7 @@ class ReaderTrackingTransformer(
                 val isRunChildReader = call.symbol.descriptor.fqNameSafe.asString() ==
                         "com.ivianuu.injekt.runChildReader"
                 val calleeContext = if (isRunChildReader) {
-                    (call.getValueArgument(1) as IrFunctionExpression)
-                        .function.getContext()!!
+                    call.getValueArgument(1)!!.type.lambdaContext!!
                 } else {
                     call.symbol.owner.getContext()!!
                 }
@@ -397,52 +413,54 @@ class ReaderTrackingTransformer(
         invocationContext: IrClass,
         isLambda: Boolean,
         isRunChildReader: Boolean
-    ) = listOf(
-        NewIndexBuilder(
-            DeclarationGraph.READER_INVOCATION_CALLEE_TO_CALLER_TAG,
-            calleeContext.descriptor.fqNameSafe.asString(),
-            invocationContext
-        ) {
-            annotations += DeclarationIrBuilder(injektContext, invocationContext.symbol).run {
-                irCall(injektContext.injektSymbols.readerInvocation.constructors.single()).apply {
-                    putValueArgument(
-                        0,
-                        irClassReference(invocationContext)
-                    )
-                    putValueArgument(
-                        1,
-                        irBoolean(isLambda)
-                    )
-                    putValueArgument(
-                        2,
-                        irBoolean(isRunChildReader)
-                    )
+    ): List<NewIndexBuilder> {
+        return listOf(
+            NewIndexBuilder(
+                DeclarationGraph.READER_INVOCATION_CALLEE_TO_CALLER_TAG,
+                calleeContext.descriptor.fqNameSafe.asString(),
+                invocationContext
+            ) {
+                annotations += DeclarationIrBuilder(injektContext, invocationContext.symbol).run {
+                    irCall(injektContext.injektSymbols.readerInvocation.constructors.single()).apply {
+                        putValueArgument(
+                            0,
+                            irClassReference(invocationContext)
+                        )
+                        putValueArgument(
+                            1,
+                            irBoolean(isLambda)
+                        )
+                        putValueArgument(
+                            2,
+                            irBoolean(isRunChildReader)
+                        )
+                    }
+                }
+            },
+            NewIndexBuilder(
+                DeclarationGraph.READER_INVOCATION_CALLER_TO_CALLEE_TAG,
+                invocationContext.descriptor.fqNameSafe.asString(),
+                invocationContext
+            ) {
+                annotations += DeclarationIrBuilder(injektContext, invocationContext.symbol).run {
+                    irCall(injektContext.injektSymbols.readerInvocation.constructors.single()).apply {
+                        putValueArgument(
+                            0,
+                            irClassReference(calleeContext)
+                        )
+                        putValueArgument(
+                            1,
+                            irBoolean(isLambda)
+                        )
+                        putValueArgument(
+                            2,
+                            irBoolean(isRunChildReader)
+                        )
+                    }
                 }
             }
-        },
-        NewIndexBuilder(
-            DeclarationGraph.READER_INVOCATION_CALLER_TO_CALLEE_TAG,
-            invocationContext.descriptor.fqNameSafe.asString(),
-            invocationContext
-        ) {
-            annotations += DeclarationIrBuilder(injektContext, invocationContext.symbol).run {
-                irCall(injektContext.injektSymbols.readerInvocation.constructors.single()).apply {
-                    putValueArgument(
-                        0,
-                        irClassReference(calleeContext)
-                    )
-                    putValueArgument(
-                        1,
-                        irBoolean(isLambda)
-                    )
-                    putValueArgument(
-                        2,
-                        irBoolean(isRunChildReader)
-                    )
-                }
-            }
-        }
-    )
+        )
+    }
 
     private fun readerImplIndexBuilders(
         superContext: IrClass,

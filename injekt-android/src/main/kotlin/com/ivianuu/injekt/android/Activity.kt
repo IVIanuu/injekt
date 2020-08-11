@@ -31,9 +31,7 @@ import com.ivianuu.injekt.runChildReader
 
 inline fun <R> ComponentActivity.runActivityReader(block: @Reader () -> R): R =
     application.runApplicationReader {
-        runChildReader(this) {
-            block()
-        }
+        runChildReader(this, block = block)
     }
 
 @Scoping

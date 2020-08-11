@@ -21,11 +21,13 @@ import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.transform.InjektContext
+import com.ivianuu.injekt.compiler.transform.implicit.lambdaContext
+import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -38,32 +40,25 @@ import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.impl.EmptyPackageFragmentDescriptor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
-import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irBoolean
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irString
-import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.impl.IrExternalPackageFragmentImpl
-import org.jetbrains.kotlin.ir.expressions.IrBlockBody
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
-import org.jetbrains.kotlin.ir.expressions.IrGetValue
-import org.jetbrains.kotlin.ir.expressions.IrReturn
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrExternalPackageFragmentSymbolImpl
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.getPackageFragment
-import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class RunReaderCallTransformer(
@@ -115,7 +110,8 @@ class RunReaderCallTransformer(
             ?.elements
             ?.map { it as IrExpression } ?: emptyList()
 
-        val lambda = (call.getValueArgument(1) as IrFunctionExpression).function
+        val lambdaExpression = call.getValueArgument(1)!!
+        val lambdaContext = lambdaExpression.type.lambdaContext!!
 
         val isChild = call.symbol.owner.descriptor.fqNameSafe.asString() ==
                 "com.ivianuu.injekt.runChildReader"
@@ -130,7 +126,7 @@ class RunReaderCallTransformer(
         )
 
         newIndexBuilders += NewIndexBuilder(scope) clazz@{
-            superTypes += lambda.getContext()!!.defaultType
+            superTypes += lambdaContext.defaultType
             if (metadata != null) superTypes += metadata.callingContext.defaultType
             addMetadataIfNotLocal()
             if (scope is IrTypeParametersContainer)
@@ -186,7 +182,7 @@ class RunReaderCallTransformer(
 
         val createFunctionStub = contextFactoryStub.addFunction {
             this.name = "create".asNameId()
-            returnType = lambda.getContext()!!.defaultType
+            returnType = lambdaContext.defaultType
             origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
         }.apply {
             dispatchReceiverParameter = contextFactoryStub.thisReceiver!!.copyTo(this)
@@ -207,53 +203,26 @@ class RunReaderCallTransformer(
         }
 
         return DeclarationIrBuilder(injektContext, call.symbol).run {
-            irBlock {
-                val rawContextExpression = irCall(createFunctionStub).apply {
-                    dispatchReceiver = irGetObject(contextFactoryStub.symbol)
+            val contextExpression = irCall(createFunctionStub).apply {
+                dispatchReceiver = irGetObject(contextFactoryStub.symbol)
 
-                    if (isChild) {
-                        putValueArgument(0, metadata!!.contextExpression)
-                    }
-
-                    inputs.forEachIndexed { index, input ->
-                        putValueArgument(index + if (isChild) 1 else 0, input)
-                    }
+                if (isChild) {
+                    putValueArgument(0, metadata!!.contextExpression)
                 }
 
-                var contextUsageCount = 0
-                lambda.body!!.transformChildrenVoid(object : IrElementTransformerVoid() {
-                    override fun visitGetValue(expression: IrGetValue): IrExpression {
-                        if (expression.symbol == lambda.valueParameters.last().symbol) {
-                            contextUsageCount++
-                        }
-                        return super.visitGetValue(expression)
-                    }
-                })
-
-                val contextExpression: () -> IrExpression = if (contextUsageCount > 1) {
-                    val tmp = irTemporary(rawContextExpression);
-                    { irGet(tmp) }
-                } else {
-                    { rawContextExpression }
+                inputs.forEachIndexed { index, input ->
+                    putValueArgument(index + if (isChild) 1 else 0, input)
                 }
-
-                (lambda.body as IrBlockBody).statements.forEach { stmt ->
-                    +stmt.transform(
-                        object : IrElementTransformerVoid() {
-                            override fun visitGetValue(expression: IrGetValue): IrExpression {
-                                return if (expression.symbol == lambda.valueParameters.last().symbol)
-                                    contextExpression()
-                                else super.visitGetValue(expression)
-                            }
-
-                            override fun visitReturn(expression: IrReturn): IrExpression {
-                                val result = super.visitReturn(expression) as IrReturn
-                                return if (result.returnTargetSymbol == lambda.symbol) result.value else result
-                            }
-                        },
-                        null
-                    )
-                }
+            }
+            irCall(
+                injektContext.referenceFunctions(
+                    FqName("com.ivianuu.injekt.internal.runReaderDummy")
+                ).single()
+            ).apply {
+                putTypeArgument(0, contextExpression.type)
+                putTypeArgument(1, lambdaExpression.type.typeArguments.last().typeOrFail)
+                putValueArgument(0, contextExpression)
+                putValueArgument(1, lambdaExpression)
             }
         }
     }

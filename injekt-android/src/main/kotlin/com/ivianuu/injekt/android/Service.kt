@@ -26,9 +26,7 @@ import com.ivianuu.injekt.runChildReader
 
 inline fun <R> Service.runServiceReader(block: @Reader () -> R): R =
     application.runApplicationReader {
-        runChildReader(this) {
-            block()
-        }
+        runChildReader(this, block = block)
     }
 
 typealias ServiceContext = Context

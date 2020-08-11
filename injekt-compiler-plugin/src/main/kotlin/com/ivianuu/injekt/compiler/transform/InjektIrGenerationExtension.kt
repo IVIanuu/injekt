@@ -37,7 +37,6 @@ import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import kotlin.system.measureTimeMillis
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
@@ -45,11 +44,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         val injektContext = InjektContext(pluginContext, moduleFragment)
         var initializeInjekt = false
         var initFile: IrFile? = null
-
-        fun AbstractInjektTransformer.doLowerAndMeasure() {
-            val duration = measureTimeMillis { doLower(moduleFragment) }
-            println("${javaClass.name} took $duration ms")
-        }
 
         moduleFragment.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitDeclaration(declaration: IrDeclaration): IrStatement {
@@ -62,7 +56,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         })
 
         if (injektContext.referenceClass(InjektFqNames.Effect) != null) {
-            EffectTransformer(injektContext).doLowerAndMeasure()
+            EffectTransformer(injektContext).doLower(moduleFragment)
         }
 
         val indexer = Indexer(
@@ -73,19 +67,19 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         val implicitContextParamTransformer =
             ImplicitContextParamTransformer(injektContext, indexer)
-        implicitContextParamTransformer.doLowerAndMeasure()
+        implicitContextParamTransformer.doLower(moduleFragment)
 
-        ImplicitCallTransformer(injektContext, indexer).doLowerAndMeasure()
+        ImplicitCallTransformer(injektContext, indexer).doLower(moduleFragment)
 
         ReaderTrackingTransformer(
             injektContext,
             indexer,
             implicitContextParamTransformer
-        ).doLowerAndMeasure()
+        ).doLower(moduleFragment)
 
-        RunReaderCallTransformer(injektContext, indexer).doLowerAndMeasure()
+        RunReaderCallTransformer(injektContext, indexer).doLower(moduleFragment)
 
-        BindingIndexingTransformer(indexer, injektContext).doLowerAndMeasure()
+        BindingIndexingTransformer(indexer, injektContext).doLower(moduleFragment)
 
         if (initializeInjekt) {
             val declarationGraph = DeclarationGraph(
@@ -100,17 +94,16 @@ class InjektIrGenerationExtension : IrGenerationExtension {
                 initFile!!
             )
             declarationGraph.runReaderContextImplTransformer = runReaderContextImplTransformer
-            runReaderContextImplTransformer.doLowerAndMeasure()
+            runReaderContextImplTransformer.doLower(moduleFragment)
             GenericContextImplTransformer(
                 injektContext,
                 declarationGraph,
                 runReaderContextImplTransformer,
                 initFile!!
-            )
-                .doLowerAndMeasure()
+            ).doLower(moduleFragment)
         }
 
-        TmpMetadataPatcher(injektContext).doLowerAndMeasure()
+        TmpMetadataPatcher(injektContext).doLower(moduleFragment)
 
         generateSymbols(pluginContext)
     }

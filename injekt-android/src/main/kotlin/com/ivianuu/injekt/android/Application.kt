@@ -25,7 +25,7 @@ import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 
 inline fun <R> Application.runApplicationReader(block: @Reader () -> R): R =
-    runReader(this) { block() }
+    runReader(this, block = block)
 
 typealias ApplicationContext = Context
 

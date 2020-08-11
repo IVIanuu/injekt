@@ -48,7 +48,6 @@ import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.utils.addToStdlib.measureTimeMillisWithResult
 
 class Indexer(
     private val injektContext: InjektContext,
@@ -64,14 +63,9 @@ class Indexer(
         val finalTag = tag.removeIllegalChars()
         val finalKey = key.removeIllegalChars()
         return classIndicesByTagAndKey.getOrPut(finalTag + finalKey) {
-            val internalClasses = measureTimeMillisWithResult {
-                internalDeclarationsByIndices.keys
-                    .filter { it.tag == finalTag && it.key == finalKey && it.type == "class" }
-                    .map { internalDeclarationsByIndices[it]!! as IrClass }
-            }.let {
-                println("computing internal classes for $tag and $key took ${it.first} ms")
-                it.second
-            }
+            val internalClasses = internalDeclarationsByIndices.keys
+                .filter { it.tag == finalTag && it.key == finalKey && it.type == "class" }
+                .map { internalDeclarationsByIndices[it]!! as IrClass }
 
             (internalClasses + externalClassIndices(finalTag, finalKey))
                 .distinct()
@@ -86,17 +80,12 @@ class Indexer(
         val finalTag = tag.removeIllegalChars()
         val finalKey = key.removeIllegalChars()
         return externalClassIndicesByTagAndKey.getOrPut(finalTag + finalKey) {
-            measureTimeMillisWithResult {
-                externalIndicesByTagAndKey(finalTag, finalKey)
-                    .filter { it.type == "class" }
-                    .map { index ->
-                        if (index.indexIsDeclaration) index.indexClass
-                        else injektContext.referenceClass(index.fqName)?.owner!!
-                    }
-            }.let {
-                println("computing external classes for $tag and $key took ${it.first} ms")
-                it.second
-            }
+            externalIndicesByTagAndKey(finalTag, finalKey)
+                .filter { it.type == "class" }
+                .map { index ->
+                    if (index.indexIsDeclaration) index.indexClass
+                    else injektContext.referenceClass(index.fqName)?.owner!!
+                }
         }
     }
 
@@ -105,27 +94,17 @@ class Indexer(
         val finalTag = tag.removeIllegalChars()
         val finalKey = key.removeIllegalChars()
         return functionIndicesByTagAndKey.getOrPut(finalTag + finalKey) {
-            val internalFunctions = measureTimeMillisWithResult {
-                internalDeclarationsByIndices.keys
-                    .filter { it.tag == finalTag && it.key == finalKey && it.type == "function" }
-                    .map { internalDeclarationsByIndices[it]!! }
-                    .filterIsInstance<IrFunction>()
-            }.let {
-                println("computing internal functions for $tag and $key took ${it.first} ms")
-                it.second
-            }
+            val internalFunctions = internalDeclarationsByIndices.keys
+                .filter { it.tag == finalTag && it.key == finalKey && it.type == "function" }
+                .map { internalDeclarationsByIndices[it]!! }
+                .filterIsInstance<IrFunction>()
 
-            val externalFunctions = measureTimeMillisWithResult {
-                externalIndicesByTagAndKey(finalTag, finalKey)
-                    .filter { it.type == "function" }
-                    .flatMapFix { index ->
-                        injektContext.referenceFunctions(index.fqName)
-                            .map { it.owner }
-                    }
-            }.let {
-                println("computing external functions for $tag and $key took ${it.first} ms")
-                it.second
-            }
+            val externalFunctions = externalIndicesByTagAndKey(finalTag, finalKey)
+                .filter { it.type == "function" }
+                .flatMapFix { index ->
+                    injektContext.referenceFunctions(index.fqName)
+                        .map { it.owner }
+                }
 
             (internalFunctions + externalFunctions)
                 .distinct()
@@ -137,27 +116,17 @@ class Indexer(
         val finalTag = tag.removeIllegalChars()
         val finalKey = key.removeIllegalChars()
         return propertyIndicesByTagAndKey.getOrPut(finalTag + finalKey) {
-            val internalProperties = measureTimeMillisWithResult {
-                internalDeclarationsByIndices.keys
-                    .filter { it.tag == finalTag && it.key == finalKey && it.type == "property" }
-                    .map { internalDeclarationsByIndices[it]!! }
-                    .filterIsInstance<IrProperty>()
-            }.let {
-                println("computing internal properties for $tag and $key took ${it.first} ms")
-                it.second
-            }
+            val internalProperties = internalDeclarationsByIndices.keys
+                .filter { it.tag == finalTag && it.key == finalKey && it.type == "property" }
+                .map { internalDeclarationsByIndices[it]!! }
+                .filterIsInstance<IrProperty>()
 
-            val externalProperties = measureTimeMillisWithResult {
-                externalIndicesByTagAndKey(finalTag, finalKey)
-                    .filter { it.type == "property" }
-                    .flatMapFix { index ->
-                        injektContext.referenceProperties(index.fqName)
-                            .map { it.owner }
-                    }
-            }.let {
-                println("computing external properties for $tag and $key took ${it.first} ms")
-                it.second
-            }
+            val externalProperties = externalIndicesByTagAndKey(finalTag, finalKey)
+                .filter { it.type == "property" }
+                .flatMapFix { index ->
+                    injektContext.referenceProperties(index.fqName)
+                        .map { it.owner }
+                }
 
             (internalProperties + externalProperties)
                 .distinct()
@@ -169,39 +138,34 @@ class Indexer(
         val finalTag = tag.removeIllegalChars()
         val finalKey = key.removeIllegalChars()
         return externalIndicesByTagAndKey.getOrPut(finalTag + finalKey) {
-            measureTimeMillisWithResult {
-                val memberScope = module.descriptor.getPackage(
-                    InjektFqNames.IndexPackage
-                        .child(finalTag.asNameId())
-                        .child(finalKey.asNameId())
-                ).memberScope
-                (memberScope.getClassifierNames() ?: emptySet())
-                    .mapNotNull {
-                        memberScope.getContributedClassifier(
-                            it,
-                            NoLookupLocation.FROM_BACKEND
-                        )
-                    }
-                    .map { injektContext.referenceClass(it.fqNameSafe)!!.owner }
-                    .map {
-                        Index(
-                            finalTag,
-                            finalKey,
-                            FqName(
-                                it.getConstantFromAnnotationOrNull<String>(
-                                    InjektFqNames.Index,
-                                    1
-                                )!!
-                            ),
-                            it,
-                            it.getConstantFromAnnotationOrNull<String>(InjektFqNames.Index, 0)!!,
-                            it.getConstantFromAnnotationOrNull<Boolean>(InjektFqNames.Index, 2)!!
-                        )
-                    }
-            }.let {
-                println("computing indices for tag $finalTag and key $finalKey took ${it.first} ms")
-                it.second
-            }
+            val memberScope = module.descriptor.getPackage(
+                InjektFqNames.IndexPackage
+                    .child(finalTag.asNameId())
+                    .child(finalKey.asNameId())
+            ).memberScope
+            (memberScope.getClassifierNames() ?: emptySet())
+                .mapNotNull {
+                    memberScope.getContributedClassifier(
+                        it,
+                        NoLookupLocation.FROM_BACKEND
+                    )
+                }
+                .map { injektContext.referenceClass(it.fqNameSafe)!!.owner }
+                .map {
+                    Index(
+                        finalTag,
+                        finalKey,
+                        FqName(
+                            it.getConstantFromAnnotationOrNull<String>(
+                                InjektFqNames.Index,
+                                1
+                            )!!
+                        ),
+                        it,
+                        it.getConstantFromAnnotationOrNull<String>(InjektFqNames.Index, 0)!!,
+                        it.getConstantFromAnnotationOrNull<Boolean>(InjektFqNames.Index, 2)!!
+                    )
+                }
         }
     }
 

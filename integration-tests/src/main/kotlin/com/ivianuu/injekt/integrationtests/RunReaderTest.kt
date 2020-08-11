@@ -134,9 +134,7 @@ class RunReaderTest {
             fun b(foo: Foo) = childRunner(foo) { given<Foo>() }
             
             @Reader
-            fun <R> childRunner(foo: Foo, block: @Reader () -> R) = runChildReader(foo) {
-                block()
-            }
+            fun <R> childRunner(foo: Foo, block: @Reader () -> R) = runChildReader(foo, block = block)
             
             fun invoke(foo: Foo) = runReader { a(foo) }
         """
@@ -158,9 +156,7 @@ class RunReaderTest {
             fun c(foo: Foo) = childRunner(foo) { given<Foo>() }
             
             @Reader
-            fun <R> childRunner(foo: Foo, block: @Reader () -> R) = runChildReader(foo) {
-                block()
-            }
+            fun <R> childRunner(foo: Foo, block: @Reader () -> R) = runChildReader(foo, block = block)
             
             fun invoke(foo: Foo) = runReader { a(foo) }
         """
@@ -193,25 +189,25 @@ class RunReaderTest {
             private fun <R> withString(
                 value: String,
                 block: @Reader () -> R
-            ) = runChildReader(value) { block() }
+            ) = runChildReader(value, block = block)
             
             @Reader
             private fun <R> withInt(
                 value: Int,
                 block: @Reader () -> R
-            ) = runChildReader(value) { block() }
+            ) = runChildReader(value, block = block)
             
             @Reader
             private fun <R> withLong(
                 value: Long,
                 block: @Reader () -> R
-            ) = runChildReader(value) { block() }
+            ) = runChildReader(value, block = block)
             
             @Reader
             private fun <R> withBoolean(
                 value: Boolean,
                 block: @Reader () -> R
-            ) = runChildReader(value) { block() }
+            ) = runChildReader(value, block = block)
         """
     ) {
         val string = "hello world"
@@ -271,21 +267,21 @@ class RunReaderTest {
             }
             
             inline fun <T> App.runAppReader(block: @Reader () -> T): T =
-                runReader(this) { block() }
+                runReader(this, block = block)
                 
             inline fun <T> Activity.runActivityReader(block: @Reader () -> T): T =
                 app.runAppReader {
-                    runChildReader(this) { block() }
+                    runChildReader(this, block = block)
                 }
                 
             inline fun <T> Service.runServiceReader(block: @Reader () -> T): T =
                 app.runAppReader {
-                    runChildReader(this) { block() }
+                    runChildReader(this, block = block)
                 }
                 
             inline fun <T> Fragment.runFragmentReader(block: @Reader () -> T): T =
                 activity.runActivityReader {
-                    runChildReader(this) { block() }
+                    runChildReader(this, block = block)
                 }
             
             @Effect
@@ -342,12 +338,12 @@ class RunReaderTest {
             
             @Reader
             fun <T> remember(block: @Reader () -> T): T {
-                return remember(*emptyArray()) { block() }
+                return remember(*emptyArray(), block = block)
             }
             
             @Reader
             fun <T> remember(vararg inputs: Any?, block: @Reader () -> T): T {
-                return runChildReader(Foo()) { block() }
+                return runChildReader(Foo(), block = block)
             }
         """
     ) {
@@ -374,21 +370,21 @@ class RunReaderTest {
             }
             
             inline fun <T> App.runAppReader(block: @Reader () -> T): T =
-                runReader(this) { block() }
+                runReader(this, block = block)
                 
             inline fun <T> Activity.runActivityReader(block: @Reader () -> T): T =
                 app.runAppReader {
-                    runChildReader(this) { block() }
+                    runChildReader(this, block = block)
                 }
                 
             inline fun <T> Service.runServiceReader(block: @Reader () -> T): T =
                 app.runAppReader {
-                    runChildReader(this) { block() }
+                    runChildReader(this, block = block)
                 }
                 
             inline fun <T> Fragment.runFragmentReader(block: @Reader () -> T): T =
                 activity.runActivityReader {
-                    runChildReader(this) { block() }
+                    runChildReader(this, block = block)
                 }
             
             @Effect
@@ -445,7 +441,7 @@ class RunReaderTest {
             
             @Reader
             fun <T> remember(block: @Reader () -> T): T {
-                return runChildReader(Foo()) { block() }
+                return runChildReader(Foo(), block = block)
             }
         """
     ) {
@@ -482,7 +478,7 @@ class RunReaderTest {
         @Given
         fun bar() = Bar(given())
         
-        inline fun <R> runBarReader(block: @Reader () -> R) = runReader("hello world") { block() }
+        inline fun <R> runBarReader(block: @Reader () -> R) = runReader("hello world", block = block)
         
         fun invoke(): Bar {
             return runBlocking {
@@ -531,7 +527,7 @@ class RunReaderTest {
     fun testRunReaderWrapper() = codegen(
         """
         fun runApplicationReader(block: @Reader () -> Foo): Foo {
-            return runReader(Foo()) { block() }
+            return runReader(Foo(), block = block)
         }
         
         fun invoke(): Foo {
@@ -548,7 +544,7 @@ class RunReaderTest {
             source(
                 """
                     fun runApplicationReader(block: @Reader () -> Foo): Foo {
-                        return runReader(Foo()) { block() }
+                        return runReader(Foo(), block = block)
                     }
                     """,
                 initializeInjekt = false
@@ -581,19 +577,6 @@ class RunReaderTest {
 
         fun invoke(): Any { 
             return runReader { given<AnnotatedBar>() }
-        }
-    """
-    ) {
-        invokeSingleFile()
-    }
-
-    // todo @Test
-    fun testGivenObject() = codegen(
-        """
-        @Given object AnnotatedFoo
-
-        fun invoke() = {
-            return runReader { given<AnnotatedFoo>() }
         }
     """
     ) {
@@ -644,7 +627,7 @@ class RunReaderTest {
     // todo @Test
     fun testGenericAnnotatedClass() = codegen(
         """
-        @Given @Reader class Dep<T> {
+        @Given class Dep<T> {
             val value: T = given()
         }
         
@@ -669,6 +652,26 @@ class RunReaderTest {
     ) {
         val (a, b) = invokeSingleFile<Pair<Foo, Foo>>()
         assertSame(a, b)
+    }
+
+    @Test
+    fun testInlinedRunReaderLambda() = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+        @Given
+        fun bar() = Bar(given())
+        
+        fun invoke(): Bar {
+            return runBlock { given<Bar>() }
+        }
+        
+        fun <R> runBlock(block: @Reader () -> R): R {
+            return runReader(block = block)
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
     }
 
 }

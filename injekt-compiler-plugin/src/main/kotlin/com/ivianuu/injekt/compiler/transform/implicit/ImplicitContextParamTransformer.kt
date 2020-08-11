@@ -479,8 +479,8 @@ class ImplicitContextParamTransformer(
         val oldTypeArguments = oldType.typeArguments
 
         return (if (oldType.isSuspendFunction())
-            this.injektContext.tmpSuspendFunction(oldTypeArguments.size) else
-            this.injektContext.tmpFunction(oldTypeArguments.size))
+            injektContext.tmpSuspendFunction(oldTypeArguments.size) else
+            injektContext.tmpFunction(oldTypeArguments.size))
             .defaultType
             .let {
                 IrSimpleTypeImpl(
