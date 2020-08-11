@@ -69,6 +69,7 @@ class ReaderTrackingTransformer(
 
     private data class NewIndexBuilder(
         val tag: String,
+        val key: String,
         val originatingDeclaration: IrDeclarationWithName,
         val classBuilder: IrClass.() -> Unit
     )
@@ -125,8 +126,8 @@ class ReaderTrackingTransformer(
                 if (defaultValue != null && defaultValue.expression.type.isTransformedReaderLambda()) {
                     newIndexBuilders += defaultValue.expression
                         .collectReaderLambdaContextsInExpression()
-                        .map { subContext ->
-                            readerImplIndexBuilder(
+                        .flatMapFix { subContext ->
+                            readerImplIndexBuilders(
                                 declaration.type.lambdaContext!!,
                                 subContext
                             )
@@ -140,8 +141,8 @@ class ReaderTrackingTransformer(
                 if (initializer != null && initializer.expression.type.isTransformedReaderLambda()) {
                     newIndexBuilders += initializer.expression
                         .collectReaderLambdaContextsInExpression()
-                        .map { subContext ->
-                            readerImplIndexBuilder(
+                        .flatMapFix { subContext ->
+                            readerImplIndexBuilders(
                                 declaration.type.lambdaContext!!,
                                 subContext
                             )
@@ -155,8 +156,8 @@ class ReaderTrackingTransformer(
                 if (initializer != null && initializer.type.isTransformedReaderLambda()) {
                     newIndexBuilders += initializer
                         .collectReaderLambdaContextsInExpression()
-                        .map { subContext ->
-                            readerImplIndexBuilder(
+                        .flatMapFix { subContext ->
+                            readerImplIndexBuilders(
                                 declaration.type.lambdaContext!!,
                                 subContext
                             )
@@ -169,8 +170,8 @@ class ReaderTrackingTransformer(
                 if (expression.symbol.owner.type.isTransformedReaderLambda()) {
                     newIndexBuilders += expression.value
                         .collectReaderLambdaContextsInExpression()
-                        .map { subContext ->
-                            readerImplIndexBuilder(
+                        .flatMapFix { subContext ->
+                            readerImplIndexBuilders(
                                 expression.symbol.owner.type.lambdaContext!!,
                                 subContext
                             )
@@ -183,8 +184,8 @@ class ReaderTrackingTransformer(
                 if (expression.symbol.owner.type.isTransformedReaderLambda()) {
                     newIndexBuilders += expression.value
                         .collectReaderLambdaContextsInExpression()
-                        .map { subContext ->
-                            readerImplIndexBuilder(
+                        .flatMapFix { subContext ->
+                            readerImplIndexBuilders(
                                 expression.symbol.owner.type.lambdaContext!!,
                                 subContext
                             )
@@ -198,8 +199,8 @@ class ReaderTrackingTransformer(
                 if (expression.type.isTransformedReaderLambda()) {
                     newIndexBuilders += expression.branches
                         .flatMapFix { it.result.collectReaderLambdaContextsInExpression() }
-                        .map { subContext ->
-                            readerImplIndexBuilder(
+                        .flatMapFix { subContext ->
+                            readerImplIndexBuilders(
                                 expression.type.lambdaContext!!,
                                 subContext
                             )
@@ -229,8 +230,8 @@ class ReaderTrackingTransformer(
                     if (lastBodyStatement != null && lastBodyStatement.type.isTransformedReaderLambda()) {
                         newIndexBuilders += lastBodyStatement
                             .collectReaderLambdaContextsInExpression()
-                            .map { subContext ->
-                                readerImplIndexBuilder(
+                            .flatMapFix { subContext ->
+                                readerImplIndexBuilders(
                                     declaration.returnType.lambdaContext!!,
                                     subContext
                                 )
@@ -240,7 +241,7 @@ class ReaderTrackingTransformer(
                     if (declaration is IrSimpleFunction) {
                         val field = declaration.correspondingPropertySymbol?.owner?.backingField
                         if (field != null && field.type.isTransformedReaderLambda()) {
-                            newIndexBuilders += readerImplIndexBuilder(
+                            newIndexBuilders += readerImplIndexBuilders(
                                 declaration.returnType.lambdaContext!!,
                                 field.type.lambdaContext!!
                             )
@@ -318,8 +319,8 @@ class ReaderTrackingTransformer(
                                     ?: error("null for ${parameter.dump()}\n${expression.symbol.owner.dump()}")) to context
                             }
                     }
-                    .map { (superContext, subContext) ->
-                        readerImplIndexBuilder(
+                    .flatMapFix { (superContext, subContext) ->
+                        readerImplIndexBuilders(
                             superContext,
                             subContext
                         )
@@ -333,7 +334,7 @@ class ReaderTrackingTransformer(
                     declaration.isMarkedAsImplicit(injektContext) &&
                     declaration.overriddenSymbols.isNotEmpty()
                 ) {
-                    newIndexBuilders += readerImplIndexBuilder(
+                    newIndexBuilders += readerImplIndexBuilders(
                         declaration.overriddenSymbols
                             .single()
                             .owner
@@ -349,16 +350,21 @@ class ReaderTrackingTransformer(
         })
 
         newIndexBuilders.forEach {
-            indexer.index(it.originatingDeclaration, it.tag, it.classBuilder)
+            indexer.index(
+                it.originatingDeclaration,
+                it.tag,
+                it.key,
+                it.classBuilder
+            )
         }
     }
 
     private fun visitPossibleReaderCall(call: IrCall) {
-        val indexBuilder = when {
+        newIndexBuilders += when {
             call.isReaderLambdaInvoke(injektContext) -> {
                 val lambdaContext = call.dispatchReceiver!!.type.lambdaContext!!
                 val scope = currentReaderScope!!
-                readerInvocationIndexBuilder(
+                readerInvocationIndexBuilders(
                     lambdaContext,
                     scope.invocationContext,
                     true,
@@ -375,69 +381,102 @@ class ReaderTrackingTransformer(
                     call.symbol.owner.getContext()!!
                 }
                 val scope = currentReaderScope!!
-                readerInvocationIndexBuilder(
+                readerInvocationIndexBuilders(
                     calleeContext,
                     scope.invocationContext,
                     false,
                     isRunChildReader
                 )
             }
-            else -> null
+            else -> emptyList()
         }
-        indexBuilder?.let { newIndexBuilders += it }
     }
 
-    private fun readerInvocationIndexBuilder(
+    private fun readerInvocationIndexBuilders(
         calleeContext: IrClass,
         invocationContext: IrClass,
         isLambda: Boolean,
         isRunChildReader: Boolean
-    ) = NewIndexBuilder(
-        DeclarationGraph.READER_INVOCATION_TAG,
-        invocationContext
-    ) {
-        annotations += DeclarationIrBuilder(injektContext, invocationContext.symbol).run {
-            irCall(injektContext.injektSymbols.readerInvocation.constructors.single()).apply {
-                putValueArgument(
-                    0,
-                    irClassReference(calleeContext)
-                )
-                putValueArgument(
-                    1,
-                    irClassReference(invocationContext)
-                )
-                putValueArgument(
-                    2,
-                    irBoolean(isLambda)
-                )
-                putValueArgument(
-                    3,
-                    irBoolean(isRunChildReader)
-                )
+    ) = listOf(
+        NewIndexBuilder(
+            DeclarationGraph.READER_INVOCATION_CALLEE_TO_CALLER_TAG,
+            calleeContext.descriptor.fqNameSafe.asString(),
+            invocationContext
+        ) {
+            annotations += DeclarationIrBuilder(injektContext, invocationContext.symbol).run {
+                irCall(injektContext.injektSymbols.readerInvocation.constructors.single()).apply {
+                    putValueArgument(
+                        0,
+                        irClassReference(invocationContext)
+                    )
+                    putValueArgument(
+                        1,
+                        irBoolean(isLambda)
+                    )
+                    putValueArgument(
+                        2,
+                        irBoolean(isRunChildReader)
+                    )
+                }
+            }
+        },
+        NewIndexBuilder(
+            DeclarationGraph.READER_INVOCATION_CALLER_TO_CALLEE_TAG,
+            invocationContext.descriptor.fqNameSafe.asString(),
+            invocationContext
+        ) {
+            annotations += DeclarationIrBuilder(injektContext, invocationContext.symbol).run {
+                irCall(injektContext.injektSymbols.readerInvocation.constructors.single()).apply {
+                    putValueArgument(
+                        0,
+                        irClassReference(calleeContext)
+                    )
+                    putValueArgument(
+                        1,
+                        irBoolean(isLambda)
+                    )
+                    putValueArgument(
+                        2,
+                        irBoolean(isRunChildReader)
+                    )
+                }
             }
         }
-    }
+    )
 
-    private fun readerImplIndexBuilder(
+    private fun readerImplIndexBuilders(
         superContext: IrClass,
         subContext: IrClass
-    ) = NewIndexBuilder(
-        DeclarationGraph.READER_IMPL_TAG,
-        subContext
-    ) {
-        annotations += DeclarationIrBuilder(injektContext, subContext.symbol).run {
-            irCall(injektContext.injektSymbols.readerImpl.constructors.single()).apply {
-                putValueArgument(
-                    0,
-                    irClassReference(superContext)
-                )
-                putValueArgument(
-                    1,
-                    irClassReference(subContext)
-                )
+    ) = listOf(
+        NewIndexBuilder(
+            DeclarationGraph.READER_IMPL_SUPER_TO_SUB_TAG,
+            superContext.descriptor.fqNameSafe.asString(),
+            subContext
+        ) {
+            annotations += DeclarationIrBuilder(injektContext, subContext.symbol).run {
+                irCall(injektContext.injektSymbols.readerImpl.constructors.single()).apply {
+                    putValueArgument(
+                        0,
+                        irClassReference(subContext)
+                    )
+                }
+            }
+        },
+        NewIndexBuilder(
+            DeclarationGraph.READER_IMPL_SUB_TO_SUPER_TAG,
+            subContext.descriptor.fqNameSafe.asString(),
+            subContext
+        ) {
+            annotations += DeclarationIrBuilder(injektContext, subContext.symbol).run {
+                irCall(injektContext.injektSymbols.readerImpl.constructors.single()).apply {
+                    putValueArgument(
+                        0,
+                        irClassReference(superContext)
+                    )
+                }
             }
         }
-    }
+    )
 
     private fun IrExpression.collectReaderLambdaContextsInExpression(): Set<IrClass> {
         val contexts = mutableSetOf<IrClass>()

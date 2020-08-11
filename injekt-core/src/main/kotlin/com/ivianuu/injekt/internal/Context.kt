@@ -30,3 +30,5 @@ annotation class RunReaderContext(
     val fqName: String,
     val isChild: Boolean
 )
+
+annotation class GivenContext(val givenKey: String)

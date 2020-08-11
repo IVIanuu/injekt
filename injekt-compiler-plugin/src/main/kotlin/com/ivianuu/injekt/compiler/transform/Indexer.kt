@@ -26,6 +26,7 @@ import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.recordLookup
+import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
@@ -55,129 +56,161 @@ class Indexer(
     private val symbols: InjektSymbols
 ) {
 
-    private val externalIndices by lazy {
-        val memberScope = injektContext.moduleDescriptor.getPackage(InjektFqNames.IndexPackage)
-            .memberScope
-
-        (memberScope.getClassifierNames() ?: emptySet())
-            .mapNotNull {
-                memberScope.getContributedClassifier(
-                    it,
-                    NoLookupLocation.FROM_BACKEND
-                )
+    private val classIndicesByTagAndKey = mutableMapOf<String, List<IrClass>>()
+    fun classIndices(
+        tag: String,
+        key: String
+    ): List<IrClass> {
+        val finalTag = tag.removeIllegalChars()
+        val finalKey = key.removeIllegalChars()
+        return classIndicesByTagAndKey.getOrPut(finalTag + finalKey) {
+            val internalClasses = measureTimeMillisWithResult {
+                internalDeclarationsByIndices.keys
+                    .filter { it.tag == finalTag && it.key == finalKey && it.type == "class" }
+                    .map { internalDeclarationsByIndices[it]!! as IrClass }
+            }.let {
+                println("computing internal classes for $tag and $key took ${it.first} ms")
+                it.second
             }
-            .map { injektContext.referenceClass(it.fqNameSafe)!!.owner }
-            .map {
-                Index(
-                    it,
-                    it.getConstantFromAnnotationOrNull<String>(InjektFqNames.Index, 0)!!,
-                    it.getConstantFromAnnotationOrNull<String>(InjektFqNames.Index, 1)!!,
-                    FqName(it.getConstantFromAnnotationOrNull<String>(InjektFqNames.Index, 2)!!),
-                    it.getConstantFromAnnotationOrNull<Boolean>(InjektFqNames.Index, 3)!!
-                )
-            }
-            .distinct()
-    }
 
-    fun classIndices(tag: String) =
-        internalClassIndices(tag) + externalClassIndices(tag)
-
-    private val internalClassIndicesByTag = mutableMapOf<String, List<IrClass>>()
-    private fun internalClassIndices(tag: String) = internalClassIndicesByTag.getOrPut(tag) {
-        measureTimeMillisWithResult {
-            internalDeclarationsByIndices.keys
-                .filter { it.type == "class" }
-                .filter { it.tag == tag }
-                .map { internalDeclarationsByIndices[it]!! as IrClass }
-        }.let {
-            println("computing internal classes took ${it.first} ms")
-            it.second
+            (internalClasses + externalClassIndices(finalTag, finalKey))
+                .distinct()
         }
     }
 
-    private val externalClassIndicesByTag = mutableMapOf<String, List<IrClass>>()
-    fun externalClassIndices(tag: String) = externalClassIndicesByTag.getOrPut(tag) {
-        measureTimeMillisWithResult {
-            externalIndices
-                .filter { it.type == "class" }
-                .filter { it.tag == tag }
-                .mapNotNull {
-                    if (it.indexIsDeclaration) it.indexClass else injektContext.referenceClass(it.fqName)?.owner
-                }
-        }.let {
-            println("computing external classes took ${it.first} ms")
-            it.second
-        }
-    }
-
-    private val externalClassIndicesByFqName = mutableMapOf<String, List<IrClass>>()
-    fun externalClassIndex(tag: String, fqName: FqName) = externalClassIndicesByFqName.getOrPut(
-        tag + fqName
-    ) {
-        externalIndices
-            .filter { it.type == "class" }
-            .filter { it.tag == tag }
-            .filter { it.fqName == fqName }
-            .mapNotNull {
-                if (it.indexIsDeclaration) it.indexClass else injektContext.referenceClass(it.fqName)?.owner
+    private val externalClassIndicesByTagAndKey = mutableMapOf<String, List<IrClass>>()
+    fun externalClassIndices(
+        tag: String,
+        key: String
+    ): List<IrClass> {
+        val finalTag = tag.removeIllegalChars()
+        val finalKey = key.removeIllegalChars()
+        return externalClassIndicesByTagAndKey.getOrPut(finalTag + finalKey) {
+            measureTimeMillisWithResult {
+                externalIndicesByTagAndKey(finalTag, finalKey)
+                    .filter { it.type == "class" }
+                    .map { index ->
+                        if (index.indexIsDeclaration) index.indexClass
+                        else injektContext.referenceClass(index.fqName)?.owner!!
+                    }
+            }.let {
+                println("computing external classes for $tag and $key took ${it.first} ms")
+                it.second
             }
-    }
-
-    private val functionIndicesByTag = mutableMapOf<String, List<IrFunction>>()
-    fun functionIndices(tag: String) = functionIndicesByTag.getOrPut(tag) {
-        measureTimeMillisWithResult {
-            internalDeclarationsByIndices.keys
-                .filter { it.type == "function" }
-                .filter { it.tag == tag }
-                .map { internalDeclarationsByIndices[it]!! }
-                .filterIsInstance<IrFunction>()
-        }.let {
-            println("computing internal functions took ${it.first} ms")
-            it.second
-        } + measureTimeMillisWithResult {
-            externalIndices
-                .filter { it.type == "function" }
-                .filter { it.tag == tag }
-                .flatMapFix { index ->
-                    injektContext.referenceFunctions(index.fqName)
-                        .map { it.owner }
-                }
-        }.let {
-            println("computing external functions took ${it.first} ms")
-            it.second
         }
     }
 
-    private val propertyIndicesByTag = mutableMapOf<String, List<IrProperty>>()
-    fun propertyIndices(tag: String) = propertyIndicesByTag.getOrPut(tag) {
-        measureTimeMillisWithResult {
-            internalDeclarationsByIndices.keys
-                .filter { it.type == "property" }
-                .filter { it.tag == tag }
-                .map { internalDeclarationsByIndices[it]!! }
-                .filterIsInstance<IrProperty>()
-        }.let {
-            println("computing internal properties took ${it.first} ms")
-            it.second
-        } + measureTimeMillisWithResult {
-            externalIndices
-                .filter { it.type == "property" }
-                .filter { it.tag == tag }
-                .flatMapFix { index ->
-                    injektContext.referenceProperties(index.fqName)
-                        .map { it.owner }
-                }
-        }.let {
-            println("computing external properties took ${it.first} ms")
-            it.second
+    private val functionIndicesByTagAndKey = mutableMapOf<String, List<IrFunction>>()
+    fun functionIndices(tag: String, key: String): List<IrFunction> {
+        val finalTag = tag.removeIllegalChars()
+        val finalKey = key.removeIllegalChars()
+        return functionIndicesByTagAndKey.getOrPut(finalTag + finalKey) {
+            val internalFunctions = measureTimeMillisWithResult {
+                internalDeclarationsByIndices.keys
+                    .filter { it.tag == finalTag && it.key == finalKey && it.type == "function" }
+                    .map { internalDeclarationsByIndices[it]!! }
+                    .filterIsInstance<IrFunction>()
+            }.let {
+                println("computing internal functions for $tag and $key took ${it.first} ms")
+                it.second
+            }
+
+            val externalFunctions = measureTimeMillisWithResult {
+                externalIndicesByTagAndKey(finalTag, finalKey)
+                    .filter { it.type == "function" }
+                    .flatMapFix { index ->
+                        injektContext.referenceFunctions(index.fqName)
+                            .map { it.owner }
+                    }
+            }.let {
+                println("computing external functions for $tag and $key took ${it.first} ms")
+                it.second
+            }
+
+            (internalFunctions + externalFunctions)
+                .distinct()
+        }
+    }
+
+    private val propertyIndicesByTagAndKey = mutableMapOf<String, List<IrProperty>>()
+    fun propertyIndices(tag: String, key: String): List<IrProperty> {
+        val finalTag = tag.removeIllegalChars()
+        val finalKey = key.removeIllegalChars()
+        return propertyIndicesByTagAndKey.getOrPut(finalTag + finalKey) {
+            val internalProperties = measureTimeMillisWithResult {
+                internalDeclarationsByIndices.keys
+                    .filter { it.tag == finalTag && it.key == finalKey && it.type == "property" }
+                    .map { internalDeclarationsByIndices[it]!! }
+                    .filterIsInstance<IrProperty>()
+            }.let {
+                println("computing internal properties for $tag and $key took ${it.first} ms")
+                it.second
+            }
+
+            val externalProperties = measureTimeMillisWithResult {
+                externalIndicesByTagAndKey(finalTag, finalKey)
+                    .filter { it.type == "property" }
+                    .flatMapFix { index ->
+                        injektContext.referenceProperties(index.fqName)
+                            .map { it.owner }
+                    }
+            }.let {
+                println("computing external properties for $tag and $key took ${it.first} ms")
+                it.second
+            }
+
+            (internalProperties + externalProperties)
+                .distinct()
+        }
+    }
+
+    private val externalIndicesByTagAndKey = mutableMapOf<String, List<Index>>()
+    private fun externalIndicesByTagAndKey(tag: String, key: String): List<Index> {
+        val finalTag = tag.removeIllegalChars()
+        val finalKey = key.removeIllegalChars()
+        return externalIndicesByTagAndKey.getOrPut(finalTag + finalKey) {
+            measureTimeMillisWithResult {
+                val memberScope = module.descriptor.getPackage(
+                    InjektFqNames.IndexPackage
+                        .child(finalTag.asNameId())
+                        .child(finalKey.asNameId())
+                ).memberScope
+                (memberScope.getClassifierNames() ?: emptySet())
+                    .mapNotNull {
+                        memberScope.getContributedClassifier(
+                            it,
+                            NoLookupLocation.FROM_BACKEND
+                        )
+                    }
+                    .map { injektContext.referenceClass(it.fqNameSafe)!!.owner }
+                    .map {
+                        Index(
+                            finalTag,
+                            finalKey,
+                            FqName(
+                                it.getConstantFromAnnotationOrNull<String>(
+                                    InjektFqNames.Index,
+                                    1
+                                )!!
+                            ),
+                            it,
+                            it.getConstantFromAnnotationOrNull<String>(InjektFqNames.Index, 0)!!,
+                            it.getConstantFromAnnotationOrNull<Boolean>(InjektFqNames.Index, 2)!!
+                        )
+                    }
+            }.let {
+                println("computing indices for tag $finalTag and key $finalKey took ${it.first} ms")
+                it.second
+            }
         }
     }
 
     private data class Index(
+        val tag: String,
+        val key: String,
+        val fqName: FqName,
         val indexClass: IrClass,
         val type: String,
-        val tag: String,
-        val fqName: FqName,
         val indexIsDeclaration: Boolean
     )
 
@@ -186,8 +219,15 @@ class Indexer(
     fun index(
         originatingDeclaration: IrDeclarationWithName,
         tag: String,
+        key: String,
         classBuilder: IrClass.() -> Unit
     ) {
+        val finalTag = tag.removeIllegalChars()
+        val finalKey = key.removeIllegalChars()
+        val packageFqName = InjektFqNames.IndexPackage
+            .child(finalTag.removeIllegalChars().asNameId())
+            .child(finalKey.removeIllegalChars().asNameId())
+
         val name = injektContext.uniqueClassNameProvider(
             (getJoinedName(
                 originatingDeclaration.getPackageFragment()!!.fqName,
@@ -195,11 +235,14 @@ class Indexer(
                     .parent().child(originatingDeclaration.name.asString().asNameId())
             ).asString() + "${originatingDeclaration.uniqueKey().hashCode()}Index")
                 .asNameId(),
-            InjektFqNames.IndexPackage
+            packageFqName
         )
+
+        println("index tag '$finalTag' key '$finalKey' p '$packageFqName' name '$name'")
+
         module.addFile(
             injektContext,
-            InjektFqNames.IndexPackage
+            packageFqName
                 .child(name)
         ).apply file@{
             recordLookup(this, originatingDeclaration)
@@ -214,10 +257,11 @@ class Indexer(
                     createImplicitParameterDeclarationWithWrappedDescriptor()
                     addMetadataIfNotLocal()
                     val index = Index(
+                        finalTag,
+                        finalKey,
+                        descriptor.fqNameSafe,
                         this,
                         "class",
-                        tag,
-                        originatingDeclaration.descriptor.fqNameSafe,
                         true
                     )
                     annotations += DeclarationIrBuilder(injektContext, symbol).run {
@@ -228,14 +272,10 @@ class Indexer(
                             )
                             putValueArgument(
                                 1,
-                                irString(index.tag)
-                            )
-                            putValueArgument(
-                                2,
                                 irString(index.fqName.asString())
                             )
                             putValueArgument(
-                                3,
+                                2,
                                 irBoolean(index.indexIsDeclaration)
                             )
                         }
@@ -249,22 +289,27 @@ class Indexer(
     }
 
     fun index(
-        declaration: IrDeclarationWithName,
-        tag: String
+        tag: String,
+        key: String,
+        declaration: IrDeclarationWithName
     ) {
+        val finalTag = tag.removeIllegalChars()
+        val finalKey = key.removeIllegalChars()
+        val packageFqName = InjektFqNames.IndexPackage
+            .child(finalTag.asNameId())
+            .child(finalKey.asNameId())
+
         val name = injektContext.uniqueClassNameProvider(
             (getJoinedName(
                 declaration.getPackageFragment()!!.fqName,
                 declaration.descriptor.fqNameSafe
                     .parent().child(declaration.name.asString().asNameId())
-            ).asString() + "${declaration.uniqueKey().hashCode()}Index")
-                .asNameId(),
-            InjektFqNames.IndexPackage
+            ).asString() + "${declaration.uniqueKey().hashCode()}Index").asNameId(),
+            packageFqName
         )
         module.addFile(
             injektContext,
-            InjektFqNames.IndexPackage
-                .child(name)
+            packageFqName.child(name)
         ).apply {
             recordLookup(this, declaration)
 
@@ -275,6 +320,9 @@ class Indexer(
                     visibility = Visibilities.INTERNAL
                 }.apply {
                     val index = Index(
+                        finalTag,
+                        finalKey,
+                        declaration.descriptor.fqNameSafe,
                         this,
                         when (declaration) {
                             is IrClass -> "class"
@@ -282,8 +330,6 @@ class Indexer(
                             is IrProperty -> "property"
                             else -> error("Unsupported declaration ${declaration.render()}")
                         },
-                        tag,
-                        declaration.descriptor.fqNameSafe,
                         false
                     )
                     internalDeclarationsByIndices[index] = declaration
@@ -298,14 +344,10 @@ class Indexer(
                             )
                             putValueArgument(
                                 1,
-                                irString(index.tag)
-                            )
-                            putValueArgument(
-                                2,
                                 irString(index.fqName.asString())
                             )
                             putValueArgument(
-                                3,
+                                2,
                                 irBoolean(index.indexIsDeclaration)
                             )
                         }

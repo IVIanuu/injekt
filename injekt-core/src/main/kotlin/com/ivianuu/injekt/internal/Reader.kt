@@ -18,14 +18,10 @@ package com.ivianuu.injekt.internal
 
 import kotlin.reflect.KClass
 
-internal annotation class ReaderImpl(
-    val superContext: KClass<*>,
-    val subContext: KClass<*>
-)
+internal annotation class ReaderImpl(val other: KClass<*>)
 
 internal annotation class ReaderInvocation(
-    val calleeContext: KClass<*>,
-    val callerContext: KClass<*>,
+    val other: KClass<*>,
     val isLambda: Boolean,
     val isRunChildReader: Boolean
 )
