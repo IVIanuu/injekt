@@ -448,7 +448,7 @@ class RunReaderContextImplTransformer(
         }
 
         val graph = BindingGraph(
-            context = injektContext,
+            injektContext = injektContext,
             declarationGraph = declarationGraph,
             contextImpl = contextImpl,
             inputs = inputFields,
