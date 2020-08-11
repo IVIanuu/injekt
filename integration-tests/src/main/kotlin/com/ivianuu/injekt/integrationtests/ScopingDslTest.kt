@@ -110,4 +110,13 @@ class ScopingDslTest {
         assertCompileError("function")
     }
 
+    @Test
+    fun testGivenWithNonScopingObjectFails() = codegen(
+        """
+            @Given(Any::class) class Dep
+        """
+    ) {
+        assertCompileError("@Scoping")
+    }
+
 }

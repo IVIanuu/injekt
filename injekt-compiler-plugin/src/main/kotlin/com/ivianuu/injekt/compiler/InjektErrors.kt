@@ -113,6 +113,11 @@ interface InjektErrors {
         )
 
         @JvmField
+        val NOT_A_SCOPING_OBJECT = error(
+            "Not a @Scoping object"
+        )
+
+        @JvmField
         val SCOPING_MUST_BE_AN_OBJECT = error(
             "@Scoping must be an object"
         )

@@ -23,10 +23,13 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 class ScopingChecker : DeclarationChecker {
 
@@ -35,6 +38,24 @@ class ScopingChecker : DeclarationChecker {
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
+        if (descriptor.hasAnnotation(InjektFqNames.Given)) {
+            val scopingParameter = descriptor.annotations.findAnnotation(InjektFqNames.Given)!!
+                .allValueArguments
+                .values
+                .singleOrNull()
+                ?.value
+                ?.let { it as? KClassValue.Value.NormalClass }
+                ?.let { descriptor.module.findClassAcrossModuleDependencies(it.classId) }
+            if (scopingParameter != null &&
+                !scopingParameter.hasAnnotation(InjektFqNames.Scoping)
+            ) {
+                context.trace.report(
+                    InjektErrors.NOT_A_SCOPING_OBJECT
+                        .on(declaration)
+                )
+            }
+        }
+
         if (descriptor !is ClassDescriptor ||
             !descriptor.hasAnnotation(InjektFqNames.Scoping)
         ) return
