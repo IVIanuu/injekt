@@ -430,10 +430,6 @@ class ReaderTrackingTransformer(
                             1,
                             irBoolean(isLambda)
                         )
-                        putValueArgument(
-                            2,
-                            irBoolean(isRunChildReader)
-                        )
                     }
                 }
             },
@@ -451,10 +447,6 @@ class ReaderTrackingTransformer(
                         putValueArgument(
                             1,
                             irBoolean(isLambda)
-                        )
-                        putValueArgument(
-                            2,
-                            irBoolean(isRunChildReader)
                         )
                     }
                 }
