@@ -39,6 +39,7 @@ import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.calls.callUtil.isCallableReference
 import org.jetbrains.kotlin.resolve.calls.checkers.AdditionalTypeChecker
 import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
 import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
@@ -156,24 +157,27 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         if (resulting !is FunctionDescriptor) return
 
         if (isImplicit(resulting, context.trace)) {
-            checkInvocations(reportOn, context)
+            checkInvocations(reportOn, context, resolvedCall)
         }
 
         if (resulting is ConstructorDescriptor &&
             (resulting.constructedClass.isMarkedAsImplicit(resulting.module))
         ) {
-            checkInvocations(reportOn, context)
+            checkInvocations(reportOn, context, resolvedCall)
         }
 
         if (isImplicit(resulting, context.trace)) {
-            checkInvocations(reportOn, context)
+            checkInvocations(reportOn, context, resolvedCall)
         }
     }
 
     private fun checkInvocations(
         reportOn: PsiElement,
-        context: CallCheckerContext
+        context: CallCheckerContext,
+        resolvedCall: ResolvedCall<*>
     ) {
+        if (resolvedCall.call.isCallableReference()) return
+
         val enclosingReaderContext = findEnclosingContext(context) {
             isImplicit(it, context.trace)
         }

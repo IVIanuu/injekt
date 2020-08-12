@@ -1146,4 +1146,39 @@ class ImplicitTest {
         assertOk()
     }
 
+    @Test
+    fun testReaderFunctionRef(): Unit = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+        
+        @Reader
+        fun func(): Foo = given<Foo>()
+        
+        fun invoke(): Foo { 
+            val funcRef: @Reader () -> Foo = ::func
+            return runReader { funcRef() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testRunReaderBlockFunctionRef(): Unit = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+        
+        @Reader
+        fun runReaderBlock(): Foo = given<Foo>()
+        
+        fun invoke(): Foo {
+            return runReader(block = ::runReaderBlock)
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
 }

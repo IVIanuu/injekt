@@ -535,11 +535,17 @@ fun IrDeclaration.isExternalDeclaration() = origin ==
         IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
         origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
 
+fun IrPluginContext.tmpKFunction(n: Int): IrClassSymbol =
+    referenceClass(builtIns.getKFunction(n).fqNameSafe)!!
+
 fun IrPluginContext.tmpFunction(n: Int): IrClassSymbol =
     referenceClass(builtIns.getFunction(n).fqNameSafe)!!
 
 fun IrPluginContext.tmpSuspendFunction(n: Int): IrClassSymbol =
     referenceClass(builtIns.getSuspendFunction(n).fqNameSafe)!!
+
+fun IrPluginContext.tmpSuspendKFunction(n: Int): IrClassSymbol =
+    referenceClass(builtIns.getKSuspendFunction(n).fqNameSafe)!!
 
 fun IrFunction.getFunctionType(injektContext: InjektContext): IrType {
     return (if (isSuspend) injektContext.tmpSuspendFunction(valueParameters.size)

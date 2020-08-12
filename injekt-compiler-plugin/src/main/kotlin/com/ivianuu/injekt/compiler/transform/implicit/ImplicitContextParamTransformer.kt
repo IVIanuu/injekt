@@ -29,7 +29,9 @@ import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
 import com.ivianuu.injekt.compiler.jvmNameAnnotation
 import com.ivianuu.injekt.compiler.remapTypeParametersByName
 import com.ivianuu.injekt.compiler.tmpFunction
+import com.ivianuu.injekt.compiler.tmpKFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
+import com.ivianuu.injekt.compiler.tmpSuspendKFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
@@ -101,6 +103,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrExpressionBodyImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrGetFieldImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrGetValueImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrReturnImpl
@@ -128,7 +131,11 @@ import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasDefaultValue
+import org.jetbrains.kotlin.ir.util.isFunction
+import org.jetbrains.kotlin.ir.util.isKFunction
+import org.jetbrains.kotlin.ir.util.isKSuspendFunction
 import org.jetbrains.kotlin.ir.util.isSuspendFunction
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -314,7 +321,7 @@ class ImplicitContextParamTransformer(
             !function.returnType.isTransformedReaderLambda()
         ) {
             transformedFunction.returnType =
-                createNewReaderLambdaType(transformedFunction.returnType, transformedFunction)
+                createNewReaderFunctionType(transformedFunction.returnType, transformedFunction)
         }
 
         if (function.canUseImplicits(injektContext)) {
@@ -356,7 +363,7 @@ class ImplicitContextParamTransformer(
         transformedFields[declaration]?.let { return it }
         if (declaration in transformedFields.values) return declaration
 
-        val newType = createNewReaderLambdaType(declaration.type, declaration)
+        val newType = createNewReaderFunctionType(declaration.type, declaration)
 
         return IrFieldImpl(
             declaration.startOffset,
@@ -391,7 +398,7 @@ class ImplicitContextParamTransformer(
         transformedVariables[declaration]?.let { return it }
         if (declaration in transformedVariables.values) return declaration
 
-        val newType = createNewReaderLambdaType(declaration.type, declaration)
+        val newType = createNewReaderFunctionType(declaration.type, declaration)
 
         return IrVariableImpl(
             declaration.startOffset,
@@ -423,7 +430,7 @@ class ImplicitContextParamTransformer(
         transformedWhens[expression]?.let { return it }
         if (expression in transformedWhens.values) return expression
 
-        val newType = createNewReaderLambdaType(type, scopeElement)
+        val newType = createNewReaderFunctionType(type, scopeElement)
 
         return IrWhenImpl(
             expression.startOffset,
@@ -444,7 +451,7 @@ class ImplicitContextParamTransformer(
         transformedValueParameters[declaration]?.let { return it }
         if (declaration in transformedValueParameters.values) return declaration
 
-        val newType = createNewReaderLambdaType(type, declaration)
+        val newType = createNewReaderFunctionType(type, declaration)
 
         return IrValueParameterImpl(
             declaration.startOffset, declaration.endOffset,
@@ -465,7 +472,7 @@ class ImplicitContextParamTransformer(
         }
     }
 
-    private fun createNewReaderLambdaType(
+    private fun createNewReaderFunctionType(
         oldType: IrType,
         declaration: IrDeclarationWithName
     ): IrType {
@@ -478,9 +485,13 @@ class ImplicitContextParamTransformer(
 
         val oldTypeArguments = oldType.typeArguments
 
-        return (if (oldType.isSuspendFunction())
-            injektContext.tmpSuspendFunction(oldTypeArguments.size) else
-            injektContext.tmpFunction(oldTypeArguments.size))
+        return when {
+            oldType.isFunction() -> injektContext.tmpFunction(oldTypeArguments.size)
+            oldType.isKFunction() -> injektContext.tmpKFunction(oldTypeArguments.size)
+            oldType.isSuspendFunction() -> injektContext.tmpSuspendFunction(oldTypeArguments.size)
+            oldType.isKSuspendFunction() -> injektContext.tmpSuspendKFunction(oldTypeArguments.size)
+            else -> error("Unexpected type ${oldType.render()}")
+        }
             .defaultType
             .let {
                 IrSimpleTypeImpl(
@@ -690,8 +701,8 @@ class ImplicitContextParamTransformer(
                 return if (transformed in transformedFunctions.values) IrFunctionExpressionImpl(
                     result.startOffset,
                     result.endOffset,
-                    result.function.getFunctionType(injektContext),
-                    result.function,
+                    transformed.getFunctionType(injektContext),
+                    transformed as IrSimpleFunction,
                     result.origin
                 )
                 else result
@@ -700,12 +711,15 @@ class ImplicitContextParamTransformer(
             override fun visitFunctionReference(expression: IrFunctionReference): IrExpression {
                 val result = super.visitFunctionReference(expression) as IrFunctionReference
                 val transformed = transformFunctionIfNeeded(result.symbol.owner)
-                return if (transformed in transformedFunctions.values) IrFunctionExpressionImpl(
+                return if (transformed in transformedFunctions.values) IrFunctionReferenceImpl(
                     result.startOffset,
                     result.endOffset,
-                    result.symbol.owner.getFunctionType(injektContext),
-                    result.symbol.owner as IrSimpleFunction,
-                    result.origin!!
+                    transformed.getFunctionType(injektContext),
+                    transformed.symbol,
+                    transformed.typeParameters.size,
+                    transformed.valueParameters.size,
+                    result.reflectionTarget,
+                    result.origin
                 )
                 else result
             }

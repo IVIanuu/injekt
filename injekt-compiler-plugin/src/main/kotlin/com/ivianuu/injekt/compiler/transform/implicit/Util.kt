@@ -42,8 +42,8 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.isFunction
-import org.jetbrains.kotlin.ir.util.isSuspendFunction
+import org.jetbrains.kotlin.ir.util.isFunctionOrKFunction
+import org.jetbrains.kotlin.ir.util.isSuspendFunctionOrKFunction
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 fun createContext(
@@ -75,10 +75,10 @@ fun createContext(
 }
 
 fun IrType.isNotTransformedReaderLambda() =
-    (isFunction() || isSuspendFunction()) && hasAnnotation(InjektFqNames.Reader)
+    (isFunctionOrKFunction() || isSuspendFunctionOrKFunction()) && hasAnnotation(InjektFqNames.Reader)
 
 fun IrType.isTransformedReaderLambda() =
-    (isFunction() || isSuspendFunction()) && typeArguments
+    (isFunctionOrKFunction() || isSuspendFunctionOrKFunction()) && typeArguments
         .mapNotNull { it.typeOrNull?.classOrNull?.owner }
         .any { it.hasAnnotation(InjektFqNames.Context) }
 

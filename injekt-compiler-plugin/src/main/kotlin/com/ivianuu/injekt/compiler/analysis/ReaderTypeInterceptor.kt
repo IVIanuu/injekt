@@ -60,7 +60,6 @@ class ReaderTypeInterceptor(
         resultType: KotlinType
     ): KotlinType {
         if (resultType === TypeUtils.NO_EXPECTED_TYPE) return resultType
-        if (element !is KtLambdaExpression) return resultType
         val isReader = implicitChecker.isImplicit(context.trace, element, resultType)
         return if (isReader) resultType.withReaderAnnotation(context.scope.ownerDescriptor.module)
         else resultType
