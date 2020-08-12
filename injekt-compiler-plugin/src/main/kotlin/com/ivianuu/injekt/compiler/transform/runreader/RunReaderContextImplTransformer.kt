@@ -82,7 +82,9 @@ import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isObject
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -449,11 +451,9 @@ class RunReaderContextImplTransformer(
         }
 
         val graph = BindingGraph(
-            injektContext = injektContext,
             declarationGraph = declarationGraph,
             contextImpl = contextImpl,
-            inputs = inputFields,
-            implicitContextParamTransformer = implicitContextParamTransformer
+            inputs = inputFields
         )
 
         var firstRound = true
@@ -519,7 +519,7 @@ class RunReaderContextImplTransformer(
     ): ContextBindingExpression {
         val rawExpression = when (val binding = graph.getBinding(request)) {
             is GivenBindingNode -> givenExpression(context, graph, binding)
-            is InputBindingNode -> inputExpression(binding)
+            is InstanceBindingNode -> inputExpression(binding)
             is MapBindingNode -> mapBindingExpression(context, binding)
             is NullBindingNode -> nullExpression(binding)
             is SetBindingNode -> setBindingExpression(context, binding)
@@ -546,7 +546,7 @@ class RunReaderContextImplTransformer(
     }
 
     private fun inputExpression(
-        binding: InputBindingNode
+        binding: InstanceBindingNode
     ): ContextBindingExpression = { irGetField(it(), binding.inputField) }
 
     private fun mapBindingExpression(
@@ -667,9 +667,20 @@ class RunReaderContextImplTransformer(
                 }
                 call.apply {
                     if (binding.function.dispatchReceiverParameter != null) {
-                        dispatchReceiver = irGetObject(
-                            binding.function.dispatchReceiverParameter!!.type.classOrNull!!
-                        )
+                        val dispatchReceiverClass =
+                            binding.function.dispatchReceiverParameter!!.type.classOrNull!!.owner
+                        dispatchReceiver =
+                            if (dispatchReceiverClass.hasAnnotation(InjektFqNames.Module)) {
+                                irGetField(
+                                    c(),
+                                    context.fields
+                                        .single { it.type.classOrNull!!.owner == dispatchReceiverClass }
+                                )
+                            } else {
+                                irGetObject(
+                                    binding.function.dispatchReceiverParameter!!.type.classOrNull!!
+                                )
+                            }
                     }
 
                     parametersMap.values.forEachIndexed { index, expression ->

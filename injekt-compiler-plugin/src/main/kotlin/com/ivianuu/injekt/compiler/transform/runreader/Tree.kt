@@ -36,7 +36,8 @@ sealed class BindingNode(
     val key: Key,
     val contexts: List<IrClass>,
     val origin: FqName?,
-    val external: Boolean
+    val external: Boolean,
+    val module: IrClass?
 )
 
 class GivenBindingNode(
@@ -44,47 +45,54 @@ class GivenBindingNode(
     contexts: List<IrClass>,
     origin: FqName?,
     external: Boolean,
+    module: IrClass?,
     val explicitParameters: List<IrValueParameter>,
     val function: IrFunction,
     val storage: IrClass?
-) : BindingNode(key, contexts, origin, external)
+) : BindingNode(key, contexts, origin, external, module)
 
-class InputBindingNode(
-    val inputField: IrField
+class InstanceBindingNode(
+    val inputField: IrField,
 ) : BindingNode(
     inputField.type.asKey(),
     emptyList(),
     inputField.descriptor.fqNameSafe,
-    false
+    false,
+    null
 )
 
 class MapBindingNode(
     key: Key,
     contexts: List<IrClass>,
-    val functions: List<IrFunction>,
-) : BindingNode(
-    key,
-    contexts,
-    null,
-    false
-)
-
-class SetBindingNode(
-    key: Key,
-    contexts: List<IrClass>,
+    module: IrClass?,
     val functions: List<IrFunction>
 ) : BindingNode(
     key,
     contexts,
     null,
-    false
+    false,
+    module
+)
+
+class SetBindingNode(
+    key: Key,
+    contexts: List<IrClass>,
+    module: IrClass?,
+    val functions: List<IrFunction>
+) : BindingNode(
+    key,
+    contexts,
+    null,
+    false,
+    module
 )
 
 class NullBindingNode(key: Key) : BindingNode(
     key,
     emptyList(),
     null,
-    true
+    true,
+    null
 )
 
 fun IrType.asKey(): Key = Key(this)
