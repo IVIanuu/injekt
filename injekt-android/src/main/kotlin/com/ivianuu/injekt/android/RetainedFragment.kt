@@ -16,31 +16,12 @@
 
 package com.ivianuu.injekt.android
 
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStoreOwner
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.Scoping
-import com.ivianuu.injekt.Storage
 import com.ivianuu.injekt.given
 
-@Scoping
-object RetainedFragmentScoped {
-    @Reader
-    inline operator fun <T> invoke(
-        key: Any,
-        init: () -> T
-    ) = given<RetainedFragmentStorage>().scope(key, init)
-}
-
-typealias RetainedFragmentStorage = Storage
-
-object RetainedFragmentModule {
-    @Given
-    val retainedFragmentStorage: RetainedFragmentStorage
-        get() {
-            return ViewModelProvider(
-                given<FragmentViewModelStoreOwner>(),
-                RetainedStorageHolder
-            )[RetainedStorageHolder::class.java].storage
-        }
+@Given
+class RetainedFragmentStorage : AbstractRetainedStorage() {
+    override fun viewModelStoreOwner(): ViewModelStoreOwner =
+        given<FragmentViewModelStoreOwner>()
 }

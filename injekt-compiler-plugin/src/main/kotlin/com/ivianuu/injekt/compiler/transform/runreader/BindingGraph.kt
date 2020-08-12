@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.transform.runreader
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.canUseImplicits
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getContextValueParameter
@@ -30,8 +29,9 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
+import org.jetbrains.kotlin.ir.types.isNothing
 import org.jetbrains.kotlin.ir.util.constructedClass
-import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -127,33 +127,25 @@ class BindingGraph(
 
         this += declarationGraph.bindings(key.type.uniqueTypeName().asString())
             .map { function ->
-                val scoping = function.getClassFromAnnotation(
+                val storage = (function.getClassFromAnnotation(
                     InjektFqNames.Given, 0
                 )
                     ?: if (function is IrConstructor) function.constructedClass.getClassFromAnnotation(
                         InjektFqNames.Given, 0
-                    ) else null
-
-                val scopingFunction = scoping
-                    ?.functions
-                    ?.single { it.canUseImplicits(injektContext) }
-                    ?.let { implicitContextParamTransformer.getTransformedFunction(it) }
+                    ) else null)
+                    ?.takeUnless { it.defaultType.isNothing() }
 
                 val explicitParameters = function.valueParameters
                     .filter { it != function.getContextValueParameter() }
 
                 GivenBindingNode(
                     key = key,
-                    contexts = listOfNotNull(
-                        function.getContext()!!,
-                        scopingFunction?.getContext()
-                    ),
+                    contexts = listOf(function.getContext()!!),
                     external = function.isExternalDeclaration(),
                     explicitParameters = explicitParameters,
                     origin = function.descriptor.fqNameSafe,
                     function = function,
-                    scopingFunction = scopingFunction,
-                    scoping = scoping
+                    storage = storage
                 )
             }
 

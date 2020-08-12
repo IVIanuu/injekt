@@ -494,22 +494,22 @@ class RunReaderTest {
     }
 
     @Test
-    fun testScoping() = codegen(
+    fun testScopedBinding() = codegen(
         """
-        
         private var foo: Foo? = null
 
-        @Scoping
-        object Singleton {
-            @Reader
-            operator fun <T : Foo> invoke(key: Any, init: () -> T): T {
+        class SingletonStorage : Storage {
+            override fun <T> scope(key: Any, init: () -> T): T {
                 foo?.let { return it as T }
-                foo = init()
+                foo = init() as Foo
                 return foo as T
             }
         }
         
-        @Given(Singleton::class)
+        @Given
+        val singletonStorage = SingletonStorage()
+        
+        @Given(SingletonStorage::class)
         fun foo() = Foo()
         
         fun invoke(): Foo {

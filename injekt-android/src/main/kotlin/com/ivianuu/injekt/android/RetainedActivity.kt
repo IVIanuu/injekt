@@ -16,31 +16,12 @@
 
 package com.ivianuu.injekt.android
 
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStoreOwner
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.Scoping
-import com.ivianuu.injekt.Storage
 import com.ivianuu.injekt.given
 
-@Scoping
-object RetainedActivityScoped {
-    @Reader
-    inline operator fun <T> invoke(
-        key: Any,
-        init: () -> T
-    ) = given<RetainedActivityStorage>().scope(key, init)
-}
-
-typealias RetainedActivityStorage = Storage
-
-object RetainedActivityModule {
-    @Given
-    val retainedActivityStorage: RetainedActivityStorage
-        get() {
-            return ViewModelProvider(
-                given<ActivityViewModelStoreOwner>(),
-                RetainedStorageHolder.Factory
-            )[RetainedStorageHolder::class.java].storage
-        }
+@Given
+class RetainedActivityStorage : AbstractRetainedStorage() {
+    override fun viewModelStoreOwner(): ViewModelStoreOwner =
+        given<ActivityViewModelStoreOwner>()
 }

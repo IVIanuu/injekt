@@ -16,12 +16,20 @@
 
 package com.ivianuu.injekt
 
-class Storage(
+interface Storage {
+
+    fun <T> scope(key: Any, init: () -> T): T
+
+}
+
+fun Storage(): Storage = StorageImpl()
+
+internal class StorageImpl(
     @PublishedApi
     internal val backing: MutableMap<Any, Any?> = mutableMapOf()
-) {
+) : Storage {
 
-    inline fun <T> scope(
+    override fun <T> scope(
         key: Any,
         init: () -> T
     ): T = synchronized(this) {

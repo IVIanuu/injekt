@@ -16,18 +16,9 @@
 
 package com.ivianuu.injekt
 
-typealias ApplicationStorage = Storage
+class ApplicationStorage : Storage by Storage()
 
 object ApplicationModule {
     @Given
-    val applicationStorage: ApplicationStorage = Storage()
-}
-
-@Scoping
-object ApplicationScoped {
-    @Reader
-    inline operator fun <T> invoke(
-        key: Any,
-        init: () -> T
-    ) = given<ApplicationStorage>().scope(key, init)
+    val applicationStorage = ApplicationStorage()
 }

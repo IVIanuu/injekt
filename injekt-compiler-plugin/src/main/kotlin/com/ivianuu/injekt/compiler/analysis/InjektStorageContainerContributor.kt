@@ -34,7 +34,6 @@ class InjektStorageContainerContributor(
         container.useInstance(EffectChecker())
         container.useInstance(GivenChecker())
         container.useInstance(implicitChecker)
-        container.useInstance(ScopingChecker())
     }
 
 }

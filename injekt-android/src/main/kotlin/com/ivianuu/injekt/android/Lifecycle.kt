@@ -27,11 +27,13 @@ import kotlinx.coroutines.launch
 
 private val storageByLifecycle = mutableMapOf<Lifecycle, Storage>()
 
-internal fun Lifecycle.storage(): Storage {
-    synchronized(storageByLifecycle) {
-        storageByLifecycle[this]?.let { return it }
-        val storage = Storage()
+internal fun <T : Storage> Lifecycle.storage(init: () -> T): T {
+    return synchronized(storageByLifecycle) {
+        storageByLifecycle[this]?.let { return it as T }
+        val storage = init()
         storageByLifecycle[this] = storage
+        storage
+    }.also {
         addObserver(object : LifecycleEventObserver {
             override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
                 if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
@@ -45,6 +47,5 @@ internal fun Lifecycle.storage(): Storage {
                 }
             }
         })
-        return storage
     }
 }

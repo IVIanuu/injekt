@@ -25,7 +25,6 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.Scoping
 import com.ivianuu.injekt.Storage
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runChildReader
@@ -35,16 +34,7 @@ inline fun <R> Fragment.runFragmentReader(block: @Reader () -> R): R =
         runChildReader(this, block = block)
     }
 
-@Scoping
-object FragmentScoped {
-    @Reader
-    inline operator fun <T> invoke(
-        key: Any,
-        init: () -> T
-    ) = given<FragmentStorage>().scope(key, init)
-}
-
-typealias FragmentStorage = Storage
+class FragmentStorage : Storage by Storage()
 
 typealias FragmentContext = Context
 
@@ -74,6 +64,8 @@ object FragmentModule {
     fun viewModelStoreOwner(): FragmentViewModelStoreOwner = given<ViewModelStoreOwner>()
 
     @Given
-    fun fragmentStorage(): FragmentStorage = given<Fragment>().lifecycle.storage()
+    fun fragmentStorage(): FragmentStorage = given<Fragment>().lifecycle.storage {
+        FragmentStorage()
+    }
 
 }

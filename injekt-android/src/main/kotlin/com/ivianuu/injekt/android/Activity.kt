@@ -24,7 +24,6 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.Scoping
 import com.ivianuu.injekt.Storage
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runChildReader
@@ -34,16 +33,7 @@ inline fun <R> ComponentActivity.runActivityReader(block: @Reader () -> R): R =
         runChildReader(this, block = block)
     }
 
-@Scoping
-object ActivityScoped {
-    @Reader
-    inline operator fun <T> invoke(
-        key: Any,
-        init: () -> T
-    ) = given<ActivityStorage>().scope(key, init)
-}
-
-typealias ActivityStorage = Storage
+class ActivityStorage : Storage by Storage()
 
 typealias ActivityContext = Context
 
@@ -73,6 +63,8 @@ object ActivityModule {
     fun viewModelStoreOwner(): ActivityViewModelStoreOwner = given<ComponentActivity>()
 
     @Given
-    fun activityStorage(): ActivityStorage = given<ComponentActivity>().lifecycle.storage()
+    fun activityStorage(): ActivityStorage = given<ComponentActivity>().lifecycle.storage {
+        ActivityStorage()
+    }
 
 }

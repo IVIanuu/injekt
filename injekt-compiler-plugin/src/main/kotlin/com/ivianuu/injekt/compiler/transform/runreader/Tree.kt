@@ -46,8 +46,7 @@ class GivenBindingNode(
     external: Boolean,
     val explicitParameters: List<IrValueParameter>,
     val function: IrFunction,
-    val scopingFunction: IrFunction?,
-    val scoping: IrClass?
+    val storage: IrClass?
 ) : BindingNode(key, contexts, origin, external)
 
 class InputBindingNode(

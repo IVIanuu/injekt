@@ -518,7 +518,7 @@ class RunReaderContextImplTransformer(
         request: BindingRequest
     ): ContextBindingExpression {
         val rawExpression = when (val binding = graph.getBinding(request)) {
-            is GivenBindingNode -> givenExpression(context, binding)
+            is GivenBindingNode -> givenExpression(context, graph, binding)
             is InputBindingNode -> inputExpression(binding)
             is MapBindingNode -> mapBindingExpression(context, binding)
             is NullBindingNode -> nullExpression(binding)
@@ -640,6 +640,7 @@ class RunReaderContextImplTransformer(
 
     private fun givenExpression(
         context: IrClass,
+        graph: BindingGraph,
         binding: GivenBindingNode
     ): ContextBindingExpression {
         return { c ->
@@ -681,9 +682,22 @@ class RunReaderContextImplTransformer(
                     putValueArgument(valueArgumentsCount - 1, c())
                 }
 
-                return if (binding.scopingFunction != null) {
-                    irCall(binding.scopingFunction).apply {
-                        dispatchReceiver = irGetObject(binding.scoping!!.symbol)
+                return if (binding.storage != null) {
+                    irCall(
+                        injektContext.injektSymbols.storage
+                            .owner
+                            .functions
+                            .first { it.name.asString() == "scope" }
+                    ).apply {
+                        dispatchReceiver = createBindingExpression(
+                            context,
+                            graph,
+                            BindingRequest(
+                                key = binding.storage.defaultType.asKey(),
+                                requestingKey = binding.key,
+                                requestOrigin = binding.origin
+                            )
+                        )(c)
                         putValueArgument(
                             0,
                             irInt(binding.key.hashCode())
@@ -694,10 +708,6 @@ class RunReaderContextImplTransformer(
                                 injektContext.tmpFunction(0)
                                     .typeWith(binding.key.type)
                             ) { call }
-                        )
-                        putValueArgument(
-                            2,
-                            c()
                         )
                     }
                 } else {

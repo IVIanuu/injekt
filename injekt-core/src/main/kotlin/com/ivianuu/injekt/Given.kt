@@ -25,7 +25,7 @@ import kotlin.reflect.KClass
     AnnotationTarget.CONSTRUCTOR,
     AnnotationTarget.PROPERTY
 )
-annotation class Given(val scoping: KClass<*> = Nothing::class)
+annotation class Given(val storage: KClass<out Storage> = Nothing::class)
 
 @Reader
 fun <T> given(vararg arguments: Any?): T = injektIntrinsic()
