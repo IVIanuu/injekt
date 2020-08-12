@@ -41,7 +41,6 @@ class ComposeTest {
         }
         
         @GivenAppUi
-        @Reader
         @androidx.compose.runtime.Composable
         fun SampleUi() {
             androidx.compose.runtime.remember {  }
