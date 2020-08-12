@@ -45,7 +45,7 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class BindingIndexingTransformer(
+class GlobalBindingIndexingTransformer(
     private val indexer: Indexer,
     injektContext: InjektContext
 ) : AbstractInjektTransformer(injektContext) {
@@ -92,7 +92,7 @@ class BindingIndexingTransformer(
             }
 
             override fun visitFunction(declaration: IrFunction): IrStatement {
-                if (!declaration.isInEffect()) {
+                if (!declaration.isInModule()) {
                     when {
                         declaration.hasAnnotation(InjektFqNames.Given) ||
                                 declaration.hasAnnotatedAnnotations(InjektFqNames.Effect) ->
@@ -235,7 +235,7 @@ class BindingIndexingTransformer(
 
             override fun visitProperty(declaration: IrProperty): IrStatement {
                 if (declaration.hasAnnotation(InjektFqNames.Given) &&
-                    !declaration.isInEffect()
+                    !declaration.isInModule()
                 ) {
                     runnables += {
                         indexer.index(
@@ -252,11 +252,13 @@ class BindingIndexingTransformer(
         runnables.forEach { it() }
     }
 
-    private fun IrDeclaration.isInEffect(): Boolean {
+    private fun IrDeclaration.isInModule(): Boolean {
         var current: IrDeclaration? = parent as? IrDeclaration
 
         while (current != null) {
-            if (current.hasAnnotation(InjektFqNames.Effect)) return true
+            if (current.hasAnnotation(InjektFqNames.Effect) ||
+                current.hasAnnotation(InjektFqNames.Module)
+            ) return true
             current = current.parent as? IrDeclaration
         }
 
