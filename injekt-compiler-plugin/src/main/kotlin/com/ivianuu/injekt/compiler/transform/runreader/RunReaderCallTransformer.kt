@@ -40,7 +40,6 @@ import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.impl.EmptyPackageFragmentDescriptor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
-import org.jetbrains.kotlin.ir.builders.irBoolean
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irString
@@ -78,9 +77,7 @@ class RunReaderCallTransformer(
             override fun visitCall(expression: IrCall): IrExpression {
                 expression.transformChildrenVoid(this)
                 return if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.runReader" ||
-                    expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.runChildReader"
+                    "com.ivianuu.injekt.runReader"
                 ) {
                     transformRunReaderCall(
                         expression,
@@ -113,11 +110,8 @@ class RunReaderCallTransformer(
         val lambdaExpression = call.getValueArgument(1)!!
         val lambdaContext = lambdaExpression.type.lambdaContext!!
 
-        val isChild = call.symbol.owner.descriptor.fqNameSafe.asString() ==
-                "com.ivianuu.injekt.runChildReader"
-
-        val metadata = if (isChild)
-            injektContext.irTrace[InjektWritableSlices.RUN_CHILD_READER_METADATA, call]!! else null
+        val metadata =
+            injektContext.irTrace[InjektWritableSlices.RUN_READER_METADATA, call]
 
         val name = injektContext.uniqueClassNameProvider(
             "${scope.descriptor.fqNameSafe.pathSegments()
@@ -136,10 +130,6 @@ class RunReaderCallTransformer(
                     putValueArgument(
                         0,
                         irString(file.fqName.child(name).asString())
-                    )
-                    putValueArgument(
-                        1,
-                        irBoolean(isChild)
                     )
                 }
             }
@@ -187,10 +177,10 @@ class RunReaderCallTransformer(
         }.apply {
             dispatchReceiverParameter = contextFactoryStub.thisReceiver!!.copyTo(this)
 
-            if (isChild) {
+            if (metadata?.callingContext != null) {
                 addValueParameter(
                     "parent",
-                    metadata!!.callingContext.defaultType
+                    metadata.callingContext.defaultType
                 )
             }
 
@@ -206,12 +196,12 @@ class RunReaderCallTransformer(
             val contextExpression = irCall(createFunctionStub).apply {
                 dispatchReceiver = irGetObject(contextFactoryStub.symbol)
 
-                if (isChild) {
-                    putValueArgument(0, metadata!!.contextExpression)
+                if (metadata?.callingContext != null) {
+                    putValueArgument(0, metadata.contextExpression)
                 }
 
                 inputs.forEachIndexed { index, input ->
-                    putValueArgument(index + if (isChild) 1 else 0, input)
+                    putValueArgument(index + if (metadata != null) 1 else 0, input)
                 }
             }
             irCall(

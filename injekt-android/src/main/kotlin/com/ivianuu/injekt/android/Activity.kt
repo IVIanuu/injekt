@@ -26,11 +26,11 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.Storage
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.runChildReader
+import com.ivianuu.injekt.runReader
 
 inline fun <R> ComponentActivity.runActivityReader(block: @Reader () -> R): R =
     application.runApplicationReader {
-        runChildReader(this, block = block)
+        runReader(this, block = block)
     }
 
 class ActivityStorage : Storage by Storage()

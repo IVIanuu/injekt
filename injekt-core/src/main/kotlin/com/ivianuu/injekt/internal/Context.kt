@@ -26,9 +26,6 @@ internal annotation class GenericContext(
     val functionMap: String
 )
 
-annotation class RunReaderContext(
-    val fqName: String,
-    val isChild: Boolean
-)
+annotation class RunReaderContext(val fqName: String)
 
 annotation class GivenContext(val givenKey: String)

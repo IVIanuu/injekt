@@ -175,7 +175,7 @@ class DeclarationGraph(
     private fun getInvokingContexts(context: IrClass): Set<IrClass> {
         val allContexts = listOf(context) + getAllSuperContexts(context)
 
-        val invokerIfRunChildReader = runReaderContexts
+        val invokerIfNestedRunReader = runReaderContexts
             .singleOrNull { it.superTypes[0] == context.defaultType }
             ?.superTypes
             ?.getOrNull(1)
@@ -198,7 +198,7 @@ class DeclarationGraph(
                 }
                 .filter { it != context }
                 .toTypedArray(),
-            invokerIfRunChildReader
+            invokerIfNestedRunReader
         )
     }
 

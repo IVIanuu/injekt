@@ -33,9 +33,3 @@ inline fun <R> runReader(
     vararg inputs: Any?,
     block: @Reader () -> R
 ): R = injektIntrinsic()
-
-@Reader
-inline fun <R> runChildReader(
-    vararg inputs: Any?,
-    block: @Reader () -> R
-): R = injektIntrinsic()

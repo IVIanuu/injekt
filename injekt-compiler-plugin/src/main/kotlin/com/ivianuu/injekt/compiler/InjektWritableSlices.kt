@@ -32,11 +32,11 @@ object InjektWritableSlices {
         BasicWritableSlice(RewritePolicy.DO_NOTHING)
     val IS_TRANSFORMED_IMPLICIT_FUNCTION: WritableSlice<IrSimpleFunction, Boolean> =
         BasicWritableSlice(RewritePolicy.DO_NOTHING)
-    val RUN_CHILD_READER_METADATA: WritableSlice<IrCall, RunChildReaderMetadata> =
+    val RUN_READER_METADATA: WritableSlice<IrCall, RunReaderMetadata> =
         BasicWritableSlice(RewritePolicy.DO_NOTHING)
 }
 
-data class RunChildReaderMetadata(
+data class RunReaderMetadata(
     val callingContext: IrClass,
     val contextExpression: IrExpression
 )

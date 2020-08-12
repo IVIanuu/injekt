@@ -166,14 +166,11 @@ class RunReaderContextImplTransformer(
                 InjektFqNames.RunReaderContext, 0
             )!!
         )
-        val isChild = index.getConstantFromAnnotationOrNull<Boolean>(
-            InjektFqNames.RunReaderContext, 1
-        )!!
 
         val file = injektContext.module.addFile(injektContext, fqName)
 
         val thisContext = index.superTypes[0].classOrNull!!.owner
-        val callingContext = if (isChild) index.superTypes[1].classOrNull!!.owner else null
+        val callingContext = index.superTypes.getOrNull(1)?.classOrNull?.owner
 
         val factory = buildClass {
             this.name = fqName.shortName()
@@ -241,10 +238,10 @@ class RunReaderContextImplTransformer(
         }.apply {
             dispatchReceiverParameter = factory.thisReceiver!!.copyTo(this)
 
-            val parentValueParameter = if (isChild) {
+            val parentValueParameter = if (callingContext != null) {
                 addValueParameter(
                     "parent",
-                    callingContext!!.defaultType
+                    callingContext.defaultType
                 )
             } else null
 

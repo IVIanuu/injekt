@@ -21,14 +21,14 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.runChildReader
+import com.ivianuu.injekt.runReader
 
 inline fun <R> BroadcastReceiver.runReceiverReader(
     context: Context,
     intent: Intent,
     block: @Reader () -> R
 ): R = (context.applicationContext as Application).runApplicationReader {
-    runChildReader(
+    runReader(
         context as ReceiverContext,
         intent as ReceiverIntent,
         block = block

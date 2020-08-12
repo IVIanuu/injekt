@@ -53,7 +53,6 @@ import org.jetbrains.kotlin.ir.expressions.IrWhen
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.statements
@@ -277,9 +276,7 @@ class ReaderTrackingTransformer(
 
             override fun visitCall(expression: IrCall): IrExpression {
                 return if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.runReader" ||
-                    expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.runChildReader"
+                    "com.ivianuu.injekt.runReader"
                 ) {
                     // every possible reader call which is used for inputs
                     // should be recorded on the parent scope
@@ -331,10 +328,7 @@ class ReaderTrackingTransformer(
                     .filter { it.first.type.isTransformedReaderLambda() }
                     .flatMapFix { (parameter, argument) ->
                         argument.collectReaderLambdaContextsInExpression()
-                            .map { context ->
-                                (parameter.type.lambdaContext
-                                    ?: error("null for ${parameter.dump()}\n${expression.symbol.owner.dump()}")) to context
-                            }
+                            .map { parameter.type.lambdaContext!! to it }
                     }
                     .flatMapFix { (superContext, subContext) ->
                         readerImplIndexBuilders(
@@ -384,24 +378,26 @@ class ReaderTrackingTransformer(
                 readerInvocationIndexBuilders(
                     lambdaContext,
                     scope.invocationContext,
-                    true,
-                    false
+                    true
                 )
             }
             call.symbol.owner.canUseImplicits(injektContext) -> {
-                val isRunChildReader = call.symbol.descriptor.fqNameSafe.asString() ==
-                        "com.ivianuu.injekt.runChildReader"
-                val calleeContext = if (isRunChildReader) {
-                    call.getValueArgument(1)!!.type.lambdaContext!!
-                } else {
-                    call.symbol.owner.getContext()!!
-                }
+                val calleeContext = call.symbol.owner.getContext()!!
                 val scope = currentReaderScope!!
                 readerInvocationIndexBuilders(
                     calleeContext,
                     scope.invocationContext,
-                    false,
-                    isRunChildReader
+                    false
+                )
+            }
+            call.symbol.owner.descriptor.fqNameSafe.asString() ==
+                    "com.ivianuu.injekt.runReader" -> {
+                val calleeContext = call.getValueArgument(1)!!.type.lambdaContext!!
+                val scope = currentReaderScope!!
+                readerInvocationIndexBuilders(
+                    calleeContext,
+                    scope.invocationContext,
+                    false
                 )
             }
             else -> emptyList()
@@ -411,8 +407,7 @@ class ReaderTrackingTransformer(
     private fun readerInvocationIndexBuilders(
         calleeContext: IrClass,
         invocationContext: IrClass,
-        isLambda: Boolean,
-        isRunChildReader: Boolean
+        isLambda: Boolean
     ): List<NewIndexBuilder> {
         return listOf(
             NewIndexBuilder(
