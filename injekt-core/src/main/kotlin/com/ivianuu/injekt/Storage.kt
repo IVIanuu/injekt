@@ -25,8 +25,7 @@ interface Storage {
 fun Storage(): Storage = StorageImpl()
 
 internal class StorageImpl(
-    @PublishedApi
-    internal val backing: MutableMap<Any, Any?> = mutableMapOf()
+    private val backing: MutableMap<Any, Any?> = mutableMapOf()
 ) : Storage {
 
     override fun <T> scope(
