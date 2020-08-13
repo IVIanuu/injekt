@@ -453,8 +453,7 @@ class RunReaderContextImplTransformer(
         val graph = BindingGraph(
             declarationGraph = declarationGraph,
             contextImpl = contextImpl,
-            inputs = inputFields,
-            implicitContextParamTransformer = implicitContextParamTransformer
+            inputs = inputFields
         )
 
         var firstRound = true
