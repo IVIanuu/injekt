@@ -409,6 +409,7 @@ class ImplicitCallTransformer(
         call: IrCall,
         contextExpression: () -> IrExpression
     ): IrExpression {
+        scope.inheritContext(call.dispatchReceiver!!.type.lambdaContext!!.defaultType)
         return DeclarationIrBuilder(injektContext, call.symbol).run {
             IrCallImpl(
                 call.startOffset,
