@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
@@ -32,6 +33,7 @@ import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.types.isNothing
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.properties
@@ -41,7 +43,8 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class BindingGraph(
     private val declarationGraph: DeclarationGraph,
     private val contextImpl: IrClass,
-    val inputs: List<IrField>
+    val inputs: List<IrField>,
+    private val implicitContextParamTransformer: ImplicitContextParamTransformer
 ) {
 
     private val instanceBindingNode = inputs
@@ -141,6 +144,7 @@ class BindingGraph(
                     .filter { it.hasAnnotation(InjektFqNames.Given) }
                     .map { it.getter!! })
                     .filter { it.returnType.asKey() == key }
+                    .map { implicitContextParamTransformer.getTransformedFunction(it) }
                     .map { function ->
                         val storage = (function.getClassFromAnnotation(
                             InjektFqNames.Given, 0
@@ -155,7 +159,9 @@ class BindingGraph(
 
                         GivenBindingNode(
                             key = key,
-                            contexts = listOf(function.getContext()!!),
+                            contexts = listOf(
+                                function.getContext() ?: error("Wtf ${function.dump()}")
+                            ),
                             external = function.isExternalDeclaration(),
                             explicitParameters = explicitParameters,
                             origin = function.descriptor.fqNameSafe,
