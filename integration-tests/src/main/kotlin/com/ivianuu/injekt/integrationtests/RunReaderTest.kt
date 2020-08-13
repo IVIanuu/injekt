@@ -625,7 +625,7 @@ class RunReaderTest {
     }
 
     // todo @Test
-    fun testGenericAnnotatedClass() = codegen(
+    fun testGenericGivenClass() = codegen(
         """
         @Given class Dep<T> {
             val value: T = given()
@@ -633,6 +633,23 @@ class RunReaderTest {
         
         @Given fun foo() = Foo() 
         
+        fun invoke() {
+            runReader {
+                given<Dep<Foo>>()
+            }
+        }
+    """
+    )
+
+    // todo @Test
+    fun testGenericGivenFunction() = codegen(
+        """    
+        @Given class Dep<T> { val value: T = given() }
+        
+        @Given fun <T> dep() = Dep<T>()
+        
+        @Given fun foo() = Foo() 
+
         fun invoke() {
             runReader {
                 given<Dep<Foo>>()
