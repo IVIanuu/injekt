@@ -50,7 +50,6 @@ import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrSetField
 import org.jetbrains.kotlin.ir.expressions.IrSetVariable
 import org.jetbrains.kotlin.ir.expressions.IrWhen
-import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.dump
@@ -106,13 +105,6 @@ class ReaderTrackingTransformer(
                     it is IrFunctionExpression &&
                             it.function == function
                 }
-
-            fun isInput(expression: IrExpression): Boolean =
-                call.getValueArgument(0)
-                    ?.let { it as IrVarargImpl }
-                    ?.elements
-                    ?.map { it as IrExpression }
-                    ?.any { it == expression } ?: false
 
         }
     }
