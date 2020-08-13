@@ -203,8 +203,10 @@ class ImplicitContextParamTransformer(
         newSignatureIndexBuilders.forEach { newIndexBuilder ->
             indexer.index(
                 newIndexBuilder.owner,
-                DeclarationGraph.SIGNATURE_TAG,
-                newIndexBuilder.owner.uniqueKey(),
+                listOf(
+                    DeclarationGraph.SIGNATURE_PATH,
+                    newIndexBuilder.owner.uniqueKey()
+                ),
                 newIndexBuilder.classBuilder
             )
         }
@@ -602,8 +604,10 @@ class ImplicitContextParamTransformer(
 
     private fun getExternalReaderSignature(owner: IrDeclarationWithName): IrFunction? {
         return indexer.externalClassIndices(
-            DeclarationGraph.SIGNATURE_TAG,
-            owner.uniqueKey()
+            listOf(
+                DeclarationGraph.SIGNATURE_PATH,
+                owner.uniqueKey()
+            )
         ).firstOrNull()
             ?.functions
             ?.single {

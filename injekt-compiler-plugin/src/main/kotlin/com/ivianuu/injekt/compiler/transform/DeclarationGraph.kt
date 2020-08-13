@@ -38,19 +38,19 @@ class DeclarationGraph(
 ) {
 
     val runReaderContexts: List<IrClass> by lazy {
-        indexer.classIndices(RUN_READER_CONTEXT_TAG, "indices")
+        indexer.classIndices(listOf(RUN_READER_CONTEXT_PATH))
     }
 
     val genericContexts: List<IrClass> by lazy {
-        indexer.classIndices(GENERIC_CONTEXT_TAG, "indices")
+        indexer.classIndices(listOf(GENERIC_CONTEXT_PATH))
     }
 
     private val bindingsByKey = mutableMapOf<String, List<IrFunction>>()
     fun bindings(key: String) = bindingsByKey.getOrPut(key) {
-        (indexer.functionIndices(GIVEN_TAG, key) +
-                indexer.classIndices(GIVEN_TAG, key)
+        (indexer.functionIndices(listOf(GIVEN_PATH, key)) +
+                indexer.classIndices(listOf(GIVEN_PATH, key))
                     .flatMapFix { it.constructors.toList() } +
-                indexer.propertyIndices(GIVEN_TAG, key)
+                indexer.propertyIndices(listOf(GIVEN_PATH, key))
                     .mapNotNull { it.getter }
                 )
             .map { implicitContextParamTransformer.getTransformedFunction(it) }
@@ -60,14 +60,14 @@ class DeclarationGraph(
 
     private val mapEntriesByKey = mutableMapOf<String, List<IrFunction>>()
     fun mapEntries(key: String) = mapEntriesByKey.getOrPut(key) {
-        indexer.functionIndices(MAP_ENTRIES_TAG, key)
+        indexer.functionIndices(listOf(MAP_ENTRIES_PATH, key))
             .map { implicitContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
     }
 
     private val setElementsByKey = mutableMapOf<String, List<IrFunction>>()
     fun setElements(key: String) = setElementsByKey.getOrPut(key) {
-        indexer.functionIndices(SET_ELEMENTS_TAG, key)
+        indexer.functionIndices(listOf(SET_ELEMENTS_PATH, key))
             .map { implicitContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
     }
@@ -164,7 +164,9 @@ class DeclarationGraph(
     }
 
     private fun getGivenDeclarationsForContext(context: IrClass): List<IrFunction> {
-        return indexer.classIndices(GIVEN_CONTEXTS, context.descriptor.fqNameSafe.asString())
+        return indexer.classIndices(
+            listOf(GIVEN_CONTEXTS_PATH, context.descriptor.fqNameSafe.asString())
+        )
             .flatMapFix {
                 val key =
                     it.getConstantFromAnnotationOrNull<String>(InjektFqNames.GivenContext, 0)!!
@@ -186,8 +188,10 @@ class DeclarationGraph(
             *allContexts
                 .flatMapFix {
                     indexer.classIndices(
-                        READER_INVOCATION_CALLEE_TO_CALLER_TAG,
-                        it.descriptor.fqNameSafe.asString()
+                        listOf(
+                            READER_INVOCATION_CALLEE_TO_CALLER_PATH,
+                            it.descriptor.fqNameSafe.asString()
+                        )
                     )
                 }
                 .map {
@@ -206,7 +210,11 @@ class DeclarationGraph(
     private fun getAllSuperContexts(
         context: IrClass
     ): Set<IrClass> = superContextsByContext.getOrPut(context) {
-        indexer.classIndices(READER_IMPL_SUB_TO_SUPER_TAG, context.descriptor.fqNameSafe.asString())
+        indexer.classIndices(
+            listOf(
+                READER_IMPL_SUB_TO_SUPER_PATH, context.descriptor.fqNameSafe.asString()
+            )
+        )
             .map {
                 it.getClassFromAnnotation(
                     InjektFqNames.ReaderImpl,
@@ -231,8 +239,10 @@ class DeclarationGraph(
             processedClasses += context
 
             indexer.classIndices(
-                READER_IMPL_SUPER_TO_SUB_TAG,
-                context.descriptor.fqNameSafe.asString()
+                listOf(
+                    READER_IMPL_SUPER_TO_SUB_PATH,
+                    context.descriptor.fqNameSafe.asString()
+                )
             )
                 .map {
                     it.getClassFromAnnotation(
@@ -246,8 +256,10 @@ class DeclarationGraph(
                 }
 
             indexer.classIndices(
-                READER_INVOCATION_CALLER_TO_CALLEE_TAG,
-                context.descriptor.fqNameSafe.asString()
+                listOf(
+                    READER_INVOCATION_CALLER_TO_CALLEE_PATH,
+                    context.descriptor.fqNameSafe.asString()
+                )
             )
                 .filter {
                     it.getConstantFromAnnotationOrNull<Boolean>(
@@ -275,17 +287,17 @@ class DeclarationGraph(
     }
 
     companion object {
-        const val READER_INVOCATION_CALLEE_TO_CALLER_TAG = "readerinvocationcalleetocaller"
-        const val READER_INVOCATION_CALLER_TO_CALLEE_TAG = "readerinvocationcallertocallee"
-        const val READER_IMPL_SUPER_TO_SUB_TAG = "readerimplsupertosub"
-        const val READER_IMPL_SUB_TO_SUPER_TAG = "readerimplsubtosuper"
-        const val RUN_READER_CONTEXT_TAG = "runreadercontext"
-        const val GIVEN_TAG = "given"
-        const val GIVEN_CONTEXTS = "givencontexts"
-        const val GENERIC_CONTEXT_TAG = "genericcontext"
-        const val MAP_ENTRIES_TAG = "mapentries"
-        const val SET_ELEMENTS_TAG = "setelements"
-        const val SIGNATURE_TAG = "signature"
+        const val READER_INVOCATION_CALLEE_TO_CALLER_PATH = "readerinvocationcalleetocaller"
+        const val READER_INVOCATION_CALLER_TO_CALLEE_PATH = "readerinvocationcallertocallee"
+        const val READER_IMPL_SUPER_TO_SUB_PATH = "readerimplsupertosub"
+        const val READER_IMPL_SUB_TO_SUPER_PATH = "readerimplsubtosuper"
+        const val RUN_READER_CONTEXT_PATH = "runreadercontext"
+        const val GIVEN_PATH = "given"
+        const val GIVEN_CONTEXTS_PATH = "givencontexts"
+        const val GENERIC_CONTEXT_PATH = "genericcontext"
+        const val MAP_ENTRIES_PATH = "mapentries"
+        const val SET_ELEMENTS_PATH = "setelements"
+        const val SIGNATURE_PATH = "signature"
     }
 
 }

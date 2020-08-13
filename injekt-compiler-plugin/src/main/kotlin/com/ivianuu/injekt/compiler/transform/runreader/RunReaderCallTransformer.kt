@@ -94,8 +94,7 @@ class RunReaderCallTransformer(
         newIndexBuilders.forEach {
             indexer.index(
                 it.originatingDeclaration,
-                DeclarationGraph.RUN_READER_CONTEXT_TAG,
-                "indices",
+                listOf(DeclarationGraph.RUN_READER_CONTEXT_PATH),
                 it.classBuilder
             )
         }

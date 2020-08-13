@@ -55,32 +55,24 @@ class Indexer(
     private val symbols: InjektSymbols
 ) {
 
-    private val classIndicesByTagAndKey = mutableMapOf<String, List<IrClass>>()
-    fun classIndices(
-        tag: String,
-        key: String
-    ): List<IrClass> {
-        val finalTag = tag.removeIllegalChars()
-        val finalKey = key.removeIllegalChars()
-        return classIndicesByTagAndKey.getOrPut(finalTag + finalKey) {
+    private val classIndicesByTagAndKey = mutableMapOf<List<String>, List<IrClass>>()
+    fun classIndices(path: List<String>): List<IrClass> {
+        val finalPath = path.map { it.removeIllegalChars() }
+        return classIndicesByTagAndKey.getOrPut(finalPath) {
             val internalClasses = internalDeclarationsByIndices.keys
-                .filter { it.tag == finalTag && it.key == finalKey && it.type == "class" }
+                .filter { it.path == finalPath && it.type == "class" }
                 .map { internalDeclarationsByIndices[it]!! as IrClass }
 
-            (internalClasses + externalClassIndices(finalTag, finalKey))
+            (internalClasses + externalClassIndices(path))
                 .distinct()
         }
     }
 
-    private val externalClassIndicesByTagAndKey = mutableMapOf<String, List<IrClass>>()
-    fun externalClassIndices(
-        tag: String,
-        key: String
-    ): List<IrClass> {
-        val finalTag = tag.removeIllegalChars()
-        val finalKey = key.removeIllegalChars()
-        return externalClassIndicesByTagAndKey.getOrPut(finalTag + finalKey) {
-            externalIndicesByTagAndKey(finalTag, finalKey)
+    private val externalClassIndicesByTagAndKey = mutableMapOf<List<String>, List<IrClass>>()
+    fun externalClassIndices(path: List<String>): List<IrClass> {
+        val finalPath = path.map { it.removeIllegalChars() }
+        return externalClassIndicesByTagAndKey.getOrPut(finalPath) {
+            externalIndicesByTagAndKey(path)
                 .filter { it.type == "class" }
                 .map { index ->
                     if (index.indexIsDeclaration) index.indexClass
@@ -89,17 +81,16 @@ class Indexer(
         }
     }
 
-    private val functionIndicesByTagAndKey = mutableMapOf<String, List<IrFunction>>()
-    fun functionIndices(tag: String, key: String): List<IrFunction> {
-        val finalTag = tag.removeIllegalChars()
-        val finalKey = key.removeIllegalChars()
-        return functionIndicesByTagAndKey.getOrPut(finalTag + finalKey) {
+    private val functionIndicesByTagAndKey = mutableMapOf<List<String>, List<IrFunction>>()
+    fun functionIndices(path: List<String>): List<IrFunction> {
+        val finalPath = path.map { it.removeIllegalChars() }
+        return functionIndicesByTagAndKey.getOrPut(finalPath) {
             val internalFunctions = internalDeclarationsByIndices.keys
-                .filter { it.tag == finalTag && it.key == finalKey && it.type == "function" }
+                .filter { it.path == finalPath && it.type == "function" }
                 .map { internalDeclarationsByIndices[it]!! }
                 .filterIsInstance<IrFunction>()
 
-            val externalFunctions = externalIndicesByTagAndKey(finalTag, finalKey)
+            val externalFunctions = externalIndicesByTagAndKey(path)
                 .filter { it.type == "function" }
                 .flatMapFix { index ->
                     injektContext.referenceFunctions(index.fqName)
@@ -111,17 +102,16 @@ class Indexer(
         }
     }
 
-    private val propertyIndicesByTagAndKey = mutableMapOf<String, List<IrProperty>>()
-    fun propertyIndices(tag: String, key: String): List<IrProperty> {
-        val finalTag = tag.removeIllegalChars()
-        val finalKey = key.removeIllegalChars()
-        return propertyIndicesByTagAndKey.getOrPut(finalTag + finalKey) {
+    private val propertyIndicesByTagAndKey = mutableMapOf<List<String>, List<IrProperty>>()
+    fun propertyIndices(path: List<String>): List<IrProperty> {
+        val finalPath = path.map { it.removeIllegalChars() }
+        return propertyIndicesByTagAndKey.getOrPut(finalPath) {
             val internalProperties = internalDeclarationsByIndices.keys
-                .filter { it.tag == finalTag && it.key == finalKey && it.type == "property" }
+                .filter { it.path == finalPath && it.type == "property" }
                 .map { internalDeclarationsByIndices[it]!! }
                 .filterIsInstance<IrProperty>()
 
-            val externalProperties = externalIndicesByTagAndKey(finalTag, finalKey)
+            val externalProperties = externalIndicesByTagAndKey(path)
                 .filter { it.type == "property" }
                 .flatMapFix { index ->
                     injektContext.referenceProperties(index.fqName)
@@ -133,16 +123,13 @@ class Indexer(
         }
     }
 
-    private val externalIndicesByTagAndKey = mutableMapOf<String, List<Index>>()
-    private fun externalIndicesByTagAndKey(tag: String, key: String): List<Index> {
-        val finalTag = tag.removeIllegalChars()
-        val finalKey = key.removeIllegalChars()
-        return externalIndicesByTagAndKey.getOrPut(finalTag + finalKey) {
-            val memberScope = module.descriptor.getPackage(
-                InjektFqNames.IndexPackage
-                    .child(finalTag.asNameId())
-                    .child(finalKey.asNameId())
-            ).memberScope
+    private val externalIndicesByTagAndKey = mutableMapOf<List<String>, List<Index>>()
+    private fun externalIndicesByTagAndKey(path: List<String>): List<Index> {
+        val finalPath = path.map { it.removeIllegalChars() }
+        return externalIndicesByTagAndKey.getOrPut(finalPath) {
+            var packageFqName = InjektFqNames.IndexPackage
+            finalPath.forEach { packageFqName = packageFqName.child(it.asNameId()) }
+            val memberScope = module.descriptor.getPackage(packageFqName).memberScope
             (memberScope.getClassifierNames() ?: emptySet())
                 .mapNotNull {
                     memberScope.getContributedClassifier(
@@ -153,8 +140,7 @@ class Indexer(
                 .map { injektContext.referenceClass(it.fqNameSafe)!!.owner }
                 .map {
                     Index(
-                        finalTag,
-                        finalKey,
+                        path,
                         FqName(
                             it.getConstantFromAnnotationOrNull<String>(
                                 InjektFqNames.Index,
@@ -170,8 +156,7 @@ class Indexer(
     }
 
     private data class Index(
-        val tag: String,
-        val key: String,
+        val path: List<String>,
         val fqName: FqName,
         val indexClass: IrClass,
         val type: String,
@@ -182,15 +167,12 @@ class Indexer(
 
     fun index(
         originatingDeclaration: IrDeclarationWithName,
-        tag: String,
-        key: String,
+        path: List<String>,
         classBuilder: IrClass.() -> Unit
     ) {
-        val finalTag = tag.removeIllegalChars()
-        val finalKey = key.removeIllegalChars()
-        val packageFqName = InjektFqNames.IndexPackage
-            .child(finalTag.removeIllegalChars().asNameId())
-            .child(finalKey.removeIllegalChars().asNameId())
+        val finalPath = path.map { it.removeIllegalChars() }
+        var packageFqName = InjektFqNames.IndexPackage
+        finalPath.forEach { packageFqName = packageFqName.child(it.asNameId()) }
 
         val name = injektContext.uniqueClassNameProvider(
             (getJoinedName(
@@ -219,8 +201,7 @@ class Indexer(
                     createImplicitParameterDeclarationWithWrappedDescriptor()
                     addMetadataIfNotLocal()
                     val index = Index(
-                        finalTag,
-                        finalKey,
+                        finalPath,
                         descriptor.fqNameSafe,
                         this,
                         "class",
@@ -251,15 +232,12 @@ class Indexer(
     }
 
     fun index(
-        tag: String,
-        key: String,
+        path: List<String>,
         declaration: IrDeclarationWithName
     ) {
-        val finalTag = tag.removeIllegalChars()
-        val finalKey = key.removeIllegalChars()
-        val packageFqName = InjektFqNames.IndexPackage
-            .child(finalTag.asNameId())
-            .child(finalKey.asNameId())
+        val finalPath = path.map { it.removeIllegalChars() }
+        var packageFqName = InjektFqNames.IndexPackage
+        finalPath.forEach { packageFqName = packageFqName.child(it.asNameId()) }
 
         val name = injektContext.uniqueClassNameProvider(
             (getJoinedName(
@@ -282,8 +260,7 @@ class Indexer(
                     visibility = Visibilities.INTERNAL
                 }.apply {
                     val index = Index(
-                        finalTag,
-                        finalKey,
+                        finalPath,
                         declaration.descriptor.fqNameSafe,
                         this,
                         when (declaration) {

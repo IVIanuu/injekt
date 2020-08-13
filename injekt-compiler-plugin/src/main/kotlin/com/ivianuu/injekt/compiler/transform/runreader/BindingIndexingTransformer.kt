@@ -62,14 +62,18 @@ class BindingIndexingTransformer(
                 ) {
                     runnables += {
                         indexer.index(
-                            DeclarationGraph.GIVEN_TAG,
-                            declaration.constructedClass.defaultType.uniqueTypeName().asString(),
+                            listOf(
+                                DeclarationGraph.GIVEN_PATH,
+                                declaration.constructedClass.defaultType.uniqueTypeName().asString()
+                            ),
                             declaration.constructedClass
                         )
                         indexer.index(
                             declaration,
-                            DeclarationGraph.GIVEN_CONTEXTS,
-                            declaration.getContext()!!.descriptor.fqNameSafe.asString(),
+                            listOf(
+                                DeclarationGraph.GIVEN_CONTEXTS_PATH,
+                                declaration.getContext()!!.descriptor.fqNameSafe.asString()
+                            ),
                         ) {
                             annotations += DeclarationIrBuilder(
                                 injektContext,
@@ -99,7 +103,7 @@ class BindingIndexingTransformer(
                             runnables += {
                                 val explicitParameters = declaration.valueParameters
                                     .filter { it != declaration.getContextValueParameter() }
-                                val key =
+                                val typePath =
                                     if (explicitParameters.isEmpty()) declaration.returnType.uniqueTypeName()
                                         .asString()
                                     else injektContext.tmpFunction(explicitParameters.size)
@@ -107,14 +111,18 @@ class BindingIndexingTransformer(
                                         .uniqueTypeName()
                                         .asString()
                                 indexer.index(
-                                    DeclarationGraph.GIVEN_TAG,
-                                    key,
+                                    listOf(
+                                        DeclarationGraph.GIVEN_PATH,
+                                        typePath
+                                    ),
                                     declaration
                                 )
                                 indexer.index(
                                     declaration,
-                                    DeclarationGraph.GIVEN_CONTEXTS,
-                                    declaration.getContext()!!.descriptor.fqNameSafe.asString(),
+                                    listOf(
+                                        DeclarationGraph.GIVEN_CONTEXTS_PATH,
+                                        declaration.getContext()!!.descriptor.fqNameSafe.asString()
+                                    ),
                                 ) {
                                     annotations += DeclarationIrBuilder(
                                         injektContext,
@@ -123,7 +131,7 @@ class BindingIndexingTransformer(
                                         irCall(injektContext.injektSymbols.givenContext.constructors.single()).apply {
                                             putValueArgument(
                                                 0,
-                                                irString(key)
+                                                irString(typePath)
                                             )
                                         }
                                     }
@@ -132,14 +140,18 @@ class BindingIndexingTransformer(
                         declaration.hasAnnotation(InjektFqNames.MapEntries) ->
                             runnables += {
                                 indexer.index(
-                                    DeclarationGraph.MAP_ENTRIES_TAG,
-                                    declaration.returnType.uniqueTypeName().asString(),
+                                    listOf(
+                                        DeclarationGraph.MAP_ENTRIES_PATH,
+                                        declaration.returnType.uniqueTypeName().asString()
+                                    ),
                                     declaration
                                 )
                                 indexer.index(
                                     declaration,
-                                    DeclarationGraph.GIVEN_CONTEXTS,
-                                    declaration.getContext()!!.descriptor.fqNameSafe.asString(),
+                                    listOf(
+                                        DeclarationGraph.GIVEN_CONTEXTS_PATH,
+                                        declaration.getContext()!!.descriptor.fqNameSafe.asString()
+                                    ),
                                 ) {
                                     annotations += DeclarationIrBuilder(
                                         injektContext,
@@ -160,14 +172,18 @@ class BindingIndexingTransformer(
                         declaration.hasAnnotation(InjektFqNames.SetElements) ->
                             runnables += {
                                 indexer.index(
-                                    DeclarationGraph.SET_ELEMENTS_TAG,
-                                    declaration.returnType.uniqueTypeName().asString(),
+                                    listOf(
+                                        DeclarationGraph.SET_ELEMENTS_PATH,
+                                        declaration.returnType.uniqueTypeName().asString()
+                                    ),
                                     declaration
                                 )
                                 indexer.index(
                                     declaration,
-                                    DeclarationGraph.GIVEN_CONTEXTS,
-                                    declaration.getContext()!!.descriptor.fqNameSafe.asString(),
+                                    listOf(
+                                        DeclarationGraph.GIVEN_CONTEXTS_PATH,
+                                        declaration.getContext()!!.descriptor.fqNameSafe.asString()
+                                    ),
                                 ) {
                                     annotations += DeclarationIrBuilder(
                                         injektContext,
@@ -199,7 +215,7 @@ class BindingIndexingTransformer(
                                 declaration.getReaderConstructor(injektContext)!!
                             val explicitParameters = readerConstructor.valueParameters
                                 .filter { it != readerConstructor.getContextValueParameter() }
-                            val key =
+                            val typePath =
                                 if (explicitParameters.isEmpty()) readerConstructor.returnType.uniqueTypeName()
                                     .asString()
                                 else injektContext.tmpFunction(explicitParameters.size)
@@ -207,14 +223,18 @@ class BindingIndexingTransformer(
                                     .uniqueTypeName()
                                     .asString()
                             indexer.index(
-                                DeclarationGraph.GIVEN_TAG,
-                                key,
+                                listOf(
+                                    DeclarationGraph.GIVEN_PATH,
+                                    typePath
+                                ),
                                 declaration
                             )
                             indexer.index(
                                 declaration,
-                                DeclarationGraph.GIVEN_CONTEXTS,
-                                readerConstructor.getContext()!!.descriptor.fqNameSafe.asString(),
+                                listOf(
+                                    DeclarationGraph.GIVEN_CONTEXTS_PATH,
+                                    readerConstructor.getContext()!!.descriptor.fqNameSafe.asString()
+                                ),
                             ) {
                                 annotations += DeclarationIrBuilder(
                                     injektContext,
@@ -223,7 +243,7 @@ class BindingIndexingTransformer(
                                     irCall(injektContext.injektSymbols.givenContext.constructors.single()).apply {
                                         putValueArgument(
                                             0,
-                                            irString(key)
+                                            irString(typePath)
                                         )
                                     }
                                 }
@@ -239,8 +259,10 @@ class BindingIndexingTransformer(
                 ) {
                     runnables += {
                         indexer.index(
-                            DeclarationGraph.GIVEN_TAG,
-                            declaration.getter!!.returnType.uniqueTypeName().asString(),
+                            listOf(
+                                DeclarationGraph.GIVEN_PATH,
+                                declaration.getter!!.returnType.uniqueTypeName().asString()
+                            ),
                             declaration
                         )
                     }

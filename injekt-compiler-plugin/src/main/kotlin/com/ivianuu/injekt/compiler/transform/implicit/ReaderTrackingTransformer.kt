@@ -71,8 +71,7 @@ class ReaderTrackingTransformer(
     private val newIndexBuilders = mutableListOf<NewIndexBuilder>()
 
     private data class NewIndexBuilder(
-        val tag: String,
-        val key: String,
+        val path: List<String>,
         val originatingDeclaration: IrDeclarationWithName,
         val classBuilder: IrClass.() -> Unit
     )
@@ -369,8 +368,7 @@ class ReaderTrackingTransformer(
         newIndexBuilders.forEach {
             indexer.index(
                 it.originatingDeclaration,
-                it.tag,
-                it.key,
+                it.path,
                 it.classBuilder
             )
         }
@@ -416,8 +414,10 @@ class ReaderTrackingTransformer(
     ): List<NewIndexBuilder> {
         return listOf(
             NewIndexBuilder(
-                DeclarationGraph.READER_INVOCATION_CALLEE_TO_CALLER_TAG,
-                calleeContext.descriptor.fqNameSafe.asString(),
+                listOf(
+                    DeclarationGraph.READER_INVOCATION_CALLEE_TO_CALLER_PATH,
+                    calleeContext.descriptor.fqNameSafe.asString()
+                ),
                 invocationContext
             ) {
                 annotations += DeclarationIrBuilder(injektContext, invocationContext.symbol).run {
@@ -434,8 +434,10 @@ class ReaderTrackingTransformer(
                 }
             },
             NewIndexBuilder(
-                DeclarationGraph.READER_INVOCATION_CALLER_TO_CALLEE_TAG,
-                invocationContext.descriptor.fqNameSafe.asString(),
+                listOf(
+                    DeclarationGraph.READER_INVOCATION_CALLER_TO_CALLEE_PATH,
+                    invocationContext.descriptor.fqNameSafe.asString()
+                ),
                 invocationContext
             ) {
                 annotations += DeclarationIrBuilder(injektContext, invocationContext.symbol).run {
@@ -459,8 +461,10 @@ class ReaderTrackingTransformer(
         subContext: IrClass
     ) = listOf(
         NewIndexBuilder(
-            DeclarationGraph.READER_IMPL_SUPER_TO_SUB_TAG,
-            superContext.descriptor.fqNameSafe.asString(),
+            listOf(
+                DeclarationGraph.READER_IMPL_SUPER_TO_SUB_PATH,
+                superContext.descriptor.fqNameSafe.asString()
+            ),
             subContext
         ) {
             annotations += DeclarationIrBuilder(injektContext, subContext.symbol).run {
@@ -473,8 +477,10 @@ class ReaderTrackingTransformer(
             }
         },
         NewIndexBuilder(
-            DeclarationGraph.READER_IMPL_SUB_TO_SUPER_TAG,
-            subContext.descriptor.fqNameSafe.asString(),
+            listOf(
+                DeclarationGraph.READER_IMPL_SUB_TO_SUPER_PATH,
+                subContext.descriptor.fqNameSafe.asString()
+            ),
             subContext
         ) {
             annotations += DeclarationIrBuilder(injektContext, subContext.symbol).run {
