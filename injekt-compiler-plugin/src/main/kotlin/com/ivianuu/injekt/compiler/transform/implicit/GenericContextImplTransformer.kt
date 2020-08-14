@@ -310,13 +310,9 @@ class GenericContextImplTransformer(
                 if (declaration is IrConstructor) continue
                 if (declaration.isFakeOverride) continue
                 if (declaration.dispatchReceiverParameter?.type == injektContext.irBuiltIns.anyType) continue
-                val existingDeclaration = contextImpl.functions.firstOrNull {
-                    it.name == declaration.name
-                }
-                if (existingDeclaration != null) {
-                    existingDeclaration.overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
-                    continue
-                }
+                if (contextImpl.functions.any {
+                        it.name == declaration.name
+                    }) continue
                 contextImpl.addFunction {
                     this.name = declaration.name
                     returnType = declaration.returnType.substitute(

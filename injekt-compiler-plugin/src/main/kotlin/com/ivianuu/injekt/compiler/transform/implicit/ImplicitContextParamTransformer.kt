@@ -66,7 +66,6 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrOverridableDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
@@ -111,7 +110,6 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrReturnableBlockImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrSetFieldImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrWhenImpl
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
-import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrFieldSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrReturnableBlockSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrValueParameterSymbolImpl
@@ -590,14 +588,6 @@ class ImplicitContextParamTransformer(
                 annotations += DeclarationIrBuilder(injektContext, symbol)
                     .jvmNameAnnotation(name, injektContext)
                 correspondingPropertySymbol?.owner?.setter = this
-            }
-
-            if (this@copyAsReader is IrOverridableDeclaration<*>) {
-                overriddenSymbols = this@copyAsReader.overriddenSymbols.map {
-                    val owner = it.owner as IrFunction
-                    val newOwner = transformFunctionIfNeeded(owner)
-                    newOwner.symbol as IrSimpleFunctionSymbol
-                }
             }
         }
     }
