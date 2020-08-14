@@ -78,11 +78,6 @@ interface InjektErrors {
         )
 
         @JvmField
-        val READER_FUNCTION_MUST_BE_FINAL = error(
-            "@Reader function must be final"
-        )
-
-        @JvmField
         val MULTIPLE_IMPLICIT_ANNOTATIONS = error(
             "A declaration can only be annotated with one of @Reader, @Given, @MapEntries, @SetElements or @Effect annotated annotations"
         )

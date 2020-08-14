@@ -118,19 +118,6 @@ class ImplicitDslTest {
     }
 
     @Test
-    fun testNonFinalReaderFunctionFails() = codegen(
-        """
-        open class MyClass {
-            @Reader
-            open fun func() {
-            }
-        }
-    """
-    ) {
-        assertCompileError("final")
-    }
-
-    @Test
     fun testReaderPropertyOk() = codegen(
         """
         @Reader
