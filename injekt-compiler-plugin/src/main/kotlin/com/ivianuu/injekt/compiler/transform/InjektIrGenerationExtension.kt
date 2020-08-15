@@ -18,13 +18,13 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.transform.context.GlobalBindingIndexingTransformer
+import com.ivianuu.injekt.compiler.transform.context.RunReaderCallTransformer
+import com.ivianuu.injekt.compiler.transform.context.RunReaderContextImplTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.GenericContextImplTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ReaderTrackingTransformer
-import com.ivianuu.injekt.compiler.transform.runreader.GlobalBindingIndexingTransformer
-import com.ivianuu.injekt.compiler.transform.runreader.RunReaderCallTransformer
-import com.ivianuu.injekt.compiler.transform.runreader.RunReaderContextImplTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -77,9 +77,15 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             implicitContextParamTransformer
         ).doLower(moduleFragment)
 
-        RunReaderCallTransformer(injektContext, indexer).doLower(moduleFragment)
+        RunReaderCallTransformer(
+            injektContext,
+            indexer
+        ).doLower(moduleFragment)
 
-        GlobalBindingIndexingTransformer(indexer, injektContext).doLower(moduleFragment)
+        GlobalBindingIndexingTransformer(
+            indexer,
+            injektContext
+        ).doLower(moduleFragment)
 
         if (initializeInjekt) {
             val declarationGraph = DeclarationGraph(
@@ -87,12 +93,13 @@ class InjektIrGenerationExtension : IrGenerationExtension {
                 moduleFragment,
                 implicitContextParamTransformer
             )
-            val runReaderContextImplTransformer = RunReaderContextImplTransformer(
-                injektContext,
-                declarationGraph,
-                implicitContextParamTransformer,
-                initFile!!
-            )
+            val runReaderContextImplTransformer =
+                RunReaderContextImplTransformer(
+                    injektContext,
+                    declarationGraph,
+                    implicitContextParamTransformer,
+                    initFile!!
+                )
             declarationGraph.runReaderContextImplTransformer = runReaderContextImplTransformer
             runReaderContextImplTransformer.doLower(moduleFragment)
             GenericContextImplTransformer(

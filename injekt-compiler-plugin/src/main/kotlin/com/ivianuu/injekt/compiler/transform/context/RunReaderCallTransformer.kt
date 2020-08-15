@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.runreader
+package com.ivianuu.injekt.compiler.transform.context
 
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
@@ -124,7 +124,9 @@ class RunReaderCallTransformer(
             file.fqName
         )
 
-        newIndexBuilders += NewIndexBuilder(scope) clazz@{
+        newIndexBuilders += NewIndexBuilder(
+            scope
+        ) clazz@{
             superTypes += lambdaContext.defaultType
             if (metadata != null) superTypes += metadata.callingContext.defaultType
             addMetadataIfNotLocal()

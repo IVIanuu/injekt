@@ -20,19 +20,18 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
-import com.ivianuu.injekt.Storage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 
-private val storageByLifecycle = mutableMapOf<Lifecycle, Storage>()
+private val lifecycleSingletons = mutableMapOf<Lifecycle, Any>()
 
-internal fun <T : Storage> Lifecycle.storage(init: () -> T): T {
-    return synchronized(storageByLifecycle) {
-        storageByLifecycle[this]?.let { return it as T }
-        val storage = init()
-        storageByLifecycle[this] = storage
-        storage
+internal fun <T : Any> Lifecycle.singletonValue(init: () -> T): T {
+    return synchronized(lifecycleSingletons) {
+        lifecycleSingletons[this]?.let { return it as T }
+        val value = init()
+        lifecycleSingletons[this] = value
+        value
     }.also {
         addObserver(object : LifecycleEventObserver {
             override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
@@ -40,8 +39,8 @@ internal fun <T : Storage> Lifecycle.storage(init: () -> T): T {
                     // schedule clean up to the next frame
                     // to allow users to access bindings in their onDestroy()
                     source.lifecycleScope.launch(Dispatchers.Main + NonCancellable) {
-                        synchronized(storageByLifecycle) {
-                            storageByLifecycle -= this@storage
+                        synchronized(lifecycleSingletons) {
+                            lifecycleSingletons -= this@singletonValue
                         }
                     }
                 }

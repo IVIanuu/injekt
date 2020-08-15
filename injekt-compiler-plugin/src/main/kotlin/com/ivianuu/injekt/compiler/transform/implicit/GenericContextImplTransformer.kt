@@ -30,7 +30,7 @@ import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
-import com.ivianuu.injekt.compiler.transform.runreader.RunReaderContextImplTransformer
+import com.ivianuu.injekt.compiler.transform.context.RunReaderContextImplTransformer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.ir.addChild

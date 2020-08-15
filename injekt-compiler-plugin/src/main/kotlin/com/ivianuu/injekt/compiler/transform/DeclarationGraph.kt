@@ -21,8 +21,8 @@ import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
+import com.ivianuu.injekt.compiler.transform.context.RunReaderContextImplTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
-import com.ivianuu.injekt.compiler.transform.runreader.RunReaderContextImplTransformer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment

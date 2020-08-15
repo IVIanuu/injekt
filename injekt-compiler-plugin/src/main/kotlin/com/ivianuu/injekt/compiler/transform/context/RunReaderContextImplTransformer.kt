@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.runreader
+package com.ivianuu.injekt.compiler.transform.context
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
@@ -490,11 +490,12 @@ class RunReaderContextImplTransformer(
                         existingDeclaration.overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
                         continue
                     }
-                    val request = BindingRequest(
-                        declaration.returnType.asKey(),
-                        null,
-                        declaration.descriptor.fqNameSafe
-                    )
+                    val request =
+                        BindingRequest(
+                            declaration.returnType.asKey(),
+                            null,
+                            declaration.descriptor.fqNameSafe
+                        )
                     bindingExpressions.getOrPut(request.key) {
                         createBindingExpression(contextImpl, graph, request)
                     }

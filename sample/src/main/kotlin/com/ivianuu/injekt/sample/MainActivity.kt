@@ -27,8 +27,9 @@ import androidx.work.WorkManager
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.android.ActivityContext
-import com.ivianuu.injekt.android.runActivityReader
+import com.ivianuu.injekt.android.activityComponent
 import com.ivianuu.injekt.given
+import com.ivianuu.injekt.runReader
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
@@ -37,7 +38,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            runActivityReader {
+            activityComponent.runReader {
                 WithMainViewModel {
                     GlobalScope.launch {
                         enqueueWork()

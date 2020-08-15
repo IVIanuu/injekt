@@ -20,18 +20,21 @@ import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.runChildReader
+import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.childComponent
+import com.ivianuu.injekt.runReader
 
-inline fun <R> BroadcastReceiver.runReceiverReader(
+@Component
+interface ReceiverComponent
+
+fun BroadcastReceiver.createReceiverComponent(
     context: Context,
-    intent: Intent,
-    block: @Reader () -> R
-): R = (context.applicationContext as Application).runApplicationReader {
-    runChildReader(
+    intent: Intent
+): ReceiverComponent = (context.applicationContext as Application).applicationComponent.runReader {
+    childComponent(
+        this,
         context as ReceiverContext,
-        intent as ReceiverIntent,
-        block = block
+        intent as ReceiverIntent
     )
 }
 

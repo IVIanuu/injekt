@@ -26,7 +26,7 @@ internal annotation class GenericContext(
     val functionMap: String
 )
 
-annotation class RunReaderContext(
+annotation class ComponentDeclaration(
     val fqName: String,
     val isChild: Boolean
 )

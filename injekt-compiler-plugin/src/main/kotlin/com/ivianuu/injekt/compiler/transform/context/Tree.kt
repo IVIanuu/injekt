@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.runreader
+package com.ivianuu.injekt.compiler.transform.context
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
@@ -95,7 +95,8 @@ class NullBindingNode(key: Key) : BindingNode(
     null
 )
 
-fun IrType.asKey(): Key = Key(this)
+fun IrType.asKey(): Key =
+    Key(this)
 
 class Key(val type: IrType) {
 
@@ -163,7 +164,12 @@ class BindingRequest(
         key: Key = this.key,
         requestingKey: Key? = this.requestingKey,
         requestOrigin: FqName? = this.requestOrigin
-    ): BindingRequest = BindingRequest(key, requestingKey, requestOrigin)
+    ): BindingRequest =
+        BindingRequest(
+            key,
+            requestingKey,
+            requestOrigin
+        )
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

@@ -24,3 +24,7 @@ internal annotation class ReaderInvocation(
     val other: KClass<*>,
     val isLambda: Boolean
 )
+
+internal annotation class RunReaderInvocation(
+    val component: KClass<*>
+)

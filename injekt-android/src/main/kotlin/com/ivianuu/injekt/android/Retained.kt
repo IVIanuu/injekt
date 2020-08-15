@@ -18,25 +18,26 @@ package com.ivianuu.injekt.android
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStoreOwner
-import com.ivianuu.injekt.Storage
+import androidx.lifecycle.ViewModelStore
 
-internal class ViewModelStorage : ViewModel(), Storage by Storage() {
-    companion object Factory : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            ViewModelStorage() as T
+fun <T> ViewModelStore.singletonValue(init: () -> T): T {
+    val holder = ViewModelProvider(
+        this,
+        object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                ViewModelComponentHolder() as T
+        }
+    )[ViewModelComponentHolder::class.java]
+
+    var value = holder.value
+    if (value == null) {
+        value = init()
+        holder.value = value
     }
+
+    return value as T
 }
 
-abstract class AbstractRetainedStorage : Storage {
-
-    override fun <T> scope(key: Any, init: () -> T): T {
-        return ViewModelProvider(
-            viewModelStoreOwner(),
-            ViewModelStorage.Factory
-        )[ViewModelStorage::class.java].scope(key, init)
-    }
-
-    protected abstract fun viewModelStoreOwner(): ViewModelStoreOwner
-
+private class ViewModelComponentHolder : ViewModel() {
+    var value: Any? = null
 }

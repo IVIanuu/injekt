@@ -18,14 +18,15 @@ package com.ivianuu.injekt.sample
 
 import android.app.Application
 import com.ivianuu.injekt.InitializeInjekt
-import com.ivianuu.injekt.android.runApplicationReader
+import com.ivianuu.injekt.android.applicationComponent
+import com.ivianuu.injekt.runReader
 
 @InitializeInjekt
 class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        runApplicationReader {
+        applicationComponent.runReader {
             initializeWorkers()
             startAppServices()
             refreshRepo()

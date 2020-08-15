@@ -20,13 +20,15 @@ import android.app.Service
 import android.content.Context
 import android.content.res.Resources
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.childComponent
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.runChildReader
+import com.ivianuu.injekt.runReader
 
-inline fun <R> Service.runServiceReader(block: @Reader () -> R): R =
-    application.runApplicationReader {
-        runChildReader(this, block = block)
+interface ServiceComponent
+
+fun Service.createServiceComponent(): ReceiverComponent =
+    application.applicationComponent.runReader {
+        childComponent(this)
     }
 
 typealias ServiceContext = Context

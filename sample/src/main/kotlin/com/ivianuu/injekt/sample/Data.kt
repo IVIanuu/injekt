@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.ApplicationStorage
+import com.ivianuu.injekt.ApplicationComponent
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.android.ApplicationContext
@@ -28,12 +28,12 @@ typealias DatabaseFile = File
 @Given
 fun databaseFile(): DatabaseFile = given<ApplicationContext>().cacheDir
 
-@Given(ApplicationStorage::class)
+@Given(ApplicationComponent::class)
 class Database {
     private val file: DatabaseFile = given()
 }
 
-@Given(ApplicationStorage::class)
+@Given(ApplicationComponent::class)
 class Repo {
     private val database: Database = given()
     private val api: Api = given()
@@ -46,5 +46,5 @@ fun refreshRepo() {
     given<Repo>().refresh()
 }
 
-@Given(ApplicationStorage::class)
+@Given(ApplicationComponent::class)
 class Api

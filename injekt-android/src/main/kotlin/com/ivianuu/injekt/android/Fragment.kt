@@ -23,18 +23,21 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
+import com.ivianuu.injekt.Component
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.Storage
+import com.ivianuu.injekt.childComponent
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.runChildReader
+import com.ivianuu.injekt.runReader
 
-inline fun <R> Fragment.runFragmentReader(block: @Reader () -> R): R =
-    activity!!.runActivityReader {
-        runChildReader(this, block = block)
+@Component
+interface FragmentComponent
+
+val Fragment.fragmentComponent: FragmentComponent
+    get() = lifecycle.singletonValue {
+        retainedFragmentComponent.runReader {
+            childComponent(this)
+        }
     }
-
-class FragmentStorage : Storage by Storage()
 
 typealias FragmentContext = Context
 
@@ -62,10 +65,5 @@ object FragmentModule {
 
     @Given
     fun viewModelStoreOwner(): FragmentViewModelStoreOwner = given<ViewModelStoreOwner>()
-
-    @Given
-    fun fragmentStorage(): FragmentStorage = given<Fragment>().lifecycle.storage {
-        FragmentStorage()
-    }
 
 }

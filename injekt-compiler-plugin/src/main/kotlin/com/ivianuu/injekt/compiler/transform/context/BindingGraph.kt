@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.runreader
+package com.ivianuu.injekt.compiler.transform.context
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
@@ -48,7 +48,11 @@ class BindingGraph(
 ) {
 
     private val instanceBindingNode = inputs
-        .map { InstanceBindingNode(it) }
+        .map {
+            InstanceBindingNode(
+                it
+            )
+        }
         .groupBy { it.key }
 
     private val modules = inputs
@@ -119,7 +123,10 @@ class BindingGraph(
         }
 
         if (request.key.type.isMarkedNullable()) {
-            binding = NullBindingNode(request.key)
+            binding =
+                NullBindingNode(
+                    request.key
+                )
             resolvedBindings[request.key] = binding
             return binding
         }
