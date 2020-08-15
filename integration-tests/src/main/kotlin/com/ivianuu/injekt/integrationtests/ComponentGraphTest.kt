@@ -217,7 +217,7 @@ class ComponentGraphTest {
         }
         """
     ) {
-        assertInternalError("multiple inputs")
+        assertInternalError("multiple instance or module")
     }
 
     @Test

@@ -17,35 +17,43 @@
 package com.ivianuu.injekt.compiler.transform.runreader
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
-import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrField
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.types.isNothing
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class BindingGraph(
-    private val injektContext: InjektContext,
     private val declarationGraph: DeclarationGraph,
     private val contextImpl: IrClass,
     val inputs: List<IrField>,
     private val implicitContextParamTransformer: ImplicitContextParamTransformer
 ) {
 
-    private val inputBindingNodes = inputs
-        .map { InputBindingNode(it) }
+    private val instanceBindingNode = inputs
+        .map { InstanceBindingNode(it) }
         .groupBy { it.key }
+
+    private val modules = inputs
+        .filter { it.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.Module) }
+        .associateWith { it.type.classOrNull!!.owner }
 
     val resolvedBindings = mutableMapOf<Key, BindingNode>()
 
@@ -55,55 +63,56 @@ class BindingGraph(
 
         val allBindings = bindingsForKey(request.key)
 
-        val inputBindings = allBindings
-            .filterIsInstance<InputBindingNode>()
+        val instanceAndModuleBindings = allBindings
             .filter { it.key == request.key }
+            .filter { it is InstanceBindingNode || it.module != null }
 
-        if (inputBindings.size > 1) {
+        if (instanceAndModuleBindings.size > 1) {
             error(
-                "Multiple inputs found for '${request.key}' at:\n${
-                inputBindings
+                "Multiple instance or module bindings found for '${request.key}' at:\n${
+                instanceAndModuleBindings
                     .joinToString("\n") { "'${it.origin.orUnknown()}'" }
                 }"
             )
         }
 
-        binding = inputBindings.singleOrNull()
+        binding = instanceAndModuleBindings.singleOrNull()
         binding?.let {
             resolvedBindings[request.key] = it
             return it
         }
 
-        val (internalBindings, externalBindings) = allBindings
-            .filterNot { it is InputBindingNode }
+        val (internalGlobalBindings, externalGlobalBindings) = allBindings
+            .filterNot { it is InstanceBindingNode }
+            .filter { it.module == null }
             .filter { it.key == request.key }
             .partition { !it.external }
 
-        if (internalBindings.size > 1) {
+        if (internalGlobalBindings.size > 1) {
             error(
                 "Multiple internal bindings found for '${request.key}' at:\n${
-                internalBindings
+                internalGlobalBindings
                     .joinToString("\n") { "'${it.origin.orUnknown()}'" }
                 }"
             )
         }
 
-        binding = internalBindings.singleOrNull()
+        binding = internalGlobalBindings.singleOrNull()
         binding?.let {
             resolvedBindings[request.key] = it
             return it
         }
 
-        if (externalBindings.size > 1) {
+        if (externalGlobalBindings.size > 1) {
             error(
                 "Multiple external bindings found for '${request.key}' at:\n${
-                externalBindings
+                externalGlobalBindings
                     .joinToString("\n") { "'${it.origin.orUnknown()}'" }
                 }.\nPlease specify a binding for the requested type in this module."
             )
         }
 
-        binding = externalBindings.singleOrNull()
+        binding = externalGlobalBindings.singleOrNull()
         binding?.let {
             resolvedBindings[request.key] = it
             return it
@@ -123,7 +132,45 @@ class BindingGraph(
     }
 
     private fun bindingsForKey(key: Key): List<BindingNode> = buildList<BindingNode> {
-        inputBindingNodes[key]?.let { this += it }
+        instanceBindingNode[key]?.let { this += it }
+
+        this += modules.values
+            .flatMapFix { module ->
+                (module.functions
+                    .filter {
+                        it.hasAnnotation(InjektFqNames.Given)
+                    }
+                    .toList() + module.properties
+                    .filter { it.hasAnnotation(InjektFqNames.Given) }
+                    .map { it.getter!! })
+                    .filter { it.returnType.asKey() == key }
+                    .map { implicitContextParamTransformer.getTransformedFunction(it) }
+                    .map { function ->
+                        val storage = (function.getClassFromAnnotation(
+                            InjektFqNames.Given, 0
+                        )
+                            ?: if (function is IrConstructor) function.constructedClass.getClassFromAnnotation(
+                                InjektFqNames.Given, 0
+                            ) else null)
+                            ?.takeUnless { it.defaultType.isNothing() }
+
+                        val explicitParameters = function.valueParameters
+                            .filter { it != function.getContextValueParameter() }
+
+                        GivenBindingNode(
+                            key = key,
+                            contexts = listOf(
+                                function.getContext() ?: error("Wtf ${function.dump()}")
+                            ),
+                            external = function.isExternalDeclaration(),
+                            explicitParameters = explicitParameters,
+                            origin = function.descriptor.fqNameSafe,
+                            function = function,
+                            storage = storage,
+                            module = module
+                        )
+                    }
+            }
 
         this += declarationGraph.bindings(key.type.uniqueTypeName().asString())
             .map { function ->
@@ -145,7 +192,8 @@ class BindingGraph(
                     explicitParameters = explicitParameters,
                     origin = function.descriptor.fqNameSafe,
                     function = function,
-                    storage = storage
+                    storage = storage,
+                    module = null
                 )
             }
 
@@ -155,6 +203,7 @@ class BindingGraph(
                 MapBindingNode(
                     key,
                     entries.map { it.getContext()!! },
+                    null,
                     entries
                 )
             }
@@ -166,6 +215,7 @@ class BindingGraph(
                 SetBindingNode(
                     key,
                     elements.map { it.getContext()!! },
+                    null,
                     elements
                 )
             }

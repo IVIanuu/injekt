@@ -22,7 +22,7 @@ import com.ivianuu.injekt.compiler.transform.implicit.GenericContextImplTransfor
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ReaderTrackingTransformer
-import com.ivianuu.injekt.compiler.transform.runreader.BindingIndexingTransformer
+import com.ivianuu.injekt.compiler.transform.runreader.GlobalBindingIndexingTransformer
 import com.ivianuu.injekt.compiler.transform.runreader.RunReaderCallTransformer
 import com.ivianuu.injekt.compiler.transform.runreader.RunReaderContextImplTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
@@ -79,7 +79,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         RunReaderCallTransformer(injektContext, indexer).doLower(moduleFragment)
 
-        BindingIndexingTransformer(indexer, injektContext).doLower(moduleFragment)
+        GlobalBindingIndexingTransformer(indexer, injektContext).doLower(moduleFragment)
 
         if (initializeInjekt) {
             val declarationGraph = DeclarationGraph(

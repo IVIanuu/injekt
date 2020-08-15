@@ -691,4 +691,44 @@ class RunReaderTest {
         assertTrue(invokeSingleFile() is Bar)
     }
 
+    @Test
+    fun testWithModule() = codegen(
+        """
+        @Module
+        class FooBarModule {
+            @Given
+            fun foo() = Foo()
+        }
+        
+        @Given
+        fun bar() = Bar(given())
+        
+        fun invoke(): Bar {
+            return runReader(FooBarModule()) { given<Bar>() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
+    }
+
+    @Test
+    fun testWithGivenRef() = codegen(
+        """
+        @Module
+        class FooBarModule {
+            @Given
+            fun foo() = Foo()
+        }
+        
+        @Given
+        fun bar() = Bar(given())
+        
+        fun invoke(): Bar {
+            return runReader(FooBarModule()) { given<Bar>() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
+    }
+
 }
