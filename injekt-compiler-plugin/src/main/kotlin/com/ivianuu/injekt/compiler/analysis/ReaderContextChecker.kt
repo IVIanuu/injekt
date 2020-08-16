@@ -18,7 +18,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 import org.jetbrains.kotlin.types.typeUtil.supertypes
 
-class ComponentChecker : CallChecker, DeclarationChecker {
+class ReaderContextChecker : CallChecker, DeclarationChecker {
 
     override fun check(
         declaration: KtDeclaration,

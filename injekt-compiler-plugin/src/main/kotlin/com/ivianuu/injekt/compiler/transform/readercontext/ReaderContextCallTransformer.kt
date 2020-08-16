@@ -78,11 +78,11 @@ class ReaderContextCallTransformer(
             override fun visitCall(expression: IrCall): IrExpression {
                 expression.transformChildrenVoid(this)
                 return if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.component" ||
+                    "com.ivianuu.injekt.context" ||
                     expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.childComponent"
+                    "com.ivianuu.injekt.childContext"
                 ) {
-                    transformComponentCall(
+                    transformContextCall(
                         expression,
                         currentFile,
                         currentScope!!.irElement as IrDeclarationWithName
@@ -108,7 +108,7 @@ class ReaderContextCallTransformer(
 
     }
 
-    private fun transformComponentCall(
+    private fun transformContextCall(
         call: IrCall,
         file: IrFile,
         scope: IrDeclarationWithName

@@ -95,7 +95,7 @@ class DeclarationGraph(
 
         val processedClasses = mutableSetOf<IrClass>()
 
-        val invokingContexts = getInvokingContexts(context)
+        val invokingContexts = getCallingContexts(context)
 
         fun collectParents(invokingContext: IrClass) {
             if (invokingContext in processedClasses) return
@@ -123,7 +123,7 @@ class DeclarationGraph(
                     }
                 }
 
-            getInvokingContexts(invokingContext)
+            getCallingContexts(invokingContext)
                 .forEach { collectParents(it) }
         }
 
@@ -137,7 +137,7 @@ class DeclarationGraph(
 
         val processedClasses = mutableSetOf<IrClass>()
 
-        val invokingContexts = getInvokingContexts(context)
+        val invokingContexts = getCallingContexts(context)
 
         fun collectParents(invokingContext: IrClass) {
             if (invokingContext in processedClasses) return
@@ -148,7 +148,7 @@ class DeclarationGraph(
                 return
             }
 
-            getInvokingContexts(invokingContext)
+            getCallingContexts(invokingContext)
                 .forEach { collectParents(it) }
         }
 
@@ -174,7 +174,7 @@ class DeclarationGraph(
             }
     }
 
-    private fun getInvokingContexts(context: IrClass): Set<IrClass> {
+    private fun getCallingContexts(context: IrClass): Set<IrClass> {
         val allContexts = listOf(context) + getAllSuperContexts(context)
 
         val invokerIfRunChildReader = components
@@ -189,14 +189,14 @@ class DeclarationGraph(
                 .flatMapFix {
                     indexer.classIndices(
                         listOf(
-                            READER_INVOCATION_CALLEE_TO_CALLER_PATH,
+                            READER_CALL_CALLEE_TO_CALLER_PATH,
                             it.descriptor.fqNameSafe.asString()
                         )
                     )
                 }
                 .map {
                     it.getClassFromAnnotation(
-                        InjektFqNames.ReaderInvocation,
+                        InjektFqNames.ReaderCall,
                         0
                     )!!
                 }
@@ -257,17 +257,17 @@ class DeclarationGraph(
 
             indexer.classIndices(
                 listOf(
-                    READER_INVOCATION_CALLER_TO_CALLEE_PATH,
+                    READER_CALL_CALLER_TO_CALLEE_PATH,
                     context.descriptor.fqNameSafe.asString()
                 )
             )
                 .filter {
                     it.getConstantFromAnnotationOrNull<Boolean>(
-                        InjektFqNames.ReaderInvocation,
+                        InjektFqNames.ReaderCall,
                         1
                     )!!
                 }
-                .map { it.getClassFromAnnotation(InjektFqNames.ReaderInvocation, 0)!! }
+                .map { it.getClassFromAnnotation(InjektFqNames.ReaderCall, 0)!! }
                 .forEach {
                     contexts += it
                     collectImplementations(it)
@@ -287,8 +287,8 @@ class DeclarationGraph(
     }
 
     companion object {
-        const val READER_INVOCATION_CALLEE_TO_CALLER_PATH = "readerinvocationcalleetocaller"
-        const val READER_INVOCATION_CALLER_TO_CALLEE_PATH = "readerinvocationcallertocallee"
+        const val READER_CALL_CALLEE_TO_CALLER_PATH = "readerinvocationcalleetocaller"
+        const val READER_CALL_CALLER_TO_CALLEE_PATH = "readerinvocationcallertocallee"
         const val READER_IMPL_SUPER_TO_SUB_PATH = "readerimplsupertosub"
         const val READER_IMPL_SUB_TO_SUPER_PATH = "readerimplsubtosuper"
         const val COMPONENT_CONTEXT_PATH = "component"

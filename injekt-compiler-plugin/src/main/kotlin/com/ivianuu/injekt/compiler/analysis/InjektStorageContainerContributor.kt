@@ -31,7 +31,7 @@ class InjektStorageContainerContributor(
         platform: TargetPlatform,
         moduleDescriptor: ModuleDescriptor
     ) {
-        container.useInstance(ComponentChecker())
+        container.useInstance(ReaderContextChecker())
         container.useInstance(EffectChecker())
         container.useInstance(GivenChecker())
         container.useInstance(implicitChecker)

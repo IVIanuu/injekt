@@ -33,8 +33,8 @@ class InjektSymbols(private val injektContext: InjektContext) {
     val givenContext = injektContext.referenceClass(InjektFqNames.GivenContext)!!
     val index = injektContext.referenceClass(InjektFqNames.Index)!!
     val qualifier = injektContext.referenceClass(InjektFqNames.Qualifier)!!
+    val readerCall = injektContext.referenceClass(InjektFqNames.ReaderCall)!!
     val readerImpl = injektContext.referenceClass(InjektFqNames.ReaderImpl)!!
-    val readerInvocation = injektContext.referenceClass(InjektFqNames.ReaderInvocation)!!
-    val runReaderInvocation = injektContext.referenceClass(InjektFqNames.RunReaderInvocation)!!
+    val runReaderCall = injektContext.referenceClass(InjektFqNames.RunReaderCall)!!
     val signature = injektContext.referenceClass(InjektFqNames.Signature)!!
 }

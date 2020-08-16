@@ -157,21 +157,21 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         if (resulting !is FunctionDescriptor) return
 
         if (isImplicit(resulting, context.trace)) {
-            checkInvocations(reportOn, context, resolvedCall)
+            checkCalls(reportOn, context, resolvedCall)
         }
 
         if (resulting is ConstructorDescriptor &&
             (resulting.constructedClass.isMarkedAsImplicit(resulting.module))
         ) {
-            checkInvocations(reportOn, context, resolvedCall)
+            checkCalls(reportOn, context, resolvedCall)
         }
 
         if (isImplicit(resulting, context.trace)) {
-            checkInvocations(reportOn, context, resolvedCall)
+            checkCalls(reportOn, context, resolvedCall)
         }
     }
 
-    private fun checkInvocations(
+    private fun checkCalls(
         reportOn: PsiElement,
         context: CallCheckerContext,
         resolvedCall: ResolvedCall<*>
@@ -184,7 +184,7 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
 
         if (enclosingReaderContext == null) {
             context.trace.report(
-                InjektErrors.FORBIDDEN_READER_INVOCATION.on(reportOn)
+                InjektErrors.FORBIDDEN_READER_CALL.on(reportOn)
             )
         }
     }

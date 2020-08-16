@@ -42,7 +42,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class BindingGraph(
     private val declarationGraph: DeclarationGraph,
-    private val componentImpl: IrClass,
+    private val contextImpl: IrClass,
     val inputs: List<IrField>,
     private val implicitContextParamTransformer: ImplicitContextParamTransformer
 ) {
@@ -134,7 +134,7 @@ class BindingGraph(
         error(
             "No binding found for '${request.key}'\n" +
                     "required at '${request.requestingKey}' '${request.requestOrigin.orUnknown()}'\n" +
-                    "in ${componentImpl.superTypes.first().render()}\n"
+                    "in ${contextImpl.superTypes.first().render()}\n"
         )
     }
 

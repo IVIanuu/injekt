@@ -371,11 +371,10 @@ class ReaderTrackingTransformer(
             call.isReaderLambdaInvoke(injektContext) -> {
                 val lambdaContext = call.dispatchReceiver!!.type.lambdaContext!!
                 val scope = currentReaderScope!!
-                readerInvocationIndexBuilders(
+                readerCallIndexBuilders(
                     lambdaContext,
                     scope.invocationContext,
-                    true,
-                    false
+                    true
                 )
             }
             call.symbol.owner.canUseImplicits(injektContext) -> {
@@ -387,36 +386,34 @@ class ReaderTrackingTransformer(
                     call.symbol.owner.getContext()!!
                 }
                 val scope = currentReaderScope!!
-                readerInvocationIndexBuilders(
+                readerCallIndexBuilders(
                     calleeContext,
                     scope.invocationContext,
-                    false,
-                    isRunChildReader
+                    false
                 )
             }
             else -> emptyList()
         }
     }
 
-    private fun readerInvocationIndexBuilders(
+    private fun readerCallIndexBuilders(
         calleeContext: IrClass,
-        invocationContext: IrClass,
-        isLambda: Boolean,
-        isRunChildReader: Boolean
+        callingContext: IrClass,
+        isLambda: Boolean
     ): List<NewIndexBuilder> {
         return listOf(
             NewIndexBuilder(
                 listOf(
-                    DeclarationGraph.READER_INVOCATION_CALLEE_TO_CALLER_PATH,
+                    DeclarationGraph.READER_CALL_CALLEE_TO_CALLER_PATH,
                     calleeContext.descriptor.fqNameSafe.asString()
                 ),
-                invocationContext
+                callingContext
             ) {
-                annotations += DeclarationIrBuilder(injektContext, invocationContext.symbol).run {
-                    irCall(injektContext.injektSymbols.readerInvocation.constructors.single()).apply {
+                annotations += DeclarationIrBuilder(injektContext, callingContext.symbol).run {
+                    irCall(injektContext.injektSymbols.readerCall.constructors.single()).apply {
                         putValueArgument(
                             0,
-                            irClassReference(invocationContext)
+                            irClassReference(callingContext)
                         )
                         putValueArgument(
                             1,
@@ -427,13 +424,13 @@ class ReaderTrackingTransformer(
             },
             NewIndexBuilder(
                 listOf(
-                    DeclarationGraph.READER_INVOCATION_CALLER_TO_CALLEE_PATH,
-                    invocationContext.descriptor.fqNameSafe.asString()
+                    DeclarationGraph.READER_CALL_CALLER_TO_CALLEE_PATH,
+                    callingContext.descriptor.fqNameSafe.asString()
                 ),
-                invocationContext
+                callingContext
             ) {
-                annotations += DeclarationIrBuilder(injektContext, invocationContext.symbol).run {
-                    irCall(injektContext.injektSymbols.readerInvocation.constructors.single()).apply {
+                annotations += DeclarationIrBuilder(injektContext, callingContext.symbol).run {
+                    irCall(injektContext.injektSymbols.readerCall.constructors.single()).apply {
                         putValueArgument(
                             0,
                             irClassReference(calleeContext)

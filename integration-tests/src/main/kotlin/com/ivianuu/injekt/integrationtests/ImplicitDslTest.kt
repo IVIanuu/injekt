@@ -24,7 +24,7 @@ import org.junit.Test
 class ImplicitDslTest {
 
     @Test
-    fun testReaderInvocationInReaderAllowed() =
+    fun testReaderCallInReaderAllowed() =
         codegen(
             """
             @Reader fun a() {}
@@ -35,7 +35,7 @@ class ImplicitDslTest {
         }
 
     @Test
-    fun testReaderInvocationInNonReaderNotAllowed() =
+    fun testReaderCallInNonReaderNotAllowed() =
         codegen(
             """
             @Reader fun a() {}
@@ -46,7 +46,7 @@ class ImplicitDslTest {
         }
 
     @Test
-    fun testReaderInvocationInNonReaderLambdaIsNotAllowed() =
+    fun testReaderCallInNonReaderLambdaIsNotAllowed() =
         codegen(
             """
             val lambda: () -> Unit = {
@@ -59,7 +59,7 @@ class ImplicitDslTest {
         }
 
     @Test
-    fun testNestedReaderInvocationInReaderAllowed() =
+    fun testNestedReaderCallInReaderAllowed() =
         codegen(
             """
             @Reader fun a() {}

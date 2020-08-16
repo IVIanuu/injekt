@@ -33,7 +33,7 @@ interface InjektErrors {
                 .also { MAP.put(it, message) }
 
         @JvmField
-        val FORBIDDEN_READER_INVOCATION = error(
+        val FORBIDDEN_READER_CALL = error(
             "@Reader functions can only be invoked inside a enclosing @Reader scope"
         )
 
