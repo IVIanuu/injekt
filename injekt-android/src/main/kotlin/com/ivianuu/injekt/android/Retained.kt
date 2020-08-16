@@ -25,9 +25,9 @@ fun <T> ViewModelStore.singletonValue(init: () -> T): T {
         this,
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                ViewModelComponentHolder() as T
+                ViewModelContextHolder() as T
         }
-    )[ViewModelComponentHolder::class.java]
+    )[ViewModelContextHolder::class.java]
 
     var value = holder.value
     if (value == null) {
@@ -38,6 +38,6 @@ fun <T> ViewModelStore.singletonValue(init: () -> T): T {
     return value as T
 }
 
-private class ViewModelComponentHolder : ViewModel() {
+private class ViewModelContextHolder : ViewModel() {
     var value: Any? = null
 }

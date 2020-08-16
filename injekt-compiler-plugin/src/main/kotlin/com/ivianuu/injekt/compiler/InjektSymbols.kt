@@ -27,7 +27,7 @@ class InjektSymbols(private val injektContext: InjektContext) {
     val reader = injektContext.referenceClass(InjektFqNames.Reader)!!
     val setElements = injektContext.referenceClass(InjektFqNames.SetElements)!!
 
-    val componentDeclaration = injektContext.referenceClass(InjektFqNames.ComponentDeclaration)!!
+    val componentDeclaration = injektContext.referenceClass(InjektFqNames.ContextDeclaration)!!
     val context = injektContext.referenceClass(InjektFqNames.Context)!!
     val genericContext = injektContext.referenceClass(InjektFqNames.GenericContext)!!
     val givenContext = injektContext.referenceClass(InjektFqNames.GivenContext)!!

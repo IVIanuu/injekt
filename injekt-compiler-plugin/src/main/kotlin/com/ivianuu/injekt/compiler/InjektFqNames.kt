@@ -30,7 +30,7 @@ object InjektFqNames {
     val SetElements = InjektPackage.child("SetElements".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
-    val ComponentDeclaration = InternalPackage.child("ComponentDeclaration".asNameId())
+    val ContextDeclaration = InternalPackage.child("ContextDeclaration".asNameId())
     val GenericContext = InternalPackage.child("GenericContext".asNameId())
     val GivenContext = InternalPackage.child("GivenContext".asNameId())
     val Index = InternalPackage.child("Index".asNameId())

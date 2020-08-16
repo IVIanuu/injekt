@@ -23,7 +23,7 @@ class ModuleChecker : DeclarationChecker {
         if (descriptor !is ClassDescriptor) return
         val moduleAnnotation = descriptor.annotations.findAnnotation(InjektFqNames.Module)
             ?: return
-        val component = (moduleAnnotation.argumentValue("component") as? KClassValue)
+        val component = (moduleAnnotation.argumentValue("context") as? KClassValue)
             ?.getArgumentType(descriptor.module)
             ?.constructor
             ?.declarationDescriptor

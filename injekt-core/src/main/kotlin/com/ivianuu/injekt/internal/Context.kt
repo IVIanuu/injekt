@@ -24,7 +24,7 @@ internal annotation class GenericContext(
     val functionMap: String
 )
 
-annotation class ComponentDeclaration(
+annotation class ContexrDeclaration(
     val fqName: String,
     val isChild: Boolean
 )

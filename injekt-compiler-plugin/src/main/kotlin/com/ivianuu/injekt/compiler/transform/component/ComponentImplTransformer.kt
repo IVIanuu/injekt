@@ -162,11 +162,11 @@ class RunReaderContextImplTransformer(
 
         val fqName = FqName(
             index.getConstantFromAnnotationOrNull<String>(
-                InjektFqNames.ComponentDeclaration, 0
+                InjektFqNames.ContextDeclaration, 0
             )!!
         )
         val isChild = index.getConstantFromAnnotationOrNull<Boolean>(
-            InjektFqNames.ComponentDeclaration, 1
+            InjektFqNames.ContextDeclaration, 1
         )!!
 
         val file = injektContext.module.addFile(injektContext, fqName)
