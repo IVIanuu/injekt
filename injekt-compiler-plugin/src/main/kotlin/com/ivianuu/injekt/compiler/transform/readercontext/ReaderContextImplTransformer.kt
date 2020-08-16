@@ -104,7 +104,7 @@ class ReaderContextImplTransformer(
         while (true) {
             val currentParentsByIndex =
                 mutableMapOf<IrClass, List<DeclarationGraph.ParentRunReaderContext>>()
-            val roundContextIndices = declarationGraph.components
+            val roundContextIndices = declarationGraph.contexts
                 .filter { it.superTypes.first().classOrNull!!.owner !in generatedContexts }
 
             if (roundContextIndices.isEmpty()) break
@@ -449,7 +449,7 @@ class ReaderContextImplTransformer(
 
         val graph = BindingGraph(
             declarationGraph = declarationGraph,
-            componentImpl = contextImpl,
+            contextImpl = contextImpl,
             inputs = inputFields,
             implicitContextParamTransformer = implicitContextParamTransformer
         )
@@ -459,7 +459,10 @@ class ReaderContextImplTransformer(
 
         while (true) {
             val superTypes =
-                (if (firstRound) listOf(thisContext, inputs)
+                (if (firstRound) listOf(
+                    thisContext,
+                    inputs
+                ) + declarationGraph.getRunReaderContexts(thisContext)
                 else graph.resolvedBindings.values
                     .flatMapFix { it.contexts }
                     .flatMapFix { it.getAllClasses() })

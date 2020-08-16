@@ -25,4 +25,4 @@ internal annotation class ReaderCall(
     val isLambda: Boolean
 )
 
-internal annotation class RunReaderCall(val context: KClass<*>)
+internal annotation class RunReaderCall(val blockContext: KClass<*>)

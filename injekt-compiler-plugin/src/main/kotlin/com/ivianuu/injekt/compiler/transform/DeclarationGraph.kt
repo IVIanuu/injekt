@@ -37,8 +37,8 @@ class DeclarationGraph(
     private val implicitContextParamTransformer: ImplicitContextParamTransformer
 ) {
 
-    val components: List<IrClass> by lazy {
-        indexer.classIndices(listOf(COMPONENT_CONTEXT_PATH))
+    val contexts: List<IrClass> by lazy {
+        indexer.classIndices(listOf(CONTEXT_PATH))
     }
 
     val genericContexts: List<IrClass> by lazy {
@@ -88,6 +88,16 @@ class DeclarationGraph(
                 return "Unknown(origin=${origin.descriptor.fqNameSafe})"
             }
         }
+    }
+
+    fun getRunReaderContexts(context: IrClass): List<IrClass> {
+        return indexer.classIndices(
+            listOf(
+                RUN_READER_CALL_PATH,
+                context.descriptor.fqNameSafe.asString()
+            )
+        )
+            .map { it.getClassFromAnnotation(InjektFqNames.RunReaderCall, 0)!! }
     }
 
     fun getParentRunReaderContexts(context: IrClass): List<ParentRunReaderContext> {
@@ -158,7 +168,7 @@ class DeclarationGraph(
     }
 
     private fun isRunReaderContext(context: IrClass): Boolean {
-        return components
+        return contexts
             .map { it.superTypes.first() }
             .any { it == context.defaultType }
     }
@@ -177,7 +187,7 @@ class DeclarationGraph(
     private fun getCallingContexts(context: IrClass): Set<IrClass> {
         val allContexts = listOf(context) + getAllSuperContexts(context)
 
-        val invokerIfRunChildReader = components
+        val invokerIfRunChildReader = contexts
             .singleOrNull { it.superTypes[0] == context.defaultType }
             ?.superTypes
             ?.getOrNull(1)
@@ -291,7 +301,7 @@ class DeclarationGraph(
         const val READER_CALL_CALLER_TO_CALLEE_PATH = "readerinvocationcallertocallee"
         const val READER_IMPL_SUPER_TO_SUB_PATH = "readerimplsupertosub"
         const val READER_IMPL_SUB_TO_SUPER_PATH = "readerimplsubtosuper"
-        const val COMPONENT_CONTEXT_PATH = "component"
+        const val CONTEXT_PATH = "component"
         const val RUN_READER_CALL_PATH = "runreadercall"
         const val GIVEN_PATH = "given"
         const val GIVEN_CONTEXTS_PATH = "givencontexts"

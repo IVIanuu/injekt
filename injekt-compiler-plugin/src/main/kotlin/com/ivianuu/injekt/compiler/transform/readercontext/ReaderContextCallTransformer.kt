@@ -25,9 +25,6 @@ import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.transform.InjektContext
-import com.ivianuu.injekt.compiler.transform.implicit.lambdaContext
-import com.ivianuu.injekt.compiler.typeArguments
-import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -54,11 +51,11 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrExternalPackageFragmentSymbolImpl
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ReaderContextCallTransformer(
@@ -94,18 +91,10 @@ class ReaderContextCallTransformer(
         newIndexBuilders.forEach {
             indexer.index(
                 it.originatingDeclaration,
-                listOf(DeclarationGraph.COMPONENT_CONTEXT_PATH),
+                listOf(DeclarationGraph.CONTEXT_PATH),
                 it.classBuilder
             )
         }
-    }
-
-    private fun transformRunReaderCall2(
-        call: IrCall,
-        file: IrFile,
-        scope: IrDeclarationWithName
-    ) {
-
     }
 
     private fun transformContextCall(
@@ -117,31 +106,28 @@ class ReaderContextCallTransformer(
             ?.elements
             ?.map { it as IrExpression } ?: emptyList()
 
-        val lambdaExpression = call.getValueArgument(1)!!
-        val lambdaContext = lambdaExpression.type.lambdaContext!!
+        val context = call.getTypeArgument(0)!!.classOrNull!!.owner
 
         val isChild = call.symbol.owner.descriptor.fqNameSafe.asString() ==
-                "com.ivianuu.injekt.runChildReader"
+                "com.ivianuu.injekt.childContext"
 
         val metadata = if (isChild)
             injektContext.irTrace[InjektWritableSlices.RUN_CHILD_READER_METADATA, call]!! else null
 
         val name = injektContext.uniqueClassNameProvider(
             "${scope.descriptor.fqNameSafe.pathSegments()
-                .joinToString("_")}RunReaderContextFactory".asNameId(),
+                .joinToString("_")}ReaderContextFactory".asNameId(),
             file.fqName
         )
 
-        newIndexBuilders += NewIndexBuilder(
-            scope
-        ) clazz@{
-            superTypes += lambdaContext.defaultType
+        newIndexBuilders += NewIndexBuilder(scope) clazz@{
+            superTypes += context.defaultType // todo
             if (metadata != null) superTypes += metadata.callingContext.defaultType
             addMetadataIfNotLocal()
             if (scope is IrTypeParametersContainer)
                 copyTypeParametersFrom(scope as IrTypeParametersContainer)
             annotations += DeclarationIrBuilder(injektContext, symbol).run {
-                irCall(injektContext.injektSymbols.componentDeclaration.constructors.single()).apply {
+                irCall(injektContext.injektSymbols.contextDeclaration.constructors.single()).apply {
                     putValueArgument(
                         0,
                         irString(file.fqName.child(name).asString())
@@ -191,7 +177,7 @@ class ReaderContextCallTransformer(
 
         val createFunctionStub = contextFactoryStub.addFunction {
             this.name = "create".asNameId()
-            returnType = lambdaContext.defaultType
+            returnType = context.defaultType
             origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
         }.apply {
             dispatchReceiverParameter = contextFactoryStub.thisReceiver!!.copyTo(this)
@@ -212,7 +198,7 @@ class ReaderContextCallTransformer(
         }
 
         return DeclarationIrBuilder(injektContext, call.symbol).run {
-            val contextExpression = irCall(createFunctionStub).apply {
+            irCall(createFunctionStub).apply {
                 dispatchReceiver = irGetObject(contextFactoryStub.symbol)
 
                 if (isChild) {
@@ -222,16 +208,6 @@ class ReaderContextCallTransformer(
                 inputs.forEachIndexed { index, input ->
                     putValueArgument(index + if (isChild) 1 else 0, input)
                 }
-            }
-            irCall(
-                injektContext.referenceFunctions(
-                    FqName("com.ivianuu.injekt.internal.runReaderDummy")
-                ).single()
-            ).apply {
-                putTypeArgument(0, contextExpression.type)
-                putTypeArgument(1, lambdaExpression.type.typeArguments.last().typeOrFail)
-                putValueArgument(0, contextExpression)
-                putValueArgument(1, lambdaExpression)
             }
         }
     }

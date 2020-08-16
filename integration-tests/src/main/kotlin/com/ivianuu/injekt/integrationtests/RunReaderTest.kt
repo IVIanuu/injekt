@@ -33,8 +33,8 @@ class RunReaderTest {
     @Test
     fun testSimple() = codegen(
         """
-            @Component
-            interface SimpleComponent
+            @Context
+            interface SimpleContext
             
             @Given
             fun foo() = Foo()
@@ -42,7 +42,7 @@ class RunReaderTest {
             fun bar() = Bar(given())
             
             fun invoke(): Bar {
-                return component<SimpleComponent>().runReader { given<Bar>() }
+                return context<SimpleContext>().runReader { given<Bar>() }
             }
     """
     ) {

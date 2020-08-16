@@ -96,12 +96,12 @@ class ReaderTrackingTransformer(
             override val fqName: FqName
         ) : Scope() {
 
-            override val invocationContext = call.getValueArgument(1)!!
+            override val invocationContext = call.getValueArgument(0)!!
                 .type
                 .lambdaContext!!
 
             fun isBlock(function: IrFunction): Boolean =
-                call.getValueArgument(1).let {
+                call.getValueArgument(0).let {
                     it is IrFunctionExpression &&
                             it.function == function
                 }
@@ -283,7 +283,7 @@ class ReaderTrackingTransformer(
                             currentScope!!.scope.scopeOwner.fqNameSafe
                         )
                     ) {
-                        val blockExpression = expression.getValueArgument(1)!!
+                        val blockExpression = expression.getValueArgument(0)!!
                         blockExpression.transformChildrenVoid()
                         visitPossibleReaderCall(
                             // we fake the invoke call here because otherwise
