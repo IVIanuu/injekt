@@ -13,7 +13,7 @@ class ModuleDslTest {
         class MyModule
     """
     ) {
-        assertCompileError("component")
+        assertCompileError("context")
     }
 
     @Test

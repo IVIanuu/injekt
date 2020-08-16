@@ -35,7 +35,7 @@ class BindingGraphTest {
         """
         @Given class Dep(bar: Bar)
         fun invoke() {
-            runReader { given<Dep>() }
+            context<TestComponent>().runReader { given<Dep>() }
         }
         """
     ) {
@@ -49,7 +49,7 @@ class BindingGraphTest {
         @SetElements fun setB() = setOf(0)
         
         fun invoke(): Pair<Set<String>, Set<Int>> {
-            return runReader { given<Set<String>>() to given<Set<Int>>() }
+            return context<TestComponent>().runReader { given<Set<String>>() to given<Set<Int>>() }
         }
     """
     ) {
@@ -67,7 +67,7 @@ class BindingGraphTest {
         @Given fun foo2(): Foo2 = Foo()
         
         fun invoke(): Pair<Foo, Foo> {
-            return runReader { given<Foo1>() to given<Foo2>() }
+            return context<TestComponent>().runReader { given<Foo1>() to given<Foo2>() }
         }
     """
     ) {
@@ -97,7 +97,7 @@ class BindingGraphTest {
             source(
                 """
                 fun invoke(): Pair<Foo, Foo> {
-                    return runReader { given<Foo1>() to given<Foo2>() }
+                    return context<TestComponent>().runReader { given<Foo1>() to given<Foo2>() }
                 } 
             """, name = "File.kt"
             )
@@ -114,7 +114,7 @@ class BindingGraphTest {
         @Given fun nullableFoo(): Foo? = null
 
         fun invoke() { 
-            runReader { given<Foo>() to given<Foo?>() }
+            context<TestComponent>().runReader { given<Foo>() to given<Foo?>() }
         }
     """
     ) {
@@ -127,7 +127,7 @@ class BindingGraphTest {
         @Given fun foo(): Foo = Foo()
 
         fun invoke(): Foo? { 
-            return runReader { given<Foo?>() }
+            return context<TestComponent>().runReader { given<Foo?>() }
         }
         """
     ) {
@@ -138,7 +138,7 @@ class BindingGraphTest {
     fun testReturnsNullOnMissingNullableBinding() = codegen(
         """
         fun invoke(): Foo? { 
-            return runReader { given<Foo?>() }
+            return context<TestComponent>().runReader { given<Foo?>() }
         }
         """
     ) {
@@ -151,7 +151,7 @@ class BindingGraphTest {
         @Given fun list(): List<*> = emptyList<Any?>()
         
         fun invoke() { 
-            runReader { given<List<*>>() }
+            context<TestComponent>().runReader { given<List<*>>() }
         }
     """
     )
@@ -163,7 +163,7 @@ class BindingGraphTest {
             fun provideFoo() = Foo()
             
             fun invoke(foo: Foo): Foo {
-                return runReader(foo) { given() }
+                return context<TestComponent>(foo).runReader { given() }
             }
         """
     ) {
@@ -197,7 +197,7 @@ class BindingGraphTest {
                     ): Foo {
                         externalFooField = externalFoo
                         internalFooField = internalFoo
-                        return runReader { given<Foo>() }
+                        return context<TestComponent>().runReader { given<Foo>() }
                     }
                 """,
                 name = "File.kt"
@@ -213,7 +213,7 @@ class BindingGraphTest {
     fun testDuplicatedInputsFails() = codegen(
         """
         fun invoke() {
-            runReader(Foo(), Foo()) { given<Foo>() }
+            context<TestComponent>(Foo(), Foo()).runReader { given<Foo>() }
         }
         """
     ) {
@@ -227,7 +227,7 @@ class BindingGraphTest {
         @Given fun foo2() = Foo()
         
         fun invoke() {
-            runReader { given<Foo>() }
+            context<TestComponent>().runReader { given<Foo>() }
         }
         """
     ) {
@@ -254,7 +254,7 @@ class BindingGraphTest {
             source(
                 """
                     fun invoke() { 
-                        runReader { given<Foo>() }
+                        context<TestComponent>().runReader { given<Foo>() }
                     }
                 """
             )
