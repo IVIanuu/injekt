@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.component
+package com.ivianuu.injekt.compiler.transform.readercontext
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
@@ -87,7 +87,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class RunReaderContextImplTransformer(
+class ReaderContextImplTransformer(
     injektContext: InjektContext,
     private val declarationGraph: DeclarationGraph,
     private val implicitContextParamTransformer: ImplicitContextParamTransformer,

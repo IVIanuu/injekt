@@ -30,7 +30,7 @@ import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
-import com.ivianuu.injekt.compiler.transform.component.RunReaderContextImplTransformer
+import com.ivianuu.injekt.compiler.transform.readercontext.ReaderContextImplTransformer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -79,7 +79,7 @@ import org.jetbrains.kotlin.name.Name
 class GenericContextImplTransformer(
     injektContext: InjektContext,
     private val declarationGraph: DeclarationGraph,
-    private val runReaderContextImplTransformer: RunReaderContextImplTransformer,
+    private val readerContextImplTransformer: ReaderContextImplTransformer,
     private val initFile: IrFile
 ) : AbstractInjektTransformer(injektContext) {
 
@@ -113,7 +113,7 @@ class GenericContextImplTransformer(
                 genericContextType.classOrNull!!.owner
             ) + delegateContext
 
-            val allParentInputs = runReaderContextImplTransformer.generatedContexts
+            val allParentInputs = readerContextImplTransformer.generatedContexts
                 .values
                 .flatten()
                 .filter { generatedContext ->
@@ -122,7 +122,7 @@ class GenericContextImplTransformer(
                             .map { it.classOrNull!!.owner }
                     }
                 }
-                .map { runReaderContextImplTransformer.inputsByContext[it]!! }
+                .map { readerContextImplTransformer.inputsByContext[it]!! }
                 .toSet()
 
             generateGenericContextFactory(

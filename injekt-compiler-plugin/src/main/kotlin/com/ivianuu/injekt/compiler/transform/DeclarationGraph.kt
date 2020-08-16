@@ -21,8 +21,8 @@ import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
-import com.ivianuu.injekt.compiler.transform.component.RunReaderContextImplTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
+import com.ivianuu.injekt.compiler.transform.readercontext.ReaderContextImplTransformer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -72,7 +72,7 @@ class DeclarationGraph(
             .filter { it.getContext() != null }
     }
 
-    lateinit var runReaderContextImplTransformer: RunReaderContextImplTransformer
+    lateinit var readerContextImplTransformer: ReaderContextImplTransformer
 
     sealed class ParentRunReaderContext {
         data class Known(val clazz: IrClass) : ParentRunReaderContext() {
@@ -108,7 +108,7 @@ class DeclarationGraph(
 
             parents += getGivenDeclarationsForContext(invokingContext)
                 .flatMapFix { declaration ->
-                    val generatedContextsWithInvokerSuperType = runReaderContextImplTransformer
+                    val generatedContextsWithInvokerSuperType = readerContextImplTransformer
                         .generatedContexts
                         .values
                         .flatten()

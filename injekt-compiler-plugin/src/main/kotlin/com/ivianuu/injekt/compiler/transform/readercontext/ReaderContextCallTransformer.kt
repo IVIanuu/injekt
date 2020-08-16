@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.component
+package com.ivianuu.injekt.compiler.transform.readercontext
 
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
@@ -61,7 +61,7 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ComponentCallTransformer(
+class ReaderContextCallTransformer(
     injektContext: InjektContext,
     private val indexer: Indexer
 ) : AbstractInjektTransformer(injektContext) {
