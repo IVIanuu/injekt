@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.context
+package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
@@ -48,7 +48,7 @@ class GivenBindingNode(
     module: IrClass?,
     val explicitParameters: List<IrValueParameter>,
     val function: IrFunction,
-    val storage: IrClass?
+    val scopeComponent: IrClass?
 ) : BindingNode(key, contexts, origin, external, module)
 
 class InstanceBindingNode(

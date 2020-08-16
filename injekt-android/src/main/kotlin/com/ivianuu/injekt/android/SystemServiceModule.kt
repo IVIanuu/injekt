@@ -257,6 +257,6 @@ object SystemServiceModule {
 
     @Reader
     private inline fun <reified T : Any> systemService() =
-        ContextCompat.getSystemService(given<ApplicationContext>(), T::class.java)!!
+        ContextCompat.getSystemService(given<ApplicationAndroidContext>(), T::class.java)!!
 
 }

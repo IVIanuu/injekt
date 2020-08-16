@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.context
+package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
@@ -61,7 +61,7 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class RunReaderCallTransformer(
+class ComponentCallTransformer(
     injektContext: InjektContext,
     private val indexer: Indexer
 ) : AbstractInjektTransformer(injektContext) {
@@ -78,11 +78,11 @@ class RunReaderCallTransformer(
             override fun visitCall(expression: IrCall): IrExpression {
                 expression.transformChildrenVoid(this)
                 return if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.runReader" ||
+                    "com.ivianuu.injekt.component" ||
                     expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.runChildReader"
+                    "com.ivianuu.injekt.childComponent"
                 ) {
-                    transformRunReaderCall(
+                    transformComponentCall(
                         expression,
                         currentFile,
                         currentScope!!.irElement as IrDeclarationWithName
@@ -94,13 +94,21 @@ class RunReaderCallTransformer(
         newIndexBuilders.forEach {
             indexer.index(
                 it.originatingDeclaration,
-                listOf(DeclarationGraph.RUN_READER_CONTEXT_PATH),
+                listOf(DeclarationGraph.COMPONENT_CONTEXT_PATH),
                 it.classBuilder
             )
         }
     }
 
-    private fun transformRunReaderCall(
+    private fun transformRunReaderCall2(
+        call: IrCall,
+        file: IrFile,
+        scope: IrDeclarationWithName
+    ) {
+
+    }
+
+    private fun transformComponentCall(
         call: IrCall,
         file: IrFile,
         scope: IrDeclarationWithName
@@ -133,7 +141,7 @@ class RunReaderCallTransformer(
             if (scope is IrTypeParametersContainer)
                 copyTypeParametersFrom(scope as IrTypeParametersContainer)
             annotations += DeclarationIrBuilder(injektContext, symbol).run {
-                irCall(injektContext.injektSymbols.runReaderContext.constructors.single()).apply {
+                irCall(injektContext.injektSymbols.componentDeclaration.constructors.single()).apply {
                     putValueArgument(
                         0,
                         irString(file.fqName.child(name).asString())

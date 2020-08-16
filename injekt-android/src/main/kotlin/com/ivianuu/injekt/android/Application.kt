@@ -17,28 +17,27 @@
 package com.ivianuu.injekt.android
 
 import android.app.Application
-import android.content.Context
 import android.content.res.Resources
 import androidx.lifecycle.ProcessLifecycleOwner
-import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.component
+import com.ivianuu.injekt.context
 import com.ivianuu.injekt.given
 
-@Component
-interface ApplicationComponent
+@Context
+interface ApplicationContext
 
-val Application.applicationComponent: ApplicationComponent
-    get() = ProcessLifecycleOwner.get().lifecycle.singletonValue { component(this) }
+val Application.applicationReaderContext: ApplicationContext
+    get() = ProcessLifecycleOwner.get().lifecycle.singletonValue { context(this) }
 
-typealias ApplicationContext = Context
+typealias ApplicationAndroidContext = android.content.Context
 
 typealias ApplicationResources = Resources
 
 object ApplicationModule {
 
     @Given
-    fun context(): ApplicationContext = given<Application>()
+    fun context(): ApplicationAndroidContext = given<Application>()
 
     @Given
     fun resources(): ApplicationResources = given<Application>().resources

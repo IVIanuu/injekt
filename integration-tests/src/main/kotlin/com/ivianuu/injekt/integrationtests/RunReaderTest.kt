@@ -33,14 +33,17 @@ class RunReaderTest {
     @Test
     fun testSimple() = codegen(
         """
-        @Given
-        fun foo() = Foo()
-        @Given
-        fun bar() = Bar(given())
-        
-        fun invoke(): Bar {
-            return runReader { given<Bar>() }
-        }
+            @Component
+            interface SimpleComponent
+            
+            @Given
+            fun foo() = Foo()
+            @Given
+            fun bar() = Bar(given())
+            
+            fun invoke(): Bar {
+                return component<SimpleComponent>().runReader { given<Bar>() }
+            }
     """
     ) {
         assertTrue(invokeSingleFile() is Bar)
@@ -49,21 +52,21 @@ class RunReaderTest {
     @Test
     fun testWithChild() = codegen(
         """
-        @Given
-        fun foo() = Foo()
-        @Given
-        fun bar() = Bar(given())
-        
-        fun invoke(foo: Foo): Foo {
-            return runReader(42, "hello world") { overriddingFoo(foo) }
-        }
-        
-        fun otherInvoke() = runReader { overriddingFoo(Foo()) }
-        
-        @Reader
-        private fun overriddingFoo(foo: Foo) = runChildReader(foo) {
-            given<Bar>().foo
-        }
+            @Given
+            fun foo() = Foo()
+            @Given
+            fun bar() = Bar(given())
+            
+            fun invoke(foo: Foo): Foo {
+                return runReader(42, "hello world") { overriddingFoo(foo) }
+            }
+            
+            fun otherInvoke() = runReader { overriddingFoo(Foo()) }
+            
+            @Reader
+            private fun overriddingFoo(foo: Foo) = runChildReader(foo) {
+                given<Bar>().foo
+            }
     """
     ) {
         val foo = Foo()

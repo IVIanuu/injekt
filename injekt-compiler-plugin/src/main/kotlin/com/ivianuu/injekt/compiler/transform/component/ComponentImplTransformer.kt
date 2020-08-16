@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.context
+package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
@@ -27,7 +27,6 @@ import com.ivianuu.injekt.compiler.getAllFunctions
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.recordLookup
-import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
@@ -58,7 +57,6 @@ import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
-import org.jetbrains.kotlin.ir.builders.irInt
 import org.jetbrains.kotlin.ir.builders.irIs
 import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irSetField
@@ -78,7 +76,6 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -107,7 +104,7 @@ class RunReaderContextImplTransformer(
         while (true) {
             val currentParentsByIndex =
                 mutableMapOf<IrClass, List<DeclarationGraph.ParentRunReaderContext>>()
-            val roundContextIndices = declarationGraph.runReaderContexts
+            val roundContextIndices = declarationGraph.components
                 .filter { it.superTypes.first().classOrNull!!.owner !in generatedContexts }
 
             if (roundContextIndices.isEmpty()) break
@@ -165,11 +162,11 @@ class RunReaderContextImplTransformer(
 
         val fqName = FqName(
             index.getConstantFromAnnotationOrNull<String>(
-                InjektFqNames.RunReaderContext, 0
+                InjektFqNames.ComponentDeclaration, 0
             )!!
         )
         val isChild = index.getConstantFromAnnotationOrNull<Boolean>(
-            InjektFqNames.RunReaderContext, 1
+            InjektFqNames.ComponentDeclaration, 1
         )!!
 
         val file = injektContext.module.addFile(injektContext, fqName)
@@ -452,7 +449,7 @@ class RunReaderContextImplTransformer(
 
         val graph = BindingGraph(
             declarationGraph = declarationGraph,
-            contextImpl = contextImpl,
+            componentImpl = contextImpl,
             inputs = inputFields,
             implicitContextParamTransformer = implicitContextParamTransformer
         )
@@ -695,7 +692,7 @@ class RunReaderContextImplTransformer(
                     putValueArgument(valueArgumentsCount - 1, c())
                 }
 
-                return if (binding.storage != null) {
+                return call /*if (binding.scopeComponent != null) {
                     irCall(
                         injektContext.injektSymbols.storage
                             .owner
@@ -706,7 +703,7 @@ class RunReaderContextImplTransformer(
                             context,
                             graph,
                             BindingRequest(
-                                key = binding.storage.defaultType.asKey(),
+                                key = binding.scopeComponent.defaultType.asKey(),
                                 requestingKey = binding.key,
                                 requestOrigin = binding.origin
                             )
@@ -723,9 +720,9 @@ class RunReaderContextImplTransformer(
                             ) { call }
                         )
                     }
-                } else {
-                    call
-                }
+                } else {*/
+
+                //}
             }
 
             if (binding.explicitParameters.isNotEmpty()) {

@@ -3,17 +3,17 @@ package com.ivianuu.injekt
 import com.ivianuu.injekt.internal.injektIntrinsic
 
 @Target(AnnotationTarget.CLASS)
-annotation class Component
+annotation class Context
 
-fun <T> component(
+fun <T> context(
     vararg inputs: Any?
 ): T = injektIntrinsic()
 
 @Reader
-fun <T> childComponent(
+fun <T> childContext(
     vararg inputs: Any?
 ): T = injektIntrinsic()
 
-fun <R> Any.runReader(
+inline fun <R> Any.runReader(
     block: @Reader () -> R
 ): R = injektIntrinsic()

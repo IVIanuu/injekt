@@ -19,14 +19,15 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.compiler.transform.InjektContext
 
 class InjektSymbols(private val injektContext: InjektContext) {
+    val component = injektContext.referenceClass(InjektFqNames.Context)!!
     val effect = injektContext.referenceClass(InjektFqNames.Effect)!!
     val given = injektContext.referenceClass(InjektFqNames.Given)!!
     val mapEntries = injektContext.referenceClass(InjektFqNames.MapEntries)!!
     val module = injektContext.referenceClass(InjektFqNames.Module)!!
     val reader = injektContext.referenceClass(InjektFqNames.Reader)!!
     val setElements = injektContext.referenceClass(InjektFqNames.SetElements)!!
-    val storage = injektContext.referenceClass(InjektFqNames.Storage)!!
 
+    val componentDeclaration = injektContext.referenceClass(InjektFqNames.ComponentDeclaration)!!
     val context = injektContext.referenceClass(InjektFqNames.Context)!!
     val genericContext = injektContext.referenceClass(InjektFqNames.GenericContext)!!
     val givenContext = injektContext.referenceClass(InjektFqNames.GivenContext)!!
@@ -34,6 +35,6 @@ class InjektSymbols(private val injektContext: InjektContext) {
     val qualifier = injektContext.referenceClass(InjektFqNames.Qualifier)!!
     val readerImpl = injektContext.referenceClass(InjektFqNames.ReaderImpl)!!
     val readerInvocation = injektContext.referenceClass(InjektFqNames.ReaderInvocation)!!
-    val runReaderContext = injektContext.referenceClass(InjektFqNames.RunReaderContext)!!
+    val runReaderInvocation = injektContext.referenceClass(InjektFqNames.RunReaderInvocation)!!
     val signature = injektContext.referenceClass(InjektFqNames.Signature)!!
 }

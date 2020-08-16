@@ -17,16 +17,16 @@
 package com.ivianuu.injekt.android
 
 import androidx.activity.ComponentActivity
-import com.ivianuu.injekt.Component
-import com.ivianuu.injekt.childComponent
+import com.ivianuu.injekt.Context
+import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.runReader
 
-@Component
-interface RetainedActivityComponent
+@Context
+interface RetainedActivityContext
 
-val ComponentActivity.retainedActivityComponent: RetainedActivityComponent
+val ComponentActivity.retainedActivityContext: RetainedActivityContext
     get() = viewModelStore.singletonValue {
-        application.applicationComponent.runReader {
-            childComponent()
+        application.applicationReaderContext.runReader {
+            childContext()
         }
     }

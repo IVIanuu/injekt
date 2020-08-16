@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.context
+package com.ivianuu.injekt.compiler.transform.component
 
 import org.jetbrains.kotlin.name.FqName
 

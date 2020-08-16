@@ -16,11 +16,23 @@
 
 package com.ivianuu.injekt.test
 
+import com.ivianuu.injekt.Context
+import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.context
+import com.ivianuu.injekt.runReader
+
 class Foo
 
 class Bar(val foo: Foo)
 
 class Baz(val foo: Foo, val bar: Bar)
+
+@Context
+interface TestComponent
+
+fun <R> runTestReader(
+    block: @Reader () -> R
+): R = context<TestComponent>().runReader(block = block)
 
 interface Command
 

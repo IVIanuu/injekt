@@ -16,30 +16,29 @@
 
 package com.ivianuu.injekt.android
 
-import android.content.Context
 import android.content.res.Resources
 import androidx.activity.ComponentActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
-import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.childComponent
+import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 
-@Component
-interface FragmentComponent
+@Context
+interface FragmentContext
 
-val Fragment.fragmentComponent: FragmentComponent
+val Fragment.fragmentContext: FragmentContext
     get() = lifecycle.singletonValue {
-        retainedFragmentComponent.runReader {
-            childComponent(this)
+        retainedFragmentContext.runReader {
+            childContext(this)
         }
     }
 
-typealias FragmentContext = Context
+typealias FragmentAndroidContext = android.content.Context
 
 typealias FragmentResources = Resources
 
@@ -52,10 +51,10 @@ typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
 object FragmentModule {
 
     @Given
-    fun context(): FragmentContext = given<Fragment>().requireContext()
+    fun context(): FragmentAndroidContext = given<Fragment>().requireContext()
 
     @Given
-    fun resources(): FragmentResources = given<FragmentContext>().resources
+    fun resources(): FragmentResources = given<FragmentAndroidContext>().resources
 
     @Given
     fun lifecycleOwner(): FragmentLifecycleOwner = given<ComponentActivity>()

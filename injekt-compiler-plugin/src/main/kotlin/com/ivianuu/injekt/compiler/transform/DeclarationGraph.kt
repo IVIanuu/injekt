@@ -21,7 +21,7 @@ import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
-import com.ivianuu.injekt.compiler.transform.context.RunReaderContextImplTransformer
+import com.ivianuu.injekt.compiler.transform.component.RunReaderContextImplTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -37,8 +37,8 @@ class DeclarationGraph(
     private val implicitContextParamTransformer: ImplicitContextParamTransformer
 ) {
 
-    val runReaderContexts: List<IrClass> by lazy {
-        indexer.classIndices(listOf(RUN_READER_CONTEXT_PATH))
+    val components: List<IrClass> by lazy {
+        indexer.classIndices(listOf(COMPONENT_CONTEXT_PATH))
     }
 
     val genericContexts: List<IrClass> by lazy {
@@ -158,7 +158,7 @@ class DeclarationGraph(
     }
 
     private fun isRunReaderContext(context: IrClass): Boolean {
-        return runReaderContexts
+        return components
             .map { it.superTypes.first() }
             .any { it == context.defaultType }
     }
@@ -177,7 +177,7 @@ class DeclarationGraph(
     private fun getInvokingContexts(context: IrClass): Set<IrClass> {
         val allContexts = listOf(context) + getAllSuperContexts(context)
 
-        val invokerIfRunChildReader = runReaderContexts
+        val invokerIfRunChildReader = components
             .singleOrNull { it.superTypes[0] == context.defaultType }
             ?.superTypes
             ?.getOrNull(1)
@@ -291,7 +291,8 @@ class DeclarationGraph(
         const val READER_INVOCATION_CALLER_TO_CALLEE_PATH = "readerinvocationcallertocallee"
         const val READER_IMPL_SUPER_TO_SUB_PATH = "readerimplsupertosub"
         const val READER_IMPL_SUB_TO_SUPER_PATH = "readerimplsubtosuper"
-        const val RUN_READER_CONTEXT_PATH = "runreadercontext"
+        const val COMPONENT_CONTEXT_PATH = "component"
+        const val RUN_READER_CALL_PATH = "runreadercall"
         const val GIVEN_PATH = "given"
         const val GIVEN_CONTEXTS_PATH = "givencontexts"
         const val GENERIC_CONTEXT_PATH = "genericcontext"

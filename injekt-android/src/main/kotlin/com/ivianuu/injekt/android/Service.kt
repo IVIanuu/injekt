@@ -17,28 +17,29 @@
 package com.ivianuu.injekt.android
 
 import android.app.Service
-import android.content.Context
 import android.content.res.Resources
+import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.childComponent
+import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 
-interface ServiceComponent
+@Context
+interface ServiceContext
 
-fun Service.createServiceComponent(): ReceiverComponent =
-    application.applicationComponent.runReader {
-        childComponent(this)
+fun Service.createServiceComponent(): ReceiverContext =
+    application.applicationReaderContext.runReader {
+        childContext(this)
     }
 
-typealias ServiceContext = Context
+typealias ServiceAndroidContext = android.content.Context
 
 typealias ServiceResources = Resources
 
 object ServiceModule {
 
     @Given
-    fun context(): ServiceContext = given<Service>()
+    fun context(): ServiceAndroidContext = given<Service>()
 
     @Given
     fun resources(): ServiceResources = given<Service>().resources

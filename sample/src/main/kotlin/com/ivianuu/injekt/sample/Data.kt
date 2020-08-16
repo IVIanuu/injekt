@@ -16,24 +16,24 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.ApplicationComponent
+import com.ivianuu.injekt.ApplicationContext
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.android.ApplicationContext
+import com.ivianuu.injekt.android.ApplicationAndroidContext
 import com.ivianuu.injekt.given
 import java.io.File
 
 typealias DatabaseFile = File
 
 @Given
-fun databaseFile(): DatabaseFile = given<ApplicationContext>().cacheDir
+fun databaseFile(): DatabaseFile = given<ApplicationAndroidContext>().cacheDir
 
-@Given(ApplicationComponent::class)
+@Given(ApplicationContext::class)
 class Database {
     private val file: DatabaseFile = given()
 }
 
-@Given(ApplicationComponent::class)
+@Given(ApplicationContext::class)
 class Repo {
     private val database: Database = given()
     private val api: Api = given()
@@ -46,5 +46,5 @@ fun refreshRepo() {
     given<Repo>().refresh()
 }
 
-@Given(ApplicationComponent::class)
+@Given(ApplicationContext::class)
 class Api

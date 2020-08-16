@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.name.FqName
 
 object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
+    val Context = InjektPackage.child("Context".asNameId())
     val Effect = InjektPackage.child("Effect".asNameId())
     val Given = InjektPackage.child("Given".asNameId())
     val InitializeInjekt = InjektPackage.child("InitializeInjekt".asNameId())
@@ -27,17 +28,16 @@ object InjektFqNames {
     val Module = InjektPackage.child("Module".asNameId())
     val Reader = InjektPackage.child("Reader".asNameId())
     val SetElements = InjektPackage.child("SetElements".asNameId())
-    val Storage = InjektPackage.child("Storage".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
-    val Context = InternalPackage.child("Context".asNameId())
+    val ComponentDeclaration = InternalPackage.child("ComponentDeclaration".asNameId())
     val GenericContext = InternalPackage.child("GenericContext".asNameId())
     val GivenContext = InternalPackage.child("GivenContext".asNameId())
     val Index = InternalPackage.child("Index".asNameId())
     val Qualifier = InternalPackage.child("Qualifier".asNameId())
     val ReaderImpl = InternalPackage.child("ReaderImpl".asNameId())
     val ReaderInvocation = InternalPackage.child("ReaderInvocation".asNameId())
-    val RunReaderContext = InternalPackage.child("RunReaderContext".asNameId())
+    val RunReaderInvocation = InternalPackage.child("RunReaderInvocation".asNameId())
     val Signature = InternalPackage.child("Signature".asNameId())
 
     val IndexPackage = InternalPackage.child("index".asNameId())

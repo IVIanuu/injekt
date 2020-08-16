@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.context
+package com.ivianuu.injekt.compiler.transform.component
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
@@ -42,7 +42,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class BindingGraph(
     private val declarationGraph: DeclarationGraph,
-    private val contextImpl: IrClass,
+    private val componentImpl: IrClass,
     val inputs: List<IrField>,
     private val implicitContextParamTransformer: ImplicitContextParamTransformer
 ) {
@@ -134,7 +134,7 @@ class BindingGraph(
         error(
             "No binding found for '${request.key}'\n" +
                     "required at '${request.requestingKey}' '${request.requestOrigin.orUnknown()}'\n" +
-                    "in ${contextImpl.superTypes.first().render()}\n"
+                    "in ${componentImpl.superTypes.first().render()}\n"
         )
     }
 
@@ -173,7 +173,7 @@ class BindingGraph(
                             explicitParameters = explicitParameters,
                             origin = function.descriptor.fqNameSafe,
                             function = function,
-                            storage = storage,
+                            scopeComponent = storage,
                             module = module
                         )
                     }
@@ -199,7 +199,7 @@ class BindingGraph(
                     explicitParameters = explicitParameters,
                     origin = function.descriptor.fqNameSafe,
                     function = function,
-                    storage = storage,
+                    scopeComponent = storage,
                     module = null
                 )
             }

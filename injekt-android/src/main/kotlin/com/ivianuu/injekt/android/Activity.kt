@@ -16,29 +16,28 @@
 
 package com.ivianuu.injekt.android
 
-import android.content.Context
 import android.content.res.Resources
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
-import com.ivianuu.injekt.Component
+import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.childComponent
+import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 
-@Component
-interface ActivityComponent
+@Context
+interface ActivityContext
 
-val ComponentActivity.activityComponent: ActivityComponent
+val ComponentActivity.activityContext: ActivityContext
     get() = lifecycle.singletonValue {
-        retainedActivityComponent.runReader {
-            childComponent(this)
+        retainedActivityContext.runReader {
+            childContext(this)
         }
     }
 
-typealias ActivityContext = Context
+typealias ActivityAndroidContext = android.content.Context
 
 typealias ActivityResources = Resources
 
@@ -51,10 +50,10 @@ typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 object ActivityModule {
 
     @Given
-    fun context(): ActivityContext = given<ComponentActivity>()
+    fun context(): ActivityAndroidContext = given<ComponentActivity>()
 
     @Given
-    fun resources(): ActivityResources = given<ActivityContext>().resources
+    fun resources(): ActivityResources = given<android.content.Context>().resources
 
     @Given
     fun lifecycleOwner(): ActivityLifecycleOwner = given<ComponentActivity>()

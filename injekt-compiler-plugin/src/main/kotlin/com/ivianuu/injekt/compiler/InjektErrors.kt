@@ -38,6 +38,26 @@ interface InjektErrors {
         )
 
         @JvmField
+        val CONTEXT_MUST_BE_EMPTY = error(
+            "@Context must be an empty interface"
+        )
+
+        @JvmField
+        val CONTEXT_MUST_BE_AN_INTERFACE = error(
+            "@Context must be an interface"
+        )
+
+        @JvmField
+        val NOT_A_CONTEXT = error(
+            "Must be a @Context type"
+        )
+
+        @JvmField
+        val CONTEXT_WITH_TYPE_PARAMETERS = error(
+            "@Context cannot have type parameters"
+        )
+
+        @JvmField
         val GIVEN_CLASS_CANNOT_BE_ABSTRACT = error(
             "@Given class cannot be an interface or abstract"
         )
@@ -55,6 +75,11 @@ interface InjektErrors {
         @JvmField
         val MULTIPLE_CONSTRUCTORS_ON_GIVEN_CLASS = error(
             "Can't choose a constructor. Annotate the right one with @Given"
+        )
+
+        @JvmField
+        val INVALID_MODULE_WITH_TARGET = error(
+            "@Module declaration with a target component must be marked as an object or must have an empty constructor"
         )
 
         @JvmField
