@@ -32,66 +32,69 @@ import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-sealed class GivenNode(
+sealed class Given(
     val key: Key,
     val contexts: List<IrClass>,
     val origin: FqName?,
     val external: Boolean,
+    val targetContext: IrClass?,
     val givenSetAccessExpression: ContextExpression?
 )
 
-class FunctionGivenNode(
+class GivenFunction(
     key: Key,
     contexts: List<IrClass>,
     origin: FqName?,
     external: Boolean,
+    targetContext: IrClass?,
     givenSetAccessExpression: ContextExpression?,
     val explicitParameters: List<IrValueParameter>,
-    val function: IrFunction,
-    val scopeContext: IrClass?
-) : GivenNode(key, contexts, origin, external, givenSetAccessExpression)
+    val function: IrFunction
+) : Given(key, contexts, origin, external, targetContext, givenSetAccessExpression)
 
-class InstanceGivenNode(
-    val inputField: IrField,
-) : GivenNode(
+class GivenInstance(val inputField: IrField) : Given(
     inputField.type.asKey(),
     emptyList(),
     inputField.descriptor.fqNameSafe,
     false,
+    null,
     null
 )
 
-class MapGivenNode(
+class GivenMap(
     key: Key,
     contexts: List<IrClass>,
     givenSetAccessExpression: ContextExpression?,
     val functions: List<IrFunction>
-) : GivenNode(
+) : Given(
     key,
     contexts,
     null,
     false,
+    null,
     givenSetAccessExpression
 )
 
-class SetGivenNode(
+class GivenSet(
     key: Key,
     contexts: List<IrClass>,
     givenSetAccessExpression: ContextExpression?,
     val functions: List<IrFunction>
-) : GivenNode(
+) : Given(
     key,
     contexts,
     null,
     false,
+    null,
     givenSetAccessExpression
 )
 
-class NullGivenNode(key: Key) : GivenNode(
+class GivenNull(key: Key) : Given(
     key,
     emptyList(),
     null,
     true,
+    null,
     null
 )
 

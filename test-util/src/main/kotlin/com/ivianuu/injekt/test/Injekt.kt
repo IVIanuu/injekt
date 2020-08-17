@@ -25,7 +25,7 @@ class Bar(val foo: Foo)
 class Baz(val foo: Foo, val bar: Bar)
 
 @Context
-interface TestComponent
+interface TestContext
 
 interface Command
 

@@ -191,7 +191,8 @@ class ReaderContextFactoryImplGenerator(
             declarationGraph = declarationGraph,
             contextImpl = contextImpl,
             inputs = inputFields,
-            implicitContextParamTransformer = implicitContextParamTransformer
+            implicitContextParamTransformer = implicitContextParamTransformer,
+            parent = null
         )
 
         val expressions = GivenExpressions(

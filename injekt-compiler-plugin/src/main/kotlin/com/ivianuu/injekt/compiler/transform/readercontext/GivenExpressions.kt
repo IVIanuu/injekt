@@ -1,12 +1,14 @@
 package com.ivianuu.injekt.compiler.transform.readercontext
 
 import com.ivianuu.injekt.compiler.irLambda
+import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
+import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -23,8 +25,10 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.name.FqName
 
 class GivenExpressions(
@@ -38,13 +42,57 @@ class GivenExpressions(
     fun getGivenExpression(request: GivenRequest): ContextExpression {
         givenExpressions[request.key]?.let { return it }
 
-        val rawExpression = when (val node = graph.getGivenNode(request)) {
-            is FunctionGivenNode -> givenExpression(node)
-            is InstanceGivenNode -> inputExpression(node)
-            is MapGivenNode -> mapExpression(node)
-            is NullGivenNode -> nullExpression()
-            is SetGivenNode -> setExpression(node)
+        val given = graph.getGiven(request)
+
+        val rawExpression = when (given) {
+            is GivenFunction -> givenExpression(given)
+            is GivenInstance -> inputExpression(given)
+            is GivenMap -> mapExpression(given)
+            is GivenNull -> nullExpression()
+            is GivenSet -> setExpression(given)
         }
+
+        val finalExpression = if (given.targetContext == null) rawExpression else ({ c ->
+            val lazy = injektContext.referenceFunctions(FqName("kotlin.lazy"))
+                .single { it.owner.valueParameters.size == 1 }
+                .owner
+
+            val field = contextImpl.addField(
+                given.key.type.uniqueTypeName(),
+                lazy.returnType.classOrNull!!.owner.typeWith(given.key.type)
+            ).apply {
+                initializer = irExprBody(
+                    irCall(lazy).apply {
+                        putValueArgument(
+                            0,
+                            DeclarationIrBuilder(injektContext, symbol)
+                                .irLambda(
+                                    injektContext.tmpFunction(0)
+                                        .typeWith(given.key.type)
+                                ) {
+                                    rawExpression {
+                                        irGet(contextImpl.thisReceiver!!)
+                                    }
+                                }
+                        )
+                    }
+                )
+            }
+
+            irCall(
+                lazy.returnType
+                    .classOrNull!!
+                    .owner
+                    .properties
+                    .single { it.name.asString() == "value" }
+                    .getter!!
+            ).apply {
+                dispatchReceiver = irGetField(
+                    c(),
+                    field
+                )
+            }
+        })
 
         val function = buildFun {
             this.name = request.key.type.uniqueTypeName()
@@ -55,7 +103,7 @@ class GivenExpressions(
             contextImpl.addChild(this)
             this.body =
                 DeclarationIrBuilder(injektContext, symbol).run {
-                    irExprBody(rawExpression(this) { irGet(dispatchReceiverParameter!!) })
+                    irExprBody(finalExpression(this) { irGet(dispatchReceiverParameter!!) })
                 }
         }
 
@@ -71,10 +119,10 @@ class GivenExpressions(
     }
 
     private fun inputExpression(
-        node: InstanceGivenNode
-    ): ContextExpression = { irGetField(it(), node.inputField) }
+        given: GivenInstance
+    ): ContextExpression = { irGetField(it(), given.inputField) }
 
-    private fun mapExpression(node: MapGivenNode): ContextExpression {
+    private fun mapExpression(given: GivenMap): ContextExpression {
         return { c ->
             irBlock {
                 val tmpMap = irTemporary(
@@ -86,7 +134,7 @@ class GivenExpressions(
                 val mapType = injektContext.referenceClass(
                     FqName("kotlin.collections.Map")
                 )!!
-                node.functions.forEach { function ->
+                given.functions.forEach { function ->
                     +irCall(
                         tmpMap.type.classOrNull!!
                             .functions
@@ -114,7 +162,7 @@ class GivenExpressions(
         }
     }
 
-    private fun setExpression(node: SetGivenNode): ContextExpression {
+    private fun setExpression(given: GivenSet): ContextExpression {
         return { c ->
             irBlock {
                 val tmpSet = irTemporary(
@@ -126,7 +174,7 @@ class GivenExpressions(
                 val collectionType = injektContext.referenceClass(
                     FqName("kotlin.collections.Collection")
                 )
-                node.functions.forEach { function ->
+                given.functions.forEach { function ->
                     +irCall(
                         tmpSet.type.classOrNull!!
                             .functions
@@ -156,36 +204,36 @@ class GivenExpressions(
 
     private fun nullExpression(): ContextExpression = { irNull() }
 
-    private fun givenExpression(node: FunctionGivenNode): ContextExpression {
+    private fun givenExpression(given: GivenFunction): ContextExpression {
         return { c ->
             fun createExpression(parametersMap: Map<IrValueParameter, () -> IrExpression?>): IrExpression {
-                val call = if (node.function is IrConstructor) {
+                val call = if (given.function is IrConstructor) {
                     IrConstructorCallImpl(
                         UNDEFINED_OFFSET,
                         UNDEFINED_OFFSET,
-                        node.function.returnType,
-                        node.function.symbol,
-                        node.function.constructedClass.typeParameters.size,
-                        node.function.typeParameters.size,
-                        node.function.valueParameters.size
+                        given.function.returnType,
+                        given.function.symbol,
+                        given.function.constructedClass.typeParameters.size,
+                        given.function.typeParameters.size,
+                        given.function.valueParameters.size
                     )
                 } else {
                     IrCallImpl(
                         UNDEFINED_OFFSET,
                         UNDEFINED_OFFSET,
-                        node.function.returnType,
-                        node.function.symbol,
-                        node.function.typeParameters.size,
-                        node.function.valueParameters.size
+                        given.function.returnType,
+                        given.function.symbol,
+                        given.function.typeParameters.size,
+                        given.function.valueParameters.size
                     )
                 }
                 call.apply {
-                    if (node.function.dispatchReceiverParameter != null) {
-                        dispatchReceiver = if (node.givenSetAccessExpression != null) {
-                            node.givenSetAccessExpression!!(c)
+                    if (given.function.dispatchReceiverParameter != null) {
+                        dispatchReceiver = if (given.givenSetAccessExpression != null) {
+                            given.givenSetAccessExpression!!(c)
                         } else {
                             irGetObject(
-                                node.function.dispatchReceiverParameter!!.type.classOrNull!!
+                                given.function.dispatchReceiverParameter!!.type.classOrNull!!
                             )
                         }
                     }
@@ -200,42 +248,12 @@ class GivenExpressions(
                     putValueArgument(valueArgumentsCount - 1, c())
                 }
 
-                return call /*if (binding.scopeComponent != null) {
-                    irCall(
-                        injektContext.injektSymbols.storage
-                            .owner
-                            .functions
-                            .first { it.name.asString() == "scope" }
-                    ).apply {
-                        dispatchReceiver = createBindingExpression(
-                            context,
-                            graph,
-                            BindingRequest(
-                                key = binding.scopeComponent.defaultType.asKey(),
-                                requestingKey = binding.key,
-                                requestOrigin = binding.origin
-                            )
-                        )(c)
-                        putValueArgument(
-                            0,
-                            irInt(binding.key.hashCode())
-                        )
-                        putValueArgument(
-                            1,
-                            irLambda(
-                                injektContext.tmpFunction(0)
-                                    .typeWith(binding.key.type)
-                            ) { call }
-                        )
-                    }
-                } else {*/
-
-                //}
+                return call
             }
 
-            if (node.explicitParameters.isNotEmpty()) {
-                irLambda(node.key.type) { function ->
-                    val parametersMap = node.explicitParameters
+            if (given.explicitParameters.isNotEmpty()) {
+                irLambda(given.key.type) { function ->
+                    val parametersMap = given.explicitParameters
                         .associateWith { parameter ->
                             {
                                 irGet(

@@ -51,7 +51,7 @@ class SetTest {
         fun commandCIntoSet(): Set<Command> = setOf(given<CommandC>())
         
         fun invoke(): Set<Command> {
-            return rootContext<TestComponent>().runReader { given<Set<Command>>() }
+            return rootContext<TestContext>().runReader { given<Set<Command>>() }
         }
         """
     ) {
@@ -66,7 +66,7 @@ class SetTest {
     fun testUndeclaredSet() = codegen(
         """
         fun invoke(): Set<Command> {
-            return rootContext<TestComponent>().runReader { given<Set<Command>>() }
+            return rootContext<TestContext>().runReader { given<Set<Command>>() }
         }
         """
     ) {

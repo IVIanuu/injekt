@@ -46,6 +46,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class GivensGraph(
+    private val parent: GivensGraph?,
     private val declarationGraph: DeclarationGraph,
     private val contextImpl: IrClass,
     val inputs: List<IrField>,
@@ -53,14 +54,14 @@ class GivensGraph(
 ) {
 
     private val instanceNodes = inputs
-        .map { InstanceGivenNode(it) }
+        .map { GivenInstance(it) }
         .groupBy { it.key }
 
-    private val inputFunctionNodes = mutableMapOf<Key, MutableSet<GivenNode>>()
+    private val inputFunctionNodes = mutableMapOf<Key, MutableSet<Given>>()
     private val inputGivenMapEntries = mutableMapOf<Key, MutableSet<IrFunction>>()
     private val inputGivenSetElements = mutableMapOf<Key, MutableSet<IrFunction>>()
 
-    val resolvedGivens = mutableMapOf<Key, GivenNode>()
+    val resolvedGivens = mutableMapOf<Key, Given>()
 
     init {
         val givenSets = inputs
@@ -100,18 +101,20 @@ class GivensGraph(
 
                 when {
                     functionOrPropertyHasAnnotation(InjektFqNames.Given) -> {
-                        val storage = (function.getClassFromAnnotation(
+                        val targetContext = (function.getClassFromAnnotation(
                             InjektFqNames.Given, 0
                         )
-                            ?: if (function is IrConstructor) function.constructedClass.getClassFromAnnotation(
+                            ?: (if (function is IrConstructor) function.constructedClass.getClassFromAnnotation(
                                 InjektFqNames.Given, 0
                             ) else null)
+                            ?: if (function is IrSimpleFunction) function.correspondingPropertySymbol
+                                ?.owner?.getClassFromAnnotation(InjektFqNames.Given, 0) else null)
                             ?.takeUnless { it.defaultType.isNothing() }
 
                         val explicitParameters = function.valueParameters
                             .filter { it != function.getContextValueParameter() }
 
-                        inputFunctionNodes.getOrPut(function.returnType.asKey()) { mutableSetOf() } += FunctionGivenNode(
+                        inputFunctionNodes.getOrPut(function.returnType.asKey()) { mutableSetOf() } += GivenFunction(
                             key = function.returnType.asKey(),
                             contexts = listOf(
                                 function.getContext() ?: error("Wtf ${function.dump()}")
@@ -120,7 +123,7 @@ class GivensGraph(
                             explicitParameters = explicitParameters,
                             origin = function.descriptor.fqNameSafe,
                             function = function,
-                            scopeContext = storage,
+                            targetContext = targetContext,
                             givenSetAccessExpression = thisAccessExpression
                         )
                     }
@@ -145,15 +148,31 @@ class GivensGraph(
         }
     }
 
-    fun getGivenNode(request: GivenRequest): GivenNode {
-        var node = resolvedGivens[request.key]
-        if (node != null) return node
+    fun getGiven(request: GivenRequest): Given {
+        var given = resolvedGivens[request.key]
+        if (given != null) return given
+
+        fun Given.check(): Given? {
+            if (targetContext != null && targetContext != contextImpl.superTypes.first().classOrNull!!.owner) {
+                if (parent == null) {
+                    error(
+                        "Context mismatch, given '${key}' " +
+                                "requires context '${targetContext.defaultType.render()}' but actual context is " +
+                                contextImpl.superTypes.first().render()
+                    )
+                } else {
+                    return null
+                }
+            }
+
+            return this
+        }
 
         val allGivens = givensForKey(request.key)
 
         val instanceAndGivenSetGivens = allGivens
             .filter { it.key == request.key }
-            .filter { it is InstanceGivenNode || it.givenSetAccessExpression != null }
+            .filter { it is GivenInstance || it.givenSetAccessExpression != null }
 
         if (instanceAndGivenSetGivens.size > 1) {
             error(
@@ -164,14 +183,14 @@ class GivensGraph(
             )
         }
 
-        node = instanceAndGivenSetGivens.singleOrNull()
-        node?.let {
+        given = instanceAndGivenSetGivens.singleOrNull()
+        given?.check()?.let {
             resolvedGivens[request.key] = it
             return it
         }
 
         val (internalGlobalGivens, externalGlobalGivens) = allGivens
-            .filterNot { it is InstanceGivenNode }
+            .filterNot { it is GivenInstance }
             .filter { it.givenSetAccessExpression == null }
             .filter { it.key == request.key }
             .partition { !it.external }
@@ -185,8 +204,8 @@ class GivensGraph(
             )
         }
 
-        node = internalGlobalGivens.singleOrNull()
-        node?.let {
+        given = internalGlobalGivens.singleOrNull()
+        given?.check()?.let {
             resolvedGivens[request.key] = it
             return it
         }
@@ -200,19 +219,16 @@ class GivensGraph(
             )
         }
 
-        node = externalGlobalGivens.singleOrNull()
-        node?.let {
+        given = externalGlobalGivens.singleOrNull()
+        given?.check()?.let {
             resolvedGivens[request.key] = it
             return it
         }
 
         if (request.key.type.isMarkedNullable()) {
-            node =
-                NullGivenNode(
-                    request.key
-                )
-            resolvedGivens[request.key] = node
-            return node
+            given = GivenNull(request.key)
+            resolvedGivens[request.key] = given
+            return given
         }
 
         error(
@@ -222,32 +238,34 @@ class GivensGraph(
         )
     }
 
-    private fun givensForKey(key: Key): List<GivenNode> = buildList<GivenNode> {
+    private fun givensForKey(key: Key): List<Given> = buildList<Given> {
         instanceNodes[key]?.let { this += it }
 
         inputFunctionNodes[key]?.let { this += it }
 
         this += declarationGraph.givens(key.type.uniqueTypeName().asString())
             .map { function ->
-                val storage = (function.getClassFromAnnotation(
+                val targetContext = (function.getClassFromAnnotation(
                     InjektFqNames.Given, 0
                 )
-                    ?: if (function is IrConstructor) function.constructedClass.getClassFromAnnotation(
+                    ?: (if (function is IrConstructor) function.constructedClass.getClassFromAnnotation(
                         InjektFqNames.Given, 0
                     ) else null)
+                    ?: if (function is IrSimpleFunction) function.correspondingPropertySymbol
+                        ?.owner?.getClassFromAnnotation(InjektFqNames.Given, 0) else null)
                     ?.takeUnless { it.defaultType.isNothing() }
 
                 val explicitParameters = function.valueParameters
                     .filter { it != function.getContextValueParameter() }
 
-                FunctionGivenNode(
+                GivenFunction(
                     key = key,
                     contexts = listOf(function.getContext()!!),
                     external = function.isExternalDeclaration(),
                     explicitParameters = explicitParameters,
                     origin = function.descriptor.fqNameSafe,
                     function = function,
-                    scopeContext = storage,
+                    targetContext = targetContext,
                     givenSetAccessExpression = null
                 )
             }
@@ -256,7 +274,7 @@ class GivensGraph(
                 inputGivenMapEntries.getOrElse(key) { emptySet() })
             .takeIf { it.isNotEmpty() }
             ?.let { entries ->
-                MapGivenNode(
+                GivenMap(
                     key,
                     entries.map { it.getContext()!! },
                     null,
@@ -269,7 +287,7 @@ class GivensGraph(
                 inputGivenSetElements.getOrElse(key) { emptySet() })
             .takeIf { it.isNotEmpty() }
             ?.let { elements ->
-                SetGivenNode(
+                GivenSet(
                     key,
                     elements.map { it.getContext()!! },
                     null,
