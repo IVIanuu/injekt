@@ -202,12 +202,12 @@ class ImplicitContextParamTransformer(
 
         newSignatureIndexBuilders.forEach { newIndexBuilder ->
             indexer.index(
-                newIndexBuilder.owner,
-                listOf(
+                originatingDeclaration = newIndexBuilder.owner,
+                path = listOf(
                     DeclarationGraph.SIGNATURE_PATH,
                     newIndexBuilder.owner.uniqueKey()
                 ),
-                newIndexBuilder.classBuilder
+                classBuilder = newIndexBuilder.classBuilder
             )
         }
 

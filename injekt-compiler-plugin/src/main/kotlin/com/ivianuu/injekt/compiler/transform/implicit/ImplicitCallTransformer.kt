@@ -119,9 +119,9 @@ class ImplicitCallTransformer(
 
         newIndexBuilders.forEach {
             indexer.index(
-                it.originatingDeclaration,
-                listOf(DeclarationGraph.GENERIC_CONTEXT_PATH),
-                it.classBuilder
+                originatingDeclaration = it.originatingDeclaration,
+                path = listOf(DeclarationGraph.GENERIC_CONTEXT_PATH),
+                classBuilder = it.classBuilder
             )
         }
     }

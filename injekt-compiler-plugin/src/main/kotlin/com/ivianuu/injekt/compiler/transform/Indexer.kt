@@ -47,6 +47,7 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class Indexer(
@@ -167,6 +168,7 @@ class Indexer(
 
     fun index(
         originatingDeclaration: IrDeclarationWithName,
+        name: Name = originatingDeclaration.name.asString().hashCode().toString().asNameId(),
         path: List<String>,
         classBuilder: IrClass.() -> Unit
     ) {
@@ -179,7 +181,7 @@ class Indexer(
                 originatingDeclaration.getPackageFragment()!!.fqName,
                 originatingDeclaration.descriptor.fqNameSafe
                     .parent().child(originatingDeclaration.name.asString().asNameId())
-            ).asString() + "${originatingDeclaration.uniqueKey().hashCode()}Index")
+            ).asString() + "$name${originatingDeclaration.uniqueKey().hashCode()}Index")
                 .asNameId(),
             packageFqName
         )

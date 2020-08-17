@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.transform.readercontext
 
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.irClassReference
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
@@ -9,6 +10,7 @@ import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.implicit.lambdaContext
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
+import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -17,9 +19,9 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class RunReaderCallTransformer(
@@ -29,13 +31,14 @@ class RunReaderCallTransformer(
 
     private data class NewIndexBuilder(
         val originatingDeclaration: IrDeclarationWithName,
+        val name: Name,
         val classBuilder: IrClass.() -> Unit
     )
 
     override fun lower() {
         val newIndexBuilders = mutableListOf<NewIndexBuilder>()
 
-        injektContext.module.transformChildrenVoid(object : IrElementTransformerVoid() {
+        injektContext.module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
                 val result = super.visitCall(expression) as IrCall
                 if (expression.symbol.descriptor.fqNameSafe.asString() != "com.ivianuu.injekt.runReader")
@@ -44,7 +47,13 @@ class RunReaderCallTransformer(
                 val contextExpression = result.extensionReceiver!!
                 val lambdaExpression = result.getValueArgument(0)!!
 
-                newIndexBuilders += NewIndexBuilder(contextExpression.type.classOrNull!!.owner) {
+                newIndexBuilders += NewIndexBuilder(
+                    contextExpression.type.classOrNull!!.owner,
+                    ((currentScope!!.irElement as IrDeclarationWithName)
+                        .descriptor.fqNameSafe.asString().hashCode() + expression.startOffset)
+                        .toString()
+                        .asNameId()
+                ) {
                     addMetadataIfNotLocal()
                     annotations += DeclarationIrBuilder(injektContext, symbol).run {
                         irCall(injektContext.injektSymbols.runReaderCall.constructors.single()).apply {
@@ -74,6 +83,7 @@ class RunReaderCallTransformer(
         newIndexBuilders.forEach {
             indexer.index(
                 it.originatingDeclaration,
+                it.name,
                 listOf(
                     DeclarationGraph.RUN_READER_CALL_PATH,
                     it.originatingDeclaration.descriptor.fqNameSafe.asString()

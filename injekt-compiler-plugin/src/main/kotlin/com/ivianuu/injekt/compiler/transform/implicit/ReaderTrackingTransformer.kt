@@ -351,9 +351,9 @@ class ReaderTrackingTransformer(
 
         newIndexBuilders.forEach {
             indexer.index(
-                it.originatingDeclaration,
-                it.path,
-                it.classBuilder
+                originatingDeclaration = it.originatingDeclaration,
+                path = it.path,
+                classBuilder = it.classBuilder
             )
         }
     }
