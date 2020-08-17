@@ -12,17 +12,14 @@ import com.ivianuu.injekt.runReader
 interface TestContext
 
 @InitializeInjekt
-fun invoke(
-    string: String,
-    int: Int,
-    long: Long,
-    boolean: Boolean
-) = rootContext<TestContext>().runReader {
-    withString(string) {
-        withInt(int) {
-            withLong(long) {
-                withBoolean(boolean) {
-                    listOf(given<String>(), given<Int>(), given<Long>(), given<Boolean>())
+fun main() {
+    rootContext<TestContext>().runReader {
+        withString("string") {
+            withInt(0) {
+                withLong(0L) {
+                    withBoolean(true) {
+                        listOf(given<String>(), given<Int>(), given<Long>(), given<Boolean>())
+                    }
                 }
             }
         }
@@ -31,7 +28,6 @@ fun invoke(
 
 @Context
 interface StringContext
-
 @Reader
 private fun <R> withString(
     value: String,
@@ -40,7 +36,6 @@ private fun <R> withString(
 
 @Context
 interface IntContext
-
 @Reader
 private fun <R> withInt(
     value: Int,
@@ -49,7 +44,6 @@ private fun <R> withInt(
 
 @Context
 interface LongContext
-
 @Reader
 private fun <R> withLong(
     value: Long,
@@ -58,7 +52,6 @@ private fun <R> withLong(
 
 @Context
 interface BooleanContext
-
 @Reader
 private fun <R> withBoolean(
     value: Boolean,

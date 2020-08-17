@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.transform.readercontext
 
 import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
@@ -52,20 +53,17 @@ class GivenExpressions(
     fun getGivenExpression(given: Given): ContextExpression {
         givenExpressions[given.key]?.let { return it }
 
-        if (given.targetContext != null &&
-            given.targetContext != contextImpl.superTypes.first().classOrNull!!.owner
-        ) {
-            return parent!!.getGivenExpression(given)
-                .also { givenExpressions[given.key] = it }
-        }
-
-        val rawExpression = when (given) {
-            is GivenChildContext -> childContextExpression(given)
-            is GivenFunction -> functionExpression(given)
-            is GivenInstance -> inputExpression(given)
-            is GivenMap -> mapExpression(given)
-            is GivenNull -> nullExpression()
-            is GivenSet -> setExpression(given)
+        val rawExpression = if (given.owner != contextImpl) {
+            parent!!.getGivenExpression(given)
+        } else {
+            when (given) {
+                is GivenChildContext -> childContextExpression(given)
+                is GivenFunction -> functionExpression(given)
+                is GivenInstance -> inputExpression(given)
+                is GivenMap -> mapExpression(given)
+                is GivenNull -> nullExpression()
+                is GivenSet -> setExpression(given)
+            }
         }
 
         val finalExpression = if (given.targetContext == null) rawExpression else ({ c ->
@@ -150,9 +148,10 @@ class GivenExpressions(
     private fun childContextExpression(given: GivenChildContext): ContextExpression {
         val generator = ReaderContextFactoryImplGenerator(
             injektContext = injektContext,
-            name = uniqueChildNameProvider(given.factory.functions
-                .first { it.name.asString().startsWith("create") }
-                .returnType.classOrNull!!.owner.name
+            name = uniqueChildNameProvider(
+                (given.factory.functions
+                    .first { it.name.asString().startsWith("create") }
+                    .returnType.classOrNull!!.owner.name.asString() + "Factory").asNameId()
             ),
             factoryInterface = given.factory,
             irParent = contextImpl,
@@ -345,14 +344,17 @@ class ContextExpressionContext(
             while (current != null) {
                 val (currentContext, currentExpression) = current
                 expressionsByContext[currentContext] = currentExpression
-                current = currentContext.fields.singleOrNull {
-                    it.name.asString() == "parent"
-                }?.type?.classOrNull?.owner?.let {
-                    it to {
+
+                val parentField = currentContext.fields
+                    .singleOrNull { it.name.asString() == "parent" }
+                current = if (parentField != null) {
+                    val parentClass = parentField.type.classOrNull!!.owner
+                    parentClass to {
                         DeclarationIrBuilder(injektContext, currentContext.symbol)
-                            .irGetField(currentExpression(),
-                                currentContext.fields.single { it.name.asString() == "parent" })
+                            .irGetField(currentExpression(), parentField)
                     }
+                } else {
+                    null
                 }
             }
 

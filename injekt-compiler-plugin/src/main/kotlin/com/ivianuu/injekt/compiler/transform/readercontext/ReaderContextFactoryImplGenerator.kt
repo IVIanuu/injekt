@@ -110,7 +110,7 @@ class ReaderContextFactoryImplGenerator(
             }
         }
 
-        val contextImpl = generateReaderContext(contextId, inputTypes)
+        val contextImpl = generateReaderContext(contextId, inputTypes, factoryImpl)
         factoryImpl.addChild(contextImpl)
 
         factoryImpl.addFunction {
@@ -163,10 +163,11 @@ class ReaderContextFactoryImplGenerator(
 
     private fun generateReaderContext(
         contextId: IrClass,
-        inputTypes: List<IrType>
+        inputTypes: List<IrType>,
+        irParent: IrDeclarationParent
     ): IrClass {
         val contextImpl = buildClass {
-            this.name = "Impl".asNameId()
+            this.name = "ContextImpl".asNameId()
             visibility = Visibilities.PRIVATE
             if (parentContext == null && inputTypes.isEmpty()) kind = ClassKind.OBJECT
         }.apply clazz@{

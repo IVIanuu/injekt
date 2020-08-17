@@ -54,7 +54,7 @@ class GivensGraph(
 ) {
 
     private val instanceNodes = inputs
-        .map { GivenInstance(it) }
+        .map { GivenInstance(it, contextImpl) }
         .groupBy { it.key }
 
     private val inputFunctionNodes = mutableMapOf<Key, MutableSet<Given>>()
@@ -116,6 +116,7 @@ class GivensGraph(
 
                         inputFunctionNodes.getOrPut(function.returnType.asKey()) { mutableSetOf() } += GivenFunction(
                             key = function.returnType.asKey(),
+                            owner = contextImpl,
                             contexts = listOf(
                                 function.getContext() ?: error("Wtf ${function.dump()}")
                             ),
@@ -225,10 +226,13 @@ class GivensGraph(
             return it
         }
 
-        parent?.getGiven(request)?.let { return it }
+        parent?.getGiven(request)?.let {
+            resolvedGivens[request.key] = it
+            return it
+        }
 
         if (request.key.type.isMarkedNullable()) {
-            given = GivenNull(request.key)
+            given = GivenNull(request.key, contextImpl)
             resolvedGivens[request.key] = given
             return given
         }
@@ -249,6 +253,7 @@ class GivensGraph(
             // todo
             this += GivenChildContext(
                 key = key,
+                owner = contextImpl,
                 contexts = emptyList(),
                 origin = null,
                 factory = key.type.classOrNull!!.owner
@@ -272,6 +277,7 @@ class GivensGraph(
 
                 GivenFunction(
                     key = key,
+                    owner = contextImpl,
                     contexts = listOf(function.getContext()!!),
                     external = function.isExternalDeclaration(),
                     explicitParameters = explicitParameters,
@@ -288,6 +294,7 @@ class GivensGraph(
             ?.let { entries ->
                 GivenMap(
                     key = key,
+                    owner = contextImpl,
                     contexts = entries.map { it.getContext()!! },
                     givenSetAccessExpression = null,
                     functions = entries
@@ -301,6 +308,7 @@ class GivensGraph(
             ?.let { elements ->
                 GivenSet(
                     key = key,
+                    owner = contextImpl,
                     contexts = elements.map { it.getContext()!! },
                     givenSetAccessExpression = null,
                     functions = elements

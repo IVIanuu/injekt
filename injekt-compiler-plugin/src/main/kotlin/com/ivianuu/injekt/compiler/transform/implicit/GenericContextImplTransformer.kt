@@ -159,7 +159,7 @@ class GenericContextImplTransformer(
         val contextImpl = generateGenericContextImpl(
             delegateContext,
             genericContextType,
-            implNameProvider("Impl".asNameId()),
+            implNameProvider("ContextImpl".asNameId()),
             factory,
             functionMap
         )

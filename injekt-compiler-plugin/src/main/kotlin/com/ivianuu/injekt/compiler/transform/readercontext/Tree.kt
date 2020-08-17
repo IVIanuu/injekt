@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 sealed class Given(
     val key: Key,
+    val owner: IrClass,
     val contexts: List<IrClass>,
     val origin: FqName?,
     val external: Boolean,
@@ -43,13 +44,15 @@ sealed class Given(
 
 class GivenChildContext(
     key: Key,
+    owner: IrClass,
     contexts: List<IrClass>,
     origin: FqName?,
     val factory: IrClass
-) : Given(key, contexts, origin, false, null, null)
+) : Given(key, owner, contexts, origin, false, null, null)
 
 class GivenFunction(
     key: Key,
+    owner: IrClass,
     contexts: List<IrClass>,
     origin: FqName?,
     external: Boolean,
@@ -57,10 +60,14 @@ class GivenFunction(
     givenSetAccessExpression: ContextExpression?,
     val explicitParameters: List<IrValueParameter>,
     val function: IrFunction
-) : Given(key, contexts, origin, external, targetContext, givenSetAccessExpression)
+) : Given(key, owner, contexts, origin, external, targetContext, givenSetAccessExpression)
 
-class GivenInstance(val inputField: IrField) : Given(
+class GivenInstance(
+    val inputField: IrField,
+    owner: IrClass
+) : Given(
     inputField.type.asKey(),
+    owner,
     emptyList(),
     inputField.descriptor.fqNameSafe,
     false,
@@ -70,11 +77,13 @@ class GivenInstance(val inputField: IrField) : Given(
 
 class GivenMap(
     key: Key,
+    owner: IrClass,
     contexts: List<IrClass>,
     givenSetAccessExpression: ContextExpression?,
     val functions: List<IrFunction>
 ) : Given(
     key,
+    owner,
     contexts,
     null,
     false,
@@ -84,11 +93,13 @@ class GivenMap(
 
 class GivenSet(
     key: Key,
+    owner: IrClass,
     contexts: List<IrClass>,
     givenSetAccessExpression: ContextExpression?,
     val functions: List<IrFunction>
 ) : Given(
     key,
+    owner,
     contexts,
     null,
     false,
@@ -96,8 +107,12 @@ class GivenSet(
     givenSetAccessExpression
 )
 
-class GivenNull(key: Key) : Given(
+class GivenNull(
+    key: Key,
+    owner: IrClass
+) : Given(
     key,
+    owner,
     emptyList(),
     null,
     true,
