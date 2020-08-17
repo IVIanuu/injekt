@@ -1,7 +1,6 @@
 package com.ivianuu.injekt.compiler.transform.readercontext
 
 import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
-import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
@@ -151,7 +150,10 @@ class GivenExpressions(
     private fun childContextExpression(given: GivenChildContext): ContextExpression {
         val generator = ReaderContextFactoryImplGenerator(
             injektContext = injektContext,
-            name = uniqueChildNameProvider("Child".asNameId()),
+            name = uniqueChildNameProvider(given.factory.functions
+                .first { it.name.asString().startsWith("create") }
+                .returnType.classOrNull!!.owner.name
+            ),
             factoryInterface = given.factory,
             irParent = contextImpl,
             declarationGraph = declarationGraph,

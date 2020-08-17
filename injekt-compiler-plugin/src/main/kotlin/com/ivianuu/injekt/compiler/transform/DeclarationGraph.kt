@@ -58,14 +58,16 @@ class DeclarationGraph(
 
     private val givenMapEntriesByKey = mutableMapOf<String, List<IrFunction>>()
     fun givenMapEntries(key: String) = givenMapEntriesByKey.getOrPut(key) {
-        indexer.functionIndices(listOf(MAP_ENTRIES_PATH, key))
+        (indexer.functionIndices(listOf(MAP_ENTRIES_PATH, key)) +
+                indexer.propertyIndices(listOf(MAP_ENTRIES_PATH, key)).mapNotNull { it.getter })
             .map { implicitContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
     }
 
     private val givenSetElementsByKey = mutableMapOf<String, List<IrFunction>>()
     fun givenSetElements(key: String) = givenSetElementsByKey.getOrPut(key) {
-        indexer.functionIndices(listOf(SET_ELEMENTS_PATH, key))
+        (indexer.functionIndices(listOf(SET_ELEMENTS_PATH, key)) +
+                indexer.propertyIndices(listOf(SET_ELEMENTS_PATH, key)).mapNotNull { it.getter })
             .map { implicitContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
     }

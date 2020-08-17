@@ -37,8 +37,8 @@ fun <T> given(vararg arguments: Any?): T = injektIntrinsic()
 )
 annotation class GivenSet
 
-@Target(AnnotationTarget.FUNCTION)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class GivenMapEntries
 
-@Target(AnnotationTarget.FUNCTION)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 annotation class GivenSetElements
