@@ -32,17 +32,22 @@ import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.name.FqName
 
 class GivenExpressions(
+    private val parent: GivenExpressions?,
     private val injektContext: InjektContext,
-    private val contextImpl: IrClass,
-    private val graph: GivensGraph
+    private val contextImpl: IrClass
 ) {
 
     private val givenExpressions = mutableMapOf<Key, ContextExpression>()
 
-    fun getGivenExpression(request: GivenRequest): ContextExpression {
-        givenExpressions[request.key]?.let { return it }
+    fun getGivenExpression(given: Given): ContextExpression {
+        givenExpressions[given.key]?.let { return it }
 
-        val given = graph.getGiven(request)
+        if (given.targetContext != null &&
+            given.targetContext != contextImpl.superTypes.first().classOrNull!!.owner
+        ) {
+            return parent!!.getGivenExpression(given)
+                .also { givenExpressions[given.key] = it }
+        }
 
         val rawExpression = when (given) {
             is GivenFunction -> givenExpression(given)
@@ -96,8 +101,8 @@ class GivenExpressions(
         })
 
         val function = buildFun {
-            this.name = request.key.type.uniqueTypeName()
-            returnType = request.key.type
+            this.name = given.key.type.uniqueTypeName()
+            returnType = given.key.type
         }.apply {
             dispatchReceiverParameter = contextImpl.thisReceiver!!.copyTo(this)
             this.parent = contextImpl
@@ -114,7 +119,7 @@ class GivenExpressions(
             }
         }
 
-        givenExpressions[request.key] = expression
+        givenExpressions[given.key] = expression
 
         return expression
     }

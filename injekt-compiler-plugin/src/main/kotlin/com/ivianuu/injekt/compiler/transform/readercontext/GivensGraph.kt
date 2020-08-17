@@ -225,6 +225,8 @@ class GivensGraph(
             return it
         }
 
+        parent?.getGiven(request)?.let { return it }
+
         if (request.key.type.isMarkedNullable()) {
             given = GivenNull(request.key)
             resolvedGivens[request.key] = given
@@ -275,10 +277,10 @@ class GivensGraph(
             .takeIf { it.isNotEmpty() }
             ?.let { entries ->
                 GivenMap(
-                    key,
-                    entries.map { it.getContext()!! },
-                    null,
-                    entries
+                    key = key,
+                    contexts = entries.map { it.getContext()!! },
+                    givenSetAccessExpression = null,
+                    functions = entries
                 )
             }
             ?.let { this += it }
@@ -288,10 +290,10 @@ class GivensGraph(
             .takeIf { it.isNotEmpty() }
             ?.let { elements ->
                 GivenSet(
-                    key,
-                    elements.map { it.getContext()!! },
-                    null,
-                    elements
+                    key = key,
+                    contexts = elements.map { it.getContext()!! },
+                    givenSetAccessExpression = null,
+                    functions = elements
                 )
             }
             ?.let { this += it }

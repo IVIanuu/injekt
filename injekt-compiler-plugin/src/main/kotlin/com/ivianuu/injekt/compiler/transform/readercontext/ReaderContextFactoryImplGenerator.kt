@@ -49,7 +49,9 @@ class ReaderContextFactoryImplGenerator(
     private val factoryInterface: IrClass,
     private val irParent: IrDeclarationParent,
     private val declarationGraph: DeclarationGraph,
-    private val implicitContextParamTransformer: ImplicitContextParamTransformer
+    private val implicitContextParamTransformer: ImplicitContextParamTransformer,
+    private val parentGraph: GivensGraph?,
+    private val parentExpressions: GivenExpressions?
 ) {
 
     fun generateFactory(): IrClass {
@@ -188,17 +190,17 @@ class ReaderContextFactoryImplGenerator(
         }
 
         val graph = GivensGraph(
+            parent = parentGraph,
             declarationGraph = declarationGraph,
             contextImpl = contextImpl,
             inputs = inputFields,
-            implicitContextParamTransformer = implicitContextParamTransformer,
-            parent = null
+            implicitContextParamTransformer = implicitContextParamTransformer
         )
 
         val expressions = GivenExpressions(
+            parent = parentExpressions,
             injektContext = injektContext,
-            contextImpl = contextImpl,
-            graph = graph
+            contextImpl = contextImpl
         )
 
         var firstRound = true
@@ -239,7 +241,7 @@ class ReaderContextFactoryImplGenerator(
                             null,
                             declaration.descriptor.fqNameSafe
                         )
-                    expressions.getGivenExpression(request)
+                    expressions.getGivenExpression(graph.getGiven(request))
                 }
 
                 superType.superTypes

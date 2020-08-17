@@ -52,12 +52,14 @@ class ReaderContextImplTransformer(
                 val file = injektContext.module.addFile(injektContext, factoryFqName)
 
                 val factoryImpl = ReaderContextFactoryImplGenerator(
-                    injektContext,
-                    factoryFqName.shortName(),
-                    factoryInterface,
-                    file,
-                    declarationGraph,
-                    implicitContextParamTransformer
+                    injektContext = injektContext,
+                    name = factoryFqName.shortName(),
+                    factoryInterface = factoryInterface,
+                    irParent = file,
+                    declarationGraph = declarationGraph,
+                    implicitContextParamTransformer = implicitContextParamTransformer,
+                    parentGraph = null,
+                    parentExpressions = null
                 ).generateFactory()
 
                 file.addChild(factoryImpl)
