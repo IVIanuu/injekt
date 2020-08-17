@@ -79,9 +79,7 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isObject
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -447,7 +445,7 @@ class ReaderContextImplTransformer(
             }
         }
 
-        val graph = BindingGraph(
+        val graph = GivensGraph(
             declarationGraph = declarationGraph,
             contextImpl = contextImpl,
             inputs = inputFields,
@@ -455,7 +453,7 @@ class ReaderContextImplTransformer(
         )
 
         var firstRound = true
-        val bindingExpressions = mutableMapOf<Key, ContextBindingExpression>()
+        val givenExpressions = mutableMapOf<Key, ContextExpression>()
 
         while (true) {
             val superTypes =
@@ -463,7 +461,7 @@ class ReaderContextImplTransformer(
                     thisContext,
                     inputs
                 ) + declarationGraph.getRunReaderContexts(thisContext)
-                else graph.resolvedBindings.values
+                else graph.resolvedGivens.values
                     .flatMapFix { it.contexts }
                     .flatMapFix { it.getAllClasses() })
                     .flatMapFix { declarationGraph.getAllContextImplementations(it) }
@@ -491,13 +489,13 @@ class ReaderContextImplTransformer(
                         continue
                     }
                     val request =
-                        BindingRequest(
+                        GivenRequest(
                             declaration.returnType.asKey(),
                             null,
                             declaration.descriptor.fqNameSafe
                         )
-                    bindingExpressions.getOrPut(request.key) {
-                        createBindingExpression(contextImpl, graph, request)
+                    givenExpressions.getOrPut(request.key) {
+                        createGivenExpression(contextImpl, graph, request)
                     }
                 }
 
@@ -514,17 +512,17 @@ class ReaderContextImplTransformer(
         return contextImpl
     }
 
-    private fun createBindingExpression(
+    private fun createGivenExpression(
         context: IrClass,
-        graph: BindingGraph,
-        request: BindingRequest
-    ): ContextBindingExpression {
-        val rawExpression = when (val binding = graph.getBinding(request)) {
-            is GivenBindingNode -> givenExpression(context, graph, binding)
-            is InstanceBindingNode -> inputExpression(binding)
-            is MapBindingNode -> mapBindingExpression(context, binding)
-            is NullBindingNode -> nullExpression(binding)
-            is SetBindingNode -> setBindingExpression(context, binding)
+        graph: GivensGraph,
+        request: GivenRequest
+    ): ContextExpression {
+        val rawExpression = when (val node = graph.getGivenNode(request)) {
+            is FunctionGivenNode -> givenExpression(context, graph, node)
+            is InstanceGivenNode -> inputExpression(node)
+            is MapGivenNode -> mapBindingExpression(node)
+            is NullGivenNode -> nullExpression(node)
+            is SetGivenNode -> setBindingExpression(context, node)
         }
 
         val function = buildFun {
@@ -548,13 +546,10 @@ class ReaderContextImplTransformer(
     }
 
     private fun inputExpression(
-        binding: InstanceBindingNode
-    ): ContextBindingExpression = { irGetField(it(), binding.inputField) }
+        node: InstanceGivenNode
+    ): ContextExpression = { irGetField(it(), node.inputField) }
 
-    private fun mapBindingExpression(
-        context: IrClass,
-        bindingNode: MapBindingNode
-    ): ContextBindingExpression {
+    private fun mapBindingExpression(node: MapGivenNode): ContextExpression {
         return { c ->
             irBlock {
                 val tmpMap = irTemporary(
@@ -566,7 +561,7 @@ class ReaderContextImplTransformer(
                 val mapType = injektContext.referenceClass(
                     FqName("kotlin.collections.Map")
                 )!!
-                bindingNode.functions.forEach { function ->
+                node.functions.forEach { function ->
                     +irCall(
                         tmpMap.type.classOrNull!!
                             .functions
@@ -596,8 +591,8 @@ class ReaderContextImplTransformer(
 
     private fun setBindingExpression(
         context: IrClass,
-        bindingNode: SetBindingNode
-    ): ContextBindingExpression {
+        node: SetGivenNode
+    ): ContextExpression {
         return { c ->
             irBlock {
                 val tmpSet = irTemporary(
@@ -609,7 +604,7 @@ class ReaderContextImplTransformer(
                 val collectionType = injektContext.referenceClass(
                     FqName("kotlin.collections.Collection")
                 )
-                bindingNode.functions.forEach { function ->
+                node.functions.forEach { function ->
                     +irCall(
                         tmpSet.type.classOrNull!!
                             .functions
@@ -637,52 +632,45 @@ class ReaderContextImplTransformer(
         }
     }
 
-    private fun nullExpression(binding: NullBindingNode): ContextBindingExpression =
+    private fun nullExpression(node: NullGivenNode): ContextExpression =
         { irNull() }
 
     private fun givenExpression(
         context: IrClass,
-        graph: BindingGraph,
-        binding: GivenBindingNode
-    ): ContextBindingExpression {
+        graph: GivensGraph,
+        node: FunctionGivenNode
+    ): ContextExpression {
         return { c ->
             fun createExpression(parametersMap: Map<IrValueParameter, () -> IrExpression?>): IrExpression {
-                val call = if (binding.function is IrConstructor) {
+                val call = if (node.function is IrConstructor) {
                     IrConstructorCallImpl(
                         UNDEFINED_OFFSET,
                         UNDEFINED_OFFSET,
-                        binding.function.returnType,
-                        binding.function.symbol,
-                        binding.function.constructedClass.typeParameters.size,
-                        binding.function.typeParameters.size,
-                        binding.function.valueParameters.size
+                        node.function.returnType,
+                        node.function.symbol,
+                        node.function.constructedClass.typeParameters.size,
+                        node.function.typeParameters.size,
+                        node.function.valueParameters.size
                     )
                 } else {
                     IrCallImpl(
                         UNDEFINED_OFFSET,
                         UNDEFINED_OFFSET,
-                        binding.function.returnType,
-                        binding.function.symbol,
-                        binding.function.typeParameters.size,
-                        binding.function.valueParameters.size
+                        node.function.returnType,
+                        node.function.symbol,
+                        node.function.typeParameters.size,
+                        node.function.valueParameters.size
                     )
                 }
                 call.apply {
-                    if (binding.function.dispatchReceiverParameter != null) {
-                        val dispatchReceiverClass =
-                            binding.function.dispatchReceiverParameter!!.type.classOrNull!!.owner
-                        dispatchReceiver =
-                            if (dispatchReceiverClass.hasAnnotation(InjektFqNames.Module)) {
-                                irGetField(
-                                    c(),
-                                    context.fields
-                                        .single { it.type.classOrNull!!.owner == dispatchReceiverClass }
-                                )
-                            } else {
-                                irGetObject(
-                                    binding.function.dispatchReceiverParameter!!.type.classOrNull!!
-                                )
-                            }
+                    if (node.function.dispatchReceiverParameter != null) {
+                        dispatchReceiver = if (node.givenSetAccessExpression != null) {
+                            node.givenSetAccessExpression!!(c)
+                        } else {
+                            irGetObject(
+                                node.function.dispatchReceiverParameter!!.type.classOrNull!!
+                            )
+                        }
                     }
 
                     parametersMap.values.forEachIndexed { index, expression ->
@@ -728,9 +716,9 @@ class ReaderContextImplTransformer(
                 //}
             }
 
-            if (binding.explicitParameters.isNotEmpty()) {
-                irLambda(binding.key.type) { function ->
-                    val parametersMap = binding.explicitParameters
+            if (node.explicitParameters.isNotEmpty()) {
+                irLambda(node.key.type) { function ->
+                    val parametersMap = node.explicitParameters
                         .associateWith { parameter ->
                             {
                                 irGet(
@@ -749,4 +737,4 @@ class ReaderContextImplTransformer(
 
 }
 
-typealias ContextBindingExpression = IrBuilderWithScope.(() -> IrExpression) -> IrExpression
+typealias ContextExpression = IrBuilderWithScope.(() -> IrExpression) -> IrExpression

@@ -45,8 +45,8 @@ class DeclarationGraph(
         indexer.classIndices(listOf(GENERIC_CONTEXT_PATH))
     }
 
-    private val bindingsByKey = mutableMapOf<String, List<IrFunction>>()
-    fun bindings(key: String) = bindingsByKey.getOrPut(key) {
+    private val givensByKey = mutableMapOf<String, List<IrFunction>>()
+    fun givens(key: String) = givensByKey.getOrPut(key) {
         (indexer.functionIndices(listOf(GIVEN_PATH, key)) +
                 indexer.classIndices(listOf(GIVEN_PATH, key))
                     .flatMapFix { it.constructors.toList() } +
@@ -180,7 +180,7 @@ class DeclarationGraph(
             .flatMapFix {
                 val key =
                     it.getConstantFromAnnotationOrNull<String>(InjektFqNames.GivenContext, 0)!!
-                bindings(key) + mapEntries(key) + setElements(key)
+                givens(key) + mapEntries(key) + setElements(key)
             }
     }
 

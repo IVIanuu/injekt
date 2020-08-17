@@ -48,7 +48,7 @@ typealias FragmentSavedStateRegistryOwner = SavedStateRegistryOwner
 
 typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
 
-object FragmentModule {
+object FragmentGivens {
 
     @Given
     fun context(): FragmentAndroidContext = given<Fragment>().requireContext()

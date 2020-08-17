@@ -29,3 +29,10 @@ annotation class Given(val scopeContext: KClass<*> = Nothing::class)
 
 @Reader
 fun <T> given(vararg arguments: Any?): T = injektIntrinsic()
+
+@Target(
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.CLASS,
+    AnnotationTarget.PROPERTY
+)
+annotation class GivenSet

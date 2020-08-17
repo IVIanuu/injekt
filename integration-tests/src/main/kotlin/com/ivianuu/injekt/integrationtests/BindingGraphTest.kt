@@ -217,7 +217,7 @@ class BindingGraphTest {
         }
         """
     ) {
-        assertInternalError("multiple instance or module")
+        assertInternalError("multiple instance or given set")
     }
 
     @Test

@@ -45,7 +45,7 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class GlobalBindingIndexingTransformer(
+class GlobalGivensIndexingTransformer(
     private val indexer: Indexer,
     injektContext: InjektContext
 ) : AbstractInjektTransformer(injektContext) {
@@ -279,7 +279,7 @@ class GlobalBindingIndexingTransformer(
 
         while (current != null) {
             if (current.hasAnnotation(InjektFqNames.Effect) ||
-                current.hasAnnotation(InjektFqNames.Module)
+                current.hasAnnotation(InjektFqNames.GivenSet)
             ) return true
             current = current.parent as? IrDeclaration
         }

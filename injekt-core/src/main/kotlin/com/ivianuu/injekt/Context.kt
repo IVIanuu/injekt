@@ -17,3 +17,5 @@ fun <T> childContext(
 inline fun <R> Any.runReader(
     block: @Reader () -> R
 ): R = injektIntrinsic()
+
+fun <T> givenSet(): T = error("")

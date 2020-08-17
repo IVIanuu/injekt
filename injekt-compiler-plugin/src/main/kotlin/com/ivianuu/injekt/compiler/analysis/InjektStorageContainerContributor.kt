@@ -34,8 +34,8 @@ class InjektStorageContainerContributor(
         container.useInstance(ReaderContextChecker())
         container.useInstance(EffectChecker())
         container.useInstance(GivenChecker())
+        container.useInstance(GivenSetChecker())
         container.useInstance(implicitChecker)
-        container.useInstance(ModuleChecker())
     }
 
 }

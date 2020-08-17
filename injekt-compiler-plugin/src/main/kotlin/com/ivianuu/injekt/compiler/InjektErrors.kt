@@ -78,11 +78,6 @@ interface InjektErrors {
         )
 
         @JvmField
-        val INVALID_MODULE_WITH_TARGET = error(
-            "@Module declaration with a target component must be marked as an object or must have an empty constructor"
-        )
-
-        @JvmField
         val READER_CLASS_CANNOT_BE_INTERFACE = error(
             "@Reader class cannot be an interface"
         )
@@ -115,6 +110,11 @@ interface InjektErrors {
         @JvmField
         val EFFECT_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS = error(
             "@Effect functions cannot have value parameters"
+        )
+
+        @JvmField
+        val NOT_A_GIVEN_SET = error(
+            "Not a @GivenSet"
         )
 
         @JvmField

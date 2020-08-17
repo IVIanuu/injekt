@@ -34,7 +34,7 @@ typealias ApplicationAndroidContext = android.content.Context
 
 typealias ApplicationResources = Resources
 
-object ApplicationModule {
+object ApplicationGivens {
 
     @Given
     fun context(): ApplicationAndroidContext = given<Application>()

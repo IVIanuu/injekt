@@ -53,7 +53,7 @@ internal class InjektWorkerFactory : WorkerFactory() {
     }
 }
 
-object WorkerInjectionModule {
+object WorkerInjectionGivens {
     @Given
     fun workerFactory(): WorkerFactory = given<InjektWorkerFactory>()
 }

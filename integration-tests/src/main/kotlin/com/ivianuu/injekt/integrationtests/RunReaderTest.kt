@@ -695,10 +695,10 @@ class RunReaderTest {
     }
 
     @Test
-    fun testWithModule() = codegen(
+    fun testWithGivenSet() = codegen(
         """
-        @Module
-        class FooBarModule {
+        @GivenSet
+        class FooGivens {
             @Given
             fun foo() = Foo()
         }
@@ -707,7 +707,33 @@ class RunReaderTest {
         fun bar() = Bar(given())
         
         fun invoke(): Bar {
-            return context<TestComponent>().runReader(FooBarModule()) { given<Bar>() }
+            return context<TestComponent>(FooGivens()).runReader { given<Bar>() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
+    }
+
+    @Test
+    fun testWithNestedGivenSets() = codegen(
+        """
+        @GivenSet
+        class FooGivens {
+            @Given
+            fun foo() = Foo()
+            
+            @GivenSet
+            val barGivens = BarGivens()
+            
+            @GivenSet
+            class BarGivens {
+                @Given
+                fun bar() = Bar(given())
+            }
+        }
+        
+        fun invoke(): Bar {
+            return context<TestComponent>(FooGivens()).runReader { given<Bar>() }
         }
     """
     ) {
@@ -718,7 +744,7 @@ class RunReaderTest {
     fun testWithGivenRef() = codegen(
         """
         @Module
-        class FooBarModule {
+        class FooBarGivens {
             @Given
             fun foo() = Foo()
         }

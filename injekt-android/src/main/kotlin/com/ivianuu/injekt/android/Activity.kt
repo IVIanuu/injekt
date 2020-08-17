@@ -47,7 +47,7 @@ typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
 
 typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 
-object ActivityModule {
+object ActivityGivens {
 
     @Given
     fun context(): ActivityAndroidContext = given<ComponentActivity>()

@@ -32,28 +32,28 @@ import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-sealed class BindingNode(
+sealed class GivenNode(
     val key: Key,
     val contexts: List<IrClass>,
     val origin: FqName?,
     val external: Boolean,
-    val module: IrClass?
+    val givenSetAccessExpression: ContextExpression?
 )
 
-class GivenBindingNode(
+class FunctionGivenNode(
     key: Key,
     contexts: List<IrClass>,
     origin: FqName?,
     external: Boolean,
-    module: IrClass?,
+    givenSetAccessExpression: ContextExpression?,
     val explicitParameters: List<IrValueParameter>,
     val function: IrFunction,
-    val scopeComponent: IrClass?
-) : BindingNode(key, contexts, origin, external, module)
+    val scopeContext: IrClass?
+) : GivenNode(key, contexts, origin, external, givenSetAccessExpression)
 
-class InstanceBindingNode(
+class InstanceGivenNode(
     val inputField: IrField,
-) : BindingNode(
+) : GivenNode(
     inputField.type.asKey(),
     emptyList(),
     inputField.descriptor.fqNameSafe,
@@ -61,33 +61,33 @@ class InstanceBindingNode(
     null
 )
 
-class MapBindingNode(
+class MapGivenNode(
     key: Key,
     contexts: List<IrClass>,
-    module: IrClass?,
+    givenSetAccessExpression: ContextExpression?,
     val functions: List<IrFunction>
-) : BindingNode(
+) : GivenNode(
     key,
     contexts,
     null,
     false,
-    module
+    givenSetAccessExpression
 )
 
-class SetBindingNode(
+class SetGivenNode(
     key: Key,
     contexts: List<IrClass>,
-    module: IrClass?,
+    givenSetAccessExpression: ContextExpression?,
     val functions: List<IrFunction>
-) : BindingNode(
+) : GivenNode(
     key,
     contexts,
     null,
     false,
-    module
+    givenSetAccessExpression
 )
 
-class NullBindingNode(key: Key) : BindingNode(
+class NullGivenNode(key: Key) : GivenNode(
     key,
     emptyList(),
     null,
@@ -154,7 +154,7 @@ class Key(val type: IrType) {
 
 }
 
-class BindingRequest(
+class GivenRequest(
     val key: Key,
     val requestingKey: Key?,
     val requestOrigin: FqName?
@@ -164,8 +164,8 @@ class BindingRequest(
         key: Key = this.key,
         requestingKey: Key? = this.requestingKey,
         requestOrigin: FqName? = this.requestOrigin
-    ): BindingRequest =
-        BindingRequest(
+    ): GivenRequest =
+        GivenRequest(
             key,
             requestingKey,
             requestOrigin
@@ -175,7 +175,7 @@ class BindingRequest(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as BindingRequest
+        other as GivenRequest
 
         if (key != other.key) return false
 

@@ -22,7 +22,7 @@ import com.ivianuu.injekt.compiler.transform.implicit.GenericContextImplTransfor
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ReaderTrackingTransformer
-import com.ivianuu.injekt.compiler.transform.readercontext.GlobalBindingIndexingTransformer
+import com.ivianuu.injekt.compiler.transform.readercontext.GlobalGivensIndexingTransformer
 import com.ivianuu.injekt.compiler.transform.readercontext.ReaderContextCallTransformer
 import com.ivianuu.injekt.compiler.transform.readercontext.ReaderContextImplTransformer
 import com.ivianuu.injekt.compiler.transform.readercontext.RunReaderCallTransformer
@@ -88,7 +88,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             indexer
         ).doLower(moduleFragment)
 
-        GlobalBindingIndexingTransformer(
+        GlobalGivensIndexingTransformer(
             indexer,
             injektContext
         ).doLower(moduleFragment)

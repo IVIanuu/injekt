@@ -36,7 +36,7 @@ typealias ServiceAndroidContext = android.content.Context
 
 typealias ServiceResources = Resources
 
-object ServiceModule {
+object ServiceGivens {
 
     @Given
     fun context(): ServiceAndroidContext = given<Service>()
