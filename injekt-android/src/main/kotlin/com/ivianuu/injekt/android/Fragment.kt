@@ -33,7 +33,7 @@ interface FragmentContext
 
 val Fragment.fragmentContext: FragmentContext
     get() = lifecycle.singleton {
-        retainedFragmentContext.runReader {
+        activity!!.activityContext.runReader {
             childContext(this)
         }
     }
