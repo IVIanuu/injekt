@@ -27,7 +27,6 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class DeclarationGraph(
@@ -79,81 +78,6 @@ class DeclarationGraph(
             )
         )
             .map { it.getClassFromAnnotation(InjektFqNames.RunReaderCall, 0)!! }
-    }
-
-    fun getNonGenericParentContext(context: IrClass): List<IrClass> {
-        val parents = mutableListOf<IrClass>()
-
-        val processedClasses = mutableSetOf<IrClass>()
-
-        val invokingContexts = getCallingContexts(context)
-
-        fun collectParents(invokingContext: IrClass) {
-            if (invokingContext in processedClasses) return
-            processedClasses += invokingContext
-
-            if (invokingContext.typeParameters.isEmpty()) {
-                parents += invokingContext
-                return
-            }
-
-            getCallingContexts(invokingContext)
-                .forEach { collectParents(it) }
-        }
-
-        invokingContexts.forEach { collectParents(it) }
-
-        return parents
-    }
-
-    private fun getCallingContexts(context: IrClass): Set<IrClass> {
-        val allContexts = listOf(context) + getAllSuperContexts(context)
-
-        val invokerIfRunChildReader = rootContexts
-            .singleOrNull { it.superTypes[0] == context.defaultType }
-            ?.superTypes
-            ?.getOrNull(1)
-            ?.classOrNull
-            ?.owner
-
-        return setOfNotNull(
-            *allContexts
-                .flatMapFix {
-                    indexer.classIndices(
-                        listOf(
-                            READER_CALL_CALLEE_TO_CALLER_PATH,
-                            it.descriptor.fqNameSafe.asString()
-                        )
-                    )
-                }
-                .map {
-                    it.getClassFromAnnotation(
-                        InjektFqNames.ReaderCall,
-                        0
-                    )!!
-                }
-                .filter { it != context }
-                .toTypedArray(),
-            invokerIfRunChildReader
-        )
-    }
-
-    private val superContextsByContext = mutableMapOf<IrClass, Set<IrClass>>()
-    private fun getAllSuperContexts(
-        context: IrClass
-    ): Set<IrClass> = superContextsByContext.getOrPut(context) {
-        indexer.classIndices(
-            listOf(
-                READER_IMPL_SUB_TO_SUPER_PATH, context.descriptor.fqNameSafe.asString()
-            )
-        )
-            .map {
-                it.getClassFromAnnotation(
-                    InjektFqNames.ReaderImpl,
-                    0
-                )!!
-            }
-            .toSet()
     }
 
     private val implementationsByContext = mutableMapOf<IrClass, Set<IrClass>>()
