@@ -71,7 +71,7 @@ fun createContext(
     recordLookup(this, owner)
 
     annotations += DeclarationIrBuilder(injektContext, symbol)
-        .irCall(injektContext.injektSymbols.context.constructors.single())
+        .irCall(injektContext.injektSymbols.contextMarker.constructors.single())
 }
 
 fun IrType.isNotTransformedReaderLambda() =
@@ -80,9 +80,9 @@ fun IrType.isNotTransformedReaderLambda() =
 fun IrType.isTransformedReaderLambda() =
     (isFunctionOrKFunction() || isSuspendFunctionOrKFunction()) && typeArguments
         .mapNotNull { it.typeOrNull?.classOrNull?.owner }
-        .any { it.hasAnnotation(InjektFqNames.Context) }
+        .any { it.hasAnnotation(InjektFqNames.ContextMarker) }
 
 val IrType.lambdaContext
     get() = typeArguments.firstOrNull {
-        it.typeOrNull?.classOrNull?.owner?.hasAnnotation(InjektFqNames.Context) == true
+        it.typeOrNull?.classOrNull?.owner?.hasAnnotation(InjektFqNames.ContextMarker) == true
     }?.typeOrFail?.classOrNull?.owner

@@ -781,7 +781,7 @@ fun IrBuilderWithScope.jvmNameAnnotation(
 fun IrFunction.getContext(): IrClass? = getContextValueParameter()?.type?.classOrNull?.owner
 
 fun IrFunction.getContextValueParameter() = valueParameters.singleOrNull {
-    it.type.classOrNull?.owner?.hasAnnotation(InjektFqNames.Context) == true
+    it.type.classOrNull?.owner?.hasAnnotation(InjektFqNames.ContextMarker) == true
 }
 
 fun IrModuleFragment.addFile(

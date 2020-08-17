@@ -27,14 +27,14 @@ import com.ivianuu.injekt.rootContext
 val Application.applicationReaderContext: ApplicationContext
     get() = ProcessLifecycleOwner.get().lifecycle.singleton { rootContext(this) }
 
-typealias ApplicationAndroidContext = android.content.Context
+typealias AndroidApplicationContext = android.content.Context
 
 typealias ApplicationResources = Resources
 
 object ApplicationGivens {
 
     @Given
-    fun context(): ApplicationAndroidContext = given<Application>()
+    fun context(): AndroidApplicationContext = given<Application>()
 
     @Given
     fun resources(): ApplicationResources = given<Application>().resources

@@ -26,7 +26,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.android.ActivityAndroidContext
+import com.ivianuu.injekt.android.AndroidActivityContext
 import com.ivianuu.injekt.android.activityContext
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
@@ -58,7 +58,7 @@ fun WithMainViewModel(children: @Composable (MainViewModel) -> Unit) {
 }
 
 @Reader
-private fun enqueueWork(context: ActivityAndroidContext = given()) {
+private fun enqueueWork(context: AndroidActivityContext = given()) {
     WorkManager.getInstance(context)
         .enqueue(
             OneTimeWorkRequestBuilder<TestWorker>()

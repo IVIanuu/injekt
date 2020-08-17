@@ -32,14 +32,14 @@ fun Service.createServiceContext(): ServiceContext =
         childContext(this)
     }
 
-typealias ServiceAndroidContext = android.content.Context
+typealias AndroidServiceContext = android.content.Context
 
 typealias ServiceResources = Resources
 
 object ServiceGivens {
 
     @Given
-    fun context(): ServiceAndroidContext = given<Service>()
+    fun context(): AndroidServiceContext = given<Service>()
 
     @Given
     fun resources(): ServiceResources = given<Service>().resources

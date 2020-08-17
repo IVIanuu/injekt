@@ -33,11 +33,11 @@ fun BroadcastReceiver.createReceiverContext(
     (context.applicationContext as Application).applicationReaderContext.runReader {
         childContext(
             this,
-            context as ReceiverAndroidContext,
+            context as AndroidReceiverContext,
             intent as ReceiverIntent
         )
     }
 
-typealias ReceiverAndroidContext = android.content.Context
+typealias AndroidReceiverContext = android.content.Context
 
 typealias ReceiverIntent = Intent

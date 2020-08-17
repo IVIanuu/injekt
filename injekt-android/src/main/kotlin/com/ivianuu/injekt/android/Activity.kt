@@ -37,7 +37,7 @@ val ComponentActivity.activityContext: ActivityContext
         }
     }
 
-typealias ActivityAndroidContext = android.content.Context
+typealias AndroidActivityContext = android.content.Context
 
 typealias ActivityResources = Resources
 
@@ -50,7 +50,7 @@ typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 object ActivityGivens {
 
     @Given
-    fun context(): ActivityAndroidContext = given<ComponentActivity>()
+    fun context(): AndroidActivityContext = given<ComponentActivity>()
 
     @Given
     fun resources(): ActivityResources = given<android.content.Context>().resources

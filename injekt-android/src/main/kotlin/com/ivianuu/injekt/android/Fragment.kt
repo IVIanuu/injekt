@@ -38,7 +38,7 @@ val Fragment.fragmentContext: FragmentContext
         }
     }
 
-typealias FragmentAndroidContext = android.content.Context
+typealias AndroidFragmentContext = android.content.Context
 
 typealias FragmentResources = Resources
 
@@ -51,10 +51,10 @@ typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
 object FragmentGivens {
 
     @Given
-    fun context(): FragmentAndroidContext = given<Fragment>().requireContext()
+    fun context(): AndroidFragmentContext = given<Fragment>().requireContext()
 
     @Given
-    fun resources(): FragmentResources = given<FragmentAndroidContext>().resources
+    fun resources(): FragmentResources = given<AndroidFragmentContext>().resources
 
     @Given
     fun lifecycleOwner(): FragmentLifecycleOwner = given<ComponentActivity>()
