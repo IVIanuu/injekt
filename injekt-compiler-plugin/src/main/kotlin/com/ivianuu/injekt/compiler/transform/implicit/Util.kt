@@ -83,6 +83,6 @@ fun IrType.isTransformedReaderLambda() =
         .any { it.hasAnnotation(InjektFqNames.Context) }
 
 val IrType.lambdaContext
-    get() = typeArguments.singleOrNull {
+    get() = typeArguments.firstOrNull {
         it.typeOrNull?.classOrNull?.owner?.hasAnnotation(InjektFqNames.Context) == true
     }?.typeOrFail?.classOrNull?.owner

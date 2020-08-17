@@ -98,7 +98,7 @@ class ReaderTrackingTransformer(
 
             override val invocationContext = call.getValueArgument(0)!!
                 .type
-                .lambdaContext!!
+                .lambdaContext ?: error("Wtf ${call.dump()}")
 
             fun isBlock(function: IrFunction): Boolean =
                 call.getValueArgument(0).let {
