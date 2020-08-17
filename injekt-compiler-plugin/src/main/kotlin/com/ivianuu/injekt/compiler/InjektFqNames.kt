@@ -30,13 +30,13 @@ object InjektFqNames {
     val Reader = InjektPackage.child("Reader".asNameId())
 
     val InternalPackage = InjektPackage.child("internal".asNameId())
-    val ContextDeclaration = InternalPackage.child("ContextDeclaration".asNameId())
     val GenericContext = InternalPackage.child("GenericContext".asNameId())
     val GivenContext = InternalPackage.child("GivenContext".asNameId())
     val Index = InternalPackage.child("Index".asNameId())
     val Qualifier = InternalPackage.child("Qualifier".asNameId())
     val ReaderCall = InternalPackage.child("ReaderCall".asNameId())
     val ReaderImpl = InternalPackage.child("ReaderImpl".asNameId())
+    val RootContext = InternalPackage.child("RootContext".asNameId())
     val RunReaderCall = InternalPackage.child("RunReaderCall".asNameId())
     val Signature = InternalPackage.child("Signature".asNameId())
 

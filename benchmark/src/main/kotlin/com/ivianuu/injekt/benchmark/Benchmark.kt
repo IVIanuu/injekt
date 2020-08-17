@@ -53,7 +53,7 @@ class Benchmark {
             source(
                 """
                     fun invoke() {
-                        context<TestComponent>().runReader { given<Fib4>() }
+                        rootContext<TestComponent>().runReader { given<Fib4>() }
                     }
             """
             )
@@ -92,7 +92,7 @@ class Benchmark {
                 source(
                     """
                     fun invoke() {
-                        context<TestComponent>().runReader { given<Fib4>() }
+                        rootContext<TestComponent>().runReader { given<Fib4>() }
                     }
             """
                 )

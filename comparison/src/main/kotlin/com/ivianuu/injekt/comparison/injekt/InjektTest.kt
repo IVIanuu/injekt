@@ -20,8 +20,8 @@ import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.InitializeInjekt
 import com.ivianuu.injekt.comparison.base.InjectionTest
 import com.ivianuu.injekt.comparison.fibonacci.Fib8
-import com.ivianuu.injekt.context
 import com.ivianuu.injekt.given
+import com.ivianuu.injekt.rootContext
 import com.ivianuu.injekt.runReader
 
 @InitializeInjekt
@@ -32,7 +32,7 @@ object InjektTest : InjectionTest {
     private var context: InjektTestContext? = null
 
     override fun setup() {
-        this.context = context()
+        this.context = rootContext()
     }
 
     override fun inject() {

@@ -85,7 +85,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ReaderContextImplTransformer(
+class RootContextImplTransformer(
     injektContext: InjektContext,
     private val declarationGraph: DeclarationGraph,
     private val implicitContextParamTransformer: ImplicitContextParamTransformer,
@@ -102,7 +102,7 @@ class ReaderContextImplTransformer(
         while (true) {
             val currentParentsByIndex =
                 mutableMapOf<IrClass, List<DeclarationGraph.ParentRunReaderContext>>()
-            val roundContextIndices = declarationGraph.contexts
+            val roundContextIndices = declarationGraph.rootContexts
                 .filter { it.superTypes.first().classOrNull!!.owner !in generatedContexts }
 
             if (roundContextIndices.isEmpty()) break
@@ -160,17 +160,14 @@ class ReaderContextImplTransformer(
 
         val fqName = FqName(
             index.getConstantFromAnnotationOrNull<String>(
-                InjektFqNames.ContextDeclaration, 0
+                InjektFqNames.RootContext, 0
             )!!
         )
-        val isChild = index.getConstantFromAnnotationOrNull<Boolean>(
-            InjektFqNames.ContextDeclaration, 1
-        )!!
 
         val file = injektContext.module.addFile(injektContext, fqName)
 
         val thisContext = index.superTypes[0].classOrNull!!.owner
-        val callingContext = if (isChild) index.superTypes[1].classOrNull!!.owner else null
+        val callingContext: IrClass? = null
 
         val factory = buildClass {
             this.name = fqName.shortName()
@@ -238,12 +235,7 @@ class ReaderContextImplTransformer(
         }.apply {
             dispatchReceiverParameter = factory.thisReceiver!!.copyTo(this)
 
-            val parentValueParameter = if (isChild) {
-                addValueParameter(
-                    "parent",
-                    callingContext!!.defaultType
-                )
-            } else null
+            val parentValueParameter: IrValueParameter? = null
 
             val inputNameProvider = SimpleUniqueNameProvider()
             thisInputTypes.forEach {

@@ -267,15 +267,7 @@ class ReaderTrackingTransformer(
             }
 
             override fun visitCall(expression: IrCall): IrExpression {
-                return if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.runReader" ||
-                    expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.runChildReader"
-                ) {
-                    // every possible reader call which is used for inputs
-                    // should be recorded on the parent scope
-                    expression.getValueArgument(0)?.transformChildrenVoid()
-
+                return if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runReader") {
                     inScope(
                         Scope.RunReader(
                             expression,
@@ -378,17 +370,9 @@ class ReaderTrackingTransformer(
                 )
             }
             call.symbol.owner.canUseImplicits(injektContext) -> {
-                val isRunChildReader = call.symbol.descriptor.fqNameSafe.asString() ==
-                        "com.ivianuu.injekt.runChildReader"
-                val calleeContext = if (isRunChildReader) {
-                    call.getValueArgument(1)!!.type.lambdaContext!!
-                } else {
-                    call.symbol.owner.getContext()!!
-                }
-                val scope = currentReaderScope!!
                 readerCallIndexBuilders(
-                    calleeContext,
-                    scope.invocationContext,
+                    call.symbol.owner.getContext()!!,
+                    currentReaderScope!!.invocationContext,
                     false
                 )
             }

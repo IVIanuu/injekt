@@ -24,9 +24,6 @@ internal annotation class GenericContext(
     val functionMap: String
 )
 
-annotation class ContextDeclaration(
-    val fqName: String,
-    val isChild: Boolean
-)
+annotation class RootContext(val fqName: String)
 
 annotation class GivenContext(val givenKey: String)

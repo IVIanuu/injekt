@@ -21,14 +21,14 @@ import android.content.res.Resources
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.context
 import com.ivianuu.injekt.given
+import com.ivianuu.injekt.rootContext
 
 @Context
 interface ApplicationContext
 
 val Application.applicationReaderContext: ApplicationContext
-    get() = ProcessLifecycleOwner.get().lifecycle.singleton { context(this) }
+    get() = ProcessLifecycleOwner.get().lifecycle.singleton { rootContext(this) }
 
 typealias ApplicationAndroidContext = android.content.Context
 

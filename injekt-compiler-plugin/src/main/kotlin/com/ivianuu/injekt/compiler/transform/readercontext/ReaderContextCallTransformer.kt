@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.transform.readercontext
 
-import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
@@ -37,7 +36,6 @@ import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.impl.EmptyPackageFragmentDescriptor
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
-import org.jetbrains.kotlin.ir.builders.irBoolean
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irString
@@ -75,7 +73,7 @@ class ReaderContextCallTransformer(
             override fun visitCall(expression: IrCall): IrExpression {
                 expression.transformChildrenVoid(this)
                 return if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.context" ||
+                    "com.ivianuu.injekt.rootContext" ||
                     expression.symbol.descriptor.fqNameSafe.asString() ==
                     "com.ivianuu.injekt.childContext"
                 ) {
@@ -91,7 +89,7 @@ class ReaderContextCallTransformer(
         newIndexBuilders.forEach {
             indexer.index(
                 it.originatingDeclaration,
-                listOf(DeclarationGraph.CONTEXT_PATH),
+                listOf(DeclarationGraph.ROOT_CONTEXT_PATH),
                 it.classBuilder
             )
         }
@@ -108,12 +106,6 @@ class ReaderContextCallTransformer(
 
         val context = call.getTypeArgument(0)!!.classOrNull!!.owner
 
-        val isChild = call.symbol.owner.descriptor.fqNameSafe.asString() ==
-                "com.ivianuu.injekt.childContext"
-
-        val metadata = if (isChild)
-            injektContext.irTrace[InjektWritableSlices.RUN_CHILD_READER_METADATA, call]!! else null
-
         val name = injektContext.uniqueClassNameProvider(
             "${scope.descriptor.fqNameSafe.pathSegments()
                 .joinToString("_")}ReaderContextFactory".asNameId(),
@@ -122,19 +114,14 @@ class ReaderContextCallTransformer(
 
         newIndexBuilders += NewIndexBuilder(scope) clazz@{
             superTypes += context.defaultType // todo
-            if (metadata != null) superTypes += metadata.callingContext.defaultType
             addMetadataIfNotLocal()
             if (scope is IrTypeParametersContainer)
                 copyTypeParametersFrom(scope as IrTypeParametersContainer)
             annotations += DeclarationIrBuilder(injektContext, symbol).run {
-                irCall(injektContext.injektSymbols.contextDeclaration.constructors.single()).apply {
+                irCall(injektContext.injektSymbols.rootContext.constructors.single()).apply {
                     putValueArgument(
                         0,
                         irString(file.fqName.child(name).asString())
-                    )
-                    putValueArgument(
-                        1,
-                        irBoolean(isChild)
                     )
                 }
             }
@@ -182,13 +169,6 @@ class ReaderContextCallTransformer(
         }.apply {
             dispatchReceiverParameter = contextFactoryStub.thisReceiver!!.copyTo(this)
 
-            if (isChild) {
-                addValueParameter(
-                    "parent",
-                    metadata!!.callingContext.defaultType
-                )
-            }
-
             inputs.forEach { input ->
                 addValueParameter(
                     input.type.uniqueTypeName().asString(),
@@ -200,13 +180,8 @@ class ReaderContextCallTransformer(
         return DeclarationIrBuilder(injektContext, call.symbol).run {
             irCall(createFunctionStub).apply {
                 dispatchReceiver = irGetObject(contextFactoryStub.symbol)
-
-                if (isChild) {
-                    putValueArgument(0, metadata!!.contextExpression)
-                }
-
                 inputs.forEachIndexed { index, input ->
-                    putValueArgument(index + if (isChild) 1 else 0, input)
+                    putValueArgument(index, input)
                 }
             }
         }

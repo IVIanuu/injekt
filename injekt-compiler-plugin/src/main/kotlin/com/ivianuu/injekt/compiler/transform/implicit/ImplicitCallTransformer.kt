@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt.compiler.transform.implicit
 
-import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.RunChildReaderMetadata
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
@@ -354,11 +352,6 @@ class ImplicitCallTransformer(
                     ) {
                         contextExpression(allScopes)
                     }
-                    expression is IrCall &&
-                            expression.symbol.owner.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runChildReader" ->
-                        transformRunChildReaderCall(scope, expression) {
-                            contextExpression(allScopes)
-                        }
                     expression.symbol.owner.canUseImplicits(injektContext) ->
                         transformReaderCall(scope, expression) {
                             contextExpression(allScopes)
@@ -537,19 +530,6 @@ class ImplicitCallTransformer(
         transformedCall.putValueArgument(transformedCall.valueArgumentsCount - 1, contextArgument)
 
         return transformedCall
-    }
-
-    private fun transformRunChildReaderCall(
-        scope: ReaderScope,
-        call: IrCall,
-        contextExpression: () -> IrExpression
-    ): IrExpression {
-        injektContext.irTrace.record(
-            InjektWritableSlices.RUN_CHILD_READER_METADATA,
-            call,
-            RunChildReaderMetadata(scope.context, contextExpression())
-        )
-        return call
     }
 
 }

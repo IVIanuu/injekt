@@ -275,7 +275,7 @@ class ImplicitContextParamTransformer(
 
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
         if (function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given" ||
-            function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runChildReader"
+            function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.childContext"
         ) return function
 
         if (function is IrConstructor) {

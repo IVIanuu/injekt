@@ -24,7 +24,7 @@ import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransf
 import com.ivianuu.injekt.compiler.transform.implicit.ReaderTrackingTransformer
 import com.ivianuu.injekt.compiler.transform.readercontext.GlobalGivensIndexingTransformer
 import com.ivianuu.injekt.compiler.transform.readercontext.ReaderContextCallTransformer
-import com.ivianuu.injekt.compiler.transform.readercontext.ReaderContextImplTransformer
+import com.ivianuu.injekt.compiler.transform.readercontext.RootContextImplTransformer
 import com.ivianuu.injekt.compiler.transform.readercontext.RunReaderCallTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -100,13 +100,13 @@ class InjektIrGenerationExtension : IrGenerationExtension {
                 implicitContextParamTransformer
             )
             val readerContextImplTransformer =
-                ReaderContextImplTransformer(
+                RootContextImplTransformer(
                     injektContext,
                     declarationGraph,
                     implicitContextParamTransformer,
                     initFile!!
                 )
-            declarationGraph.readerContextImplTransformer = readerContextImplTransformer
+            declarationGraph.rootContextImplTransformer = readerContextImplTransformer
             readerContextImplTransformer.doLower(moduleFragment)
             GenericContextImplTransformer(
                 injektContext,

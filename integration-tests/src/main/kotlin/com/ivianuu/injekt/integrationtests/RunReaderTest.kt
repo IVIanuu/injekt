@@ -42,7 +42,7 @@ class RunReaderTest {
             fun bar() = Bar(given())
             
             fun invoke(): Bar {
-                return context<SimpleContext>().runReader { given<Bar>() }
+                return rootContext<SimpleContext>().runReader { given<Bar>() }
             }
     """
     ) {
@@ -241,7 +241,7 @@ class RunReaderTest {
             fun FooFactoryImpl() = runChildReader { given<Foo>() }
             
             fun invoke(foo: Foo): Foo {
-                return context<TestComponent>(foo).runReader {
+                return rootContext<TestComponent>(foo).runReader {
                     given<FooFactoryMarker>()()
                 }
             }
@@ -462,7 +462,7 @@ class RunReaderTest {
         
         fun invoke(): Bar {
             return runBlocking {
-                context<TestComponent>().runReader { 
+                rootContext<TestComponent>().runReader { 
                     delay(1)
                     given<Bar>()
                 }
@@ -481,7 +481,7 @@ class RunReaderTest {
         @Given
         fun bar() = Bar(given())
         
-        inline fun <R> runBarReader(block: @Reader () -> R) = context<TestComponent>().runReader("hello world", block = block)
+        inline fun <R> runBarReader(block: @Reader () -> R) = rootContext<TestComponent>().runReader("hello world", block = block)
         
         fun invoke(): Bar {
             return runBlocking {
@@ -530,7 +530,7 @@ class RunReaderTest {
     fun testRunReaderWrapper() = codegen(
         """
         fun runApplicationReader(block: @Reader () -> Foo): Foo {
-            return context<TestComponent>().runReader(Foo(), block = block)
+            return rootContext<TestComponent>().runReader(Foo(), block = block)
         }
         
         fun invoke(): Foo {
@@ -579,7 +579,7 @@ class RunReaderTest {
         fun foo(): Foo = Foo()
 
         fun invoke(): Any { 
-            return context<TestComponent>().runReader { given<AnnotatedBar>() }
+            return rootContext<TestComponent>().runReader { given<AnnotatedBar>() }
         }
     """
     ) {
@@ -592,7 +592,7 @@ class RunReaderTest {
         @Given val foo = Foo()
         
         fun invoke(): Foo {
-            return context<TestComponent>().runReader { given<Foo>() }
+            return rootContext<TestComponent>().runReader { given<Foo>() }
         }
     """
     ) {
@@ -606,7 +606,7 @@ class RunReaderTest {
         fun bar(foo: Foo) = Bar(foo)
 
         fun invoke(foo: Foo): Bar { 
-            return context<TestComponent>().runReader { given<Bar>(foo) }
+            return rootContext<TestComponent>().runReader { given<Bar>(foo) }
         }
     """
     ) {
@@ -620,7 +620,7 @@ class RunReaderTest {
         class AnnotatedBar(foo: Foo)
 
         fun invoke(foo: Foo): Any {
-            return context<TestComponent>().runReader { given<AnnotatedBar>(foo) }
+            return rootContext<TestComponent>().runReader { given<AnnotatedBar>(foo) }
         }
     """
     ) {
@@ -666,7 +666,7 @@ class RunReaderTest {
         """
         fun invoke(): Pair<Foo, Foo> {
             val foo = Foo()
-            return foo to context<TestComponent>(foo).runReader { given<Foo>() }
+            return foo to rootContext<TestComponent>(foo).runReader { given<Foo>() }
         }
     """
     ) {
@@ -687,7 +687,7 @@ class RunReaderTest {
         }
         
         fun <R> runBlock(block: @Reader () -> R): R {
-            return context<TestComponent>().runReader(block = block)
+            return rootContext<TestComponent>().runReader(block = block)
         }
     """
     ) {
@@ -707,7 +707,7 @@ class RunReaderTest {
         fun bar() = Bar(given())
         
         fun invoke(): Bar {
-            return context<TestComponent>(FooGivens()).runReader { given<Bar>() }
+            return rootContext<TestComponent>(FooGivens()).runReader { given<Bar>() }
         }
     """
     ) {
@@ -733,7 +733,7 @@ class RunReaderTest {
         }
         
         fun invoke(): Bar {
-            return context<TestComponent>(FooGivens()).runReader { given<Bar>() }
+            return rootContext<TestComponent>(FooGivens()).runReader { given<Bar>() }
         }
     """
     ) {
@@ -753,7 +753,7 @@ class RunReaderTest {
         fun bar() = Bar(given())
         
         fun invoke(): Bar {
-            return context<TestComponent>(FooBarModule()).runReader { given<Bar>() }
+            return rootContext<TestComponent>(FooBarModule()).runReader { given<Bar>() }
         }
     """
     ) {

@@ -22,7 +22,7 @@ import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
-import com.ivianuu.injekt.compiler.transform.readercontext.ReaderContextImplTransformer
+import com.ivianuu.injekt.compiler.transform.readercontext.RootContextImplTransformer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -37,8 +37,8 @@ class DeclarationGraph(
     private val implicitContextParamTransformer: ImplicitContextParamTransformer
 ) {
 
-    val contexts: List<IrClass> by lazy {
-        indexer.classIndices(listOf(CONTEXT_PATH))
+    val rootContexts: List<IrClass> by lazy {
+        indexer.classIndices(listOf(ROOT_CONTEXT_PATH))
     }
 
     val genericContexts: List<IrClass> by lazy {
@@ -72,7 +72,7 @@ class DeclarationGraph(
             .filter { it.getContext() != null }
     }
 
-    lateinit var readerContextImplTransformer: ReaderContextImplTransformer
+    lateinit var rootContextImplTransformer: RootContextImplTransformer
 
     sealed class ParentRunReaderContext {
         data class Known(val clazz: IrClass) : ParentRunReaderContext() {
@@ -118,7 +118,7 @@ class DeclarationGraph(
 
             parents += getGivenDeclarationsForContext(invokingContext)
                 .flatMapFix { declaration ->
-                    val generatedContextsWithInvokerSuperType = readerContextImplTransformer
+                    val generatedContextsWithInvokerSuperType = rootContextImplTransformer
                         .generatedContexts
                         .values
                         .flatten()
@@ -168,7 +168,7 @@ class DeclarationGraph(
     }
 
     private fun isRunReaderContext(context: IrClass): Boolean {
-        return contexts
+        return rootContexts
             .map { it.superTypes.first() }
             .any { it == context.defaultType }
     }
@@ -187,7 +187,7 @@ class DeclarationGraph(
     private fun getCallingContexts(context: IrClass): Set<IrClass> {
         val allContexts = listOf(context) + getAllSuperContexts(context)
 
-        val invokerIfRunChildReader = contexts
+        val invokerIfRunChildReader = rootContexts
             .singleOrNull { it.superTypes[0] == context.defaultType }
             ?.superTypes
             ?.getOrNull(1)
@@ -297,17 +297,17 @@ class DeclarationGraph(
     }
 
     companion object {
-        const val READER_CALL_CALLEE_TO_CALLER_PATH = "readerinvocationcalleetocaller"
-        const val READER_CALL_CALLER_TO_CALLEE_PATH = "readerinvocationcallertocallee"
-        const val READER_IMPL_SUPER_TO_SUB_PATH = "readerimplsupertosub"
-        const val READER_IMPL_SUB_TO_SUPER_PATH = "readerimplsubtosuper"
-        const val CONTEXT_PATH = "component"
-        const val RUN_READER_CALL_PATH = "runreadercall"
+        const val READER_CALL_CALLEE_TO_CALLER_PATH = "reader_invocation_callee_to_caller"
+        const val READER_CALL_CALLER_TO_CALLEE_PATH = "reader_invocation_caller_to_callee"
+        const val READER_IMPL_SUPER_TO_SUB_PATH = "reader_impl_super_to_sub"
+        const val READER_IMPL_SUB_TO_SUPER_PATH = "reader_impl_sub_to_super"
+        const val ROOT_CONTEXT_PATH = "root_context"
+        const val RUN_READER_CALL_PATH = "run_reader_call"
         const val GIVEN_PATH = "given"
-        const val GIVEN_CONTEXTS_PATH = "givencontexts"
-        const val GENERIC_CONTEXT_PATH = "genericcontext"
-        const val MAP_ENTRIES_PATH = "mapentries"
-        const val SET_ELEMENTS_PATH = "setelements"
+        const val GIVEN_CONTEXTS_PATH = "given_contexts"
+        const val GENERIC_CONTEXT_PATH = "generic_context"
+        const val MAP_ENTRIES_PATH = "map_entries"
+        const val SET_ELEMENTS_PATH = "set_elements"
         const val SIGNATURE_PATH = "signature"
     }
 
