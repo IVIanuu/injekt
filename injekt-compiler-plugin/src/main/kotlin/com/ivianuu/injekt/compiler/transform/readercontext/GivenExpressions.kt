@@ -67,7 +67,7 @@ class GivenExpressions(
         }
 
         val finalExpression = if (given.targetContext == null ||
-            given.targetContext != contextImpl
+            given.owner != contextImpl
         ) rawExpression else ({ c ->
             val lazy = injektContext.referenceFunctions(FqName("kotlin.lazy"))
                 .single { it.owner.valueParameters.size == 1 }
