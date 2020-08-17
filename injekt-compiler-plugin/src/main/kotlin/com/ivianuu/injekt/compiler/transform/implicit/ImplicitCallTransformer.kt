@@ -147,9 +147,7 @@ class ImplicitCallTransformer(
             typeArguments: List<IrType>
         ): Name {
             val name = injektContext.uniqueClassNameProvider(
-                "${declaration.descriptor.fqNameSafe.pathSegments()
-                    .joinToString("_")}GenericContextFactory"
-                    .asNameId(),
+                "${declaration.descriptor.name}GenericContextFactory".asNameId(),
                 context.getPackageFragment()!!.fqName
             )
 

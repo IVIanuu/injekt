@@ -112,8 +112,7 @@ class ReaderContextCallTransformer(
 
         val contextFactory = buildClass {
             name = injektContext.uniqueClassNameProvider(
-                "${scope.descriptor.fqNameSafe.pathSegments()
-                    .joinToString("_")}ReaderContextFactory".asNameId(),
+                "${context.name}Factory".asNameId(),
                 file.fqName
             )
             kind = ClassKind.INTERFACE
