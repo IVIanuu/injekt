@@ -43,7 +43,7 @@ object InjektTest : InjectionTest {
         context = null
     }
 
-}
+    @Context
+    interface InjektTestContext
 
-@Context
-interface InjektTestContext
+}
