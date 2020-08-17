@@ -22,21 +22,21 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Effect
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.MapEntries
+import com.ivianuu.injekt.GivenMapEntries
 import com.ivianuu.injekt.given
 import kotlin.reflect.KClass
 
 @Effect
 annotation class GivenWorker {
     companion object {
-        @MapEntries
+        @GivenMapEntries
         inline operator fun <reified T : ListenableWorker> invoke(): Workers = mapOf(
             T::class to given<(Context, WorkerParameters) -> T>()
         )
     }
 }
 
-typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
+internal typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
 
 @Given
 internal class InjektWorkerFactory : WorkerFactory() {
@@ -49,11 +49,11 @@ internal class InjektWorkerFactory : WorkerFactory() {
         return given<Workers>()[Class.forName(workerClassName).kotlin]?.invoke(
             appContext,
             workerParameters
-        ) ?: error("Could not find a worker for $workerClassName")
+        )
     }
 }
 
-object WorkerInjectionModule {
+object WorkerInjectionGivens {
     @Given
     fun workerFactory(): WorkerFactory = given<InjektWorkerFactory>()
 }

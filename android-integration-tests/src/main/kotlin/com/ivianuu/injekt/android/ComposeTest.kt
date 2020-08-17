@@ -47,7 +47,7 @@ class ComposeTest {
         }
         
         fun invoke(): AppUi {
-            return runReader { given<AppUi>() }
+            return rootContext<TestContext>().runReader { given<AppUi>() }
         }
     """,
         config = {
@@ -86,7 +86,7 @@ class ComposeTest {
                 }
                 
                 fun invoke(): AppUi {
-                    return runReader { given<AppUi>() }
+                    return rootContext<TestContext>().runReader { given<AppUi>() }
                 }
                 """,
                 name = "File.kt"
@@ -124,7 +124,7 @@ class ComposeTest {
 
         @androidx.compose.runtime.Composable
         fun invoke(): Foo {
-            return runReader {
+            return runTestReader {
                 withFoo { 
                     other()
                     it

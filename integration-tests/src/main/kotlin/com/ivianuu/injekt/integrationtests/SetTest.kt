@@ -35,23 +35,23 @@ class SetTest {
         @Given 
         fun commandA() = CommandA()
         
-        @SetElements
+        @GivenSetElements
         fun commandAIntoSet(): Set<Command> = setOf(given<CommandA>())
         
         @Given 
         fun commandB() = CommandB()
         
-        @SetElements
+        @GivenSetElements
         fun commandBIntoSet(): Set<Command> = setOf(given<CommandB>())
         
         @Given 
         fun commandC() = CommandC()
         
-        @SetElements
+        @GivenSetElements
         fun commandCIntoSet(): Set<Command> = setOf(given<CommandC>())
         
         fun invoke(): Set<Command> {
-            return runReader { given<Set<Command>>() }
+            return rootContext<TestContext>().runReader { given<Set<Command>>() }
         }
         """
     ) {
@@ -66,11 +66,11 @@ class SetTest {
     fun testUndeclaredSet() = codegen(
         """
         fun invoke(): Set<Command> {
-            return runReader { given<Set<Command>>() }
+            return rootContext<TestContext>().runReader { given<Set<Command>>() }
         }
         """
     ) {
-        assertInternalError("no binding")
+        assertInternalError("no given")
     }
 
 }

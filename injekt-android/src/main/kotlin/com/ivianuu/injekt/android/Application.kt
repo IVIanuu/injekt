@@ -17,24 +17,24 @@
 package com.ivianuu.injekt.android
 
 import android.app.Application
-import android.content.Context
 import android.content.res.Resources
+import androidx.lifecycle.ProcessLifecycleOwner
+import com.ivianuu.injekt.ApplicationContext
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.runReader
+import com.ivianuu.injekt.rootContext
 
-inline fun <R> Application.runApplicationReader(block: @Reader () -> R): R =
-    runReader(this, block = block)
+val Application.applicationReaderContext: ApplicationContext
+    get() = ProcessLifecycleOwner.get().lifecycle.singleton { rootContext(this) }
 
-typealias ApplicationContext = Context
+typealias ApplicationAndroidContext = android.content.Context
 
 typealias ApplicationResources = Resources
 
-object ApplicationModule {
+object ApplicationGivens {
 
     @Given
-    fun context(): ApplicationContext = given<Application>()
+    fun context(): ApplicationAndroidContext = given<Application>()
 
     @Given
     fun resources(): ApplicationResources = given<Application>().resources

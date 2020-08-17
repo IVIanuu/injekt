@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.runreader
+package com.ivianuu.injekt.compiler.transform.readercontext
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getContext
@@ -45,7 +45,7 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class GlobalBindingIndexingTransformer(
+class IndexingTransformer(
     private val indexer: Indexer,
     injektContext: InjektContext
 ) : AbstractInjektTransformer(injektContext) {
@@ -137,7 +137,7 @@ class GlobalBindingIndexingTransformer(
                                     }
                                 }
                             }
-                        declaration.hasAnnotation(InjektFqNames.MapEntries) ->
+                        declaration.hasAnnotation(InjektFqNames.GivenMapEntries) ->
                             runnables += {
                                 indexer.index(
                                     listOf(
@@ -169,7 +169,7 @@ class GlobalBindingIndexingTransformer(
                                     }
                                 }
                             }
-                        declaration.hasAnnotation(InjektFqNames.SetElements) ->
+                        declaration.hasAnnotation(InjektFqNames.GivenSetElements) ->
                             runnables += {
                                 indexer.index(
                                     listOf(
@@ -279,7 +279,7 @@ class GlobalBindingIndexingTransformer(
 
         while (current != null) {
             if (current.hasAnnotation(InjektFqNames.Effect) ||
-                current.hasAnnotation(InjektFqNames.Module)
+                current.hasAnnotation(InjektFqNames.GivenSet)
             ) return true
             current = current.parent as? IrDeclaration
         }

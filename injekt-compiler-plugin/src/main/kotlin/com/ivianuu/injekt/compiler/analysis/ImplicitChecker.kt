@@ -74,8 +74,8 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         var implicitAnnotations = 0
         if (descriptor.hasAnnotation(InjektFqNames.Given)) implicitAnnotations += 1
         if (descriptor.hasAnnotation(InjektFqNames.Reader)) implicitAnnotations += 1
-        if (descriptor.hasAnnotation(InjektFqNames.MapEntries)) implicitAnnotations += 1
-        if (descriptor.hasAnnotation(InjektFqNames.SetElements)) implicitAnnotations += 1
+        if (descriptor.hasAnnotation(InjektFqNames.GivenMapEntries)) implicitAnnotations += 1
+        if (descriptor.hasAnnotation(InjektFqNames.GivenSetElements)) implicitAnnotations += 1
 
         if (implicitAnnotations > 1 || (implicitAnnotations == 1 &&
                     descriptor.hasAnnotation(InjektFqNames.Reader) &&
@@ -157,21 +157,21 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         if (resulting !is FunctionDescriptor) return
 
         if (isImplicit(resulting, context.trace)) {
-            checkInvocations(reportOn, context, resolvedCall)
+            checkCalls(reportOn, context, resolvedCall)
         }
 
         if (resulting is ConstructorDescriptor &&
             (resulting.constructedClass.isMarkedAsImplicit(resulting.module))
         ) {
-            checkInvocations(reportOn, context, resolvedCall)
+            checkCalls(reportOn, context, resolvedCall)
         }
 
         if (isImplicit(resulting, context.trace)) {
-            checkInvocations(reportOn, context, resolvedCall)
+            checkCalls(reportOn, context, resolvedCall)
         }
     }
 
-    private fun checkInvocations(
+    private fun checkCalls(
         reportOn: PsiElement,
         context: CallCheckerContext,
         resolvedCall: ResolvedCall<*>
@@ -184,7 +184,7 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
 
         if (enclosingReaderContext == null) {
             context.trace.report(
-                InjektErrors.FORBIDDEN_READER_INVOCATION.on(reportOn)
+                InjektErrors.FORBIDDEN_READER_CALL.on(reportOn)
             )
         }
     }

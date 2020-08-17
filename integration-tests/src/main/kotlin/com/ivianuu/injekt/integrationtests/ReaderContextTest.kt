@@ -28,19 +28,22 @@ import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
-class RunReaderTest {
+class ReaderContextTest {
 
     @Test
     fun testSimple() = codegen(
         """
-        @Given
-        fun foo() = Foo()
-        @Given
-        fun bar() = Bar(given())
-        
-        fun invoke(): Bar {
-            return runReader { given<Bar>() }
-        }
+            @Context
+            interface SimpleContext
+            
+            @Given
+            fun foo() = Foo()
+            @Given
+            fun bar() = Bar(given())
+            
+            fun invoke(): Bar {
+                return rootContext<SimpleContext>().runReader { given<Bar>() }
+            }
     """
     ) {
         assertTrue(invokeSingleFile() is Bar)
@@ -49,21 +52,47 @@ class RunReaderTest {
     @Test
     fun testWithChild() = codegen(
         """
-        @Given
-        fun foo() = Foo()
-        @Given
-        fun bar() = Bar(given())
-        
-        fun invoke(foo: Foo): Foo {
-            return runReader(42, "hello world") { overriddingFoo(foo) }
-        }
-        
-        fun otherInvoke() = runReader { overriddingFoo(Foo()) }
-        
-        @Reader
-        private fun overriddingFoo(foo: Foo) = runChildReader(foo) {
-            given<Bar>().foo
-        }
+            @Given
+            fun foo() = Foo()
+            @Given
+            fun bar() = Bar(given())
+            
+            fun invoke(foo: Foo): Foo {
+                return rootContext<TestParentContext>(42, "hello world").runReader { overriddingFoo(foo) }
+            }
+            
+            fun otherInvoke() = rootContext<TestParentContext>().runReader { overriddingFoo(Foo()) }
+            
+            @Reader
+            private fun overriddingFoo(foo: Foo) = childContext<TestChildContext>(foo).runReader {
+                given<Bar>().foo
+            }
+    """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile(foo))
+    }
+
+    @Test
+    fun testWithMultiChild() = codegen(
+        """
+            @Given
+            fun foo() = Foo()
+            @Given
+            fun bar() = Bar(given())
+            
+            fun invoke(foo: Foo): Foo {
+                return rootContext<TestParentContext>(42, "hello world", foo).runReader { overriddingFoo(foo) }
+            }
+            
+            fun otherInvoke() = rootContext<TestParentContext>().runReader { overriddingFoo(Foo()) }
+            
+            @Reader
+            private fun overriddingFoo(foo: Foo) = childContext<TestChildContext>(Foo()).runReader {
+                childContext<TestContext>(foo).runReader {
+                    given<Bar>().foo
+                }
+            }
     """
     ) {
         val foo = Foo()
@@ -79,13 +108,13 @@ class RunReaderTest {
         fun bar() = Bar(given())
         
         fun invoke(foo: Foo): Foo {
-            return runReader(42, "hello world") { overriding<Bar>(foo) }
+            return rootContext<TestContext>(42, "hello world").runReader { overriding<Bar>(foo) }
         }
         
-        fun otherInvoke() = runReader { overriding<Bar>(Foo()) }
+        fun otherInvoke() = rootContext<TestContext2>().runReader { overriding<Bar>(Foo()) }
         
         @Reader
-        private fun <T> overriding(value: Foo) = runChildReader(value) {
+        private fun <T> overriding(value: Foo) = childContext<TestChildContext>(value).runReader {
             given<Bar>().foo
         }
     """
@@ -103,11 +132,11 @@ class RunReaderTest {
         fun bar() = Bar(given())
         
         fun invoke(foo: Foo): Foo {
-            return runReader(42, true) { genericA<Bar>(foo) }
+            return rootContext<TestParentContext>(42, true).runReader { genericA<Bar>(foo) }
         }
         
         @Reader
-        fun <T> genericA(foo: Foo) = runChildReader(foo, "") {
+        fun <T> genericA(foo: Foo) = childContext<TestChildContext>(foo, "").runReader {
             nonGeneric(foo)
         }
         
@@ -115,7 +144,7 @@ class RunReaderTest {
         private fun nonGeneric(foo: Foo) = genericB<String>(foo)
 
         @Reader
-        private fun <S> genericB(foo: Foo) = runChildReader(foo, 0L) {
+        private fun <S> genericB(foo: Foo) = childContext<TestChildContext2>(foo, 0L).runReader {
             given<Bar>().foo
         }
     """
@@ -134,9 +163,9 @@ class RunReaderTest {
             fun b(foo: Foo) = childRunner(foo) { given<Foo>() }
             
             @Reader
-            fun <R> childRunner(foo: Foo, block: @Reader () -> R) = runChildReader(foo, block = block)
+            fun <R> childRunner(foo: Foo, block: @Reader () -> R) = childContext<TestChildContext>(foo).runReader(block = block)
             
-            fun invoke(foo: Foo) = runReader { a(foo) }
+            fun invoke(foo: Foo) = rootContext<TestParentContext>().runReader { a(foo) }
         """
     ) {
         val foo = Foo()
@@ -156,9 +185,9 @@ class RunReaderTest {
             fun c(foo: Foo) = childRunner(foo) { given<Foo>() }
             
             @Reader
-            fun <R> childRunner(foo: Foo, block: @Reader () -> R) = runChildReader(foo, block = block)
+            fun <R> childRunner(foo: Foo, block: @Reader () -> R) = childContext<TestChildContext>(foo).runReader(block = block)
             
-            fun invoke(foo: Foo) = runReader { a(foo) }
+            fun invoke(foo: Foo) = rootContext<TestParentContext>().runReader { a(foo) }
         """
     ) {
         val foo = Foo()
@@ -173,7 +202,7 @@ class RunReaderTest {
                 int: Int,
                 long: Long,
                 boolean: Boolean
-            ) = runReader {
+            ) = rootContext<TestContext>().runReader {
                 withString(string) {
                     withInt(int) {
                         withLong(long) {
@@ -184,30 +213,38 @@ class RunReaderTest {
                     }
                 }
             }
-            
+
+            @Context
+            interface StringContext
             @Reader
             private fun <R> withString(
                 value: String,
                 block: @Reader () -> R
-            ) = runChildReader(value, block = block)
+            ) = childContext<StringContext>(value).runReader(block = block)
             
+            @Context
+            interface IntContext
             @Reader
             private fun <R> withInt(
                 value: Int,
                 block: @Reader () -> R
-            ) = runChildReader(value, block = block)
+            ) = childContext<IntContext>(value).runReader(block = block)
             
+            @Context
+            interface LongContext
             @Reader
             private fun <R> withLong(
                 value: Long,
                 block: @Reader () -> R
-            ) = runChildReader(value, block = block)
+            ) = childContext<LongContext>(value).runReader(block = block)
             
+            @Context
+            interface BooleanContext
             @Reader
             private fun <R> withBoolean(
                 value: Boolean,
                 block: @Reader () -> R
-            ) = runChildReader(value, block = block)
+            ) = childContext<BooleanContext>(value).runReader(block = block)
         """
     ) {
         val string = "hello world"
@@ -235,10 +272,10 @@ class RunReaderTest {
             typealias FooFactoryMarker = () -> Foo
             
             @GivenFooFactory
-            fun FooFactoryImpl() = runChildReader { given<Foo>() }
+            fun FooFactoryImpl() = childContext<TestChildContext>().runReader { given<Foo>() }
             
             fun invoke(foo: Foo): Foo {
-                return runReader(foo) {
+                return rootContext<TestParentContext>(foo).runReader {
                     given<FooFactoryMarker>()()
                 }
             }
@@ -266,22 +303,30 @@ class RunReaderTest {
                 val activity = Activity()
             }
             
+            @Context
+            interface AppContext
             inline fun <T> App.runAppReader(block: @Reader () -> T): T =
-                runReader(this, block = block)
-                
+                rootContext<AppContext>(this).runReader(block = block)
+
+            @Context
+            interface ActivityContext
             inline fun <T> Activity.runActivityReader(block: @Reader () -> T): T =
                 app.runAppReader {
-                    runChildReader(this, block = block)
+                    childContext<ActivityContext>(this).runReader(block = block)
                 }
                 
+            @Context
+            interface ServiceContext
             inline fun <T> Service.runServiceReader(block: @Reader () -> T): T =
                 app.runAppReader {
-                    runChildReader(this, block = block)
+                    childContext<ServiceContext>(this).runReader(block = block)
                 }
-                
+           
+            @Context
+            interface FragmentContext
             inline fun <T> Fragment.runFragmentReader(block: @Reader () -> T): T =
                 activity.runActivityReader {
-                    runChildReader(this, block = block)
+                    childContext<FragmentContext>(this).runReader(block = block)
                 }
             
             @Effect
@@ -312,7 +357,7 @@ class RunReaderTest {
             @Effect
             annotation class BindActionPickerDelegate {
                 companion object {
-                    @SetElements
+                    @GivenSetElements
                     fun <T : ActionPickerDelegate> invoke(): Set<ActionPickerDelegate> = setOf(given<T>())
                 }
             }
@@ -341,9 +386,12 @@ class RunReaderTest {
                 return remember(*emptyArray(), block = block)
             }
             
+            @Context
+            interface RememberContext
+            
             @Reader
             fun <T> remember(vararg inputs: Any?, block: @Reader () -> T): T {
-                return runChildReader(Foo(), block = block)
+                return childContext<RememberContext>(Foo()).runReader(block = block)
             }
         """
     ) {
@@ -369,22 +417,30 @@ class RunReaderTest {
                 val activity = Activity()
             }
             
+            @Context
+            interface AppContext
             inline fun <T> App.runAppReader(block: @Reader () -> T): T =
-                runReader(this, block = block)
-                
+                rootContext<AppContext>(this).runReader(block = block)
+
+            @Context
+            interface ActivityContext
             inline fun <T> Activity.runActivityReader(block: @Reader () -> T): T =
                 app.runAppReader {
-                    runChildReader(this, block = block)
+                    childContext<ActivityContext>(this).runReader(block = block)
                 }
                 
+            @Context
+            interface ServiceContext
             inline fun <T> Service.runServiceReader(block: @Reader () -> T): T =
                 app.runAppReader {
-                    runChildReader(this, block = block)
+                    childContext<ServiceContext>(this).runReader(block = block)
                 }
-                
+           
+            @Context
+            interface FragmentContext
             inline fun <T> Fragment.runFragmentReader(block: @Reader () -> T): T =
                 activity.runActivityReader {
-                    runChildReader(this, block = block)
+                    childContext<FragmentContext>(this).runReader(block = block)
                 }
             
             @Effect
@@ -415,7 +471,7 @@ class RunReaderTest {
             @Effect
             annotation class GivenActionPickerDelegate {
                 companion object {
-                    @SetElements
+                    @GivenSetElements
                     fun <T : ActionPickerDelegate> invoke(): Set<ActionPickerDelegate> = setOf(given<T>())
                 }
             }
@@ -439,9 +495,12 @@ class RunReaderTest {
                 }
             }
             
+            @Context
+            interface RememberContext
+            
             @Reader
             fun <T> remember(block: @Reader () -> T): T {
-                return runChildReader(Foo(), block = block)
+                return childContext<RememberContext>(Foo()).runReader(block = block)
             }
         """
     ) {
@@ -459,7 +518,7 @@ class RunReaderTest {
         
         fun invoke(): Bar {
             return runBlocking {
-                runReader { 
+                rootContext<TestContext>().runReader { 
                     delay(1)
                     given<Bar>()
                 }
@@ -478,7 +537,7 @@ class RunReaderTest {
         @Given
         fun bar() = Bar(given())
         
-        inline fun <R> runBarReader(block: @Reader () -> R) = runReader("hello world", block = block)
+        inline fun <R> runBarReader(block: @Reader () -> R) = rootContext<TestContext>("hello world").runReader(block = block)
         
         fun invoke(): Bar {
             return runBlocking {
@@ -496,24 +555,13 @@ class RunReaderTest {
     @Test
     fun testScopedBinding() = codegen(
         """
-        private var foo: Foo? = null
-
-        class SingletonStorage : Storage {
-            override fun <T> scope(key: Any, init: () -> T): T {
-                foo?.let { return it as T }
-                foo = init() as Foo
-                return foo as T
-            }
-        }
-        
-        @Given
-        val singletonStorage = SingletonStorage()
-        
-        @Given(SingletonStorage::class)
+        @Given(TestContext::class)
         fun foo() = Foo()
         
+        val context = rootContext<TestContext>()
+        
         fun invoke(): Foo {
-            return runReader { given<Foo>() }
+            return context.runReader { given<Foo>() }
         }
     """
     ) {
@@ -527,7 +575,7 @@ class RunReaderTest {
     fun testRunReaderWrapper() = codegen(
         """
         fun runApplicationReader(block: @Reader () -> Foo): Foo {
-            return runReader(Foo(), block = block)
+            return rootContext<TestContext>(Foo()).runReader(block = block)
         }
         
         fun invoke(): Foo {
@@ -544,7 +592,7 @@ class RunReaderTest {
             source(
                 """
                     fun runApplicationReader(block: @Reader () -> Foo): Foo {
-                        return runReader(Foo(), block = block)
+                        return rootContext<TestContext>(Foo()).runReader(block = block)
                     }
                     """,
                 initializeInjekt = false
@@ -576,7 +624,7 @@ class RunReaderTest {
         fun foo(): Foo = Foo()
 
         fun invoke(): Any { 
-            return runReader { given<AnnotatedBar>() }
+            return rootContext<TestContext>().runReader { given<AnnotatedBar>() }
         }
     """
     ) {
@@ -589,7 +637,7 @@ class RunReaderTest {
         @Given val foo = Foo()
         
         fun invoke(): Foo {
-            return runReader { given<Foo>() }
+            return rootContext<TestContext>().runReader { given<Foo>() }
         }
     """
     ) {
@@ -603,7 +651,7 @@ class RunReaderTest {
         fun bar(foo: Foo) = Bar(foo)
 
         fun invoke(foo: Foo): Bar { 
-            return runReader { given<Bar>(foo) }
+            return rootContext<TestContext>().runReader { given<Bar>(foo) }
         }
     """
     ) {
@@ -617,7 +665,7 @@ class RunReaderTest {
         class AnnotatedBar(foo: Foo)
 
         fun invoke(foo: Foo): Any {
-            return runReader { given<AnnotatedBar>(foo) }
+            return rootContext<TestContext>().runReader { given<AnnotatedBar>(foo) }
         }
     """
     ) {
@@ -663,7 +711,7 @@ class RunReaderTest {
         """
         fun invoke(): Pair<Foo, Foo> {
             val foo = Foo()
-            return foo to runReader(foo) { given<Foo>() }
+            return foo to rootContext<TestContext>(foo).runReader { given<Foo>() }
         }
     """
     ) {
@@ -684,7 +732,7 @@ class RunReaderTest {
         }
         
         fun <R> runBlock(block: @Reader () -> R): R {
-            return runReader(block = block)
+            return rootContext<TestContext>().runReader(block = block)
         }
     """
     ) {
@@ -692,10 +740,10 @@ class RunReaderTest {
     }
 
     @Test
-    fun testWithModule() = codegen(
+    fun testWithGivenSet() = codegen(
         """
-        @Module
-        class FooBarModule {
+        @GivenSet
+        class FooGivens {
             @Given
             fun foo() = Foo()
         }
@@ -704,7 +752,7 @@ class RunReaderTest {
         fun bar() = Bar(given())
         
         fun invoke(): Bar {
-            return runReader(FooBarModule()) { given<Bar>() }
+            return rootContext<TestContext>(FooGivens()).runReader { given<Bar>() }
         }
     """
     ) {
@@ -712,10 +760,36 @@ class RunReaderTest {
     }
 
     @Test
+    fun testWithNestedGivenSets() = codegen(
+        """
+        @GivenSet
+        class FooGivens {
+            @Given
+            fun foo() = Foo()
+            
+            @GivenSet
+            val barGivens = BarGivens()
+            
+            @GivenSet
+            class BarGivens {
+                @Given
+                fun bar() = Bar(given())
+            }
+        }
+        
+        fun invoke(): Bar {
+            return rootContext<TestContext>(FooGivens()).runReader { given<Bar>() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
+    }
+
+    // todo @Test
     fun testWithGivenRef() = codegen(
         """
         @Module
-        class FooBarModule {
+        class FooBarGivens {
             @Given
             fun foo() = Foo()
         }
@@ -724,7 +798,7 @@ class RunReaderTest {
         fun bar() = Bar(given())
         
         fun invoke(): Bar {
-            return runReader(FooBarModule()) { given<Bar>() }
+            return rootContext<TestContext>(FooBarModule()).runReader { given<Bar>() }
         }
     """
     ) {

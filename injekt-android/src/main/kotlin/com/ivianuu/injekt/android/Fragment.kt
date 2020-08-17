@@ -16,27 +16,29 @@
 
 package com.ivianuu.injekt.android
 
-import android.content.Context
 import android.content.res.Resources
 import androidx.activity.ComponentActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
+import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.Storage
+import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.runChildReader
+import com.ivianuu.injekt.runReader
 
-inline fun <R> Fragment.runFragmentReader(block: @Reader () -> R): R =
-    activity!!.runActivityReader {
-        runChildReader(this, block = block)
+@Context
+interface FragmentContext
+
+val Fragment.fragmentContext: FragmentContext
+    get() = lifecycle.singleton {
+        retainedFragmentContext.runReader {
+            childContext(this)
+        }
     }
 
-class FragmentStorage : Storage by Storage()
-
-typealias FragmentContext = Context
+typealias FragmentAndroidContext = android.content.Context
 
 typealias FragmentResources = Resources
 
@@ -46,13 +48,13 @@ typealias FragmentSavedStateRegistryOwner = SavedStateRegistryOwner
 
 typealias FragmentViewModelStoreOwner = ViewModelStoreOwner
 
-object FragmentModule {
+object FragmentGivens {
 
     @Given
-    fun context(): FragmentContext = given<Fragment>().requireContext()
+    fun context(): FragmentAndroidContext = given<Fragment>().requireContext()
 
     @Given
-    fun resources(): FragmentResources = given<FragmentContext>().resources
+    fun resources(): FragmentResources = given<FragmentAndroidContext>().resources
 
     @Given
     fun lifecycleOwner(): FragmentLifecycleOwner = given<ComponentActivity>()
@@ -62,10 +64,5 @@ object FragmentModule {
 
     @Given
     fun viewModelStoreOwner(): FragmentViewModelStoreOwner = given<ViewModelStoreOwner>()
-
-    @Given
-    fun fragmentStorage(): FragmentStorage = given<Fragment>().lifecycle.storage {
-        FragmentStorage()
-    }
 
 }

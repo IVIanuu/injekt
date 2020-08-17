@@ -28,28 +28,28 @@ import junit.framework.Assert.assertNull
 import junit.framework.Assert.assertSame
 import org.junit.Test
 
-class ComponentGraphTest {
+class GivensGraphTest {
 
     @Test
     fun testMissingBindingFails() = codegen(
         """
         @Given class Dep(bar: Bar)
         fun invoke() {
-            runReader { given<Dep>() }
+            rootContext<TestContext>().runReader { given<Dep>() }
         }
         """
     ) {
-        assertInternalError("no binding")
+        assertInternalError("no given")
     }
 
     @Test
     fun testDistinctTypeParameter() = codegen(
         """
-        @SetElements fun setA() = setOf("a")
-        @SetElements fun setB() = setOf(0)
+        @GivenSetElements fun setA() = setOf("a")
+        @GivenSetElements fun setB() = setOf(0)
         
         fun invoke(): Pair<Set<String>, Set<Int>> {
-            return runReader { given<Set<String>>() to given<Set<Int>>() }
+            return rootContext<TestContext>().runReader { given<Set<String>>() to given<Set<Int>>() }
         }
     """
     ) {
@@ -67,7 +67,7 @@ class ComponentGraphTest {
         @Given fun foo2(): Foo2 = Foo()
         
         fun invoke(): Pair<Foo, Foo> {
-            return runReader { given<Foo1>() to given<Foo2>() }
+            return rootContext<TestContext>().runReader { given<Foo1>() to given<Foo2>() }
         }
     """
     ) {
@@ -97,7 +97,7 @@ class ComponentGraphTest {
             source(
                 """
                 fun invoke(): Pair<Foo, Foo> {
-                    return runReader { given<Foo1>() to given<Foo2>() }
+                    return rootContext<TestContext>().runReader { given<Foo1>() to given<Foo2>() }
                 } 
             """, name = "File.kt"
             )
@@ -114,7 +114,7 @@ class ComponentGraphTest {
         @Given fun nullableFoo(): Foo? = null
 
         fun invoke() { 
-            runReader { given<Foo>() to given<Foo?>() }
+            rootContext<TestContext>().runReader { given<Foo>() to given<Foo?>() }
         }
     """
     ) {
@@ -127,7 +127,7 @@ class ComponentGraphTest {
         @Given fun foo(): Foo = Foo()
 
         fun invoke(): Foo? { 
-            return runReader { given<Foo?>() }
+            return rootContext<TestContext>().runReader { given<Foo?>() }
         }
         """
     ) {
@@ -138,7 +138,7 @@ class ComponentGraphTest {
     fun testReturnsNullOnMissingNullableBinding() = codegen(
         """
         fun invoke(): Foo? { 
-            return runReader { given<Foo?>() }
+            return rootContext<TestContext>().runReader { given<Foo?>() }
         }
         """
     ) {
@@ -151,7 +151,7 @@ class ComponentGraphTest {
         @Given fun list(): List<*> = emptyList<Any?>()
         
         fun invoke() { 
-            runReader { given<List<*>>() }
+            rootContext<TestContext>().runReader { given<List<*>>() }
         }
     """
     )
@@ -163,7 +163,7 @@ class ComponentGraphTest {
             fun provideFoo() = Foo()
             
             fun invoke(foo: Foo): Foo {
-                return runReader(foo) { given() }
+                return rootContext<TestContext>(foo).runReader { given() }
             }
         """
     ) {
@@ -197,7 +197,7 @@ class ComponentGraphTest {
                     ): Foo {
                         externalFooField = externalFoo
                         internalFooField = internalFoo
-                        return runReader { given<Foo>() }
+                        return rootContext<TestContext>().runReader { given<Foo>() }
                     }
                 """,
                 name = "File.kt"
@@ -213,11 +213,11 @@ class ComponentGraphTest {
     fun testDuplicatedInputsFails() = codegen(
         """
         fun invoke() {
-            runReader(Foo(), Foo()) { given<Foo>() }
+            rootContext<TestContext>(Foo(), Foo()).runReader { given<Foo>() }
         }
         """
     ) {
-        assertInternalError("multiple instance or module")
+        assertInternalError("multiple instance or given set")
     }
 
     @Test
@@ -227,11 +227,11 @@ class ComponentGraphTest {
         @Given fun foo2() = Foo()
         
         fun invoke() {
-            runReader { given<Foo>() }
+            rootContext<TestContext>().runReader { given<Foo>() }
         }
         """
     ) {
-        assertInternalError("multiple internal bindings")
+        assertInternalError("multiple internal givens")
     }
 
     @Test
@@ -254,13 +254,13 @@ class ComponentGraphTest {
             source(
                 """
                     fun invoke() { 
-                        runReader { given<Foo>() }
+                        rootContext<TestContext>().runReader { given<Foo>() }
                     }
                 """
             )
         )
     ) {
-        it.last().assertInternalError("multiple external bindings")
+        it.last().assertInternalError("multiple external givens")
     }
 
 }

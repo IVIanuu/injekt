@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.runreader
+package com.ivianuu.injekt.compiler.transform.readercontext
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
@@ -32,70 +32,96 @@ import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-sealed class BindingNode(
+sealed class Given(
     val key: Key,
+    val owner: IrClass,
     val contexts: List<IrClass>,
     val origin: FqName?,
     val external: Boolean,
-    val module: IrClass?
+    val targetContext: IrClass?,
+    val givenSetAccessExpression: ContextExpression?
 )
 
-class GivenBindingNode(
+class GivenChildContext(
     key: Key,
+    owner: IrClass,
+    contexts: List<IrClass>,
+    origin: FqName?,
+    val factory: IrClass
+) : Given(key, owner, contexts, origin, false, null, null)
+
+class GivenFunction(
+    key: Key,
+    owner: IrClass,
     contexts: List<IrClass>,
     origin: FqName?,
     external: Boolean,
-    module: IrClass?,
+    targetContext: IrClass?,
+    givenSetAccessExpression: ContextExpression?,
     val explicitParameters: List<IrValueParameter>,
-    val function: IrFunction,
-    val storage: IrClass?
-) : BindingNode(key, contexts, origin, external, module)
+    val function: IrFunction
+) : Given(key, owner, contexts, origin, external, targetContext, givenSetAccessExpression)
 
-class InstanceBindingNode(
+class GivenInstance(
     val inputField: IrField,
-) : BindingNode(
+    owner: IrClass
+) : Given(
     inputField.type.asKey(),
+    owner,
     emptyList(),
     inputField.descriptor.fqNameSafe,
     false,
+    null,
     null
 )
 
-class MapBindingNode(
+class GivenMap(
     key: Key,
+    owner: IrClass,
     contexts: List<IrClass>,
-    module: IrClass?,
+    givenSetAccessExpression: ContextExpression?,
     val functions: List<IrFunction>
-) : BindingNode(
+) : Given(
     key,
+    owner,
     contexts,
     null,
     false,
-    module
+    null,
+    givenSetAccessExpression
 )
 
-class SetBindingNode(
+class GivenSet(
     key: Key,
+    owner: IrClass,
     contexts: List<IrClass>,
-    module: IrClass?,
+    givenSetAccessExpression: ContextExpression?,
     val functions: List<IrFunction>
-) : BindingNode(
+) : Given(
     key,
+    owner,
     contexts,
     null,
     false,
-    module
+    null,
+    givenSetAccessExpression
 )
 
-class NullBindingNode(key: Key) : BindingNode(
+class GivenNull(
+    key: Key,
+    owner: IrClass
+) : Given(
     key,
+    owner,
     emptyList(),
     null,
     true,
+    null,
     null
 )
 
-fun IrType.asKey(): Key = Key(this)
+fun IrType.asKey(): Key =
+    Key(this)
 
 class Key(val type: IrType) {
 
@@ -153,7 +179,7 @@ class Key(val type: IrType) {
 
 }
 
-class BindingRequest(
+class GivenRequest(
     val key: Key,
     val requestingKey: Key?,
     val requestOrigin: FqName?
@@ -163,13 +189,18 @@ class BindingRequest(
         key: Key = this.key,
         requestingKey: Key? = this.requestingKey,
         requestOrigin: FqName? = this.requestOrigin
-    ): BindingRequest = BindingRequest(key, requestingKey, requestOrigin)
+    ): GivenRequest =
+        GivenRequest(
+            key,
+            requestingKey,
+            requestOrigin
+        )
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as BindingRequest
+        other as GivenRequest
 
         if (key != other.key) return false
 
@@ -179,6 +210,6 @@ class BindingRequest(
     override fun hashCode(): Int = key.hashCode()
 
     override fun toString(): String =
-        "BindingRequest(key=$key, requestingKey=$requestingKey, requestOrigin=$requestOrigin)"
+        "GivenRequest(key=$key, requestingKey=$requestingKey, requestOrigin=$requestOrigin)"
 
 }

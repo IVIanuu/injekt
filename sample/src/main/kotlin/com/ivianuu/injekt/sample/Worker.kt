@@ -22,7 +22,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.android.ApplicationContext
+import com.ivianuu.injekt.android.ApplicationAndroidContext
 import com.ivianuu.injekt.android.work.GivenWorker
 import com.ivianuu.injekt.given
 
@@ -43,7 +43,7 @@ class TestWorker(
 @Reader
 fun initializeWorkers() {
     WorkManager.initialize(
-        given<ApplicationContext>(), Configuration.Builder()
+        given<ApplicationAndroidContext>(), Configuration.Builder()
             .setWorkerFactory(given()).build()
     )
 }

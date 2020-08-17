@@ -25,7 +25,20 @@ import kotlin.reflect.KClass
     AnnotationTarget.CONSTRUCTOR,
     AnnotationTarget.PROPERTY
 )
-annotation class Given(val storage: KClass<out Storage> = Nothing::class)
+annotation class Given(val scopeContext: KClass<*> = Nothing::class)
 
 @Reader
 fun <T> given(vararg arguments: Any?): T = injektIntrinsic()
+
+@Target(
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.CLASS,
+    AnnotationTarget.PROPERTY
+)
+annotation class GivenSet
+
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
+annotation class GivenMapEntries
+
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
+annotation class GivenSetElements

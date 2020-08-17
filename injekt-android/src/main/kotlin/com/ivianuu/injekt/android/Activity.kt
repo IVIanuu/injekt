@@ -16,26 +16,28 @@
 
 package com.ivianuu.injekt.android
 
-import android.content.Context
 import android.content.res.Resources
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
+import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.Storage
+import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.runChildReader
+import com.ivianuu.injekt.runReader
 
-inline fun <R> ComponentActivity.runActivityReader(block: @Reader () -> R): R =
-    application.runApplicationReader {
-        runChildReader(this, block = block)
+@Context
+interface ActivityContext
+
+val ComponentActivity.activityContext: ActivityContext
+    get() = lifecycle.singleton {
+        retainedActivityContext.runReader {
+            childContext(this)
+        }
     }
 
-class ActivityStorage : Storage by Storage()
-
-typealias ActivityContext = Context
+typealias ActivityAndroidContext = android.content.Context
 
 typealias ActivityResources = Resources
 
@@ -45,13 +47,13 @@ typealias ActivitySavedStateRegistryOwner = SavedStateRegistryOwner
 
 typealias ActivityViewModelStoreOwner = ViewModelStoreOwner
 
-object ActivityModule {
+object ActivityGivens {
 
     @Given
-    fun context(): ActivityContext = given<ComponentActivity>()
+    fun context(): ActivityAndroidContext = given<ComponentActivity>()
 
     @Given
-    fun resources(): ActivityResources = given<ActivityContext>().resources
+    fun resources(): ActivityResources = given<android.content.Context>().resources
 
     @Given
     fun lifecycleOwner(): ActivityLifecycleOwner = given<ComponentActivity>()
@@ -61,10 +63,5 @@ object ActivityModule {
 
     @Given
     fun viewModelStoreOwner(): ActivityViewModelStoreOwner = given<ComponentActivity>()
-
-    @Given
-    fun activityStorage(): ActivityStorage = given<ComponentActivity>().lifecycle.storage {
-        ActivityStorage()
-    }
 
 }

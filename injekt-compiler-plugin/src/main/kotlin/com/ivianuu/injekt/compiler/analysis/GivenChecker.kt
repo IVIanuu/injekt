@@ -33,8 +33,16 @@ class GivenChecker : DeclarationChecker {
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (descriptor !is ClassDescriptor) return
+        if (descriptor is ClassDescriptor) {
+            checkClass(declaration, descriptor, context)
+        }
+    }
 
+    private fun checkClass(
+        declaration: KtDeclaration,
+        descriptor: ClassDescriptor,
+        context: DeclarationCheckerContext
+    ) {
         val classHasAnnotation = descriptor.hasAnnotation(InjektFqNames.Given)
 
         val annotatedConstructors = descriptor.constructors

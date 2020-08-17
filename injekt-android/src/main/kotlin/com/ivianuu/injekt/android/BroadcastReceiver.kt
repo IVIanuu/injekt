@@ -18,23 +18,26 @@ package com.ivianuu.injekt.android
 
 import android.app.Application
 import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.runChildReader
+import com.ivianuu.injekt.Context
+import com.ivianuu.injekt.childContext
+import com.ivianuu.injekt.runReader
 
-inline fun <R> BroadcastReceiver.runReceiverReader(
-    context: Context,
-    intent: Intent,
-    block: @Reader () -> R
-): R = (context.applicationContext as Application).runApplicationReader {
-    runChildReader(
-        context as ReceiverContext,
-        intent as ReceiverIntent,
-        block = block
-    )
-}
+@Context
+interface ReceiverContext
 
-typealias ReceiverContext = Context
+fun BroadcastReceiver.createReceiverContext(
+    context: android.content.Context,
+    intent: Intent
+): ReceiverContext =
+    (context.applicationContext as Application).applicationReaderContext.runReader {
+        childContext(
+            this,
+            context as ReceiverAndroidContext,
+            intent as ReceiverIntent
+        )
+    }
+
+typealias ReceiverAndroidContext = android.content.Context
 
 typealias ReceiverIntent = Intent

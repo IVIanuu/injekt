@@ -17,8 +17,8 @@
 package com.ivianuu.injekt.sample
 
 import com.ivianuu.injekt.Effect
+import com.ivianuu.injekt.GivenSetElements
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.SetElements
 import com.ivianuu.injekt.given
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -28,7 +28,7 @@ typealias AppServices = Set<suspend () -> Unit>
 @Effect
 annotation class GivenAppService {
     companion object {
-        @SetElements
+        @GivenSetElements
         inline operator fun <reified T : suspend () -> Unit> invoke(): AppServices = setOf(
             given<T>()
         )

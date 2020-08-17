@@ -18,17 +18,14 @@ package com.ivianuu.injekt.internal
 
 import kotlin.reflect.KClass
 
-internal annotation class Context
-
 internal annotation class GenericContext(
     val delegateContext: KClass<*>,
     val factoryName: String,
     val functionMap: String
 )
 
-annotation class RunReaderContext(
-    val fqName: String,
-    val isChild: Boolean
-)
+annotation class ChildContextFactory
+
+annotation class RootContextFactory(val factoryFqName: String)
 
 annotation class GivenContext(val givenKey: String)

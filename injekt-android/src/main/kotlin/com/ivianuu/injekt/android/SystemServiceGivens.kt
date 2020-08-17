@@ -79,7 +79,7 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
 
-object SystemServiceModule {
+object SystemServiceGivens {
 
     @Given
     fun accessibilityManager() = systemService<AccessibilityManager>()
@@ -257,6 +257,6 @@ object SystemServiceModule {
 
     @Reader
     private inline fun <reified T : Any> systemService() =
-        ContextCompat.getSystemService(given<ApplicationContext>(), T::class.java)!!
+        ContextCompat.getSystemService(given<ApplicationAndroidContext>(), T::class.java)!!
 
 }

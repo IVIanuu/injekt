@@ -96,12 +96,12 @@ class ReaderTrackingTransformer(
             override val fqName: FqName
         ) : Scope() {
 
-            override val invocationContext = call.getValueArgument(1)!!
+            override val invocationContext = call.getValueArgument(0)!!
                 .type
-                .lambdaContext!!
+                .lambdaContext ?: error("Wtf ${call.dump()}")
 
             fun isBlock(function: IrFunction): Boolean =
-                call.getValueArgument(1).let {
+                call.getValueArgument(0).let {
                     it is IrFunctionExpression &&
                             it.function == function
                 }
@@ -267,15 +267,7 @@ class ReaderTrackingTransformer(
             }
 
             override fun visitCall(expression: IrCall): IrExpression {
-                return if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.runReader" ||
-                    expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.runChildReader"
-                ) {
-                    // every possible reader call which is used for inputs
-                    // should be recorded on the parent scope
-                    expression.getValueArgument(0)?.transformChildrenVoid()
-
+                return if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runReader") {
                     inScope(
                         Scope.RunReader(
                             expression,
@@ -283,7 +275,7 @@ class ReaderTrackingTransformer(
                             currentScope!!.scope.scopeOwner.fqNameSafe
                         )
                     ) {
-                        val blockExpression = expression.getValueArgument(1)!!
+                        val blockExpression = expression.getValueArgument(0)!!
                         blockExpression.transformChildrenVoid()
                         visitPossibleReaderCall(
                             // we fake the invoke call here because otherwise
@@ -371,52 +363,41 @@ class ReaderTrackingTransformer(
             call.isReaderLambdaInvoke(injektContext) -> {
                 val lambdaContext = call.dispatchReceiver!!.type.lambdaContext!!
                 val scope = currentReaderScope!!
-                readerInvocationIndexBuilders(
+                readerCallIndexBuilders(
                     lambdaContext,
                     scope.invocationContext,
-                    true,
-                    false
+                    true
                 )
             }
             call.symbol.owner.canUseImplicits(injektContext) -> {
-                val isRunChildReader = call.symbol.descriptor.fqNameSafe.asString() ==
-                        "com.ivianuu.injekt.runChildReader"
-                val calleeContext = if (isRunChildReader) {
-                    call.getValueArgument(1)!!.type.lambdaContext!!
-                } else {
-                    call.symbol.owner.getContext()!!
-                }
-                val scope = currentReaderScope!!
-                readerInvocationIndexBuilders(
-                    calleeContext,
-                    scope.invocationContext,
-                    false,
-                    isRunChildReader
+                readerCallIndexBuilders(
+                    call.symbol.owner.getContext()!!,
+                    currentReaderScope!!.invocationContext,
+                    false
                 )
             }
             else -> emptyList()
         }
     }
 
-    private fun readerInvocationIndexBuilders(
+    private fun readerCallIndexBuilders(
         calleeContext: IrClass,
-        invocationContext: IrClass,
-        isLambda: Boolean,
-        isRunChildReader: Boolean
+        callingContext: IrClass,
+        isLambda: Boolean
     ): List<NewIndexBuilder> {
         return listOf(
             NewIndexBuilder(
                 listOf(
-                    DeclarationGraph.READER_INVOCATION_CALLEE_TO_CALLER_PATH,
+                    DeclarationGraph.READER_CALL_CALLEE_TO_CALLER_PATH,
                     calleeContext.descriptor.fqNameSafe.asString()
                 ),
-                invocationContext
+                callingContext
             ) {
-                annotations += DeclarationIrBuilder(injektContext, invocationContext.symbol).run {
-                    irCall(injektContext.injektSymbols.readerInvocation.constructors.single()).apply {
+                annotations += DeclarationIrBuilder(injektContext, callingContext.symbol).run {
+                    irCall(injektContext.injektSymbols.readerCall.constructors.single()).apply {
                         putValueArgument(
                             0,
-                            irClassReference(invocationContext)
+                            irClassReference(callingContext)
                         )
                         putValueArgument(
                             1,
@@ -427,13 +408,13 @@ class ReaderTrackingTransformer(
             },
             NewIndexBuilder(
                 listOf(
-                    DeclarationGraph.READER_INVOCATION_CALLER_TO_CALLEE_PATH,
-                    invocationContext.descriptor.fqNameSafe.asString()
+                    DeclarationGraph.READER_CALL_CALLER_TO_CALLEE_PATH,
+                    callingContext.descriptor.fqNameSafe.asString()
                 ),
-                invocationContext
+                callingContext
             ) {
-                annotations += DeclarationIrBuilder(injektContext, invocationContext.symbol).run {
-                    irCall(injektContext.injektSymbols.readerInvocation.constructors.single()).apply {
+                annotations += DeclarationIrBuilder(injektContext, callingContext.symbol).run {
+                    irCall(injektContext.injektSymbols.readerCall.constructors.single()).apply {
                         putValueArgument(
                             0,
                             irClassReference(calleeContext)

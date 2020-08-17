@@ -16,9 +16,5 @@
 
 package com.ivianuu.injekt
 
-class ApplicationStorage : Storage by Storage()
-
-object ApplicationModule {
-    @Given
-    val applicationStorage = ApplicationStorage()
-}
+@Context
+interface ApplicationContext

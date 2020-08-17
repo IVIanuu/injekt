@@ -16,10 +16,12 @@
 
 package com.ivianuu.injekt.comparison.injekt
 
+import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.InitializeInjekt
 import com.ivianuu.injekt.comparison.base.InjectionTest
 import com.ivianuu.injekt.comparison.fibonacci.Fib8
 import com.ivianuu.injekt.given
+import com.ivianuu.injekt.rootContext
 import com.ivianuu.injekt.runReader
 
 @InitializeInjekt
@@ -27,14 +29,21 @@ object InjektTest : InjectionTest {
 
     override val name = "Injekt"
 
+    private var context: InjektTestContext? = null
+
     override fun setup() {
+        this.context = rootContext()
     }
 
     override fun inject() {
-        runReader { given<Fib8>() }
+        context!!.runReader { given<Fib8>() }
     }
 
     override fun shutdown() {
+        context = null
     }
+
+    @Context
+    interface InjektTestContext
 
 }

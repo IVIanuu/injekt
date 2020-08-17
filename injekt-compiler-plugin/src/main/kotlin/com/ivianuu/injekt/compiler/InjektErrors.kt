@@ -33,8 +33,28 @@ interface InjektErrors {
                 .also { MAP.put(it, message) }
 
         @JvmField
-        val FORBIDDEN_READER_INVOCATION = error(
+        val FORBIDDEN_READER_CALL = error(
             "@Reader functions can only be invoked inside a enclosing @Reader scope"
+        )
+
+        @JvmField
+        val CONTEXT_MUST_BE_EMPTY = error(
+            "@Context must be an empty interface"
+        )
+
+        @JvmField
+        val CONTEXT_MUST_BE_AN_INTERFACE = error(
+            "@Context must be an interface"
+        )
+
+        @JvmField
+        val NOT_A_CONTEXT = error(
+            "Must be a @Context type"
+        )
+
+        @JvmField
+        val CONTEXT_WITH_TYPE_PARAMETERS = error(
+            "@Context cannot have type parameters"
         )
 
         @JvmField
@@ -79,7 +99,7 @@ interface InjektErrors {
 
         @JvmField
         val MULTIPLE_IMPLICIT_ANNOTATIONS = error(
-            "A declaration can only be annotated with one of @Reader, @Given, @MapEntries, @SetElements or @Effect annotated annotations"
+            "A declaration can only be annotated with one of @Reader, @Given, @GivenMapEntries, @GivenSetElements or @Effect annotated annotations"
         )
 
         @JvmField
@@ -90,6 +110,11 @@ interface InjektErrors {
         @JvmField
         val EFFECT_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS = error(
             "@Effect functions cannot have value parameters"
+        )
+
+        @JvmField
+        val NOT_A_GIVEN_SET = error(
+            "Not a @GivenSet"
         )
 
         @JvmField
@@ -104,7 +129,7 @@ interface InjektErrors {
 
         @JvmField
         val EFFECT_WITH_TYPE_PARAMETERS = error(
-            "@BindingEffect and @Effect annotated declaration cannot have type parameters"
+            "@Effect annotated declaration cannot have type parameters"
         )
 
         init {

@@ -22,13 +22,11 @@ import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
-import com.ivianuu.injekt.compiler.transform.runreader.RunReaderContextImplTransformer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class DeclarationGraph(
@@ -37,16 +35,16 @@ class DeclarationGraph(
     private val implicitContextParamTransformer: ImplicitContextParamTransformer
 ) {
 
-    val runReaderContexts: List<IrClass> by lazy {
-        indexer.classIndices(listOf(RUN_READER_CONTEXT_PATH))
+    val rootContextFactories: List<IrClass> by lazy {
+        indexer.classIndices(listOf(ROOT_CONTEXT_FACTORY_PATH))
     }
 
     val genericContexts: List<IrClass> by lazy {
         indexer.classIndices(listOf(GENERIC_CONTEXT_PATH))
     }
 
-    private val bindingsByKey = mutableMapOf<String, List<IrFunction>>()
-    fun bindings(key: String) = bindingsByKey.getOrPut(key) {
+    private val givensByKey = mutableMapOf<String, List<IrFunction>>()
+    fun givens(key: String) = givensByKey.getOrPut(key) {
         (indexer.functionIndices(listOf(GIVEN_PATH, key)) +
                 indexer.classIndices(listOf(GIVEN_PATH, key))
                     .flatMapFix { it.constructors.toList() } +
@@ -58,170 +56,30 @@ class DeclarationGraph(
             .distinct()
     }
 
-    private val mapEntriesByKey = mutableMapOf<String, List<IrFunction>>()
-    fun mapEntries(key: String) = mapEntriesByKey.getOrPut(key) {
-        indexer.functionIndices(listOf(MAP_ENTRIES_PATH, key))
+    private val givenMapEntriesByKey = mutableMapOf<String, List<IrFunction>>()
+    fun givenMapEntries(key: String) = givenMapEntriesByKey.getOrPut(key) {
+        (indexer.functionIndices(listOf(MAP_ENTRIES_PATH, key)) +
+                indexer.propertyIndices(listOf(MAP_ENTRIES_PATH, key)).mapNotNull { it.getter })
             .map { implicitContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
     }
 
-    private val setElementsByKey = mutableMapOf<String, List<IrFunction>>()
-    fun setElements(key: String) = setElementsByKey.getOrPut(key) {
-        indexer.functionIndices(listOf(SET_ELEMENTS_PATH, key))
+    private val givenSetElementsByKey = mutableMapOf<String, List<IrFunction>>()
+    fun givenSetElements(key: String) = givenSetElementsByKey.getOrPut(key) {
+        (indexer.functionIndices(listOf(SET_ELEMENTS_PATH, key)) +
+                indexer.propertyIndices(listOf(SET_ELEMENTS_PATH, key)).mapNotNull { it.getter })
             .map { implicitContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
     }
 
-    lateinit var runReaderContextImplTransformer: RunReaderContextImplTransformer
-
-    sealed class ParentRunReaderContext {
-        data class Known(val clazz: IrClass) : ParentRunReaderContext() {
-            override fun toString(): String {
-                return "Known(context=${clazz.descriptor.fqNameSafe})"
-            }
-        }
-
-        data class Unknown(
-            val origin: IrFunction
-        ) : ParentRunReaderContext() {
-            override fun toString(): String {
-                return "Unknown(origin=${origin.descriptor.fqNameSafe})"
-            }
-        }
-    }
-
-    fun getParentRunReaderContexts(context: IrClass): List<ParentRunReaderContext> {
-        val parents = mutableListOf<ParentRunReaderContext>()
-
-        val processedClasses = mutableSetOf<IrClass>()
-
-        val invokingContexts = getInvokingContexts(context)
-
-        fun collectParents(invokingContext: IrClass) {
-            if (invokingContext in processedClasses) return
-            processedClasses += invokingContext
-
-            if (isRunReaderContext(invokingContext)) {
-                parents += ParentRunReaderContext.Known(invokingContext)
-                return
-            }
-
-            parents += getGivenDeclarationsForContext(invokingContext)
-                .flatMapFix { declaration ->
-                    val generatedContextsWithInvokerSuperType = runReaderContextImplTransformer
-                        .generatedContexts
-                        .values
-                        .flatten()
-                        .filter { invokingContext.defaultType in it.superTypes }
-                        .map { it.superTypes.first().classOrNull!!.owner }
-
-                    if (generatedContextsWithInvokerSuperType.isNotEmpty()) {
-                        generatedContextsWithInvokerSuperType
-                            .map { ParentRunReaderContext.Known(it) }
-                    } else {
-                        listOf(ParentRunReaderContext.Unknown(declaration))
-                    }
-                }
-
-            getInvokingContexts(invokingContext)
-                .forEach { collectParents(it) }
-        }
-
-        invokingContexts.forEach { collectParents(it) }
-
-        return parents
-    }
-
-    fun getNonGenericParentContext(context: IrClass): List<IrClass> {
-        val parents = mutableListOf<IrClass>()
-
-        val processedClasses = mutableSetOf<IrClass>()
-
-        val invokingContexts = getInvokingContexts(context)
-
-        fun collectParents(invokingContext: IrClass) {
-            if (invokingContext in processedClasses) return
-            processedClasses += invokingContext
-
-            if (invokingContext.typeParameters.isEmpty()) {
-                parents += invokingContext
-                return
-            }
-
-            getInvokingContexts(invokingContext)
-                .forEach { collectParents(it) }
-        }
-
-        invokingContexts.forEach { collectParents(it) }
-
-        return parents
-    }
-
-    private fun isRunReaderContext(context: IrClass): Boolean {
-        return runReaderContexts
-            .map { it.superTypes.first() }
-            .any { it == context.defaultType }
-    }
-
-    private fun getGivenDeclarationsForContext(context: IrClass): List<IrFunction> {
+    fun getRunReaderContexts(context: IrClass): List<IrClass> {
         return indexer.classIndices(
-            listOf(GIVEN_CONTEXTS_PATH, context.descriptor.fqNameSafe.asString())
-        )
-            .flatMapFix {
-                val key =
-                    it.getConstantFromAnnotationOrNull<String>(InjektFqNames.GivenContext, 0)!!
-                bindings(key) + mapEntries(key) + setElements(key)
-            }
-    }
-
-    private fun getInvokingContexts(context: IrClass): Set<IrClass> {
-        val allContexts = listOf(context) + getAllSuperContexts(context)
-
-        val invokerIfRunChildReader = runReaderContexts
-            .singleOrNull { it.superTypes[0] == context.defaultType }
-            ?.superTypes
-            ?.getOrNull(1)
-            ?.classOrNull
-            ?.owner
-
-        return setOfNotNull(
-            *allContexts
-                .flatMapFix {
-                    indexer.classIndices(
-                        listOf(
-                            READER_INVOCATION_CALLEE_TO_CALLER_PATH,
-                            it.descriptor.fqNameSafe.asString()
-                        )
-                    )
-                }
-                .map {
-                    it.getClassFromAnnotation(
-                        InjektFqNames.ReaderInvocation,
-                        0
-                    )!!
-                }
-                .filter { it != context }
-                .toTypedArray(),
-            invokerIfRunChildReader
-        )
-    }
-
-    private val superContextsByContext = mutableMapOf<IrClass, Set<IrClass>>()
-    private fun getAllSuperContexts(
-        context: IrClass
-    ): Set<IrClass> = superContextsByContext.getOrPut(context) {
-        indexer.classIndices(
             listOf(
-                READER_IMPL_SUB_TO_SUPER_PATH, context.descriptor.fqNameSafe.asString()
+                RUN_READER_CALL_PATH,
+                context.descriptor.fqNameSafe.asString()
             )
         )
-            .map {
-                it.getClassFromAnnotation(
-                    InjektFqNames.ReaderImpl,
-                    0
-                )!!
-            }
-            .toSet()
+            .map { it.getClassFromAnnotation(InjektFqNames.RunReaderCall, 0)!! }
     }
 
     private val implementationsByContext = mutableMapOf<IrClass, Set<IrClass>>()
@@ -257,17 +115,17 @@ class DeclarationGraph(
 
             indexer.classIndices(
                 listOf(
-                    READER_INVOCATION_CALLER_TO_CALLEE_PATH,
+                    READER_CALL_CALLER_TO_CALLEE_PATH,
                     context.descriptor.fqNameSafe.asString()
                 )
             )
                 .filter {
                     it.getConstantFromAnnotationOrNull<Boolean>(
-                        InjektFqNames.ReaderInvocation,
+                        InjektFqNames.ReaderCall,
                         1
                     )!!
                 }
-                .map { it.getClassFromAnnotation(InjektFqNames.ReaderInvocation, 0)!! }
+                .map { it.getClassFromAnnotation(InjektFqNames.ReaderCall, 0)!! }
                 .forEach {
                     contexts += it
                     collectImplementations(it)
@@ -287,16 +145,17 @@ class DeclarationGraph(
     }
 
     companion object {
-        const val READER_INVOCATION_CALLEE_TO_CALLER_PATH = "readerinvocationcalleetocaller"
-        const val READER_INVOCATION_CALLER_TO_CALLEE_PATH = "readerinvocationcallertocallee"
-        const val READER_IMPL_SUPER_TO_SUB_PATH = "readerimplsupertosub"
-        const val READER_IMPL_SUB_TO_SUPER_PATH = "readerimplsubtosuper"
-        const val RUN_READER_CONTEXT_PATH = "runreadercontext"
+        const val READER_CALL_CALLEE_TO_CALLER_PATH = "reader_invocation_callee_to_caller"
+        const val READER_CALL_CALLER_TO_CALLEE_PATH = "reader_invocation_caller_to_callee"
+        const val READER_IMPL_SUPER_TO_SUB_PATH = "reader_impl_super_to_sub"
+        const val READER_IMPL_SUB_TO_SUPER_PATH = "reader_impl_sub_to_super"
+        const val ROOT_CONTEXT_FACTORY_PATH = "root_context_factory"
+        const val RUN_READER_CALL_PATH = "run_reader_call"
         const val GIVEN_PATH = "given"
-        const val GIVEN_CONTEXTS_PATH = "givencontexts"
-        const val GENERIC_CONTEXT_PATH = "genericcontext"
-        const val MAP_ENTRIES_PATH = "mapentries"
-        const val SET_ELEMENTS_PATH = "setelements"
+        const val GIVEN_CONTEXTS_PATH = "given_contexts"
+        const val GENERIC_CONTEXT_PATH = "generic_context"
+        const val MAP_ENTRIES_PATH = "map_entries"
+        const val SET_ELEMENTS_PATH = "set_elements"
         const val SIGNATURE_PATH = "signature"
     }
 

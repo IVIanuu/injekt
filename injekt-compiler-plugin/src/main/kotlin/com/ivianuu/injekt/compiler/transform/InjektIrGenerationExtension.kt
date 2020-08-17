@@ -18,13 +18,15 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.implicit.GenericContextImplTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ReaderTrackingTransformer
-import com.ivianuu.injekt.compiler.transform.runreader.GlobalBindingIndexingTransformer
-import com.ivianuu.injekt.compiler.transform.runreader.RunReaderCallTransformer
-import com.ivianuu.injekt.compiler.transform.runreader.RunReaderContextImplTransformer
+import com.ivianuu.injekt.compiler.transform.readercontext.IndexingTransformer
+import com.ivianuu.injekt.compiler.transform.readercontext.ReaderContextCallTransformer
+import com.ivianuu.injekt.compiler.transform.readercontext.ReaderContextImplTransformer
+import com.ivianuu.injekt.compiler.transform.readercontext.RunReaderCallTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -65,6 +67,11 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             InjektSymbols(injektContext)
         )
 
+        ReaderContextCallTransformer(
+            injektContext,
+            indexer
+        ).doLower(moduleFragment)
+
         val implicitContextParamTransformer =
             ImplicitContextParamTransformer(injektContext, indexer)
         implicitContextParamTransformer.doLower(moduleFragment)
@@ -77,9 +84,15 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             implicitContextParamTransformer
         ).doLower(moduleFragment)
 
-        RunReaderCallTransformer(injektContext, indexer).doLower(moduleFragment)
+        RunReaderCallTransformer(
+            injektContext,
+            indexer
+        ).doLower(moduleFragment)
 
-        GlobalBindingIndexingTransformer(indexer, injektContext).doLower(moduleFragment)
+        IndexingTransformer(
+            indexer,
+            injektContext
+        ).doLower(moduleFragment)
 
         if (initializeInjekt) {
             val declarationGraph = DeclarationGraph(
@@ -87,18 +100,15 @@ class InjektIrGenerationExtension : IrGenerationExtension {
                 moduleFragment,
                 implicitContextParamTransformer
             )
-            val runReaderContextImplTransformer = RunReaderContextImplTransformer(
+            ReaderContextImplTransformer(
                 injektContext,
                 declarationGraph,
                 implicitContextParamTransformer,
                 initFile!!
-            )
-            declarationGraph.runReaderContextImplTransformer = runReaderContextImplTransformer
-            runReaderContextImplTransformer.doLower(moduleFragment)
+            ).doLower(moduleFragment)
             GenericContextImplTransformer(
                 injektContext,
                 declarationGraph,
-                runReaderContextImplTransformer,
                 initFile!!
             ).doLower(moduleFragment)
         }
@@ -106,6 +116,8 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         TmpMetadataPatcher(injektContext).doLower(moduleFragment)
 
         generateSymbols(pluginContext)
+
+        println(moduleFragment.dumpSrc())
     }
 
 }

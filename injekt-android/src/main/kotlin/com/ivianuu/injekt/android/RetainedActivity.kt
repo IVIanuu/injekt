@@ -16,12 +16,17 @@
 
 package com.ivianuu.injekt.android
 
-import androidx.lifecycle.ViewModelStoreOwner
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.given
+import androidx.activity.ComponentActivity
+import com.ivianuu.injekt.Context
+import com.ivianuu.injekt.childContext
+import com.ivianuu.injekt.runReader
 
-@Given
-class RetainedActivityStorage : AbstractRetainedStorage() {
-    override fun viewModelStoreOwner(): ViewModelStoreOwner =
-        given<ActivityViewModelStoreOwner>()
-}
+@Context
+interface RetainedActivityContext
+
+val ComponentActivity.retainedActivityContext: RetainedActivityContext
+    get() = viewModelStore.singleton {
+        application.applicationReaderContext.runReader {
+            childContext()
+        }
+    }
