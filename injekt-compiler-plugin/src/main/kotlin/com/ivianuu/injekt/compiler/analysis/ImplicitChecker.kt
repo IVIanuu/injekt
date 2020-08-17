@@ -74,8 +74,8 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         var implicitAnnotations = 0
         if (descriptor.hasAnnotation(InjektFqNames.Given)) implicitAnnotations += 1
         if (descriptor.hasAnnotation(InjektFqNames.Reader)) implicitAnnotations += 1
-        if (descriptor.hasAnnotation(InjektFqNames.MapEntries)) implicitAnnotations += 1
-        if (descriptor.hasAnnotation(InjektFqNames.SetElements)) implicitAnnotations += 1
+        if (descriptor.hasAnnotation(InjektFqNames.GivenMapEntries)) implicitAnnotations += 1
+        if (descriptor.hasAnnotation(InjektFqNames.GivenSetElements)) implicitAnnotations += 1
 
         if (implicitAnnotations > 1 || (implicitAnnotations == 1 &&
                     descriptor.hasAnnotation(InjektFqNames.Reader) &&

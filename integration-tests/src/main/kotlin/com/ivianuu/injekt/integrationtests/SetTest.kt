@@ -35,19 +35,19 @@ class SetTest {
         @Given 
         fun commandA() = CommandA()
         
-        @SetElements
+        @GivenSetElements
         fun commandAIntoSet(): Set<Command> = setOf(given<CommandA>())
         
         @Given 
         fun commandB() = CommandB()
         
-        @SetElements
+        @GivenSetElements
         fun commandBIntoSet(): Set<Command> = setOf(given<CommandB>())
         
         @Given 
         fun commandC() = CommandC()
         
-        @SetElements
+        @GivenSetElements
         fun commandCIntoSet(): Set<Command> = setOf(given<CommandC>())
         
         fun invoke(): Set<Command> {

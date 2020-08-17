@@ -36,19 +36,19 @@ class MapTest {
         @Given 
         fun commandA() = CommandA()
         
-        @MapEntries
+        @GivenMapEntries
         fun commandAIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandA::class to given<CommandA>())
         
         @Given 
         fun commandB() = CommandB()
 
-        @MapEntries 
+        @GivenMapEntries 
         fun commandBIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandB::class to given<CommandB>())
         
         @Given 
         fun commandC() = CommandC()
         
-        @MapEntries
+        @GivenMapEntries
         fun commandCIntoMap(): Map<KClass<out Command>, Command> = mapOf(CommandC::class to given<CommandC>())
         
         fun invoke(): Map<KClass<out Command>, Command> {

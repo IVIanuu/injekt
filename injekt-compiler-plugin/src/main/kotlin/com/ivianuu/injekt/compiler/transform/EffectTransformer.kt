@@ -234,8 +234,8 @@ class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransforme
                 it.declarations
                     .filter {
                         it.hasAnnotation(InjektFqNames.Given) ||
-                                it.hasAnnotation(InjektFqNames.MapEntries) ||
-                                it.hasAnnotation(InjektFqNames.SetElements)
+                                it.hasAnnotation(InjektFqNames.GivenMapEntries) ||
+                                it.hasAnnotation(InjektFqNames.GivenSetElements)
                     }
                     .filterIsInstance<IrFunction>()
             }

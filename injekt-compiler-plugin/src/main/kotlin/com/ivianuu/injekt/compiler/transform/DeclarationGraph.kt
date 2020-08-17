@@ -58,15 +58,15 @@ class DeclarationGraph(
             .distinct()
     }
 
-    private val mapEntriesByKey = mutableMapOf<String, List<IrFunction>>()
-    fun mapEntries(key: String) = mapEntriesByKey.getOrPut(key) {
+    private val givenMapEntriesByKey = mutableMapOf<String, List<IrFunction>>()
+    fun givenMapEntries(key: String) = givenMapEntriesByKey.getOrPut(key) {
         indexer.functionIndices(listOf(MAP_ENTRIES_PATH, key))
             .map { implicitContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
     }
 
-    private val setElementsByKey = mutableMapOf<String, List<IrFunction>>()
-    fun setElements(key: String) = setElementsByKey.getOrPut(key) {
+    private val givenSetElementsByKey = mutableMapOf<String, List<IrFunction>>()
+    fun givenSetElements(key: String) = givenSetElementsByKey.getOrPut(key) {
         indexer.functionIndices(listOf(SET_ELEMENTS_PATH, key))
             .map { implicitContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
@@ -180,7 +180,7 @@ class DeclarationGraph(
             .flatMapFix {
                 val key =
                     it.getConstantFromAnnotationOrNull<String>(InjektFqNames.GivenContext, 0)!!
-                givens(key) + mapEntries(key) + setElements(key)
+                givens(key) + givenMapEntries(key) + givenSetElements(key)
             }
     }
 

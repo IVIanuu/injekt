@@ -56,8 +56,8 @@ fun Annotated.getAnnotatedAnnotations(
 fun Annotated.isMarkedAsImplicit(module: ModuleDescriptor): Boolean =
     hasAnnotation(InjektFqNames.Reader) ||
             hasAnnotation(InjektFqNames.Given) ||
-            hasAnnotation(InjektFqNames.MapEntries) ||
-            hasAnnotation(InjektFqNames.SetElements) ||
+            hasAnnotation(InjektFqNames.GivenMapEntries) ||
+            hasAnnotation(InjektFqNames.GivenSetElements) ||
             hasAnnotatedAnnotations(InjektFqNames.Effect, module)
 
 fun FunctionDescriptor.getFunctionType(): KotlinType {

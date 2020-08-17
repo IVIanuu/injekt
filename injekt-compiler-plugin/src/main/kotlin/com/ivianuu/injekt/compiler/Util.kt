@@ -697,8 +697,8 @@ fun IrDeclarationWithName.uniqueKey() = when (this) {
 fun IrDeclarationWithName.isMarkedAsImplicit(injektContext: InjektContext): Boolean =
     isReader(injektContext) ||
             hasAnnotation(InjektFqNames.Given) ||
-            hasAnnotation(InjektFqNames.MapEntries) ||
-            hasAnnotation(InjektFqNames.SetElements) ||
+            hasAnnotation(InjektFqNames.GivenMapEntries) ||
+            hasAnnotation(InjektFqNames.GivenSetElements) ||
             hasAnnotatedAnnotations(InjektFqNames.Effect)
 
 private fun IrDeclarationWithName.isReader(injektContext: InjektContext): Boolean {

@@ -57,8 +57,8 @@ class GivensGraph(
         .groupBy { it.key }
 
     private val inputFunctionNodes = mutableMapOf<Key, MutableSet<GivenNode>>()
-    private val inputMapEntries = mutableMapOf<Key, MutableSet<IrFunction>>()
-    private val inputSetElements = mutableMapOf<Key, MutableSet<IrFunction>>()
+    private val inputGivenMapEntries = mutableMapOf<Key, MutableSet<IrFunction>>()
+    private val inputGivenSetElements = mutableMapOf<Key, MutableSet<IrFunction>>()
 
     val resolvedGivens = mutableMapOf<Key, GivenNode>()
 
@@ -130,11 +130,11 @@ class GivensGraph(
                             function
                         )
                     }
-                    functionOrPropertyHasAnnotation(InjektFqNames.MapEntries) -> {
-                        inputMapEntries.getOrPut(function.returnType.asKey()) { mutableSetOf() } += function
+                    functionOrPropertyHasAnnotation(InjektFqNames.GivenMapEntries) -> {
+                        inputGivenMapEntries.getOrPut(function.returnType.asKey()) { mutableSetOf() } += function
                     }
-                    functionOrPropertyHasAnnotation(InjektFqNames.SetElements) -> {
-                        inputSetElements.getOrPut(function.returnType.asKey()) { mutableSetOf() } += function
+                    functionOrPropertyHasAnnotation(InjektFqNames.GivenSetElements) -> {
+                        inputGivenSetElements.getOrPut(function.returnType.asKey()) { mutableSetOf() } += function
                     }
                 }
             }
@@ -252,8 +252,8 @@ class GivensGraph(
                 )
             }
 
-        (declarationGraph.mapEntries(key.type.uniqueTypeName().asString()) +
-                inputMapEntries.getOrElse(key) { emptySet() })
+        (declarationGraph.givenMapEntries(key.type.uniqueTypeName().asString()) +
+                inputGivenMapEntries.getOrElse(key) { emptySet() })
             .takeIf { it.isNotEmpty() }
             ?.let { entries ->
                 MapGivenNode(
@@ -265,8 +265,8 @@ class GivensGraph(
             }
             ?.let { this += it }
 
-        (declarationGraph.setElements(key.type.uniqueTypeName().asString()) +
-                inputSetElements.getOrElse(key) { emptySet() })
+        (declarationGraph.givenSetElements(key.type.uniqueTypeName().asString()) +
+                inputGivenSetElements.getOrElse(key) { emptySet() })
             .takeIf { it.isNotEmpty() }
             ?.let { elements ->
                 SetGivenNode(

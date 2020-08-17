@@ -137,7 +137,7 @@ class GlobalGivensIndexingTransformer(
                                     }
                                 }
                             }
-                        declaration.hasAnnotation(InjektFqNames.MapEntries) ->
+                        declaration.hasAnnotation(InjektFqNames.GivenMapEntries) ->
                             runnables += {
                                 indexer.index(
                                     listOf(
@@ -169,7 +169,7 @@ class GlobalGivensIndexingTransformer(
                                     }
                                 }
                             }
-                        declaration.hasAnnotation(InjektFqNames.SetElements) ->
+                        declaration.hasAnnotation(InjektFqNames.GivenSetElements) ->
                             runnables += {
                                 indexer.index(
                                     listOf(

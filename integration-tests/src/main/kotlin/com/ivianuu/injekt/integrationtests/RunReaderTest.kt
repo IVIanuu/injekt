@@ -315,7 +315,7 @@ class RunReaderTest {
             @Effect
             annotation class BindActionPickerDelegate {
                 companion object {
-                    @SetElements
+                    @GivenSetElements
                     fun <T : ActionPickerDelegate> invoke(): Set<ActionPickerDelegate> = setOf(given<T>())
                 }
             }
@@ -418,7 +418,7 @@ class RunReaderTest {
             @Effect
             annotation class GivenActionPickerDelegate {
                 companion object {
-                    @SetElements
+                    @GivenSetElements
                     fun <T : ActionPickerDelegate> invoke(): Set<ActionPickerDelegate> = setOf(given<T>())
                 }
             }

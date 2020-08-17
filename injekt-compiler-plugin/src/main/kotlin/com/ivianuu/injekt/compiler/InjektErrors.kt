@@ -99,7 +99,7 @@ interface InjektErrors {
 
         @JvmField
         val MULTIPLE_IMPLICIT_ANNOTATIONS = error(
-            "A declaration can only be annotated with one of @Reader, @Given, @MapEntries, @SetElements or @Effect annotated annotations"
+            "A declaration can only be annotated with one of @Reader, @Given, @GivenMapEntries, @GivenSetElements or @Effect annotated annotations"
         )
 
         @JvmField

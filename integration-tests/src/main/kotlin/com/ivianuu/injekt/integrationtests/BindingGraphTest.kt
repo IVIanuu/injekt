@@ -45,8 +45,8 @@ class BindingGraphTest {
     @Test
     fun testDistinctTypeParameter() = codegen(
         """
-        @SetElements fun setA() = setOf("a")
-        @SetElements fun setB() = setOf(0)
+        @GivenSetElements fun setA() = setOf("a")
+        @GivenSetElements fun setB() = setOf(0)
         
         fun invoke(): Pair<Set<String>, Set<Int>> {
             return context<TestComponent>().runReader { given<Set<String>>() to given<Set<Int>>() }

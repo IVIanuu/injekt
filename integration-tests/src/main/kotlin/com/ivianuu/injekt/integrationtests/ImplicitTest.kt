@@ -867,10 +867,10 @@ class ImplicitTest {
             val set2: Set<Int> = given()
         }
         
-        @SetElements
+        @GivenSetElements
         fun set1() = emptySet<String>()
         
-        @SetElements
+        @GivenSetElements
         fun set2() = emptySet<Int>()
         
         fun invoke() { 
