@@ -37,13 +37,12 @@ class RunReaderCallTransformer(
 
         injektContext.module.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol.descriptor.fqNameSafe.asString() != "com.ivianuu.injekt.runReader") return super.visitCall(
-                    expression
-                )
-                expression.transformChildrenVoid()
+                val result = super.visitCall(expression) as IrCall
+                if (expression.symbol.descriptor.fqNameSafe.asString() != "com.ivianuu.injekt.runReader")
+                    return result
 
-                val contextExpression = expression.extensionReceiver!!
-                val lambdaExpression = expression.getValueArgument(0)!!
+                val contextExpression = result.extensionReceiver!!
+                val lambdaExpression = result.getValueArgument(0)!!
 
                 newIndexBuilders += NewIndexBuilder(contextExpression.type.classOrNull!!.owner) {
                     addMetadataIfNotLocal()
@@ -57,7 +56,7 @@ class RunReaderCallTransformer(
                     }
                 }
 
-                return DeclarationIrBuilder(injektContext, expression.symbol).run {
+                return DeclarationIrBuilder(injektContext, result.symbol).run {
                     irCall(
                         injektContext.referenceFunctions(
                             FqName("com.ivianuu.injekt.internal.runReaderDummy")

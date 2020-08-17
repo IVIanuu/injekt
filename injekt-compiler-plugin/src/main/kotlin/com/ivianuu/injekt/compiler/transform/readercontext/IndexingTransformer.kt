@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.transform.readercontext
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
@@ -27,10 +26,7 @@ import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.uniqueTypeName
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
@@ -38,12 +34,10 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
-import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class IndexingTransformer(
     private val indexer: Indexer,
@@ -68,28 +62,6 @@ class IndexingTransformer(
                             ),
                             declaration.constructedClass
                         )
-                        indexer.index(
-                            declaration,
-                            listOf(
-                                DeclarationGraph.GIVEN_CONTEXTS_PATH,
-                                declaration.getContext()!!.descriptor.fqNameSafe.asString()
-                            ),
-                        ) {
-                            annotations += DeclarationIrBuilder(
-                                injektContext,
-                                declaration.symbol
-                            ).run {
-                                irCall(injektContext.injektSymbols.givenContext.constructors.single()).apply {
-                                    putValueArgument(
-                                        0,
-                                        irString(
-                                            declaration.constructedClass.defaultType.uniqueTypeName()
-                                                .asString()
-                                        )
-                                    )
-                                }
-                            }
-                        }
                     }
                 }
                 return super.visitConstructor(declaration)
@@ -116,25 +88,6 @@ class IndexingTransformer(
                                     ),
                                     declaration
                                 )
-                                indexer.index(
-                                    declaration,
-                                    listOf(
-                                        DeclarationGraph.GIVEN_CONTEXTS_PATH,
-                                        declaration.getContext()!!.descriptor.fqNameSafe.asString()
-                                    ),
-                                ) {
-                                    annotations += DeclarationIrBuilder(
-                                        injektContext,
-                                        declaration.symbol
-                                    ).run {
-                                        irCall(injektContext.injektSymbols.givenContext.constructors.single()).apply {
-                                            putValueArgument(
-                                                0,
-                                                irString(typePath)
-                                            )
-                                        }
-                                    }
-                                }
                             }
                         declaration.hasAnnotation(InjektFqNames.GivenMapEntries) ->
                             runnables += {
@@ -145,28 +98,6 @@ class IndexingTransformer(
                                     ),
                                     declaration
                                 )
-                                indexer.index(
-                                    declaration,
-                                    listOf(
-                                        DeclarationGraph.GIVEN_CONTEXTS_PATH,
-                                        declaration.getContext()!!.descriptor.fqNameSafe.asString()
-                                    ),
-                                ) {
-                                    annotations += DeclarationIrBuilder(
-                                        injektContext,
-                                        declaration.symbol
-                                    ).run {
-                                        irCall(injektContext.injektSymbols.givenContext.constructors.single()).apply {
-                                            putValueArgument(
-                                                0,
-                                                irString(
-                                                    declaration.returnType.uniqueTypeName()
-                                                        .asString()
-                                                )
-                                            )
-                                        }
-                                    }
-                                }
                             }
                         declaration.hasAnnotation(InjektFqNames.GivenSetElements) ->
                             runnables += {
@@ -177,28 +108,6 @@ class IndexingTransformer(
                                     ),
                                     declaration
                                 )
-                                indexer.index(
-                                    declaration,
-                                    listOf(
-                                        DeclarationGraph.GIVEN_CONTEXTS_PATH,
-                                        declaration.getContext()!!.descriptor.fqNameSafe.asString()
-                                    ),
-                                ) {
-                                    annotations += DeclarationIrBuilder(
-                                        injektContext,
-                                        declaration.symbol
-                                    ).run {
-                                        irCall(injektContext.injektSymbols.givenContext.constructors.single()).apply {
-                                            putValueArgument(
-                                                0,
-                                                irString(
-                                                    declaration.returnType.uniqueTypeName()
-                                                        .asString()
-                                                )
-                                            )
-                                        }
-                                    }
-                                }
                             }
                     }
                 }
@@ -228,25 +137,6 @@ class IndexingTransformer(
                                 ),
                                 declaration
                             )
-                            indexer.index(
-                                declaration,
-                                listOf(
-                                    DeclarationGraph.GIVEN_CONTEXTS_PATH,
-                                    readerConstructor.getContext()!!.descriptor.fqNameSafe.asString()
-                                ),
-                            ) {
-                                annotations += DeclarationIrBuilder(
-                                    injektContext,
-                                    declaration.symbol
-                                ).run {
-                                    irCall(injektContext.injektSymbols.givenContext.constructors.single()).apply {
-                                        putValueArgument(
-                                            0,
-                                            irString(typePath)
-                                        )
-                                    }
-                                }
-                            }
                         }
                 }
                 return super.visitClass(declaration)

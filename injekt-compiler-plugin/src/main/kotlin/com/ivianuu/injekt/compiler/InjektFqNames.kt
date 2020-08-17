@@ -33,7 +33,6 @@ object InjektFqNames {
     val ChildContextFactory = InternalPackage.child("ChildContextFactory".asNameId())
     val ContextMarker = InternalPackage.child("ContextMarker".asNameId())
     val GenericContext = InternalPackage.child("GenericContext".asNameId())
-    val GivenContext = InternalPackage.child("GivenContext".asNameId())
     val Index = InternalPackage.child("Index".asNameId())
     val Qualifier = InternalPackage.child("Qualifier".asNameId())
     val ReaderCall = InternalPackage.child("ReaderCall".asNameId())

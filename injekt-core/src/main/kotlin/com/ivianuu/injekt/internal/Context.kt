@@ -29,5 +29,3 @@ internal annotation class GenericContext(
 annotation class ChildContextFactory
 
 annotation class RootContextFactory(val factoryFqName: String)
-
-annotation class GivenContext(val givenKey: String)
