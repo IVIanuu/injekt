@@ -28,7 +28,7 @@ import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
-class RunReaderTest {
+class ReaderContextTest {
 
     @Test
     fun testSimple() = codegen(
@@ -740,7 +740,7 @@ class RunReaderTest {
         assertTrue(invokeSingleFile() is Bar)
     }
 
-    @Test
+    // todo @Test
     fun testWithGivenRef() = codegen(
         """
         @Module

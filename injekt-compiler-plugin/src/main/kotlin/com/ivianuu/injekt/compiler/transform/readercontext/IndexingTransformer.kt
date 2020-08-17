@@ -45,7 +45,7 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class GlobalGivensIndexingTransformer(
+class IndexingTransformer(
     private val indexer: Indexer,
     injektContext: InjektContext
 ) : AbstractInjektTransformer(injektContext) {

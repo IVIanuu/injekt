@@ -30,7 +30,6 @@ import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
-import com.ivianuu.injekt.compiler.transform.readercontext.RootContextImplTransformer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -46,23 +45,17 @@ import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irAs
 import org.jetbrains.kotlin.ir.builders.irBlockBody
-import org.jetbrains.kotlin.ir.builders.irBranch
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
-import org.jetbrains.kotlin.ir.builders.irElseBranch
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
-import org.jetbrains.kotlin.ir.builders.irIs
 import org.jetbrains.kotlin.ir.builders.irSetField
-import org.jetbrains.kotlin.ir.builders.irString
-import org.jetbrains.kotlin.ir.builders.irWhen
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
@@ -73,13 +66,11 @@ import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.isFakeOverride
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 class GenericContextImplTransformer(
     injektContext: InjektContext,
     private val declarationGraph: DeclarationGraph,
-    private val rootContextImplTransformer: RootContextImplTransformer,
     private val initFile: IrFile
 ) : AbstractInjektTransformer(injektContext) {
 
@@ -109,24 +100,7 @@ class GenericContextImplTransformer(
 
             val genericContextType = index.superTypes.single()
 
-            val parentContexts = declarationGraph.getNonGenericParentContext(
-                genericContextType.classOrNull!!.owner
-            ) + delegateContext
-
-            val allParentInputs = rootContextImplTransformer.generatedContexts
-                .values
-                .flatten()
-                .filter { generatedContext ->
-                    parentContexts.any { resolvedParentContext ->
-                        resolvedParentContext in generatedContext.superTypes
-                            .map { it.classOrNull!!.owner }
-                    }
-                }
-                .map { rootContextImplTransformer.inputsByContext[it]!! }
-                .toSet()
-
             generateGenericContextFactory(
-                allParentInputs,
                 delegateContext,
                 genericContextType,
                 name,
@@ -136,7 +110,6 @@ class GenericContextImplTransformer(
     }
 
     private fun generateGenericContextFactory(
-        allParentInputs: Set<IrClass>,
         delegateContext: IrClass,
         genericContextType: IrType,
         name: String,
@@ -183,18 +156,15 @@ class GenericContextImplTransformer(
 
         val implNameProvider = SimpleUniqueNameProvider()
 
-        val contextImplsWithParentInputs = allParentInputs.map { parentInputs ->
-            generateGenericContextImpl(
-                delegateContext,
-                genericContextType,
-                implNameProvider("Impl".asNameId()),
-                factory,
-                functionMap,
-                parentInputs
-            ) to parentInputs
-        }
+        val contextImpl = generateGenericContextImpl(
+            delegateContext,
+            genericContextType,
+            implNameProvider("Impl".asNameId()),
+            factory,
+            functionMap
+        )
 
-        contextImplsWithParentInputs.forEach { factory.addChild(it.first) }
+        factory.addChild(contextImpl)
 
         factory.addFunction {
             this.name = "create".asNameId()
@@ -208,38 +178,11 @@ class GenericContextImplTransformer(
             )
 
             body = DeclarationIrBuilder(injektContext, symbol).run {
-                fun createContextImpl(contextImpl: IrClass, parent: IrClass): IrExpression {
-                    return irCall(contextImpl.constructors.single()).apply {
+                irExprBody(
+                    irCall(contextImpl.constructors.single()).apply {
                         putValueArgument(
                             0,
                             irGet(delegateValueParameter)
-                        )
-                    }
-                }
-                irExprBody(
-                    if (contextImplsWithParentInputs.size == 1) {
-                        val (contextImpl, parentInputs) = contextImplsWithParentInputs.single()
-                        createContextImpl(contextImpl, parentInputs)
-                    } else {
-                        irWhen(
-                            genericContextType,
-                            contextImplsWithParentInputs.map { (contextImpl, parentInputs) ->
-                                irBranch(
-                                    irIs(irGet(delegateValueParameter), parentInputs.defaultType),
-                                    createContextImpl(contextImpl, parentInputs)
-                                )
-                            } + irElseBranch(
-                                irCall(
-                                    injektContext.referenceFunctions(
-                                        FqName("kotlin.error")
-                                    ).single()
-                                ).apply {
-                                    putValueArgument(
-                                        0,
-                                        irString("Unexpected parent")
-                                    )
-                                }
-                            )
                         )
                     }
                 )
@@ -252,8 +195,7 @@ class GenericContextImplTransformer(
         genericContextType: IrType,
         name: Name,
         irParent: IrDeclarationParent,
-        functionMap: Map<String, String>,
-        parentInputs: IrClass
+        functionMap: Map<String, String>
     ): IrClass {
         val contextImpl = buildClass {
             this.name = name
@@ -378,7 +320,7 @@ class GenericContextImplTransformer(
             genericContextType.typeArguments.map { it.typeOrFail }
         )
 
-        (declarationGraph.getAllContextImplementations(genericContextType.classOrNull!!.owner) + parentInputs)
+        declarationGraph.getAllContextImplementations(genericContextType.classOrNull!!.owner)
             .forEach { superType ->
                 implement(
                     superType,

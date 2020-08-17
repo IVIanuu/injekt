@@ -18,13 +18,14 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.implicit.GenericContextImplTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ReaderTrackingTransformer
-import com.ivianuu.injekt.compiler.transform.readercontext.GlobalGivensIndexingTransformer
+import com.ivianuu.injekt.compiler.transform.readercontext.IndexingTransformer
 import com.ivianuu.injekt.compiler.transform.readercontext.ReaderContextCallTransformer
-import com.ivianuu.injekt.compiler.transform.readercontext.RootContextImplTransformer
+import com.ivianuu.injekt.compiler.transform.readercontext.ReaderContextImplTransformer
 import com.ivianuu.injekt.compiler.transform.readercontext.RunReaderCallTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -88,7 +89,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             indexer
         ).doLower(moduleFragment)
 
-        GlobalGivensIndexingTransformer(
+        IndexingTransformer(
             indexer,
             injektContext
         ).doLower(moduleFragment)
@@ -99,19 +100,15 @@ class InjektIrGenerationExtension : IrGenerationExtension {
                 moduleFragment,
                 implicitContextParamTransformer
             )
-            val readerContextImplTransformer =
-                RootContextImplTransformer(
-                    injektContext,
-                    declarationGraph,
-                    implicitContextParamTransformer,
-                    initFile!!
-                )
-            declarationGraph.rootContextImplTransformer = readerContextImplTransformer
-            readerContextImplTransformer.doLower(moduleFragment)
+            ReaderContextImplTransformer(
+                injektContext,
+                declarationGraph,
+                implicitContextParamTransformer,
+                initFile!!
+            ).doLower(moduleFragment)
             GenericContextImplTransformer(
                 injektContext,
                 declarationGraph,
-                readerContextImplTransformer,
                 initFile!!
             ).doLower(moduleFragment)
         }
@@ -120,7 +117,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         generateSymbols(pluginContext)
 
-        //println(moduleFragment.dumpSrc())
+        println(moduleFragment.dumpSrc())
     }
 
 }

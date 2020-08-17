@@ -26,6 +26,7 @@ import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
+import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
@@ -40,6 +41,7 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFile
@@ -52,8 +54,10 @@ import org.jetbrains.kotlin.ir.symbols.impl.IrExternalPackageFragmentSymbolImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ReaderContextCallTransformer(
@@ -61,6 +65,7 @@ class ReaderContextCallTransformer(
     private val indexer: Indexer
 ) : AbstractInjektTransformer(injektContext) {
 
+    private val newDeclarations = mutableListOf<IrDeclarationWithName>()
     private val newIndexBuilders = mutableListOf<NewIndexBuilder>()
 
     private data class NewIndexBuilder(
@@ -86,6 +91,10 @@ class ReaderContextCallTransformer(
             }
         })
 
+        newDeclarations.forEach {
+            (it.parent as IrDeclarationContainer).addChild(it)
+        }
+
         newIndexBuilders.forEach {
             indexer.index(
                 it.originatingDeclaration,
@@ -106,29 +115,25 @@ class ReaderContextCallTransformer(
 
         val context = call.getTypeArgument(0)!!.classOrNull!!.owner
 
-        val name = injektContext.uniqueClassNameProvider(
-            "${scope.descriptor.fqNameSafe.pathSegments()
-                .joinToString("_")}ReaderContextFactory".asNameId(),
-            file.fqName
-        )
+        val isChild = call.symbol.descriptor.fqNameSafe.asString() ==
+                "com.ivianuu.injekt.childContext"
 
-        newIndexBuilders += NewIndexBuilder(scope) clazz@{
-            superTypes += context.defaultType // todo
+        val contextFactory = buildClass {
+            name = injektContext.uniqueClassNameProvider(
+                "${scope.descriptor.fqNameSafe.pathSegments()
+                    .joinToString("_")}ReaderContextFactory".asNameId(),
+                file.fqName
+            )
+            kind = ClassKind.INTERFACE
+            visibility = Visibilities.INTERNAL
+        }.apply clazz@{
+            parent = file
+            createImplicitParameterDeclarationWithWrappedDescriptor()
             addMetadataIfNotLocal()
-            if (scope is IrTypeParametersContainer)
-                copyTypeParametersFrom(scope as IrTypeParametersContainer)
-            annotations += DeclarationIrBuilder(injektContext, symbol).run {
-                irCall(injektContext.injektSymbols.rootContext.constructors.single()).apply {
-                    putValueArgument(
-                        0,
-                        irString(file.fqName.child(name).asString())
-                    )
-                }
-            }
 
             addFunction {
-                this.name = "inputs".asNameId()
-                returnType = injektContext.irBuiltIns.unitType
+                this.name = "create".asNameId()
+                returnType = context.defaultType
                 modality = Modality.ABSTRACT
             }.apply {
                 dispatchReceiverParameter = thisReceiver!!.copyTo(this)
@@ -142,44 +147,64 @@ class ReaderContextCallTransformer(
                     )
                 }
             }
+
+            newDeclarations += this
         }
 
-        val contextFactoryStub = buildClass {
-            this.name = name
-            origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
-            kind = ClassKind.OBJECT
-            visibility = Visibilities.INTERNAL
-        }.apply clazz@{
-            createImplicitParameterDeclarationWithWrappedDescriptor()
-            parent = IrExternalPackageFragmentImpl(
-                IrExternalPackageFragmentSymbolImpl(
-                    EmptyPackageFragmentDescriptor(
-                        injektContext.moduleDescriptor,
-                        scope.getPackageFragment()!!.fqName
-                    )
-                ),
-                scope.getPackageFragment()!!.fqName
-            )
-        }
-
-        val createFunctionStub = contextFactoryStub.addFunction {
-            this.name = "create".asNameId()
-            returnType = context.defaultType
-            origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
-        }.apply {
-            dispatchReceiverParameter = contextFactoryStub.thisReceiver!!.copyTo(this)
-
-            inputs.forEach { input ->
-                addValueParameter(
-                    input.type.uniqueTypeName().asString(),
-                    input.type
-                )
+        newIndexBuilders += NewIndexBuilder(scope) clazz@{
+            superTypes += contextFactory.defaultType
+            addMetadataIfNotLocal()
+            if (scope is IrTypeParametersContainer)
+                copyTypeParametersFrom(scope as IrTypeParametersContainer)
+            if (!isChild) {
+                annotations += DeclarationIrBuilder(injektContext, symbol).run {
+                    irCall(injektContext.injektSymbols.rootContext.constructors.single()).apply {
+                        putValueArgument(
+                            0,
+                            irString(
+                                file.fqName.child(
+                                    (contextFactory.name.asString() + "Impl").asNameId()
+                                ).asString()
+                            )
+                        )
+                    }
+                }
             }
         }
 
         return DeclarationIrBuilder(injektContext, call.symbol).run {
-            irCall(createFunctionStub).apply {
-                dispatchReceiver = irGetObject(contextFactoryStub.symbol)
+            val factoryExpression = if (!isChild) {
+                val contextFactoryImplStub = buildClass {
+                    this.name = (contextFactory.name.asString() + "Impl").asNameId()
+                    origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
+                    kind = ClassKind.OBJECT
+                    visibility = Visibilities.INTERNAL
+                }.apply clazz@{
+                    createImplicitParameterDeclarationWithWrappedDescriptor()
+                    parent = IrExternalPackageFragmentImpl(
+                        IrExternalPackageFragmentSymbolImpl(
+                            EmptyPackageFragmentDescriptor(
+                                injektContext.moduleDescriptor,
+                                scope.getPackageFragment()!!.fqName
+                            )
+                        ),
+                        scope.getPackageFragment()!!.fqName
+                    )
+                }
+
+                irGetObject(contextFactoryImplStub.symbol)
+            } else {
+                irCall(
+                    injektContext.referenceFunctions(FqName("com.ivianuu.injekt.given"))
+                        .single(),
+                    contextFactory.defaultType
+                ).apply {
+                    putTypeArgument(0, contextFactory.defaultType)
+                }
+            }
+
+            irCall(contextFactory.functions.single()).apply {
+                dispatchReceiver = factoryExpression
                 inputs.forEachIndexed { index, input ->
                     putValueArgument(index, input)
                 }

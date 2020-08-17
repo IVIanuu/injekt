@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
-import com.ivianuu.injekt.compiler.transform.readercontext.RootContextImplTransformer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -72,24 +71,6 @@ class DeclarationGraph(
             .filter { it.getContext() != null }
     }
 
-    lateinit var rootContextImplTransformer: RootContextImplTransformer
-
-    sealed class ParentRunReaderContext {
-        data class Known(val clazz: IrClass) : ParentRunReaderContext() {
-            override fun toString(): String {
-                return "Known(context=${clazz.descriptor.fqNameSafe})"
-            }
-        }
-
-        data class Unknown(
-            val origin: IrFunction
-        ) : ParentRunReaderContext() {
-            override fun toString(): String {
-                return "Unknown(origin=${origin.descriptor.fqNameSafe})"
-            }
-        }
-    }
-
     fun getRunReaderContexts(context: IrClass): List<IrClass> {
         return indexer.classIndices(
             listOf(
@@ -98,48 +79,6 @@ class DeclarationGraph(
             )
         )
             .map { it.getClassFromAnnotation(InjektFqNames.RunReaderCall, 0)!! }
-    }
-
-    fun getParentRunReaderContexts(context: IrClass): List<ParentRunReaderContext> {
-        val parents = mutableListOf<ParentRunReaderContext>()
-
-        val processedClasses = mutableSetOf<IrClass>()
-
-        val invokingContexts = getCallingContexts(context)
-
-        fun collectParents(invokingContext: IrClass) {
-            if (invokingContext in processedClasses) return
-            processedClasses += invokingContext
-
-            if (isRunReaderContext(invokingContext)) {
-                parents += ParentRunReaderContext.Known(invokingContext)
-                return
-            }
-
-            parents += getGivenDeclarationsForContext(invokingContext)
-                .flatMapFix { declaration ->
-                    val generatedContextsWithInvokerSuperType = rootContextImplTransformer
-                        .generatedContexts
-                        .values
-                        .flatten()
-                        .filter { invokingContext.defaultType in it.superTypes }
-                        .map { it.superTypes.first().classOrNull!!.owner }
-
-                    if (generatedContextsWithInvokerSuperType.isNotEmpty()) {
-                        generatedContextsWithInvokerSuperType
-                            .map { ParentRunReaderContext.Known(it) }
-                    } else {
-                        listOf(ParentRunReaderContext.Unknown(declaration))
-                    }
-                }
-
-            getCallingContexts(invokingContext)
-                .forEach { collectParents(it) }
-        }
-
-        invokingContexts.forEach { collectParents(it) }
-
-        return parents
     }
 
     fun getNonGenericParentContext(context: IrClass): List<IrClass> {
@@ -165,23 +104,6 @@ class DeclarationGraph(
         invokingContexts.forEach { collectParents(it) }
 
         return parents
-    }
-
-    private fun isRunReaderContext(context: IrClass): Boolean {
-        return rootContexts
-            .map { it.superTypes.first() }
-            .any { it == context.defaultType }
-    }
-
-    private fun getGivenDeclarationsForContext(context: IrClass): List<IrFunction> {
-        return indexer.classIndices(
-            listOf(GIVEN_CONTEXTS_PATH, context.descriptor.fqNameSafe.asString())
-        )
-            .flatMapFix {
-                val key =
-                    it.getConstantFromAnnotationOrNull<String>(InjektFqNames.GivenContext, 0)!!
-                givens(key) + givenMapEntries(key) + givenSetElements(key)
-            }
     }
 
     private fun getCallingContexts(context: IrClass): Set<IrClass> {
