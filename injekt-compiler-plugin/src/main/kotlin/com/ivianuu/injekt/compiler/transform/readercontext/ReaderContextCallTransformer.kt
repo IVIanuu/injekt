@@ -28,7 +28,6 @@ import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
-import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -45,7 +44,6 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFile
-import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.impl.IrExternalPackageFragmentImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -66,12 +64,7 @@ class ReaderContextCallTransformer(
 ) : AbstractInjektTransformer(injektContext) {
 
     private val newDeclarations = mutableListOf<IrDeclarationWithName>()
-    private val newIndexBuilders = mutableListOf<NewIndexBuilder>()
-
-    private data class NewIndexBuilder(
-        val originatingDeclaration: IrDeclarationWithName,
-        val classBuilder: IrClass.() -> Unit
-    )
+    private val newRootFactories = mutableListOf<IrClass>()
 
     override fun lower() {
         injektContext.module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
@@ -95,11 +88,10 @@ class ReaderContextCallTransformer(
             (it.parent as IrDeclarationContainer).addChild(it)
         }
 
-        newIndexBuilders.forEach {
+        newRootFactories.forEach {
             indexer.index(
-                it.originatingDeclaration,
-                listOf(DeclarationGraph.ROOT_CONTEXT_PATH),
-                it.classBuilder
+                listOf(DeclarationGraph.ROOT_CONTEXT_FACTORY_PATH),
+                it
             )
         }
     }
@@ -148,28 +140,23 @@ class ReaderContextCallTransformer(
                 }
             }
 
-            newDeclarations += this
-        }
-
-        newIndexBuilders += NewIndexBuilder(scope) clazz@{
-            superTypes += contextFactory.defaultType
-            addMetadataIfNotLocal()
-            if (scope is IrTypeParametersContainer)
-                copyTypeParametersFrom(scope as IrTypeParametersContainer)
-            if (!isChild) {
-                annotations += DeclarationIrBuilder(injektContext, symbol).run {
-                    irCall(injektContext.injektSymbols.rootContext.constructors.single()).apply {
+            annotations += DeclarationIrBuilder(injektContext, symbol).run {
+                if (!isChild) {
+                    irCall(injektContext.injektSymbols.rootContextFactory.constructors.single()).apply {
                         putValueArgument(
                             0,
                             irString(
-                                file.fqName.child(
-                                    (contextFactory.name.asString() + "Impl").asNameId()
-                                ).asString()
+                                file.fqName.child((name.asString() + "Impl").asNameId()).asString()
                             )
                         )
                     }
+                } else {
+                    irCall(injektContext.injektSymbols.childContextFactory.constructors.single())
                 }
             }
+
+            newDeclarations += this
+            if (!isChild) newRootFactories += this
         }
 
         return DeclarationIrBuilder(injektContext, call.symbol).run {

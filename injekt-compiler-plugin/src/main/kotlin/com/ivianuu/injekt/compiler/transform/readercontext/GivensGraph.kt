@@ -80,7 +80,7 @@ class GivensGraph(
             val thisAccessExpression: ContextExpression = { c ->
                 if (parentAccessExpression == null) {
                     irGetField(
-                        c(),
+                        c[contextImpl],
                         contextImpl.fields
                             .single { it.type.classOrNull!!.owner == this@collectGivens }
                     )
@@ -244,6 +244,16 @@ class GivensGraph(
         instanceNodes[key]?.let { this += it }
 
         inputFunctionNodes[key]?.let { this += it }
+
+        if (key.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.ChildContextFactory)) {
+            // todo
+            this += GivenChildContext(
+                key = key,
+                contexts = emptyList(),
+                origin = null,
+                factory = key.type.classOrNull!!.owner
+            )
+        }
 
         this += declarationGraph.givens(key.type.uniqueTypeName().asString())
             .map { function ->

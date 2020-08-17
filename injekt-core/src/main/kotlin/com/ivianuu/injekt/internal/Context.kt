@@ -24,6 +24,8 @@ internal annotation class GenericContext(
     val functionMap: String
 )
 
-annotation class RootContext(val factoryFqName: String)
+annotation class ChildContextFactory
+
+annotation class RootContextFactory(val factoryFqName: String)
 
 annotation class GivenContext(val givenKey: String)

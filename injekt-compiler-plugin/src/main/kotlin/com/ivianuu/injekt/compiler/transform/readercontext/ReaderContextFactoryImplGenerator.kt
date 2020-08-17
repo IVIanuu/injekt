@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -50,6 +51,7 @@ class ReaderContextFactoryImplGenerator(
     private val irParent: IrDeclarationParent,
     private val declarationGraph: DeclarationGraph,
     private val implicitContextParamTransformer: ImplicitContextParamTransformer,
+    private val parentContext: IrClass?,
     private val parentGraph: GivensGraph?,
     private val parentExpressions: GivenExpressions?
 ) {
@@ -66,28 +68,43 @@ class ReaderContextFactoryImplGenerator(
 
         val factoryImpl = buildClass {
             this.name = this@ReaderContextFactoryImplGenerator.name
-            kind = ClassKind.OBJECT
-            visibility = Visibilities.INTERNAL
+            if (parentContext == null) kind = ClassKind.OBJECT
+            visibility = if (parentContext != null) Visibilities.PRIVATE else Visibilities.INTERNAL
         }.apply clazz@{
             parent = irParent
             createImplicitParameterDeclarationWithWrappedDescriptor()
             superTypes += factoryInterface.defaultType
+        }
 
-            addConstructor {
-                returnType = defaultType
-                isPrimary = true
-                visibility = Visibilities.PUBLIC
-            }.apply {
-                body = DeclarationIrBuilder(
-                    injektContext,
-                    symbol
-                ).irBlockBody {
-                    +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
-                    +IrInstanceInitializerCallImpl(
-                        UNDEFINED_OFFSET,
-                        UNDEFINED_OFFSET,
-                        this@clazz.symbol,
-                        context.irBuiltIns.unitType
+        val parentField = if (parentContext != null) {
+            factoryImpl.addField("parent", parentContext.defaultType)
+        } else null
+
+        factoryImpl.addConstructor {
+            returnType = factoryImpl.defaultType
+            isPrimary = true
+            visibility = Visibilities.PUBLIC
+        }.apply {
+            val parentValueParameter = if (parentField != null) {
+                addValueParameter(parentField.name.asString(), parentField.type)
+            } else null
+
+            body = DeclarationIrBuilder(
+                injektContext,
+                symbol
+            ).irBlockBody {
+                +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
+                +IrInstanceInitializerCallImpl(
+                    UNDEFINED_OFFSET,
+                    UNDEFINED_OFFSET,
+                    factoryImpl.symbol,
+                    context.irBuiltIns.unitType
+                )
+                if (parentValueParameter != null) {
+                    +irSetField(
+                        irGet(factoryImpl.thisReceiver!!),
+                        parentField!!,
+                        irGet(parentValueParameter)
                     )
                 }
             }
@@ -117,11 +134,21 @@ class ReaderContextFactoryImplGenerator(
                     } else {
                         val contextImplInputs = contextImpl.constructors.single()
                             .valueParameters
+                            .drop(if (parentContext != null) 1 else 0)
                             .map { it.type }
                         irCall(contextImpl.constructors.single()).apply {
+                            if (parentContext != null) {
+                                putValueArgument(
+                                    0,
+                                    irGetField(
+                                        irGet(dispatchReceiverParameter!!),
+                                        parentField!!
+                                    )
+                                )
+                            }
                             contextImplInputs.forEachIndexed { index, type ->
                                 putValueArgument(
-                                    index,
+                                    index + if (parentContext != null) 1 else 0,
                                     irGet(valueParameters[index])
                                 )
                             }
@@ -140,12 +167,16 @@ class ReaderContextFactoryImplGenerator(
     ): IrClass {
         val contextImpl = buildClass {
             this.name = "Impl".asNameId()
-            visibility = Visibilities.INTERNAL
-            if (inputTypes.isEmpty()) kind = ClassKind.OBJECT
+            visibility = Visibilities.PRIVATE
+            if (parentContext == null && inputTypes.isEmpty()) kind = ClassKind.OBJECT
         }.apply clazz@{
             parent = irParent
             createImplicitParameterDeclarationWithWrappedDescriptor()
         }
+
+        val parentField = if (parentContext != null) {
+            contextImpl.addField("parent", parentContext.defaultType)
+        } else null
 
         val inputFieldNameProvider = SimpleUniqueNameProvider()
         val inputFields = inputTypes
@@ -161,6 +192,10 @@ class ReaderContextFactoryImplGenerator(
             isPrimary = true
             visibility = Visibilities.PUBLIC
         }.apply {
+            val parentValueParameter = if (parentField != null) {
+                addValueParameter(parentField.name.asString(), parentField.type)
+            } else null
+
             val inputValueParameters = inputFields.associateWith {
                 addValueParameter(
                     it.name.asString(),
@@ -179,6 +214,13 @@ class ReaderContextFactoryImplGenerator(
                     contextImpl.symbol,
                     context.irBuiltIns.unitType
                 )
+                if (parentValueParameter != null) {
+                    +irSetField(
+                        irGet(contextImpl.thisReceiver!!),
+                        parentField!!,
+                        irGet(parentValueParameter)
+                    )
+                }
                 inputValueParameters.forEach { (field, valueParameter) ->
                     +irSetField(
                         irGet(contextImpl.thisReceiver!!),
@@ -200,7 +242,10 @@ class ReaderContextFactoryImplGenerator(
         val expressions = GivenExpressions(
             parent = parentExpressions,
             injektContext = injektContext,
-            contextImpl = contextImpl
+            contextImpl = contextImpl,
+            declarationGraph = declarationGraph,
+            givensGraph = graph,
+            implicitContextParamTransformer = implicitContextParamTransformer
         )
 
         var firstRound = true

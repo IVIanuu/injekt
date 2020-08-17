@@ -27,6 +27,12 @@ class Baz(val foo: Foo, val bar: Bar)
 @Context
 interface TestContext
 
+@Context
+interface TestParentContext
+
+@Context
+interface TestChildContext
+
 interface Command
 
 class CommandA : Command

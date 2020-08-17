@@ -25,10 +25,7 @@ import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import org.jetbrains.kotlin.backend.common.ir.addChild
-import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.declarations.IrFile
-import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.name.FqName
 
 class ReaderContextImplTransformer(
@@ -39,25 +36,24 @@ class ReaderContextImplTransformer(
 ) : AbstractInjektTransformer(injektContext) {
 
     override fun lower() {
-        declarationGraph.rootContexts
-            .forEach { index ->
+        declarationGraph.rootContextFactories
+            .forEach { rootFactory ->
                 val factoryFqName = FqName(
-                    index.getConstantFromAnnotationOrNull<String>(
-                        InjektFqNames.RootContext, 0
+                    rootFactory.getConstantFromAnnotationOrNull<String>(
+                        InjektFqNames.RootContextFactory, 0
                     )!!
                 )
-
-                val factoryInterface = index.superTypes[0].classOrNull!!.owner
 
                 val file = injektContext.module.addFile(injektContext, factoryFqName)
 
                 val factoryImpl = ReaderContextFactoryImplGenerator(
                     injektContext = injektContext,
                     name = factoryFqName.shortName(),
-                    factoryInterface = factoryInterface,
+                    factoryInterface = rootFactory,
                     irParent = file,
                     declarationGraph = declarationGraph,
                     implicitContextParamTransformer = implicitContextParamTransformer,
+                    parentContext = null,
                     parentGraph = null,
                     parentExpressions = null
                 ).generateFactory()
@@ -69,5 +65,3 @@ class ReaderContextImplTransformer(
     }
 
 }
-
-typealias ContextExpression = IrBuilderWithScope.(() -> IrExpression) -> IrExpression

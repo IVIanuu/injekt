@@ -41,6 +41,13 @@ sealed class Given(
     val givenSetAccessExpression: ContextExpression?
 )
 
+class GivenChildContext(
+    key: Key,
+    contexts: List<IrClass>,
+    origin: FqName?,
+    val factory: IrClass
+) : Given(key, contexts, origin, false, null, null)
+
 class GivenFunction(
     key: Key,
     contexts: List<IrClass>,

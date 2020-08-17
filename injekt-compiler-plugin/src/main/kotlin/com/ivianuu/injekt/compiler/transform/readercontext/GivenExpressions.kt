@@ -1,13 +1,18 @@
 package com.ivianuu.injekt.compiler.transform.readercontext
 
+import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.tmpFunction
+import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
+import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlock
@@ -27,6 +32,8 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
+import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.name.FqName
@@ -34,10 +41,14 @@ import org.jetbrains.kotlin.name.FqName
 class GivenExpressions(
     private val parent: GivenExpressions?,
     private val injektContext: InjektContext,
-    private val contextImpl: IrClass
+    private val contextImpl: IrClass,
+    private val declarationGraph: DeclarationGraph,
+    private val implicitContextParamTransformer: ImplicitContextParamTransformer,
+    private val givensGraph: GivensGraph
 ) {
 
     private val givenExpressions = mutableMapOf<Key, ContextExpression>()
+    private val uniqueChildNameProvider = SimpleUniqueNameProvider()
 
     fun getGivenExpression(given: Given): ContextExpression {
         givenExpressions[given.key]?.let { return it }
@@ -50,7 +61,8 @@ class GivenExpressions(
         }
 
         val rawExpression = when (given) {
-            is GivenFunction -> givenExpression(given)
+            is GivenChildContext -> childContextExpression(given)
+            is GivenFunction -> functionExpression(given)
             is GivenInstance -> inputExpression(given)
             is GivenMap -> mapExpression(given)
             is GivenNull -> nullExpression()
@@ -76,9 +88,14 @@ class GivenExpressions(
                                     injektContext.tmpFunction(0)
                                         .typeWith(given.key.type)
                                 ) {
-                                    rawExpression {
-                                        irGet(contextImpl.thisReceiver!!)
-                                    }
+                                    rawExpression(
+                                        ContextExpressionContext(
+                                            injektContext,
+                                            contextImpl
+                                        ) {
+                                            irGet(contextImpl.thisReceiver!!)
+                                        }
+                                    )
                                 }
                         )
                     }
@@ -94,7 +111,7 @@ class GivenExpressions(
                     .getter!!
             ).apply {
                 dispatchReceiver = irGetField(
-                    c(),
+                    c[contextImpl],
                     field
                 )
             }
@@ -109,13 +126,20 @@ class GivenExpressions(
             contextImpl.addChild(this)
             this.body =
                 DeclarationIrBuilder(injektContext, symbol).run {
-                    irExprBody(finalExpression(this) { irGet(dispatchReceiverParameter!!) })
+                    irExprBody(
+                        finalExpression(
+                            this,
+                            ContextExpressionContext(injektContext, contextImpl) {
+                                irGet(dispatchReceiverParameter!!)
+                            }
+                        )
+                    )
                 }
         }
 
-        val expression: ContextExpression = {
+        val expression: ContextExpression = { c ->
             irCall(function).apply {
-                dispatchReceiver = it()
+                dispatchReceiver = c[contextImpl]
             }
         }
 
@@ -124,9 +148,32 @@ class GivenExpressions(
         return expression
     }
 
+    private fun childContextExpression(given: GivenChildContext): ContextExpression {
+        val generator = ReaderContextFactoryImplGenerator(
+            injektContext = injektContext,
+            name = uniqueChildNameProvider("Child".asNameId()),
+            factoryInterface = given.factory,
+            irParent = contextImpl,
+            declarationGraph = declarationGraph,
+            implicitContextParamTransformer = implicitContextParamTransformer,
+            parentContext = contextImpl,
+            parentGraph = givensGraph,
+            parentExpressions = this
+        )
+
+        val childFactory = generator.generateFactory()
+        contextImpl.addChild(childFactory)
+
+        return { c ->
+            irCall(childFactory.constructors.single()).apply {
+                putValueArgument(0, c[contextImpl])
+            }
+        }
+    }
+
     private fun inputExpression(
         given: GivenInstance
-    ): ContextExpression = { irGetField(it(), given.inputField) }
+    ): ContextExpression = { irGetField(it[contextImpl], given.inputField) }
 
     private fun mapExpression(given: GivenMap): ContextExpression {
         return { c ->
@@ -157,7 +204,7 @@ class GivenExpressions(
                                 if (function.dispatchReceiverParameter != null)
                                     dispatchReceiver =
                                         irGetObject(function.dispatchReceiverParameter!!.type.classOrNull!!)
-                                putValueArgument(valueArgumentsCount - 1, c())
+                                putValueArgument(valueArgumentsCount - 1, c[contextImpl])
                             }
                         )
                     }
@@ -197,7 +244,7 @@ class GivenExpressions(
                                 if (function.dispatchReceiverParameter != null)
                                     dispatchReceiver =
                                         irGetObject(function.dispatchReceiverParameter!!.type.classOrNull!!)
-                                putValueArgument(valueArgumentsCount - 1, c())
+                                putValueArgument(valueArgumentsCount - 1, c[contextImpl])
                             }
                         )
                     }
@@ -210,7 +257,7 @@ class GivenExpressions(
 
     private fun nullExpression(): ContextExpression = { irNull() }
 
-    private fun givenExpression(given: GivenFunction): ContextExpression {
+    private fun functionExpression(given: GivenFunction): ContextExpression {
         return { c ->
             fun createExpression(parametersMap: Map<IrValueParameter, () -> IrExpression?>): IrExpression {
                 val call = if (given.function is IrConstructor) {
@@ -251,7 +298,7 @@ class GivenExpressions(
                         )
                     }
 
-                    putValueArgument(valueArgumentsCount - 1, c())
+                    putValueArgument(valueArgumentsCount - 1, c[contextImpl])
                 }
 
                 return call
@@ -277,3 +324,39 @@ class GivenExpressions(
     }
 
 }
+
+class ContextExpressionContext(
+    private val expressionsByContext: Map<IrClass, () -> IrExpression>
+) {
+
+    operator fun get(context: IrClass) = expressionsByContext[context]!!()
+
+    companion object {
+        operator fun invoke(
+            injektContext: InjektContext,
+            thisContext: IrClass,
+            thisExpression: () -> IrExpression
+        ): ContextExpressionContext {
+            val expressionsByContext =
+                mutableMapOf<IrClass, () -> IrExpression>()
+            var current: Pair<IrClass, () -> IrExpression>? = thisContext to thisExpression
+            while (current != null) {
+                val (currentContext, currentExpression) = current
+                expressionsByContext[currentContext] = currentExpression
+                current = currentContext.fields.singleOrNull {
+                    it.name.asString() == "parent"
+                }?.type?.classOrNull?.owner?.let {
+                    it to {
+                        DeclarationIrBuilder(injektContext, currentContext.symbol)
+                            .irGetField(currentExpression(),
+                                currentContext.fields.single { it.name.asString() == "parent" })
+                    }
+                }
+            }
+
+            return ContextExpressionContext(expressionsByContext)
+        }
+    }
+}
+
+typealias ContextExpression = IrBuilderWithScope.(ContextExpressionContext) -> IrExpression
