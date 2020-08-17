@@ -518,11 +518,11 @@ class ReaderContextImplTransformer(
         request: GivenRequest
     ): ContextExpression {
         val rawExpression = when (val node = graph.getGivenNode(request)) {
-            is FunctionGivenNode -> givenExpression(context, graph, node)
+            is FunctionGivenNode -> givenExpression(node)
             is InstanceGivenNode -> inputExpression(node)
-            is MapGivenNode -> mapBindingExpression(node)
-            is NullGivenNode -> nullExpression(node)
-            is SetGivenNode -> setBindingExpression(context, node)
+            is MapGivenNode -> mapExpression(node)
+            is NullGivenNode -> nullExpression()
+            is SetGivenNode -> setExpression(node)
         }
 
         val function = buildFun {
@@ -549,7 +549,7 @@ class ReaderContextImplTransformer(
         node: InstanceGivenNode
     ): ContextExpression = { irGetField(it(), node.inputField) }
 
-    private fun mapBindingExpression(node: MapGivenNode): ContextExpression {
+    private fun mapExpression(node: MapGivenNode): ContextExpression {
         return { c ->
             irBlock {
                 val tmpMap = irTemporary(
@@ -589,10 +589,7 @@ class ReaderContextImplTransformer(
         }
     }
 
-    private fun setBindingExpression(
-        context: IrClass,
-        node: SetGivenNode
-    ): ContextExpression {
+    private fun setExpression(node: SetGivenNode): ContextExpression {
         return { c ->
             irBlock {
                 val tmpSet = irTemporary(
@@ -632,14 +629,9 @@ class ReaderContextImplTransformer(
         }
     }
 
-    private fun nullExpression(node: NullGivenNode): ContextExpression =
-        { irNull() }
+    private fun nullExpression(): ContextExpression = { irNull() }
 
-    private fun givenExpression(
-        context: IrClass,
-        graph: GivensGraph,
-        node: FunctionGivenNode
-    ): ContextExpression {
+    private fun givenExpression(node: FunctionGivenNode): ContextExpression {
         return { c ->
             fun createExpression(parametersMap: Map<IrValueParameter, () -> IrExpression?>): IrExpression {
                 val call = if (node.function is IrConstructor) {

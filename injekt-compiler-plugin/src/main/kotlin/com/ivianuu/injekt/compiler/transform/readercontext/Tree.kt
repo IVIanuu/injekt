@@ -185,6 +185,6 @@ class GivenRequest(
     override fun hashCode(): Int = key.hashCode()
 
     override fun toString(): String =
-        "BindingRequest(key=$key, requestingKey=$requestingKey, requestOrigin=$requestOrigin)"
+        "GivenRequest(key=$key, requestingKey=$requestingKey, requestOrigin=$requestOrigin)"
 
 }

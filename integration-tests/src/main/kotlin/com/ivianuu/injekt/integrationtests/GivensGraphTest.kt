@@ -28,7 +28,7 @@ import junit.framework.Assert.assertNull
 import junit.framework.Assert.assertSame
 import org.junit.Test
 
-class BindingGraphTest {
+class GivensGraphTest {
 
     @Test
     fun testMissingBindingFails() = codegen(

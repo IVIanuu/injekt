@@ -129,7 +129,7 @@ interface InjektErrors {
 
         @JvmField
         val EFFECT_WITH_TYPE_PARAMETERS = error(
-            "@BindingEffect and @Effect annotated declaration cannot have type parameters"
+            "@Effect annotated declaration cannot have type parameters"
         )
 
         init {

@@ -146,12 +146,12 @@ class GivensGraph(
     }
 
     fun getGivenNode(request: GivenRequest): GivenNode {
-        var binding = resolvedGivens[request.key]
-        if (binding != null) return binding
+        var node = resolvedGivens[request.key]
+        if (node != null) return node
 
-        val allBindings = givensForKey(request.key)
+        val allGivens = givensForKey(request.key)
 
-        val instanceAndGivenSetGivens = allBindings
+        val instanceAndGivenSetGivens = allGivens
             .filter { it.key == request.key }
             .filter { it is InstanceGivenNode || it.givenSetAccessExpression != null }
 
@@ -164,59 +164,59 @@ class GivensGraph(
             )
         }
 
-        binding = instanceAndGivenSetGivens.singleOrNull()
-        binding?.let {
+        node = instanceAndGivenSetGivens.singleOrNull()
+        node?.let {
             resolvedGivens[request.key] = it
             return it
         }
 
-        val (internalGlobalBindings, externalGlobalBindings) = allBindings
+        val (internalGlobalGivens, externalGlobalGivens) = allGivens
             .filterNot { it is InstanceGivenNode }
             .filter { it.givenSetAccessExpression == null }
             .filter { it.key == request.key }
             .partition { !it.external }
 
-        if (internalGlobalBindings.size > 1) {
+        if (internalGlobalGivens.size > 1) {
             error(
-                "Multiple internal bindings found for '${request.key}' at:\n${
-                internalGlobalBindings
+                "Multiple internal givens found for '${request.key}' at:\n${
+                internalGlobalGivens
                     .joinToString("\n") { "'${it.origin.orUnknown()}'" }
                 }"
             )
         }
 
-        binding = internalGlobalBindings.singleOrNull()
-        binding?.let {
+        node = internalGlobalGivens.singleOrNull()
+        node?.let {
             resolvedGivens[request.key] = it
             return it
         }
 
-        if (externalGlobalBindings.size > 1) {
+        if (externalGlobalGivens.size > 1) {
             error(
-                "Multiple external bindings found for '${request.key}' at:\n${
-                externalGlobalBindings
+                "Multiple external givens found for '${request.key}' at:\n${
+                externalGlobalGivens
                     .joinToString("\n") { "'${it.origin.orUnknown()}'" }
-                }.\nPlease specify a binding for the requested type in this project."
+                }.\nPlease specify a given for the requested type in this project."
             )
         }
 
-        binding = externalGlobalBindings.singleOrNull()
-        binding?.let {
+        node = externalGlobalGivens.singleOrNull()
+        node?.let {
             resolvedGivens[request.key] = it
             return it
         }
 
         if (request.key.type.isMarkedNullable()) {
-            binding =
+            node =
                 NullGivenNode(
                     request.key
                 )
-            resolvedGivens[request.key] = binding
-            return binding
+            resolvedGivens[request.key] = node
+            return node
         }
 
         error(
-            "No binding found for '${request.key}'\n" +
+            "No given found for '${request.key}'\n" +
                     "required at '${request.requestingKey}' '${request.requestOrigin.orUnknown()}'\n" +
                     "in ${contextImpl.superTypes.first().render()}\n"
         )
