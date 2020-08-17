@@ -274,7 +274,6 @@ class GivensGraph(
 
         this += declarationGraph.givens(key.type.uniqueTypeName().asString())
             .map { function ->
-                println(function.dump())
                 val targetContext = (function.getClassFromAnnotation(
                     InjektFqNames.Given, 0
                 )
