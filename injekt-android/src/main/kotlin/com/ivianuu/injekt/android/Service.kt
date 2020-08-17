@@ -27,7 +27,7 @@ import com.ivianuu.injekt.runReader
 @Context
 interface ServiceContext
 
-fun Service.createServiceContext(): ReceiverContext =
+fun Service.createServiceContext(): ServiceContext =
     application.applicationReaderContext.runReader {
         childContext(this)
     }
