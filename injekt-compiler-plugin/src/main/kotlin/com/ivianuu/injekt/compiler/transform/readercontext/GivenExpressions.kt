@@ -63,6 +63,7 @@ class GivenExpressions(
             ).apply {
                 initializer = irExprBody(
                     irCall(lazy).apply {
+                        putTypeArgument(0, given.key.type)
                         putValueArgument(
                             0,
                             DeclarationIrBuilder(injektContext, symbol)

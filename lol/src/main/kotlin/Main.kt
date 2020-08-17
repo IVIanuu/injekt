@@ -7,20 +7,19 @@ import com.ivianuu.injekt.given
 import com.ivianuu.injekt.rootContext
 import com.ivianuu.injekt.runReader
 
+@Context
+interface TestContext
+
 class Foo
 
 class Bar(val foo: Foo)
 
-@Context
-interface SimpleContext
-
-@Given
+@Given(TestContext::class)
 fun foo() = Foo()
 
-@Given
-fun bar() = Bar(given())
+val context = rootContext<TestContext>()
 
 @InitializeInjekt
-fun main() {
-    rootContext<SimpleContext>().runReader { given<Bar>() }
+fun invoke(): Foo {
+    return context.runReader { given<Foo>() }
 }
