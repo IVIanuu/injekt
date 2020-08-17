@@ -32,7 +32,7 @@ import com.ivianuu.injekt.runReader
 interface FragmentContext
 
 val Fragment.fragmentContext: FragmentContext
-    get() = lifecycle.singletonValue {
+    get() = lifecycle.singleton {
         retainedFragmentContext.runReader {
             childContext(this)
         }

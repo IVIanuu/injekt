@@ -25,7 +25,7 @@ import com.ivianuu.injekt.runReader
 interface RetainedFragmentContext
 
 val Fragment.retainedFragmentContext: RetainedFragmentContext
-    get() = viewModelStore.singletonValue {
+    get() = viewModelStore.singleton {
         activity!!.application.applicationReaderContext.runReader {
             childContext()
         }

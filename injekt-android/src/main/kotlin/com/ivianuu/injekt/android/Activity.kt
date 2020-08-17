@@ -31,7 +31,7 @@ import com.ivianuu.injekt.runReader
 interface ActivityContext
 
 val ComponentActivity.activityContext: ActivityContext
-    get() = lifecycle.singletonValue {
+    get() = lifecycle.singleton {
         retainedActivityContext.runReader {
             childContext(this)
         }

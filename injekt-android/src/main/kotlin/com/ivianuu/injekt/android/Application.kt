@@ -28,7 +28,7 @@ import com.ivianuu.injekt.given
 interface ApplicationContext
 
 val Application.applicationReaderContext: ApplicationContext
-    get() = ProcessLifecycleOwner.get().lifecycle.singletonValue { context(this) }
+    get() = ProcessLifecycleOwner.get().lifecycle.singleton { context(this) }
 
 typealias ApplicationAndroidContext = android.content.Context
 
