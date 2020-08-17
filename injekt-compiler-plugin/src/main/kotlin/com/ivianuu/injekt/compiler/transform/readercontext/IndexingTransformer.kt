@@ -98,8 +98,7 @@ class IndexingTransformer(
             override fun visitFunction(declaration: IrFunction): IrStatement {
                 if (!declaration.isInModule()) {
                     when {
-                        declaration.hasAnnotation(InjektFqNames.Given) ||
-                                declaration.hasAnnotatedAnnotations(InjektFqNames.Effect) ->
+                        declaration.hasAnnotation(InjektFqNames.Given) ->
                             runnables += {
                                 val explicitParameters = declaration.valueParameters
                                     .filter { it != declaration.getContextValueParameter() }

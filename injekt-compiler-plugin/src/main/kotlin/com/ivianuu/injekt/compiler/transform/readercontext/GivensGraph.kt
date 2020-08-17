@@ -250,18 +250,31 @@ class GivensGraph(
         inputFunctionNodes[key]?.let { this += it }
 
         if (key.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.ChildContextFactory)) {
-            // todo
-            this += GivenChildContext(
-                key = key,
-                owner = contextImpl,
-                contexts = emptyList(),
-                origin = null,
-                factory = key.type.classOrNull!!.owner
-            )
+            val existingFactories = mutableSetOf<IrClass>()
+            var currentContext: IrClass? = contextImpl
+            while (currentContext != null) {
+                existingFactories += (currentContext.parent as IrClass)
+                    .superTypes.first().classOrNull!!.owner
+                currentContext = currentContext.fields
+                    .singleOrNull { it.name.asString() == "parent" }
+                    ?.type
+                    ?.classOrNull
+                    ?.owner
+            }
+            if (key.type.classOrNull!!.owner !in existingFactories) {
+                this += GivenChildContext(
+                    key = key,
+                    owner = contextImpl,
+                    contexts = emptyList(),
+                    origin = null,
+                    factory = key.type.classOrNull!!.owner
+                )
+            }
         }
 
         this += declarationGraph.givens(key.type.uniqueTypeName().asString())
             .map { function ->
+                println(function.dump())
                 val targetContext = (function.getClassFromAnnotation(
                     InjektFqNames.Given, 0
                 )

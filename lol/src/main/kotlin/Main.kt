@@ -1,59 +1,41 @@
 package com.ivianuu.injekt.lol
 
 import com.ivianuu.injekt.Context
+import com.ivianuu.injekt.Effect
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.InitializeInjekt
-import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.rootContext
 import com.ivianuu.injekt.runReader
 
-@Context
-interface TestContext
+class Foo
+class Bar(foo: Foo)
 
-@InitializeInjekt
-fun main() {
-    rootContext<TestContext>().runReader {
-        withString("string") {
-            withInt(0) {
-                withLong(0L) {
-                    withBoolean(true) {
-                        listOf(given<String>(), given<Int>(), given<Long>(), given<Boolean>())
-                    }
-                }
-            }
-        }
+@Context
+interface TestChildContext
+@Context
+interface TestParentContext
+
+@Effect
+annotation class GivenFooFactory {
+    companion object {
+        @Given
+        fun <T : () -> Foo> invoke(): FooFactoryMarker = given<T>()
     }
 }
 
-@Context
-interface StringContext
-@Reader
-private fun <R> withString(
-    value: String,
-    block: @Reader () -> R
-) = childContext<StringContext>(value).runReader(block = block)
+typealias FooFactoryMarker = () -> Foo
 
-@Context
-interface IntContext
-@Reader
-private fun <R> withInt(
-    value: Int,
-    block: @Reader () -> R
-) = childContext<IntContext>(value).runReader(block = block)
+@GivenFooFactory
+fun FooFactoryImpl() = childContext<TestChildContext>().runReader { given<Foo>() }
 
-@Context
-interface LongContext
-@Reader
-private fun <R> withLong(
-    value: Long,
-    block: @Reader () -> R
-) = childContext<LongContext>(value).runReader(block = block)
+@InitializeInjekt
+fun main() {
+    val a = Foo()
+    val b = rootContext<TestParentContext>(a).runReader {
+        given<FooFactoryMarker>()()
+    }
 
-@Context
-interface BooleanContext
-@Reader
-private fun <R> withBoolean(
-    value: Boolean,
-    block: @Reader () -> R
-) = childContext<BooleanContext>(value).runReader(block = block)
+    check(a === b)
+}

@@ -121,17 +121,6 @@ class GivenExpressions(
             dispatchReceiverParameter = contextImpl.thisReceiver!!.copyTo(this)
             this.parent = contextImpl
             contextImpl.addChild(this)
-            this.body =
-                DeclarationIrBuilder(injektContext, symbol).run {
-                    irExprBody(
-                        finalExpression(
-                            this,
-                            ContextExpressionContext(injektContext, contextImpl) {
-                                irGet(dispatchReceiverParameter!!)
-                            }
-                        )
-                    )
-                }
         }
 
         val expression: ContextExpression = { c ->
@@ -142,30 +131,42 @@ class GivenExpressions(
 
         givenExpressions[given.key] = expression
 
+        function.body =
+            DeclarationIrBuilder(injektContext, function.symbol).run {
+                irExprBody(
+                    finalExpression(
+                        this,
+                        ContextExpressionContext(injektContext, contextImpl) {
+                            irGet(function.dispatchReceiverParameter!!)
+                        }
+                    )
+                )
+            }
+
         return expression
     }
 
     private fun childContextExpression(given: GivenChildContext): ContextExpression {
-        val generator = ReaderContextFactoryImplGenerator(
-            injektContext = injektContext,
-            name = uniqueChildNameProvider(
-                (given.factory.functions
-                    .first { it.name.asString().startsWith("create") }
-                    .returnType.classOrNull!!.owner.name.asString() + "Factory").asNameId()
-            ),
-            factoryInterface = given.factory,
-            irParent = contextImpl,
-            declarationGraph = declarationGraph,
-            implicitContextParamTransformer = implicitContextParamTransformer,
-            parentContext = contextImpl,
-            parentGraph = givensGraph,
-            parentExpressions = this
-        )
-
-        val childFactory = generator.generateFactory()
-        contextImpl.addChild(childFactory)
-
         return { c ->
+            val generator = ReaderContextFactoryImplGenerator(
+                injektContext = injektContext,
+                name = uniqueChildNameProvider(
+                    (given.factory.functions
+                        .first { it.name.asString().startsWith("create") }
+                        .returnType.classOrNull!!.owner.name.asString() + "Factory").asNameId()
+                ),
+                factoryInterface = given.factory,
+                irParent = contextImpl,
+                declarationGraph = declarationGraph,
+                implicitContextParamTransformer = implicitContextParamTransformer,
+                parentContext = contextImpl,
+                parentGraph = givensGraph,
+                parentExpressions = this@GivenExpressions
+            )
+
+            val childFactory = generator.generateFactory()
+            contextImpl.addChild(childFactory)
+
             irCall(childFactory.constructors.single()).apply {
                 putValueArgument(0, c[contextImpl])
             }
