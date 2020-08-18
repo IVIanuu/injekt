@@ -16,17 +16,35 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.dumpSrc
+import com.ivianuu.injekt.compiler.transform.implicit.GenericContextImplTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
+import com.ivianuu.injekt.compiler.transform.implicit.ReaderTrackingTransformer
+import com.ivianuu.injekt.compiler.transform.readercontext.ContextTrackingTransformer
+import com.ivianuu.injekt.compiler.transform.readercontext.IndexingTransformer
+import com.ivianuu.injekt.compiler.transform.readercontext.ReaderContextCallTransformer
+import com.ivianuu.injekt.compiler.transform.readercontext.ReaderContextImplTransformer
+import com.ivianuu.injekt.compiler.transform.readercontext.RunReaderCallTransformer
+import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
+import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
+import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        /*val injektContext = InjektContext(pluginContext, moduleFragment)
+        val injektContext = InjektContext(pluginContext, moduleFragment)
         var initializeInjekt = false
         var initFile: IrFile? = null
 
@@ -50,14 +68,14 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             InjektSymbols(injektContext)
         )
 
+        val implicitContextParamTransformer =
+            ImplicitContextParamTransformer(injektContext, indexer)
+        implicitContextParamTransformer.doLower(moduleFragment)
+
         ReaderContextCallTransformer(
             injektContext,
             indexer
         ).doLower(moduleFragment)
-
-        val implicitContextParamTransformer =
-            ImplicitContextParamTransformer(injektContext, indexer)
-        implicitContextParamTransformer.doLower(moduleFragment)
 
         ImplicitCallTransformer(injektContext, indexer).doLower(moduleFragment)
 
@@ -75,6 +93,11 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         IndexingTransformer(
             indexer,
             injektContext
+        ).doLower(moduleFragment)
+
+        ContextTrackingTransformer(
+            injektContext,
+            indexer
         ).doLower(moduleFragment)
 
         if (initializeInjekt) {
@@ -98,7 +121,9 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         TmpMetadataPatcher(injektContext).doLower(moduleFragment)
 
-        generateSymbols(pluginContext)*/
+        generateSymbols(pluginContext)
+
+        println(moduleFragment.dumpSrc())
     }
 
 }

@@ -38,7 +38,7 @@ sealed class Given(
     val contexts: List<IrClass>,
     val origin: FqName?,
     val external: Boolean,
-    val targetContext: IrClass?,
+    val targetContextName: IrClass?,
     val givenSetAccessExpression: ContextExpression?
 )
 
@@ -47,7 +47,8 @@ class GivenChildContext(
     owner: IrClass,
     contexts: List<IrClass>,
     origin: FqName?,
-    val factory: IrClass
+    val factory: IrClass,
+    val contextName: IrClass?
 ) : Given(key, owner, contexts, origin, false, null, null)
 
 class GivenFunction(

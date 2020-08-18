@@ -18,7 +18,11 @@ package com.ivianuu.injekt.internal
 
 import kotlin.reflect.KClass
 
+internal annotation class ContextImpl(val other: KClass<*>)
+
 internal annotation class ContextMarker
+
+internal annotation class ReaderContextMarker
 
 internal annotation class GenericContext(
     val delegateContext: KClass<*>,
@@ -26,6 +30,11 @@ internal annotation class GenericContext(
     val functionMap: String
 )
 
-annotation class ChildContextFactory
+internal annotation class ChildContextFactory(
+    val contextName: KClass<*> = Nothing::class
+)
 
-annotation class RootContextFactory(val factoryFqName: String)
+internal annotation class RootContextFactory(
+    val factoryFqName: String,
+    val contextName: KClass<*> = Nothing::class
+)

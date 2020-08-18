@@ -145,12 +145,12 @@ class DeclarationGraph(
     }
 
     companion object {
+        const val CONTEXT_IMPL_PATH = "context_impl"
         const val READER_CALL_PATH = "reader_call"
         const val READER_IMPL_PATH = "reader_impl"
         const val ROOT_CONTEXT_FACTORY_PATH = "root_context_factory"
         const val RUN_READER_CALL_PATH = "run_reader_call"
         const val GIVEN_PATH = "given"
-        const val GIVEN_CONTEXTS_PATH = "given_contexts"
         const val GENERIC_CONTEXT_PATH = "generic_context"
         const val MAP_ENTRIES_PATH = "map_entries"
         const val SET_ELEMENTS_PATH = "set_elements"

@@ -66,7 +66,7 @@ class GivenExpressions(
             }
         }
 
-        val finalExpression = if (given.targetContext == null ||
+        val finalExpression = if (given.targetContextName == null ||
             given.owner != contextImpl
         ) rawExpression else ({ c ->
             val lazy = injektContext.referenceFunctions(FqName("kotlin.lazy"))
@@ -152,11 +152,12 @@ class GivenExpressions(
         return { c ->
             val generator = ReaderContextFactoryImplGenerator(
                 injektContext = injektContext,
-                name = uniqueChildNameProvider(
+                factoryName = uniqueChildNameProvider(
                     (given.factory.functions
                         .first { it.name.asString().startsWith("create") }
                         .returnType.classOrNull!!.owner.name.asString() + "Factory").asNameId()
                 ),
+                contextName = given.contextName,
                 factoryInterface = given.factory,
                 irParent = contextImpl,
                 declarationGraph = declarationGraph,

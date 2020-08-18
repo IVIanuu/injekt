@@ -46,7 +46,8 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ReaderContextFactoryImplGenerator(
     private val injektContext: InjektContext,
-    private val name: Name,
+    private val factoryName: Name,
+    private val contextName: IrClass?,
     private val factoryInterface: IrClass,
     private val irParent: IrDeclarationParent,
     private val declarationGraph: DeclarationGraph,
@@ -67,7 +68,7 @@ class ReaderContextFactoryImplGenerator(
         val contextId = createFunction.returnType.classOrNull!!.owner
 
         val factoryImpl = buildClass {
-            this.name = this@ReaderContextFactoryImplGenerator.name
+            this.name = this@ReaderContextFactoryImplGenerator.factoryName
             if (parentContext == null) kind = ClassKind.OBJECT
             visibility = if (parentContext != null) Visibilities.PRIVATE else Visibilities.INTERNAL
         }.apply clazz@{
@@ -236,6 +237,7 @@ class ReaderContextFactoryImplGenerator(
             parent = parentGraph,
             declarationGraph = declarationGraph,
             contextImpl = contextImpl,
+            contextName = contextName,
             inputs = inputFields,
             implicitContextParamTransformer = implicitContextParamTransformer
         )

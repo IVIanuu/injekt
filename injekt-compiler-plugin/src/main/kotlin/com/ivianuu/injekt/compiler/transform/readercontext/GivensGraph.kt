@@ -49,6 +49,7 @@ class GivensGraph(
     private val parent: GivensGraph?,
     private val declarationGraph: DeclarationGraph,
     private val contextImpl: IrClass,
+    private val contextName: IrClass?,
     val inputs: List<IrField>,
     private val implicitContextParamTransformer: ImplicitContextParamTransformer
 ) {
@@ -154,12 +155,12 @@ class GivensGraph(
         if (given != null) return given
 
         fun Given.check(): Given? {
-            if (targetContext != null && targetContext != contextImpl.superTypes.first().classOrNull!!.owner) {
+            if (targetContextName != null && targetContextName != contextName) {
                 if (parent == null) {
                     error(
                         "Context mismatch, given '${key}' " +
-                                "requires context '${targetContext.defaultType.render()}' but actual context is " +
-                                contextImpl.superTypes.first().render()
+                                "requires context with name '${targetContextName.defaultType.render()}' but actual context name is " +
+                                contextName?.defaultType?.render()
                     )
                 } else {
                     return null
@@ -267,7 +268,11 @@ class GivensGraph(
                     owner = contextImpl,
                     contexts = emptyList(),
                     origin = null,
-                    factory = key.type.classOrNull!!.owner
+                    factory = key.type.classOrNull!!.owner,
+                    contextName = key.type.classOrNull!!.owner.getClassFromAnnotation(
+                        InjektFqNames.ChildContextFactory,
+                        0
+                    )
                 )
             }
         }

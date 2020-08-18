@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
+import com.ivianuu.injekt.compiler.irClassReference
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
@@ -46,10 +47,12 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.impl.IrExternalPackageFragmentImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrExternalPackageFragmentSymbolImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.isNothing
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
@@ -101,18 +104,24 @@ class ReaderContextCallTransformer(
         file: IrFile,
         scope: IrDeclarationWithName
     ): IrExpression {
+        val contextName = (call.getValueArgument(1) as? IrClassReference)
+            ?.classType
+            ?.takeUnless { it.isNothing() }
+            ?.classOrNull
+            ?.owner
+
         val inputs = (call.getValueArgument(0) as? IrVarargImpl)
             ?.elements
             ?.map { it as IrExpression } ?: emptyList()
 
-        val context = call.getTypeArgument(0)!!.classOrNull!!.owner
+        val context = call.type.classOrNull!!.owner
 
         val isChild = call.symbol.descriptor.fqNameSafe.asString() ==
                 "com.ivianuu.injekt.childContext"
 
         val contextFactory = buildClass {
             name = injektContext.uniqueClassNameProvider(
-                "${context.name}Factory".asNameId(),
+                "${contextName?.name ?: context.name}Factory".asNameId(),
                 file.fqName
             )
             kind = ClassKind.INTERFACE
@@ -148,9 +157,22 @@ class ReaderContextCallTransformer(
                                 file.fqName.child((name.asString() + "Impl").asNameId()).asString()
                             )
                         )
+                        if (contextName != null) {
+                            putValueArgument(
+                                1,
+                                irClassReference(contextName)
+                            )
+                        }
                     }
                 } else {
-                    irCall(injektContext.injektSymbols.childContextFactory.constructors.single())
+                    irCall(injektContext.injektSymbols.childContextFactory.constructors.single()).apply {
+                        if (contextName != null) {
+                            putValueArgument(
+                                0,
+                                irClassReference(contextName)
+                            )
+                        }
+                    }
                 }
             }
 

@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform.readercontext
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.addFile
+import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
@@ -48,7 +49,11 @@ class ReaderContextImplTransformer(
 
                 val factoryImpl = ReaderContextFactoryImplGenerator(
                     injektContext = injektContext,
-                    name = factoryFqName.shortName(),
+                    factoryName = factoryFqName.shortName(),
+                    contextName = rootFactory.getClassFromAnnotation(
+                        InjektFqNames.RootContextFactory,
+                        1
+                    ),
                     factoryInterface = rootFactory,
                     irParent = file,
                     declarationGraph = declarationGraph,

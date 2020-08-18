@@ -150,6 +150,7 @@ class ImplicitContextParamTransformer(
     private val indexer: Indexer
 ) : AbstractInjektTransformer(injektContext) {
 
+    private val transformedCalls = mutableMapOf<IrCall, IrCall>()
     private val transformedClasses = mutableSetOf<IrClass>()
     private val transformedFields = mutableMapOf<IrField, IrField>()
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
@@ -169,6 +170,14 @@ class ImplicitContextParamTransformer(
         transformFunctionIfNeeded(function)
 
     private val transformer = object : IrElementTransformerVoidWithContext() {
+
+        override fun visitCall(expression: IrCall): IrExpression =
+            super.visitCall(
+                transformCallIfNeeded(
+                    expression,
+                    currentScope!!.irElement as IrDeclarationWithName
+                )
+            )
 
         override fun visitClassNew(declaration: IrClass): IrStatement =
             super.visitClassNew(transformClassIfNeeded(declaration))
@@ -349,7 +358,7 @@ class ImplicitContextParamTransformer(
             if (owner.visibility == Visibilities.LOCAL && owner.parent is IrFunction)
                 owner.parent as IrFunction else null
 
-        val context = createContext(owner, parentFunction, injektContext)
+        val context = createContext(owner, parentFunction, injektContext, false)
         newContexts += context
         val contextParameter = ownerFunction.addContextParameter(context)
         onContextParameterCreated(contextParameter)
@@ -359,13 +368,19 @@ class ImplicitContextParamTransformer(
         declaration: IrField
     ): IrField {
         val type = declaration.type
-        if (!type.isNotTransformedReaderLambda()) return declaration
-        if (type.isTransformedReaderLambda()) return declaration
+        if (!type.isNotTransformedReaderLambda() &&
+            !type.isNotTransformedReaderContext()
+        ) return declaration
+        if (type.isTransformedReaderLambda() ||
+            type.isTransformedReaderContext()
+        ) return declaration
 
         transformedFields[declaration]?.let { return it }
         if (declaration in transformedFields.values) return declaration
 
-        val newType = createNewReaderFunctionType(declaration.type, declaration)
+        val newType = if (type.isNotTransformedReaderLambda())
+            createNewReaderFunctionType(declaration.type, declaration)
+        else createNewContextType(declaration)
 
         return IrFieldImpl(
             declaration.startOffset,
@@ -394,13 +409,19 @@ class ImplicitContextParamTransformer(
         declaration: IrVariable
     ): IrVariable {
         val type = declaration.type
-        if (!type.isNotTransformedReaderLambda()) return declaration
-        if (type.isTransformedReaderLambda()) return declaration
+        if (!type.isNotTransformedReaderLambda() &&
+            !type.isNotTransformedReaderContext()
+        ) return declaration
+        if (type.isTransformedReaderLambda() ||
+            type.isTransformedReaderContext()
+        ) return declaration
 
         transformedVariables[declaration]?.let { return it }
         if (declaration in transformedVariables.values) return declaration
 
-        val newType = createNewReaderFunctionType(declaration.type, declaration)
+        val newType = if (type.isNotTransformedReaderLambda())
+            createNewReaderFunctionType(declaration.type, declaration)
+        else createNewContextType(declaration)
 
         return IrVariableImpl(
             declaration.startOffset,
@@ -421,18 +442,49 @@ class ImplicitContextParamTransformer(
         }
     }
 
+    private fun transformCallIfNeeded(
+        expression: IrCall,
+        scopeElement: IrDeclarationWithName
+    ): IrCall {
+        val type = expression.type
+        if (!type.isNotTransformedReaderContext()) return expression
+        if (type.isTransformedReaderContext()) return expression
+
+        transformedCalls[expression]?.let { return it }
+        if (expression in transformedCalls.values) return expression
+
+        val newType = createNewContextType(scopeElement)
+
+        return IrCallImpl(
+            expression.startOffset,
+            expression.endOffset,
+            newType,
+            expression.symbol,
+            expression.typeArgumentsCount,
+            expression.valueArgumentsCount,
+            expression.origin,
+            expression.superQualifierSymbol
+        ).copyAttributes(expression)
+    }
+
     private fun transformWhenIfNeeded(
         expression: IrWhen,
         scopeElement: IrDeclarationWithName
     ): IrWhen {
         val type = expression.type
-        if (!type.isNotTransformedReaderLambda()) return expression
-        if (type.isTransformedReaderLambda()) return expression
+        if (!type.isNotTransformedReaderLambda() &&
+            !type.isNotTransformedReaderContext()
+        ) return expression
+        if (type.isTransformedReaderLambda() ||
+            type.isTransformedReaderContext()
+        ) return expression
 
         transformedWhens[expression]?.let { return it }
         if (expression in transformedWhens.values) return expression
 
-        val newType = createNewReaderFunctionType(type, scopeElement)
+        val newType = if (type.isNotTransformedReaderLambda())
+            createNewReaderFunctionType(expression.type, scopeElement)
+        else createNewContextType(scopeElement)
 
         return IrWhenImpl(
             expression.startOffset,
@@ -447,13 +499,19 @@ class ImplicitContextParamTransformer(
         declaration: IrValueParameter
     ): IrValueParameter {
         val type = declaration.type
-        if (!type.isNotTransformedReaderLambda()) return declaration
-        if (type.isTransformedReaderLambda()) return declaration
+        if (!type.isNotTransformedReaderLambda() &&
+            !type.isNotTransformedReaderContext()
+        ) return declaration
+        if (type.isTransformedReaderLambda() ||
+            type.isTransformedReaderContext()
+        ) return declaration
 
         transformedValueParameters[declaration]?.let { return it }
         if (declaration in transformedValueParameters.values) return declaration
 
-        val newType = createNewReaderFunctionType(type, declaration)
+        val newType = if (type.isNotTransformedReaderLambda())
+            createNewReaderFunctionType(declaration.type, declaration)
+        else createNewContextType(declaration)
 
         return IrValueParameterImpl(
             declaration.startOffset, declaration.endOffset,
@@ -481,7 +539,8 @@ class ImplicitContextParamTransformer(
         val context = createContext(
             declaration,
             null,
-            injektContext
+            injektContext,
+            false
         )
         newContexts += context
 
@@ -506,6 +565,17 @@ class ImplicitContextParamTransformer(
                     (oldType as? IrSimpleType)?.abbreviation
                 )
             }
+    }
+
+    private fun createNewContextType(declaration: IrDeclarationWithName): IrType {
+        val context = createContext(
+            declaration,
+            null,
+            injektContext,
+            true
+        )
+        newContexts += context
+        return context.defaultType
     }
 
     private fun IrFunction.addContextParameter(context: IrClass): IrValueParameter {
@@ -753,7 +823,8 @@ class ImplicitContextParamTransformer(
 
             override fun visitReturn(expression: IrReturn): IrExpression {
                 val result = super.visitReturn(expression) as IrReturn
-                return if (result.value.type.isTransformedReaderLambda() &&
+                return if ((result.value.type.isTransformedReaderLambda() ||
+                            result.value.type.isTransformedReaderContext()) &&
                     result.value.type != result.type
                 ) IrReturnImpl(
                     expression.startOffset,
@@ -767,7 +838,8 @@ class ImplicitContextParamTransformer(
 
             override fun visitExpressionBody(body: IrExpressionBody): IrBody {
                 val result = super.visitExpressionBody(body) as IrExpressionBody
-                return if (result.expression.type.isTransformedReaderLambda() &&
+                return if ((result.expression.type.isTransformedReaderLambda() ||
+                            result.expression.type.isTransformedReaderContext()) &&
                     result.expression.type != body.expression.type
                 ) IrExpressionBodyImpl(
                     body.startOffset,
@@ -782,7 +854,8 @@ class ImplicitContextParamTransformer(
                 val result = super.visitBlockBody(body) as IrBlockBody
                 val resultLastStatement = result.statements.lastOrNull() as? IrExpression
                 return if (resultLastStatement != null &&
-                    resultLastStatement.type.isTransformedReaderLambda() &&
+                    (resultLastStatement.type.isTransformedReaderLambda() ||
+                            resultLastStatement.type.isTransformedReaderContext()) &&
                     resultLastStatement.type != lastStatement?.type
                 ) IrBlockBodyImpl(
                     result.startOffset, result.endOffset,
@@ -795,7 +868,8 @@ class ImplicitContextParamTransformer(
                 val result = super.visitBlock(expression) as IrBlock
                 val lastStatement = result.statements.lastOrNull() as? IrExpression
                 return if (lastStatement != null &&
-                    lastStatement.type.isTransformedReaderLambda()
+                    (lastStatement.type.isTransformedReaderLambda() ||
+                            lastStatement.type.isTransformedReaderContext())
                 ) if (expression is IrReturnableBlock)
                     IrReturnableBlockImpl(
                         result.startOffset, result.endOffset,
@@ -818,12 +892,15 @@ class ImplicitContextParamTransformer(
             override fun visitTypeOperator(expression: IrTypeOperatorCall): IrExpression {
                 // todo check if this has negative side effects
                 val result = super.visitTypeOperator(expression) as IrTypeOperatorCall
-                return if (result.argument.type.isTransformedReaderLambda()) result.argument else result
+                return if (result.argument.type.isTransformedReaderLambda() ||
+                    result.argument.type.isTransformedReaderContext()
+                ) result.argument else result
             }
 
             override fun visitCall(expression: IrCall): IrExpression {
                 val result = super.visitCall(expression) as IrCall
-                return if (result.symbol.owner.returnType.isTransformedReaderLambda() &&
+                return if ((result.symbol.owner.returnType.isTransformedReaderLambda() ||
+                            result.symbol.owner.returnType.isTransformedReaderContext()) &&
                     result.type != result.symbol.owner.returnType
                 ) IrCallImpl(
                     result.startOffset,

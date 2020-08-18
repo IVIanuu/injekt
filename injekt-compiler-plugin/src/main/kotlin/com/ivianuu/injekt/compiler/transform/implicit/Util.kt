@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
+import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeOrNull
@@ -44,12 +45,14 @@ import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunctionOrKFunction
 import org.jetbrains.kotlin.ir.util.isSuspendFunctionOrKFunction
+import org.jetbrains.kotlin.ir.util.superTypes
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 fun createContext(
     owner: IrDeclarationWithName,
     parentFunction: IrFunction?,
-    injektContext: InjektContext
+    injektContext: InjektContext,
+    isReaderContext: Boolean
 ) = buildClass {
     kind = ClassKind.INTERFACE
     name = injektContext.uniqueClassNameProvider(
@@ -70,8 +73,13 @@ fun createContext(
     //parentFunction?.let { copyTypeParametersFrom(it) }
     recordLookup(this, owner)
 
-    annotations += DeclarationIrBuilder(injektContext, symbol)
-        .irCall(injektContext.injektSymbols.contextMarker.constructors.single())
+    annotations += DeclarationIrBuilder(injektContext, symbol).run {
+        if (isReaderContext) {
+            irCall(injektContext.injektSymbols.readerContextMarker.constructors.single())
+        } else {
+            irCall(injektContext.injektSymbols.contextMarker.constructors.single())
+        }
+    }
 }
 
 fun IrType.isNotTransformedReaderLambda() =
@@ -86,3 +94,18 @@ val IrType.lambdaContext
     get() = typeArguments.firstOrNull {
         it.typeOrNull?.classOrNull?.owner?.hasAnnotation(InjektFqNames.ContextMarker) == true
     }?.typeOrFail?.classOrNull?.owner
+
+private fun IrType.hasTransformedReaderContextSubType(): Boolean =
+    classOrNull?.owner?.hasAnnotation(InjektFqNames.ReaderContextMarker) == true ||
+            (this is IrSimpleType && superTypes().any { it.hasTransformedReaderContextSubType() })
+
+private fun IrType.hasContextSubType(): Boolean =
+    classOrNull?.descriptor?.fqNameSafe == InjektFqNames.Context ||
+            (this is IrSimpleType && superTypes().any { it.hasContextSubType() })
+
+fun IrType.isNotTransformedReaderContext(): Boolean =
+    hasContextSubType()
+
+fun IrType.isTransformedReaderContext(): Boolean =
+    classOrNull?.owner?.hasAnnotation(InjektFqNames.ReaderContextMarker) == true &&
+            hasContextSubType()
