@@ -47,7 +47,7 @@ class ComposeTest {
         }
         
         fun invoke(): AppUi {
-            return rootContext<TestContext>().runReader { given<AppUi>() }
+            return rootContext().runReader { given<AppUi>() }
         }
     """,
         config = {
@@ -86,7 +86,7 @@ class ComposeTest {
                 }
                 
                 fun invoke(): AppUi {
-                    return rootContext<TestContext>().runReader { given<AppUi>() }
+                    return rootContext().runReader { given<AppUi>() }
                 }
                 """,
                 name = "File.kt"

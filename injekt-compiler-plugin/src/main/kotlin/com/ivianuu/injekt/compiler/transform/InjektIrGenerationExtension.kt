@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.implicit.GenericContextImplTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
@@ -85,6 +84,11 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             implicitContextParamTransformer
         ).doLower(moduleFragment)
 
+        ContextTrackingTransformer(
+            injektContext,
+            indexer
+        ).doLower(moduleFragment)
+
         RunReaderCallTransformer(
             injektContext,
             indexer
@@ -93,11 +97,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         IndexingTransformer(
             indexer,
             injektContext
-        ).doLower(moduleFragment)
-
-        ContextTrackingTransformer(
-            injektContext,
-            indexer
         ).doLower(moduleFragment)
 
         if (initializeInjekt) {
@@ -122,8 +121,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         TmpMetadataPatcher(injektContext).doLower(moduleFragment)
 
         generateSymbols(pluginContext)
-
-        println(moduleFragment.dumpSrc())
     }
 
 }

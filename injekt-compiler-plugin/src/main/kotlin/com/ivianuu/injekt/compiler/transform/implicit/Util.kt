@@ -38,6 +38,7 @@ import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.file
@@ -73,6 +74,10 @@ fun createContext(
     //parentFunction?.let { copyTypeParametersFrom(it) }
     recordLookup(this, owner)
 
+    if (isReaderContext) {
+        superTypes += injektContext.injektSymbols.context.defaultType
+    }
+
     annotations += DeclarationIrBuilder(injektContext, symbol).run {
         if (isReaderContext) {
             irCall(injektContext.injektSymbols.readerContextMarker.constructors.single())
@@ -95,17 +100,20 @@ val IrType.lambdaContext
         it.typeOrNull?.classOrNull?.owner?.hasAnnotation(InjektFqNames.ContextMarker) == true
     }?.typeOrFail?.classOrNull?.owner
 
-private fun IrType.hasTransformedReaderContextSubType(): Boolean =
+fun IrType.hasTransformedReaderContextSubType(): Boolean =
     classOrNull?.owner?.hasAnnotation(InjektFqNames.ReaderContextMarker) == true ||
             (this is IrSimpleType && superTypes().any { it.hasTransformedReaderContextSubType() })
 
-private fun IrType.hasContextSubType(): Boolean =
-    classOrNull?.descriptor?.fqNameSafe == InjektFqNames.Context ||
-            (this is IrSimpleType && superTypes().any { it.hasContextSubType() })
+fun IrType.isContextSubType(processedSuperTypes: MutableSet<IrType> = mutableSetOf()): Boolean {
+    if (this in processedSuperTypes) return false
+    processedSuperTypes += this
+    return classOrNull?.descriptor?.fqNameSafe == InjektFqNames.Context ||
+            (this is IrSimpleType && superTypes().any { it.isContextSubType(processedSuperTypes) })
+}
 
 fun IrType.isNotTransformedReaderContext(): Boolean =
-    hasContextSubType()
+    isContextSubType()
 
 fun IrType.isTransformedReaderContext(): Boolean =
     classOrNull?.owner?.hasAnnotation(InjektFqNames.ReaderContextMarker) == true &&
-            hasContextSubType()
+            isContextSubType()

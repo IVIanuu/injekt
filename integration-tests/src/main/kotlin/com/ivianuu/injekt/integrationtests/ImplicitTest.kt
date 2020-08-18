@@ -39,7 +39,7 @@ class ImplicitTest {
         fun func(): Foo = given<Foo>()
         
         fun invoke(): Foo { 
-            return rootContext<TestContext>().runReader { func() }
+            return rootContext().runReader { func() }
         }
     """
     ) {
@@ -65,7 +65,7 @@ class ImplicitTest {
         fun withFoo(block: @Reader (Foo) -> Unit) = block(func())
         
         fun invoke(): Foo {
-            return rootContext<TestContext>().runReader {
+            return rootContext().runReader {
                 withFoo {
                     other()
                     it
@@ -105,7 +105,7 @@ class ImplicitTest {
             source(
                 """
                     fun invoke(): Foo {
-                        return rootContext<TestContext>().runReader {
+                        return rootContext().runReader {
                             withFoo {
                                 other()
                                 it
@@ -140,7 +140,7 @@ class ImplicitTest {
         fun <R> withFoo(block: @Reader (Foo) -> R) = block(func())
         
         fun invoke(): Foo {
-            return rootContext<TestContext>().runReader {
+            return rootContext().runReader {
                 withFoo {
                     other()
                     it
@@ -179,7 +179,7 @@ class ImplicitTest {
             source(
                 """
                     fun invoke(): Foo {
-                        return rootContext<TestContext>().runReader {
+                        return rootContext().runReader {
                             withFoo {
                                 other()
                                 it
@@ -206,7 +206,7 @@ class ImplicitTest {
         fun <R> nonReader(block: () -> R) = block()
         
         fun invoke(): Foo {
-            return rootContext<TestContext>().runReader {
+            return rootContext().runReader {
                 nonReader { 
                     createFoo()
                 }
@@ -230,7 +230,7 @@ class ImplicitTest {
         }
         
         fun invoke(): Foo { 
-            return rootContext<TestContext>().runReader {
+            return rootContext().runReader {
                 runBlocking {
                     delay(1)
                     func()
@@ -256,7 +256,7 @@ class ImplicitTest {
         
         fun invoke(): Foo { 
             return runBlocking {
-                rootContext<TestContext>().runReader {
+                rootContext().runReader {
                     delay(1)
                     func()
                 }
@@ -326,7 +326,7 @@ class ImplicitTest {
         
         fun invoke(): Foo {
             return runBlocking {
-                rootContext<TestContext>().runReader {
+                rootContext().runReader {
                     delay(1)
                     withFoo {
                         delay(1)
@@ -354,7 +354,7 @@ class ImplicitTest {
         fun withDefault(foo: Foo = func()): Foo = foo
         
         fun invoke(): Foo { 
-            return rootContext<TestContext>().runReader { withDefault() }
+            return rootContext().runReader { withDefault() }
         }
     """
     ) {
@@ -371,7 +371,7 @@ class ImplicitTest {
         fun withDefault(foo: Foo = given(), foo2: Foo = foo): Foo = foo
         
         fun invoke(): Foo { 
-            return rootContext<TestContext>().runReader { withDefault() }
+            return rootContext().runReader { withDefault() }
         }
     """
     ) {
@@ -412,7 +412,7 @@ class ImplicitTest {
         listOf(
             source(
                 """ 
-                fun getFoo() = rootContext<TestContext>().runReader {
+                fun getFoo() = rootContext().runReader {
                     withBar {
                         foo()
                     }
@@ -445,7 +445,7 @@ class ImplicitTest {
         val foo: Foo get() = given()
         
         fun invoke(): Foo { 
-            return rootContext<TestContext>().runReader { foo }
+            return rootContext().runReader { foo }
         }
     """
     ) {
@@ -461,7 +461,7 @@ class ImplicitTest {
         fun getFooProvider(): @Reader () -> Foo = { given() }
          
         fun invoke(): Foo { 
-            return rootContext<TestContext>().runReader { getFooProvider()() }
+            return rootContext().runReader { getFooProvider()() }
         }
     """
     ) {
@@ -477,7 +477,7 @@ class ImplicitTest {
         val foo: @Reader () -> Foo get() = { given() }
         
         fun invoke(): Foo { 
-            return rootContext<TestContext>().runReader { foo() }
+            return rootContext().runReader { foo() }
         }
     """
     ) {
@@ -493,7 +493,7 @@ class ImplicitTest {
         val foo: @Reader () -> Foo = { given() }
         
         fun invoke(): Foo { 
-            return rootContext<TestContext>().runReader { foo() }
+            return rootContext().runReader { foo() }
         }
     """
     ) {
@@ -510,7 +510,7 @@ class ImplicitTest {
         fun foo(provider: @Reader () -> Foo = { given() }) = provider()
          
         fun invoke(): Foo { 
-            return rootContext<TestContext>().runReader { foo() }
+            return rootContext().runReader { foo() }
         }
     """
     ) {
@@ -525,7 +525,7 @@ class ImplicitTest {
         
         fun invoke(): Foo { 
             val foo: @Reader () -> Foo = { given() }
-            return rootContext<TestContext>().runReader { foo() }
+            return rootContext().runReader { foo() }
         }
     """
     ) {
@@ -548,7 +548,7 @@ class ImplicitTest {
                     else -> error("Unexpected clazz")
                 }
                 
-                return rootContext<TestContext>().runReader { provider() }
+                return rootContext().runReader { provider() }
             }
         """
     ) {
@@ -574,7 +574,7 @@ class ImplicitTest {
             source(
                 """
                 fun invoke(): Foo { 
-                    return rootContext<TestContext>().runReader { foo }
+                    return rootContext().runReader { foo }
                 }
                 """,
                 name = "File.kt"
@@ -596,7 +596,7 @@ class ImplicitTest {
         }
         
         fun invoke(): Foo { 
-            return rootContext<TestContext>().runReader { FooFactory().getFoo() }
+            return rootContext().runReader { FooFactory().getFoo() }
         }
     """
     ) {
@@ -623,7 +623,7 @@ class ImplicitTest {
             source(
                 """ 
                 fun invoke(): Foo { 
-                    return rootContext<TestContext>().runReader { FooFactory().getFoo() }
+                    return rootContext().runReader { FooFactory().getFoo() }
                 }
             """, name = "File.kt"
             )
@@ -642,7 +642,7 @@ class ImplicitTest {
         }
         
         fun invoke(): Foo { 
-            return rootContext<TestContext>().runReader { FooFactory().getFoo() }
+            return rootContext().runReader { FooFactory().getFoo() }
         }
     """
     ) {
@@ -660,7 +660,7 @@ class ImplicitTest {
         }
         
         fun invoke(): Foo { 
-            return rootContext<TestContext>().runReader { given<FooFactory>().getFoo() }
+            return rootContext().runReader { given<FooFactory>().getFoo() }
         }
     """
     ) {
@@ -741,7 +741,7 @@ class ImplicitTest {
         }
         
         fun invoke(): Foo {
-            return rootContext<TestContext>().runReader { given<FooFactory>().foo }
+            return rootContext().runReader { given<FooFactory>().foo }
         }
     """
     ) {
@@ -770,7 +770,7 @@ class ImplicitTest {
         fun <T> provide() = given<T>()
         
         fun invoke(): Foo { 
-            return rootContext<TestContext>().runReader { provide() }
+            return rootContext().runReader { provide() }
         }
     """
     ) {
@@ -794,7 +794,7 @@ class ImplicitTest {
             source(
                 """
                 fun invoke(): Foo { 
-                    return rootContext<TestContext>().runReader { provide() }
+                    return rootContext().runReader { provide() }
                 }
             """, name = "File.kt"
             )
@@ -813,8 +813,8 @@ class ImplicitTest {
         fun bar() = Bar(given())
         
         fun invoke(): Bar { 
-            return rootContext<TestContext>().runReader {
-                rootContext<TestContext>().runReader {
+            return rootContext().runReader {
+                rootContext().runReader {
                     given<Bar>()
                 }
             }
@@ -833,7 +833,7 @@ class ImplicitTest {
         fun createFoo(foo: Foo = given()): Foo = foo
         
         fun invoke(): Foo { 
-            return rootContext<TestContext>().runReader { createFoo() }
+            return rootContext().runReader { createFoo() }
         }
     """
     ) {
@@ -851,7 +851,7 @@ class ImplicitTest {
         fun createFoo(foo: Foo2 = given()): Foo2 = foo
         
         fun invoke(): Foo { 
-            return rootContext<TestContext>().runReader { createFoo() }
+            return rootContext().runReader { createFoo() }
         }
     """
     ) {
@@ -874,7 +874,7 @@ class ImplicitTest {
         fun set2() = emptySet<Int>()
         
         fun invoke() { 
-            rootContext<TestContext>().runReader { given<MyClass>() }
+            rootContext().runReader { given<MyClass>() }
         }
     """
     ) {
@@ -928,7 +928,7 @@ class ImplicitTest {
         fun createFoo(foo: Foo = "lol".run { given() }) = foo
         
         fun invoke() {
-            rootContext<TestContext>().runReader { createFoo(Foo()) }
+            rootContext().runReader { createFoo(Foo()) }
         }
     """
     ) {
@@ -942,7 +942,7 @@ class ImplicitTest {
         fun bar(foo: Foo) = Bar(foo)
         
         fun invoke(): Bar {
-            return rootContext<TestContext>().runReader { given<Bar>(Foo()) }
+            return rootContext().runReader { given<Bar>(Foo()) }
         }
         """
     ) {
@@ -979,7 +979,7 @@ class ImplicitTest {
         }
         
         fun invoke() {
-            rootContext<TestContext>().runReader {
+            rootContext().runReader {
                 val actions = listOf(
                     FooAction(),
                     BarAction()
@@ -1042,7 +1042,7 @@ class ImplicitTest {
             source(
                 """
                     fun invoke() {
-                        rootContext<TestContext>().runReader {
+                        rootContext().runReader {
                             val actions = listOf(
                                 FooAction(),
                                 BarAction()
@@ -1073,7 +1073,7 @@ class ImplicitTest {
         }
         
         fun invoke() {
-            rootContext<TestContext>().runReader {
+            rootContext().runReader {
                 val actions = listOf(
                     object : Action { 
                         @Reader
@@ -1131,7 +1131,7 @@ class ImplicitTest {
             
             delegate()
             block()
-            rootContext<TestContext>().runReader {
+            rootContext().runReader {
                 block()
                 delegate()
             }
@@ -1157,7 +1157,7 @@ class ImplicitTest {
         
         fun invoke(): Foo { 
             val funcRef: @Reader () -> Foo = ::func
-            return rootContext<TestContext>().runReader { funcRef() }
+            return rootContext().runReader { funcRef() }
         }
     """
     ) {
@@ -1174,7 +1174,7 @@ class ImplicitTest {
         fun runReaderBlock(): Foo = given<Foo>()
         
         fun invoke(): Foo {
-            return rootContext<TestContext>().runReader(block = ::runReaderBlock)
+            return rootContext().runReader(block = ::runReaderBlock)
         }
     """
     ) {

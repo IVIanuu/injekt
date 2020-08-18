@@ -35,7 +35,7 @@ class GivensGraphTest {
         """
         @Given class Dep(bar: Bar)
         fun invoke() {
-            rootContext<TestContext>().runReader { given<Dep>() }
+            rootContext().runReader { given<Dep>() }
         }
         """
     ) {
@@ -49,7 +49,7 @@ class GivensGraphTest {
         @GivenSetElements fun setB() = setOf(0)
         
         fun invoke(): Pair<Set<String>, Set<Int>> {
-            return rootContext<TestContext>().runReader { given<Set<String>>() to given<Set<Int>>() }
+            return rootContext().runReader { given<Set<String>>() to given<Set<Int>>() }
         }
     """
     ) {
@@ -67,7 +67,7 @@ class GivensGraphTest {
         @Given fun foo2(): Foo2 = Foo()
         
         fun invoke(): Pair<Foo, Foo> {
-            return rootContext<TestContext>().runReader { given<Foo1>() to given<Foo2>() }
+            return rootContext().runReader { given<Foo1>() to given<Foo2>() }
         }
     """
     ) {
@@ -97,7 +97,7 @@ class GivensGraphTest {
             source(
                 """
                 fun invoke(): Pair<Foo, Foo> {
-                    return rootContext<TestContext>().runReader { given<Foo1>() to given<Foo2>() }
+                    return rootContext().runReader { given<Foo1>() to given<Foo2>() }
                 } 
             """, name = "File.kt"
             )
@@ -114,7 +114,7 @@ class GivensGraphTest {
         @Given fun nullableFoo(): Foo? = null
 
         fun invoke() { 
-            rootContext<TestContext>().runReader { given<Foo>() to given<Foo?>() }
+            rootContext().runReader { given<Foo>() to given<Foo?>() }
         }
     """
     ) {
@@ -127,7 +127,7 @@ class GivensGraphTest {
         @Given fun foo(): Foo = Foo()
 
         fun invoke(): Foo? { 
-            return rootContext<TestContext>().runReader { given<Foo?>() }
+            return rootContext().runReader { given<Foo?>() }
         }
         """
     ) {
@@ -138,7 +138,7 @@ class GivensGraphTest {
     fun testReturnsNullOnMissingNullableBinding() = codegen(
         """
         fun invoke(): Foo? { 
-            return rootContext<TestContext>().runReader { given<Foo?>() }
+            return rootContext().runReader { given<Foo?>() }
         }
         """
     ) {
@@ -151,7 +151,7 @@ class GivensGraphTest {
         @Given fun list(): List<*> = emptyList<Any?>()
         
         fun invoke() { 
-            rootContext<TestContext>().runReader { given<List<*>>() }
+            rootContext().runReader { given<List<*>>() }
         }
     """
     )
@@ -163,7 +163,7 @@ class GivensGraphTest {
             fun provideFoo() = Foo()
             
             fun invoke(foo: Foo): Foo {
-                return rootContext<TestContext>(foo).runReader { given() }
+                return rootContext(foo).runReader { given() }
             }
         """
     ) {
@@ -197,7 +197,7 @@ class GivensGraphTest {
                     ): Foo {
                         externalFooField = externalFoo
                         internalFooField = internalFoo
-                        return rootContext<TestContext>().runReader { given<Foo>() }
+                        return rootContext().runReader { given<Foo>() }
                     }
                 """,
                 name = "File.kt"
@@ -213,7 +213,7 @@ class GivensGraphTest {
     fun testDuplicatedInputsFails() = codegen(
         """
         fun invoke() {
-            rootContext<TestContext>(Foo(), Foo()).runReader { given<Foo>() }
+            rootContext(Foo(), Foo()).runReader { given<Foo>() }
         }
         """
     ) {
@@ -227,7 +227,7 @@ class GivensGraphTest {
         @Given fun foo2() = Foo()
         
         fun invoke() {
-            rootContext<TestContext>().runReader { given<Foo>() }
+            rootContext().runReader { given<Foo>() }
         }
         """
     ) {
@@ -254,7 +254,7 @@ class GivensGraphTest {
             source(
                 """
                     fun invoke() { 
-                        rootContext<TestContext>().runReader { given<Foo>() }
+                        rootContext().runReader { given<Foo>() }
                     }
                 """
             )

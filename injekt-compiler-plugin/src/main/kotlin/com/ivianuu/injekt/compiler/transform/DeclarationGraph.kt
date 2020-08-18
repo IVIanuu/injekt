@@ -131,6 +131,23 @@ class DeclarationGraph(
                     collectImplementations(it)
                 }
 
+            indexer.classIndices(
+                listOf(
+                    CONTEXT_IMPL_PATH,
+                    context.descriptor.fqNameSafe.asString()
+                )
+            )
+                .map {
+                    it.getClassFromAnnotation(
+                        InjektFqNames.ContextImpl,
+                        0
+                    )!!
+                }
+                .forEach {
+                    contexts += it
+                    collectImplementations(it)
+                }
+
             context.superTypes
                 .map { it.classOrNull!!.owner }
                 .forEach {

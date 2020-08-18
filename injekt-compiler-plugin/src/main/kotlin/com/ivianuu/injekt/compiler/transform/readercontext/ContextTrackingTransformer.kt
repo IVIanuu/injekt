@@ -1,18 +1,44 @@
 package com.ivianuu.injekt.compiler.transform.readercontext
 
+import com.ivianuu.injekt.compiler.flatMapFix
+import com.ivianuu.injekt.compiler.irClassReference
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
+import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.transform.InjektContext
+import com.ivianuu.injekt.compiler.transform.implicit.isContextSubType
+import com.ivianuu.injekt.compiler.transform.implicit.isNotTransformedReaderContext
+import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
+import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
+import org.jetbrains.kotlin.ir.declarations.IrField
+import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
+import org.jetbrains.kotlin.ir.declarations.IrVariable
+import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
+import org.jetbrains.kotlin.ir.expressions.IrGetField
+import org.jetbrains.kotlin.ir.expressions.IrGetValue
+import org.jetbrains.kotlin.ir.expressions.IrSetField
+import org.jetbrains.kotlin.ir.expressions.IrSetVariable
+import org.jetbrains.kotlin.ir.expressions.IrWhen
+import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.statements
+import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.utils.addIfNotNull
 
 class ContextTrackingTransformer(
     injektContext: InjektContext,
     private val indexer: Indexer
 ) : AbstractInjektTransformer(injektContext) {
-
-    override fun lower() {
-    }
-
-    /*private val newIndexBuilders = mutableListOf<NewIndexBuilder>()
+    private val newIndexBuilders = mutableListOf<NewIndexBuilder>()
 
     private data class NewIndexBuilder(
         val path: List<String>,
@@ -25,12 +51,12 @@ class ContextTrackingTransformer(
 
             override fun visitValueParameterNew(declaration: IrValueParameter): IrStatement {
                 val defaultValue = declaration.defaultValue
-                if (defaultValue != null && defaultValue.expression.type.isTransformedReaderContext()) {
+                if (defaultValue != null && defaultValue.expression.type.isContextSubType()) {
                     newIndexBuilders += defaultValue.expression
                         .collectContextsInExpression()
                         .map { subContext ->
                             contextImplIndexBuilder(
-                                declaration.type.lambdaContext!!,
+                                declaration.type.classOrNull!!.owner,
                                 subContext
                             )
                         }
@@ -40,12 +66,12 @@ class ContextTrackingTransformer(
 
             override fun visitFieldNew(declaration: IrField): IrStatement {
                 val initializer = declaration.initializer
-                if (initializer != null && initializer.expression.type.isTransformedReaderContext()) {
+                if (initializer != null && initializer.expression.type.isContextSubType()) {
                     newIndexBuilders += initializer.expression
                         .collectContextsInExpression()
                         .map { subContext ->
                             contextImplIndexBuilder(
-                                declaration.type.lambdaContext!!,
+                                declaration.type.classOrNull!!.owner,
                                 subContext
                             )
                         }
@@ -55,12 +81,12 @@ class ContextTrackingTransformer(
 
             override fun visitVariable(declaration: IrVariable): IrStatement {
                 val initializer = declaration.initializer
-                if (initializer != null && initializer.type.isTransformedReaderContext()) {
+                if (initializer != null && initializer.type.isContextSubType()) {
                     newIndexBuilders += initializer
                         .collectContextsInExpression()
                         .map { subContext ->
                             contextImplIndexBuilder(
-                                declaration.type.lambdaContext!!,
+                                declaration.type.classOrNull!!.owner,
                                 subContext
                             )
                         }
@@ -69,12 +95,12 @@ class ContextTrackingTransformer(
             }
 
             override fun visitSetField(expression: IrSetField): IrExpression {
-                if (expression.symbol.owner.type.isTransformedReaderContext()) {
+                if (expression.symbol.owner.type.isContextSubType()) {
                     newIndexBuilders += expression.value
                         .collectContextsInExpression()
                         .map { subContext ->
                             contextImplIndexBuilder(
-                                expression.symbol.owner.type.lambdaContext!!,
+                                expression.symbol.owner.type.classOrNull!!.owner,
                                 subContext
                             )
                         }
@@ -83,12 +109,12 @@ class ContextTrackingTransformer(
             }
 
             override fun visitSetVariable(expression: IrSetVariable): IrExpression {
-                if (expression.symbol.owner.type.isTransformedReaderContext()) {
+                if (expression.symbol.owner.type.isContextSubType()) {
                     newIndexBuilders += expression.value
                         .collectContextsInExpression()
                         .map { subContext ->
                             contextImplIndexBuilder(
-                                expression.symbol.owner.type.lambdaContext!!,
+                                expression.symbol.owner.type.classOrNull!!.owner,
                                 subContext
                             )
                         }
@@ -98,12 +124,12 @@ class ContextTrackingTransformer(
 
             override fun visitWhen(expression: IrWhen): IrExpression {
                 val result = super.visitWhen(expression) as IrWhen
-                if (expression.type.isTransformedReaderContext()) {
+                if (expression.type.isContextSubType()) {
                     newIndexBuilders += expression.branches
                         .flatMapFix { it.result.collectContextsInExpression() }
                         .map { subContext ->
                             contextImplIndexBuilder(
-                                expression.type.lambdaContext!!,
+                                expression.type.classOrNull!!.owner,
                                 subContext
                             )
                         }
@@ -112,15 +138,15 @@ class ContextTrackingTransformer(
             }
 
             override fun visitFunctionNew(declaration: IrFunction): IrStatement {
-                if (declaration.returnType.isTransformedReaderContext()) {
+                if (declaration.returnType.isContextSubType()) {
                     val lastBodyStatement =
                         declaration.body?.statements?.lastOrNull() as? IrExpression
-                    if (lastBodyStatement != null && lastBodyStatement.type.isTransformedReaderContext()) {
+                    if (lastBodyStatement != null && lastBodyStatement.type.isContextSubType()) {
                         newIndexBuilders += lastBodyStatement
                             .collectContextsInExpression()
                             .map { subContext ->
                                 contextImplIndexBuilder(
-                                    declaration.returnType.lambdaContext!!,
+                                    declaration.returnType.classOrNull!!.owner!!,
                                     subContext
                                 )
                             }
@@ -128,10 +154,10 @@ class ContextTrackingTransformer(
 
                     if (declaration is IrSimpleFunction) {
                         val field = declaration.correspondingPropertySymbol?.owner?.backingField
-                        if (field != null && field.type.isTransformedReaderContext()) {
+                        if (field != null && field.type.isContextSubType()) {
                             newIndexBuilders += contextImplIndexBuilder(
-                                declaration.returnType.lambdaContext!!,
-                                field.type.lambdaContext!!
+                                declaration.returnType.classOrNull!!.owner,
+                                field.type.classOrNull!!.owner
                             )
                         }
                     }
@@ -144,26 +170,23 @@ class ContextTrackingTransformer(
         injektContext.module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
 
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
-                /*newIndexBuilders += (0 until expression.valueArgumentsCount)
+                newIndexBuilders += (0 until expression.valueArgumentsCount)
                     .mapNotNull { index ->
                         expression.getValueArgument(index)
                             ?.let { index to it }
                     }
-                    .map { transformedCallee.valueParameters[it.first] to it.second }
-                    .filter { it.first.type.isReaderContext() }
+                    .map { expression.symbol.owner.valueParameters[it.first] to it.second }
+                    .filter { it.first.type.isContextSubType() }
                     .flatMapFix { (parameter, argument) ->
-                        argument.collectReaderLambdaContextsInExpression()
-                            .map { context ->
-                                (parameter.type.lambdaContext
-                                    ?: error("null for ${parameter.dump()}\n${expression.symbol.owner.dump()}")) to context
-                            }
+                        argument.collectContextsInExpression()
+                            .map { context -> context to parameter.type.classOrNull!!.owner }
                     }
                     .map { (superContext, subContext) ->
                         contextImplIndexBuilder(
                             superContext,
                             subContext
                         )
-                    }*/
+                    }
 
                 return super.visitFunctionAccess(expression)
             }
@@ -185,15 +208,15 @@ class ContextTrackingTransformer(
     ) = NewIndexBuilder(
         listOf(
             DeclarationGraph.CONTEXT_IMPL_PATH,
-            superContext.descriptor.fqNameSafe.asString()
+            subContext.descriptor.fqNameSafe.asString()
         ),
-        subContext
+        superContext
     ) {
         annotations += DeclarationIrBuilder(injektContext, subContext.symbol).run {
             irCall(injektContext.injektSymbols.contextImpl.constructors.single()).apply {
                 putValueArgument(
                     0,
-                    irClassReference(subContext)
+                    irClassReference(superContext)
                 )
             }
         }
@@ -202,30 +225,28 @@ class ContextTrackingTransformer(
     private fun IrExpression.collectContextsInExpression(): Set<IrClass> {
         val contexts = mutableSetOf<IrClass>()
 
-        if (type.isTransformedReaderContext()) {
-            contexts.addIfNotNull(type.lambdaContext)
+        if (type.isContextSubType()) {
+            contexts.addIfNotNull(type.classOrNull!!.owner)
         }
 
         when (this) {
             is IrGetField -> {
-                if (symbol.owner.type.isTransformedReaderContext()) {
-                    contexts.addIfNotNull(symbol.owner.type.lambdaContext)
+                if (symbol.owner.type.isContextSubType()) {
+                    contexts.addIfNotNull(symbol.owner.type.classOrNull!!.owner)
                 }
             }
             is IrGetValue -> {
-                if (symbol.owner.type.isTransformedReaderContext()) {
-                    contexts.addIfNotNull(symbol.owner.type.lambdaContext)
+                if (symbol.owner.type.isContextSubType()) {
+                    contexts.addIfNotNull(symbol.owner.type.classOrNull!!.owner)
                 }
             }
-            is IrFunctionExpression -> {
-                contexts.addIfNotNull(function.getContext())
-            }
             is IrCall -> {
-                contexts.addIfNotNull(symbol.owner.getContext())
+                if (symbol.owner.returnType.isNotTransformedReaderContext())
+                    contexts.addIfNotNull(symbol.owner.returnType.classOrNull!!.owner)
             }
         }
 
         return contexts
-    }*/
+    }
 
 }

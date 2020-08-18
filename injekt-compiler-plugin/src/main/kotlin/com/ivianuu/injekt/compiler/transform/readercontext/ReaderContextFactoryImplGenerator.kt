@@ -255,7 +255,12 @@ class ReaderContextFactoryImplGenerator(
 
         while (true) {
             val superTypes =
-                (if (firstRound) listOf(contextId) + declarationGraph.getRunReaderContexts(contextId)
+                (if (firstRound) (listOf(contextId) +
+                        contextId.getAllClasses()
+                            .flatMapFix { declarationGraph.getAllContextImplementations(it) }
+                            .flatMapFix { declarationGraph.getRunReaderContexts(it) })
+                    .flatMapFix { it.getAllClasses() }
+                    .flatMapFix { declarationGraph.getAllContextImplementations(it) }
                 else graph.resolvedGivens.values
                     .flatMapFix { it.contexts }
                     .flatMapFix { it.getAllClasses() })

@@ -58,6 +58,7 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irSetField
+import org.jetbrains.kotlin.ir.declarations.IrAnonymousInitializer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
@@ -175,7 +176,10 @@ class ImplicitContextParamTransformer(
             super.visitCall(
                 transformCallIfNeeded(
                     expression,
-                    currentScope!!.irElement as IrDeclarationWithName
+                    currentScope!!.irElement as? IrDeclarationWithName
+                        ?: (currentScope!!.irElement as? IrAnonymousInitializer)
+                            ?.let { currentClass!!.irElement as IrDeclarationWithName }
+                        ?: error("Cannot get scope for $currentScope")
                 )
             )
 
@@ -313,12 +317,14 @@ class ImplicitContextParamTransformer(
         if (!needsTransform) {
             val returnType = function.returnType
             needsTransform =
-                returnType.isNotTransformedReaderLambda() && !returnType.isTransformedReaderLambda()
+                (returnType.isNotTransformedReaderLambda() && !returnType.isTransformedReaderLambda()) ||
+                        (returnType.isNotTransformedReaderContext() && !returnType.isTransformedReaderContext())
         }
 
         if (!needsTransform) {
             needsTransform = function.valueParameters.any {
-                it.type.isNotTransformedReaderLambda() && !it.type.isTransformedReaderLambda()
+                (it.type.isNotTransformedReaderLambda() && !it.type.isTransformedReaderLambda()) ||
+                        (it.type.isNotTransformedReaderContext() && !it.type.isTransformedReaderContext())
             }
         }
 
@@ -333,6 +339,11 @@ class ImplicitContextParamTransformer(
         ) {
             transformedFunction.returnType =
                 createNewReaderFunctionType(transformedFunction.returnType, transformedFunction)
+        } else if (function.returnType.isNotTransformedReaderContext() &&
+            !function.returnType.isTransformedReaderContext()
+        ) {
+            transformedFunction.returnType =
+                createNewContextType(transformedFunction)
         }
 
         if (function.canUseImplicits(injektContext)) {
@@ -464,7 +475,9 @@ class ImplicitContextParamTransformer(
             expression.valueArgumentsCount,
             expression.origin,
             expression.superQualifierSymbol
-        ).copyAttributes(expression)
+        ).apply {
+            copyTypeAndValueArgumentsFrom(expression)
+        }.copyAttributes(expression)
     }
 
     private fun transformWhenIfNeeded(
