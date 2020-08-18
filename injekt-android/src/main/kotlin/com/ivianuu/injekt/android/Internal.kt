@@ -48,6 +48,4 @@ internal fun ViewModelStore.scopedContext(init: () -> Context): Context {
     )[ViewModelContextHolder::class.java].context
 }
 
-private class ViewModelContextHolder(
-    val context: Context
-) : ViewModel()
+private class ViewModelContextHolder(val context: Context) : ViewModel()
