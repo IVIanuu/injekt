@@ -457,6 +457,11 @@ class ImplicitContextParamTransformer(
         expression: IrCall,
         scopeElement: IrDeclarationWithName
     ): IrCall {
+        if (expression.symbol.descriptor.fqNameSafe.asString() !=
+            "com.ivianuu.injekt.rootContext" &&
+            expression.symbol.owner.descriptor.fqNameSafe.asString() !=
+            "com.ivianuu.injekt.childContext"
+        ) return expression
         val type = expression.type
         if (!type.isNotTransformedReaderContext()) return expression
         if (type.isTransformedReaderContext()) return expression
