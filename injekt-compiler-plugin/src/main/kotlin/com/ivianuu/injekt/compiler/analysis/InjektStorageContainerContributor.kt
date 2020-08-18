@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.analysis
 
 import org.jetbrains.kotlin.container.StorageComponentContainer
-import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.platform.TargetPlatform
@@ -31,11 +30,11 @@ class InjektStorageContainerContributor(
         platform: TargetPlatform,
         moduleDescriptor: ModuleDescriptor
     ) {
-        container.useInstance(ReaderContextChecker())
+        /*container.useInstance(ReaderContextChecker())
         container.useInstance(EffectChecker())
         container.useInstance(GivenChecker())
         container.useInstance(GivenSetChecker())
-        container.useInstance(implicitChecker)
+        container.useInstance(implicitChecker)*/
     }
 
 }

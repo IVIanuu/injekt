@@ -1,13 +1,13 @@
 package com.ivianuu.injekt
 
 import com.ivianuu.injekt.internal.injektIntrinsic
+import kotlin.reflect.KClass
 
-@Target(AnnotationTarget.CLASS)
-annotation class Context
+interface Context
 
-fun <T> rootContext(vararg inputs: Any?): T = injektIntrinsic()
+fun rootContext(vararg inputs: Any?, name: KClass<*> = Nothing::class): Context = injektIntrinsic()
 
 @Reader
-fun <T> childContext(vararg inputs: Any?): T = injektIntrinsic()
+fun childContext(vararg inputs: Any?, name: KClass<*> = Nothing::class): Context = injektIntrinsic()
 
-inline fun <R> Any.runReader(block: @Reader () -> R): R = injektIntrinsic()
+inline fun <R> Context.runReader(block: @Reader () -> R): R = injektIntrinsic()

@@ -28,13 +28,15 @@ import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 
-@Context
 interface FragmentContext
 
-val Fragment.fragmentContext: FragmentContext
-    get() = lifecycle.singleton {
+val Fragment.fragmentContext: Context
+    get() = lifecycle.scopedContext {
         activity!!.activityContext.runReader {
-            childContext(this)
+            childContext(
+                this,
+                name = FragmentContext::class
+            )
         }
     }
 

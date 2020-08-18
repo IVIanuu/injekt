@@ -21,12 +21,11 @@ import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.runReader
 
-@Context
 interface RetainedActivityContext
 
-val ComponentActivity.retainedActivityContext: RetainedActivityContext
-    get() = viewModelStore.singleton {
+val ComponentActivity.retainedActivityContext: Context
+    get() = viewModelStore.scopedContext {
         application.applicationReaderContext.runReader {
-            childContext()
+            childContext(name = RetainedActivityContext::class)
         }
     }

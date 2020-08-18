@@ -27,13 +27,12 @@ import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 
-@Context
 interface ActivityContext
 
-val ComponentActivity.activityContext: ActivityContext
-    get() = lifecycle.singleton {
+val ComponentActivity.activityContext: Context
+    get() = lifecycle.scopedContext {
         retainedActivityContext.runReader {
-            childContext(this)
+            childContext(this, name = ActivityContext::class)
         }
     }
 

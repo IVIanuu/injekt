@@ -20,12 +20,15 @@ import android.app.Application
 import android.content.res.Resources
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.ApplicationContext
+import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.rootContext
 
-val Application.applicationReaderContext: ApplicationContext
-    get() = ProcessLifecycleOwner.get().lifecycle.singleton { rootContext(this) }
+val Application.applicationReaderContext: Context
+    get() = ProcessLifecycleOwner.get().lifecycle.scopedContext {
+        rootContext(this, name = ApplicationContext::class)
+    }
 
 typealias AndroidApplicationContext = android.content.Context
 

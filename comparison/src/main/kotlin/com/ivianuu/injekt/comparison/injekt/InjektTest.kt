@@ -29,7 +29,7 @@ object InjektTest : InjectionTest {
 
     override val name = "Injekt"
 
-    private var context: InjektTestContext? = null
+    private var context: Context? = null
 
     override fun setup() {
         this.context = rootContext()
@@ -42,8 +42,5 @@ object InjektTest : InjectionTest {
     override fun shutdown() {
         context = null
     }
-
-    @Context
-    interface InjektTestContext
 
 }

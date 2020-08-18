@@ -7,18 +7,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.lifecycleScope
+import com.ivianuu.injekt.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 
-private val lifecycleSingletons = mutableMapOf<Lifecycle, Any>()
+private val lifecycleContexts = mutableMapOf<Lifecycle, Context>()
 
-internal fun <T : Any> Lifecycle.singleton(init: () -> T): T {
-    return synchronized(lifecycleSingletons) {
-        lifecycleSingletons[this]?.let { return it as T }
-        val value = init()
-        lifecycleSingletons[this] = value
-        value
+internal fun Lifecycle.scopedContext(init: () -> Context): Context {
+    lifecycleContexts[this]?.let { return it }
+    return synchronized(lifecycleContexts) {
+        lifecycleContexts[this]?.let { return it }
+        val context = init()
+        lifecycleContexts[this] = context
+        context
     }.also {
         addObserver(object : LifecycleEventObserver {
             override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
@@ -26,8 +28,8 @@ internal fun <T : Any> Lifecycle.singleton(init: () -> T): T {
                     // schedule clean up to the next frame
                     // to allow users to access bindings in their onDestroy()
                     source.lifecycleScope.launch(Dispatchers.Main + NonCancellable) {
-                        synchronized(lifecycleSingletons) {
-                            lifecycleSingletons -= this@singleton
+                        synchronized(lifecycleContexts) {
+                            lifecycleContexts -= this@scopedContext
                         }
                     }
                 }
@@ -36,24 +38,16 @@ internal fun <T : Any> Lifecycle.singleton(init: () -> T): T {
     }
 }
 
-internal fun <T> ViewModelStore.singleton(init: () -> T): T {
-    val holder = ViewModelProvider(
+internal fun ViewModelStore.scopedContext(init: () -> Context): Context {
+    return ViewModelProvider(
         this,
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                ViewModelContextHolder() as T
+                ViewModelContextHolder(init()) as T
         }
-    )[ViewModelContextHolder::class.java]
-
-    var value = holder.value
-    if (value == null) {
-        value = init()
-        holder.value = value
-    }
-
-    return value as T
+    )[ViewModelContextHolder::class.java].context
 }
 
-private class ViewModelContextHolder : ViewModel() {
-    var value: Any? = null
-}
+private class ViewModelContextHolder(
+    val context: Context
+) : ViewModel()
