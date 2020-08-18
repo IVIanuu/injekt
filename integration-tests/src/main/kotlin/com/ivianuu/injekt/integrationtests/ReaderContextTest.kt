@@ -71,6 +71,26 @@ class ReaderContextTest {
     }
 
     @Test
+    fun testWithChild2() = codegen(
+        """
+            val rootContext = rootContext()
+            
+            fun invoke() { 
+                rootContext.runReader {  }
+                child()
+            }
+
+            private fun child() = rootContext.runReader {
+                childContext(Foo()).runReader {
+                    given<Foo>()
+                }
+            }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
     fun testWithMultiChild() = codegen(
         """
             @Given
