@@ -36,7 +36,6 @@ import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.types.isNothing
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -117,9 +116,7 @@ class GivensGraph(
                         inputFunctionNodes.getOrPut(function.returnType.asKey()) { mutableSetOf() } += GivenFunction(
                             key = function.returnType.asKey(),
                             owner = contextImpl,
-                            contexts = listOf(
-                                function.getContext() ?: error("Wtf ${function.dump()}")
-                            ),
+                            contexts = listOf(function.getContext()!!),
                             external = function.isExternalDeclaration(),
                             explicitParameters = explicitParameters,
                             origin = function.descriptor.fqNameSafe,
@@ -150,6 +147,23 @@ class GivensGraph(
     }
 
     fun getGiven(request: GivenRequest): Given {
+        var given = getGivenOrNull(request)
+
+        if (request.key.type.isMarkedNullable()) {
+            given = GivenNull(request.key, contextImpl)
+            resolvedGivens[request.key] = given
+            return given
+        }
+
+
+        error(
+            "No given found for '${request.key}'\n" +
+                    "required at '${request.requestOrigin.orUnknown()}'\n" +
+                    "in ${contextImpl.superTypes.first().render()}\n"
+        )
+    }
+
+    private fun getGivenOrNull(request: GivenRequest): Given? {
         var given = resolvedGivens[request.key]
         if (given != null) return given
 
@@ -178,8 +192,8 @@ class GivensGraph(
         if (instanceAndGivenSetGivens.size > 1) {
             error(
                 "Multiple instance or given set givens found for '${request.key}' at:\n${
-                instanceAndGivenSetGivens
-                    .joinToString("\n") { "'${it.origin.orUnknown()}'" }
+                    instanceAndGivenSetGivens
+                        .joinToString("\n") { "'${it.origin.orUnknown()}'" }
                 }"
             )
         }
@@ -199,8 +213,8 @@ class GivensGraph(
         if (internalGlobalGivens.size > 1) {
             error(
                 "Multiple internal givens found for '${request.key}' at:\n${
-                internalGlobalGivens
-                    .joinToString("\n") { "'${it.origin.orUnknown()}'" }
+                    internalGlobalGivens
+                        .joinToString("\n") { "'${it.origin.orUnknown()}'" }
                 }"
             )
         }
@@ -214,8 +228,8 @@ class GivensGraph(
         if (externalGlobalGivens.size > 1) {
             error(
                 "Multiple external givens found for '${request.key}' at:\n${
-                externalGlobalGivens
-                    .joinToString("\n") { "'${it.origin.orUnknown()}'" }
+                    externalGlobalGivens
+                        .joinToString("\n") { "'${it.origin.orUnknown()}'" }
                 }.\nPlease specify a given for the requested type in this project."
             )
         }
@@ -226,22 +240,12 @@ class GivensGraph(
             return it
         }
 
-        parent?.getGiven(request)?.let {
+        parent?.getGivenOrNull(request)?.let {
             resolvedGivens[request.key] = it
             return it
         }
 
-        if (request.key.type.isMarkedNullable()) {
-            given = GivenNull(request.key, contextImpl)
-            resolvedGivens[request.key] = given
-            return given
-        }
-
-        error(
-            "No given found for '${request.key}'\n" +
-                    "required at '${request.requestingKey}' '${request.requestOrigin.orUnknown()}'\n" +
-                    "in ${contextImpl.superTypes.first().render()}\n"
-        )
+        return null
     }
 
     private fun givensForKey(key: Key): List<Given> = buildList<Given> {
