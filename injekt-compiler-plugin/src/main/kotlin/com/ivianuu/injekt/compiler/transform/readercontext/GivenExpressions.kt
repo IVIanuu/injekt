@@ -152,7 +152,7 @@ class GivenExpressions(
         return { c ->
             val generator = ReaderContextFactoryImplGenerator(
                 injektContext = injektContext,
-                name = uniqueChildNameProvider("ChildFactory".asNameId()),
+                name = uniqueChildNameProvider("F".asNameId()),
                 factoryInterface = given.factory,
                 irParent = contextImpl,
                 declarationGraph = declarationGraph,

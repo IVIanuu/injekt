@@ -195,6 +195,22 @@ class ImplicitTest {
     }
 
     @Test
+    fun testGenericTypeParametersCapturingReaderLambda() = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+        
+        fun <T> create() = childContext<TestContext>().runReader { given<T>() }
+        
+        fun invoke(): Foo {
+            return create()
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
     fun testNestedReader() = codegen(
         """
         @Given

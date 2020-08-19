@@ -167,7 +167,7 @@ class ReaderContextFactoryImplGenerator(
         irParent: IrDeclarationParent
     ): IrClass {
         val contextImpl = buildClass {
-            this.name = "ContextImpl".asNameId()
+            this.name = "C".asNameId()
             visibility = Visibilities.PRIVATE
             if (parentContext == null && inputTypes.isEmpty()) kind = ClassKind.OBJECT
         }.apply clazz@{
