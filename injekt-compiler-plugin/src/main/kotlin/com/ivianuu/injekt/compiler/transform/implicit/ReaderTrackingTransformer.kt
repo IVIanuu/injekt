@@ -52,7 +52,6 @@ import org.jetbrains.kotlin.ir.expressions.IrSetVariable
 import org.jetbrains.kotlin.ir.expressions.IrWhen
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.statements
@@ -98,7 +97,7 @@ class ReaderTrackingTransformer(
 
             override val invocationContext = call.getValueArgument(0)!!
                 .type
-                .lambdaContext ?: error("Wtf ${call.dump()}")
+                .lambdaContext!!
 
             fun isBlock(function: IrFunction): Boolean =
                 call.getValueArgument(0).let {
@@ -314,10 +313,7 @@ class ReaderTrackingTransformer(
                     .filter { it.first.type.isTransformedReaderLambda() }
                     .flatMapFix { (parameter, argument) ->
                         argument.collectReaderLambdaContextsInExpression()
-                            .map { context ->
-                                (parameter.type.lambdaContext
-                                    ?: error("null for ${parameter.dump()}\n${expression.symbol.owner.dump()}")) to context
-                            }
+                            .map { parameter.type.lambdaContext!! to it }
                     }
                     .map { (superContext, subContext) ->
                         readerImplIndexBuilder(

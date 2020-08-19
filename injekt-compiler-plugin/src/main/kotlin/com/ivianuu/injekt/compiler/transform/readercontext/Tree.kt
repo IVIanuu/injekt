@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.transform.readercontext
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.isTypeParameter
+import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -27,6 +28,7 @@ import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
 import org.jetbrains.kotlin.ir.types.IrErrorType
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
@@ -145,7 +147,21 @@ class Key(val type: IrType) {
 
     override fun toString(): String {
         return when (val distinctedType = type.typeOrTypeAlias) {
-            is IrTypeAliasSymbol -> distinctedType
+            is IrTypeAliasSymbol -> {
+                buildString {
+                    append(distinctedType.descriptor.fqNameSafe.asString())
+                    if (type.typeArguments.isNotEmpty()) {
+                        type.typeArguments.joinToString(
+                            prefix = "<",
+                            postfix = ">",
+                            separator = ", "
+                        ) {
+                            it.render()
+                        }
+                    }
+                    if (type.isMarkedNullable()) append("?")
+                }
+            }
             else -> type.render()
         }.toString()
     }
@@ -181,20 +197,13 @@ class Key(val type: IrType) {
 
 class GivenRequest(
     val key: Key,
-    val requestingKey: Key?,
     val requestOrigin: FqName?
 ) {
 
     fun copy(
         key: Key = this.key,
-        requestingKey: Key? = this.requestingKey,
         requestOrigin: FqName? = this.requestOrigin
-    ): GivenRequest =
-        GivenRequest(
-            key,
-            requestingKey,
-            requestOrigin
-        )
+    ): GivenRequest = GivenRequest(key, requestOrigin)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -210,6 +219,6 @@ class GivenRequest(
     override fun hashCode(): Int = key.hashCode()
 
     override fun toString(): String =
-        "GivenRequest(key=$key, requestingKey=$requestingKey, requestOrigin=$requestOrigin)"
+        "GivenRequest(key=$key, requestOrigin=$requestOrigin)"
 
 }

@@ -281,12 +281,10 @@ class ReaderContextFactoryImplGenerator(
                         existingDeclaration.overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
                         continue
                     }
-                    val request =
-                        GivenRequest(
-                            declaration.returnType.asKey(),
-                            null,
-                            declaration.descriptor.fqNameSafe
-                        )
+                    val request = GivenRequest(
+                        declaration.returnType.asKey(),
+                        declaration.descriptor.fqNameSafe
+                    )
                     expressions.getGivenExpression(graph.getGiven(request))
                 }
 
