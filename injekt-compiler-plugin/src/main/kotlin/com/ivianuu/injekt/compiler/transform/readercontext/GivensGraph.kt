@@ -148,13 +148,13 @@ class GivensGraph(
 
     fun getGiven(request: GivenRequest): Given {
         var given = getGivenOrNull(request)
+        if (given != null) return given
 
         if (request.key.type.isMarkedNullable()) {
             given = GivenNull(request.key, contextImpl)
             resolvedGivens[request.key] = given
             return given
         }
-
 
         error(
             "No given found for '${request.key}'\n" +
