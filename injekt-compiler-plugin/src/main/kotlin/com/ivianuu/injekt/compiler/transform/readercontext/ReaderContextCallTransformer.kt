@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform.readercontext
 
+import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
@@ -24,6 +25,7 @@ import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.transform.InjektContext
+import com.ivianuu.injekt.compiler.transform.implicit.addGivenFunction
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -55,7 +57,6 @@ import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ReaderContextCallTransformer(
@@ -180,12 +181,11 @@ class ReaderContextCallTransformer(
 
                 irGetObject(contextFactoryImplStub.symbol)
             } else {
-                irCall(
-                    injektContext.referenceFunctions(FqName("com.ivianuu.injekt.given"))
-                        .single(),
-                    contextFactory.defaultType
-                ).apply {
-                    putTypeArgument(0, contextFactory.defaultType)
+                val (callerContext, callerContextExpression) =
+                    injektContext.irTrace[InjektWritableSlices.CHILD_CONTEXT_CALLER_CONTEXT, call]!!
+                val factoryFunction = callerContext.addGivenFunction(contextFactory.defaultType)
+                irCall(factoryFunction).apply {
+                    dispatchReceiver = callerContextExpression()
                 }
             }
 

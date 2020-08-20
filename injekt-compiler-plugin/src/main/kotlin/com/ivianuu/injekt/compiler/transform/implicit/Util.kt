@@ -26,12 +26,17 @@ import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.uniqueKey
+import com.ivianuu.injekt.compiler.uniqueTypeName
+import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
@@ -45,6 +50,17 @@ import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunctionOrKFunction
 import org.jetbrains.kotlin.ir.util.isSuspendFunctionOrKFunction
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+
+fun IrClass.addGivenFunction(type: IrType): IrFunction {
+    return addFunction {
+        name = type.uniqueTypeName()
+        returnType = type
+        modality = Modality.ABSTRACT
+    }.apply {
+        dispatchReceiverParameter = thisReceiver?.copyTo(this)
+        addMetadataIfNotLocal()
+    }
+}
 
 fun createContext(
     owner: IrDeclarationWithName,

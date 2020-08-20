@@ -68,13 +68,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             InjektSymbols(injektContext)
         )
 
-        MockReaderTransformer(injektContext).doLower(moduleFragment)
-
-        ReaderContextCallTransformer(
-            injektContext,
-            indexer
-        ).doLower(moduleFragment)
-
         val implicitContextParamTransformer =
             ImplicitContextParamTransformer(injektContext, indexer)
         implicitContextParamTransformer.doLower(moduleFragment)
@@ -85,6 +78,13 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             injektContext,
             indexer,
             implicitContextParamTransformer
+        ).doLower(moduleFragment)
+
+        MockReaderTransformer(injektContext).doLower(moduleFragment)
+
+        ReaderContextCallTransformer(
+            injektContext,
+            indexer
         ).doLower(moduleFragment)
 
         RunReaderCallTransformer(

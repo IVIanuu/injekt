@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt.compiler
 
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.util.slicedMap.BasicWritableSlice
 import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
@@ -29,4 +31,11 @@ object InjektWritableSlices {
         BasicWritableSlice(RewritePolicy.DO_NOTHING)
     val IS_TRANSFORMED_IMPLICIT_FUNCTION: WritableSlice<IrSimpleFunction, Boolean> =
         BasicWritableSlice(RewritePolicy.DO_NOTHING)
+    val CHILD_CONTEXT_CALLER_CONTEXT: WritableSlice<IrFunctionAccessExpression, ChildContextCallMetadata> =
+        BasicWritableSlice(RewritePolicy.DO_NOTHING)
 }
+
+data class ChildContextCallMetadata(
+    val context: IrClass,
+    val expression: () -> IrExpression
+)
