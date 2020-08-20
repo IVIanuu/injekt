@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.internal.injektIntrinsic
+import com.ivianuu.injekt.internal._injektIntrinsic
 
 @Target(
     AnnotationTarget.FUNCTION,
@@ -29,4 +29,4 @@ import com.ivianuu.injekt.internal.injektIntrinsic
 )
 annotation class Reader
 
-fun <T : Function<R>, R> mockReader(reader: T, mock: T): T = injektIntrinsic()
+fun <T : Function<R>, R> mockReader(reader: T, mock: T): T = _injektIntrinsic()

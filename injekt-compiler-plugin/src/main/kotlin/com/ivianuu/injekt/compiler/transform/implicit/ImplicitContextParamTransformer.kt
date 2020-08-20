@@ -681,7 +681,7 @@ class ImplicitContextParamTransformer(
                         irExprBody(
                             irCall(
                                 injektContext.referenceFunctions(
-                                    FqName("com.ivianuu.injekt.internal.injektIntrinsic")
+                                    FqName("com.ivianuu.injekt.internal._injektIntrinsic")
                                 )
                                     .single()
                             ).apply {

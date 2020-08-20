@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt
 
-import com.ivianuu.injekt.internal.injektIntrinsic
+import com.ivianuu.injekt.internal._injektIntrinsic
 import kotlin.reflect.KClass
 
 @Target(
@@ -28,7 +28,7 @@ import kotlin.reflect.KClass
 annotation class Given(val scopeContext: KClass<*> = Nothing::class)
 
 @Reader
-fun <T> given(vararg arguments: Any?): T = injektIntrinsic()
+fun <T> given(vararg arguments: Any?): T = _injektIntrinsic()
 
 @Target(
     AnnotationTarget.FUNCTION,
