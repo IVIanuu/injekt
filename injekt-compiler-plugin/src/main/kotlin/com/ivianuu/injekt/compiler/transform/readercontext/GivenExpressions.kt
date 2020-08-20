@@ -44,6 +44,8 @@ import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -94,11 +96,19 @@ class GivenExpressions(
         contextImpl.addFunction {
             this.name = declaration.name
             returnType = declaration.returnType
+            isSuspend = declaration.isSuspend
         }.apply {
             this.parent = contextImpl
             copyReceiverParametersFrom(declaration)
             copyValueParametersFrom(declaration)
             dispatchReceiverParameter = contextImpl.thisReceiver!!.copyTo(this)
+
+            if (declaration.hasAnnotation(FqName("androidx.compose.runtime.Composable"))) {
+                annotations += DeclarationIrBuilder(injektContext, symbol).irCall(
+                    injektContext.referenceConstructors(FqName("androidx.compose.runtime.Composable"))
+                        .single()
+                )
+            }
 
             body = DeclarationIrBuilder(injektContext, symbol).run {
                 irExprBody(

@@ -90,9 +90,11 @@ import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -278,12 +280,19 @@ class ImplicitCallTransformer(
                         .uniqueTypeName()
                     returnType = function.returnType
                     modality = Modality.ABSTRACT
+                    isSuspend = function.isSuspend
                 }.apply {
                     dispatchReceiverParameter = context.thisReceiver?.copyTo(this)
                     addMetadataIfNotLocal()
                     copyValueParametersToStatic(function, IrDeclarationOrigin.DEFINED)
                     valueParameters = valueParameters.dropLast(1)
                     annotations += qualifierAnnotation()
+                    if (function.hasAnnotation(FqName("androidx.compose.runtime.Composable"))) {
+                        annotations += DeclarationIrBuilder(injektContext, symbol).irCall(
+                            injektContext.referenceConstructors(FqName("androidx.compose.runtime.Composable"))
+                                .single()
+                        )
+                    }
                 }
             }
         }
@@ -576,6 +585,7 @@ class ImplicitCallTransformer(
             }
 
         return if ((transformedCall is IrCall || transformedCall is IrConstructorCall) &&
+            !transformedCall.symbol.owner.isInline &&
             transformedCall.typeArgumentsCount == 0
         ) {
             val transformedCallee = transformedCall.symbol.owner
