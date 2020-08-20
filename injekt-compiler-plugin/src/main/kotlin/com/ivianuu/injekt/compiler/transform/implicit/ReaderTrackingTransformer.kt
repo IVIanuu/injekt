@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.irClassReference
 import com.ivianuu.injekt.compiler.isMarkedAsImplicit
 import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
+import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
@@ -390,6 +391,8 @@ class ReaderTrackingTransformer(
             ),
             callingContext
         ) {
+            recordLookup(this, calleeContext)
+            recordLookup(this, callingContext)
             annotations += DeclarationIrBuilder(injektContext, callingContext.symbol).run {
                 irCall(injektContext.injektSymbols.readerCall.constructors.single()).apply {
                     putValueArgument(
@@ -415,6 +418,8 @@ class ReaderTrackingTransformer(
         ),
         subContext
     ) {
+        recordLookup(this, superContext)
+        recordLookup(this, subContext)
         annotations += DeclarationIrBuilder(injektContext, subContext.symbol).run {
             irCall(injektContext.injektSymbols.readerImpl.constructors.single()).apply {
                 putValueArgument(

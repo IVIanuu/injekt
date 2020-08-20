@@ -79,7 +79,7 @@ class DeclarationGraph(
                 context.descriptor.fqNameSafe.asString()
             )
         )
-            .map { it.getClassFromAnnotation(InjektFqNames.RunReaderCall, 0)!! }
+            .mapNotNull { it.getClassFromAnnotation(InjektFqNames.RunReaderCall, 0) }
     }
 
     private val implementationsByContext = mutableMapOf<IrClass, Set<IrClass>>()

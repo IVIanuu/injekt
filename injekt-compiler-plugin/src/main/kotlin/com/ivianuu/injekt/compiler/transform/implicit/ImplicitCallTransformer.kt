@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.irClassReference
 import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
+import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.remapTypeParametersByName
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.thisOfClass
@@ -196,6 +197,7 @@ class ImplicitCallTransformer(
                 }
 
             newIndexBuilders += NewIndexBuilder(context) {
+                recordLookup(this, context)
                 copyTypeParametersFrom(genericContext)
                 superTypes += genericContext.typeWith(
                     typeArguments

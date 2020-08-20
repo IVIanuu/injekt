@@ -27,6 +27,7 @@ import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isMarkedAsImplicit
 import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
 import com.ivianuu.injekt.compiler.jvmNameAnnotation
+import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.remapTypeParametersByName
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpKFunction
@@ -252,6 +253,7 @@ class ImplicitContextParamTransformer(
         )
 
         newSignatureIndexBuilders += NewIndexBuilder(clazz) {
+            recordLookup(this, clazz)
             addReaderSignature(clazz, readerConstructor, null)
         }
 
@@ -334,6 +336,7 @@ class ImplicitContextParamTransformer(
         }
 
         newSignatureIndexBuilders += NewIndexBuilder(transformedFunction) {
+            recordLookup(this, transformedFunction)
             addReaderSignature(transformedFunction, transformedFunction, null)
         }
 

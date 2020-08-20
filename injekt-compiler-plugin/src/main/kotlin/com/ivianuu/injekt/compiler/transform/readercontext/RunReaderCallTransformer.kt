@@ -1,8 +1,8 @@
 package com.ivianuu.injekt.compiler.transform.readercontext
 
-import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.irClassReference
+import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
@@ -54,7 +54,8 @@ class RunReaderCallTransformer(
                         .toString()
                         .asNameId()
                 ) {
-                    addMetadataIfNotLocal()
+                    recordLookup(this, contextExpression.type.classOrNull!!.owner)
+                    recordLookup(this, lambdaExpression.type.lambdaContext!!)
                     annotations += DeclarationIrBuilder(injektContext, symbol).run {
                         irCall(injektContext.injektSymbols.runReaderCall.constructors.single()).apply {
                             putValueArgument(
