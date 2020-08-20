@@ -14,7 +14,17 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.internal
+plugins {
+    kotlin("jvm")
+}
 
-fun <T> injektIntrinsic(): T =
-    throw UnsupportedOperationException("Must be compiled with the injekt compiler")
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-compiler-args.gradle")
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
+apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mvn-publish.gradle")
+
+dependencies {
+    api(project(":injekt-core"))
+    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
+    testImplementation(Deps.junit)
+}

@@ -9,6 +9,7 @@ include(
     ":injekt-compiler-plugin",
     ":injekt-core",
     ":injekt-gradle-plugin",
+    ":injekt-test",
     ":integration-tests",
     ":lol",
     ":sample",
