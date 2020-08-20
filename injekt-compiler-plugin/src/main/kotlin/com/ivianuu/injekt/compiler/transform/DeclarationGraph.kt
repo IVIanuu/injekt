@@ -22,14 +22,17 @@ import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
+import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class DeclarationGraph(
+    private val injektContext: InjektContext,
     private val indexer: Indexer,
     val module: IrModuleFragment,
     private val implicitContextParamTransformer: ImplicitContextParamTransformer
@@ -144,13 +147,38 @@ class DeclarationGraph(
         contexts
     }
 
+    private val readerFunctionByType = mutableMapOf<String, IrFunction>()
+    fun getReaderFunctionForKey(key: String) = readerFunctionByType.getOrPut(key) {
+        val fqName = key.split("__").first()
+            .removeSuffix(".<init>")
+            .let { FqName(it) }
+        when {
+            key.endsWith("__property") -> {
+                injektContext.referenceProperties(fqName)
+                    .single { it.owner.uniqueKey() == key }
+                    .owner
+                    .getter!!
+            }
+            key.contains("<init>") -> {
+                injektContext.referenceClass(fqName)!!
+                    .constructors
+                    .single { it.owner.uniqueKey() == key }
+                    .owner
+            }
+            else -> {
+                injektContext.referenceFunctions(fqName)
+                    .single { it.owner.uniqueKey() == key }
+                    .owner
+            }
+        }.let { implicitContextParamTransformer.getTransformedFunction(it) }
+    }
+
     companion object {
         const val READER_CALL_PATH = "reader_call"
         const val READER_IMPL_PATH = "reader_impl"
         const val ROOT_CONTEXT_FACTORY_PATH = "root_context_factory"
         const val RUN_READER_CALL_PATH = "run_reader_call"
         const val GIVEN_PATH = "given"
-        const val GIVEN_CONTEXTS_PATH = "given_contexts"
         const val GENERIC_CONTEXT_PATH = "generic_context"
         const val MAP_ENTRIES_PATH = "map_entries"
         const val SET_ELEMENTS_PATH = "set_elements"

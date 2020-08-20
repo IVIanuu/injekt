@@ -65,12 +65,14 @@ class GivenFunction(
 ) : Given(key, owner, contexts, origin, external, targetContext, givenSetAccessExpression)
 
 class GivenInstance(
-    val inputField: IrField,
-    owner: IrClass
+    key: Key,
+    owner: IrClass,
+    contexts: List<IrClass>,
+    val inputField: IrField
 ) : Given(
-    inputField.type.asKey(),
+    key,
     owner,
-    emptyList(),
+    contexts,
     inputField.descriptor.fqNameSafe,
     false,
     null,
@@ -178,6 +180,12 @@ class Key(val type: IrType) {
 
     private fun IrType.hashWithDistinct(): Int {
         var result = 0
+        val qualifier = getConstantFromAnnotationOrNull<String>(InjektFqNames.Qualifier, 0)
+        if (qualifier != null) {
+            result += 31 * qualifier.hashCode()
+            return result
+        }
+
         val distinctedType = typeOrTypeAlias
         if (distinctedType is IrSimpleType) {
             result += 31 * distinctedType.classifier.hashCode()
@@ -186,9 +194,6 @@ class Key(val type: IrType) {
         } else {
             result += 31 * distinctedType.hashCode()
         }
-
-        val qualifier = getConstantFromAnnotationOrNull<String>(InjektFqNames.Qualifier, 0)
-        if (qualifier != null) result += 31 * qualifier.hashCode()
 
         return result
     }

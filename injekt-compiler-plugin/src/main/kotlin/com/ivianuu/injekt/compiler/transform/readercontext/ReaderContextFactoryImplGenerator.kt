@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler.transform.readercontext
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
@@ -40,6 +41,7 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isObject
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -281,11 +283,19 @@ class ReaderContextFactoryImplGenerator(
                         existingDeclaration.overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
                         continue
                     }
-                    val request = GivenRequest(
-                        declaration.returnType.asKey(),
-                        declaration.descriptor.fqNameSafe
-                    )
-                    expressions.getGivenExpression(graph.getGiven(request))
+                    if (declaration.hasAnnotation(InjektFqNames.Qualifier)) {
+                        expressions.implementReaderFunction(declaration)
+                            ?.let { implement(it) }
+                    } else {
+                        expressions.getGivenExpression(
+                            graph.getGiven(
+                                GivenRequest(
+                                    declaration.returnType.asKey(),
+                                    declaration.descriptor.fqNameSafe
+                                )
+                            )
+                        )
+                    }
                 }
 
                 superType.superTypes

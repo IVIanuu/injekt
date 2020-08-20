@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
@@ -547,10 +548,16 @@ fun IrPluginContext.tmpSuspendFunction(n: Int): IrClassSymbol =
 fun IrPluginContext.tmpSuspendKFunction(n: Int): IrClassSymbol =
     referenceClass(builtIns.getKSuspendFunction(n).fqNameSafe)!!
 
-fun IrFunction.getFunctionType(injektContext: InjektContext): IrType {
-    return (if (isSuspend) injektContext.tmpSuspendFunction(valueParameters.size)
-    else injektContext.tmpFunction(valueParameters.size))
-        .typeWith(valueParameters.map { it.type } + returnType)
+fun IrFunction.getFunctionType(
+    injektContext: InjektContext,
+    includeReaderContext: Boolean = true
+): IrType {
+    val minusArgs = if (!includeReaderContext && getContextValueParameter() != null) 1 else 0
+    return (if (isSuspend) injektContext.tmpSuspendFunction(valueParameters.size - minusArgs)
+    else injektContext.tmpFunction(valueParameters.size - minusArgs))
+        .typeWith(valueParameters
+            .filter { includeReaderContext || it != getContextValueParameter() }
+            .map { it.type } + returnType)
 }
 
 fun getJoinedName(
@@ -624,7 +631,10 @@ fun wrapDescriptor(descriptor: FunctionDescriptor): WrappedSimpleFunctionDescrip
     }
 }
 
-fun IrFunction.copy(injektContext: InjektContext): IrSimpleFunction {
+fun IrFunction.copy(
+    injektContext: InjektContext,
+    visibility: Visibility = this.visibility
+): IrSimpleFunction {
     val descriptor = descriptor
     val newDescriptor = wrapDescriptor(descriptor)
 

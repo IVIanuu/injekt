@@ -20,8 +20,10 @@ import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.canUseImplicits
+import com.ivianuu.injekt.compiler.copy
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getContextValueParameter
+import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.irClassReference
 import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
@@ -36,11 +38,14 @@ import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
+import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
+import org.jetbrains.kotlin.backend.common.ir.copyValueParametersToStatic
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -62,6 +67,7 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.impl.IrExternalPackageFragmentImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
@@ -128,11 +134,12 @@ class ImplicitCallTransformer(
     }
 
     inner class ReaderScope(
-        val declaration: IrDeclaration,
+        val declaration: IrDeclarationWithName,
         val context: IrClass
     ) {
 
         private val functionsByType = mutableMapOf<IrType, IrFunction>()
+        private val functionsByReaderFunction = mutableMapOf<IrFunction, IrFunction>()
 
         private val parentFunction =
             if ((declaration as IrDeclarationWithVisibility).visibility == Visibilities.LOCAL && declaration.parent is IrFunction)
@@ -238,6 +245,47 @@ class ImplicitCallTransformer(
             }
 
             return name
+        }
+
+        fun functionForReader(function: IrFunction): IrFunction {
+            return functionsByReaderFunction.getOrPut(function) {
+                fun qualifierAnnotation() = DeclarationIrBuilder(
+                    injektContext,
+                    function.symbol
+                ).run {
+                    irCall(injektContext.injektSymbols.qualifier.constructors.single()).apply {
+                        putValueArgument(
+                            0,
+                            irString(
+                                if (function is IrSimpleFunction &&
+                                    function.correspondingPropertySymbol != null
+                                ) {
+                                    function.correspondingPropertySymbol!!.owner.uniqueKey()
+                                } else {
+                                    function.uniqueKey()
+                                }
+                            )
+                        )
+                    }
+                }
+                context.addFunction {
+                    name = function.getFunctionType(injektContext, includeReaderContext = false)
+                        .let {
+                            it.copy(
+                                annotations = it.annotations + qualifierAnnotation()
+                            )
+                        }
+                        .uniqueTypeName()
+                    returnType = function.returnType
+                    modality = Modality.ABSTRACT
+                }.apply {
+                    dispatchReceiverParameter = context.thisReceiver?.copyTo(this)
+                    addMetadataIfNotLocal()
+                    copyValueParametersToStatic(function, IrDeclarationOrigin.DEFINED)
+                    valueParameters = valueParameters.dropLast(1)
+                    annotations += qualifierAnnotation()
+                }
+            }
         }
 
         fun givenExpressionForType(
@@ -480,8 +528,8 @@ class ImplicitCallTransformer(
         }
 
         val contextArgument =
-            if (transformedCall.isReaderLambdaInvoke(injektContext) || transformedCall.typeArgumentsCount == 0) {
-                if (!transformedCall.isReaderLambdaInvoke(injektContext))
+            if (transformedCall.typeArgumentsCount == 0) {
+                if (transformedCall is IrDelegatingConstructorCall)
                     scope.inheritContext(calleeContext.defaultType)
                 contextExpression()
             } else {
@@ -527,9 +575,33 @@ class ImplicitCallTransformer(
                 }
             }
 
-        transformedCall.putValueArgument(transformedCall.valueArgumentsCount - 1, contextArgument)
-
-        return transformedCall
+        return if ((transformedCall is IrCall || transformedCall is IrConstructorCall) &&
+            transformedCall.typeArgumentsCount == 0
+        ) {
+            val transformedCallee = transformedCall.symbol.owner
+            DeclarationIrBuilder(injektContext, transformedCall.symbol).run {
+                irCall(scope.functionForReader(transformedCallee)).apply {
+                    dispatchReceiver = contextExpression()
+                    transformedCallee.allParameters.dropLast(1)
+                        .forEachIndexed { index, valueParameter ->
+                            putValueArgument(
+                                index,
+                                when (valueParameter) {
+                                    transformedCallee.dispatchReceiverParameter -> transformedCall.dispatchReceiver
+                                    transformedCallee.extensionReceiverParameter -> transformedCall.extensionReceiver
+                                    else -> transformedCall.getValueArgument(valueParameter.index)
+                                }
+                            )
+                        }
+                }
+            }
+        } else {
+            transformedCall.putValueArgument(
+                transformedCall.valueArgumentsCount - 1,
+                contextArgument
+            )
+            return transformedCall
+        }
     }
 
 }

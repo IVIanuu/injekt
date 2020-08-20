@@ -569,7 +569,8 @@ class ImplicitContextParamTransformer(
 
     private fun IrFunction.copyAsReader(): IrFunction {
         return copy(
-            injektContext
+            injektContext,
+            visibility = if (visibility != Visibilities.LOCAL) Visibilities.PUBLIC else visibility
         ).apply {
             injektContext.irTrace.record(
                 InjektWritableSlices.IS_TRANSFORMED_IMPLICIT_FUNCTION,

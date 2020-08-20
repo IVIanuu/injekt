@@ -1,7 +1,12 @@
 package com.ivianuu.injekt.compiler.transform.readercontext
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.copy
+import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
+import com.ivianuu.injekt.compiler.getContext
+import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
@@ -9,12 +14,14 @@ import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.ir.addChild
+import org.jetbrains.kotlin.backend.common.ir.copyReceiverParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.copyTo
+import org.jetbrains.kotlin.backend.common.ir.copyValueParametersFrom
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addField
-import org.jetbrains.kotlin.ir.builders.declarations.buildFun
+import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irExprBody
@@ -22,9 +29,11 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irNull
+import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
@@ -37,6 +46,7 @@ import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class GivenExpressions(
     private val parent: GivenExpressions?,
@@ -49,6 +59,86 @@ class GivenExpressions(
 
     private val givenExpressions = mutableMapOf<Key, ContextExpression>()
     private val uniqueChildNameProvider = SimpleUniqueNameProvider()
+
+    fun implementReaderFunction(declaration: IrFunction): IrClass? {
+        if (contextImpl.functions.any { it.name == declaration.name }) return null
+
+        val key = declaration.getConstantFromAnnotationOrNull<String>(InjektFqNames.Qualifier, 0)!!
+
+        val uniqueKey = declaration
+            .getConstantFromAnnotationOrNull<String>(InjektFqNames.Qualifier, 0)!!
+        val mock = givensGraph.getGivenOrNull(
+            GivenRequest(
+                declaration.getFunctionType(injektContext, false)
+                    .let {
+                        it.copy(
+                            annotations = it.annotations + DeclarationIrBuilder(
+                                injektContext,
+                                declaration.symbol
+                            ).run {
+                                irCall(injektContext.injektSymbols.qualifier.constructors.single()).apply {
+                                    putValueArgument(
+                                        0,
+                                        irString(uniqueKey)
+                                    )
+                                }
+                            }
+                        )
+                    }
+                    .asKey(),
+                declaration.descriptor.fqNameSafe
+            )
+        )
+        val callee = if (mock == null) declarationGraph.getReaderFunctionForKey(key) else null
+
+        contextImpl.addFunction {
+            this.name = declaration.name
+            returnType = declaration.returnType
+        }.apply {
+            this.parent = contextImpl
+            copyReceiverParametersFrom(declaration)
+            copyValueParametersFrom(declaration)
+            dispatchReceiverParameter = contextImpl.thisReceiver!!.copyTo(this)
+
+            body = DeclarationIrBuilder(injektContext, symbol).run {
+                irExprBody(
+                    if (mock != null) getGivenExpression(mock)(
+                        ContextExpressionContext(
+                            injektContext,
+                            contextImpl
+                        ) { irGet(dispatchReceiverParameter!!) }
+                    )
+                    else (if (callee is IrConstructor) {
+                        IrConstructorCallImpl(
+                            UNDEFINED_OFFSET,
+                            UNDEFINED_OFFSET,
+                            callee.returnType,
+                            callee.symbol,
+                            callee.constructedClass.typeParameters.size,
+                            callee.typeParameters.size,
+                            callee.valueParameters.size
+                        )
+                    } else {
+                        irCall(callee!!)
+                    }).apply {
+                        var currentParameter = 0
+                        fun nextParam() = irGet(valueParameters[currentParameter++])
+                        if (dispatchReceiver != null) dispatchReceiver = nextParam()
+                        if (extensionReceiver != null) extensionReceiver = nextParam()
+                        callee.valueParameters.dropLast(1).forEach {
+                            putValueArgument(it.index, nextParam())
+                        }
+                        putValueArgument(
+                            callee.valueParameters.size - 1,
+                            irGet(dispatchReceiverParameter!!)
+                        )
+                    }
+                )
+            }
+        }
+
+        return if (mock == null) callee!!.getContext()!! else null
+    }
 
     fun getGivenExpression(given: Given): ContextExpression {
         givenExpressions[given.key]?.let { return it }
@@ -116,13 +206,11 @@ class GivenExpressions(
             }
         })
 
-        val function = buildFun {
+        val function = contextImpl.addFunction {
             this.name = given.key.type.uniqueTypeName()
             returnType = given.key.type
         }.apply {
             dispatchReceiverParameter = contextImpl.thisReceiver!!.copyTo(this)
-            this.parent = contextImpl
-            contextImpl.addChild(this)
         }
 
         val expression: ContextExpression = { c ->

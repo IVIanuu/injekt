@@ -53,7 +53,14 @@ class GivensGraph(
 ) {
 
     private val instanceNodes = inputs
-        .map { GivenInstance(it, contextImpl) }
+        .map {
+            GivenInstance(
+                it.type.asKey(),
+                contextImpl,
+                emptyList(),
+                it
+            )
+        }
         .groupBy { it.key }
 
     private val inputFunctionNodes = mutableMapOf<Key, MutableSet<Given>>()
@@ -163,7 +170,20 @@ class GivensGraph(
         )
     }
 
-    private fun getGivenOrNull(request: GivenRequest): Given? {
+    fun getGivenOrNull(request: GivenRequest): Given? {
+        var given = getGivenOrNullIgnoreNullability(request)
+        if (given != null) return given
+
+        if (request.key.type.isMarkedNullable()) {
+            given = GivenNull(request.key, contextImpl)
+            resolvedGivens[request.key] = given
+            return given
+        }
+
+        return given
+    }
+
+    private fun getGivenOrNullIgnoreNullability(request: GivenRequest): Given? {
         var given = resolvedGivens[request.key]
         if (given != null) return given
 
@@ -240,7 +260,7 @@ class GivensGraph(
             return it
         }
 
-        parent?.getGivenOrNull(request)?.let {
+        parent?.getGivenOrNullIgnoreNullability(request)?.let {
             resolvedGivens[request.key] = it
             return it
         }

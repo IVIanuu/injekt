@@ -50,6 +50,51 @@ class ReaderContextTest {
     }
 
     @Test
+    fun testSimple2() = codegen(
+        """
+            @Context
+            interface SimpleContext
+            
+            @Given
+            fun foo() = Foo()
+            @Given
+            fun bar() = Bar(given())
+            
+            fun invoke(): Bar {
+                return rootContext<SimpleContext>().runReader { a() }
+            }
+            
+            @Reader
+            fun a() = b()
+            
+            @Reader
+            fun b() = given<Bar>()
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
+    }
+
+    @Test
+    fun testMock() = codegen(
+        """
+            @Context
+            interface SimpleContext
+            
+            @Given
+            fun foo() = Foo()
+            
+            fun invoke(foo: Foo): Foo {
+                return rootContext<SimpleContext>(
+                    mockReader(::foo) { foo }
+                ).runReader { foo() }
+            }
+    """
+    ) {
+        val foo = Foo()
+        assertSame(foo, invokeSingleFile(foo))
+    }
+
+    @Test
     fun testWithChild() = codegen(
         """
             @Given
