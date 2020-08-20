@@ -164,18 +164,6 @@ class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransforme
                                             .single()
                                     )
                                 )
-                            } else if (declaration.hasAnnotation(FqName("androidx.compose.Composable"))) {
-                                it.copy(
-                                    annotations = it.annotations + DeclarationIrBuilder(
-                                        injektContext,
-                                        declaration.symbol
-                                    ).irCall(
-                                        injektContext.referenceConstructors(FqName("androidx.compose.Composable"))
-                                            .single()
-                                    )
-                                )
-                            } else {
-                                it
                             }
                         }
                         .let {
