@@ -27,6 +27,8 @@ import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.uniqueTypeName
+import org.jetbrains.kotlin.backend.common.pop
+import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -66,6 +68,7 @@ class GivensGraph(
 
     val resolvedGivens = mutableMapOf<Key, Given>()
 
+    private val callChain = mutableListOf<FqName?>()
     private val requestChain = mutableListOf<GivenRequest>()
 
     init {
@@ -152,6 +155,14 @@ class GivensGraph(
         }
     }
 
+    fun pushCall(fqName: FqName?) {
+        callChain.push(fqName)
+    }
+
+    fun popCall() {
+        callChain.pop()
+    }
+
     fun check(request: GivenRequest) {
         requestChain += request
         getGiven(request)
@@ -183,15 +194,32 @@ class GivensGraph(
         }
 
         error(
-            "No given found for '${request.key}' in '${
-                contextImpl.superTypes.first().render()
-            }':\n" +
-                    "${
-                        requestChain
-                            .joinToString("\n") {
-                                "    '${it.key}' given at '${it.requestOrigin.orUnknown()}'"
-                            }
-                    }\n"
+            buildString {
+                var indendation = ""
+                fun indent() {
+                    indendation = "$indendation    "
+                }
+                appendLine(
+                    "No given found for '${request.key}' in '${
+                        contextImpl.superTypes.first().render()
+                    }':"
+                )
+
+                callChain.forEachIndexed { index, fqName ->
+                    if (index == 0) {
+                        appendLine("${indendation}runReader '${fqName.orUnknown()}'")
+                    } else {
+                        appendLine("${indendation}calls '${fqName.orUnknown()}'")
+                    }
+                    indent()
+                }
+
+                requestChain
+                    .forEach {
+                        appendLine("${indendation}requires '${it.key}'")
+                        indent()
+                    }
+            }
         )
     }
 

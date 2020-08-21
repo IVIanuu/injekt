@@ -43,6 +43,50 @@ class GivensGraphTest {
     }
 
     @Test
+    fun testDeeplyMissingBindingFails() = codegen(
+        """
+    
+        @Given
+        fun bar() = Bar(given())
+    
+        @Given
+        fun baz() = Baz(given(), given())
+
+        fun invoke() {
+            rootContext<TestContext>().runReader { given<Baz>() }
+        }
+        """
+    ) {
+        assertInternalError("no given")
+    }
+
+    @Test
+    fun testMissingBindingFails2() = codegen(
+        """
+        @Reader
+        fun a() {
+            b()
+        }
+        
+        @Reder
+        fun b() {
+            c()
+        }
+        
+        @Reader
+        fun c() {
+            given<Any>()
+        }
+        
+        fun invoke() {
+            rootContext<TestContext>().runReader { a() }
+        }
+        """
+    ) {
+        assertInternalError("no given")
+    }
+
+    @Test
     fun testDistinctTypeParameter() = codegen(
         """
         @GivenSetElements fun setA() = setOf("a")

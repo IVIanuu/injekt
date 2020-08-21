@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
@@ -72,6 +73,14 @@ fun createContext(
 
     annotations += DeclarationIrBuilder(injektContext, symbol)
         .irCall(injektContext.injektSymbols.contextMarker.constructors.single())
+    annotations += DeclarationIrBuilder(injektContext, symbol).run {
+        irCall(injektContext.injektSymbols.origin.constructors.single()).apply {
+            putValueArgument(
+                0,
+                irString(owner.descriptor.fqNameSafe.asString())
+            )
+        }
+    }
 }
 
 fun IrType.isNotTransformedReaderLambda() =
