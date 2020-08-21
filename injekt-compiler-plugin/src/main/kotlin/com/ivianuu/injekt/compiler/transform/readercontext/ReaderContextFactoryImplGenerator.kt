@@ -271,13 +271,6 @@ class ReaderContextFactoryImplGenerator(
                 contextImpl.superTypes += superType.defaultType
                 recordLookup(contextImpl, superType)
 
-                val origin =
-                    superType.getConstantFromAnnotationOrNull<String>(
-                        InjektFqNames.ContextMarker,
-                        0
-                    )
-                        ?.let { FqName(it) }
-
                 for (declaration in superType.declarations.toList()) {
                     if (declaration !is IrFunction) continue
                     if (declaration is IrConstructor) continue
@@ -291,6 +284,13 @@ class ReaderContextFactoryImplGenerator(
                         existingDeclaration.overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
                         continue
                     }
+
+                    val origin =
+                        declaration.getConstantFromAnnotationOrNull<String>(
+                            InjektFqNames.Origin,
+                            0
+                        )?.let { FqName(it) }
+
                     val request = GivenRequest(
                         declaration.returnType.asKey(),
                         origin

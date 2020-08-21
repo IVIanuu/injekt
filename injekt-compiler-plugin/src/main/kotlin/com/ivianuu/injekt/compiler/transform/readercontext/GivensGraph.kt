@@ -66,6 +66,8 @@ class GivensGraph(
 
     val resolvedGivens = mutableMapOf<Key, Given>()
 
+    private val requestChain = mutableListOf<GivenRequest>()
+
     init {
         val givenSets = inputs
             .filter { it.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.GivenSet) }
@@ -150,14 +152,12 @@ class GivensGraph(
         }
     }
 
-    private val chain = mutableListOf<GivenRequest>()
-
     fun check(request: GivenRequest) {
-        chain += request
+        requestChain += request
         getGiven(request)
             .getDependencyRequests()
             .forEach { check(it) }
-        chain -= request
+        requestChain -= request
     }
 
     private fun Given.getDependencyRequests(): List<GivenRequest> {
@@ -187,7 +187,7 @@ class GivensGraph(
                 contextImpl.superTypes.first().render()
             }':\n" +
                     "${
-                        chain
+                        requestChain
                             .joinToString("\n") {
                                 "    '${it.key}' given at '${it.requestOrigin.orUnknown()}'"
                             }
@@ -204,7 +204,7 @@ class GivensGraph(
                 if (parent == null) {
                     error(
                         "Context mismatch, given '${key}' " +
-                                "requires context '${targetContext.defaultType.render()}' but actual context is " +
+                                "is scoped to '${targetContext.defaultType.render()}' but actual context is " +
                                 contextImpl.superTypes.first().render()
                     )
                 } else {
@@ -223,7 +223,7 @@ class GivensGraph(
 
         if (instanceAndGivenSetGivens.size > 1) {
             error(
-                "Multiple instance or given set givens found for '${request.key}' at:\n${
+                "Multiple givens found in inputs for '${request.key}' at:\n${
                     instanceAndGivenSetGivens
                         .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
                 }"

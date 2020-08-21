@@ -16,10 +16,12 @@
 
 package com.ivianuu.injekt.compiler.transform.implicit
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.canUseImplicits
+import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.getReaderConstructor
@@ -193,6 +195,19 @@ class ImplicitCallTransformer(
                     }.apply {
                         dispatchReceiverParameter = context.thisReceiver?.copyTo(this)
                         addMetadataIfNotLocal()
+                        annotations += DeclarationIrBuilder(injektContext, symbol).run {
+                            irCall(injektContext.injektSymbols.origin.constructors.single()).apply {
+                                putValueArgument(
+                                    0,
+                                    irString(
+                                        genericContextFunction.getConstantFromAnnotationOrNull<String>(
+                                            InjektFqNames.Origin,
+                                            0
+                                        )!!
+                                    )
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -255,6 +270,14 @@ class ImplicitCallTransformer(
                 }.apply {
                     dispatchReceiverParameter = context.thisReceiver?.copyTo(this)
                     addMetadataIfNotLocal()
+                    annotations += DeclarationIrBuilder(injektContext, symbol).run {
+                        irCall(injektContext.injektSymbols.origin.constructors.single()).apply {
+                            putValueArgument(
+                                0,
+                                irString(declaration.descriptor.fqNameSafe.asString())
+                            )
+                        }
+                    }
                 }
             }
 

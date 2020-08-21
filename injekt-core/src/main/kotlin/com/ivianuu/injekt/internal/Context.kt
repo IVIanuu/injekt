@@ -18,7 +18,7 @@ package com.ivianuu.injekt.internal
 
 import kotlin.reflect.KClass
 
-internal annotation class ContextMarker(val origin: String)
+internal annotation class ContextMarker
 
 internal annotation class GenericContext(
     val delegateContext: KClass<*>,
