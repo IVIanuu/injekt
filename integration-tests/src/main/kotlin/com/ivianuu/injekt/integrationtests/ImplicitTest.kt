@@ -194,7 +194,7 @@ class ImplicitTest {
         assertTrue(it.last().invokeSingleFile() is Foo)
     }
 
-    @Test
+    // todo @Test
     fun testGenericTypeParametersCapturingReaderLambda() = codegen(
         """
         @Given

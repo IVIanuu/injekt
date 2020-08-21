@@ -217,7 +217,7 @@ class GivensGraphTest {
         }
         """
     ) {
-        assertInternalError("multiple instance or given set")
+        assertInternalError("multiple given inputs")
     }
 
     @Test
