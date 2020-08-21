@@ -17,11 +17,14 @@
 package com.ivianuu.injekt.compiler.transform.readercontext
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.flatMapFix
+import com.ivianuu.injekt.compiler.getAllFunctions
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
+import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -46,6 +49,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class GivensGraph(
     private val parent: GivensGraph?,
+    private val injektContext: InjektContext,
     private val declarationGraph: DeclarationGraph,
     private val contextImpl: IrClass,
     val inputs: List<IrField>,
@@ -146,6 +150,28 @@ class GivensGraph(
         }
     }
 
+    private val chain = mutableListOf<GivenRequest>()
+
+    fun check(request: GivenRequest) {
+        chain += request
+        getGiven(request)
+            .getDependencyRequests()
+            .forEach { check(it) }
+        chain -= request
+    }
+
+    private fun Given.getDependencyRequests(): List<GivenRequest> {
+        return contexts
+            .flatMapFix { it.getAllFunctions() }
+            .filterNot {
+                it.dispatchReceiverParameter?.type ==
+                        injektContext.irBuiltIns.anyType
+            }
+            .map { it.returnType }
+            .map { it.asKey() }
+            .map { GivenRequest(it, origin) }
+    }
+
     fun getGiven(request: GivenRequest): Given {
         var given = getGivenOrNull(request)
         if (given != null) return given
@@ -157,9 +183,15 @@ class GivensGraph(
         }
 
         error(
-            "No given found for '${request.key}'\n" +
-                    "required at '${request.requestOrigin.orUnknown()}'\n" +
-                    "in ${contextImpl.superTypes.first().render()}\n"
+            "No given found for '${request.key}' in '${
+                contextImpl.superTypes.first().render()
+            }':\n" +
+                    "${
+                        chain
+                            .joinToString("\n") {
+                                "    '${it.key}' given at '${it.requestOrigin.orUnknown()}'"
+                            }
+                    }\n"
         )
     }
 
@@ -193,7 +225,7 @@ class GivensGraph(
             error(
                 "Multiple instance or given set givens found for '${request.key}' at:\n${
                     instanceAndGivenSetGivens
-                        .joinToString("\n") { "'${it.origin.orUnknown()}'" }
+                        .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
                 }"
             )
         }
@@ -214,7 +246,7 @@ class GivensGraph(
             error(
                 "Multiple internal givens found for '${request.key}' at:\n${
                     internalGlobalGivens
-                        .joinToString("\n") { "'${it.origin.orUnknown()}'" }
+                        .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
                 }"
             )
         }
@@ -229,7 +261,7 @@ class GivensGraph(
             error(
                 "Multiple external givens found for '${request.key}' at:\n${
                     externalGlobalGivens
-                        .joinToString("\n") { "'${it.origin.orUnknown()}'" }
+                        .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
                 }.\nPlease specify a given for the requested type in this project."
             )
         }

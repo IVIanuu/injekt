@@ -22,7 +22,7 @@ class Foo
 
 class Bar(val foo: Foo)
 
-class Baz(val foo: Foo, val bar: Bar)
+class Baz(val bar: Bar, val foo: Foo)
 
 @Context
 interface TestContext

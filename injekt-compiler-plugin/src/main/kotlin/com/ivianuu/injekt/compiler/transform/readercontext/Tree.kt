@@ -200,11 +200,6 @@ class GivenRequest(
     val requestOrigin: FqName?
 ) {
 
-    fun copy(
-        key: Key = this.key,
-        requestOrigin: FqName? = this.requestOrigin
-    ): GivenRequest = GivenRequest(key, requestOrigin)
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

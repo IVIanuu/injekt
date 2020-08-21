@@ -1,10 +1,12 @@
 package com.ivianuu.injekt.compiler.transform.readercontext
 
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getAllClasses
+import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
@@ -41,8 +43,8 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.isObject
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ReaderContextFactoryImplGenerator(
     private val injektContext: InjektContext,
@@ -234,6 +236,7 @@ class ReaderContextFactoryImplGenerator(
 
         val graph = GivensGraph(
             parent = parentGraph,
+            injektContext = injektContext,
             declarationGraph = declarationGraph,
             contextImpl = contextImpl,
             inputs = inputFields,
@@ -268,6 +271,13 @@ class ReaderContextFactoryImplGenerator(
                 contextImpl.superTypes += superType.defaultType
                 recordLookup(contextImpl, superType)
 
+                val origin =
+                    superType.getConstantFromAnnotationOrNull<String>(
+                        InjektFqNames.ContextMarker,
+                        0
+                    )
+                        ?.let { FqName(it) }
+
                 for (declaration in superType.declarations.toList()) {
                     if (declaration !is IrFunction) continue
                     if (declaration is IrConstructor) continue
@@ -283,8 +293,10 @@ class ReaderContextFactoryImplGenerator(
                     }
                     val request = GivenRequest(
                         declaration.returnType.asKey(),
-                        declaration.descriptor.fqNameSafe
+                        origin
                     )
+
+                    graph.check(request)
                     expressions.getGivenExpression(graph.getGiven(request))
                 }
 
