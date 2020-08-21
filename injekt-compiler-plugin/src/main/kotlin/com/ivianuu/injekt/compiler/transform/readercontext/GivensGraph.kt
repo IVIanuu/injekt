@@ -248,11 +248,18 @@ class GivensGraph(
 
                 chain.forEachIndexed { index, element ->
                     if (index == 0) {
-                        appendLine("${indendation}runReader '${element}'")
+                        appendLine("${indendation}runReader call '${element}'")
                     } else {
                         when (element) {
-                            is ChainElement.Call -> appendLine("${indendation}calls '${element}'")
-                            is ChainElement.Given -> appendLine("${indendation}requires '${element}'")
+                            is ChainElement.Call -> {
+                                val lastElement = chain.getOrNull(index - 1)
+                                if (lastElement is ChainElement.Given) {
+                                    appendLine("${indendation}given by '${element}'")
+                                } else {
+                                    appendLine("${indendation}calls reader '${element}'")
+                                }
+                            }
+                            is ChainElement.Given -> appendLine("${indendation}requires given '${element}'")
                         }
 
                     }

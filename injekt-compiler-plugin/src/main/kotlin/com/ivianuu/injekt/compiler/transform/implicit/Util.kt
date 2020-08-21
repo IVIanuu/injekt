@@ -45,10 +45,12 @@ import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunctionOrKFunction
 import org.jetbrains.kotlin.ir.util.isSuspendFunctionOrKFunction
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 fun createContext(
     owner: IrDeclarationWithName,
+    origin: FqName,
     parentFunction: IrFunction?,
     injektContext: InjektContext
 ) = buildClass {
@@ -75,10 +77,7 @@ fun createContext(
         .irCall(injektContext.injektSymbols.contextMarker.constructors.single())
     annotations += DeclarationIrBuilder(injektContext, symbol).run {
         irCall(injektContext.injektSymbols.origin.constructors.single()).apply {
-            putValueArgument(
-                0,
-                irString(owner.descriptor.fqNameSafe.asString())
-            )
+            putValueArgument(0, irString(origin.asString()))
         }
     }
 }

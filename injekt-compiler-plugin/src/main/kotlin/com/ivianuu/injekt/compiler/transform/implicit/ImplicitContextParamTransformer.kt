@@ -352,7 +352,8 @@ class ImplicitContextParamTransformer(
             if (owner.visibility == Visibilities.LOCAL && owner.parent is IrFunction)
                 owner.parent as IrFunction else null
 
-        val context = createContext(owner, parentFunction, injektContext)
+        val context =
+            createContext(owner, ownerFunction.descriptor.fqNameSafe, parentFunction, injektContext)
         newContexts += context
         val contextParameter = ownerFunction.addContextParameter(context)
         onContextParameterCreated(contextParameter)
@@ -483,6 +484,7 @@ class ImplicitContextParamTransformer(
     ): IrType {
         val context = createContext(
             declaration,
+            declaration.descriptor.fqNameSafe,
             null,
             injektContext
         )
