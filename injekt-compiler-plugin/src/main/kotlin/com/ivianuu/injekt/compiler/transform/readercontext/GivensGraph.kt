@@ -18,8 +18,8 @@ package com.ivianuu.injekt.compiler.transform.readercontext
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.flatMapFix
-import com.ivianuu.injekt.compiler.getAllFunctions
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
+import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.isExternalDeclaration
@@ -36,6 +36,7 @@ import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.types.isNothing
@@ -68,8 +69,17 @@ class GivensGraph(
 
     val resolvedGivens = mutableMapOf<Key, Given>()
 
-    private val callChain = mutableListOf<FqName?>()
-    private val requestChain = mutableListOf<GivenRequest>()
+    sealed class ChainElement {
+        class Given(val key: Key) : ChainElement() {
+            override fun toString() = key.toString()
+        }
+
+        class Call(val fqName: FqName?) : ChainElement() {
+            override fun toString() = fqName.orUnknown()
+        }
+    }
+
+    private val chain = mutableListOf<ChainElement>()
 
     init {
         val givenSets = inputs
@@ -156,31 +166,62 @@ class GivensGraph(
     }
 
     fun pushCall(fqName: FqName?) {
-        callChain.push(fqName)
+        chain.push(ChainElement.Call(fqName))
     }
 
     fun popCall() {
-        callChain.pop()
+        chain.pop()
     }
 
     fun check(request: GivenRequest) {
-        requestChain += request
+        chain.push(ChainElement.Given(request.key))
         getGiven(request)
-            .getDependencyRequests()
+            .contexts
+            .flatMapFix { declarationGraph.getAllContextImplementations(it) }
             .forEach { check(it) }
-        requestChain -= request
+        chain.pop()
     }
 
-    private fun Given.getDependencyRequests(): List<GivenRequest> {
-        return contexts
-            .flatMapFix { it.getAllFunctions() }
-            .filterNot {
-                it.dispatchReceiverParameter?.type ==
-                        injektContext.irBuiltIns.anyType
+    private fun check(context: IrClass) {
+        val origin = context.getConstantFromAnnotationOrNull<String>(
+            InjektFqNames.Origin,
+            0
+        )?.let { FqName(it) }
+        chain.push(ChainElement.Call(origin))
+        for (declaration in context.declarations.toList()) {
+            if (declaration !is IrFunction) continue
+            if (declaration is IrConstructor) continue
+            if (declaration.dispatchReceiverParameter?.type ==
+                injektContext.irBuiltIns.anyType
+            ) continue
+            val existingDeclaration = contextImpl.functions.singleOrNull {
+                it.name == declaration.name
             }
-            .map { it.returnType }
-            .map { it.asKey() }
-            .map { GivenRequest(it, origin) }
+            if (existingDeclaration != null) {
+                existingDeclaration.overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
+                continue
+            }
+
+            val origin =
+                declaration.getConstantFromAnnotationOrNull<String>(
+                    InjektFqNames.Origin,
+                    0
+                )?.let { FqName(it) }
+
+            check(
+                GivenRequest(
+                    declaration.returnType.asKey(),
+                    origin
+                )
+            )
+        }
+
+        context.superTypes
+            .map { it.classOrNull!!.owner }
+            .flatMapFix { declarationGraph.getAllContextImplementations(it) }
+            .forEach { check(it) }
+
+        chain.pop()
     }
 
     fun getGiven(request: GivenRequest): Given {
@@ -205,20 +246,18 @@ class GivensGraph(
                     }':"
                 )
 
-                callChain.forEachIndexed { index, fqName ->
+                chain.forEachIndexed { index, element ->
                     if (index == 0) {
-                        appendLine("${indendation}runReader '${fqName.orUnknown()}'")
+                        appendLine("${indendation}runReader '${element}'")
                     } else {
-                        appendLine("${indendation}calls '${fqName.orUnknown()}'")
+                        when (element) {
+                            is ChainElement.Call -> appendLine("${indendation}calls '${element}'")
+                            is ChainElement.Given -> appendLine("${indendation}requires '${element}'")
+                        }
+
                     }
                     indent()
                 }
-
-                requestChain
-                    .forEach {
-                        appendLine("${indendation}requires '${it.key}'")
-                        indent()
-                    }
             }
         )
     }

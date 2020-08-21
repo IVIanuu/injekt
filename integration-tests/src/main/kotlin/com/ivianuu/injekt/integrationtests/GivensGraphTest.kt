@@ -68,7 +68,7 @@ class GivensGraphTest {
             b()
         }
         
-        @Reder
+        @Reader
         fun b() {
             c()
         }
