@@ -283,9 +283,7 @@ class ReaderContextFactoryImplGenerator(
             }
             .map { it.returnType.asKey() }
             .forEach {
-                expressions.getGivenExpression(
-                    graph.resolvedGivens[it] ?: error("Wtf $it")
-                )
+                expressions.getGivenExpression(graph.resolvedGivens[it]!!)
             }
 
         return contextImpl
