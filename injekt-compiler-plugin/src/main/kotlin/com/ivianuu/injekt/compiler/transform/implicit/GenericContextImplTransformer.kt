@@ -65,6 +65,7 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
+import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.name.Name
 
 class GenericContextImplTransformer(
@@ -250,6 +251,7 @@ class GenericContextImplTransformer(
                 if (declaration !is IrFunction) continue
                 if (declaration is IrConstructor) continue
                 if (declaration.dispatchReceiverParameter?.type == injektContext.irBuiltIns.anyType) continue
+                if (declaration.isFakeOverride) continue
                 val existingDeclaration = contextImpl.functions.firstOrNull {
                     it.name == declaration.name
                 }
