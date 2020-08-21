@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.typeArguments
+import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -49,8 +50,13 @@ class GivenChildContext(
     owner: IrClass,
     contexts: List<IrClass>,
     origin: FqName?,
-    val factory: IrClass
-) : Given(key, owner, contexts, origin, false, null, null)
+    private val generator: ReaderContextFactoryImplGenerator
+) : Given(key, owner, contexts, origin, false, null, null) {
+    val factory by lazy {
+        generator.generateFactory()
+            .also { owner.addChild(it) }
+    }
+}
 
 class GivenFunction(
     key: Key,

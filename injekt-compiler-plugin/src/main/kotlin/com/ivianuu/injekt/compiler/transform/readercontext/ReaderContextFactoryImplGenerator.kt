@@ -41,7 +41,6 @@ import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isObject
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ReaderContextFactoryImplGenerator(
     private val injektContext: InjektContext,
@@ -256,11 +255,6 @@ class ReaderContextFactoryImplGenerator(
                 .flatMap { declarationGraph.getAllContextImplementations(it) }
         )
 
-        println(
-            "implement resolved givens ${contextId.descriptor.fqNameSafe}\n" +
-                    "${graph.resolvedGivens}"
-        )
-
         (entryPoints + graph.resolvedGivens.flatMap { it.value.contexts })
             .flatMap { it.getAllClasses() }
             .flatMap { declarationGraph.getAllContextImplementations(it) }
@@ -286,12 +280,7 @@ class ReaderContextFactoryImplGenerator(
                 } else true
             }
             .map { it.returnType.asKey() }
-            .forEach {
-                expressions.getGivenExpression(
-                    graph.resolvedGivens[it]
-                        ?: error("wtf $it")
-                )
-            }
+            .forEach { expressions.getGivenExpression(graph.getGiven(it)) }
 
         return contextImpl
     }

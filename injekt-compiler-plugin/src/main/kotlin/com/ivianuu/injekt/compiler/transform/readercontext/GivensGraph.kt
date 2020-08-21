@@ -27,7 +27,6 @@ import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.uniqueTypeName
-import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -176,13 +175,14 @@ class GivensGraph(
 
     private fun check(key: Key) {
         if (key in checkedKeys) return
-        checkedKeys += key
         chain.push(ChainElement.Given(key))
         check(getGiven(key))
         chain.pop()
     }
 
     private fun check(given: Given) {
+        if (given.key in checkedKeys) return
+        checkedKeys += given.key
         given
             .contexts
             .flatMap { declarationGraph.getAllContextImplementations(it) }
@@ -286,8 +286,6 @@ class GivensGraph(
                 }
             }
 
-            check(this)
-
             return this
         }
 
@@ -309,6 +307,7 @@ class GivensGraph(
         given = instanceAndGivenSetGivens.singleOrNull()
         given?.check()?.let {
             resolvedGivens[key] = it
+            check(it)
             return it
         }
 
@@ -330,6 +329,8 @@ class GivensGraph(
         given = internalGlobalGivens.singleOrNull()
         given?.check()?.let {
             resolvedGivens[key] = it
+            check(it)
+            (it as? GivenChildContext)?.factory
             return it
         }
 
@@ -345,6 +346,7 @@ class GivensGraph(
         given = externalGlobalGivens.singleOrNull()
         given?.check()?.let {
             resolvedGivens[key] = it
+            check(it)
             return it
         }
 
@@ -387,15 +389,12 @@ class GivensGraph(
                     parentExpressions = expressions
                 )
 
-                val childFactory = generator.generateFactory()
-                contextImpl.addChild(childFactory)
-
                 this += GivenChildContext(
                     key = key,
                     owner = contextImpl,
                     contexts = emptyList(),
                     origin = null,
-                    factory = childFactory
+                    generator = generator
                 )
             }
         }
