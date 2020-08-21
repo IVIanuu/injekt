@@ -194,26 +194,3 @@ class Key(val type: IrType) {
     }
 
 }
-
-class GivenRequest(
-    val key: Key,
-    val requestOrigin: FqName?
-) {
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as GivenRequest
-
-        if (key != other.key) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int = key.hashCode()
-
-    override fun toString(): String =
-        "GivenRequest(key=$key, requestOrigin=$requestOrigin)"
-
-}

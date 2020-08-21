@@ -44,6 +44,7 @@ import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
@@ -166,22 +167,19 @@ class GivensGraph(
         }
     }
 
-    fun pushCall(fqName: FqName?) {
-        chain.push(ChainElement.Call(fqName))
+    fun checkEntryPoints(entryPoints: List<IrClass>) {
+        entryPoints.forEach { check(it) }
     }
 
-    fun popCall() {
-        chain.pop()
-    }
-
-    fun check(request: GivenRequest) {
-        if (request.key in checkedKeys) return
-        checkedKeys += request.key
-        chain.push(ChainElement.Given(request.key))
-        getGiven(request)
+    private fun check(key: Key) {
+        if (key in checkedKeys) return
+        checkedKeys += key
+        chain.push(ChainElement.Given(key))
+        getGiven(key)
             .contexts
             .flatMap { declarationGraph.getAllContextImplementations(it) }
             .forEach { check(it) }
+
         chain.pop()
     }
 
@@ -193,12 +191,14 @@ class GivensGraph(
             0
         )?.let { FqName(it) }
         chain.push(ChainElement.Call(origin))
+
         for (declaration in context.declarations.toList()) {
             if (declaration !is IrFunction) continue
             if (declaration is IrConstructor) continue
             if (declaration.dispatchReceiverParameter?.type ==
                 injektContext.irBuiltIns.anyType
             ) continue
+            if (declaration.isFakeOverride) continue
             val existingDeclaration = contextImpl.functions.singleOrNull {
                 it.name == declaration.name
             }
@@ -207,18 +207,7 @@ class GivensGraph(
                 continue
             }
 
-            val origin =
-                declaration.getConstantFromAnnotationOrNull<String>(
-                    InjektFqNames.Origin,
-                    0
-                )?.let { FqName(it) }
-
-            check(
-                GivenRequest(
-                    declaration.returnType.asKey(),
-                    origin
-                )
-            )
+            check(declaration.returnType.asKey())
         }
 
         context.superTypes
@@ -229,13 +218,13 @@ class GivensGraph(
         chain.pop()
     }
 
-    fun getGiven(request: GivenRequest): Given {
-        var given = getGivenOrNull(request)
+    private fun getGiven(key: Key): Given {
+        var given = getGivenOrNull(key)
         if (given != null) return given
 
-        if (request.key.type.isMarkedNullable()) {
-            given = GivenNull(request.key, contextImpl)
-            resolvedGivens[request.key] = given
+        if (key.type.isMarkedNullable()) {
+            given = GivenNull(key, contextImpl)
+            resolvedGivens[key] = given
             return given
         }
 
@@ -246,7 +235,7 @@ class GivensGraph(
                     indendation = "$indendation    "
                 }
                 appendLine(
-                    "No given found for '${request.key}' in '${
+                    "No given found for '${key}' in '${
                         contextImpl.superTypes.first().render()
                     }':"
                 )
@@ -274,8 +263,8 @@ class GivensGraph(
         )
     }
 
-    private fun getGivenOrNull(request: GivenRequest): Given? {
-        var given = resolvedGivens[request.key]
+    private fun getGivenOrNull(key: Key): Given? {
+        var given = resolvedGivens[key]
         if (given != null) return given
 
         fun Given.check(): Given? {
@@ -294,15 +283,15 @@ class GivensGraph(
             return this
         }
 
-        val allGivens = givensForKey(request.key)
+        val allGivens = givensForKey(key)
 
         val instanceAndGivenSetGivens = allGivens
-            .filter { it.key == request.key }
+            .filter { it.key == key }
             .filter { it is GivenInstance || it.givenSetAccessExpression != null }
 
         if (instanceAndGivenSetGivens.size > 1) {
             error(
-                "Multiple givens found in inputs for '${request.key}' at:\n${
+                "Multiple givens found in inputs for '${key}' at:\n${
                     instanceAndGivenSetGivens
                         .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
                 }"
@@ -311,19 +300,19 @@ class GivensGraph(
 
         given = instanceAndGivenSetGivens.singleOrNull()
         given?.check()?.let {
-            resolvedGivens[request.key] = it
+            resolvedGivens[key] = it
             return it
         }
 
         val (internalGlobalGivens, externalGlobalGivens) = allGivens
             .filterNot { it is GivenInstance }
             .filter { it.givenSetAccessExpression == null }
-            .filter { it.key == request.key }
+            .filter { it.key == key }
             .partition { !it.external }
 
         if (internalGlobalGivens.size > 1) {
             error(
-                "Multiple internal givens found for '${request.key}' at:\n${
+                "Multiple internal givens found for '${key}' at:\n${
                     internalGlobalGivens
                         .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
                 }"
@@ -332,13 +321,13 @@ class GivensGraph(
 
         given = internalGlobalGivens.singleOrNull()
         given?.check()?.let {
-            resolvedGivens[request.key] = it
+            resolvedGivens[key] = it
             return it
         }
 
         if (externalGlobalGivens.size > 1) {
             error(
-                "Multiple external givens found for '${request.key}' at:\n${
+                "Multiple external givens found for '${key}' at:\n${
                     externalGlobalGivens
                         .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
                 }.\nPlease specify a given for the requested type in this project."
@@ -347,12 +336,12 @@ class GivensGraph(
 
         given = externalGlobalGivens.singleOrNull()
         given?.check()?.let {
-            resolvedGivens[request.key] = it
+            resolvedGivens[key] = it
             return it
         }
 
-        parent?.getGivenOrNull(request)?.let {
-            resolvedGivens[request.key] = it
+        parent?.getGivenOrNull(key)?.let {
+            resolvedGivens[key] = it
             return it
         }
 

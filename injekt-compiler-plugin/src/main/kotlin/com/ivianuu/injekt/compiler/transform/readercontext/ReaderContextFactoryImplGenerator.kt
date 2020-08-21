@@ -1,11 +1,9 @@
 package com.ivianuu.injekt.compiler.transform.readercontext
 
-import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getAllClasses
-import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
@@ -40,8 +38,8 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isObject
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 class ReaderContextFactoryImplGenerator(
@@ -253,104 +251,42 @@ class ReaderContextFactoryImplGenerator(
         contextImpl.superTypes += contextId.defaultType
 
         val entryPoints = listOf(contextId) + declarationGraph.getRunReaderContexts(contextId)
-        val checkedTypes = mutableSetOf<IrClass>()
 
-        fun check(superType: IrClass) {
-            if (superType in checkedTypes) return
-            checkedTypes += superType
-            graph.pushCall(
-                superType.getConstantFromAnnotationOrNull<String>(
-                    InjektFqNames.Origin,
-                    0
-                )?.let { FqName(it) }
-            )
-
-            for (declaration in superType.declarations.toList()) {
-                if (declaration !is IrFunction) continue
-                if (declaration is IrConstructor) continue
-                if (declaration.dispatchReceiverParameter?.type ==
-                    injektContext.irBuiltIns.anyType
-                ) continue
-                val existingDeclaration = contextImpl.functions.singleOrNull {
-                    it.name == declaration.name
-                }
-                if (existingDeclaration != null) {
-                    existingDeclaration.overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
-                    continue
-                }
-
-                val origin =
-                    declaration.getConstantFromAnnotationOrNull<String>(
-                        InjektFqNames.Origin,
-                        0
-                    )?.let { FqName(it) }
-
-                val request = GivenRequest(
-                    declaration.returnType.asKey(),
-                    origin
-                )
-
-                graph.check(request)
-
-                val given = graph.getGiven(request)
-
-                given.contexts
-                    .flatMap { declarationGraph.getAllContextImplementations(it) }
-                    .forEach { check(it) }
-            }
-
-            superType.superTypes
-                .map { it.classOrNull!!.owner }
+        graph.checkEntryPoints(
+            entryPoints
                 .flatMap { declarationGraph.getAllContextImplementations(it) }
-                .forEach { check(it) }
+        )
 
-            graph.popCall()
-        }
-
-        entryPoints
-            .flatMap { declarationGraph.getAllContextImplementations(it) }
-            .forEach { check(it) }
-
-        for (superType in (entryPoints + graph.resolvedGivens.flatMap { it.value.contexts })
+        (entryPoints + graph.resolvedGivens.flatMap { it.value.contexts })
             .flatMap { it.getAllClasses() }
             .flatMap { declarationGraph.getAllContextImplementations(it) }
-        ) {
-            if (superType.defaultType in contextImpl.superTypes) continue
-            contextImpl.superTypes += superType.defaultType
-            for (declaration in superType.declarations) {
-                if (declaration !is IrFunction) continue
-                if (declaration is IrConstructor) continue
-                if (declaration.dispatchReceiverParameter?.type ==
-                    injektContext.irBuiltIns.anyType
-                ) continue
-                val origin =
-                    declaration.getConstantFromAnnotationOrNull<String>(
-                        InjektFqNames.Origin,
-                        0
-                    )?.let { FqName(it) }
-
-                val request = GivenRequest(
-                    declaration.returnType.asKey(),
-                    origin
-                )
-
-                val parent = declaration.parent as IrClass
-
-                if (parent.defaultType !in contextImpl.superTypes) {
-                    contextImpl.superTypes += parent.defaultType
+            .onEach {
+                if (it.defaultType !in contextImpl.superTypes) {
+                    contextImpl.superTypes += it.defaultType
                 }
-
+            }
+            .flatMap { it.declarations }
+            .filterIsInstance<IrFunction>()
+            .filterNot { it is IrConstructor }
+            .filterNot { it.isFakeOverride }
+            .filterNot {
+                it.dispatchReceiverParameter?.type == injektContext.irBuiltIns.anyType
+            }
+            .filter { declaration ->
                 val existingDeclaration = contextImpl.functions.singleOrNull {
                     it.name == declaration.name
                 }
                 if (existingDeclaration != null) {
                     existingDeclaration.overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
-                    continue
-                }
-
-                expressions.getGivenExpression(graph.getGiven(request))
+                    false
+                } else true
             }
-        }
+            .map { it.returnType.asKey() }
+            .forEach {
+                expressions.getGivenExpression(
+                    graph.resolvedGivens[it] ?: error("Wtf $it")
+                )
+            }
 
         return contextImpl
     }
