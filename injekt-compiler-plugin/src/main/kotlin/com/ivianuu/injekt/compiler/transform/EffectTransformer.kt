@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.copy
-import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
@@ -218,7 +217,7 @@ class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransforme
 
         effects
             .map { it.companionObject() as IrClass }
-            .flatMapFix {
+            .flatMap {
                 it.declarations
                     .filter {
                         it.hasAnnotation(InjektFqNames.Given) ||

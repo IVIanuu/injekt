@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.transform.readercontext
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
@@ -80,6 +79,8 @@ class GivensGraph(
     }
 
     private val chain = mutableListOf<ChainElement>()
+    private val checkedKeys = mutableSetOf<Key>()
+    private val checkedTypes = mutableSetOf<IrClass>()
 
     init {
         val givenSets = inputs
@@ -174,15 +175,19 @@ class GivensGraph(
     }
 
     fun check(request: GivenRequest) {
+        if (request.key in checkedKeys) return
+        checkedKeys += request.key
         chain.push(ChainElement.Given(request.key))
         getGiven(request)
             .contexts
-            .flatMapFix { declarationGraph.getAllContextImplementations(it) }
+            .flatMap { declarationGraph.getAllContextImplementations(it) }
             .forEach { check(it) }
         chain.pop()
     }
 
     private fun check(context: IrClass) {
+        if (context in checkedTypes) return
+        checkedTypes += context
         val origin = context.getConstantFromAnnotationOrNull<String>(
             InjektFqNames.Origin,
             0
@@ -218,7 +223,7 @@ class GivensGraph(
 
         context.superTypes
             .map { it.classOrNull!!.owner }
-            .flatMapFix { declarationGraph.getAllContextImplementations(it) }
+            .flatMap { declarationGraph.getAllContextImplementations(it) }
             .forEach { check(it) }
 
         chain.pop()

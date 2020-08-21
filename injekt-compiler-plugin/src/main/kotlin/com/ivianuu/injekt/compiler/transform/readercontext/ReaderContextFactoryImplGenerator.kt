@@ -4,9 +4,8 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.flatMapFix
+import com.ivianuu.injekt.compiler.getAllClasses
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
-import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
@@ -251,12 +250,14 @@ class ReaderContextFactoryImplGenerator(
             implicitContextParamTransformer = implicitContextParamTransformer
         )
 
-        val entryPoints = listOf(contextId) + declarationGraph.getRunReaderContexts(contextId)
+        contextImpl.superTypes += contextId.defaultType
 
-        fun implement(superType: IrClass) {
-            if (superType in contextImpl.superTypes.map { it.classOrNull!!.owner }) return
-            contextImpl.superTypes += superType.defaultType
-            recordLookup(contextImpl, superType)
+        val entryPoints = listOf(contextId) + declarationGraph.getRunReaderContexts(contextId)
+        val checkedTypes = mutableSetOf<IrClass>()
+
+        fun check(superType: IrClass) {
+            if (superType in checkedTypes) return
+            checkedTypes += superType
             graph.pushCall(
                 superType.getConstantFromAnnotationOrNull<String>(
                     InjektFqNames.Origin,
@@ -294,23 +295,62 @@ class ReaderContextFactoryImplGenerator(
                 val given = graph.getGiven(request)
 
                 given.contexts
-                    .flatMapFix { declarationGraph.getAllContextImplementations(it) }
-                    .forEach { implement(it) }
-
-                expressions.getGivenExpression(given)
+                    .flatMap { declarationGraph.getAllContextImplementations(it) }
+                    .forEach { check(it) }
             }
 
             superType.superTypes
                 .map { it.classOrNull!!.owner }
-                .flatMapFix { declarationGraph.getAllContextImplementations(it) }
-                .forEach { implement(it) }
+                .flatMap { declarationGraph.getAllContextImplementations(it) }
+                .forEach { check(it) }
 
             graph.popCall()
         }
 
         entryPoints
-            .flatMapFix { declarationGraph.getAllContextImplementations(it) }
-            .forEach { implement(it) }
+            .flatMap { declarationGraph.getAllContextImplementations(it) }
+            .forEach { check(it) }
+
+        for (superType in (entryPoints + graph.resolvedGivens.flatMap { it.value.contexts })
+            .flatMap { it.getAllClasses() }
+            .flatMap { declarationGraph.getAllContextImplementations(it) }
+        ) {
+            if (superType.defaultType in contextImpl.superTypes) continue
+            contextImpl.superTypes += superType.defaultType
+            for (declaration in superType.declarations) {
+                if (declaration !is IrFunction) continue
+                if (declaration is IrConstructor) continue
+                if (declaration.dispatchReceiverParameter?.type ==
+                    injektContext.irBuiltIns.anyType
+                ) continue
+                val origin =
+                    declaration.getConstantFromAnnotationOrNull<String>(
+                        InjektFqNames.Origin,
+                        0
+                    )?.let { FqName(it) }
+
+                val request = GivenRequest(
+                    declaration.returnType.asKey(),
+                    origin
+                )
+
+                val parent = declaration.parent as IrClass
+
+                if (parent.defaultType !in contextImpl.superTypes) {
+                    contextImpl.superTypes += parent.defaultType
+                }
+
+                val existingDeclaration = contextImpl.functions.singleOrNull {
+                    it.name == declaration.name
+                }
+                if (existingDeclaration != null) {
+                    existingDeclaration.overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
+                    continue
+                }
+
+                expressions.getGivenExpression(graph.getGiven(request))
+            }
+        }
 
         return contextImpl
     }

@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.addFile
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.recordLookup
@@ -93,7 +92,7 @@ class Indexer(
 
             val externalFunctions = externalIndicesByTagAndKey(path)
                 .filter { it.type == "function" }
-                .flatMapFix { index ->
+                .flatMap { index ->
                     injektContext.referenceFunctions(index.fqName)
                         .map { it.owner }
                 }
@@ -114,7 +113,7 @@ class Indexer(
 
             val externalProperties = externalIndicesByTagAndKey(path)
                 .filter { it.type == "property" }
-                .flatMapFix { index ->
+                .flatMap { index ->
                     injektContext.referenceProperties(index.fqName)
                         .map { it.owner }
                 }

@@ -206,10 +206,6 @@ fun IrAnnotationContainer.getAnnotatedAnnotations(
         it.type.classOrNull!!.owner.hasAnnotation(annotation)
     }
 
-inline fun <T, R> Iterable<T>.flatMapFix(
-    block: (T) -> Iterable<R>
-): List<R> = flatMap { block(it) }.toList()
-
 val IrType.typeArguments: List<IrTypeArgument>
     get() = (this as? IrSimpleType)?.arguments?.map { it } ?: emptyList()
 

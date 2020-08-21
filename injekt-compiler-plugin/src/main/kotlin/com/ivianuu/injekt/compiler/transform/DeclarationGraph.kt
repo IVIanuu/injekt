@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
@@ -47,7 +46,7 @@ class DeclarationGraph(
     fun givens(key: String) = givensByKey.getOrPut(key) {
         (indexer.functionIndices(listOf(GIVEN_PATH, key)) +
                 indexer.classIndices(listOf(GIVEN_PATH, key))
-                    .flatMapFix { it.constructors.toList() } +
+                    .flatMap { it.constructors.toList() } +
                 indexer.propertyIndices(listOf(GIVEN_PATH, key))
                     .mapNotNull { it.getter }
                 )

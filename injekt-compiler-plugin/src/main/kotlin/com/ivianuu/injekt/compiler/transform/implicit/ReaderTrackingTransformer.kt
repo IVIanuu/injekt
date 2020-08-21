@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler.transform.implicit
 
 import com.ivianuu.injekt.compiler.canUseImplicits
-import com.ivianuu.injekt.compiler.flatMapFix
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.irClassReference
@@ -199,7 +198,7 @@ class ReaderTrackingTransformer(
                 val result = super.visitWhen(expression) as IrWhen
                 if (expression.type.isTransformedReaderLambda()) {
                     newIndexBuilders += expression.branches
-                        .flatMapFix { it.result.collectReaderLambdaContextsInExpression() }
+                        .flatMap { it.result.collectReaderLambdaContextsInExpression() }
                         .map { subContext ->
                             readerImplIndexBuilder(
                                 expression.type.lambdaContext!!,
@@ -312,7 +311,7 @@ class ReaderTrackingTransformer(
                     }
                     .map { transformedCallee.valueParameters[it.first] to it.second }
                     .filter { it.first.type.isTransformedReaderLambda() }
-                    .flatMapFix { (parameter, argument) ->
+                    .flatMap { (parameter, argument) ->
                         argument.collectReaderLambdaContextsInExpression()
                             .map { parameter.type.lambdaContext!! to it }
                     }
