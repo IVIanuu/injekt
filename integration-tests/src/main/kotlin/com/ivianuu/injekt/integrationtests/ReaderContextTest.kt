@@ -572,6 +572,31 @@ class ReaderContextTest {
     }
 
     @Test
+    fun testParentScopedBinding() = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+
+        @Given(TestParentContext::class)
+        fun bar() = Bar(given())
+        
+        val parentContext = rootContext<TestParentContext>()
+        val childContext = parentContext.runReader {
+            childContext<TestChildContext>()
+        }
+        
+        fun invoke(): Bar {
+            return childContext.runReader { given<Bar>() }
+        }
+    """
+    ) {
+        assertSame(
+            invokeSingleFile(),
+            invokeSingleFile()
+        )
+    }
+
+    @Test
     fun testRunReaderWrapper() = codegen(
         """
         fun runApplicationReader(block: @Reader () -> Foo): Foo {
