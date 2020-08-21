@@ -164,7 +164,7 @@ class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransforme
                                             .single()
                                     )
                                 )
-                            }
+                            } else it
                         }
                         .let {
                             it.copy(
