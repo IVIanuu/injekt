@@ -217,7 +217,7 @@ class GivensGraphTest {
         }
         """
     ) {
-        assertInternalError("multiple given inputs")
+        assertInternalError("multiple givens found in inputs")
     }
 
     @Test
