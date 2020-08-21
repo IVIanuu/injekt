@@ -41,6 +41,7 @@ import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isObject
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ReaderContextFactoryImplGenerator(
     private val injektContext: InjektContext,
@@ -230,21 +231,19 @@ class ReaderContextFactoryImplGenerator(
             }
         }
 
+        val expressions = GivenExpressions(
+            parent = parentExpressions,
+            injektContext = injektContext,
+            contextImpl = contextImpl
+        )
+
         val graph = GivensGraph(
             parent = parentGraph,
             injektContext = injektContext,
             declarationGraph = declarationGraph,
+            expressions = expressions,
             contextImpl = contextImpl,
             inputs = inputFields,
-            implicitContextParamTransformer = implicitContextParamTransformer
-        )
-
-        val expressions = GivenExpressions(
-            parent = parentExpressions,
-            injektContext = injektContext,
-            contextImpl = contextImpl,
-            declarationGraph = declarationGraph,
-            givensGraph = graph,
             implicitContextParamTransformer = implicitContextParamTransformer
         )
 
@@ -255,6 +254,11 @@ class ReaderContextFactoryImplGenerator(
         graph.checkEntryPoints(
             entryPoints
                 .flatMap { declarationGraph.getAllContextImplementations(it) }
+        )
+
+        println(
+            "implement resolved givens ${contextId.descriptor.fqNameSafe}\n" +
+                    "${graph.resolvedGivens}"
         )
 
         (entryPoints + graph.resolvedGivens.flatMap { it.value.contexts })
@@ -283,7 +287,10 @@ class ReaderContextFactoryImplGenerator(
             }
             .map { it.returnType.asKey() }
             .forEach {
-                expressions.getGivenExpression(graph.resolvedGivens[it]!!)
+                expressions.getGivenExpression(
+                    graph.resolvedGivens[it]
+                        ?: error("wtf $it")
+                )
             }
 
         return contextImpl

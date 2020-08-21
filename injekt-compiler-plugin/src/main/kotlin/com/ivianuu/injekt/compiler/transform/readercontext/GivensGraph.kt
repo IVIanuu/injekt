@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.readercontext
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
@@ -26,6 +27,7 @@ import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.uniqueTypeName
+import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -55,6 +57,7 @@ class GivensGraph(
     private val injektContext: InjektContext,
     private val declarationGraph: DeclarationGraph,
     private val contextImpl: IrClass,
+    private val expressions: GivenExpressions,
     val inputs: List<IrField>,
     private val implicitContextParamTransformer: ImplicitContextParamTransformer
 ) {
@@ -175,12 +178,15 @@ class GivensGraph(
         if (key in checkedKeys) return
         checkedKeys += key
         chain.push(ChainElement.Given(key))
-        getGiven(key)
+        check(getGiven(key))
+        chain.pop()
+    }
+
+    private fun check(given: Given) {
+        given
             .contexts
             .flatMap { declarationGraph.getAllContextImplementations(it) }
             .forEach { check(it) }
-
-        chain.pop()
     }
 
     private fun check(context: IrClass) {
@@ -218,7 +224,7 @@ class GivensGraph(
         chain.pop()
     }
 
-    private fun getGiven(key: Key): Given {
+    fun getGiven(key: Key): Given {
         var given = getGivenOrNull(key)
         if (given != null) return given
 
@@ -279,6 +285,8 @@ class GivensGraph(
                     return null
                 }
             }
+
+            check(this)
 
             return this
         }
@@ -366,12 +374,28 @@ class GivensGraph(
                     ?.owner
             }
             if (key.type.classOrNull!!.owner !in existingFactories) {
+                val factory = key.type.classOrNull!!.owner
+                val generator = ReaderContextFactoryImplGenerator(
+                    injektContext = injektContext,
+                    name = expressions.uniqueChildNameProvider("F".asNameId()),
+                    factoryInterface = factory,
+                    irParent = contextImpl,
+                    declarationGraph = declarationGraph,
+                    implicitContextParamTransformer = implicitContextParamTransformer,
+                    parentContext = contextImpl,
+                    parentGraph = this@GivensGraph,
+                    parentExpressions = expressions
+                )
+
+                val childFactory = generator.generateFactory()
+                contextImpl.addChild(childFactory)
+
                 this += GivenChildContext(
                     key = key,
                     owner = contextImpl,
                     contexts = emptyList(),
                     origin = null,
-                    factory = key.type.classOrNull!!.owner
+                    factory = childFactory
                 )
             }
         }

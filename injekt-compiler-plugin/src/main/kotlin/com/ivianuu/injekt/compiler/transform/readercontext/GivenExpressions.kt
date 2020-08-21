@@ -1,12 +1,9 @@
 package com.ivianuu.injekt.compiler.transform.readercontext
 
 import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
-import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.tmpFunction
-import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -41,14 +38,11 @@ import org.jetbrains.kotlin.name.FqName
 class GivenExpressions(
     private val parent: GivenExpressions?,
     private val injektContext: InjektContext,
-    private val contextImpl: IrClass,
-    private val declarationGraph: DeclarationGraph,
-    private val implicitContextParamTransformer: ImplicitContextParamTransformer,
-    private val givensGraph: GivensGraph
+    private val contextImpl: IrClass
 ) {
 
     private val givenExpressions = mutableMapOf<Key, ContextExpression>()
-    private val uniqueChildNameProvider = SimpleUniqueNameProvider()
+    val uniqueChildNameProvider = SimpleUniqueNameProvider()
 
     fun getGivenExpression(given: Given): ContextExpression {
         givenExpressions[given.key]?.let { return it }
@@ -150,22 +144,7 @@ class GivenExpressions(
 
     private fun childContextExpression(given: GivenChildContext): ContextExpression {
         return { c ->
-            val generator = ReaderContextFactoryImplGenerator(
-                injektContext = injektContext,
-                name = uniqueChildNameProvider("F".asNameId()),
-                factoryInterface = given.factory,
-                irParent = contextImpl,
-                declarationGraph = declarationGraph,
-                implicitContextParamTransformer = implicitContextParamTransformer,
-                parentContext = contextImpl,
-                parentGraph = givensGraph,
-                parentExpressions = this@GivenExpressions
-            )
-
-            val childFactory = generator.generateFactory()
-            contextImpl.addChild(childFactory)
-
-            irCall(childFactory.constructors.single()).apply {
+            irCall(given.factory.constructors.single()).apply {
                 putValueArgument(0, c[contextImpl])
             }
         }
