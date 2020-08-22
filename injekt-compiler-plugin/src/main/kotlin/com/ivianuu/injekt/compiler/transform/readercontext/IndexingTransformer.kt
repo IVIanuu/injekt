@@ -29,7 +29,6 @@ import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
-import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -52,7 +51,7 @@ class IndexingTransformer(
                     runnables += {
                         indexer.index(
                             listOf(DeclarationGraph.GIVEN_PATH),
-                            declaration.constructedClass
+                            declaration
                         )
                     }
                 }

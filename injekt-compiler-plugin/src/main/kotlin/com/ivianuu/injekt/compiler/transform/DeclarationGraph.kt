@@ -17,19 +17,26 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.classifierOrTypeAliasFqName
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
+import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.isTypeParameter
+import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.reader.ReaderContextParamTransformer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class DeclarationGraph(
+    private val injektContext: InjektContext,
     private val indexer: Indexer,
     val module: IrModuleFragment,
     private val readerContextParamTransformer: ReaderContextParamTransformer
@@ -39,21 +46,30 @@ class DeclarationGraph(
         indexer.classIndices(listOf(ROOT_CONTEXT_FACTORY_PATH))
     }
 
-    private val givensByType = mutableMapOf<IrClass, List<IrFunction>>()
-    fun givens(type: IrClass) = givensByType.getOrPut(type) {
-        (indexer.functionIndices(listOf(GIVEN_PATH)) +
-                indexer.classIndices(listOf(GIVEN_PATH))
-                    .flatMap { it.constructors.toList() } +
-                indexer.propertyIndices(listOf(GIVEN_PATH))
-                    .mapNotNull { it.getter }
-                )
-            .filter {
-                it.returnType.isTypeParameter() ||
-                        it.returnType.classOrNull!!.owner == type
-            }
-            .map { readerContextParamTransformer.getTransformedFunction(it) }
-            .filter { it.getContext() != null }
-            .distinct()
+    private val givensByType = mutableMapOf<FqName, List<IrFunction>>()
+    fun givens(type: IrType): List<IrFunction> {
+        val fqName = type.classifierOrTypeAliasFqName
+        return givensByType.getOrPut(fqName) {
+            (indexer.functionIndices(listOf(GIVEN_PATH)) +
+                    indexer.classIndices(listOf(GIVEN_PATH))
+                        .flatMap { it.constructors.toList() } +
+                    indexer.propertyIndices(listOf(GIVEN_PATH))
+                        .mapNotNull { it.getter }
+                    )
+                .filter { function ->
+                    val explicitParameters = function.valueParameters
+                        .filter { it != function.getContextValueParameter() }
+                    val realType =
+                        if (explicitParameters.isEmpty()) function.returnType
+                        else injektContext.tmpFunction(explicitParameters.size)
+                            .typeWith(explicitParameters.map { it.type } + function.returnType)
+                    realType.isTypeParameter() ||
+                            realType.classifierOrTypeAliasFqName == fqName
+                }
+                .map { readerContextParamTransformer.getTransformedFunction(it) }
+                .filter { it.getContext() != null }
+                .distinct()
+        }
     }
 
     private val givenMapEntriesByKey = mutableMapOf<String, List<IrFunction>>()

@@ -29,8 +29,6 @@ import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.reader.ReaderContextParamTransformer
 import com.ivianuu.injekt.compiler.typeArguments
-import com.ivianuu.injekt.compiler.typeOrFail
-import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
@@ -51,7 +49,6 @@ import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.isFunctionOrKFunction
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
@@ -412,16 +409,7 @@ class GivensGraph(
             }
         }
 
-        val realGivenType = if (key.type.isFunctionOrKFunction()) {
-            key.type.typeArguments.last().typeOrFail
-        } else {
-            key.type
-        }
-
-        val potentialGivenFunctions = declarationGraph
-            .givens(realGivenType.classOrNull!!.owner)
-
-        this += potentialGivenFunctions
+        this += declarationGraph.givens(key.type)
             .map { function ->
                 val targetContext = (function.getClassFromAnnotation(
                     InjektFqNames.Given, 0
@@ -439,10 +427,7 @@ class GivensGraph(
                 GivenFunction(
                     key = key,
                     owner = contextImpl,
-                    contexts = listOf(
-                        function.getContext()!!
-                            .typeWith(realGivenType.typeArguments.map { it.typeOrFail })
-                    ),
+                    contexts = listOf(function.getContext()!!.defaultType),
                     external = function.isExternalDeclaration(),
                     explicitParameters = explicitParameters,
                     origin = function.descriptor.fqNameSafe,
