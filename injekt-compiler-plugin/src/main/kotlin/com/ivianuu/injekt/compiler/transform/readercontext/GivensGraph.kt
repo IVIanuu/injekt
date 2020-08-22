@@ -26,6 +26,8 @@ import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.reader.ReaderContextParamTransformer
+import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
@@ -386,7 +388,8 @@ class GivensGraph(
                     readerContextParamTransformer = readerContextParamTransformer,
                     parentContext = contextImpl,
                     parentGraph = this@GivensGraph,
-                    parentExpressions = expressions
+                    parentExpressions = expressions,
+                    typeArguments = key.type.typeArguments.map { it.typeOrFail }
                 )
 
                 this += GivenChildContext(

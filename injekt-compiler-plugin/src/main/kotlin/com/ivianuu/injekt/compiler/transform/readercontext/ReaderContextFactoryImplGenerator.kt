@@ -4,6 +4,7 @@ import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getAllClasses
+import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.reader.ReaderContextParamTransformer
@@ -51,7 +52,8 @@ class ReaderContextFactoryImplGenerator(
     private val readerContextParamTransformer: ReaderContextParamTransformer,
     private val parentContext: IrClass?,
     private val parentGraph: GivensGraph?,
-    private val parentExpressions: GivenExpressions?
+    private val parentExpressions: GivenExpressions?,
+    private val typeArguments: List<IrType>
 ) {
 
     fun generateFactory(): IrClass {
@@ -61,6 +63,14 @@ class ReaderContextFactoryImplGenerator(
         val inputTypes = createFunction
             .valueParameters
             .map { it.type }
+            .map {
+                it.substitute(
+                    factoryInterface.typeParameters
+                        .map { it.symbol }
+                        .zip(typeArguments)
+                        .toMap()
+                )
+            }
 
         val contextId = createFunction.returnType.classOrNull!!.owner
 
@@ -116,6 +126,8 @@ class ReaderContextFactoryImplGenerator(
             returnType = contextId.defaultType
         }.apply {
             dispatchReceiverParameter = factoryImpl.thisReceiver!!.copyTo(this)
+
+            overriddenSymbols += createFunction.symbol
 
             val inputNameProvider = SimpleUniqueNameProvider()
             inputTypes.forEach {

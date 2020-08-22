@@ -96,7 +96,8 @@ class RootContextCallTransformer(
             file = file,
             inputTypes = inputs.map { it.type },
             injektContext = injektContext,
-            isChild = false
+            isChild = false,
+            typeParametersContainer = null
         ).also { newRootFactories += it }
 
         return DeclarationIrBuilder(injektContext, call.symbol).run {

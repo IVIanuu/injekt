@@ -81,6 +81,7 @@ import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrExternalPackageFragmentSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
@@ -414,13 +415,19 @@ class ReaderCallTransformer(
             file = scope.declaration.file,
             inputTypes = inputs.map { it.type },
             injektContext = injektContext,
-            isChild = true
+            isChild = true,
+            typeParametersContainer = scope.declaration as? IrTypeParametersContainer
         ).also { newDeclarations += it }
 
         return DeclarationIrBuilder(injektContext, call.symbol).run {
             irCall(contextFactory.functions.single()).apply {
                 dispatchReceiver = scope.givenExpressionForType(
-                    contextFactory.defaultType,
+                    if (scope.declaration is IrTypeParametersContainer)
+                        contextFactory.typeWith(
+                            *scope.declaration.typeParameters
+                                .map { it.defaultType }.toTypedArray()
+                        )
+                    else contextFactory.defaultType,
                     contextExpression
                 )
                 inputs.forEachIndexed { index, input ->

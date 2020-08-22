@@ -55,7 +55,8 @@ class ReaderContextImplTransformer(
                     readerContextParamTransformer = readerContextParamTransformer,
                     parentContext = null,
                     parentGraph = null,
-                    parentExpressions = null
+                    parentExpressions = null,
+                    typeArguments = emptyList()
                 ).generateFactory()
 
                 file.addChild(factoryImpl)

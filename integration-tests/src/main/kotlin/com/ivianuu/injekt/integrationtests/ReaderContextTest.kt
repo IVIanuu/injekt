@@ -150,6 +150,45 @@ class ReaderContextTest {
         assertSame(foo, invokeSingleFile(foo))
     }
 
+    @Test
+    fun testGenericRequestInChildContext() = codegen(
+        """
+            val parentContext = rootContext<TestParentContext>()
+            
+            fun invoke() {
+                parentContext.runReader {
+                    val foo = diyGiven<Foo>()
+                }
+            }
+            
+            @Reader
+            fun <T> diyGiven() = childContext<TestChildContext>().runReader { given<T>() }
+        """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testGenericChildContextInput() = codegen(
+        """
+            val parentContext = rootContext<TestParentContext>()
+            
+            fun invoke() {
+                parentContext.runReader {
+                    val foo = childContextBuilder<Foo>(Foo()) { given<Foo>() }
+                }
+            }
+            
+            @Reader
+            fun <T> childContextBuilder(
+                value: T,
+                block: @Reader () -> T
+            ) = childContext<TestChildContext>(value).runReader { block() }
+        """
+    ) {
+        invokeSingleFile()
+    }
+
     // todo @Test
     fun testCircular() = codegen(
         """

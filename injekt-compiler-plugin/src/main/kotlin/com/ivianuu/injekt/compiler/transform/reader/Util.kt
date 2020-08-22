@@ -31,6 +31,7 @@ import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
+import org.jetbrains.kotlin.backend.common.ir.remapTypeParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
@@ -93,6 +94,7 @@ fun createContext(
 
 fun createContextFactory(
     context: IrClass,
+    typeParametersContainer: IrTypeParametersContainer?,
     file: IrFile,
     inputTypes: List<IrType>,
     injektContext: InjektContext,
@@ -109,6 +111,9 @@ fun createContextFactory(
     createImplicitParameterDeclarationWithWrappedDescriptor()
     addMetadataIfNotLocal()
 
+    if (typeParametersContainer != null)
+        copyTypeParametersFrom(typeParametersContainer)
+
     addFunction {
         this.name = "create".asNameId()
         returnType = context.defaultType
@@ -118,12 +123,14 @@ fun createContextFactory(
         parent = this@clazz
         addMetadataIfNotLocal()
         val parameterUniqueNameProvider = SimpleUniqueNameProvider()
-        inputTypes.forEach {
-            addValueParameter(
-                parameterUniqueNameProvider(it.uniqueTypeName()).asString(),
-                it
-            )
-        }
+        inputTypes
+            .map { it.remapTypeParameters(typeParametersContainer ?: this@clazz, this@clazz) }
+            .forEach {
+                addValueParameter(
+                    parameterUniqueNameProvider(it.uniqueTypeName()).asString(),
+                    it
+                )
+            }
     }
 
     annotations += DeclarationIrBuilder(injektContext, symbol).run {
