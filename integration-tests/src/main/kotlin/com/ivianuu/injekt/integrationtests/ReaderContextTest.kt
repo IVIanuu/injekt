@@ -33,16 +33,13 @@ class ReaderContextTest {
     @Test
     fun testSimple() = codegen(
         """
-            @Context
-            interface SimpleContext
-            
             @Given
             fun foo() = Foo()
             @Given
             fun bar() = Bar(given())
             
             fun invoke(): Bar {
-                return rootContext<SimpleContext>().runReader { given<Bar>() }
+                return rootContext<TestContext>().runReader { given<Bar>() }
             }
     """
     ) {

@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.comparison.injekt
 
-import com.ivianuu.injekt.Context
+import com.ivianuu.injekt.ApplicationContext
 import com.ivianuu.injekt.InitializeInjekt
 import com.ivianuu.injekt.comparison.base.InjectionTest
 import com.ivianuu.injekt.comparison.fibonacci.Fib8
@@ -29,7 +29,7 @@ object InjektTest : InjectionTest {
 
     override val name = "Injekt"
 
-    private var context: InjektTestContext? = null
+    private var context: ApplicationContext? = null
 
     override fun setup() {
         this.context = rootContext()
@@ -42,8 +42,5 @@ object InjektTest : InjectionTest {
     override fun shutdown() {
         context = null
     }
-
-    @Context
-    interface InjektTestContext
 
 }
