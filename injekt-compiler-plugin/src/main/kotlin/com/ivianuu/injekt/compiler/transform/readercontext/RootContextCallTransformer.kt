@@ -16,29 +16,22 @@
 
 package com.ivianuu.injekt.compiler.transform.readercontext
 
-import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
-import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.transform.InjektContext
-import com.ivianuu.injekt.compiler.uniqueTypeName
+import com.ivianuu.injekt.compiler.transform.implicit.createContextFactory
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
-import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.impl.EmptyPackageFragmentDescriptor
-import org.jetbrains.kotlin.ir.builders.declarations.addFunction
-import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
-import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
@@ -50,20 +43,16 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrExternalPackageFragmentSymbolImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ReaderContextCallTransformer(
+class RootContextCallTransformer(
     injektContext: InjektContext,
     private val indexer: Indexer
 ) : AbstractInjektTransformer(injektContext) {
 
-    private val newDeclarations = mutableListOf<IrDeclarationWithName>()
     private val newRootFactories = mutableListOf<IrClass>()
 
     override fun lower() {
@@ -71,9 +60,7 @@ class ReaderContextCallTransformer(
             override fun visitCall(expression: IrCall): IrExpression {
                 expression.transformChildrenVoid(this)
                 return if (expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.rootContext" ||
-                    expression.symbol.descriptor.fqNameSafe.asString() ==
-                    "com.ivianuu.injekt.childContext"
+                    "com.ivianuu.injekt.rootContext"
                 ) {
                     transformContextCall(
                         expression,
@@ -84,11 +71,8 @@ class ReaderContextCallTransformer(
             }
         })
 
-        newDeclarations.forEach {
-            (it.parent as IrDeclarationContainer).addChild(it)
-        }
-
         newRootFactories.forEach {
+            (it.parent as IrDeclarationContainer).addChild(it)
             indexer.index(
                 listOf(DeclarationGraph.ROOT_CONTEXT_FACTORY_PATH),
                 it
@@ -107,59 +91,16 @@ class ReaderContextCallTransformer(
 
         val context = call.getTypeArgument(0)!!.classOrNull!!.owner
 
-        val isChild = call.symbol.descriptor.fqNameSafe.asString() ==
-                "com.ivianuu.injekt.childContext"
-
-        val contextFactory = buildClass {
-            name = injektContext.uniqueClassNameProvider(
-                "${context.name}Factory".asNameId(),
-                file.fqName
-            )
-            kind = ClassKind.INTERFACE
-            visibility = Visibilities.INTERNAL
-        }.apply clazz@{
-            parent = file
-            createImplicitParameterDeclarationWithWrappedDescriptor()
-            addMetadataIfNotLocal()
-
-            addFunction {
-                this.name = "create".asNameId()
-                returnType = context.defaultType
-                modality = Modality.ABSTRACT
-            }.apply {
-                dispatchReceiverParameter = thisReceiver!!.copyTo(this)
-                parent = this@clazz
-                addMetadataIfNotLocal()
-                val parameterUniqueNameProvider = SimpleUniqueNameProvider()
-                inputs.forEach {
-                    addValueParameter(
-                        parameterUniqueNameProvider(it.type.uniqueTypeName()).asString(),
-                        it.type
-                    )
-                }
-            }
-
-            annotations += DeclarationIrBuilder(injektContext, symbol).run {
-                if (!isChild) {
-                    irCall(injektContext.injektSymbols.rootContextFactory.constructors.single()).apply {
-                        putValueArgument(
-                            0,
-                            irString(
-                                file.fqName.child((name.asString() + "Impl").asNameId()).asString()
-                            )
-                        )
-                    }
-                } else {
-                    irCall(injektContext.injektSymbols.childContextFactory.constructors.single())
-                }
-            }
-
-            newDeclarations += this
-            if (!isChild) newRootFactories += this
-        }
+        val contextFactory = createContextFactory(
+            context = context,
+            file = file,
+            inputTypes = inputs.map { it.type },
+            injektContext = injektContext,
+            isChild = false
+        ).also { newRootFactories += it }
 
         return DeclarationIrBuilder(injektContext, call.symbol).run {
-            val factoryExpression = if (!isChild) {
+            irCall(contextFactory.functions.single()).apply {
                 val contextFactoryImplStub = buildClass {
                     this.name = (contextFactory.name.asString() + "Impl").asNameId()
                     origin = IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB
@@ -177,20 +118,7 @@ class ReaderContextCallTransformer(
                         scope.getPackageFragment()!!.fqName
                     )
                 }
-
-                irGetObject(contextFactoryImplStub.symbol)
-            } else {
-                irCall(
-                    injektContext.referenceFunctions(FqName("com.ivianuu.injekt.given"))
-                        .single(),
-                    contextFactory.defaultType
-                ).apply {
-                    putTypeArgument(0, contextFactory.defaultType)
-                }
-            }
-
-            irCall(contextFactory.functions.single()).apply {
-                dispatchReceiver = factoryExpression
+                dispatchReceiver = irGetObject(contextFactoryImplStub.symbol)
                 inputs.forEachIndexed { index, input ->
                     putValueArgument(index, input)
                 }

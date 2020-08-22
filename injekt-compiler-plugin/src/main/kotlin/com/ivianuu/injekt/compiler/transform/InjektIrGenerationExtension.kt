@@ -23,8 +23,8 @@ import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
 import com.ivianuu.injekt.compiler.transform.implicit.ReaderTrackingTransformer
 import com.ivianuu.injekt.compiler.transform.readercontext.IndexingTransformer
-import com.ivianuu.injekt.compiler.transform.readercontext.ReaderContextCallTransformer
 import com.ivianuu.injekt.compiler.transform.readercontext.ReaderContextImplTransformer
+import com.ivianuu.injekt.compiler.transform.readercontext.RootContextCallTransformer
 import com.ivianuu.injekt.compiler.transform.readercontext.RunReaderCallTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -66,7 +66,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             InjektSymbols(injektContext)
         )
 
-        ReaderContextCallTransformer(
+        RootContextCallTransformer(
             injektContext,
             indexer
         ).doLower(moduleFragment)

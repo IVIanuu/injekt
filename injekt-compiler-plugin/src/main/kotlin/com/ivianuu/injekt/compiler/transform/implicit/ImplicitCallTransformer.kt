@@ -41,6 +41,7 @@ import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
+import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
@@ -60,6 +61,7 @@ import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
@@ -84,6 +86,7 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fields
+import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.isSuspend
@@ -99,6 +102,7 @@ class ImplicitCallTransformer(
 
     private val transformedDeclarations = mutableListOf<IrDeclaration>()
     private val newIndexBuilders = mutableListOf<NewIndexBuilder>()
+    private val newDeclarations = mutableListOf<IrDeclarationWithName>()
 
     private data class NewIndexBuilder(
         val originatingDeclaration: IrDeclarationWithName,
@@ -126,6 +130,10 @@ class ImplicitCallTransformer(
                 path = listOf(DeclarationGraph.GENERIC_CONTEXT_PATH),
                 classBuilder = it.classBuilder
             )
+        }
+
+        newDeclarations.forEach {
+            (it.parent as IrDeclarationContainer).addChild(it)
         }
     }
 
@@ -369,6 +377,11 @@ class ImplicitCallTransformer(
                         transformGivenCall(scope, expression) {
                             contextExpression(allScopes)
                         }
+                    expression is IrCall &&
+                            expression.symbol.owner.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.childContext" ->
+                        transformChildContextCall(scope, expression) {
+                            contextExpression(allScopes)
+                        }
                     expression.isReaderLambdaInvoke(injektContext) -> transformReaderLambdaInvoke(
                         scope,
                         expression as IrCall
@@ -383,6 +396,38 @@ class ImplicitCallTransformer(
                 }
             }
         }, null)
+    }
+
+    private fun transformChildContextCall(
+        scope: ReaderScope,
+        call: IrCall,
+        contextExpression: () -> IrExpression
+    ): IrExpression {
+        val inputs = (call.getValueArgument(0) as? IrVarargImpl)
+            ?.elements
+            ?.map { it as IrExpression } ?: emptyList()
+
+        val context = call.getTypeArgument(0)!!.classOrNull!!.owner
+
+        val contextFactory = createContextFactory(
+            context = context,
+            file = scope.declaration.file,
+            inputTypes = inputs.map { it.type },
+            injektContext = injektContext,
+            isChild = true
+        ).also { newDeclarations += it }
+
+        return DeclarationIrBuilder(injektContext, call.symbol).run {
+            irCall(contextFactory.functions.single()).apply {
+                dispatchReceiver = scope.givenExpressionForType(
+                    contextFactory.defaultType,
+                    contextExpression
+                )
+                inputs.forEachIndexed { index, input ->
+                    putValueArgument(index, input)
+                }
+            }
+        }
     }
 
     private fun transformGivenCall(

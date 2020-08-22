@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.implicit
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
@@ -26,20 +27,28 @@ import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.uniqueKey
+import com.ivianuu.injekt.compiler.uniqueTypeName
+import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.ir.builders.declarations.addFunction
+import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -78,6 +87,57 @@ fun createContext(
     annotations += DeclarationIrBuilder(injektContext, symbol).run {
         irCall(injektContext.injektSymbols.origin.constructors.single()).apply {
             putValueArgument(0, irString(origin.asString()))
+        }
+    }
+}
+
+fun createContextFactory(
+    context: IrClass,
+    file: IrFile,
+    inputTypes: List<IrType>,
+    injektContext: InjektContext,
+    isChild: Boolean
+) = buildClass {
+    name = injektContext.uniqueClassNameProvider(
+        "${context.name}Factory".asNameId(),
+        file.fqName
+    )
+    kind = ClassKind.INTERFACE
+    visibility = Visibilities.INTERNAL
+}.apply clazz@{
+    parent = file
+    createImplicitParameterDeclarationWithWrappedDescriptor()
+    addMetadataIfNotLocal()
+
+    addFunction {
+        this.name = "create".asNameId()
+        returnType = context.defaultType
+        modality = Modality.ABSTRACT
+    }.apply {
+        dispatchReceiverParameter = thisReceiver!!.copyTo(this)
+        parent = this@clazz
+        addMetadataIfNotLocal()
+        val parameterUniqueNameProvider = SimpleUniqueNameProvider()
+        inputTypes.forEach {
+            addValueParameter(
+                parameterUniqueNameProvider(it.uniqueTypeName()).asString(),
+                it
+            )
+        }
+    }
+
+    annotations += DeclarationIrBuilder(injektContext, symbol).run {
+        if (!isChild) {
+            irCall(injektContext.injektSymbols.rootContextFactory.constructors.single()).apply {
+                putValueArgument(
+                    0,
+                    irString(
+                        file.fqName.child((name.asString() + "Impl").asNameId()).asString()
+                    )
+                )
+            }
+        } else {
+            irCall(injektContext.injektSymbols.childContextFactory.constructors.single())
         }
     }
 }
