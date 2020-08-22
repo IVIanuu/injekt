@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.implicit
+package com.ivianuu.injekt.compiler.transform.reader
 
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.canUseImplicits
+import com.ivianuu.injekt.compiler.canUseReaders
 import com.ivianuu.injekt.compiler.copy
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.isExternalDeclaration
-import com.ivianuu.injekt.compiler.isMarkedAsImplicit
+import com.ivianuu.injekt.compiler.isMarkedAsReader
 import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
 import com.ivianuu.injekt.compiler.jvmNameAnnotation
 import com.ivianuu.injekt.compiler.recordLookup
@@ -146,7 +146,7 @@ import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.Variance
 
-class ImplicitContextParamTransformer(
+class ReaderContextParamTransformer(
     injektContext: InjektContext,
     private val indexer: Indexer
 ) : AbstractInjektTransformer(injektContext) {
@@ -225,7 +225,7 @@ class ImplicitContextParamTransformer(
 
         val readerConstructor = clazz.getReaderConstructor(injektContext)
 
-        if (!clazz.isMarkedAsImplicit(injektContext) && readerConstructor == null) return clazz
+        if (!clazz.isMarkedAsReader(injektContext) && readerConstructor == null) return clazz
 
         if (readerConstructor == null) return clazz
 
@@ -240,7 +240,7 @@ class ImplicitContextParamTransformer(
         lateinit var contextField: IrField
         lateinit var contextParameter: IrValueParameter
 
-        transformImplicitFunction(
+        transformReaderFunction(
             owner = clazz,
             ownerFunction = readerConstructor,
             onContextParameterCreated = {
@@ -281,7 +281,7 @@ class ImplicitContextParamTransformer(
         ) return function
 
         if (function is IrConstructor) {
-            return if (function.canUseImplicits(injektContext)) {
+            return if (function.canUseReaders(injektContext)) {
                 transformClassIfNeeded(function.constructedClass)
                 function
             } else function
@@ -293,7 +293,7 @@ class ImplicitContextParamTransformer(
         if (function.isExternalDeclaration()) {
             val existingSignature = getExternalReaderSignature(function)
             if (existingSignature == null &&
-                !function.canUseImplicits(injektContext)
+                !function.canUseReaders(injektContext)
             ) return function
             val transformedFunction = function.copyAsReader()
             transformedFunctions[function] = transformedFunction
@@ -301,7 +301,7 @@ class ImplicitContextParamTransformer(
             return transformedFunction
         }
 
-        var needsTransform = function.canUseImplicits(injektContext)
+        var needsTransform = function.canUseReaders(injektContext)
 
         if (!needsTransform) {
             val returnType = function.returnType
@@ -328,8 +328,8 @@ class ImplicitContextParamTransformer(
                 createNewReaderFunctionType(transformedFunction.returnType, transformedFunction)
         }
 
-        if (function.canUseImplicits(injektContext)) {
-            transformImplicitFunction(
+        if (function.canUseReaders(injektContext)) {
+            transformReaderFunction(
                 owner = transformedFunction,
                 ownerFunction = transformedFunction
             )
@@ -343,7 +343,7 @@ class ImplicitContextParamTransformer(
         return transformedFunction
     }
 
-    private fun <T> transformImplicitFunction(
+    private fun <T> transformReaderFunction(
         owner: T,
         ownerFunction: IrFunction,
         onContextParameterCreated: (IrValueParameter) -> Unit = {}
@@ -574,7 +574,7 @@ class ImplicitContextParamTransformer(
             injektContext
         ).apply {
             injektContext.irTrace.record(
-                InjektWritableSlices.IS_TRANSFORMED_IMPLICIT_FUNCTION,
+                InjektWritableSlices.IS_TRANSFORMED_READER_FUNCTION,
                 this,
                 true
             )

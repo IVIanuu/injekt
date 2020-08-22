@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.implicit
+package com.ivianuu.injekt.compiler.transform.reader
 
-import com.ivianuu.injekt.compiler.canUseImplicits
+import com.ivianuu.injekt.compiler.canUseReaders
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.irClassReference
-import com.ivianuu.injekt.compiler.isMarkedAsImplicit
+import com.ivianuu.injekt.compiler.isMarkedAsReader
 import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
 import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
@@ -63,7 +63,7 @@ import org.jetbrains.kotlin.utils.addIfNotNull
 class ReaderTrackingTransformer(
     injektContext: InjektContext,
     private val indexer: Indexer,
-    private val implicitContextParamTransformer: ImplicitContextParamTransformer
+    private val readerContextParamTransformer: ReaderContextParamTransformer
 ) : AbstractInjektTransformer(injektContext) {
 
     private val newIndexBuilders = mutableListOf<NewIndexBuilder>()
@@ -210,7 +210,7 @@ class ReaderTrackingTransformer(
             }
 
             override fun visitClassNew(declaration: IrClass): IrStatement {
-                return if (declaration.canUseImplicits(injektContext)) {
+                return if (declaration.canUseReaders(injektContext)) {
                     inScope(
                         Scope.Reader(
                             declaration,
@@ -249,7 +249,7 @@ class ReaderTrackingTransformer(
                     }
                 }
 
-                return if (declaration.canUseImplicits(injektContext) &&
+                return if (declaration.canUseReaders(injektContext) &&
                     currentReaderScope.let {
                         it == null || it !is Scope.RunReader || !it.isBlock(declaration)
                     }
@@ -301,7 +301,7 @@ class ReaderTrackingTransformer(
         injektContext.module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
 
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
-                val transformedCallee = implicitContextParamTransformer
+                val transformedCallee = readerContextParamTransformer
                     .getTransformedFunction(expression.symbol.owner)
 
                 newIndexBuilders += (0 until expression.valueArgumentsCount)
@@ -327,7 +327,7 @@ class ReaderTrackingTransformer(
 
             override fun visitFunctionNew(declaration: IrFunction): IrStatement {
                 if (declaration is IrSimpleFunction &&
-                    declaration.isMarkedAsImplicit(injektContext) &&
+                    declaration.isMarkedAsReader(injektContext) &&
                     declaration.overriddenSymbols.isNotEmpty()
                 ) {
                     newIndexBuilders += readerImplIndexBuilder(
@@ -366,7 +366,7 @@ class ReaderTrackingTransformer(
                         true
                     )
                 }
-                call.symbol.owner.canUseImplicits(injektContext) -> {
+                call.symbol.owner.canUseReaders(injektContext) -> {
                     readerCallIndexBuilder(
                         call.symbol.owner.getContext()!!,
                         currentReaderScope!!.invocationContext,

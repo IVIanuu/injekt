@@ -18,10 +18,10 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.transform.implicit.GenericContextImplTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitCallTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
-import com.ivianuu.injekt.compiler.transform.implicit.ReaderTrackingTransformer
+import com.ivianuu.injekt.compiler.transform.reader.GenericContextImplTransformer
+import com.ivianuu.injekt.compiler.transform.reader.ReaderCallTransformer
+import com.ivianuu.injekt.compiler.transform.reader.ReaderContextParamTransformer
+import com.ivianuu.injekt.compiler.transform.reader.ReaderTrackingTransformer
 import com.ivianuu.injekt.compiler.transform.readercontext.IndexingTransformer
 import com.ivianuu.injekt.compiler.transform.readercontext.ReaderContextImplTransformer
 import com.ivianuu.injekt.compiler.transform.readercontext.RootContextCallTransformer
@@ -71,16 +71,16 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             indexer
         ).doLower(moduleFragment)
 
-        val implicitContextParamTransformer =
-            ImplicitContextParamTransformer(injektContext, indexer)
-        implicitContextParamTransformer.doLower(moduleFragment)
+        val readerContextParamTransformer =
+            ReaderContextParamTransformer(injektContext, indexer)
+        readerContextParamTransformer.doLower(moduleFragment)
 
-        ImplicitCallTransformer(injektContext, indexer).doLower(moduleFragment)
+        ReaderCallTransformer(injektContext, indexer).doLower(moduleFragment)
 
         ReaderTrackingTransformer(
             injektContext,
             indexer,
-            implicitContextParamTransformer
+            readerContextParamTransformer
         ).doLower(moduleFragment)
 
         RunReaderCallTransformer(
@@ -97,12 +97,12 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             val declarationGraph = DeclarationGraph(
                 indexer,
                 moduleFragment,
-                implicitContextParamTransformer
+                readerContextParamTransformer
             )
             ReaderContextImplTransformer(
                 injektContext,
                 declarationGraph,
-                implicitContextParamTransformer,
+                readerContextParamTransformer,
                 initFile!!
             ).doLower(moduleFragment)
             GenericContextImplTransformer(

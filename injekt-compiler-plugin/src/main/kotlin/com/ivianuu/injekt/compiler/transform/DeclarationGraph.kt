@@ -20,7 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
+import com.ivianuu.injekt.compiler.transform.reader.ReaderContextParamTransformer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -31,7 +31,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class DeclarationGraph(
     private val indexer: Indexer,
     val module: IrModuleFragment,
-    private val implicitContextParamTransformer: ImplicitContextParamTransformer
+    private val readerContextParamTransformer: ReaderContextParamTransformer
 ) {
 
     val rootContextFactories: List<IrClass> by lazy {
@@ -50,7 +50,7 @@ class DeclarationGraph(
                 indexer.propertyIndices(listOf(GIVEN_PATH, key))
                     .mapNotNull { it.getter }
                 )
-            .map { implicitContextParamTransformer.getTransformedFunction(it) }
+            .map { readerContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
             .distinct()
     }
@@ -59,7 +59,7 @@ class DeclarationGraph(
     fun givenMapEntries(key: String) = givenMapEntriesByKey.getOrPut(key) {
         (indexer.functionIndices(listOf(MAP_ENTRIES_PATH, key)) +
                 indexer.propertyIndices(listOf(MAP_ENTRIES_PATH, key)).mapNotNull { it.getter })
-            .map { implicitContextParamTransformer.getTransformedFunction(it) }
+            .map { readerContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
     }
 
@@ -67,7 +67,7 @@ class DeclarationGraph(
     fun givenSetElements(key: String) = givenSetElementsByKey.getOrPut(key) {
         (indexer.functionIndices(listOf(SET_ELEMENTS_PATH, key)) +
                 indexer.propertyIndices(listOf(SET_ELEMENTS_PATH, key)).mapNotNull { it.getter })
-            .map { implicitContextParamTransformer.getTransformedFunction(it) }
+            .map { readerContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
     }
 

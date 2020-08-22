@@ -19,7 +19,7 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.ClassUniqueNameProvider
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.WeakBindingTrace
-import com.ivianuu.injekt.compiler.analysis.ImplicitChecker
+import com.ivianuu.injekt.compiler.analysis.ReaderChecker
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
@@ -31,6 +31,6 @@ class InjektContext(
     val injektSymbols = InjektSymbols(this)
     val uniqueClassNameProvider = ClassUniqueNameProvider(this)
     val irTrace = WeakBindingTrace()
-    val implicitChecker = ImplicitChecker()
+    val readerChecker = ReaderChecker()
     val bindingTrace = DelegatingBindingTrace(bindingContext, "Injekt IR")
 }

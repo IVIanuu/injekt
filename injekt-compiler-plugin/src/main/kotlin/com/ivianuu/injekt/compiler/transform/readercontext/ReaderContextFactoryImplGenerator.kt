@@ -6,7 +6,7 @@ import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getAllClasses
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
+import com.ivianuu.injekt.compiler.transform.reader.ReaderContextParamTransformer
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -48,7 +48,7 @@ class ReaderContextFactoryImplGenerator(
     private val factoryInterface: IrClass,
     private val irParent: IrDeclarationParent,
     private val declarationGraph: DeclarationGraph,
-    private val implicitContextParamTransformer: ImplicitContextParamTransformer,
+    private val readerContextParamTransformer: ReaderContextParamTransformer,
     private val parentContext: IrClass?,
     private val parentGraph: GivensGraph?,
     private val parentExpressions: GivenExpressions?
@@ -243,7 +243,7 @@ class ReaderContextFactoryImplGenerator(
             expressions = expressions,
             contextImpl = contextImpl,
             inputs = inputFields,
-            implicitContextParamTransformer = implicitContextParamTransformer
+            readerContextParamTransformer = readerContextParamTransformer
         )
 
         contextImpl.superTypes += contextId.defaultType

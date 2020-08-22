@@ -38,7 +38,7 @@ class TmpMetadataPatcher(injektContext: InjektContext) :
                             .filterIsInstance<IrDeclarationWithName>()
                             .filter {
                                 (it !is IrSimpleFunction ||
-                                        injektContext.irTrace[InjektWritableSlices.IS_TRANSFORMED_IMPLICIT_FUNCTION, it] != true)
+                                        injektContext.irTrace[InjektWritableSlices.IS_TRANSFORMED_READER_FUNCTION, it] != true)
                             })
                             .map { it.descriptor })
                             .distinct()

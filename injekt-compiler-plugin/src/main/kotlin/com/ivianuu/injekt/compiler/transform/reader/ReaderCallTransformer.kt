@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.implicit
+package com.ivianuu.injekt.compiler.transform.reader
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.canUseImplicits
+import com.ivianuu.injekt.compiler.canUseReaders
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getContextValueParameter
@@ -95,7 +95,7 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ImplicitCallTransformer(
+class ReaderCallTransformer(
     injektContext: InjektContext,
     private val indexer: Indexer
 ) : AbstractInjektTransformer(injektContext) {
@@ -300,7 +300,7 @@ class ImplicitCallTransformer(
     private fun transformClassIfNeeded(
         declaration: IrClass
     ) {
-        if (!declaration.canUseImplicits(injektContext)) return
+        if (!declaration.canUseReaders(injektContext)) return
 
         val readerConstructor = declaration.getReaderConstructor(injektContext)!!
 
@@ -329,7 +329,7 @@ class ImplicitCallTransformer(
     private fun transformFunctionIfNeeded(
         declaration: IrFunction
     ) {
-        if (!declaration.canUseImplicits(injektContext)) return
+        if (!declaration.canUseReaders(injektContext)) return
 
         transformDeclarationIfNeeded(
             declaration = declaration,
@@ -363,7 +363,7 @@ class ImplicitCallTransformer(
 
                 if (allScopes
                         .mapNotNull { it.irElement as? IrDeclarationWithName }
-                        .last { it.canUseImplicits(injektContext) }
+                        .last { it.canUseReaders(injektContext) }
                         .let {
                             it != declaration && it != declarationFunction
                         }
@@ -388,7 +388,7 @@ class ImplicitCallTransformer(
                     ) {
                         contextExpression(allScopes)
                     }
-                    expression.symbol.owner.canUseImplicits(injektContext) ->
+                    expression.symbol.owner.canUseReaders(injektContext) ->
                         transformReaderCall(scope, expression) {
                             contextExpression(allScopes)
                         }

@@ -53,7 +53,7 @@ fun Annotated.getAnnotatedAnnotations(
         it.hasAnnotation(annotation, module)
     }
 
-fun Annotated.isMarkedAsImplicit(module: ModuleDescriptor): Boolean =
+fun Annotated.isMarkedAsReader(module: ModuleDescriptor): Boolean =
     hasAnnotation(InjektFqNames.Reader) ||
             hasAnnotation(InjektFqNames.Given) ||
             hasAnnotation(InjektFqNames.GivenMapEntries) ||

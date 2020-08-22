@@ -17,8 +17,8 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
-import com.ivianuu.injekt.compiler.analysis.ImplicitChecker
 import com.ivianuu.injekt.compiler.analysis.InjektStorageContainerContributor
+import com.ivianuu.injekt.compiler.analysis.ReaderChecker
 import com.ivianuu.injekt.compiler.analysis.ReaderTypeInterceptor
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -36,10 +36,10 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project: MockProject,
         configuration: CompilerConfiguration
     ) {
-        val implicitChecker = ImplicitChecker()
+        val readerChecker = ReaderChecker()
         StorageComponentContainerContributor.registerExtension(
             project,
-            InjektStorageContainerContributor(implicitChecker)
+            InjektStorageContainerContributor(readerChecker)
         )
 
         // make sure that our plugin always runs before the Compose plugin
@@ -69,7 +69,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
 
         TypeResolutionInterceptor.registerExtension(
             project,
-            ReaderTypeInterceptor(implicitChecker)
+            ReaderTypeInterceptor(readerChecker)
         )
     }
 

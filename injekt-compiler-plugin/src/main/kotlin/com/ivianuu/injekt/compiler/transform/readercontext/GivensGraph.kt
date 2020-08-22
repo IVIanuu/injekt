@@ -25,7 +25,7 @@ import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
+import com.ivianuu.injekt.compiler.transform.reader.ReaderContextParamTransformer
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
@@ -58,7 +58,7 @@ class GivensGraph(
     private val contextImpl: IrClass,
     private val expressions: GivenExpressions,
     val inputs: List<IrField>,
-    private val implicitContextParamTransformer: ImplicitContextParamTransformer
+    private val readerContextParamTransformer: ReaderContextParamTransformer
 ) {
 
     private val instanceNodes = inputs
@@ -97,7 +97,7 @@ class GivensGraph(
             val functions = (functions
                 .toList() + properties
                 .map { it.getter!! })
-                .map { implicitContextParamTransformer.getTransformedFunction(it) }
+                .map { readerContextParamTransformer.getTransformedFunction(it) }
 
             val thisAccessExpression: ContextExpression = { c ->
                 if (parentAccessExpression == null) {
@@ -383,7 +383,7 @@ class GivensGraph(
                     factoryInterface = factory,
                     irParent = contextImpl,
                     declarationGraph = declarationGraph,
-                    implicitContextParamTransformer = implicitContextParamTransformer,
+                    readerContextParamTransformer = readerContextParamTransformer,
                     parentContext = contextImpl,
                     parentGraph = this@GivensGraph,
                     parentExpressions = expressions

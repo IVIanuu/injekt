@@ -23,7 +23,7 @@ import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
-import com.ivianuu.injekt.compiler.transform.implicit.ImplicitContextParamTransformer
+import com.ivianuu.injekt.compiler.transform.reader.ReaderContextParamTransformer
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.name.FqName
@@ -31,7 +31,7 @@ import org.jetbrains.kotlin.name.FqName
 class ReaderContextImplTransformer(
     injektContext: InjektContext,
     private val declarationGraph: DeclarationGraph,
-    private val implicitContextParamTransformer: ImplicitContextParamTransformer,
+    private val readerContextParamTransformer: ReaderContextParamTransformer,
     private val initFile: IrFile
 ) : AbstractInjektTransformer(injektContext) {
 
@@ -52,7 +52,7 @@ class ReaderContextImplTransformer(
                     factoryInterface = rootFactory,
                     irParent = file,
                     declarationGraph = declarationGraph,
-                    implicitContextParamTransformer = implicitContextParamTransformer,
+                    readerContextParamTransformer = readerContextParamTransformer,
                     parentContext = null,
                     parentGraph = null,
                     parentExpressions = null

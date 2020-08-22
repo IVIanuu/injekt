@@ -27,7 +27,7 @@ import com.ivianuu.injekt.test.source
 import junit.framework.Assert.assertTrue
 import org.junit.Test
 
-class ImplicitTest {
+class ReaderTest {
 
     @Test
     fun testSimpleReader() = codegen(

@@ -23,10 +23,10 @@ import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 
 object InjektWritableSlices {
-    val IS_IMPLICIT: WritableSlice<Any, Boolean> =
+    val IS_READER: WritableSlice<Any, Boolean> =
         BasicWritableSlice(RewritePolicy.DO_NOTHING)
     val IS_READER_LAMBDA_INVOKE: WritableSlice<IrFunctionAccessExpression, Boolean> =
         BasicWritableSlice(RewritePolicy.DO_NOTHING)
-    val IS_TRANSFORMED_IMPLICIT_FUNCTION: WritableSlice<IrSimpleFunction, Boolean> =
+    val IS_TRANSFORMED_READER_FUNCTION: WritableSlice<IrSimpleFunction, Boolean> =
         BasicWritableSlice(RewritePolicy.DO_NOTHING)
 }

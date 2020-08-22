@@ -58,7 +58,7 @@ import org.jetbrains.kotlin.types.typeUtil.builtIns
 import org.jetbrains.kotlin.types.upperIfFlexible
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
-class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
+class ReaderChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
 
     override fun check(
         declaration: KtDeclaration,
@@ -71,19 +71,19 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
             is PropertyDescriptor -> checkProperty(declaration, descriptor, context)
         }
 
-        var implicitAnnotations = 0
-        if (descriptor.hasAnnotation(InjektFqNames.Given)) implicitAnnotations += 1
-        if (descriptor.hasAnnotation(InjektFqNames.Reader)) implicitAnnotations += 1
-        if (descriptor.hasAnnotation(InjektFqNames.GivenMapEntries)) implicitAnnotations += 1
-        if (descriptor.hasAnnotation(InjektFqNames.GivenSetElements)) implicitAnnotations += 1
+        var readerAnnotations = 0
+        if (descriptor.hasAnnotation(InjektFqNames.Given)) readerAnnotations += 1
+        if (descriptor.hasAnnotation(InjektFqNames.Reader)) readerAnnotations += 1
+        if (descriptor.hasAnnotation(InjektFqNames.GivenMapEntries)) readerAnnotations += 1
+        if (descriptor.hasAnnotation(InjektFqNames.GivenSetElements)) readerAnnotations += 1
 
-        if (implicitAnnotations > 1 || (implicitAnnotations == 1 &&
+        if (readerAnnotations > 1 || (readerAnnotations == 1 &&
                     descriptor.hasAnnotation(InjektFqNames.Reader) &&
                     descriptor.getAnnotatedAnnotations(InjektFqNames.Effect, descriptor.module)
                         .isNotEmpty())
         ) {
             context.trace.report(
-                InjektErrors.MULTIPLE_IMPLICIT_ANNOTATIONS
+                InjektErrors.MULTIPLE_READER_ANNOTATIONS
                     .on(declaration)
             )
         }
@@ -94,8 +94,8 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         descriptor: ClassDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (!descriptor.isMarkedAsImplicit(descriptor.module) &&
-            descriptor.constructors.none { it.isMarkedAsImplicit(descriptor.module) }
+        if (!descriptor.isMarkedAsReader(descriptor.module) &&
+            descriptor.constructors.none { it.isMarkedAsReader(descriptor.module) }
         ) return
 
         if (descriptor.kind == ClassKind.INTERFACE) {
@@ -118,9 +118,9 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         descriptor: FunctionDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (!isImplicit(descriptor, context.trace) &&
+        if (!isReader(descriptor, context.trace) &&
             (descriptor !is ConstructorDescriptor ||
-                    !descriptor.constructedClass.isMarkedAsImplicit(descriptor.module))
+                    !descriptor.constructedClass.isMarkedAsReader(descriptor.module))
         ) return
     }
 
@@ -156,17 +156,17 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
 
         if (resulting !is FunctionDescriptor) return
 
-        if (isImplicit(resulting, context.trace)) {
+        if (isReader(resulting, context.trace)) {
             checkCalls(reportOn, context, resolvedCall)
         }
 
         if (resulting is ConstructorDescriptor &&
-            (resulting.constructedClass.isMarkedAsImplicit(resulting.module))
+            (resulting.constructedClass.isMarkedAsReader(resulting.module))
         ) {
             checkCalls(reportOn, context, resolvedCall)
         }
 
-        if (isImplicit(resulting, context.trace)) {
+        if (isReader(resulting, context.trace)) {
             checkCalls(reportOn, context, resolvedCall)
         }
     }
@@ -179,7 +179,7 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         if (resolvedCall.call.isCallableReference()) return
 
         val enclosingReaderContext = findEnclosingContext(context) {
-            isImplicit(it, context.trace)
+            isReader(it, context.trace)
         }
 
         if (enclosingReaderContext == null) {
@@ -197,53 +197,53 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
             it is LexicalScope && predicate(it.ownerDescriptor)
         }?.cast<LexicalScope>()?.ownerDescriptor
 
-    fun isImplicit(
+    fun isReader(
         descriptor: DeclarationDescriptor,
         trace: BindingTrace
     ): Boolean {
         val psi = descriptor.findPsi() as? KtElement
 
         psi?.let {
-            trace.bindingContext.get(InjektWritableSlices.IS_IMPLICIT, it)?.let {
+            trace.bindingContext.get(InjektWritableSlices.IS_READER, it)?.let {
                 return it
             }
         }
 
-        var isImplicit = descriptor.isMarkedAsImplicit(descriptor.module)
+        var isReader = descriptor.isMarkedAsReader(descriptor.module)
 
-        if (!isImplicit && descriptor is PropertyGetterDescriptor) {
-            isImplicit = descriptor.correspondingProperty.isMarkedAsImplicit(descriptor.module)
+        if (!isReader && descriptor is PropertyGetterDescriptor) {
+            isReader = descriptor.correspondingProperty.isMarkedAsReader(descriptor.module)
         }
 
-        if (!isImplicit && descriptor is ConstructorDescriptor) {
-            isImplicit = descriptor.constructedClass.isMarkedAsImplicit(descriptor.module) ||
+        if (!isReader && descriptor is ConstructorDescriptor) {
+            isReader = descriptor.constructedClass.isMarkedAsReader(descriptor.module) ||
                     descriptor.constructedClass.constructors.any {
-                        it.isMarkedAsImplicit(descriptor.module)
+                        it.isMarkedAsReader(descriptor.module)
                     }
         }
 
-        if (!isImplicit && descriptor is ClassDescriptor) {
-            isImplicit = descriptor.constructors.any { it.isMarkedAsImplicit(descriptor.module) }
+        if (!isReader && descriptor is ClassDescriptor) {
+            isReader = descriptor.constructors.any { it.isMarkedAsReader(descriptor.module) }
         }
 
-        if (!isImplicit) {
-            isImplicit = trace.bindingContext.get(
-                InjektWritableSlices.IS_IMPLICIT,
+        if (!isReader) {
+            isReader = trace.bindingContext.get(
+                InjektWritableSlices.IS_READER,
                 descriptor
             ) ?: false
         }
 
-        psi?.let { trace.record(InjektWritableSlices.IS_IMPLICIT, it, isImplicit) }
+        psi?.let { trace.record(InjektWritableSlices.IS_READER, it, isReader) }
 
-        return isImplicit
+        return isReader
     }
 
-    fun isImplicit(
+    fun isReader(
         trace: BindingTrace,
         element: KtElement,
         type: KotlinType?
     ): Boolean {
-        trace.bindingContext.get(InjektWritableSlices.IS_IMPLICIT, element)?.let {
+        trace.bindingContext.get(InjektWritableSlices.IS_READER, element)?.let {
             return it
         }
 
@@ -277,7 +277,7 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
             }
         }
 
-        trace.record(InjektWritableSlices.IS_IMPLICIT, element, isReader)
+        trace.record(InjektWritableSlices.IS_READER, element, isReader)
 
         return isReader
     }
@@ -296,7 +296,7 @@ class ImplicitChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
             val expectedIsReader =
                 expectedType.hasAnnotation(InjektFqNames.Reader)
             val isReader =
-                isImplicit(c.trace, expression, c.expectedType)
+                isReader(c.trace, expression, c.expectedType)
 
             if (expectedIsReader != isReader) {
                 val isInlineable =

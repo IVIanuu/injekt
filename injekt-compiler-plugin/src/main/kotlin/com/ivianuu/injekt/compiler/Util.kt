@@ -501,9 +501,9 @@ fun String.asNameId(): Name = Name.identifier(this)
 fun IrClass.getReaderConstructor(injektContext: InjektContext): IrConstructor? {
     constructors
         .firstOrNull {
-            it.isMarkedAsImplicit(injektContext)
+            it.isMarkedAsReader(injektContext)
         }?.let { return it }
-    if (!isMarkedAsImplicit(injektContext)) return null
+    if (!isMarkedAsReader(injektContext)) return null
     return primaryConstructor
 }
 
@@ -690,7 +690,7 @@ fun IrDeclarationWithName.uniqueKey() = when (this) {
     else -> error("Unsupported declaration ${dump()}")
 }
 
-fun IrDeclarationWithName.isMarkedAsImplicit(injektContext: InjektContext): Boolean =
+fun IrDeclarationWithName.isMarkedAsReader(injektContext: InjektContext): Boolean =
     isReader(injektContext) ||
             hasAnnotation(InjektFqNames.Given) ||
             hasAnnotation(InjektFqNames.GivenMapEntries) ||
@@ -700,7 +700,7 @@ fun IrDeclarationWithName.isMarkedAsImplicit(injektContext: InjektContext): Bool
 private fun IrDeclarationWithName.isReader(injektContext: InjektContext): Boolean {
     if (hasAnnotation(InjektFqNames.Reader)) return true
     return try {
-        injektContext.implicitChecker.isImplicit(descriptor, injektContext.bindingTrace)
+        injektContext.readerChecker.isReader(descriptor, injektContext.bindingTrace)
     } catch (e: Exception) {
         false
     }
@@ -714,13 +714,13 @@ fun IrFunctionAccessExpression.isReaderLambdaInvoke(
                     injektContext.irTrace[InjektWritableSlices.IS_READER_LAMBDA_INVOKE, this] == true)
 }
 
-fun IrDeclarationWithName.canUseImplicits(
+fun IrDeclarationWithName.canUseReaders(
     injektContext: InjektContext
 ): Boolean =
     (!hasAnnotation(InjektFqNames.Signature) && (this is IrFunction && !isExternalDeclaration() && getContext() != null) ||
-            isMarkedAsImplicit(injektContext) ||
-            (this is IrConstructor && constructedClass.isMarkedAsImplicit(injektContext)) ||
-            (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsImplicit(
+            isMarkedAsReader(injektContext) ||
+            (this is IrConstructor && constructedClass.isMarkedAsReader(injektContext)) ||
+            (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsReader(
                 injektContext
             ) == true))
 

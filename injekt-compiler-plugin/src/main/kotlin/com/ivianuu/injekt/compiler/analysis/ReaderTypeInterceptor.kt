@@ -37,7 +37,7 @@ import org.jetbrains.kotlin.types.typeUtil.replaceAnnotations
 @OptIn(org.jetbrains.kotlin.extensions.internal.InternalNonStableExtensionPoints::class)
 @Suppress("INVISIBLE_REFERENCE", "EXPERIMENTAL_IS_NOT_ENABLED")
 class ReaderTypeInterceptor(
-    private val implicitChecker: ImplicitChecker
+    private val readerChecker: ReaderChecker
 ) : TypeResolutionInterceptorExtension {
 
     override fun interceptFunctionLiteralDescriptor(
@@ -49,7 +49,7 @@ class ReaderTypeInterceptor(
             context.expectedType !== TypeUtils.UNIT_EXPECTED_TYPE &&
             context.expectedType.hasAnnotation(InjektFqNames.Reader)
         ) {
-            context.trace.record(InjektWritableSlices.IS_IMPLICIT, descriptor, true)
+            context.trace.record(InjektWritableSlices.IS_READER, descriptor, true)
         }
         return descriptor
     }
@@ -60,7 +60,7 @@ class ReaderTypeInterceptor(
         resultType: KotlinType
     ): KotlinType {
         if (resultType === TypeUtils.NO_EXPECTED_TYPE) return resultType
-        val isReader = implicitChecker.isImplicit(context.trace, element, resultType)
+        val isReader = readerChecker.isReader(context.trace, element, resultType)
         return if (isReader) resultType.withReaderAnnotation(context.scope.ownerDescriptor.module)
         else resultType
     }

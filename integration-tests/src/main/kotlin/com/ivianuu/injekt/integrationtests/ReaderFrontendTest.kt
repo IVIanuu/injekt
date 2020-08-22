@@ -21,7 +21,7 @@ import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import org.junit.Test
 
-class ImplicitFrontendTest {
+class ReaderFrontendTest {
 
     @Test
     fun testReaderCallInReaderAllowed() =
@@ -146,7 +146,7 @@ class ImplicitFrontendTest {
     }
 
     @Test
-    fun testMultipleImplicitAnnotationsFails() = codegen(
+    fun testMultipleReaderAnnotationsFails() = codegen(
         """
             @Reader @Given
             var property = ""
