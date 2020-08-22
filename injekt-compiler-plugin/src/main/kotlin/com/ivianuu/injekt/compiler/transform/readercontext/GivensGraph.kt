@@ -26,8 +26,6 @@ import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.reader.ReaderContextParamTransformer
-import com.ivianuu.injekt.compiler.typeArguments
-import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
@@ -383,13 +381,13 @@ class GivensGraph(
                     injektContext = injektContext,
                     name = expressions.uniqueChildNameProvider("F".asNameId()),
                     factoryInterface = factory,
+                    factoryType = key.type,
                     irParent = contextImpl,
                     declarationGraph = declarationGraph,
                     readerContextParamTransformer = readerContextParamTransformer,
                     parentContext = contextImpl,
                     parentGraph = this@GivensGraph,
-                    parentExpressions = expressions,
-                    typeArguments = key.type.typeArguments.map { it.typeOrFail }
+                    parentExpressions = expressions
                 )
 
                 this += GivenChildContext(

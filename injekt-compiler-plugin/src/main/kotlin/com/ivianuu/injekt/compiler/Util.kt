@@ -379,6 +379,33 @@ fun IrType.substitute(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrTy
     )
 }
 
+fun IrType.substituteByName(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {
+    if (this !is IrSimpleType) return this
+
+    substitutionMap.toList()
+        .firstOrNull { it.first.descriptor.name == classifier.descriptor.name }
+        ?.second
+        ?.let { return it }
+
+    val newArguments = arguments.map {
+        if (it is IrTypeProjection) {
+            makeTypeProjection(it.type.substituteByName(substitutionMap), it.variance)
+        } else {
+            it
+        }
+    }
+
+    val newAnnotations = annotations.map { it.deepCopyWithSymbols() }
+    return IrSimpleTypeImpl(
+        makeKotlinType(classifier, arguments, hasQuestionMark, annotations, abbreviation),
+        classifier,
+        hasQuestionMark,
+        newArguments,
+        newAnnotations,
+        abbreviation
+    )
+}
+
 fun makeKotlinType(
     classifier: IrClassifierSymbol,
     arguments: List<IrTypeArgument>,

@@ -8,6 +8,8 @@ import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.reader.ReaderContextParamTransformer
+import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -47,13 +49,13 @@ class ReaderContextFactoryImplGenerator(
     private val injektContext: InjektContext,
     private val name: Name,
     private val factoryInterface: IrClass,
+    private val factoryType: IrType,
     private val irParent: IrDeclarationParent,
     private val declarationGraph: DeclarationGraph,
     private val readerContextParamTransformer: ReaderContextParamTransformer,
     private val parentContext: IrClass?,
     private val parentGraph: GivensGraph?,
-    private val parentExpressions: GivenExpressions?,
-    private val typeArguments: List<IrType>
+    private val parentExpressions: GivenExpressions?
 ) {
 
     fun generateFactory(): IrClass {
@@ -67,7 +69,7 @@ class ReaderContextFactoryImplGenerator(
                 it.substitute(
                     factoryInterface.typeParameters
                         .map { it.symbol }
-                        .zip(typeArguments)
+                        .zip(factoryType.typeArguments.map { it.typeOrFail })
                         .toMap()
                 )
             }
@@ -81,7 +83,7 @@ class ReaderContextFactoryImplGenerator(
         }.apply clazz@{
             parent = irParent
             createImplicitParameterDeclarationWithWrappedDescriptor()
-            superTypes += factoryInterface.defaultType
+            superTypes += factoryType
         }
 
         val parentField = if (parentContext != null) {

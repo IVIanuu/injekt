@@ -172,18 +172,58 @@ class ReaderContextTest {
     fun testGenericChildContextInput() = codegen(
         """
             val parentContext = rootContext<TestParentContext>()
+
+            @Given
+            fun foo() = Foo()
+            
+            @Given
+            fun bar() = Bar(given())
             
             fun invoke() {
                 parentContext.runReader {
-                    val foo = childContextBuilder<Foo>(Foo()) { given<Foo>() }
+                    val foo = childContextBuilder { given<Foo>() }
+                    val bar = childContextBuilder { given<Bar>() }
                 }
             }
             
             @Reader
             fun <T> childContextBuilder(
-                value: T,
                 block: @Reader () -> T
-            ) = childContext<TestChildContext>(value).runReader { block() }
+            ) = childContext<TestChildContext>().runReader { block() }
+        """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
+    fun testNestedGenericChildContextInput() = codegen(
+        """
+            val parentContext = rootContext<TestParentContext>()
+
+            @Given
+            fun foo() = Foo()
+            
+            @Given
+            fun bar() = Bar(given())
+            
+            fun invoke() {
+                parentContext.runReader {
+                    val foo = a { given<Foo>() }
+                    val bar = a { given<Bar>() }
+                }
+            }
+            
+            @Reader
+            fun <T> a(
+                block: @Reader () -> T
+            ) = childContext<TestChildContext>().runReader { 
+                b<T, T> { block() }
+            }
+            
+            @Reader
+            fun <A, B> b(
+                block: @Reader () -> A
+            ) = childContext<TestChildContext2>().runReader { block() }
         """
     ) {
         invokeSingleFile()

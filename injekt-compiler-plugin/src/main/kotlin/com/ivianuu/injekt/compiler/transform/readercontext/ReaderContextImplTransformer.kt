@@ -26,6 +26,7 @@ import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.reader.ReaderContextParamTransformer
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.ir.declarations.IrFile
+import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.name.FqName
 
 class ReaderContextImplTransformer(
@@ -50,13 +51,13 @@ class ReaderContextImplTransformer(
                     injektContext = injektContext,
                     name = factoryFqName.shortName(),
                     factoryInterface = rootFactory,
+                    factoryType = rootFactory.defaultType,
                     irParent = file,
                     declarationGraph = declarationGraph,
                     readerContextParamTransformer = readerContextParamTransformer,
                     parentContext = null,
                     parentGraph = null,
-                    parentExpressions = null,
-                    typeArguments = emptyList()
+                    parentExpressions = null
                 ).generateFactory()
 
                 file.addChild(factoryImpl)
