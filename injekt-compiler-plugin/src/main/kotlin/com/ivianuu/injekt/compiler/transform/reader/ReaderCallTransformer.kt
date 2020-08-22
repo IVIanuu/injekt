@@ -270,6 +270,11 @@ class ReaderCallTransformer(
         ): IrExpression {
             val finalType = type
                 .remapTypeParametersByName(declaration as IrTypeParametersContainer, context)
+                .let {
+                    if (parentFunction != null)
+                        it.remapTypeParametersByName(parentFunction, context)
+                    else it
+                }
 
             val function = functionsByType.getOrPut(finalType) {
                 context.addFunction {

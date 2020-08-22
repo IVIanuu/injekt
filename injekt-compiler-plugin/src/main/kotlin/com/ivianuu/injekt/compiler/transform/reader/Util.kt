@@ -80,7 +80,7 @@ fun createContext(
     createImplicitParameterDeclarationWithWrappedDescriptor()
     addMetadataIfNotLocal()
     if (owner is IrTypeParametersContainer) copyTypeParametersFrom(owner)
-    //parentFunction?.let { copyTypeParametersFrom(it) }
+    parentFunction?.let { copyTypeParametersFrom(it) }
     recordLookup(this, owner)
 
     annotations += DeclarationIrBuilder(injektContext, symbol)
