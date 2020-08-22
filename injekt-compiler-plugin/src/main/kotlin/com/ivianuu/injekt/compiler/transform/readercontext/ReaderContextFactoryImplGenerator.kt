@@ -3,7 +3,7 @@ package com.ivianuu.injekt.compiler.transform.readercontext
 import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.getAllClasses
+import com.ivianuu.injekt.compiler.getAllFunctionsWithSubstitutionMap
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
@@ -31,9 +31,7 @@ import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
-import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
@@ -41,7 +39,6 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isObject
 import org.jetbrains.kotlin.name.Name
 
@@ -74,7 +71,13 @@ class ReaderContextFactoryImplGenerator(
                 )
             }
 
-        val contextId = createFunction.returnType.classOrNull!!.owner
+        val contextIdType = createFunction.returnType
+            .substitute(
+                factoryInterface.typeParameters
+                    .map { it.symbol }
+                    .zip(factoryType.typeArguments.map { it.typeOrFail })
+                    .toMap()
+            )
 
         val factoryImpl = buildClass {
             this.name = this@ReaderContextFactoryImplGenerator.name
@@ -120,12 +123,12 @@ class ReaderContextFactoryImplGenerator(
             }
         }
 
-        val contextImpl = generateReaderContext(contextId, inputTypes, factoryImpl)
+        val contextImpl = generateReaderContext(contextIdType, inputTypes, factoryImpl)
         factoryImpl.addChild(contextImpl)
 
         factoryImpl.addFunction {
             name = "create".asNameId()
-            returnType = contextId.defaultType
+            returnType = contextIdType
         }.apply {
             dispatchReceiverParameter = factoryImpl.thisReceiver!!.copyTo(this)
 
@@ -174,7 +177,7 @@ class ReaderContextFactoryImplGenerator(
     }
 
     private fun generateReaderContext(
-        contextId: IrClass,
+        contextIdType: IrType,
         inputTypes: List<IrType>,
         irParent: IrDeclarationParent
     ): IrClass {
@@ -185,6 +188,7 @@ class ReaderContextFactoryImplGenerator(
         }.apply clazz@{
             parent = irParent
             createImplicitParameterDeclarationWithWrappedDescriptor()
+            superTypes += contextIdType
         }
 
         val parentField = if (parentContext != null) {
@@ -260,41 +264,46 @@ class ReaderContextFactoryImplGenerator(
             readerContextParamTransformer = readerContextParamTransformer
         )
 
-        contextImpl.superTypes += contextId.defaultType
+        val entryPoints = listOf(contextIdType)
+            .flatMap {
+                listOf(it) + declarationGraph.getAllContextImplementations(it.classOrNull!!.owner)
+                    .drop(1)
+                    .map { it.defaultType }
+            } + declarationGraph.getRunReaderContexts(contextIdType.classOrNull!!.owner)
+            .flatMap { declarationGraph.getAllContextImplementations(it) }
+            .map { it.defaultType }
 
-        val entryPoints = listOf(contextId) + declarationGraph.getRunReaderContexts(contextId)
-
-        graph.checkEntryPoints(
-            entryPoints
-                .flatMap { declarationGraph.getAllContextImplementations(it) }
-        )
+        graph.checkEntryPoints(entryPoints)
 
         (entryPoints + graph.resolvedGivens.flatMap { it.value.contexts })
-            .flatMap { it.getAllClasses() }
-            .flatMap { declarationGraph.getAllContextImplementations(it) }
+            .flatMap {
+                listOf(it) + declarationGraph.getAllContextImplementations(it.classOrNull!!.owner)
+                    .drop(1)
+                    .map { it.defaultType }
+            }
             .onEach {
-                if (it.defaultType !in contextImpl.superTypes) {
-                    contextImpl.superTypes += it.defaultType
+                if (it !in contextImpl.superTypes) {
+                    contextImpl.superTypes += it
                 }
             }
-            .flatMap { it.declarations }
-            .filterIsInstance<IrFunction>()
-            .filterNot { it is IrConstructor }
-            .filterNot { it.isFakeOverride }
-            .filterNot {
-                it.dispatchReceiverParameter?.type == injektContext.irBuiltIns.anyType
-            }
-            .filter { declaration ->
+            .flatMap { it.getAllFunctionsWithSubstitutionMap(injektContext).toList() }
+            .filter { (function, _) ->
                 val existingDeclaration = contextImpl.functions.singleOrNull {
-                    it.name == declaration.name
+                    it.name == function.name
                 }
                 if (existingDeclaration != null) {
-                    existingDeclaration.overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
+                    existingDeclaration.overriddenSymbols += function.symbol as IrSimpleFunctionSymbol
                     false
                 } else true
             }
-            .map { it.returnType.asKey() }
-            .forEach { expressions.getGivenExpression(graph.getGiven(it)) }
+            .map { (function, substitutionMap) ->
+                function to function.returnType
+                    .substitute(substitutionMap)
+                    .asKey()
+            }
+            .forEach { (superFunction, key) ->
+                expressions.getGivenExpression(graph.getGiven(key), superFunction)
+            }
 
         return contextImpl
     }

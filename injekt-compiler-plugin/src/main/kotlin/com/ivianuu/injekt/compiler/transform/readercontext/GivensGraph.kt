@@ -18,14 +18,17 @@ package com.ivianuu.injekt.compiler.transform.readercontext
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.getAllFunctionsWithSubstitutionMap
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.isExternalDeclaration
+import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.reader.ReaderContextParamTransformer
+import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
@@ -37,6 +40,7 @@ import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
+import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.types.isNothing
@@ -45,7 +49,6 @@ import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
@@ -83,7 +86,16 @@ class GivensGraph(
 
     private val chain = mutableListOf<ChainElement>()
     private val checkedKeys = mutableSetOf<Key>()
-    private val checkedTypes = mutableSetOf<IrClass>()
+    private val checkedTypes = mutableSetOf<IrType>()
+
+    private val substitutionMap = contextImpl.superTypes.first()
+        .let {
+            it.classOrNull!!.owner
+                .typeParameters
+                .map { it.symbol }
+                .zip(it.typeArguments)
+                .toMap()
+        }
 
     init {
         val givenSets = inputs
@@ -139,7 +151,7 @@ class GivensGraph(
                         inputFunctionNodes.getOrPut(function.returnType.asKey()) { mutableSetOf() } += GivenFunction(
                             key = function.returnType.asKey(),
                             owner = contextImpl,
-                            contexts = listOf(function.getContext()!!),
+                            contexts = listOf(function.getContext()!!.defaultType),
                             external = function.isExternalDeclaration(),
                             explicitParameters = explicitParameters,
                             origin = function.descriptor.fqNameSafe,
@@ -169,7 +181,7 @@ class GivensGraph(
         }
     }
 
-    fun checkEntryPoints(entryPoints: List<IrClass>) {
+    fun checkEntryPoints(entryPoints: List<IrType>) {
         entryPoints.forEach { check(it) }
     }
 
@@ -185,41 +197,37 @@ class GivensGraph(
         checkedKeys += given.key
         given
             .contexts
-            .flatMap { declarationGraph.getAllContextImplementations(it) }
+            .flatMap {
+                declarationGraph.getAllContextImplementations(it.classOrNull!!.owner)
+                    .map { it.defaultType }
+            }
             .forEach { check(it) }
     }
 
-    private fun check(context: IrClass) {
+    private fun check(context: IrType) {
         if (context in checkedTypes) return
         checkedTypes += context
-        val origin = context.getConstantFromAnnotationOrNull<String>(
+
+        val origin = context.classOrNull!!.owner.getConstantFromAnnotationOrNull<String>(
             InjektFqNames.Origin,
             0
         )?.let { FqName(it) }
         chain.push(ChainElement.Call(origin))
 
-        for (declaration in context.declarations.toList()) {
-            if (declaration !is IrFunction) continue
-            if (declaration is IrConstructor) continue
-            if (declaration.dispatchReceiverParameter?.type ==
-                injektContext.irBuiltIns.anyType
-            ) continue
-            if (declaration.isFakeOverride) continue
-            val existingDeclaration = contextImpl.functions.singleOrNull {
-                it.name == declaration.name
-            }
-            if (existingDeclaration != null) {
-                existingDeclaration.overriddenSymbols += declaration.symbol as IrSimpleFunctionSymbol
-                continue
-            }
+        (listOf(context) + declarationGraph.getAllContextImplementations(context.classOrNull!!.owner)
+            .drop(1).map { it.defaultType })
+            .flatMap { it.getAllFunctionsWithSubstitutionMap(injektContext).toList() }
+            .forEach { (function, substitutionMap) ->
+                val existingFunction = contextImpl.functions.singleOrNull {
+                    it.name == function.name
+                }
+                if (existingFunction != null) {
+                    existingFunction.overriddenSymbols += function.symbol as IrSimpleFunctionSymbol
+                    return@forEach
+                }
 
-            check(declaration.returnType.asKey())
-        }
-
-        context.superTypes
-            .map { it.classOrNull!!.owner }
-            .flatMap { declarationGraph.getAllContextImplementations(it) }
-            .forEach { check(it) }
+                check(function.returnType.substitute(substitutionMap).asKey())
+            }
 
         chain.pop()
     }
@@ -418,7 +426,7 @@ class GivensGraph(
                 GivenFunction(
                     key = key,
                     owner = contextImpl,
-                    contexts = listOf(function.getContext()!!),
+                    contexts = listOf(function.getContext()!!.defaultType),
                     external = function.isExternalDeclaration(),
                     explicitParameters = explicitParameters,
                     origin = function.descriptor.fqNameSafe,
@@ -435,7 +443,7 @@ class GivensGraph(
                 GivenMap(
                     key = key,
                     owner = contextImpl,
-                    contexts = entries.map { it.getContext()!! },
+                    contexts = entries.map { it.getContext()!!.defaultType },
                     givenSetAccessExpression = null,
                     functions = entries
                 )
@@ -449,7 +457,7 @@ class GivensGraph(
                 GivenSet(
                     key = key,
                     owner = contextImpl,
-                    contexts = elements.map { it.getContext()!! },
+                    contexts = elements.map { it.getContext()!!.defaultType },
                     givenSetAccessExpression = null,
                     functions = elements
                 )

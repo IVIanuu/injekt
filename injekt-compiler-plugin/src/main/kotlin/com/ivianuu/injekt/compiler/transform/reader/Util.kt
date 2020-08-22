@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.recordLookup
+import com.ivianuu.injekt.compiler.remapTypeParametersByName
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
@@ -31,7 +32,6 @@ import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
-import org.jetbrains.kotlin.backend.common.ir.remapTypeParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
@@ -40,7 +40,6 @@ import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
-import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -49,7 +48,6 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -93,7 +91,7 @@ fun createContext(
 }
 
 fun createContextFactory(
-    context: IrClass,
+    contextType: IrType,
     typeParametersContainer: IrTypeParametersContainer?,
     file: IrFile,
     inputTypes: List<IrType>,
@@ -101,7 +99,7 @@ fun createContextFactory(
     isChild: Boolean
 ) = buildClass {
     name = injektContext.uniqueClassNameProvider(
-        "${context.name}Factory".asNameId(),
+        "${contextType.classOrNull!!.owner.name}Factory".asNameId(),
         file.fqName
     )
     kind = ClassKind.INTERFACE
@@ -116,7 +114,8 @@ fun createContextFactory(
 
     addFunction {
         this.name = "create".asNameId()
-        returnType = context.defaultType
+        returnType = contextType
+            .remapTypeParametersByName(typeParametersContainer ?: this@clazz, this@clazz)
         modality = Modality.ABSTRACT
     }.apply {
         dispatchReceiverParameter = thisReceiver!!.copyTo(this)
@@ -124,7 +123,7 @@ fun createContextFactory(
         addMetadataIfNotLocal()
         val parameterUniqueNameProvider = SimpleUniqueNameProvider()
         inputTypes
-            .map { it.remapTypeParameters(typeParametersContainer ?: this@clazz, this@clazz) }
+            .map { it.remapTypeParametersByName(typeParametersContainer ?: this@clazz, this@clazz) }
             .forEach {
                 addValueParameter(
                     parameterUniqueNameProvider(it.uniqueTypeName()).asString(),
@@ -152,10 +151,11 @@ fun createContextFactory(
 fun IrType.isNotTransformedReaderLambda() =
     (isFunctionOrKFunction() || isSuspendFunctionOrKFunction()) && hasAnnotation(InjektFqNames.Reader)
 
-fun IrType.isTransformedReaderLambda() =
-    (isFunctionOrKFunction() || isSuspendFunctionOrKFunction()) && typeArguments
+fun IrType.isTransformedReaderLambda(): Boolean {
+    return (isFunctionOrKFunction() || isSuspendFunctionOrKFunction()) && typeArguments
         .mapNotNull { it.typeOrNull?.classOrNull?.owner }
         .any { it.hasAnnotation(InjektFqNames.ContextMarker) }
+}
 
 val IrType.lambdaContext
     get() = typeArguments.firstOrNull {
