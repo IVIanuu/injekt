@@ -51,6 +51,7 @@ import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isFunctionOrKFunction
 import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
@@ -411,7 +412,16 @@ class GivensGraph(
             }
         }
 
-        this += declarationGraph.givens(key.type.classOrNull!!.owner)
+        val realGivenType = if (key.type.isFunctionOrKFunction()) {
+            key.type.typeArguments.last().typeOrFail
+        } else {
+            key.type
+        }
+
+        val potentialGivenFunctions = declarationGraph
+            .givens(realGivenType.classOrNull!!.owner)
+
+        this += potentialGivenFunctions
             .map { function ->
                 val targetContext = (function.getClassFromAnnotation(
                     InjektFqNames.Given, 0
@@ -431,7 +441,7 @@ class GivensGraph(
                     owner = contextImpl,
                     contexts = listOf(
                         function.getContext()!!
-                            .typeWith(key.type.typeArguments.map { it.typeOrFail })
+                            .typeWith(realGivenType.typeArguments.map { it.typeOrFail })
                     ),
                     external = function.isExternalDeclaration(),
                     explicitParameters = explicitParameters,
