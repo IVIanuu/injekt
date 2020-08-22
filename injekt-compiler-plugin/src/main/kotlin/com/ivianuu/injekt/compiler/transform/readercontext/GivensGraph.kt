@@ -29,6 +29,8 @@ import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.reader.ReaderContextParamTransformer
 import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.typeOrFail
+import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
@@ -198,7 +200,8 @@ class GivensGraph(
         given
             .contexts
             .flatMap {
-                declarationGraph.getAllContextImplementations(it.classOrNull!!.owner)
+                listOf(it) + declarationGraph.getAllContextImplementations(it.classOrNull!!.owner)
+                    .drop(1)
                     .map { it.defaultType }
             }
             .forEach { check(it) }
@@ -408,7 +411,7 @@ class GivensGraph(
             }
         }
 
-        this += declarationGraph.givens(key.type.uniqueTypeName().asString())
+        this += declarationGraph.givens(key.type.classOrNull!!.owner)
             .map { function ->
                 val targetContext = (function.getClassFromAnnotation(
                     InjektFqNames.Given, 0
@@ -426,7 +429,10 @@ class GivensGraph(
                 GivenFunction(
                     key = key,
                     owner = contextImpl,
-                    contexts = listOf(function.getContext()!!.defaultType),
+                    contexts = listOf(
+                        function.getContext()!!
+                            .typeWith(key.type.typeArguments.map { it.typeOrFail })
+                    ),
                     external = function.isExternalDeclaration(),
                     explicitParameters = explicitParameters,
                     origin = function.descriptor.fqNameSafe,

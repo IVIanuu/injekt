@@ -798,35 +798,50 @@ class ReaderContextTest {
         invokeSingleFile(Foo())
     }
 
-    // todo @Test
+    @Test
     fun testGenericGivenClass() = codegen(
         """
-        @Given class Dep<T> {
+        @Given class Dep<T : Any> {
             val value: T = given()
         }
         
         @Given fun foo() = Foo() 
         
         fun invoke() {
-            runReader {
+            rootContext<TestContext>().runReader {
                 given<Dep<Foo>>()
             }
         }
     """
     )
 
-    // todo @Test
+    @Test
     fun testGenericGivenFunction() = codegen(
         """    
-        @Given class Dep<T> { val value: T = given() }
+        @Reader class Dep<T> { val value: T = given() }
         
         @Given fun <T> dep() = Dep<T>()
         
         @Given fun foo() = Foo() 
 
         fun invoke() {
-            runReader {
+            rootContext<TestContext>().runReader {
                 given<Dep<Foo>>()
+            }
+        }
+    """
+    )
+
+    @Test
+    fun testComplexGenericGiven() = codegen(
+        """
+        @Given inline fun <reified K : Any, V> map() = mapOf(Foo::class.java.name!! to (K::class to given<V>()))
+        
+        @Given fun foo() = Foo() 
+
+        fun invoke() {
+            rootContext<TestContext>().runReader {
+                given<Map<String, Foo>>()
             }
         }
     """
@@ -905,26 +920,6 @@ class ReaderContextTest {
         
         fun invoke(): Bar {
             return rootContext<TestContext>(FooGivens()).runReader { given<Bar>() }
-        }
-    """
-    ) {
-        assertTrue(invokeSingleFile() is Bar)
-    }
-
-    // todo @Test
-    fun testWithGivenRef() = codegen(
-        """
-        @Module
-        class FooBarGivens {
-            @Given
-            fun foo() = Foo()
-        }
-        
-        @Given
-        fun bar() = Bar(given())
-        
-        fun invoke(): Bar {
-            return rootContext<TestContext>(FooBarModule()).runReader { given<Bar>() }
         }
     """
     ) {

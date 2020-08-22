@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
+import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.transform.reader.ReaderContextParamTransformer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -38,14 +39,18 @@ class DeclarationGraph(
         indexer.classIndices(listOf(ROOT_CONTEXT_FACTORY_PATH))
     }
 
-    private val givensByKey = mutableMapOf<String, List<IrFunction>>()
-    fun givens(key: String) = givensByKey.getOrPut(key) {
-        (indexer.functionIndices(listOf(GIVEN_PATH, key)) +
-                indexer.classIndices(listOf(GIVEN_PATH, key))
+    private val givensByType = mutableMapOf<IrClass, List<IrFunction>>()
+    fun givens(type: IrClass) = givensByType.getOrPut(type) {
+        (indexer.functionIndices(listOf(GIVEN_PATH)) +
+                indexer.classIndices(listOf(GIVEN_PATH))
                     .flatMap { it.constructors.toList() } +
-                indexer.propertyIndices(listOf(GIVEN_PATH, key))
+                indexer.propertyIndices(listOf(GIVEN_PATH))
                     .mapNotNull { it.getter }
                 )
+            .filter {
+                it.returnType.isTypeParameter() ||
+                        it.returnType.classOrNull!!.owner == type
+            }
             .map { readerContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
             .distinct()
