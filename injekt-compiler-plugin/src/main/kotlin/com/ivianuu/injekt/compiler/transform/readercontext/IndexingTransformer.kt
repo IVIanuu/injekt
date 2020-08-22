@@ -25,6 +25,7 @@ import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.transform.InjektContext
+import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -32,7 +33,6 @@ import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
-import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -78,6 +78,7 @@ class IndexingTransformer(
                                     if (explicitParameters.isEmpty()) declaration.returnType.uniqueTypeName()
                                         .asString()
                                     else injektContext.tmpFunction(explicitParameters.size)
+                                        .owner
                                         .typeWith(explicitParameters.map { it.type } + declaration.returnType)
                                         .uniqueTypeName()
                                         .asString()
@@ -127,6 +128,7 @@ class IndexingTransformer(
                                 if (explicitParameters.isEmpty()) readerConstructor.returnType.uniqueTypeName()
                                     .asString()
                                 else injektContext.tmpFunction(explicitParameters.size)
+                                    .owner
                                     .typeWith(explicitParameters.map { it.type } + readerConstructor.returnType)
                                     .uniqueTypeName()
                                     .asString()

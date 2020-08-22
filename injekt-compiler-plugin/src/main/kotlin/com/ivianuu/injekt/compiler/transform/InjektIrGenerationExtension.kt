@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.transform.reader.GenericContextImplTransformer
 import com.ivianuu.injekt.compiler.transform.reader.ReaderCallTransformer
 import com.ivianuu.injekt.compiler.transform.reader.ReaderContextParamTransformer
 import com.ivianuu.injekt.compiler.transform.reader.ReaderTrackingTransformer
@@ -75,7 +74,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             ReaderContextParamTransformer(injektContext, indexer)
         readerContextParamTransformer.doLower(moduleFragment)
 
-        ReaderCallTransformer(injektContext, indexer).doLower(moduleFragment)
+        ReaderCallTransformer(injektContext).doLower(moduleFragment)
 
         ReaderTrackingTransformer(
             injektContext,
@@ -103,11 +102,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
                 injektContext,
                 declarationGraph,
                 readerContextParamTransformer,
-                initFile!!
-            ).doLower(moduleFragment)
-            GenericContextImplTransformer(
-                injektContext,
-                declarationGraph,
                 initFile!!
             ).doLower(moduleFragment)
         }

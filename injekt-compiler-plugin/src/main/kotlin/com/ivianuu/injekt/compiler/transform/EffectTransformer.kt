@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.copy
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
@@ -29,7 +28,9 @@ import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
+import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueKey
+import com.ivianuu.injekt.compiler.withAnnotations
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
@@ -54,7 +55,6 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.companionObject
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
@@ -147,6 +147,7 @@ class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransforme
                     val parametersSize = declaration.valueParameters.size
                     (if (declaration.isSuspend) injektContext.tmpSuspendFunction(parametersSize)
                     else injektContext.tmpFunction(parametersSize))
+                        .owner
                         .typeWith(
                             declaration.valueParameters
                                 .take(parametersSize)
@@ -154,30 +155,34 @@ class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransforme
                         )
                         .let {
                             if (declaration.hasAnnotation(FqName("androidx.compose.runtime.Composable"))) {
-                                it.copy(
-                                    annotations = it.annotations + DeclarationIrBuilder(
-                                        injektContext,
-                                        declaration.symbol
-                                    ).irCall(
-                                        injektContext.referenceConstructors(FqName("androidx.compose.runtime.Composable"))
-                                            .single()
+                                it.withAnnotations(
+                                    listOf(
+                                        DeclarationIrBuilder(
+                                            injektContext,
+                                            declaration.symbol
+                                        ).irCall(
+                                            injektContext.referenceConstructors(FqName("androidx.compose.runtime.Composable"))
+                                                .single()
+                                        )
                                     )
                                 )
                             } else it
                         }
                         .let {
-                            it.copy(
-                                annotations = it.annotations + DeclarationIrBuilder(
-                                    injektContext,
-                                    declaration.symbol
-                                ).run {
-                                    irCall(injektContext.injektSymbols.qualifier.constructors.single()).apply {
-                                        putValueArgument(
-                                            0,
-                                            irString(declaration.uniqueKey())
-                                        )
+                            it.withAnnotations(
+                                listOf(
+                                    DeclarationIrBuilder(
+                                        injektContext,
+                                        declaration.symbol
+                                    ).run {
+                                        irCall(injektContext.injektSymbols.qualifier.constructors.single()).apply {
+                                            putValueArgument(
+                                                0,
+                                                irString(declaration.uniqueKey())
+                                            )
+                                        }
                                     }
-                                }
+                                )
                             )
                         }
                 }

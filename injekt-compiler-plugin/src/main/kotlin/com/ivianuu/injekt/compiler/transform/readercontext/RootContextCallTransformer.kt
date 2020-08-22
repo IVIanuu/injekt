@@ -42,7 +42,6 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrExternalPackageFragmentSymbolImpl
-import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -89,10 +88,10 @@ class RootContextCallTransformer(
             ?.elements
             ?.map { it as IrExpression } ?: emptyList()
 
-        val context = call.getTypeArgument(0)!!.classOrNull!!.owner
+        val contextType = call.getTypeArgument(0)!!
 
         val contextFactory = createContextFactory(
-            context = context,
+            contextType = contextType,
             file = file,
             inputTypes = inputs.map { it.type },
             injektContext = injektContext,

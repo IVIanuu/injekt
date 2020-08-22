@@ -38,7 +38,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 sealed class Given(
     val key: Key,
     val owner: IrClass,
-    val contexts: List<IrClass>,
+    val contexts: List<IrType>,
     val origin: FqName?,
     val external: Boolean,
     val targetContext: IrClass?,
@@ -48,7 +48,7 @@ sealed class Given(
 class GivenChildContext(
     key: Key,
     owner: IrClass,
-    contexts: List<IrClass>,
+    contexts: List<IrType>,
     origin: FqName?,
     private val generator: ReaderContextFactoryImplGenerator
 ) : Given(key, owner, contexts, origin, false, null, null) {
@@ -61,7 +61,7 @@ class GivenChildContext(
 class GivenFunction(
     key: Key,
     owner: IrClass,
-    contexts: List<IrClass>,
+    contexts: List<IrType>,
     origin: FqName?,
     external: Boolean,
     targetContext: IrClass?,
@@ -86,7 +86,7 @@ class GivenInstance(
 class GivenMap(
     key: Key,
     owner: IrClass,
-    contexts: List<IrClass>,
+    contexts: List<IrType>,
     givenSetAccessExpression: ContextExpression?,
     val functions: List<IrFunction>
 ) : Given(
@@ -102,7 +102,7 @@ class GivenMap(
 class GivenSet(
     key: Key,
     owner: IrClass,
-    contexts: List<IrClass>,
+    contexts: List<IrType>,
     givenSetAccessExpression: ContextExpression?,
     val functions: List<IrFunction>
 ) : Given(

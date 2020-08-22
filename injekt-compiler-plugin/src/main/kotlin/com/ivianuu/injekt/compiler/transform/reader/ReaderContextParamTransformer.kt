@@ -38,12 +38,12 @@ import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.typeArguments
+import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
-import org.jetbrains.kotlin.backend.common.ir.remapTypeParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
@@ -124,7 +124,6 @@ import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
-import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
@@ -516,9 +515,7 @@ class ReaderContextParamTransformer(
     private fun IrFunction.addContextParameter(context: IrClass): IrValueParameter {
         return addValueParameter(
             name = "_context",
-            type = context.typeWith(
-                typeParameters.map { it.defaultType }
-            )
+            type = context.typeWith(typeParameters.map { it.defaultType })
         )
     }
 
@@ -664,14 +661,14 @@ class ReaderContextParamTransformer(
                     type = it.type
                         .remapTypeParametersByName(owner, this)
                         .let {
-                            if (parentFunction != null) it.remapTypeParameters(
+                            if (parentFunction != null) it.remapTypeParametersByName(
                                 parentFunction, this
                             ) else it
                         },
                     varargElementType = it.varargElementType
                         ?.remapTypeParametersByName(owner, this)
                         ?.let {
-                            if (parentFunction != null) it.remapTypeParameters(
+                            if (parentFunction != null) it.remapTypeParametersByName(
                                 parentFunction, this
                             ) else it
                         },

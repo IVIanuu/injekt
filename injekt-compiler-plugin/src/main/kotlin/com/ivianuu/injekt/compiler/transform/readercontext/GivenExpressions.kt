@@ -4,6 +4,7 @@ import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
 import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.InjektContext
+import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -22,12 +23,13 @@ import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.fields
@@ -44,11 +46,14 @@ class GivenExpressions(
     private val givenExpressions = mutableMapOf<Key, ContextExpression>()
     val uniqueChildNameProvider = SimpleUniqueNameProvider()
 
-    fun getGivenExpression(given: Given): ContextExpression {
+    fun getGivenExpression(
+        given: Given,
+        superFunction: IrFunction?
+    ): ContextExpression {
         givenExpressions[given.key]?.let { return it }
 
         val rawExpression = if (given.owner != contextImpl) {
-            parent!!.getGivenExpression(given)
+            parent!!.getGivenExpression(given, null)
         } else {
             when (given) {
                 is GivenChildContext -> childContextExpression(given)
@@ -69,7 +74,7 @@ class GivenExpressions(
 
             val field = contextImpl.addField(
                 given.key.type.uniqueTypeName(),
-                lazy.returnType.classOrNull!!.owner.typeWith(given.key.type)
+                lazy.returnType.classOrNull!!.owner.typeWith(listOf(given.key.type))
             ).apply {
                 initializer = irExprBody(
                     irCall(lazy).apply {
@@ -79,7 +84,8 @@ class GivenExpressions(
                             DeclarationIrBuilder(injektContext, symbol)
                                 .irLambda(
                                     injektContext.tmpFunction(0)
-                                        .typeWith(given.key.type)
+                                        .owner
+                                        .typeWith(listOf(given.key.type))
                                 ) {
                                     rawExpression(
                                         ContextExpressionContext(
@@ -110,34 +116,56 @@ class GivenExpressions(
             }
         })
 
-        val function = buildFun {
+        val functionByType = buildFun {
             this.name = given.key.type.uniqueTypeName()
             returnType = given.key.type
         }.apply {
             dispatchReceiverParameter = contextImpl.thisReceiver!!.copyTo(this)
             this.parent = contextImpl
             contextImpl.addChild(this)
+            if (superFunction is IrSimpleFunction && name == superFunction.name) {
+                overriddenSymbols += superFunction.symbol
+            }
         }
 
         val expression: ContextExpression = { c ->
-            irCall(function).apply {
+            irCall(functionByType).apply {
                 dispatchReceiver = c[contextImpl]
             }
         }
 
         givenExpressions[given.key] = expression
 
-        function.body =
-            DeclarationIrBuilder(injektContext, function.symbol).run {
+        functionByType.body =
+            DeclarationIrBuilder(injektContext, functionByType.symbol).run {
                 irExprBody(
                     finalExpression(
                         this,
                         ContextExpressionContext(injektContext, contextImpl) {
-                            irGet(function.dispatchReceiverParameter!!)
+                            irGet(functionByType.dispatchReceiverParameter!!)
                         }
                     )
                 )
             }
+
+        if (superFunction is IrSimpleFunction && functionByType.name != superFunction.name) {
+            buildFun {
+                this.name = superFunction.name
+                returnType = given.key.type
+            }.apply {
+                dispatchReceiverParameter = contextImpl.thisReceiver!!.copyTo(this)
+                this.parent = contextImpl
+                contextImpl.addChild(this)
+                overriddenSymbols += superFunction.symbol
+                body = DeclarationIrBuilder(injektContext, symbol).run {
+                    irExprBody(
+                        irCall(functionByType).apply {
+                            dispatchReceiver = irGet(dispatchReceiverParameter!!)
+                        }
+                    )
+                }
+            }
+        }
 
         return expression
     }

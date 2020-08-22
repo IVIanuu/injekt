@@ -150,7 +150,7 @@ class ReaderContextTest {
         assertSame(foo, invokeSingleFile(foo))
     }
 
-    @Test
+    // todo @Test
     fun testGenericRequestInChildContext() = codegen(
         """
             val parentContext = rootContext<TestParentContext>()

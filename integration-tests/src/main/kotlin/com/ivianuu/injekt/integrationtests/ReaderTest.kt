@@ -794,6 +794,25 @@ class ReaderTest {
     }
 
     @Test
+    fun testNestedGenericReader() = codegen(
+        """
+        @Given fun foo() = Foo()
+        
+        @Reader
+        fun <T> provide() = doProvideViaGiven<T>()
+        
+        @Reader
+        fun <S> doProvideViaGiven() = given<S>()
+        
+        fun invoke(): Foo { 
+            return rootContext<TestContext>().runReader { provide() }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
     fun testGenericReaderMulti() = multiCodegen(
         listOf(
             source(

@@ -38,10 +38,6 @@ class DeclarationGraph(
         indexer.classIndices(listOf(ROOT_CONTEXT_FACTORY_PATH))
     }
 
-    val genericContexts: List<IrClass> by lazy {
-        indexer.classIndices(listOf(GENERIC_CONTEXT_PATH))
-    }
-
     private val givensByKey = mutableMapOf<String, List<IrFunction>>()
     fun givens(key: String) = givensByKey.getOrPut(key) {
         (indexer.functionIndices(listOf(GIVEN_PATH, key)) +
@@ -149,8 +145,6 @@ class DeclarationGraph(
         const val ROOT_CONTEXT_FACTORY_PATH = "root_context_factory"
         const val RUN_READER_CALL_PATH = "run_reader_call"
         const val GIVEN_PATH = "given"
-        const val GIVEN_CONTEXTS_PATH = "given_contexts"
-        const val GENERIC_CONTEXT_PATH = "generic_context"
         const val MAP_ENTRIES_PATH = "map_entries"
         const val SET_ELEMENTS_PATH = "set_elements"
         const val SIGNATURE_PATH = "signature"
