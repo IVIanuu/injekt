@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 private val lifecycleSingletons = mutableMapOf<Lifecycle, Any>()
 
 internal fun <T : Any> Lifecycle.singleton(init: () -> T): T {
+    lifecycleSingletons[this]?.let { return it as T }
     return synchronized(lifecycleSingletons) {
         lifecycleSingletons[this]?.let { return it as T }
         val value = init()
@@ -37,23 +38,13 @@ internal fun <T : Any> Lifecycle.singleton(init: () -> T): T {
 }
 
 internal fun <T> ViewModelStore.singleton(init: () -> T): T {
-    val holder = ViewModelProvider(
+    return ViewModelProvider(
         this,
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                ViewModelContextHolder() as T
+                ViewModelContextHolder(init()) as T
         }
-    )[ViewModelContextHolder::class.java]
-
-    var value = holder.value
-    if (value == null) {
-        value = init()
-        holder.value = value
-    }
-
-    return value as T
+    )[ViewModelContextHolder::class.java].context as T
 }
 
-private class ViewModelContextHolder : ViewModel() {
-    var value: Any? = null
-}
+private class ViewModelContextHolder<T>(val context: T) : ViewModel()
