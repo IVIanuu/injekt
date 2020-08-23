@@ -209,8 +209,6 @@ class GivensGraph(
         if (context in checkedTypes) return
         checkedTypes += context
 
-        println("check ${context.render()}")
-
         val origin = context.classOrNull!!.owner.getConstantFromAnnotationOrNull<String>(
             InjektFqNames.Origin,
             0
@@ -411,7 +409,7 @@ class GivensGraph(
             }
         }
 
-        this += declarationGraph.givens(key.type)
+        this += declarationGraph.givens(key.type.uniqueTypeName().asString())
             .map { function ->
                 val targetContext = (function.getClassFromAnnotation(
                     InjektFqNames.Given, 0

@@ -230,11 +230,6 @@ val IrTypeArgument.typeOrFail: IrType
 
 fun IrType.isTypeParameter() = toKotlinType().isTypeParameter()
 
-val IrType.classifierOrTypeAliasFqName: FqName
-    get() = if (this is IrSimpleType && abbreviation != null)
-        abbreviation!!.typeAlias.descriptor.fqNameSafe
-    else classifierOrFail.descriptor.fqNameSafe
-
 fun IrTypeArgument.hasAnnotation(fqName: FqName): Boolean =
     typeOrNull?.hasAnnotation(fqName) == true
 

@@ -17,11 +17,15 @@
 package com.ivianuu.injekt.compiler.transform.readercontext
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.getContextValueParameter
+import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.Indexer
 import com.ivianuu.injekt.compiler.transform.InjektContext
+import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -29,6 +33,8 @@ import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
+import org.jetbrains.kotlin.ir.util.constructedClass
+import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -50,8 +56,11 @@ class IndexingTransformer(
                 ) {
                     runnables += {
                         indexer.index(
-                            listOf(DeclarationGraph.GIVEN_PATH),
-                            declaration
+                            listOf(
+                                DeclarationGraph.GIVEN_PATH,
+                                declaration.constructedClass.defaultType.uniqueTypeName().asString()
+                            ),
+                            declaration.constructedClass
                         )
                     }
                 }
@@ -63,8 +72,21 @@ class IndexingTransformer(
                     when {
                         declaration.hasAnnotation(InjektFqNames.Given) ->
                             runnables += {
+                                val explicitParameters = declaration.valueParameters
+                                    .filter { it != declaration.getContextValueParameter() }
+                                val typePath =
+                                    if (explicitParameters.isEmpty()) declaration.returnType.uniqueTypeName()
+                                        .asString()
+                                    else injektContext.tmpFunction(explicitParameters.size)
+                                        .owner
+                                        .typeWith(explicitParameters.map { it.type } + declaration.returnType)
+                                        .uniqueTypeName()
+                                        .asString()
                                 indexer.index(
-                                    listOf(DeclarationGraph.GIVEN_PATH),
+                                    listOf(
+                                        DeclarationGraph.GIVEN_PATH,
+                                        typePath
+                                    ),
                                     declaration
                                 )
                             }
@@ -98,8 +120,23 @@ class IndexingTransformer(
                     declaration.hasAnnotation(InjektFqNames.Given) ||
                             declaration.hasAnnotatedAnnotations(InjektFqNames.Effect) ->
                         runnables += {
+                            val readerConstructor =
+                                declaration.getReaderConstructor(injektContext)!!
+                            val explicitParameters = readerConstructor.valueParameters
+                                .filter { it != readerConstructor.getContextValueParameter() }
+                            val typePath =
+                                if (explicitParameters.isEmpty()) readerConstructor.returnType.uniqueTypeName()
+                                    .asString()
+                                else injektContext.tmpFunction(explicitParameters.size)
+                                    .owner
+                                    .typeWith(explicitParameters.map { it.type } + readerConstructor.returnType)
+                                    .uniqueTypeName()
+                                    .asString()
                             indexer.index(
-                                listOf(DeclarationGraph.GIVEN_PATH),
+                                listOf(
+                                    DeclarationGraph.GIVEN_PATH,
+                                    typePath
+                                ),
                                 declaration
                             )
                         }
@@ -113,7 +150,10 @@ class IndexingTransformer(
                 ) {
                     runnables += {
                         indexer.index(
-                            listOf(DeclarationGraph.GIVEN_PATH),
+                            listOf(
+                                DeclarationGraph.GIVEN_PATH,
+                                declaration.getter!!.returnType.uniqueTypeName().asString()
+                            ),
                             declaration
                         )
                     }
