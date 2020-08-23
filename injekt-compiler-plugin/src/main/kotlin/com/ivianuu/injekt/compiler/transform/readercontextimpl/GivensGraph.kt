@@ -37,6 +37,7 @@ import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrField
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
@@ -59,6 +60,7 @@ class GivensGraph(
     private val injektContext: InjektContext,
     private val declarationGraph: DeclarationGraph,
     private val contextImpl: IrClass,
+    private val initFile: IrFile,
     private val expressions: GivenExpressions,
     val inputs: List<IrField>,
     private val readerContextParamTransformer: ReaderContextParamTransformer
@@ -87,15 +89,6 @@ class GivensGraph(
     private val chain = mutableListOf<ChainElement>()
     private val checkedKeys = mutableSetOf<Key>()
     private val checkedTypes = mutableSetOf<IrType>()
-
-    private val substitutionMap = contextImpl.superTypes.first()
-        .let {
-            it.classOrNull!!.owner
-                .typeParameters
-                .map { it.symbol }
-                .zip(it.typeArguments)
-                .toMap()
-        }
 
     init {
         val givenSets = inputs
@@ -151,6 +144,7 @@ class GivensGraph(
                         inputFunctionNodes.getOrPut(function.returnType.asKey()) { mutableSetOf() } += GivenFunction(
                             key = function.returnType.asKey(),
                             owner = contextImpl,
+                            declarations = listOf(function),
                             contexts = listOf(function.getContext()!!.defaultType),
                             external = function.isExternalDeclaration(),
                             explicitParameters = explicitParameters,
@@ -391,6 +385,7 @@ class GivensGraph(
                     name = expressions.uniqueChildNameProvider("F".asNameId()),
                     factoryInterface = factory,
                     factoryType = key.type,
+                    initFile = initFile,
                     irParent = contextImpl,
                     declarationGraph = declarationGraph,
                     readerContextParamTransformer = readerContextParamTransformer,
@@ -402,7 +397,6 @@ class GivensGraph(
                 this += GivenChildContext(
                     key = key,
                     owner = contextImpl,
-                    contexts = emptyList(),
                     origin = null,
                     generator = generator
                 )
@@ -428,6 +422,7 @@ class GivensGraph(
                     key = key,
                     owner = contextImpl,
                     contexts = listOf(function.getContext()!!.defaultType),
+                    declarations = listOf(function),
                     external = function.isExternalDeclaration(),
                     explicitParameters = explicitParameters,
                     origin = function.descriptor.fqNameSafe,

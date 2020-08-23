@@ -184,12 +184,17 @@ class ReaderCallTransformer(
         fun inheritContext(type: IrType) {
             context.superTypes += type
                 .remapTypeParametersByName(declaration as IrTypeParametersContainer, context)
+            recordLookup(context, type.classOrNull!!.owner)
+            recordLookup(declaration, type.classOrNull!!.owner)
         }
 
         fun genericContextExpression(
             contextType: IrType,
             contextExpression: () -> IrExpression
         ): IrExpression {
+            recordLookup(context, contextType.classOrNull!!.owner)
+            recordLookup(declaration, contextType.classOrNull!!.owner)
+
             val factory = createContextFactory(
                 contextType,
                 declaration as IrTypeParametersContainer,
@@ -439,15 +444,18 @@ class ReaderCallTransformer(
         val runReaderCallContextExpression = call.extensionReceiver!!
         val lambdaExpression = call.getValueArgument(0)!!
 
+        val scopeDeclaration = (scope?.declaration ?: irScope!!)
+        recordLookup(scopeDeclaration, runReaderCallContextExpression.type.classOrNull!!.owner)
+        recordLookup(scopeDeclaration, lambdaExpression.type.lambdaContext!!)
+
         newIndexBuilders += NewIndexBuilder(
             runReaderCallContextExpression.type.classOrNull!!.owner,
-            ((scope?.declaration ?: irScope!!)
+            (scopeDeclaration
                 .descriptor.fqNameSafe.asString().hashCode() + call.startOffset)
                 .toString()
                 .asNameId()
         ) {
-            recordLookup(this, runReaderCallContextExpression.type.classOrNull!!.owner)
-            recordLookup(this, lambdaExpression.type.lambdaContext!!)
+            recordLookup(this, scopeDeclaration as IrDeclarationWithName)
             annotations += DeclarationIrBuilder(injektContext, symbol).run {
                 irCall(injektContext.injektSymbols.runReaderCall.constructors.single()).apply {
                     putValueArgument(

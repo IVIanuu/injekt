@@ -107,6 +107,8 @@ fun createContextFactory(
     createImplicitParameterDeclarationWithWrappedDescriptor()
     addMetadataIfNotLocal()
 
+    recordLookup(this, contextType.classOrNull!!.owner)
+
     if (typeParametersContainer != null)
         copyTypeParametersFrom(typeParametersContainer)
 

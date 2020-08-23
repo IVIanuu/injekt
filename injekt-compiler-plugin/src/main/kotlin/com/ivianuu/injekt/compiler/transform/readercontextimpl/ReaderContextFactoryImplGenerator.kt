@@ -4,6 +4,7 @@ import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getAllFunctionsWithSubstitutionMap
+import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
@@ -33,6 +34,7 @@ import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
@@ -49,6 +51,7 @@ class ReaderContextFactoryImplGenerator(
     private val factoryInterface: IrClass,
     private val factoryType: IrType,
     private val irParent: IrDeclarationParent,
+    private val initFile: IrFile,
     private val declarationGraph: DeclarationGraph,
     private val readerContextParamTransformer: ReaderContextParamTransformer,
     private val parentContext: IrClass?,
@@ -88,6 +91,8 @@ class ReaderContextFactoryImplGenerator(
             parent = irParent
             createImplicitParameterDeclarationWithWrappedDescriptor()
             superTypes += factoryType
+            recordLookup(this, factoryInterface)
+            recordLookup(initFile, factoryInterface)
         }
 
         val parentField = if (parentContext != null) {
@@ -126,6 +131,7 @@ class ReaderContextFactoryImplGenerator(
 
         val contextImpl = generateReaderContext(contextIdType, inputTypes, factoryImpl)
         factoryImpl.addChild(contextImpl)
+        recordLookup(factoryImpl, contextImpl)
 
         factoryImpl.addFunction {
             name = "create".asNameId()
@@ -190,6 +196,8 @@ class ReaderContextFactoryImplGenerator(
             parent = irParent
             createImplicitParameterDeclarationWithWrappedDescriptor()
             superTypes += contextIdType
+            recordLookup(this, contextIdType.classOrNull!!.owner)
+            recordLookup(initFile, contextIdType.classOrNull!!.owner)
         }
 
         val parentField = if (parentContext != null) {
@@ -252,7 +260,8 @@ class ReaderContextFactoryImplGenerator(
         val expressions = GivenExpressions(
             parent = parentExpressions,
             injektContext = injektContext,
-            contextImpl = contextImpl
+            contextImpl = contextImpl,
+            initFile = initFile
         )
 
         val graph = GivensGraph(
@@ -261,6 +270,7 @@ class ReaderContextFactoryImplGenerator(
             declarationGraph = declarationGraph,
             expressions = expressions,
             contextImpl = contextImpl,
+            initFile = initFile,
             inputs = inputFields,
             readerContextParamTransformer = readerContextParamTransformer
         )
@@ -294,6 +304,7 @@ class ReaderContextFactoryImplGenerator(
             .onEach {
                 if (it !in contextImpl.superTypes) {
                     contextImpl.superTypes += it
+                    recordLookup(contextImpl, it.classOrNull!!.owner)
                 }
             }
             .flatMap { it.getAllFunctionsWithSubstitutionMap(injektContext).toList() }

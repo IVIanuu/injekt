@@ -56,6 +56,7 @@ class ReaderContextImplTransformer(
                     declarationGraph = declarationGraph,
                     readerContextParamTransformer = readerContextParamTransformer,
                     parentContext = null,
+                    initFile = initFile,
                     parentGraph = null,
                     parentExpressions = null
                 ).generateFactory()

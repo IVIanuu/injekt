@@ -179,6 +179,8 @@ import kotlin.math.absoluteValue
 
 var lookupTracker: LookupTracker? = null
 
+val lookups = mutableListOf<Pair<LookupLocation, FqName>>()
+
 fun recordLookup(
     source: IrElement,
     lookedUp: IrDeclarationWithName
@@ -195,6 +197,8 @@ fun recordLookup(
                         get() = Position.NO_POSITION
                 }
         }
+
+    lookups += location to lookedUp.descriptor.fqNameSafe
 
     lookupTracker!!.record(
         location,

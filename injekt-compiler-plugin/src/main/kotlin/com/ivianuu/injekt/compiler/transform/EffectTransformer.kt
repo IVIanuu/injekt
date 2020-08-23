@@ -119,6 +119,9 @@ class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransforme
         createImplicitParameterDeclarationWithWrappedDescriptor()
         addMetadataIfNotLocal()
 
+        recordLookup(this, declaration)
+        effects.forEach { recordLookup(this, it) }
+
         addConstructor {
             returnType = defaultType
             isPrimary = true
@@ -206,7 +209,6 @@ class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransforme
                     irExprBody(
                         irLambda(givenType) {
                             irCall(declaration.symbol).apply {
-                                recordLookup(this@function, declaration)
                                 if (declaration.dispatchReceiverParameter != null) {
                                     dispatchReceiver =
                                         irGetObject(declaration.dispatchReceiverParameter!!.type.classOrNull!!)
@@ -255,7 +257,6 @@ class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransforme
                     body = DeclarationIrBuilder(injektContext, symbol).run {
                         irExprBody(
                             irCall(effectFunction.symbol).apply {
-                                recordLookup(this@function, effectFunction)
                                 dispatchReceiver =
                                     irGetObject(effectFunction.dispatchReceiverParameter!!.type.classOrNull!!)
                                 putTypeArgument(0, givenType)

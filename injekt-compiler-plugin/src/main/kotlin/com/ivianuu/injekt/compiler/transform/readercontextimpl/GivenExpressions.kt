@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.transform.readercontextimpl
 
 import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
 import com.ivianuu.injekt.compiler.irLambda
+import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.typeWith
@@ -23,6 +24,7 @@ import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
@@ -40,7 +42,8 @@ import org.jetbrains.kotlin.name.FqName
 class GivenExpressions(
     private val parent: GivenExpressions?,
     private val injektContext: InjektContext,
-    private val contextImpl: IrClass
+    private val contextImpl: IrClass,
+    private val initFile: IrFile
 ) {
 
     private val givenExpressions = mutableMapOf<Key, ContextExpression>()
@@ -51,6 +54,25 @@ class GivenExpressions(
         superFunction: IrFunction?
     ): ContextExpression {
         givenExpressions[given.key]?.let { return it }
+
+        given.declarations.forEach {
+            recordLookup(contextImpl, it)
+            recordLookup(initFile, it)
+            if (it is IrConstructor) {
+                recordLookup(contextImpl, it.constructedClass)
+                recordLookup(initFile, it.constructedClass)
+            }
+        }
+        given.contexts.forEach {
+            recordLookup(contextImpl, it.classOrNull!!.owner)
+            recordLookup(initFile, it.classOrNull!!.owner)
+        }
+        recordLookup(contextImpl, given.owner)
+        recordLookup(initFile, given.owner)
+        if (given.targetContext != null) {
+            recordLookup(contextImpl, given.targetContext)
+            recordLookup(initFile, given.targetContext)
+        }
 
         val rawExpression = if (given.owner != contextImpl) {
             parent!!.getGivenExpression(given, null)
