@@ -23,8 +23,8 @@ import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.irCallAndRecordLookup
 import com.ivianuu.injekt.compiler.irLambda
+import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
@@ -205,7 +205,8 @@ class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransforme
                 body = DeclarationIrBuilder(injektContext, symbol).run {
                     irExprBody(
                         irLambda(givenType) {
-                            irCallAndRecordLookup(this@function, declaration.symbol).apply {
+                            irCall(declaration.symbol).apply {
+                                recordLookup(this@function, declaration)
                                 if (declaration.dispatchReceiverParameter != null) {
                                     dispatchReceiver =
                                         irGetObject(declaration.dispatchReceiverParameter!!.type.classOrNull!!)
@@ -253,7 +254,8 @@ class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransforme
 
                     body = DeclarationIrBuilder(injektContext, symbol).run {
                         irExprBody(
-                            irCallAndRecordLookup(this@function, effectFunction.symbol).apply {
+                            irCall(effectFunction.symbol).apply {
+                                recordLookup(this@function, effectFunction)
                                 dispatchReceiver =
                                     irGetObject(effectFunction.dispatchReceiverParameter!!.type.classOrNull!!)
                                 putTypeArgument(0, givenType)
