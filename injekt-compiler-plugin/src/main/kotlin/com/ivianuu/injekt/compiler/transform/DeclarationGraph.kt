@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.transform.reader.ReaderContextParamTransformer
+import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -29,6 +30,7 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class DeclarationGraph(
+    private val injektContext: InjektContext,
     private val indexer: Indexer,
     val module: IrModuleFragment,
     private val readerContextParamTransformer: ReaderContextParamTransformer
@@ -38,17 +40,22 @@ class DeclarationGraph(
         indexer.classIndices(listOf(ROOT_CONTEXT_FACTORY_PATH))
     }
 
-    private val givensByKey = mutableMapOf<String, List<IrFunction>>()
-    fun givens(key: String) = givensByKey.getOrPut(key) {
-        (indexer.functionIndices(listOf(GIVEN_PATH, key)) +
-                indexer.classIndices(listOf(GIVEN_PATH, key))
-                    .flatMap { it.constructors.toList() } +
-                indexer.propertyIndices(listOf(GIVEN_PATH, key))
-                    .mapNotNull { it.getter }
-                )
-            .map { readerContextParamTransformer.getTransformedFunction(it) }
-            .filter { it.getContext() != null }
-            .distinct()
+    private val givensByType = mutableMapOf<String, List<IrFunction>>()
+    fun givens(key: String): List<IrFunction> {
+        return givensByType.getOrPut(key) {
+            (indexer.functionIndices(listOf(GIVEN_PATH)) +
+                    indexer.classIndices(listOf(GIVEN_PATH))
+                        .flatMap { it.constructors.toList() } +
+                    indexer.propertyIndices(listOf(GIVEN_PATH))
+                        .mapNotNull { it.getter }
+                    )
+                .filter { function ->
+                    function.returnType.uniqueTypeName().asString() == key
+                }
+                .map { readerContextParamTransformer.getTransformedFunction(it) }
+                .filter { it.getContext() != null }
+                .distinct()
+        }
     }
 
     private val givenMapEntriesByKey = mutableMapOf<String, List<IrFunction>>()

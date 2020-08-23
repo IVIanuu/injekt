@@ -33,7 +33,7 @@ class GivensGraphTest {
     @Test
     fun testMissingBindingFails() = codegen(
         """
-        @Given class Dep(bar: Bar)
+        class Dep()
         fun invoke() {
             rootContext<TestContext>().runReader { given<Dep>() }
         }

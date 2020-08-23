@@ -198,7 +198,8 @@ class GivensGraph(
         given
             .contexts
             .flatMap {
-                declarationGraph.getAllContextImplementations(it.classOrNull!!.owner)
+                listOf(it) + declarationGraph.getAllContextImplementations(it.classOrNull!!.owner)
+                    .drop(1)
                     .map { it.defaultType }
             }
             .forEach { check(it) }
@@ -409,6 +410,7 @@ class GivensGraph(
         }
 
         this += declarationGraph.givens(key.type.uniqueTypeName().asString())
+            .filter { it.returnType.asKey() == key }
             .map { function ->
                 val targetContext = (function.getClassFromAnnotation(
                     InjektFqNames.Given, 0

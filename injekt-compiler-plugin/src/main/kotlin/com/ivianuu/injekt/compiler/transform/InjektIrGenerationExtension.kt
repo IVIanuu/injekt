@@ -94,6 +94,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         if (initializeInjekt) {
             val declarationGraph = DeclarationGraph(
+                injektContext,
                 indexer,
                 moduleFragment,
                 readerContextParamTransformer
