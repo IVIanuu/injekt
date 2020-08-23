@@ -10,6 +10,7 @@ import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.ReaderContextParamTransformer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
+import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -271,7 +272,16 @@ class ReaderContextFactoryImplGenerator(
                     .map { it.defaultType }
             } + declarationGraph.getRunReaderContexts(contextIdType.classOrNull!!.owner)
             .flatMap { declarationGraph.getAllContextImplementations(it) }
-            .map { it.defaultType }
+            .map {
+                // this is really naive and probably error prone
+                if (factoryInterface.typeParameters.size == it.typeParameters.size &&
+                    factoryInterface.typeParameters.zip(it.typeParameters).all {
+                        it.first.name == it.second.name
+                    }
+                ) {
+                    it.typeWith(factoryType.typeArguments.map { it.typeOrFail })
+                } else it.defaultType
+            }
 
         graph.checkEntryPoints(entryPoints)
 

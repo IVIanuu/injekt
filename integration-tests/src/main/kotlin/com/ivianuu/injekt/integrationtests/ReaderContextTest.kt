@@ -150,10 +150,13 @@ class ReaderContextTest {
         assertSame(foo, invokeSingleFile(foo))
     }
 
-    // todo @Test
+    @Test
     fun testGenericRequestInChildContext() = codegen(
         """
             val parentContext = rootContext<TestParentContext>()
+            
+            @Given
+            fun foo() = Foo()
             
             fun invoke() {
                 parentContext.runReader {
@@ -163,6 +166,31 @@ class ReaderContextTest {
             
             @Reader
             fun <T> diyGiven() = childContext<TestChildContext>().runReader { given<T>() }
+        """
+    ) {
+        invokeSingleFile()
+    }
+
+    // todo @Test
+    fun testGenericRequestInNestedChildContext() = codegen(
+        """
+            val parentContext = rootContext<TestParentContext>()
+            
+            @Given
+            fun foo() = Foo()
+            
+            fun invoke() {
+                parentContext.runReader {
+                    val foo = diyGiven<Foo>()
+                }
+            }
+            
+            @Reader
+            fun <T> diyGiven() = childContext<TestChildContext>().runReader { 
+                childContext<TestChildContext2>().runReader { 
+                    given<T>() 
+                }
+            }
         """
     ) {
         invokeSingleFile()

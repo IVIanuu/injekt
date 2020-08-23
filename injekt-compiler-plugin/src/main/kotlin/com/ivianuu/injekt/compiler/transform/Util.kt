@@ -41,7 +41,6 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFile
-import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
@@ -58,7 +57,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 fun createContext(
     owner: IrDeclarationWithName,
     origin: FqName,
-    parentFunction: IrFunction?,
+    parentTypeParametersContainer: IrTypeParametersContainer?,
     injektContext: InjektContext
 ) = buildClass {
     kind = ClassKind.INTERFACE
@@ -77,7 +76,7 @@ fun createContext(
     createImplicitParameterDeclarationWithWrappedDescriptor()
     addMetadataIfNotLocal()
     if (owner is IrTypeParametersContainer) copyTypeParametersFrom(owner)
-    parentFunction?.let { copyTypeParametersFrom(it) }
+    parentTypeParametersContainer?.let { copyTypeParametersFrom(it) }
     recordLookup(this, owner)
 
     annotations += DeclarationIrBuilder(injektContext, symbol)
