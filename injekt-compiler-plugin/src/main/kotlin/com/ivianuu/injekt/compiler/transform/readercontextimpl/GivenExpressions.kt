@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.compiler.transform.readercontext
+package com.ivianuu.injekt.compiler.transform.readercontextimpl
 
 import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
 import com.ivianuu.injekt.compiler.irLambda
