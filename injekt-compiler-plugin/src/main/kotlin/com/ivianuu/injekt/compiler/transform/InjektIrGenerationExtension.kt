@@ -18,13 +18,9 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.transform.reader.ReaderCallTransformer
-import com.ivianuu.injekt.compiler.transform.reader.ReaderContextParamTransformer
-import com.ivianuu.injekt.compiler.transform.reader.ReaderTrackingTransformer
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.readercontext.IndexingTransformer
 import com.ivianuu.injekt.compiler.transform.readercontext.ReaderContextImplTransformer
-import com.ivianuu.injekt.compiler.transform.readercontext.RootContextCallTransformer
-import com.ivianuu.injekt.compiler.transform.readercontext.RunReaderCallTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -65,16 +61,11 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             InjektSymbols(injektContext)
         )
 
-        RootContextCallTransformer(
-            injektContext,
-            indexer
-        ).doLower(moduleFragment)
-
         val readerContextParamTransformer =
             ReaderContextParamTransformer(injektContext, indexer)
         readerContextParamTransformer.doLower(moduleFragment)
 
-        ReaderCallTransformer(injektContext).doLower(moduleFragment)
+        ReaderCallTransformer(injektContext, indexer).doLower(moduleFragment)
 
         ReaderTrackingTransformer(
             injektContext,
@@ -82,15 +73,12 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             readerContextParamTransformer
         ).doLower(moduleFragment)
 
-        RunReaderCallTransformer(
-            injektContext,
-            indexer
-        ).doLower(moduleFragment)
-
         IndexingTransformer(
             indexer,
             injektContext
         ).doLower(moduleFragment)
+
+        println(moduleFragment.dumpSrc())
 
         if (initializeInjekt) {
             val declarationGraph = DeclarationGraph(

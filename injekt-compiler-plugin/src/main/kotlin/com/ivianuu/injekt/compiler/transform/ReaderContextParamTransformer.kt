@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.reader
+package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
@@ -33,10 +33,6 @@ import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpKFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import com.ivianuu.injekt.compiler.tmpSuspendKFunction
-import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
-import com.ivianuu.injekt.compiler.transform.DeclarationGraph
-import com.ivianuu.injekt.compiler.transform.Indexer
-import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueKey
@@ -645,7 +641,7 @@ class ReaderContextParamTransformer(
             addMetadataIfNotLocal()
 
             copyTypeParametersFrom(owner as IrTypeParametersContainer)
-            //parentFunction?.let { copyTypeParametersFrom(it) }
+            parentFunction?.let { copyTypeParametersFrom(it) }
 
             returnType = ownerFunction.returnType
                 .remapTypeParametersByName(owner, this)

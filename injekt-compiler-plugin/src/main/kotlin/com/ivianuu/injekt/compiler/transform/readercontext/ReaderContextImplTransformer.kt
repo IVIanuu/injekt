@@ -23,7 +23,7 @@ import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
-import com.ivianuu.injekt.compiler.transform.reader.ReaderContextParamTransformer
+import com.ivianuu.injekt.compiler.transform.ReaderContextParamTransformer
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.util.defaultType

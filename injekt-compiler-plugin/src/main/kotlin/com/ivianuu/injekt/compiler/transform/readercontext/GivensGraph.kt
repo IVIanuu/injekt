@@ -27,7 +27,7 @@ import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
-import com.ivianuu.injekt.compiler.transform.reader.ReaderContextParamTransformer
+import com.ivianuu.injekt.compiler.transform.ReaderContextParamTransformer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.pop
@@ -208,6 +208,8 @@ class GivensGraph(
     private fun check(context: IrType) {
         if (context in checkedTypes) return
         checkedTypes += context
+
+        println("check ${context.render()}")
 
         val origin = context.classOrNull!!.owner.getConstantFromAnnotationOrNull<String>(
             InjektFqNames.Origin,

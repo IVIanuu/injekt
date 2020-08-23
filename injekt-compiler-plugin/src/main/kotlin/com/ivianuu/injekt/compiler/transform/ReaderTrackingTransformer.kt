@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.reader
+package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.canUseReaders
 import com.ivianuu.injekt.compiler.getContext
@@ -23,10 +23,6 @@ import com.ivianuu.injekt.compiler.irClassReference
 import com.ivianuu.injekt.compiler.isMarkedAsReader
 import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
 import com.ivianuu.injekt.compiler.recordLookup
-import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
-import com.ivianuu.injekt.compiler.transform.DeclarationGraph
-import com.ivianuu.injekt.compiler.transform.Indexer
-import com.ivianuu.injekt.compiler.transform.InjektContext
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.ir.IrStatement
