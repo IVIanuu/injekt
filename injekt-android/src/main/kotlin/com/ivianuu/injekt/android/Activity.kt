@@ -53,7 +53,7 @@ object ActivityGivens {
     fun context(): AndroidActivityContext = given<ComponentActivity>()
 
     @Given
-    fun resources(): ActivityResources = given<android.content.Context>().resources
+    fun resources(): ActivityResources = given<AndroidActivityContext>().resources
 
     @Given
     fun lifecycleOwner(): ActivityLifecycleOwner = given<ComponentActivity>()
