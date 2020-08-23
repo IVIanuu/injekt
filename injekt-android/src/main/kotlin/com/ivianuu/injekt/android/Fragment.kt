@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.android
 
 import android.content.res.Resources
-import androidx.activity.ComponentActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
@@ -57,12 +56,12 @@ object FragmentGivens {
     fun resources(): FragmentResources = given<AndroidFragmentContext>().resources
 
     @Given
-    fun lifecycleOwner(): FragmentLifecycleOwner = given<ComponentActivity>()
+    fun lifecycleOwner(): FragmentLifecycleOwner = given<Fragment>()
 
     @Given
     fun savedStateRegistryOwner(): FragmentSavedStateRegistryOwner = given<Fragment>()
 
     @Given
-    fun viewModelStoreOwner(): FragmentViewModelStoreOwner = given<ViewModelStoreOwner>()
+    fun viewModelStoreOwner(): FragmentViewModelStoreOwner = given<Fragment>()
 
 }
