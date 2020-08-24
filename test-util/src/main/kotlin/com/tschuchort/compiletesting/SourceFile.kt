@@ -25,7 +25,7 @@ import java.io.File
  * A source file for the [KotlinCompilation]
  */
 abstract class SourceFile {
-    internal abstract fun writeIfNeeded(dir: File): File
+    abstract fun writeIfNeeded(dir: File): File
 
     companion object {
         /**

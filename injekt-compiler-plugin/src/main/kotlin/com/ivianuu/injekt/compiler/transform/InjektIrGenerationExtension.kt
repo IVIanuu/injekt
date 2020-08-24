@@ -25,7 +25,7 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrFile
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
@@ -37,13 +37,13 @@ class InjektIrGenerationExtension : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val injektContext = InjektContext(pluginContext, moduleFragment)
         var initializeInjekt = false
-        var initFile: IrFile? = null
+        var initTrigger: IrDeclarationWithName? = null
 
         moduleFragment.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitDeclaration(declaration: IrDeclaration): IrStatement {
                 if (declaration.hasAnnotation(InjektFqNames.InitializeInjekt)) {
                     initializeInjekt = true
-                    initFile = currentFile
+                    initTrigger = declaration as IrDeclarationWithName
                 }
                 return super.visitDeclaration(declaration)
             }
@@ -76,8 +76,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             injektContext
         ).doLower(moduleFragment)
 
-        //println(moduleFragment.dumpSrc())
-
         if (initializeInjekt) {
             val declarationGraph = DeclarationGraph(
                 indexer,
@@ -88,7 +86,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
                 injektContext,
                 declarationGraph,
                 readerContextParamTransformer,
-                initFile!!
+                initTrigger!!
             ).doLower(moduleFragment)
         }
 

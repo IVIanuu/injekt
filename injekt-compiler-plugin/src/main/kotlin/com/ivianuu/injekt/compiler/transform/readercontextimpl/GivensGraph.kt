@@ -28,7 +28,6 @@ import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.ReaderContextParamTransformer
-import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
@@ -36,8 +35,8 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrField
-import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
@@ -60,7 +59,7 @@ class GivensGraph(
     private val injektContext: InjektContext,
     private val declarationGraph: DeclarationGraph,
     private val contextImpl: IrClass,
-    private val initFile: IrFile,
+    private val initTrigger: IrDeclarationWithName,
     private val expressions: GivenExpressions,
     val inputs: List<IrField>,
     private val readerContextParamTransformer: ReaderContextParamTransformer
@@ -385,7 +384,7 @@ class GivensGraph(
                     name = expressions.uniqueChildNameProvider("F".asNameId()),
                     factoryInterface = factory,
                     factoryType = key.type,
-                    initFile = initFile,
+                    initTrigger = initTrigger,
                     irParent = contextImpl,
                     declarationGraph = declarationGraph,
                     readerContextParamTransformer = readerContextParamTransformer,

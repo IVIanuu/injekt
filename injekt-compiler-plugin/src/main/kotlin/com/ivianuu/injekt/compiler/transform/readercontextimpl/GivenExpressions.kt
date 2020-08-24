@@ -24,7 +24,7 @@ import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
-import org.jetbrains.kotlin.ir.declarations.IrFile
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
@@ -43,7 +43,7 @@ class GivenExpressions(
     private val parent: GivenExpressions?,
     private val injektContext: InjektContext,
     private val contextImpl: IrClass,
-    private val initFile: IrFile
+    private val initTrigger: IrDeclarationWithName
 ) {
 
     private val givenExpressions = mutableMapOf<Key, ContextExpression>()
@@ -56,22 +56,15 @@ class GivenExpressions(
         givenExpressions[given.key]?.let { return it }
 
         given.declarations.forEach {
-            recordLookup(contextImpl, it)
-            recordLookup(initFile, it)
-            if (it is IrConstructor) {
-                recordLookup(contextImpl, it.constructedClass)
-                recordLookup(initFile, it.constructedClass)
-            }
+            recordLookup(initTrigger, it)
+            if (it is IrConstructor) recordLookup(initTrigger, it.constructedClass)
         }
         given.contexts.forEach {
-            recordLookup(contextImpl, it.classOrNull!!.owner)
-            recordLookup(initFile, it.classOrNull!!.owner)
+            recordLookup(initTrigger, it.classOrNull!!.owner)
         }
-        recordLookup(contextImpl, given.owner)
-        recordLookup(initFile, given.owner)
+        recordLookup(initTrigger, given.owner)
         if (given.targetContext != null) {
-            recordLookup(contextImpl, given.targetContext)
-            recordLookup(initFile, given.targetContext)
+            recordLookup(initTrigger, given.targetContext)
         }
 
         val rawExpression = if (given.owner != contextImpl) {

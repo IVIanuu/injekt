@@ -401,7 +401,7 @@ class KotlinCompilation {
 
 
     // setup common arguments for the two kotlinc calls
-    private fun commonK2JVMArgs() = K2JVMCompilerArguments().also { args ->
+    fun commonK2JVMArgs() = K2JVMCompilerArguments().also { args ->
         args.destination = classesDir.absolutePath
         args.classpath = commonClasspaths().joinToString(separator = File.pathSeparator)
 
@@ -617,7 +617,7 @@ class KotlinCompilation {
         )
     }
 
-    private fun getResourcesPath(): String {
+    fun getResourcesPath(): String {
         val resourceName =
             "META-INF/services/org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar"
         return this::class.java.classLoader.getResources(resourceName)
@@ -966,7 +966,7 @@ private fun convertKotlinExitCode(code: ExitCode) = when (code) {
 }
 
 /** Returns the files on the classloader's classpath and modulepath */
-private fun getHostClasspaths(): List<File> {
+fun getHostClasspaths(): List<File> {
     val classGraph = ClassGraph()
         .enableSystemJarsAndModules()
         .removeTemporaryFilesAfterScan()

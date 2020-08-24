@@ -24,7 +24,7 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.kapt3.base.incremental.IncrementalProcessor
 
 @AutoService(ComponentRegistrar::class)
-internal class MainComponentRegistrar : ComponentRegistrar {
+class MainComponentRegistrar : ComponentRegistrar {
 
     override fun registerProjectComponents(
         project: MockProject,

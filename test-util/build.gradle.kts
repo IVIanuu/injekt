@@ -41,7 +41,7 @@ dependencies {
     api(Deps.roboelectric)
 
     // todo remove compile testing deps
-    implementation("com.squareup.okio:okio:2.1.0")
-    implementation("org.jetbrains.kotlin:kotlin-annotation-processing-embeddable:1.3.70")
-    implementation("io.github.classgraph:classgraph:4.8.64")
+    api("com.squareup.okio:okio:2.1.0")
+    api("org.jetbrains.kotlin:kotlin-annotation-processing-embeddable:1.3.70")
+    api("io.github.classgraph:classgraph:4.8.64")
 }

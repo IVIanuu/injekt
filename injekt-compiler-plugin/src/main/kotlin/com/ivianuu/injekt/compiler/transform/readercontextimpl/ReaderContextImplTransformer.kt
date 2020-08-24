@@ -25,7 +25,7 @@ import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.ReaderContextParamTransformer
 import org.jetbrains.kotlin.backend.common.ir.addChild
-import org.jetbrains.kotlin.ir.declarations.IrFile
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.name.FqName
 
@@ -33,7 +33,7 @@ class ReaderContextImplTransformer(
     injektContext: InjektContext,
     private val declarationGraph: DeclarationGraph,
     private val readerContextParamTransformer: ReaderContextParamTransformer,
-    private val initFile: IrFile
+    private val initTrigger: IrDeclarationWithName
 ) : AbstractInjektTransformer(injektContext) {
 
     override fun lower() {
@@ -56,14 +56,14 @@ class ReaderContextImplTransformer(
                     declarationGraph = declarationGraph,
                     readerContextParamTransformer = readerContextParamTransformer,
                     parentContext = null,
-                    initFile = initFile,
+                    initTrigger = initTrigger,
                     parentGraph = null,
                     parentExpressions = null
                 ).generateFactory()
 
                 file.addChild(factoryImpl)
 
-                recordLookup(initFile, factoryImpl)
+                recordLookup(initTrigger, factoryImpl)
             }
     }
 
