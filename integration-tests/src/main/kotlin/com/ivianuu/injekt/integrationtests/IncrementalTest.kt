@@ -27,27 +27,38 @@ class IncrementalTest {
             """
                 @Given
                 fun caller() {
-                    callee()
+                    changingCallee()
+                    notChangingCallee()
                 }
             """,
             name = "Caller.kt",
             initializeInjekt = false
         ).also { it.writeIfNeeded(srcDir) }
 
-        var calleeSource = source(
+        var changingCalleeSource = source(
             """
                 @Reader
-                fun callee() {
+                fun changingCallee() {
                 }
             """,
-            name = "Callee.kt",
+            name = "ChangingCallee.kt",
+            initializeInjekt = false
+        ).also { it.writeIfNeeded(srcDir) }
+
+        val notChangingCallee = source(
+            """
+                @Reader
+                fun notChangingCallee() {
+                }
+            """,
+            name = "NotChangingCallee.kt",
             initializeInjekt = false
         ).also { it.writeIfNeeded(srcDir) }
 
         val contextSource = source(
             """
                 @InitializeInjekt
-                val context = rootContext<TestContext>()
+                val context = rootContext<TestContext>("hello")
             """,
             name = "Context.kt",
             initializeInjekt = false
@@ -60,6 +71,7 @@ class IncrementalTest {
             name = "RunReader.kt",
             initializeInjekt = false
         ).also { it.writeIfNeeded(srcDir) }
+
         val unrelatedSource = source(
             """
                 class Unrelated
@@ -112,44 +124,47 @@ class IncrementalTest {
         }
         doCompile().run {
             assertTrue("Caller.kt is marked dirty" in this)
-            assertTrue("Callee.kt is marked dirty" in this)
+            assertTrue("ChangingCallee.kt is marked dirty" in this)
+            assertTrue("NotChangingCallee.kt is marked dirty" in this)
             assertTrue("Context.kt is marked dirty" in this)
             assertTrue("RunReader.kt is marked dirty" in this)
             assertTrue("Unrelated.kt is marked dirty" in this)
         }
 
-        calleeSource = source(
+        changingCalleeSource = source(
             """
                 @Reader
-                fun callee() {
+                fun changingCallee() {
                 }
             """,
-            name = "Callee.kt",
+            name = "ChangingCallee.kt",
             initializeInjekt = false
         ).also { it.writeIfNeeded(srcDir) }
 
         doCompile().run {
             assertTrue("Caller.kt is marked dirty" !in this)
-            assertTrue("Callee.kt is marked dirty" !in this)
+            assertTrue("ChangingCallee.kt is marked dirty" !in this)
+            assertTrue("NotChangingCallee.kt is marked dirty" !in this)
             assertTrue("Context.kt is marked dirty" !in this)
             assertTrue("RunReader.kt is marked dirty" !in this)
             assertTrue("Unrelated.kt is marked dirty" !in this)
         }
 
-        calleeSource = source(
+        changingCalleeSource = source(
             """
                 @Reader
-                fun callee() {
+                fun changingCallee() {
                     given<String>()
                 }
             """,
-            name = "Callee.kt",
+            name = "ChangingCallee.kt",
             initializeInjekt = false
         ).also { it.writeIfNeeded(srcDir) }
 
         doCompile().run {
             assertTrue("Caller.kt is marked dirty" in this)
-            assertTrue("Callee.kt is marked dirty" in this)
+            assertTrue("ChangingCallee.kt is marked dirty" in this)
+            assertTrue("NotChangingCallee.kt is marked dirty" !in this)
             assertTrue("Context.kt is marked dirty" in this)
             assertTrue("RunReader.kt is marked dirty" in this)
             assertTrue("Unrelated.kt is marked dirty" !in this)
