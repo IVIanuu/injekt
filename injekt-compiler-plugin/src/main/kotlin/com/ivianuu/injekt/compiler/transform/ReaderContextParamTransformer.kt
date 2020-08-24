@@ -124,6 +124,7 @@ import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasDefaultValue
@@ -227,8 +228,8 @@ class ReaderContextParamTransformer(
         transformedClasses += clazz
 
         if (clazz.isExternalDeclaration()) {
-            val existingSignature = getExternalReaderSignature(clazz)
-            readerConstructor.copySignatureFrom(existingSignature!!)
+            val existingSignature = getExternalReaderSignature(clazz)!!
+            readerConstructor.copySignatureFrom(existingSignature)
             return clazz
         }
 
@@ -272,7 +273,8 @@ class ReaderContextParamTransformer(
 
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
         if (function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given" ||
-            function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.childContext"
+            function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.childContext" ||
+            function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runReader"
         ) return function
 
         if (function is IrConstructor) {
@@ -284,17 +286,6 @@ class ReaderContextParamTransformer(
 
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
-
-        if (function.isExternalDeclaration()) {
-            val existingSignature = getExternalReaderSignature(function)
-            if (existingSignature == null &&
-                !function.canUseReaders(injektContext)
-            ) return function
-            val transformedFunction = function.copyAsReader()
-            transformedFunctions[function] = transformedFunction
-            transformedFunction.copySignatureFrom(existingSignature!!)
-            return transformedFunction
-        }
 
         var needsTransform = function.canUseReaders(injektContext)
 
@@ -311,6 +302,15 @@ class ReaderContextParamTransformer(
         }
 
         if (!needsTransform) return function
+
+        if (function.isExternalDeclaration()) {
+            val existingSignature = getExternalReaderSignature(function)
+                ?: error("Wtf ${function.dump()}")
+            val transformedFunction = function.copyAsReader()
+            transformedFunctions[function] = transformedFunction
+            transformedFunction.copySignatureFrom(existingSignature)
+            return transformedFunction
+        }
 
         val transformedFunction = function.copyAsReader()
             .also { it.transformChildrenVoid(transformer) }
