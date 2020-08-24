@@ -60,6 +60,13 @@ class IncrementalTest {
             name = "RunReader.kt",
             initializeInjekt = false
         ).also { it.writeIfNeeded(srcDir) }
+        val unrelatedSource = source(
+            """
+                class Unrelated
+            """,
+            name = "Unrelated.kt",
+            initializeInjekt = false
+        ).also { it.writeIfNeeded(srcDir) }
 
         fun doCompile(): String {
             val messages = mutableListOf<String>()
@@ -108,6 +115,7 @@ class IncrementalTest {
             assertTrue("Callee.kt is marked dirty" in this)
             assertTrue("Context.kt is marked dirty" in this)
             assertTrue("RunReader.kt is marked dirty" in this)
+            assertTrue("Unrelated.kt is marked dirty" in this)
         }
 
         calleeSource = source(
@@ -125,6 +133,7 @@ class IncrementalTest {
             assertTrue("Callee.kt is marked dirty" !in this)
             assertTrue("Context.kt is marked dirty" !in this)
             assertTrue("RunReader.kt is marked dirty" !in this)
+            assertTrue("Unrelated.kt is marked dirty" !in this)
         }
 
         calleeSource = source(
@@ -143,6 +152,7 @@ class IncrementalTest {
             assertTrue("Callee.kt is marked dirty" in this)
             assertTrue("Context.kt is marked dirty" in this)
             assertTrue("RunReader.kt is marked dirty" in this)
+            assertTrue("Unrelated.kt is marked dirty" !in this)
         }
 
     }
