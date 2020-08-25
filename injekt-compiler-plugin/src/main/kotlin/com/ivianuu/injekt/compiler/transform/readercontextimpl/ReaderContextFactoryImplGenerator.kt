@@ -3,7 +3,6 @@ package com.ivianuu.injekt.compiler.transform.readercontextimpl
 import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.getAllFunctionsWithSubstitutionMap
 import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
@@ -13,6 +12,7 @@ import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueTypeName
+import com.ivianuu.injekt.compiler.visitAllFunctionsWithSubstitutionMap
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
@@ -294,34 +294,31 @@ class ReaderContextFactoryImplGenerator(
         graph.checkEntryPoints(entryPoints)
 
         (entryPoints + graph.resolvedGivens.flatMap { it.value.contexts })
-            .flatMap {
-                listOf(it) + declarationGraph.getAllContextImplementations(it.classOrNull!!.owner)
-                    .drop(1)
-                    .map { it.defaultType }
-            }
-            .onEach {
-                if (it !in contextImpl.superTypes) {
-                    contextImpl.superTypes += it
-                    recordLookup(initTrigger, it.classOrNull!!.owner)
+            .forEach { context ->
+                context.visitAllFunctionsWithSubstitutionMap(
+                    injektContext = injektContext,
+                    declarationGraph = declarationGraph,
+                    enterType = {
+                        if (it !in contextImpl.superTypes) {
+                            contextImpl.superTypes += it
+                            recordLookup(initTrigger, it.classOrNull!!.owner)
+                        }
+                    }
+                ) { function, substitutionMap ->
+                    val existingDeclaration = contextImpl.functions.singleOrNull {
+                        it.name == function.name
+                    }
+                    if (existingDeclaration != null) {
+                        existingDeclaration.overriddenSymbols += function.symbol as IrSimpleFunctionSymbol
+                        return@visitAllFunctionsWithSubstitutionMap
+                    }
+
+                    val key = function.returnType
+                        .substitute(substitutionMap)
+                        .asKey()
+
+                    expressions.getGivenExpression(graph.getGiven(key), function)
                 }
-            }
-            .flatMap { it.getAllFunctionsWithSubstitutionMap(injektContext).toList() }
-            .filter { (function, _) ->
-                val existingDeclaration = contextImpl.functions.singleOrNull {
-                    it.name == function.name
-                }
-                if (existingDeclaration != null) {
-                    existingDeclaration.overriddenSymbols += function.symbol as IrSimpleFunctionSymbol
-                    false
-                } else true
-            }
-            .map { (function, substitutionMap) ->
-                function to function.returnType
-                    .substitute(substitutionMap)
-                    .asKey()
-            }
-            .forEach { (superFunction, key) ->
-                expressions.getGivenExpression(graph.getGiven(key), superFunction)
             }
 
         return contextImpl

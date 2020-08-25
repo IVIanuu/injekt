@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.transform.readercontextimpl
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.getAllFunctionsWithSubstitutionMap
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
@@ -29,6 +28,7 @@ import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.ReaderContextParamTransformer
 import com.ivianuu.injekt.compiler.uniqueTypeName
+import com.ivianuu.injekt.compiler.visitAllFunctionsWithSubstitutionMap
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -190,11 +190,6 @@ class GivensGraph(
         checkedKeys += given.key
         given
             .contexts
-            .flatMap {
-                listOf(it) + declarationGraph.getAllContextImplementations(it.classOrNull!!.owner)
-                    .drop(1)
-                    .map { it.defaultType }
-            }
             .forEach { check(it) }
     }
 
@@ -202,28 +197,28 @@ class GivensGraph(
         if (context in checkedTypes) return
         checkedTypes += context
 
-        val origin = context.classOrNull!!.owner.getConstantFromAnnotationOrNull<String>(
-            InjektFqNames.Origin,
-            0
-        )?.let { FqName(it) }
-        chain.push(ChainElement.Call(origin))
-
-        (listOf(context) + declarationGraph.getAllContextImplementations(context.classOrNull!!.owner)
-            .drop(1).map { it.defaultType })
-            .flatMap { it.getAllFunctionsWithSubstitutionMap(injektContext).toList() }
-            .forEach { (function, substitutionMap) ->
-                val existingFunction = contextImpl.functions.singleOrNull {
-                    it.name == function.name
-                }
-                if (existingFunction != null) {
-                    existingFunction.overriddenSymbols += function.symbol as IrSimpleFunctionSymbol
-                    return@forEach
-                }
-
-                check(function.returnType.substitute(substitutionMap).asKey())
+        context.visitAllFunctionsWithSubstitutionMap(
+            injektContext = injektContext,
+            declarationGraph = declarationGraph,
+            enterType = {
+                val origin = it.classOrNull!!.owner.getConstantFromAnnotationOrNull<String>(
+                    InjektFqNames.Origin,
+                    0
+                )?.let { FqName(it) }
+                chain.push(ChainElement.Call(origin))
+            },
+            exitType = { chain.pop() }
+        ) { function, substitutionMap ->
+            val existingFunction = contextImpl.functions.singleOrNull {
+                it.name == function.name
+            }
+            if (existingFunction != null) {
+                existingFunction.overriddenSymbols += function.symbol as IrSimpleFunctionSymbol
+                return@visitAllFunctionsWithSubstitutionMap
             }
 
-        chain.pop()
+            check(function.returnType.substitute(substitutionMap).asKey())
+        }
     }
 
     fun getGiven(key: Key): Given {

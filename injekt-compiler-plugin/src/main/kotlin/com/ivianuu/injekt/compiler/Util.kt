@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -312,48 +313,57 @@ fun IrType.remapTypeParametersByName(
         else -> this
     }
 
-fun IrType.getAllFunctionsWithSubstitutionMap(
-    injektContext: InjektContext
-): Map<IrFunction, Map<IrTypeParameterSymbol, IrType>> {
-    val allFunctions = mutableMapOf<IrFunction, Map<IrTypeParameterSymbol, IrType>>()
-
-    fun collect(
+fun IrType.visitAllFunctionsWithSubstitutionMap(
+    injektContext: InjektContext,
+    declarationGraph: DeclarationGraph,
+    enterType: (IrType) -> Unit = {},
+    exitType: (IrType) -> Unit = {},
+    visitFunction: (IrFunction, Map<IrTypeParameterSymbol, IrType>) -> Unit
+) {
+    val processedTypes = mutableSetOf<IrType>()
+    fun visit(
         clazz: IrClass,
         typeArguments: List<IrType>
     ) {
+        val type = clazz.typeWith(typeArguments)
+        if (type in processedTypes) return
+        processedTypes += type
+        enterType(type)
         val substitutionMap = clazz.typeParameters
             .map { it.symbol }
             .zip(typeArguments)
             .toMap()
 
         for (function in clazz.functions) {
-            if (function in allFunctions) continue
             if (function is IrConstructor) continue
             if (function.dispatchReceiverParameter?.type ==
                 injektContext.irBuiltIns.anyType
             ) continue
             if (function.isFakeOverride) continue
-            allFunctions[function] = substitutionMap
+            visitFunction(function, substitutionMap)
         }
 
-        clazz.superTypes.forEach { superType ->
-            collect(
-                superType.classOrNull!!.owner,
-                superType.typeArguments
-                    .map { it.typeOrFail }
-                    .map { typeArg ->
-                        typeArg.substitute(substitutionMap)
-                    }
-            )
-        }
+        clazz.superTypes
+            .forEach { superType ->
+                visit(
+                    superType.classOrNull!!.owner,
+                    superType.typeArguments
+                        .map { it.typeOrFail }
+                        .map { typeArg ->
+                            typeArg.substitute(substitutionMap)
+                        }
+                )
+            }
+        declarationGraph.getAllContextImplementations(clazz)
+            .drop(1)
+            .forEach { visit(it, it.defaultType.typeArguments.map { it.typeOrFail }) }
+        exitType(type)
     }
 
-    collect(
+    visit(
         classOrNull!!.owner,
         typeArguments.map { it.typeOrFail }
     )
-
-    return allFunctions
 }
 
 fun <T> IrAnnotationContainer.getConstantFromAnnotationOrNull(
