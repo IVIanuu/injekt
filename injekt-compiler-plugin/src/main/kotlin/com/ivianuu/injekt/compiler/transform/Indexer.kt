@@ -175,15 +175,13 @@ class Indexer(
         var packageFqName = InjektFqNames.IndexPackage
         finalPath.forEach { packageFqName = packageFqName.child(it.asNameId()) }
 
-        val name = injektContext.uniqueClassNameProvider(
-            (getJoinedName(
-                originatingDeclaration.getPackageFragment()!!.fqName,
-                originatingDeclaration.descriptor.fqNameSafe
-                    .parent().child(originatingDeclaration.name.asString().asNameId())
-            ).asString() + "$name${originatingDeclaration.uniqueKey().hashCode()}Index")
-                .asNameId(),
-            packageFqName
-        )
+        val name = (getJoinedName(
+            originatingDeclaration.getPackageFragment()!!.fqName,
+            originatingDeclaration.descriptor.fqNameSafe
+                .parent().child(originatingDeclaration.name.asString().asNameId())
+        ).asString() + "$name${originatingDeclaration.uniqueKey().hashCode()}Index")
+            .removeIllegalChars()
+            .asNameId()
 
         module.addFile(
             injektContext,
@@ -240,14 +238,11 @@ class Indexer(
         var packageFqName = InjektFqNames.IndexPackage
         finalPath.forEach { packageFqName = packageFqName.child(it.asNameId()) }
 
-        val name = injektContext.uniqueClassNameProvider(
-            (getJoinedName(
-                declaration.getPackageFragment()!!.fqName,
-                declaration.descriptor.fqNameSafe
-                    .parent().child(declaration.name.asString().asNameId())
-            ).asString() + "${declaration.uniqueKey().hashCode()}Index").asNameId(),
-            packageFqName
-        )
+        val name = (getJoinedName(
+            declaration.getPackageFragment()!!.fqName,
+            declaration.descriptor.fqNameSafe
+                .parent().child(declaration.name.asString().asNameId())
+        ).asString() + "${declaration.uniqueKey().hashCode()}Index").removeIllegalChars().asNameId()
         module.addFile(
             injektContext,
             packageFqName.child(name)

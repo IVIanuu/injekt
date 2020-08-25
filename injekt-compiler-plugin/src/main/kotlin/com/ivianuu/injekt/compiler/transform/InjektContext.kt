@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.ClassUniqueNameProvider
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.WeakBindingTrace
 import com.ivianuu.injekt.compiler.analysis.ReaderChecker
@@ -29,7 +28,6 @@ class InjektContext(
     val module: IrModuleFragment
 ) : IrPluginContext by delegate {
     val injektSymbols = InjektSymbols(this)
-    val uniqueClassNameProvider = ClassUniqueNameProvider(this)
     val irTrace = WeakBindingTrace()
     val readerChecker = ReaderChecker()
     val bindingTrace = DelegatingBindingTrace(bindingContext, "Injekt IR")

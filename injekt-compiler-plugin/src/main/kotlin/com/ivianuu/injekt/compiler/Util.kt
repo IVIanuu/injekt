@@ -845,16 +845,28 @@ private fun IrBody.move(
 }, null)
 
 fun IrDeclarationWithName.uniqueKey() = when (this) {
-    is IrClass -> "${descriptor.fqNameSafe}__class"
+    is IrClass -> "${descriptor.fqNameSafe}${
+        if (descriptor.visibility == Visibilities.LOCAL &&
+            descriptor.name.isSpecial
+        ) startOffset else ""
+    }__class"
     is IrField -> "${descriptor.fqNameSafe}__field"
-    is IrFunction -> "${descriptor.fqNameSafe}__function${
+    is IrFunction -> "${descriptor.fqNameSafe}${
+        if (descriptor.visibility == Visibilities.LOCAL &&
+            descriptor.name.isSpecial
+        ) startOffset else ""
+    }__function${
         ((metadata as? MetadataSource.Function)?.descriptor ?: descriptor).valueParameters
             .filterNot { it.name == getContextValueParameter()?.name }
             .map { it.type }.map {
                 it.constructor.declarationDescriptor!!.fqNameSafe
             }.hashCode().absoluteValue
-    }${if (visibility == Visibilities.LOCAL) "_$startOffset" else ""}"
-    is IrProperty -> "${descriptor.fqNameSafe}__property"
+    }"
+    is IrProperty -> "${descriptor.fqNameSafe}${
+        if (descriptor.visibility == Visibilities.LOCAL &&
+            descriptor.name.isSpecial
+        ) startOffset else ""
+    }__property"
     is IrValueParameter -> "${descriptor.fqNameSafe}__valueparameter"
     is IrVariableImpl -> "${descriptor.fqNameSafe}__variable"
     else -> error("Unsupported declaration ${dump()}")

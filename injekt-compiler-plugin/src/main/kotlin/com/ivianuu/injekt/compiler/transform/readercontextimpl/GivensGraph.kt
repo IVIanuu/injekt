@@ -376,7 +376,7 @@ class GivensGraph(
                 val factory = key.type.classOrNull!!.owner
                 val generator = ReaderContextFactoryImplGenerator(
                     injektContext = injektContext,
-                    name = expressions.uniqueChildNameProvider("F".asNameId()),
+                    name = expressions.uniqueChildNameProvider("F").asNameId(),
                     factoryInterface = factory,
                     factoryType = key.type,
                     initTrigger = initTrigger,

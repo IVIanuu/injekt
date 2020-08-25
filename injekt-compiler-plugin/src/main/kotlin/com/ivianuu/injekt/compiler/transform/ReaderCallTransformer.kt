@@ -27,6 +27,7 @@ import com.ivianuu.injekt.compiler.irClassReference
 import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
 import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.remapTypeParametersByName
+import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.compiler.thisOfClass
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
@@ -190,14 +191,16 @@ class ReaderCallTransformer(
 
         fun genericContextExpression(
             contextType: IrType,
+            startOffset: Int,
             contextExpression: () -> IrExpression
         ): IrExpression {
             recordLookup(context, contextType.classOrNull!!.owner)
             recordLookup(declaration, contextType.classOrNull!!.owner)
 
             val factory = createContextFactory(
-                contextType,
-                declaration as IrTypeParametersContainer,
+                contextType = contextType,
+                startOffset = startOffset,
+                typeParametersContainer = declaration as IrTypeParametersContainer,
                 file = declaration.file,
                 inputTypes = emptyList(),
                 injektContext = injektContext,
@@ -383,6 +386,7 @@ class ReaderCallTransformer(
         val contextFactory = createContextFactory(
             contextType = contextType,
             file = file,
+            startOffset = call.startOffset,
             inputTypes = inputs.map { it.type },
             injektContext = injektContext,
             isChild = isChild,
@@ -453,6 +457,7 @@ class ReaderCallTransformer(
             (scopeDeclaration
                 .descriptor.fqNameSafe.asString().hashCode() + call.startOffset)
                 .toString()
+                .removeIllegalChars()
                 .asNameId()
         ) {
             recordLookup(this, scopeDeclaration as IrDeclarationWithName)
@@ -608,6 +613,7 @@ class ReaderCallTransformer(
                     transformedCall.symbol.owner
                         .getContext()!!
                         .typeWith(transformedCall.typeArguments),
+                    transformedCall.startOffset,
                     contextExpression
                 )
             }

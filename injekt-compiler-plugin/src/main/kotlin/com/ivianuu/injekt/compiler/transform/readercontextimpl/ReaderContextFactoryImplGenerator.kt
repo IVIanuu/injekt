@@ -1,6 +1,6 @@
 package com.ivianuu.injekt.compiler.transform.readercontextimpl
 
-import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
+import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.recordLookup
@@ -140,10 +140,10 @@ class ReaderContextFactoryImplGenerator(
 
             overriddenSymbols += createFunction.symbol
 
-            val inputNameProvider = SimpleUniqueNameProvider()
+            val inputNameProvider = UniqueNameProvider()
             inputTypes.forEach {
                 addValueParameter(
-                    inputNameProvider(it.uniqueTypeName()).asString(),
+                    inputNameProvider(it.uniqueTypeName().asString()),
                     it
                 )
             }
@@ -202,11 +202,11 @@ class ReaderContextFactoryImplGenerator(
             contextImpl.addField("parent", parentContext.defaultType)
         } else null
 
-        val inputFieldNameProvider = SimpleUniqueNameProvider()
+        val inputFieldNameProvider = UniqueNameProvider()
         val inputFields = inputTypes
             .map {
                 contextImpl.addField(
-                    inputFieldNameProvider(it.uniqueTypeName()),
+                    inputFieldNameProvider(it.uniqueTypeName().asString()),
                     it
                 )
             }

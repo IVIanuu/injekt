@@ -1,6 +1,6 @@
 package com.ivianuu.injekt.compiler.transform.readercontextimpl
 
-import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
+import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.tmpFunction
@@ -47,7 +47,7 @@ class GivenExpressions(
 ) {
 
     private val givenExpressions = mutableMapOf<Key, ContextExpression>()
-    val uniqueChildNameProvider = SimpleUniqueNameProvider()
+    val uniqueChildNameProvider = UniqueNameProvider()
 
     fun getGivenExpression(
         given: Given,

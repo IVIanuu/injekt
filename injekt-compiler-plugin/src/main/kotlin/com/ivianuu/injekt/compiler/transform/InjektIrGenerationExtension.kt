@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.readercontextimpl.ReaderContextImplTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -93,6 +94,8 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         TmpMetadataPatcher(injektContext).doLower(moduleFragment)
 
         generateSymbols(pluginContext)
+
+        println(moduleFragment.dumpSrc())
     }
 
 }

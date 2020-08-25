@@ -17,13 +17,14 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.SimpleUniqueNameProvider
+import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.remapTypeParametersByName
+import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.uniqueKey
@@ -61,15 +62,13 @@ fun createContext(
     injektContext: InjektContext
 ) = buildClass {
     kind = ClassKind.INTERFACE
-    name = injektContext.uniqueClassNameProvider(
-        (getJoinedName(
-            owner.getPackageFragment()!!.fqName,
-            owner.descriptor.fqNameSafe
-                .parent().child(owner.name.asString().asNameId())
-        ).asString() + "${owner.uniqueKey().hashCode()}Context")
-            .asNameId(),
-        owner.getPackageFragment()!!.fqName
-    )
+    name = (getJoinedName(
+        owner.getPackageFragment()!!.fqName,
+        owner.descriptor.fqNameSafe
+            .parent().child(owner.name.asString().asNameId())
+    ).asString().removeIllegalChars() + "${owner.uniqueKey().hashCode()}Context")
+        .removeIllegalChars()
+        .asNameId()
     visibility = Visibilities.INTERNAL
 }.apply {
     parent = owner.file
@@ -93,13 +92,12 @@ fun createContextFactory(
     typeParametersContainer: IrTypeParametersContainer?,
     file: IrFile,
     inputTypes: List<IrType>,
+    startOffset: Int,
     injektContext: InjektContext,
     isChild: Boolean
 ) = buildClass {
-    name = injektContext.uniqueClassNameProvider(
-        "${contextType.classOrNull!!.owner.name}Factory".asNameId(),
-        file.fqName
-    )
+    name = "${contextType.classOrNull!!.owner.name}${startOffset}Factory"
+        .removeIllegalChars().asNameId()
     kind = ClassKind.INTERFACE
     visibility = Visibilities.INTERNAL
 }.apply clazz@{
@@ -121,12 +119,12 @@ fun createContextFactory(
         dispatchReceiverParameter = thisReceiver!!.copyTo(this)
         parent = this@clazz
         addMetadataIfNotLocal()
-        val parameterUniqueNameProvider = SimpleUniqueNameProvider()
+        val parameterUniqueNameProvider = UniqueNameProvider()
         inputTypes
             .map { it.remapTypeParametersByName(typeParametersContainer ?: this@clazz, this@clazz) }
             .forEach {
                 addValueParameter(
-                    parameterUniqueNameProvider(it.uniqueTypeName()).asString(),
+                    parameterUniqueNameProvider(it.uniqueTypeName().asString()),
                     it
                 )
             }

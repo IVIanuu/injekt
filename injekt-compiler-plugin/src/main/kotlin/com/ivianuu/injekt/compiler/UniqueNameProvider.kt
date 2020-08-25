@@ -16,42 +16,20 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.transform.InjektContext
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
+class UniqueNameProvider {
 
-class UniqueNameProvider(
-    private val existsPredicate: (Name, FqName) -> Boolean
-) {
+    private val existingNames = mutableSetOf<String>()
 
-    operator fun invoke(
-        base: Name,
-        fqName: FqName = FqName.ROOT
-    ): Name {
-        val finalBase = base.asString().removeIllegalChars().asNameId()
+    operator fun invoke(base: String): String {
+        val finalBase = base.removeIllegalChars()
         var name = finalBase
         var differentiator = 2
-        while (existsPredicate(name, fqName)) {
-            name = (finalBase.asString() + differentiator).asNameId()
+        while (name in existingNames) {
+            name = finalBase + differentiator
             differentiator++
         }
+        existingNames += name
         return name
     }
 
-}
-
-fun SimpleUniqueNameProvider(): UniqueNameProvider {
-    val uniqueNames = mutableSetOf<FqName>()
-    return UniqueNameProvider { base, fqName -> !uniqueNames.add(fqName.child(base)) }
-}
-
-fun ClassUniqueNameProvider(
-    injektContext: InjektContext
-): UniqueNameProvider {
-    val uniqueNames = mutableSetOf<FqName>()
-    return UniqueNameProvider { base, fqName ->
-        val fullFqName = fqName.child(base)
-        (injektContext.referenceClass(fullFqName) != null) or
-                !uniqueNames.add(fullFqName)
-    }
 }
