@@ -31,13 +31,13 @@ import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.compiler.thisOfClass
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
+import com.ivianuu.injekt.compiler.transformFiles
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
-import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -54,7 +54,6 @@ import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
@@ -85,7 +84,6 @@ import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ReaderCallTransformer(
@@ -94,12 +92,9 @@ class ReaderCallTransformer(
 ) : AbstractInjektTransformer(injektContext) {
 
     private val transformedDeclarations = mutableListOf<IrDeclaration>()
-    private val newDeclarations = mutableListOf<IrDeclarationWithName>()
-    private val newRootFactories = mutableListOf<IrClass>()
-    private val newIndexBuilders = mutableListOf<NewIndexBuilder>()
 
     override fun lower() {
-        injektContext.module.transformChildrenVoid(
+        injektContext.module.transformFiles(
             object : IrElementTransformerVoidWithContext() {
                 override fun visitClassNew(declaration: IrClass): IrStatement {
                     transformClassIfNeeded(declaration)
@@ -139,37 +134,7 @@ class ReaderCallTransformer(
                 }
             }
         )
-
-        newDeclarations.forEach {
-            (it.parent as IrDeclarationContainer).addChild(it)
-        }
-
-        newRootFactories.forEach {
-            (it.parent as IrDeclarationContainer).addChild(it)
-            indexer.index(
-                listOf(DeclarationGraph.ROOT_CONTEXT_FACTORY_PATH),
-                it
-            )
-        }
-
-        newIndexBuilders.forEach {
-            indexer.index(
-                it.originatingDeclaration,
-                it.name,
-                listOf(
-                    DeclarationGraph.RUN_READER_CALL_PATH,
-                    it.originatingDeclaration.descriptor.fqNameSafe.asString()
-                ),
-                it.classBuilder
-            )
-        }
     }
-
-    private data class NewIndexBuilder(
-        val originatingDeclaration: IrDeclarationWithName,
-        val name: Name,
-        val classBuilder: IrClass.() -> Unit
-    )
 
     inner class ReaderScope(
         val declaration: IrDeclaration,
@@ -205,7 +170,7 @@ class ReaderCallTransformer(
                 inputTypes = emptyList(),
                 injektContext = injektContext,
                 isChild = true
-            ).also { newDeclarations += it }
+            )
 
             return DeclarationIrBuilder(injektContext, factory.symbol).run {
                 irCall(factory.functions.first {
@@ -392,10 +357,11 @@ class ReaderCallTransformer(
             isChild = isChild,
             typeParametersContainer = scope?.declaration as? IrTypeParametersContainer
         ).also {
-            if (isChild) {
-                newDeclarations += it
-            } else {
-                newRootFactories += it
+            if (!isChild) {
+                indexer.index(
+                    listOf(DeclarationGraph.ROOT_CONTEXT_FACTORY_PATH),
+                    it
+                )
             }
         }
 
@@ -452,13 +418,17 @@ class ReaderCallTransformer(
         recordLookup(scopeDeclaration, runReaderCallContextExpression.type.classOrNull!!.owner)
         recordLookup(scopeDeclaration, lambdaExpression.type.lambdaContext!!)
 
-        newIndexBuilders += NewIndexBuilder(
+        indexer.index(
             runReaderCallContextExpression.type.classOrNull!!.owner,
             (scopeDeclaration
                 .descriptor.fqNameSafe.asString().hashCode() + call.startOffset)
                 .toString()
                 .removeIllegalChars()
-                .asNameId()
+                .asNameId(),
+            listOf(
+                DeclarationGraph.RUN_READER_CALL_PATH,
+                runReaderCallContextExpression.type.classOrNull!!.owner.descriptor.fqNameSafe.asString()
+            )
         ) {
             recordLookup(this, scopeDeclaration as IrDeclarationWithName)
             annotations += DeclarationIrBuilder(injektContext, symbol).run {

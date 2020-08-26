@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
@@ -177,6 +178,22 @@ import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.types.withAbbreviation
 import kotlin.math.absoluteValue
+
+fun IrModuleFragment.transformFiles(
+    transformer: IrElementTransformerVoid
+) {
+    files.toList().forEach { it.transform(transformer, null) }
+}
+
+fun IrFile.addChildAndUpdateMetadata(
+    declaration: IrDeclaration
+) {
+    addChild(declaration)
+    (this as IrFileImpl).metadata = MetadataSource.File(
+        declarations
+            .map { it.descriptor }
+    )
+}
 
 var lookupTracker: LookupTracker? = null
 
@@ -980,9 +997,7 @@ fun IrModuleFragment.addFile(
             }
         ),
         fqName = fqName.parent()
-    ).apply {
-        metadata = MetadataSource.File(emptyList())
-    }
+    )
 
     files += file
 

@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.tmpFunction
+import com.ivianuu.injekt.compiler.transformFiles
 import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.ir.IrStatement
@@ -33,7 +34,6 @@ import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
 class IndexingTransformer(
     private val indexer: Indexer,
@@ -41,24 +41,18 @@ class IndexingTransformer(
 ) : AbstractInjektTransformer(injektContext) {
 
     override fun lower() {
-        // we have to defer the indexing because otherwise
-        // we would get ConcurrentModficationExceptions
-        val runnables = mutableListOf<() -> Unit>()
-
-        injektContext.module.transformChildrenVoid(object : IrElementTransformerVoid() {
+        injektContext.module.transformFiles(object : IrElementTransformerVoid() {
             override fun visitConstructor(declaration: IrConstructor): IrStatement {
                 if (declaration.hasAnnotation(InjektFqNames.Given) ||
                     declaration.hasAnnotatedAnnotations(InjektFqNames.Effect)
                 ) {
-                    runnables += {
-                        indexer.index(
-                            listOf(
-                                DeclarationGraph.GIVEN_PATH,
-                                declaration.constructedClass.defaultType.uniqueTypeName().asString()
-                            ),
-                            declaration.constructedClass
-                        )
-                    }
+                    indexer.index(
+                        listOf(
+                            DeclarationGraph.GIVEN_PATH,
+                            declaration.constructedClass.defaultType.uniqueTypeName().asString()
+                        ),
+                        declaration.constructedClass
+                    )
                 }
                 return super.visitConstructor(declaration)
             }
@@ -66,66 +60,15 @@ class IndexingTransformer(
             override fun visitFunction(declaration: IrFunction): IrStatement {
                 if (!declaration.isInModule()) {
                     when {
-                        declaration.hasAnnotation(InjektFqNames.Given) ->
-                            runnables += {
-                                val explicitParameters = declaration.valueParameters
-                                    .filter { it != declaration.getContextValueParameter() }
-                                val typePath =
-                                    if (explicitParameters.isEmpty()) declaration.returnType.uniqueTypeName()
-                                        .asString()
-                                    else injektContext.tmpFunction(explicitParameters.size)
-                                        .owner
-                                        .typeWith(explicitParameters.map { it.type } + declaration.returnType)
-                                        .uniqueTypeName()
-                                        .asString()
-                                indexer.index(
-                                    listOf(
-                                        DeclarationGraph.GIVEN_PATH,
-                                        typePath
-                                    ),
-                                    declaration
-                                )
-                            }
-                        declaration.hasAnnotation(InjektFqNames.GivenMapEntries) ->
-                            runnables += {
-                                indexer.index(
-                                    listOf(
-                                        DeclarationGraph.MAP_ENTRIES_PATH,
-                                        declaration.returnType.uniqueTypeName().asString()
-                                    ),
-                                    declaration
-                                )
-                            }
-                        declaration.hasAnnotation(InjektFqNames.GivenSetElements) ->
-                            runnables += {
-                                indexer.index(
-                                    listOf(
-                                        DeclarationGraph.SET_ELEMENTS_PATH,
-                                        declaration.returnType.uniqueTypeName().asString()
-                                    ),
-                                    declaration
-                                )
-                            }
-                    }
-                }
-                return super.visitFunction(declaration)
-            }
-
-            override fun visitClass(declaration: IrClass): IrStatement {
-                when {
-                    declaration.hasAnnotation(InjektFqNames.Given) ||
-                            declaration.hasAnnotatedAnnotations(InjektFqNames.Effect) ->
-                        runnables += {
-                            val readerConstructor =
-                                declaration.getReaderConstructor(injektContext)!!
-                            val explicitParameters = readerConstructor.valueParameters
-                                .filter { it != readerConstructor.getContextValueParameter() }
+                        declaration.hasAnnotation(InjektFqNames.Given) -> {
+                            val explicitParameters = declaration.valueParameters
+                                .filter { it != declaration.getContextValueParameter() }
                             val typePath =
-                                if (explicitParameters.isEmpty()) readerConstructor.returnType.uniqueTypeName()
+                                if (explicitParameters.isEmpty()) declaration.returnType.uniqueTypeName()
                                     .asString()
                                 else injektContext.tmpFunction(explicitParameters.size)
                                     .owner
-                                    .typeWith(explicitParameters.map { it.type } + readerConstructor.returnType)
+                                    .typeWith(explicitParameters.map { it.type } + declaration.returnType)
                                     .uniqueTypeName()
                                     .asString()
                             indexer.index(
@@ -136,6 +79,53 @@ class IndexingTransformer(
                                 declaration
                             )
                         }
+                        declaration.hasAnnotation(InjektFqNames.GivenMapEntries) -> {
+                            indexer.index(
+                                listOf(
+                                    DeclarationGraph.MAP_ENTRIES_PATH,
+                                    declaration.returnType.uniqueTypeName().asString()
+                                ),
+                                declaration
+                            )
+                        }
+                        declaration.hasAnnotation(InjektFqNames.GivenSetElements) -> {
+                            indexer.index(
+                                listOf(
+                                    DeclarationGraph.SET_ELEMENTS_PATH,
+                                    declaration.returnType.uniqueTypeName().asString()
+                                ),
+                                declaration
+                            )
+                        }
+                    }
+                }
+                return super.visitFunction(declaration)
+            }
+
+            override fun visitClass(declaration: IrClass): IrStatement {
+                when {
+                    declaration.hasAnnotation(InjektFqNames.Given) ||
+                            declaration.hasAnnotatedAnnotations(InjektFqNames.Effect) -> {
+                        val readerConstructor =
+                            declaration.getReaderConstructor(injektContext)!!
+                        val explicitParameters = readerConstructor.valueParameters
+                            .filter { it != readerConstructor.getContextValueParameter() }
+                        val typePath =
+                            if (explicitParameters.isEmpty()) readerConstructor.returnType.uniqueTypeName()
+                                .asString()
+                            else injektContext.tmpFunction(explicitParameters.size)
+                                .owner
+                                .typeWith(explicitParameters.map { it.type } + readerConstructor.returnType)
+                                .uniqueTypeName()
+                                .asString()
+                        indexer.index(
+                            listOf(
+                                DeclarationGraph.GIVEN_PATH,
+                                typePath
+                            ),
+                            declaration
+                        )
+                    }
                 }
                 return super.visitClass(declaration)
             }
@@ -144,21 +134,17 @@ class IndexingTransformer(
                 if (declaration.hasAnnotation(InjektFqNames.Given) &&
                     !declaration.isInModule()
                 ) {
-                    runnables += {
-                        indexer.index(
-                            listOf(
-                                DeclarationGraph.GIVEN_PATH,
-                                declaration.getter!!.returnType.uniqueTypeName().asString()
-                            ),
-                            declaration
-                        )
-                    }
+                    indexer.index(
+                        listOf(
+                            DeclarationGraph.GIVEN_PATH,
+                            declaration.getter!!.returnType.uniqueTypeName().asString()
+                        ),
+                        declaration
+                    )
                 }
                 return super.visitProperty(declaration)
             }
         })
-
-        runnables.forEach { it() }
     }
 
     private fun IrDeclaration.isInModule(): Boolean {

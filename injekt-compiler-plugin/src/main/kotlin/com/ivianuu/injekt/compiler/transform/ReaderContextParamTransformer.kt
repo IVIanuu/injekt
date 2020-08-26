@@ -33,11 +33,11 @@ import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpKFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
 import com.ivianuu.injekt.compiler.tmpSuspendKFunction
+import com.ivianuu.injekt.compiler.transformFiles
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
-import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -45,7 +45,6 @@ import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
@@ -57,12 +56,12 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrOverridableDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
@@ -154,14 +153,6 @@ class ReaderContextParamTransformer(
     private val transformedVariables = mutableMapOf<IrVariable, IrVariable>()
     private val transformedWhens = mutableMapOf<IrWhen, IrWhen>()
 
-    private val newContexts = mutableListOf<IrClass>()
-    private val newSignatureIndexBuilders = mutableListOf<NewIndexBuilder>()
-
-    private data class NewIndexBuilder(
-        val owner: IrDeclarationWithName,
-        val classBuilder: IrClass.() -> Unit
-    )
-
     fun getTransformedFunction(function: IrFunction) =
         transformFunctionIfNeeded(function)
 
@@ -193,27 +184,8 @@ class ReaderContextParamTransformer(
     }
 
     override fun lower() {
-        injektContext.module.transformChildrenVoid(transformer)
-
+        injektContext.module.transformFiles(transformer)
         injektContext.module.rewriteTransformedReferences()
-
-        newSignatureIndexBuilders.forEach { newIndexBuilder ->
-            indexer.index(
-                originatingDeclaration = newIndexBuilder.owner,
-                path = listOf(
-                    DeclarationGraph.SIGNATURE_PATH,
-                    newIndexBuilder.owner.uniqueKey()
-                ),
-                classBuilder = newIndexBuilder.classBuilder
-            )
-        }
-
-        newContexts.forEach { newContext ->
-            val parent = newContext.parent as IrDeclarationContainer
-            if (newContext !in parent.declarations) {
-                parent.addChild(newContext)
-            }
-        }
     }
 
     private fun transformClassIfNeeded(clazz: IrClass): IrClass {
@@ -228,7 +200,8 @@ class ReaderContextParamTransformer(
         transformedClasses += clazz
 
         if (clazz.isExternalDeclaration()) {
-            val existingSignature = getExternalReaderSignature(clazz)!!
+            val existingSignature = getExternalReaderSignature(clazz)
+                ?: error("Lol ${clazz.dump()}")
             readerConstructor.copySignatureFrom(existingSignature)
             return clazz
         }
@@ -248,7 +221,13 @@ class ReaderContextParamTransformer(
             }
         )
 
-        newSignatureIndexBuilders += NewIndexBuilder(clazz) {
+        indexer.index(
+            originatingDeclaration = clazz,
+            path = listOf(
+                DeclarationGraph.SIGNATURE_PATH,
+                clazz.uniqueKey()
+            )
+        ) {
             recordLookup(this, clazz)
             addReaderSignature(clazz, readerConstructor, null)
         }
@@ -305,7 +284,10 @@ class ReaderContextParamTransformer(
 
         if (function.isExternalDeclaration()) {
             val existingSignature = getExternalReaderSignature(function)
-                ?: error("Wtf ${function.dump()}")
+            if (existingSignature == null) {
+
+                error("Wtf ${function.dump()}")
+            }
             val transformedFunction = function.copyAsReader()
             transformedFunctions[function] = transformedFunction
             transformedFunction.copySignatureFrom(existingSignature)
@@ -330,7 +312,13 @@ class ReaderContextParamTransformer(
             )
         }
 
-        newSignatureIndexBuilders += NewIndexBuilder(transformedFunction) {
+        indexer.index(
+            originatingDeclaration = transformedFunction,
+            path = listOf(
+                DeclarationGraph.SIGNATURE_PATH,
+                transformedFunction.uniqueKey()
+            )
+        ) {
             recordLookup(this, transformedFunction)
             addReaderSignature(transformedFunction, transformedFunction, null)
         }
@@ -349,7 +337,6 @@ class ReaderContextParamTransformer(
 
         val context =
             createContext(owner, ownerFunction.descriptor.fqNameSafe, parentFunction, injektContext)
-        newContexts += context
         val contextParameter = ownerFunction.addContextParameter(context)
         onContextParameterCreated(contextParameter)
     }
@@ -483,7 +470,6 @@ class ReaderContextParamTransformer(
             null,
             injektContext
         )
-        newContexts += context
 
         val oldTypeArguments = oldType.typeArguments
 
@@ -688,7 +674,7 @@ class ReaderContextParamTransformer(
         }
     }
 
-    private fun IrElement.rewriteTransformedReferences() {
+    private fun IrModuleFragment.rewriteTransformedReferences() {
         val fieldMap = transformedFields
             .mapKeys { it.key.symbol }
         val valueParameterMap = transformedValueParameters
@@ -696,7 +682,7 @@ class ReaderContextParamTransformer(
         val variableMap = transformedVariables
             .mapKeys { it.key.symbol }
 
-        transformChildrenVoid(object : IrElementTransformerVoid() {
+        transformFiles(object : IrElementTransformerVoid() {
             override fun visitFunctionExpression(expression: IrFunctionExpression): IrExpression {
                 val result = super.visitFunctionExpression(expression) as IrFunctionExpression
                 val transformed = transformFunctionIfNeeded(result.function)

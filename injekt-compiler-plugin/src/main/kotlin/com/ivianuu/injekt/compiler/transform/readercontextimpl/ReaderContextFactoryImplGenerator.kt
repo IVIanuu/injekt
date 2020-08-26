@@ -91,7 +91,6 @@ class ReaderContextFactoryImplGenerator(
             parent = irParent
             createImplicitParameterDeclarationWithWrappedDescriptor()
             superTypes += factoryType
-            recordLookup(this, factoryInterface)
             recordLookup(initTrigger, factoryInterface)
         }
 

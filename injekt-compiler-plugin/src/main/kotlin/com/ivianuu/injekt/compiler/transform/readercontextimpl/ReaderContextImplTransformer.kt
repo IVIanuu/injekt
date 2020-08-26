@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform.readercontextimpl
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.addChildAndUpdateMetadata
 import com.ivianuu.injekt.compiler.addFile
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.recordLookup
@@ -24,7 +25,6 @@ import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.ReaderContextParamTransformer
-import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.name.FqName
@@ -61,7 +61,7 @@ class ReaderContextImplTransformer(
                     parentExpressions = null
                 ).generateFactory()
 
-                file.addChild(factoryImpl)
+                file.addChildAndUpdateMetadata(factoryImpl)
 
                 recordLookup(initTrigger, factoryImpl)
             }

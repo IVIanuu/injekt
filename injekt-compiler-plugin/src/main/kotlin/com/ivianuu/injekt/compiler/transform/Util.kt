@@ -18,6 +18,8 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.UniqueNameProvider
+import com.ivianuu.injekt.compiler.addChildAndUpdateMetadata
+import com.ivianuu.injekt.compiler.addFile
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
@@ -47,7 +49,6 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFunctionOrKFunction
@@ -71,12 +72,16 @@ fun createContext(
         .asNameId()
     visibility = Visibilities.INTERNAL
 }.apply {
-    parent = owner.file
+    injektContext.module.addFile(
+        injektContext,
+        owner.getPackageFragment()!!.fqName
+            .child(name)
+    ).also { it.addChildAndUpdateMetadata(this) }
     createImplicitParameterDeclarationWithWrappedDescriptor()
     addMetadataIfNotLocal()
     if (owner is IrTypeParametersContainer) copyTypeParametersFrom(owner)
     parentTypeParametersContainer?.let { copyTypeParametersFrom(it) }
-    recordLookup(this, owner)
+    recordLookup(parent, owner)
 
     annotations += DeclarationIrBuilder(injektContext, symbol)
         .irCall(injektContext.injektSymbols.contextMarker.constructors.single())
@@ -101,11 +106,14 @@ fun createContextFactory(
     kind = ClassKind.INTERFACE
     visibility = Visibilities.INTERNAL
 }.apply clazz@{
-    parent = file
+    injektContext.module.addFile(
+        injektContext,
+        file.fqName
+            .child(name)
+    ).also { it.addChildAndUpdateMetadata(this) }
     createImplicitParameterDeclarationWithWrappedDescriptor()
     addMetadataIfNotLocal()
-
-    recordLookup(this, contextType.classOrNull!!.owner)
+    recordLookup(parent, contextType.classOrNull!!.owner)
 
     if (typeParametersContainer != null)
         copyTypeParametersFrom(typeParametersContainer)

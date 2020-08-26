@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.addChildAndUpdateMetadata
 import com.ivianuu.injekt.compiler.addFile
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
@@ -27,7 +28,6 @@ import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.compiler.uniqueKey
-import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -189,8 +189,7 @@ class Indexer(
                 .child(name)
         ).apply file@{
             recordLookup(this, originatingDeclaration)
-
-            addChild(
+            addChildAndUpdateMetadata(
                 buildClass {
                     this.name = name
                     kind = ClassKind.INTERFACE
@@ -243,18 +242,19 @@ class Indexer(
             declaration.descriptor.fqNameSafe
                 .parent().child(declaration.name.asString().asNameId())
         ).asString() + "${declaration.uniqueKey().hashCode()}Index").removeIllegalChars().asNameId()
+
         module.addFile(
             injektContext,
             packageFqName.child(name)
-        ).apply {
+        ).apply file@{
             recordLookup(this, declaration)
-
-            addChild(
+            addChildAndUpdateMetadata(
                 buildClass {
                     this.name = name
                     kind = ClassKind.INTERFACE
                     visibility = Visibilities.INTERNAL
                 }.apply {
+                    parent = this@file
                     val index = Index(
                         finalPath,
                         declaration.descriptor.fqNameSafe,

@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.readercontextimpl.ReaderContextImplTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -35,6 +36,12 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+        println("compile files ${moduleFragment.files.joinToString("\n") { it.fileEntry.name }}")
+        try {
+            error("compile files ${moduleFragment.files.joinToString("\n") { it.fileEntry.name }}")
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         val injektContext = InjektContext(pluginContext, moduleFragment)
         var initializeInjekt = false
         var initTrigger: IrDeclarationWithName? = null
@@ -90,9 +97,9 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             ).doLower(moduleFragment)
         }
 
-        TmpMetadataPatcher(injektContext).doLower(moduleFragment)
-
         generateSymbols(pluginContext)
+
+        println(moduleFragment.dumpSrc())
     }
 
 }

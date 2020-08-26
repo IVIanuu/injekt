@@ -17,6 +17,8 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.addChildAndUpdateMetadata
+import com.ivianuu.injekt.compiler.addFile
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
@@ -28,10 +30,10 @@ import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
+import com.ivianuu.injekt.compiler.transformFiles
 import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.injekt.compiler.withAnnotations
-import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -66,204 +68,195 @@ import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransformer(injektContext) {
 
     override fun lower() {
-        val declarations = mutableListOf<IrDeclarationWithName>()
-
-        injektContext.module.transformChildrenVoid(object : IrElementTransformerVoid() {
+        injektContext.module.transformFiles(object : IrElementTransformerVoid() {
             override fun visitClass(declaration: IrClass): IrStatement {
                 if (declaration.hasAnnotatedAnnotations(InjektFqNames.Effect)) {
-                    declarations += declaration
+                    addEffectModuleForDeclaration(declaration)
                 }
                 return super.visitClass(declaration)
             }
 
             override fun visitFunction(declaration: IrFunction): IrStatement {
                 if (declaration.hasAnnotatedAnnotations(InjektFqNames.Effect)) {
-                    declarations += declaration
+                    addEffectModuleForDeclaration(declaration)
                 }
                 return super.visitFunction(declaration)
             }
         })
-
-        declarations.forEach { clazz ->
-            val effects = clazz
-                .getAnnotatedAnnotations(InjektFqNames.Effect)
-                .map { it.symbol.owner.constructedClass }
-            val effectModule = effectModule(
-                clazz,
-                "${clazz.name}Effects".asNameId(),
-                effects
-            )
-
-            clazz.file.addChild(effectModule)
-        }
     }
 
-    private fun effectModule(
-        declaration: IrDeclarationWithName,
-        name: Name,
-        effects: List<IrClass>
-    ) = buildClass {
-        this.name = name
-        kind = ClassKind.OBJECT
-        visibility = Visibilities.INTERNAL
-    }.apply clazz@{
-        parent = declaration.file
-        createImplicitParameterDeclarationWithWrappedDescriptor()
-        addMetadataIfNotLocal()
+    private fun addEffectModuleForDeclaration(declaration: IrDeclarationWithName) {
+        val effects = declaration
+            .getAnnotatedAnnotations(InjektFqNames.Effect)
+            .map { it.symbol.owner.constructedClass }
+        val effectModule = buildClass {
+            this.name = "${declaration.name}Effects".asNameId()
+            kind = ClassKind.OBJECT
+            visibility = Visibilities.INTERNAL
+        }.apply clazz@{
+            createImplicitParameterDeclarationWithWrappedDescriptor()
+            addMetadataIfNotLocal()
 
-        recordLookup(this, declaration)
-        effects.forEach { recordLookup(this, it) }
+            recordLookup(this, declaration)
+            effects.forEach { recordLookup(declaration, it) }
 
-        addConstructor {
-            returnType = defaultType
-            isPrimary = true
-            visibility = Visibilities.PUBLIC
-        }.apply {
-            body = DeclarationIrBuilder(
-                injektContext,
-                symbol
-            ).irBlockBody {
-                +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
-                +IrInstanceInitializerCallImpl(
-                    UNDEFINED_OFFSET,
-                    UNDEFINED_OFFSET,
-                    this@clazz.symbol,
-                    context.irBuiltIns.unitType
-                )
+            addConstructor {
+                returnType = defaultType
+                isPrimary = true
+                visibility = Visibilities.PUBLIC
+            }.apply {
+                body = DeclarationIrBuilder(
+                    injektContext,
+                    symbol
+                ).irBlockBody {
+                    +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
+                    +IrInstanceInitializerCallImpl(
+                        UNDEFINED_OFFSET,
+                        UNDEFINED_OFFSET,
+                        this@clazz.symbol,
+                        context.irBuiltIns.unitType
+                    )
+                }
             }
-        }
 
-        val givenType = when (declaration) {
-            is IrClass -> declaration.defaultType
-            is IrFunction -> {
-                if (declaration.hasAnnotation(InjektFqNames.Given)) {
-                    declaration.returnType
-                } else {
-                    val parametersSize = declaration.valueParameters.size
-                    (if (declaration.isSuspend) injektContext.tmpSuspendFunction(parametersSize)
-                    else injektContext.tmpFunction(parametersSize))
-                        .owner
-                        .typeWith(
-                            declaration.valueParameters
-                                .take(parametersSize)
-                                .map { it.type } + declaration.returnType
-                        )
-                        .let {
-                            if (declaration.hasAnnotation(FqName("androidx.compose.runtime.Composable"))) {
+            val givenType = when (declaration) {
+                is IrClass -> declaration.defaultType
+                is IrFunction -> {
+                    if (declaration.hasAnnotation(InjektFqNames.Given)) {
+                        declaration.returnType
+                    } else {
+                        val parametersSize = declaration.valueParameters.size
+                        (if (declaration.isSuspend) injektContext.tmpSuspendFunction(parametersSize)
+                        else injektContext.tmpFunction(parametersSize))
+                            .owner
+                            .typeWith(
+                                declaration.valueParameters
+                                    .take(parametersSize)
+                                    .map { it.type } + declaration.returnType
+                            )
+                            .let {
+                                if (declaration.hasAnnotation(FqName("androidx.compose.runtime.Composable"))) {
+                                    it.withAnnotations(
+                                        listOf(
+                                            DeclarationIrBuilder(
+                                                injektContext,
+                                                declaration.symbol
+                                            ).irCall(
+                                                injektContext.referenceConstructors(FqName("androidx.compose.runtime.Composable"))
+                                                    .single()
+                                            )
+                                        )
+                                    )
+                                } else it
+                            }
+                            .let {
                                 it.withAnnotations(
                                     listOf(
                                         DeclarationIrBuilder(
                                             injektContext,
                                             declaration.symbol
-                                        ).irCall(
-                                            injektContext.referenceConstructors(FqName("androidx.compose.runtime.Composable"))
-                                                .single()
-                                        )
+                                        ).run {
+                                            irCall(injektContext.injektSymbols.qualifier.constructors.single()).apply {
+                                                putValueArgument(
+                                                    0,
+                                                    irString(declaration.uniqueKey())
+                                                )
+                                            }
+                                        }
                                     )
                                 )
-                            } else it
-                        }
-                        .let {
-                            it.withAnnotations(
-                                listOf(
-                                    DeclarationIrBuilder(
-                                        injektContext,
-                                        declaration.symbol
-                                    ).run {
-                                        irCall(injektContext.injektSymbols.qualifier.constructors.single()).apply {
-                                            putValueArgument(
-                                                0,
-                                                irString(declaration.uniqueKey())
-                                            )
-                                        }
-                                    }
-                                )
-                            )
-                        }
-                }
-            }
-            is IrProperty -> declaration.getter!!.returnType
-            is IrField -> declaration.type
-            else -> error("Unexpected given declaration ${declaration.dump()}")
-        }
-
-        if (declaration is IrFunction && !declaration.hasAnnotation(InjektFqNames.Given)) {
-            addFunction("function", givenType).apply function@{
-                addMetadataIfNotLocal()
-
-                dispatchReceiverParameter = thisReceiver!!.copyTo(this)
-
-                DeclarationIrBuilder(injektContext, symbol).run {
-                    annotations += irCall(injektContext.injektSymbols.given.constructors.single())
-                }
-
-                body = DeclarationIrBuilder(injektContext, symbol).run {
-                    irExprBody(
-                        irLambda(givenType) {
-                            irCall(declaration.symbol).apply {
-                                if (declaration.dispatchReceiverParameter != null) {
-                                    dispatchReceiver =
-                                        irGetObject(declaration.dispatchReceiverParameter!!.type.classOrNull!!)
-                                }
-                                valueParameters.forEachIndexed { index, param ->
-                                    putValueArgument(index, irGet(param))
-                                }
                             }
-                        }
-                    )
-                }
-            }
-        }
-
-        effects
-            .map { it.companionObject() as IrClass }
-            .flatMap {
-                it.declarations
-                    .filter {
-                        it.hasAnnotation(InjektFqNames.Given) ||
-                                it.hasAnnotation(InjektFqNames.GivenMapEntries) ||
-                                it.hasAnnotation(InjektFqNames.GivenSetElements)
                     }
-                    .filterIsInstance<IrFunction>()
+                }
+                is IrProperty -> declaration.getter!!.returnType
+                is IrField -> declaration.type
+                else -> error("Unexpected given declaration ${declaration.dump()}")
             }
-            .map { effectFunction ->
-                addFunction(
-                    getJoinedName(
-                        effectFunction.getPackageFragment()!!.fqName,
-                        effectFunction.descriptor.fqNameSafe
-                    ).asString(),
-                    effectFunction.returnType
-                        .substitute(
-                            mapOf(
-                                effectFunction.typeParameters
-                                    .single().symbol to givenType
-                            )
-                        ),
-                    isSuspend = effectFunction.isSuspend
-                ).apply function@{
+
+            if (declaration is IrFunction && !declaration.hasAnnotation(InjektFqNames.Given)) {
+                addFunction("function", givenType).apply function@{
+                    addMetadataIfNotLocal()
+
                     dispatchReceiverParameter = thisReceiver!!.copyTo(this)
 
-                    annotations += effectFunction.annotations
-                        .map { it.deepCopyWithSymbols() }
+                    DeclarationIrBuilder(injektContext, symbol).run {
+                        annotations += irCall(injektContext.injektSymbols.given.constructors.single())
+                    }
 
                     body = DeclarationIrBuilder(injektContext, symbol).run {
                         irExprBody(
-                            irCall(effectFunction.symbol).apply {
-                                dispatchReceiver =
-                                    irGetObject(effectFunction.dispatchReceiverParameter!!.type.classOrNull!!)
-                                putTypeArgument(0, givenType)
+                            irLambda(givenType) {
+                                irCall(declaration.symbol).apply {
+                                    if (declaration.dispatchReceiverParameter != null) {
+                                        dispatchReceiver =
+                                            irGetObject(declaration.dispatchReceiverParameter!!.type.classOrNull!!)
+                                    }
+                                    valueParameters.forEachIndexed { index, param ->
+                                        putValueArgument(index, irGet(param))
+                                    }
+                                }
                             }
                         )
                     }
                 }
             }
+
+            effects
+                .map { it.companionObject() as IrClass }
+                .flatMap {
+                    it.declarations
+                        .filter {
+                            it.hasAnnotation(InjektFqNames.Given) ||
+                                    it.hasAnnotation(InjektFqNames.GivenMapEntries) ||
+                                    it.hasAnnotation(InjektFqNames.GivenSetElements)
+                        }
+                        .filterIsInstance<IrFunction>()
+                }
+                .map { effectFunction ->
+                    addFunction(
+                        getJoinedName(
+                            effectFunction.getPackageFragment()!!.fqName,
+                            effectFunction.descriptor.fqNameSafe
+                        ).asString(),
+                        effectFunction.returnType
+                            .substitute(
+                                mapOf(
+                                    effectFunction.typeParameters
+                                        .single().symbol to givenType
+                                )
+                            ),
+                        isSuspend = effectFunction.isSuspend
+                    ).apply function@{
+                        dispatchReceiverParameter = thisReceiver!!.copyTo(this)
+
+                        annotations += effectFunction.annotations
+                            .map { it.deepCopyWithSymbols() }
+
+                        body = DeclarationIrBuilder(injektContext, symbol).run {
+                            irExprBody(
+                                irCall(effectFunction.symbol).apply {
+                                    dispatchReceiver =
+                                        irGetObject(effectFunction.dispatchReceiverParameter!!.type.classOrNull!!)
+                                    putTypeArgument(0, givenType)
+                                }
+                            )
+                        }
+                    }
+                }
+        }
+
+        injektContext.module.addFile(
+            injektContext,
+            declaration.file.fqName
+                .child(effectModule.name)
+        ).also {
+            it.addChildAndUpdateMetadata(effectModule)
+        }
     }
 }
