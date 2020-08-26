@@ -4,10 +4,11 @@ import com.ivianuu.injekt.test.compilation
 import com.ivianuu.injekt.test.source
 import com.tschuchort.compiletesting.MainComponentRegistrar
 import com.tschuchort.compiletesting.SourceFile
-import io.github.classgraph.ClassGraph
 import org.jetbrains.kotlin.base.kapt3.KaptOptions
 import org.jetbrains.kotlin.build.DEFAULT_KOTLIN_SOURCE_FILES_EXTENSIONS
 import org.jetbrains.kotlin.cli.common.ExitCode
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSourceLocation
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.config.IncrementalCompilation
 import org.jetbrains.kotlin.incremental.ChangedFiles
@@ -16,6 +17,7 @@ import org.jetbrains.kotlin.incremental.IncrementalJvmCompilerRunner
 import org.jetbrains.kotlin.incremental.IncrementalModuleEntry
 import org.jetbrains.kotlin.incremental.IncrementalModuleInfo
 import org.jetbrains.kotlin.incremental.multiproject.ModulesApiHistoryJvm
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -73,7 +75,9 @@ class IncrementalTest {
 
         val runReaderSource = source(
             """
-                val result = context.runReader { caller() }
+                fun invoke() {
+                    val result = context.runReader { caller() }
+                }
             """,
             name = "RunReader.kt",
             initializeInjekt = false
@@ -102,12 +106,18 @@ class IncrementalTest {
             otherModules = emptyList(),
             providedChangedFiles = null
         ).run {
+            assertFalse(hasErrors)
             assertTrue("Caller.kt is marked dirty" in messageOutput)
             assertTrue("ChangingCallee.kt is marked dirty" in messageOutput)
             assertTrue("NotChangingCallee.kt is marked dirty" in messageOutput)
             assertTrue("Context.kt is marked dirty" in messageOutput)
             assertTrue("RunReader.kt is marked dirty" in messageOutput)
             assertTrue("Unrelated.kt is marked dirty" in messageOutput)
+
+            classLoader.loadClass("com.ivianuu.injekt.integrationtests.RunReaderKt")
+                .declaredMethods
+                .single { it.name == "invoke" }
+                .invoke(null)
         }
 
         changingCalleeSource = source(
@@ -135,12 +145,17 @@ class IncrementalTest {
             otherModules = emptyList(),
             providedChangedFiles = null
         ).run {
+            assertFalse(hasErrors)
             assertTrue("Caller.kt is marked dirty" !in messageOutput)
             assertTrue("ChangingCallee.kt is marked dirty" !in messageOutput)
             assertTrue("NotChangingCallee.kt is marked dirty" !in messageOutput)
             assertTrue("Context.kt is marked dirty" !in messageOutput)
             assertTrue("RunReader.kt is marked dirty" !in messageOutput)
             assertTrue("Unrelated.kt is marked dirty" !in messageOutput)
+            classLoader.loadClass("com.ivianuu.injekt.integrationtests.RunReaderKt")
+                .declaredMethods
+                .single { it.name == "invoke" }
+                .invoke(null)
         }
 
         changingCalleeSource = source(
@@ -169,12 +184,17 @@ class IncrementalTest {
             otherModules = emptyList(),
             providedChangedFiles = null
         ).run {
+            assertFalse(hasErrors)
             assertTrue("Caller.kt is marked dirty" in messageOutput)
             assertTrue("ChangingCallee.kt is marked dirty" in messageOutput)
             assertTrue("NotChangingCallee.kt is marked dirty" !in messageOutput)
             assertTrue("Context.kt is marked dirty" in messageOutput)
             assertTrue("RunReader.kt is marked dirty" in messageOutput)
             assertTrue("Unrelated.kt is marked dirty" !in messageOutput)
+            classLoader.loadClass("com.ivianuu.injekt.integrationtests.RunReaderKt")
+                .declaredMethods
+                .single { it.name == "invoke" }
+                .invoke(null)
         }
     }
 
@@ -231,7 +251,9 @@ class IncrementalTest {
 
         val runReaderSource = source(
             """
-                val result = context.runReader { caller() }
+                fun invoke() {
+                    val result = context.runReader { caller() }
+                }
             """,
             name = "RunReader.kt",
             initializeInjekt = false
@@ -257,6 +279,7 @@ class IncrementalTest {
             otherModules = emptyList(),
             providedChangedFiles = null
         ).apply {
+            assertFalse(hasErrors)
             assertTrue("ChangingCallee.kt is marked dirty" in messageOutput)
             assertTrue("NotChangingCallee.kt is marked dirty" in messageOutput)
             assertTrue("Unrelated.kt is marked dirty" in messageOutput)
@@ -271,17 +294,18 @@ class IncrementalTest {
                 runReaderSource
             ),
             otherModules = listOf(
-                Module(
-                    "modulea",
-                    workingDirA,
-                    resultA1.classLoader
-                )
+                Module("modulea", workingDirA)
             ),
             providedChangedFiles = null
         ).apply {
+            assertFalse(hasErrors)
             assertTrue("Caller.kt is marked dirty" in messageOutput)
             assertTrue("Context.kt is marked dirty" in messageOutput)
             assertTrue("RunReader.kt is marked dirty" in messageOutput)
+            classLoader.loadClass("com.ivianuu.injekt.integrationtests.RunReaderKt")
+                .declaredMethods
+                .single { it.name == "invoke" }
+                .invoke(null)
         }
 
         changingCalleeSource = source(
@@ -306,6 +330,7 @@ class IncrementalTest {
             otherModules = emptyList(),
             providedChangedFiles = null
         ).apply {
+            assertFalse(hasErrors)
             assertTrue("ChangingCallee.kt is marked dirty" !in messageOutput)
             assertTrue("NotChangingCallee.kt is marked dirty" !in messageOutput)
             assertTrue("Unrelated.kt is marked dirty" !in messageOutput)
@@ -320,17 +345,18 @@ class IncrementalTest {
                 runReaderSource
             ),
             otherModules = listOf(
-                Module(
-                    "modulea",
-                    workingDirA,
-                    resultA2.classLoader
-                )
+                Module("modulea", workingDirA)
             ),
             providedChangedFiles = null
         ).apply {
+            assertFalse(hasErrors)
             assertTrue("Caller.kt is marked dirty" !in messageOutput)
             assertTrue("Context.kt is marked dirty" !in messageOutput)
             assertTrue("RunReader.kt is marked dirty" !in messageOutput)
+            classLoader.loadClass("com.ivianuu.injekt.integrationtests.RunReaderKt")
+                .declaredMethods
+                .single { it.name == "invoke" }
+                .invoke(null)
         }
 
         changingCalleeSource = source(
@@ -356,10 +382,12 @@ class IncrementalTest {
             otherModules = emptyList(),
             providedChangedFiles = null
         ).apply {
+            assertFalse(hasErrors)
             assertTrue("ChangingCallee.kt is marked dirty" in messageOutput)
             assertTrue("NotChangingCallee.kt is marked dirty" !in messageOutput)
             assertTrue("Unrelated.kt is marked dirty" !in messageOutput)
         }
+        val lol = ""
         val resultB3 = compileIncrementally(
             moduleName = "moduleb",
             projectRoot = projectRoot,
@@ -370,33 +398,34 @@ class IncrementalTest {
                 runReaderSource
             ),
             otherModules = listOf(
-                Module(
-                    "modulea",
-                    workingDirA,
-                    resultA3.classLoader
-                )
+                Module("modulea", workingDirA)
             ),
             providedChangedFiles = ChangedFiles.Known(
                 modified = listOf(resultA3.fileBySourceFile.getValue(changingCalleeSource)),
                 removed = emptyList()
             )
         ).apply {
+            assertFalse(hasErrors)
             assertTrue("Caller.kt is marked dirty" in messageOutput)
             assertTrue("Context.kt is marked dirty" in messageOutput)
             assertTrue("RunReader.kt is marked dirty" in messageOutput)
+            classLoader.loadClass("com.ivianuu.injekt.integrationtests.RunReaderKt")
+                .declaredMethods
+                .single { it.name == "invoke" }
+                .invoke(null)
         }
     }
 
     private class Result(
         val messageOutput: String,
         val classLoader: ClassLoader,
-        val fileBySourceFile: Map<SourceFile, File>
+        val fileBySourceFile: Map<SourceFile, File>,
+        val hasErrors: Boolean
     )
 
     private class Module(
         val name: String,
-        val workingDir: File,
-        val classLoader: ClassLoader?
+        val workingDir: File
     )
 
     private fun compileIncrementally(
@@ -409,7 +438,7 @@ class IncrementalTest {
     ): Result {
         println("compile start $moduleName")
         println()
-        val srcDir = workingDir.resolve("src")
+        val srcDir = workingDir.resolve("sources")
             .also { it.mkdirs() }
         val fileBySourceFile = sources.associateWith { it.writeIfNeeded(srcDir) }
         val messages = mutableListOf<String>()
@@ -417,13 +446,9 @@ class IncrementalTest {
         val kotlinCompileArgs = compilation {
             this.workingDir = workingDir
             this.moduleName = moduleName
-            val classGraph = ClassGraph()
             otherModules.forEach {
-                if (it.classLoader != null) classGraph.addClassLoader(it.classLoader)
+                this.classpaths += it.workingDir.resolve("classes")
             }
-            val classpaths = classGraph.classpathFiles
-            val modules = classGraph.modules.mapNotNull { it.locationFile }
-            this.classpaths += (classpaths + modules).distinctBy(File::getAbsolutePath)
         }
 
         val args = kotlinCompileArgs.commonK2JVMArgs().apply {
@@ -449,7 +474,7 @@ class IncrementalTest {
 
         val moduleEntries = otherModules.associateWith {
             IncrementalModuleEntry(
-                it.workingDir.path,
+                ":${it.name}",
                 it.name,
                 it.workingDir.resolve("build").also { it.mkdirs() },
                 it.workingDir.resolve("caches").resolve("build-history.bin")
@@ -459,10 +484,8 @@ class IncrementalTest {
         val moduleApiHistory = ModulesApiHistoryJvm(
             IncrementalModuleInfo(
                 projectRoot,
-                moduleEntries.mapKeys { it.key.workingDir.resolve("classes") }
-                    .also { println(it) },
-                moduleEntries.mapKeys { it.key.name }.mapValues { setOf(it.value) }
-                    .also { println(it) },
+                moduleEntries.mapKeys { it.key.workingDir.resolve("classes") },
+                moduleEntries.mapKeys { it.key.name }.mapValues { setOf(it.value) },
                 emptyMap(),
                 emptyMap()
             )
@@ -498,7 +521,27 @@ class IncrementalTest {
         )
 
         IncrementalCompilation.setIsEnabledForJvm(true)
-        compiler.compile(sourceFiles, args, MessageCollector.NONE, providedChangedFiles)
+        var hasErrors = false
+        compiler.compile(
+            sourceFiles,
+            args,
+            object : MessageCollector {
+                override fun report(
+                    severity: CompilerMessageSeverity,
+                    message: String,
+                    location: CompilerMessageSourceLocation?
+                ) {
+                    hasErrors = hasErrors || severity.isError
+                    println("$severity $message $location")
+                }
+
+                override fun hasErrors(): Boolean = hasErrors
+
+                override fun clear() {
+                }
+            },
+            providedChangedFiles
+        )
 
         val classLoader = URLClassLoader(
             arrayOf(
@@ -513,7 +556,8 @@ class IncrementalTest {
         return Result(
             messages.joinToString("\n"),
             classLoader,
-            fileBySourceFile
+            fileBySourceFile,
+            hasErrors
         )
     }
 
