@@ -20,9 +20,18 @@ import org.jetbrains.kotlin.incremental.multiproject.ModulesApiHistoryJvm
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.BufferedInputStream
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.io.InputStream
+import java.io.OutputStream
 import java.net.URLClassLoader
 import java.nio.file.Files
+import java.util.jar.Attributes
+import java.util.jar.JarEntry
+import java.util.jar.JarOutputStream
+import java.util.jar.Manifest
 
 class IncrementalTest {
 
@@ -400,9 +409,10 @@ class IncrementalTest {
             otherModules = listOf(
                 Module("modulea", workingDirA)
             ),
-            providedChangedFiles = ChangedFiles.Known(
-                modified = listOf(resultA3.fileBySourceFile.getValue(changingCalleeSource)),
-                removed = emptyList()
+            providedChangedFiles = listOf(
+                callerSource,
+                contextSource,
+                runReaderSource
             )
         ).apply {
             assertFalse(hasErrors)
@@ -419,7 +429,6 @@ class IncrementalTest {
     private class Result(
         val messageOutput: String,
         val classLoader: ClassLoader,
-        val fileBySourceFile: Map<SourceFile, File>,
         val hasErrors: Boolean
     )
 
@@ -434,7 +443,7 @@ class IncrementalTest {
         projectRoot: File,
         sources: List<SourceFile>,
         otherModules: List<Module>,
-        providedChangedFiles: ChangedFiles?
+        providedChangedFiles: List<SourceFile>?
     ): Result {
         println("compile start $moduleName")
         println()
@@ -487,7 +496,7 @@ class IncrementalTest {
                 moduleEntries.mapKeys { it.key.workingDir.resolve("classes") },
                 moduleEntries.mapKeys { it.key.name }.mapValues { setOf(it.value) },
                 emptyMap(),
-                emptyMap()
+                moduleEntries.mapKeys { it.key.workingDir.resolve("lib.jar") }
             )
         )
 
@@ -540,7 +549,12 @@ class IncrementalTest {
                 override fun clear() {
                 }
             },
-            providedChangedFiles
+            providedChangedFiles?.let {
+                ChangedFiles.Known(
+                    modified = it.map { fileBySourceFile[it]!! },
+                    removed = emptyList()
+                )
+            }
         )
 
         val classLoader = URLClassLoader(
@@ -550,15 +564,68 @@ class IncrementalTest {
             ),
             this::class.java.classLoader
         )
+
+        createJar(
+            workingDir.resolve("lib.jar")
+                .absolutePath,
+            workingDir.resolve("classes").absolutePath
+        )
+
         println()
         println("compile end $moduleName")
         println()
         return Result(
             messages.joinToString("\n"),
             classLoader,
-            fileBySourceFile,
             hasErrors
         )
     }
 
+}
+
+private fun copy(inputStream: InputStream, outputStream: OutputStream) {
+    val BUFFER_SIZE = 1024
+    val buffer = ByteArray(BUFFER_SIZE)
+    val bufferedInputStream = BufferedInputStream(inputStream)
+    var len: Int
+    while (true) {
+        len = bufferedInputStream.read(buffer)
+        if (len == -1) {
+            break
+        }
+        outputStream.write(buffer, 0, len)
+    }
+    bufferedInputStream.close()
+}
+
+private fun copyFilesRecursively(dir: File, jarOutputStream: JarOutputStream, prefLen: Int) {
+    for (file in dir.listFiles()!!) {
+        if (file.isDirectory()) {
+            copyFilesRecursively(file, jarOutputStream, prefLen)
+        } else {
+            val fileName = file.getCanonicalPath().substring(prefLen).replace('\\', '/')
+            val jarEntry = JarEntry(fileName)
+            jarEntry.setTime(file.lastModified())
+            jarOutputStream.putNextEntry(jarEntry)
+            val fileInputStream = FileInputStream(file)
+            copy(fileInputStream, jarOutputStream)
+            jarOutputStream.closeEntry()
+        }
+    }
+}
+
+private fun createJar(jarFile: String, srcDir: String) {
+    val manifest = Manifest()
+    manifest.getMainAttributes()!!.put(Attributes.Name.MANIFEST_VERSION, "1.0")
+    File(jarFile).getParentFile()!!.mkdirs()
+    val jarOutputStream = JarOutputStream(FileOutputStream(jarFile), manifest)
+    val srcDirFile = File(srcDir).getCanonicalFile()
+    val srcDirCanonical = srcDirFile.getCanonicalPath()
+    val prefLen = srcDirCanonical.length + if (srcDirCanonical.endsWith('/')) {
+        0
+    } else {
+        1
+    }
+    copyFilesRecursively(srcDirFile, jarOutputStream, prefLen)
+    jarOutputStream.close()
 }
