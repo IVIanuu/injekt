@@ -74,9 +74,9 @@ class Indexer(
         return externalClassIndicesByTagAndKey.getOrPut(finalPath) {
             externalIndicesByTagAndKey(path)
                 .filter { it.type == "class" }
-                .map { index ->
+                .mapNotNull { index ->
                     if (index.indexIsDeclaration) index.indexClass
-                    else injektContext.referenceClass(index.fqName)?.owner!!
+                    else injektContext.referenceClass(index.fqName)?.owner
                 }
         }
     }
@@ -137,7 +137,7 @@ class Indexer(
                         NoLookupLocation.FROM_BACKEND
                     )
                 }
-                .map { injektContext.referenceClass(it.fqNameSafe)!!.owner }
+                .mapNotNull { injektContext.referenceClass(it.fqNameSafe)?.owner }
                 .map {
                     Index(
                         path,
