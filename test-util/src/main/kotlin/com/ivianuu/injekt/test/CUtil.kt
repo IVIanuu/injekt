@@ -19,11 +19,9 @@ package com.ivianuu.injekt.test
 import com.ivianuu.injekt.compiler.InjektComponentRegistrar
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
-import io.github.classgraph.ClassGraph
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.intellij.lang.annotations.Language
-import java.io.File
 import kotlin.reflect.KClass
 
 var fileIndex = 0
@@ -89,19 +87,14 @@ fun multiCodegen(
     config: KotlinCompilation.() -> Unit = {},
     assertions: (List<KotlinCompilation.Result>) -> Unit = { it.forEach { it.assertOk() } }
 ) {
-    val prevCompilations = mutableListOf<KotlinCompilation.Result>()
+    val prevCompilations = mutableListOf<KotlinCompilation>()
     val results = sources.map { sourceFiles ->
         compile {
             this.sources = sourceFiles
-            prevCompilations.forEach {
-                val classGraph = ClassGraph()
-                    .addClassLoader(it.classLoader)
-                val classpaths = classGraph.classpathFiles
-                val modules = classGraph.modules.mapNotNull { it.locationFile }
-                this.classpaths += (classpaths + modules).distinctBy(File::getAbsolutePath)
-            }
+            this.classpaths += prevCompilations.map { it.classesDir }
             config()
-        }.also { prevCompilations += it }
+            prevCompilations += this
+        }
     }
     assertions(results)
 }
