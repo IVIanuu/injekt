@@ -55,8 +55,9 @@ class IncrementalTest {
 
         var changingCalleeSource = source(
             """
+                class Logger
                 @Reader
-                fun changingCallee() {
+                inline fun changingCallee() {
                 }
             """,
             name = "ChangingCallee.kt",
@@ -131,8 +132,9 @@ class IncrementalTest {
 
         changingCalleeSource = source(
             """
+                class Logger
                 @Reader
-                fun changingCallee() {
+                inline fun changingCallee() {
                 }
             """,
             name = "ChangingCallee.kt",
@@ -169,8 +171,9 @@ class IncrementalTest {
 
         changingCalleeSource = source(
             """
+                class Logger
                 @Reader
-                fun changingCallee() {
+                inline fun changingCallee() {
                     given<String>()
                 }
             """,
@@ -231,8 +234,9 @@ class IncrementalTest {
 
         var changingCalleeSource = source(
             """
+                class Logger
                 @Reader
-                fun changingCallee() {
+                inline fun changingCallee() {
                 }
             """,
             name = "ChangingCallee.kt",
@@ -319,8 +323,9 @@ class IncrementalTest {
 
         changingCalleeSource = source(
             """
+                class Logger
                 @Reader
-                fun changingCallee() {
+                inline fun changingCallee() {
                 }
             """,
             name = "ChangingCallee.kt",
@@ -370,8 +375,9 @@ class IncrementalTest {
 
         changingCalleeSource = source(
             """
+                class Logger
                 @Reader
-                fun changingCallee() {
+                inline fun changingCallee() {
                     given<String>()
                 }
             """,
