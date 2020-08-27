@@ -77,11 +77,17 @@ object Ast2StringTranslator {
             declaration.renderVisibility()
             declaration.renderExpectActual()
             if (declaration.kind != AstClass.Kind.INTERFACE) declaration.renderModality()
-            if (declaration.isInner) {
-                append("inner ")
+            if (declaration.isFun) {
+                append("fun ")
             }
             if (declaration.isData) {
                 append("data ")
+            }
+            if (declaration.isInner) {
+                append("inner ")
+            }
+            if (declaration.isExternal) {
+                append("external ")
             }
             when (declaration.kind) {
                 AstClass.Kind.CLASS -> append("class ")

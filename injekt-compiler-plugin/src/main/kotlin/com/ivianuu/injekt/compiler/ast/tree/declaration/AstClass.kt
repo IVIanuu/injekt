@@ -4,6 +4,7 @@ import com.ivianuu.injekt.compiler.ast.tree.AstClassId
 import com.ivianuu.injekt.compiler.ast.tree.AstExpectActual
 import com.ivianuu.injekt.compiler.ast.tree.AstModality
 import com.ivianuu.injekt.compiler.ast.tree.AstVisibility
+import com.ivianuu.injekt.compiler.ast.tree.type.AstClassifier
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
 import com.ivianuu.injekt.compiler.ast.tree.visitor.transformInplace
@@ -20,6 +21,7 @@ class AstClass(
     var isInner: Boolean = false,
     var isExternal: Boolean = false
 ) : AstDeclarationBase(),
+    AstClassifier,
     AstDeclarationWithVisibility,
     AstDeclarationWithExpectActual,
     AstDeclarationWithModality,

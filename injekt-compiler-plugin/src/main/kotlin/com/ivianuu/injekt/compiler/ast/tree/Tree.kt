@@ -9,45 +9,7 @@ class AstTypeParameter(
     var isReified: Boolean = false
 ) : AstDeclaration
 
-/*
-// todo IN OUT VARIANCE
-interface AstType : AstAnnotationContainer {
-    val classifier: AstClassifier
-    val hasQuestionMark: Boolean
-    val arguments: List<Astty>
-    val abbreviation: AstTypeAbbreviation?
-}*/
-
-interface AstType : AstAnnotationContainer
-
 val AstType.classIdOrFail: AstClassId get() = TODO()
-
-/*
-interface AstSimpleType {
-    val classifier: IrClassifierSymbol
-    val hasQuestionMark: Boolean
-    val arguments: List<IrTypeArgument>
-    val abbreviation: IrTypeAbbreviation?
-}
-
-interface AstTypeArgument
-
-interface AstStarProjection : AstTypeArgument
-
-interface AstTypeProjection : AstTypeArgument {
-    val variance: Variance
-    val type: IrType
-}
-
-interface IrTypeAbbreviation : IrAnnotationContainer {
-    val typeAlias: IrTypeAliasSymbol
-    val hasQuestionMark: Boolean
-    val arguments: List<IrTypeArgument>
-}
-
-interface AstTypeAbbreviation
-*/
-
 
 class AstCall(
     var callee: AstFunction,
@@ -55,10 +17,6 @@ class AstCall(
 ) : AstExpression
 
 class AstGetValueParameter(var valueParameter: AstValueParameter) : AstExpression()
-
-interface KClassifier
-
-
 
 val AstClass.defaultType: AstType get() = TODO()
 
