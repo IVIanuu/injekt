@@ -1,7 +1,7 @@
 package com.ivianuu.injekt.compiler.ast.psi
 
-import com.ivianuu.injekt.compiler.ast.AstFile
 import com.ivianuu.injekt.compiler.ast.string.Ast2StringTranslator
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
 import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer

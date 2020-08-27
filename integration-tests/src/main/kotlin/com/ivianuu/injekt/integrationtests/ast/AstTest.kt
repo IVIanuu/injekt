@@ -1,17 +1,16 @@
 package com.ivianuu.injekt.integrationtests.ast
 
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.ast.AstClass
-import com.ivianuu.injekt.compiler.ast.AstClassId
-import com.ivianuu.injekt.compiler.ast.AstElement
-import com.ivianuu.injekt.compiler.ast.AstFile
-import com.ivianuu.injekt.compiler.ast.AstModuleFragment
-import com.ivianuu.injekt.compiler.ast.AstTransformResult
-import com.ivianuu.injekt.compiler.ast.AstTransformer
-import com.ivianuu.injekt.compiler.ast.addChild
 import com.ivianuu.injekt.compiler.ast.extension.AstGenerationExtension
 import com.ivianuu.injekt.compiler.ast.extension.AstPluginContext
-import com.ivianuu.injekt.compiler.ast.transformSingle
+import com.ivianuu.injekt.compiler.ast.tree.AstClassId
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
+import com.ivianuu.injekt.compiler.ast.tree.declaration.addChild
+import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
+import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformerVoid
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.source
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
@@ -52,27 +51,24 @@ class AstTest {
                                     moduleFragment: AstModuleFragment,
                                     pluginContext: AstPluginContext
                                 ) {
-                                    moduleFragment.files.toList().forEach { currentFile ->
-                                        currentFile.transformSingle(
-                                            object : AstTransformer {
-                                                override fun transform(element: AstElement): AstTransformResult<AstElement> {
-                                                    if (element !is AstClass) return super.transform(
-                                                        element
-                                                    )
+                                    moduleFragment.files.toList().forEach { file ->
+                                        file.transformChildren(
+                                            object : AstTransformerVoid {
+                                                override fun visitClass(declaration: AstClass): AstTransformResult<AstDeclaration> {
                                                     moduleFragment.files += AstFile(
-                                                        packageFqName = currentFile.packageFqName,
-                                                        name = (element.classId.className.asString() + "Context.kt").asNameId()
+                                                        packageFqName = file.packageFqName,
+                                                        name = (declaration.classId.className.asString() + "Context.kt").asNameId()
                                                     ).apply {
                                                         addChild(
                                                             AstClass(
                                                                 classId = AstClassId(
-                                                                    packageName = element.classId.packageName,
-                                                                    className = (element.classId.className.asString() + "Context").asNameId()
+                                                                    packageName = declaration.classId.packageName,
+                                                                    className = (declaration.classId.className.asString() + "Context").asNameId()
                                                                 )
                                                             )
                                                         )
                                                     }
-                                                    return super.transform(element)
+                                                    return super.visitClass(declaration)
                                                 }
                                             }
                                         )

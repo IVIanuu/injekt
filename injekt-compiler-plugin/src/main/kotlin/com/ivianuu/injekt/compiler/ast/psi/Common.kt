@@ -1,10 +1,10 @@
 package com.ivianuu.injekt.compiler.ast.psi
 
-import com.ivianuu.injekt.compiler.ast.AstClass
-import com.ivianuu.injekt.compiler.ast.AstClassId
-import com.ivianuu.injekt.compiler.ast.AstModality
-import com.ivianuu.injekt.compiler.ast.AstMultiPlatformModality
-import com.ivianuu.injekt.compiler.ast.AstVisibility
+import com.ivianuu.injekt.compiler.ast.tree.AstClassId
+import com.ivianuu.injekt.compiler.ast.tree.AstExpectActual
+import com.ivianuu.injekt.compiler.ast.tree.AstModality
+import com.ivianuu.injekt.compiler.ast.tree.AstVisibility
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -44,8 +44,8 @@ fun ClassKind.toAstClassKind() = when (this) {
 fun multiPlatformModalityOf(
     isActual: Boolean,
     isExpect: Boolean
-): AstMultiPlatformModality? = when {
-    isActual -> AstMultiPlatformModality.ACTUAL
-    isExpect -> AstMultiPlatformModality.EXPECT
+): AstExpectActual? = when {
+    isActual -> AstExpectActual.ACTUAL
+    isExpect -> AstExpectActual.EXPECT
     else -> null
 }

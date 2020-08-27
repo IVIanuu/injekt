@@ -1,34 +1,25 @@
 package com.ivianuu.injekt.compiler.ast.string
 
-import com.ivianuu.injekt.compiler.ast.AstAnnotationContainer
-import com.ivianuu.injekt.compiler.ast.AstBody
-import com.ivianuu.injekt.compiler.ast.AstCall
-import com.ivianuu.injekt.compiler.ast.AstClass
-import com.ivianuu.injekt.compiler.ast.AstDeclarationContainer
-import com.ivianuu.injekt.compiler.ast.AstElement
-import com.ivianuu.injekt.compiler.ast.AstFile
-import com.ivianuu.injekt.compiler.ast.AstFunction
-import com.ivianuu.injekt.compiler.ast.AstGetValueParameter
-import com.ivianuu.injekt.compiler.ast.AstModalityOwner
-import com.ivianuu.injekt.compiler.ast.AstModuleFragment
-import com.ivianuu.injekt.compiler.ast.AstMultiPlatformDeclaration
-import com.ivianuu.injekt.compiler.ast.AstTransformResult
-import com.ivianuu.injekt.compiler.ast.AstTransformer
-import com.ivianuu.injekt.compiler.ast.AstTypeParameter
-import com.ivianuu.injekt.compiler.ast.AstValueParameter
-import com.ivianuu.injekt.compiler.ast.AstVisibilityOwner
-import com.ivianuu.injekt.compiler.ast.compose
+import com.ivianuu.injekt.compiler.ast.tree.AstElement
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstAnnotationContainer
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationContainer
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationWithExpectActual
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationWithModality
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationWithVisibility
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
+import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitorVoid
 import org.jetbrains.kotlin.name.FqName
 
 object Ast2StringTranslator {
 
     fun generate(element: AstElement): String {
         val builder = StringBuilder()
-        Writer(builder).transform(element)
+        element.accept(Writer(builder))
         return builder.toString()
     }
 
-    private class Writer(private val builder: StringBuilder) : AstTransformer {
+    private class Writer(private val builder: StringBuilder) : AstVisitorVoid {
 
         private var indent = ""
 
@@ -73,47 +64,55 @@ object Ast2StringTranslator {
             result
         }
 
-        override fun transform(element: AstElement): AstTransformResult<AstElement> {
+        override fun visitFile(declaration: AstFile) {
+            if (declaration.packageFqName != FqName.ROOT)
+                appendIndentedLine("package ${declaration.packageFqName}")
+            if (declaration.declarations.isNotEmpty()) appendLine()
+            declaration.renderDeclarations()
+        }
+
+        override fun visitClass(declaration: AstClass) {
+            declaration.renderAnnotations()
+            appendIndent()
+            declaration.renderVisibility()
+            declaration.renderExpectActual()
+            if (declaration.kind != AstClass.Kind.INTERFACE) declaration.renderModality()
+            if (declaration.isInner) {
+                append("inner ")
+            }
+            if (declaration.isData) {
+                append("data ")
+            }
+            when (declaration.kind) {
+                AstClass.Kind.CLASS -> append("class ")
+                AstClass.Kind.INTERFACE -> append("interface ")
+                AstClass.Kind.ENUM_CLASS -> append("enum class ")
+                AstClass.Kind.ENUM_ENTRY -> TODO()
+                AstClass.Kind.ANNOTATION -> append("annotation class ")
+                AstClass.Kind.OBJECT -> {
+                    if (declaration.isCompanion) append("companion ")
+                    append("object ")
+                }
+            }.let { }
+
+            append("${declaration.classId.className} ")
+            if (declaration.declarations.isNotEmpty()) {
+                appendBraced {
+                    declaration.renderDeclarations()
+                }
+            } else {
+                appendLine()
+            }
+        }
+
+        /*override fun transform(element: AstElement): AstTransformResult<AstElement> {
             when (element) {
                 is AstModuleFragment -> TODO()
                 is AstFile -> {
-                    if (element.packageFqName != FqName.ROOT)
-                        appendIndentedLine("package ${element.packageFqName}")
-                    if (element.declarations.isNotEmpty()) appendLine()
-                    element.renderDeclarations()
+
                 }
                 is AstClass -> {
-                    element.renderAnnotations()
-                    appendIndent()
-                    element.renderVisibility()
-                    element.renderMultiPlatformModality()
-                    if (element.kind != AstClass.Kind.INTERFACE) element.renderModality()
-                    if (element.isInner) {
-                        append("inner ")
-                    }
-                    if (element.isData) {
-                        append("data ")
-                    }
-                    when (element.kind) {
-                        AstClass.Kind.CLASS -> append("class ")
-                        AstClass.Kind.INTERFACE -> append("interface ")
-                        AstClass.Kind.ENUM_CLASS -> append("enum class ")
-                        AstClass.Kind.ENUM_ENTRY -> TODO()
-                        AstClass.Kind.ANNOTATION -> append("annotation class ")
-                        AstClass.Kind.OBJECT -> {
-                            if (element.isCompanion) append("companion ")
-                            append("object ")
-                        }
-                    }.let { }
 
-                    append("${element.classId.className} ")
-                    if (element.declarations.isNotEmpty()) {
-                        appendBraced {
-                            element.renderDeclarations()
-                        }
-                    } else {
-                        appendLine()
-                    }
                 }
                 is AstFunction -> {
                     element.renderAnnotations()
@@ -130,28 +129,28 @@ object Ast2StringTranslator {
                 is AstCall -> TODO()
             }.let { }
             return element.compose()
-        }
+        }*/
 
-        private fun AstVisibilityOwner.renderVisibility(appendSpace: Boolean = true) {
+        private fun AstDeclarationWithVisibility.renderVisibility(appendSpace: Boolean = true) {
             append(visibility.name.toLowerCase())
             if (appendSpace) appendSpace()
         }
 
-        private fun AstMultiPlatformDeclaration.renderMultiPlatformModality(appendSpace: Boolean = true) {
-            if (multiPlatformModality != null) {
-                append(multiPlatformModality!!.name.toLowerCase())
+        private fun AstDeclarationWithExpectActual.renderExpectActual(appendSpace: Boolean = true) {
+            if (expectActual != null) {
+                append(expectActual!!.name.toLowerCase())
                 if (appendSpace) appendSpace()
             }
         }
 
-        private fun AstModalityOwner.renderModality(appendSpace: Boolean = true) {
+        private fun AstDeclarationWithModality.renderModality(appendSpace: Boolean = true) {
             append(modality.name.toLowerCase())
             if (appendSpace) appendSpace()
         }
 
         private fun AstDeclarationContainer.renderDeclarations() {
             declarations.forEachIndexed { index, declaration ->
-                transform(declaration)
+                declaration.accept(this@Writer)
                 if (index != declarations.lastIndex) appendLine()
             }
         }
