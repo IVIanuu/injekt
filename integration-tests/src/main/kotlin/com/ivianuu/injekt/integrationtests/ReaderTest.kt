@@ -35,6 +35,10 @@ class ReaderTest {
         @Given
         fun foo() = Foo()
         
+        class Dummy {
+            class Inner
+        }
+        
         @Reader
         fun func(): Foo = given<Foo>()
         
