@@ -2,9 +2,12 @@ package com.ivianuu.injekt.compiler.ast.tree.visitor
 
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstConstructor
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
 
 interface AstTransformer<D> : AstVisitor<AstTransformResult<AstElement>, D> {
@@ -35,6 +38,15 @@ interface AstTransformer<D> : AstVisitor<AstTransformResult<AstElement>, D> {
 
     override fun visitClass(declaration: AstClass, data: D) =
         visitDeclaration(declaration, data)
+
+    override fun visitFunction(declaration: AstFunction, data: D) =
+        visitDeclaration(declaration, data)
+
+    override fun visitSimpleFunction(declaration: AstSimpleFunction, data: D) =
+        visitFunction(declaration, data)
+
+    override fun visitConstructor(declaration: AstConstructor, data: D) =
+        visitFunction(declaration, data)
 
     override fun visitExpression(
         expression: AstExpression,

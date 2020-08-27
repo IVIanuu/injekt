@@ -2,9 +2,12 @@ package com.ivianuu.injekt.compiler.ast.tree.visitor
 
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstConstructor
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
 
 interface AstVisitorVoid : AstVisitor<Unit, Nothing?> {
@@ -25,6 +28,18 @@ interface AstVisitorVoid : AstVisitor<Unit, Nothing?> {
 
     fun visitClass(declaration: AstClass) = visitElement(declaration)
     override fun visitClass(declaration: AstClass, data: Nothing?) = visitClass(declaration)
+
+    fun visitFunction(declaration: AstFunction) = visitDeclaration(declaration)
+    override fun visitFunction(declaration: AstFunction, data: Nothing?) =
+        visitFunction(declaration)
+
+    fun visitSimpleFunction(declaration: AstSimpleFunction) = visitFunction(declaration)
+    override fun visitSimpleFunction(declaration: AstSimpleFunction, data: Nothing?) =
+        visitSimpleFunction(declaration)
+
+    fun visitConstructor(declaration: AstConstructor) = visitFunction(declaration)
+    override fun visitConstructor(declaration: AstConstructor, data: Nothing?) =
+        visitConstructor(declaration)
 
     fun visitExpression(expression: AstExpression) = visitElement(expression)
     override fun visitExpression(expression: AstExpression, data: Nothing?) =
