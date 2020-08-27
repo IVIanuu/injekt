@@ -1,13 +1,16 @@
 package com.ivianuu.injekt.compiler.ast.string
 
 import com.ivianuu.injekt.compiler.ast.AstAnnotationContainer
+import com.ivianuu.injekt.compiler.ast.AstBody
 import com.ivianuu.injekt.compiler.ast.AstCall
 import com.ivianuu.injekt.compiler.ast.AstClass
 import com.ivianuu.injekt.compiler.ast.AstDeclarationContainer
 import com.ivianuu.injekt.compiler.ast.AstElement
 import com.ivianuu.injekt.compiler.ast.AstFile
 import com.ivianuu.injekt.compiler.ast.AstFunction
+import com.ivianuu.injekt.compiler.ast.AstGetValueParameter
 import com.ivianuu.injekt.compiler.ast.AstModalityOwner
+import com.ivianuu.injekt.compiler.ast.AstModuleFragment
 import com.ivianuu.injekt.compiler.ast.AstMultiPlatformDeclaration
 import com.ivianuu.injekt.compiler.ast.AstTransformResult
 import com.ivianuu.injekt.compiler.ast.AstTransformer
@@ -15,6 +18,7 @@ import com.ivianuu.injekt.compiler.ast.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.AstVisibilityOwner
 import com.ivianuu.injekt.compiler.ast.compose
+import org.jetbrains.kotlin.name.FqName
 
 object Ast2StringTranslator {
 
@@ -71,8 +75,10 @@ object Ast2StringTranslator {
 
         override fun transform(element: AstElement): AstTransformResult<AstElement> {
             when (element) {
+                is AstModuleFragment -> TODO()
                 is AstFile -> {
-                    appendIndentedLine("package ${element.packageFqName}")
+                    if (element.packageFqName != FqName.ROOT)
+                        appendIndentedLine("package ${element.packageFqName}")
                     if (element.declarations.isNotEmpty()) appendLine()
                     element.renderDeclarations()
                 }
@@ -117,6 +123,8 @@ object Ast2StringTranslator {
                     //element.renderName(appendSpace = true)
                     appendBraced { }
                 }
+                is AstBody -> TODO()
+                is AstGetValueParameter -> TODO()
                 is AstTypeParameter -> TODO()
                 is AstValueParameter -> TODO()
                 is AstCall -> TODO()

@@ -1,13 +1,12 @@
 package com.ivianuu.injekt.compiler.ast
 
-import org.jetbrains.kotlin.backend.common.serialization.proto.IrExpression
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 sealed class AstElement
 
 interface AstAnnotationContainer {
-    val annotations: MutableList<AstCall>
+    var annotations: List<AstCall>
 }
 
 enum class AstVisibility {
@@ -37,7 +36,7 @@ interface AstMultiPlatformDeclaration {
 }
 
 interface AstTypeParameterContainer {
-    val typeParameters: MutableList<AstTypeParameter>
+    var typeParameters: List<AstTypeParameter>
 }
 
 class AstTypeParameter(
@@ -52,11 +51,13 @@ enum class AstVariance {
 interface AstType : AstAnnotationContainer {
     val classifier: AstClassifier
     val hasQuestionMark: Boolean
-    val arguments: MutableList<Astty>
+    val arguments: List<Astty>
     val abbreviation: AstTypeAbbreviation?
 }*/
 
 interface AstType : AstAnnotationContainer
+
+val AstType.classIdOrFail: AstClassId get() = TODO()
 
 /*
 interface AstSimpleType {
@@ -83,29 +84,39 @@ interface IrTypeAbbreviation : IrAnnotationContainer {
 
 interface AstTypeAbbreviation
 */
-interface AstDeclarationContainer {
-    val declarations: MutableList<AstDeclaration>
+interface AstDeclarationContainer : AstDeclarationParent {
+    var declarations: List<AstDeclaration>
 }
 
+fun AstDeclarationContainer.addChild(declaration: AstDeclaration) {
+    declarations += declaration
+    declaration.parent = this
+}
+
+interface AstDeclarationParent
+
 sealed class AstDeclaration : AstElement() {
-    lateinit var parent: AstDeclarationContainer
+    lateinit var parent: AstDeclarationParent
 }
 
 sealed class AstExpression : AstElement()
 
 class AstCall(
     var callee: AstFunction,
-    val arguments: MutableList<IrExpression>
+    var arguments: List<AstExpression>
 ) : AstExpression()
+
+class AstGetValueParameter(var valueParameter: AstValueParameter) : AstExpression()
 
 interface AstClassifier
 
 class AstFile(
     var packageFqName: FqName,
-    var name: Name,
-    override val annotations: MutableList<AstCall> = mutableListOf(),
-    override val declarations: MutableList<AstDeclaration> = mutableListOf()
-) : AstElement(), AstAnnotationContainer, AstDeclarationContainer
+    var name: Name
+) : AstElement(), AstAnnotationContainer, AstDeclarationContainer {
+    override var annotations: List<AstCall> = emptyList()
+    override var declarations: List<AstDeclaration> = emptyList()
+}
 
 data class AstClassId(
     val packageName: FqName,
@@ -117,6 +128,14 @@ data class AstCallableId(
     val className: FqName?,
     val callableName: Name
 )
+
+val AstClass.defaultType: AstType get() = TODO()
+
+class AstModuleFragment(
+    val name: Name
+) : AstElement() {
+    var files = emptyList<AstFile>()
+}
 
 class AstClass(
     var classId: AstClassId,
@@ -136,9 +155,9 @@ class AstClass(
     AstTypeParameterContainer,
     AstDeclarationContainer {
 
-    override val annotations: MutableList<AstCall> = mutableListOf()
-    override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
-    override val declarations: MutableList<AstDeclaration> = mutableListOf()
+    override var annotations: List<AstCall> = emptyList()
+    override var typeParameters: List<AstTypeParameter> = emptyList()
+    override var declarations: List<AstDeclaration> = emptyList()
 
     enum class Kind {
         CLASS,
@@ -151,12 +170,20 @@ class AstClass(
 }
 
 sealed class AstFunction : AstDeclaration(), AstAnnotationContainer,
+    AstDeclarationParent,
     AstVisibilityOwner,
-    AstMultiPlatformDeclaration {
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    AstMultiPlatformDeclaration,
+    AstTypeParameterContainer {
+    override var annotations: List<AstCall> = emptyList()
 
-    val valueParameters: MutableList<AstValueParameter> = mutableListOf()
     abstract var callableId: AstCallableId
+
+    override var typeParameters: List<AstTypeParameter> = emptyList()
+    var valueParameters: List<AstValueParameter> = emptyList()
+
+    abstract var returnType: AstType
+
+    var body: AstBody? = null
 }
 
 class AstSimpleFunction(
@@ -164,32 +191,40 @@ class AstSimpleFunction(
     override var visibility: AstVisibility = AstVisibility.PUBLIC,
     override var multiPlatformModality: AstMultiPlatformModality? = null,
     override var modality: AstModality = AstModality.FINAL,
+    override var returnType: AstType,
     var isInfix: Boolean = false,
     var isOperator: Boolean = false,
     var isTailrec: Boolean = false,
     var isSuspend: Boolean = false
-) : AstFunction(), AstModalityOwner, AstTypeParameterContainer {
-    override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
-    val overriddenFunctions: MutableList<AstSimpleFunction> = mutableListOf()
+) : AstFunction(), AstModalityOwner {
+    var overriddenFunctions: List<AstSimpleFunction> = emptyList()
 }
 
 class AstConstructor(
     override var callableId: AstCallableId,
     override var visibility: AstVisibility = AstVisibility.PUBLIC,
     override var multiPlatformModality: AstMultiPlatformModality? = null,
+    override var returnType: AstType,
     var isPrimary: Boolean = false
 ) : AstFunction()
 
 class AstValueParameter(
     var name: Name,
+    var type: AstType,
     var inlineHint: InlineHint? = null,
     var isVararg: Boolean = false
 ) : AstDeclaration(), AstAnnotationContainer {
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    override var annotations: List<AstCall> = emptyList()
 
     enum class InlineHint {
         INLINE,
         NOINLINE,
         CROSSINLINE
     }
+}
+
+class AstBody(
+    var type: AstType
+) : AstElement() {
+    var statements: List<AstElement> = emptyList()
 }

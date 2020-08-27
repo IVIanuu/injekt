@@ -1,31 +1,33 @@
 package com.ivianuu.injekt.compiler.ast
 
-import org.jetbrains.kotlin.fir.visitors.CompositeTransformResult
-
 interface AstTransformer {
 
     fun transform(element: AstElement): AstTransformResult<AstElement> {
         return when (element) {
+            is AstModuleFragment -> {
+                element.files = element.files.transformInplace(this)
+                element.compose()
+            }
             is AstFile -> {
-                element.annotations.transformInplace(this)
-                element.declarations.transformInplace(this)
+                element.annotations = element.annotations.transformInplace(this)
+                element.declarations = element.declarations.transformInplace(this)
                 element.compose()
             }
             is AstClass -> {
-                element.annotations.transformInplace(this)
-                element.declarations.transformInplace(this)
-                element.typeParameters.transformInplace(this)
+                element.annotations = element.annotations.transformInplace(this)
+                element.declarations = element.declarations.transformInplace(this)
+                element.typeParameters = element.typeParameters.transformInplace(this)
                 element.compose()
             }
             is AstSimpleFunction -> {
-                element.annotations.transformInplace(this)
-                element.typeParameters.transformInplace(this)
-                element.valueParameters.transformInplace(this)
+                element.annotations = element.annotations.transformInplace(this)
+                element.typeParameters = element.typeParameters.transformInplace(this)
+                element.valueParameters = element.valueParameters.transformInplace(this)
                 element.compose()
             }
             is AstConstructor -> {
-                element.annotations.transformInplace(this)
-                element.valueParameters.transformInplace(this)
+                element.annotations = element.annotations.transformInplace(this)
+                element.valueParameters = element.valueParameters.transformInplace(this)
                 element.compose()
             }
             is AstTypeParameter -> {
@@ -34,6 +36,11 @@ interface AstTransformer {
             is AstValueParameter -> {
                 element.compose()
             }
+            is AstBody -> {
+                element.statements.transformInplace(this)
+                element.compose()
+            }
+            is AstGetValueParameter -> element.compose()
             is AstCall -> element.compose()
         }
     }
@@ -41,56 +48,53 @@ interface AstTransformer {
 }
 
 sealed class AstTransformResult<out T : AstElement> {
-    class Single<out T : AstElement>(val element: T) : AstTransformResult<T>()
-    class Multiple<out T : AstElement>(val elements: List<T>) : AstTransformResult<T>()
+    data class Single<out T : AstElement>(val element: T) : AstTransformResult<T>()
+    data class Multiple<out T : AstElement>(val elements: List<T>) : AstTransformResult<T>()
     companion object {
         fun <T : AstElement> Empty() = Multiple<T>(emptyList())
     }
 }
 
-val <T : AstElement> AstTransformResult<T>.list: List<T>
+val <T : AstElement> AstTransformResult<T>.elements: List<T>
     get() = when (this) {
-        is CompositeTransformResult.Multiple<*> -> _list as List<T>
-        else -> error("!")
+        is AstTransformResult.Multiple<*> -> elements as List<T>
+        else -> error("Expected multi result but was $this")
     }
 
 
-val <T : AstElement> AstTransformResult<T>.single: T
+val <T : AstElement> AstTransformResult<T>.element: T
     get() = when (this) {
-        is CompositeTransformResult.Single<*> -> _single as T
-        else -> error("!")
+        is AstTransformResult.Single<*> -> element as T
+        else -> error("Expected single result but was $this")
     }
-
-val <T : AstElement> AstTransformResult<T>.isSingle
-    get() = this is CompositeTransformResult.Single<*>
-
-val <T : AstElement> AstTransformResult<T>.isEmpty
-    get() = this is CompositeTransformResult.Multiple<*> && this.list.isEmpty()
 
 fun <T : AstElement> T.compose() =
     AstTransformResult.Single(this)
 
 fun <T : AstElement> T.transformSingle(transformer: AstTransformer): T {
-    return transformer.transform(this).single as T
+    return transformer.transform(this).element as T
 }
 
-fun <T : AstElement> MutableList<T>.transformInplace(transformer: AstTransformer) {
-    val iterator = listIterator()
+fun <T : AstElement> List<T>.transformInplace(transformer: AstTransformer): List<T> {
+    val newList = toMutableList()
+    val iterator = newList.listIterator()
     while (iterator.hasNext()) {
         val next = iterator.next()
         val result = transformer.transform(next)
-        if (result.isSingle) {
-            iterator.set(result.single as T)
-        } else {
-            val resultIterator = result.list.listIterator()
-            if (!resultIterator.hasNext()) {
-                iterator.remove()
-            } else {
-                iterator.set(resultIterator.next() as T)
-            }
-            while (resultIterator.hasNext()) {
-                iterator.add(resultIterator.next() as T)
+        when (result) {
+            is AstTransformResult.Single -> iterator.set(result.element as T)
+            is AstTransformResult.Multiple -> {
+                val resultIterator = result.elements.listIterator()
+                if (!resultIterator.hasNext()) {
+                    iterator.remove()
+                } else {
+                    iterator.set(resultIterator.next() as T)
+                }
+                while (resultIterator.hasNext()) {
+                    iterator.add(resultIterator.next() as T)
+                }
             }
         }
     }
+    return newList
 }

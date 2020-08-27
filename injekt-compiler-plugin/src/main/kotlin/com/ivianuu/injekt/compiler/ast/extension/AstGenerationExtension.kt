@@ -1,11 +1,23 @@
-package com.ivianuu.injekt.compiler.ast
+package com.ivianuu.injekt.compiler.ast.extension
 
+import com.ivianuu.injekt.compiler.ast.AstClass
+import com.ivianuu.injekt.compiler.ast.AstModuleFragment
 import com.ivianuu.injekt.compiler.ast.stub.AstDescriptorStubGenerator
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.extensions.ProjectExtensionDescriptor
 import org.jetbrains.kotlin.name.ClassId
 
-class AstContext(
+interface AstGenerationExtension {
+    companion object : ProjectExtensionDescriptor<AstGenerationExtension>(
+        "com.ivianuu.injekt.compiler.ast.extension.AstGenerationExtension",
+        AstGenerationExtension::class.java
+    )
+
+    fun generate(moduleFragment: AstModuleFragment, pluginContext: AstPluginContext)
+}
+
+class AstPluginContext(
     private val moduleDescriptor: ModuleDescriptor
 ) {
 

@@ -7,23 +7,19 @@ import com.ivianuu.injekt.compiler.ast.AstClass
 import com.ivianuu.injekt.compiler.ast.AstConstructor
 import com.ivianuu.injekt.compiler.ast.AstDeclaration
 import com.ivianuu.injekt.compiler.ast.AstFile
+import com.ivianuu.injekt.compiler.ast.AstModuleFragment
 import com.ivianuu.injekt.compiler.ast.AstSimpleFunction
+import com.ivianuu.injekt.compiler.ast.AstType
 import com.ivianuu.injekt.compiler.ast.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.AstValueParameter
-import com.ivianuu.injekt.compiler.ast.string.Ast2StringTranslator
+import com.ivianuu.injekt.compiler.ast.addChild
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
-import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
-import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
-import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
-import org.jetbrains.kotlin.com.intellij.psi.PsiManager
-import org.jetbrains.kotlin.com.intellij.testFramework.LightVirtualFile
-import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
-import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
@@ -34,9 +30,11 @@ import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.types.KotlinType
 
-class Psi2AstGenerator(
-    private val bindingTrace: BindingTrace
+class Psi2AstTranslator(
+    private val bindingTrace: BindingTrace,
+    private val moduleDescriptor: ModuleDescriptor
 ) {
 
     private val classes =
@@ -46,16 +44,20 @@ class Psi2AstGenerator(
     private val constructors =
         mutableMapOf<ConstructorDescriptor, AstConstructor>()
 
+    fun generateModule(files: List<KtFile>): AstModuleFragment {
+        return AstModuleFragment(moduleDescriptor.name).apply {
+            this.files = files.map { generateFile(it) }
+        }
+    }
+
     fun generateFile(file: KtFile): AstFile {
         return AstFile(
             packageFqName = file.packageFqName,
-            name = file.name.asNameId(),
-            annotations = generateAnnotations()
+            name = file.name.asNameId()
         ).apply {
-            declarations += generateDeclarations(file.declarations)
-                .onEach {
-                    it.parent = this
-                }
+            annotations = generateAnnotations()
+            generateDeclarations(file.declarations)
+                .forEach { addChild(it) }
         }
     }
 
@@ -110,10 +112,11 @@ class Psi2AstGenerator(
                 isInner = descriptor.isInner,
                 isExternal = descriptor.isExternal
             ).apply {
+                classes[descriptor] = this// todo fixes recursion issues
                 annotations += generateAnnotations()
                 typeParameters += generateTypeParameters(descriptor.declaredTypeParameters)
-                declarations += generateDeclarations(declaration.declarations)
-                    .onEach { it.parent = this }
+                generateDeclarations(declaration.declarations)
+                    .forEach { addChild(it) }
             }
         }
     }
@@ -133,11 +136,13 @@ class Psi2AstGenerator(
                     descriptor.isExpect
                 ),
                 modality = descriptor.modality.toAstModality(),
+                returnType = descriptor.returnType!!.toAstType(),
                 isInfix = descriptor.isInfix,
                 isOperator = descriptor.isOperator,
                 isTailrec = descriptor.isTailrec,
                 isSuspend = descriptor.isSuspend
             ).apply {
+                simpleFunctions[descriptor] = this// todo fixes recursion issues
                 annotations += generateAnnotations()
                 typeParameters += generateTypeParameters(descriptor.typeParameters)
                 valueParameters += generateValueParameters(descriptor.valueParameters)
@@ -160,13 +165,17 @@ class Psi2AstGenerator(
                     descriptor.isActual,
                     descriptor.isExpect
                 ),
+                returnType = descriptor.returnType.toAstType(),
                 isPrimary = descriptor.isPrimary
             ).apply {
+                constructors[descriptor] = this// todo fixes recursion issues
                 annotations += generateAnnotations()
                 valueParameters += generateValueParameters(descriptor.valueParameters)
             }
         }
     }
+
+    private fun KotlinType.toAstType(): AstType = TODO()
 
     // todo
     private fun generateAnnotations() = mutableListOf<AstCall>()
@@ -187,25 +196,5 @@ class Psi2AstGenerator(
     // todo
     private fun generateTypeParameters(typeParameters: List<TypeParameterDescriptor>) =
         mutableListOf<AstTypeParameter>()
-
-}
-
-object Ast2PsiTranslator {
-
-    private val proj by lazy {
-        KotlinCoreEnvironment.createForProduction(
-            Disposer.newDisposable(),
-            CompilerConfiguration(),
-            EnvironmentConfigFiles.JVM_CONFIG_FILES
-        ).project
-    }
-
-    fun generateFile(element: AstFile): KtFile =
-        PsiManager.getInstance(proj).findFile(
-            LightVirtualFile(
-                "tmp.kt", KotlinFileType.INSTANCE,
-                Ast2StringTranslator.generate(element)
-            )
-        ) as KtFile
 
 }
