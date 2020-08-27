@@ -1,10 +1,6 @@
 package com.ivianuu.injekt.compiler.ast
 
 import org.jetbrains.kotlin.backend.common.serialization.proto.IrExpression
-import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
-import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
-import org.jetbrains.kotlin.ir.symbols.IrTypeAliasSymbol
-import org.jetbrains.kotlin.ir.types.IrTypeArgument
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -51,17 +47,18 @@ class AstTypeParameter(
 enum class AstVariance {
     IN, OUT
 }
-
+/*
 // todo IN OUT VARIANCE
 interface AstType : AstAnnotationContainer {
     val classifier: AstClassifier
     val hasQuestionMark: Boolean
     val arguments: MutableList<Astty>
     val abbreviation: AstTypeAbbreviation?
-}
+}*/
 
 interface AstType : AstAnnotationContainer
 
+/*
 interface AstSimpleType {
     val classifier: IrClassifierSymbol
     val hasQuestionMark: Boolean
@@ -85,7 +82,7 @@ interface IrTypeAbbreviation : IrAnnotationContainer {
 }
 
 interface AstTypeAbbreviation
-
+*/
 interface AstDeclarationContainer {
     val declarations: MutableList<AstDeclaration>
 }
