@@ -10,6 +10,8 @@ abstract class AstFunction : AstDeclarationBase(), AstAnnotationContainer,
     AstTypeParameterContainer,
     AstTarget {
 
+    var receiver: AstType? = null
+
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
     val valueParameters: MutableList<AstValueParameter> = mutableListOf()
 

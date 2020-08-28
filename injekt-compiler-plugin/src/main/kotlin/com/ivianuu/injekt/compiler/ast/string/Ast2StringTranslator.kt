@@ -17,6 +17,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.fqName
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.type.AstStarProjection
@@ -34,6 +35,7 @@ object Ast2StringTranslator {
         return builder.toString()
     }
 
+    // todo use AstVisitor<String>
     private class Writer(private val builder: StringBuilder) : AstVisitorVoid {
 
         private var indent = ""
@@ -363,13 +365,57 @@ object Ast2StringTranslator {
 
         override fun <T> visitConst(const: AstConst<T>) {
             append(
-                if (const.kind is AstConst.Kind.Null) "null"
-                else const.value.toString()
+                when (const.kind) {
+                    AstConst.Kind.Null -> "null"
+                    AstConst.Kind.Boolean -> const.value.toString()
+                    AstConst.Kind.Char -> "'${const.value}'"
+                    AstConst.Kind.Byte -> const.value.toString()
+                    AstConst.Kind.Short -> const.value.toString()
+                    AstConst.Kind.Int -> const.value.toString()
+                    AstConst.Kind.Long -> "${const.value}L"
+                    AstConst.Kind.String -> "\"${const.value}\""
+                    AstConst.Kind.Float -> "${const.value}f"
+                    AstConst.Kind.Double -> const.value.toString()
+                }
             )
         }
 
         override fun visitBlock(block: AstBlock) {
             block.acceptChildren(this)
+        }
+
+        override fun visitCall(call: AstCall) {
+            appendIndent()
+            if (call.receiver != null) {
+                call.receiver!!.accept(this)
+                append(".")
+            }
+            val callee = call.callee
+            if (callee is AstConstructor) {
+                append(callee.constructedClass.name)
+            } else if (callee is AstSimpleFunction) {
+                append("${callee.name}")
+            }
+            if (call.typeArguments.isNotEmpty()) {
+                append("<")
+                call.typeArguments.forEachIndexed { index, typeArgument ->
+                    typeArgument.render()
+                    if (index != call.typeArguments.lastIndex) append(", ")
+                }
+                append(">")
+            }
+            append("(")
+            call.valueArguments.forEachIndexed { index, valueArgument ->
+                if (valueArgument != null) {
+                    append("${callee.valueParameters[index].name} = ")
+                    valueArgument.accept(this)
+                    if (index != call.valueArguments.lastIndex &&
+                        call.valueArguments[index + 1] != null
+                    ) append(", ")
+                }
+            }
+            append(")")
+            appendLine()
         }
 
         override fun visitReturn(astReturn: AstReturn) {

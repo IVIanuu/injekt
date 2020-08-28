@@ -15,6 +15,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
@@ -89,6 +90,9 @@ interface AstVisitorVoid : AstVisitor<Unit, Nothing?> {
 
     fun visitBlock(block: AstBlock) = visitExpression(block)
     override fun visitBlock(block: AstBlock, data: Nothing?) = visitBlock(block)
+
+    fun visitCall(call: AstCall) = visitExpression(call)
+    override fun visitCall(call: AstCall, data: Nothing?) = visitCall(call)
 
     fun visitReturn(astReturn: AstReturn) = visitExpression(astReturn)
     override fun visitReturn(astReturn: AstReturn, data: Nothing?) = visitReturn(astReturn)

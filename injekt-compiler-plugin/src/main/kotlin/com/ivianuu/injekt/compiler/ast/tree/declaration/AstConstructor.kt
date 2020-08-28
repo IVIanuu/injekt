@@ -9,6 +9,7 @@ import com.ivianuu.injekt.compiler.ast.tree.visitor.transformInplace
 import com.ivianuu.injekt.compiler.ast.tree.visitor.transformSingle
 
 class AstConstructor(
+    var constructedClass: AstClass,
     override var returnType: AstType, // todo constructedClass
     override var visibility: AstVisibility = AstVisibility.PUBLIC,
     override var expectActual: AstExpectActual? = null,

@@ -38,7 +38,9 @@ import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.js.translate.callTranslator.getReturnType
 import org.jetbrains.kotlin.psi.KtBlockExpression
+import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstantExpression
 import org.jetbrains.kotlin.psi.KtConstructor
@@ -57,7 +59,10 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.bindingContextUtil.isUsedAsExpression
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.components.isVararg
+import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
+import org.jetbrains.kotlin.resolve.calls.model.ExpressionValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.resolve.calls.model.VarargValueArgument
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
 import org.jetbrains.kotlin.resolve.constants.ByteValue
 import org.jetbrains.kotlin.resolve.constants.CharValue
@@ -193,8 +198,7 @@ class Psi2AstTranslator(
                     .onEach { it.parent = this }
                 overriddenFunctions += overriddenDescriptors
                     .map { (it as SimpleFunctionDescriptor).toAstSimpleFunction() }
-                body = declaration.bodyExpression
-                    ?.toAstBlock(this@toAstSimpleFunction, this)
+                body = declaration.bodyExpression?.toAstBlock(this)
             }
         }
     }
@@ -204,9 +208,10 @@ class Psi2AstTranslator(
             ?: return stubGenerator.get(this) as AstConstructor
         return storage.constructors.getOrPut(this) {
             AstConstructor(
+                constructedClass = returnType.toAstType().classifier as AstClass,
+                returnType = returnType.toAstType(),
                 visibility = visibility.toAstVisibility(),
                 expectActual = expectActualOf(isActual, isExpect),
-                returnType = returnType.toAstType(),
                 isPrimary = isPrimary
             ).apply {
                 storage.constructors[this@toAstConstructor] = this// todo fixes recursion issues
@@ -215,8 +220,7 @@ class Psi2AstTranslator(
                     .onEach { it.parent = this }
                 valueParameters += this@toAstConstructor.valueParameters.toAstValueParameters()
                     .onEach { it.parent = this }
-                body = declaration.bodyExpression
-                    ?.toAstBlock(this@toAstConstructor, this)
+                body = declaration.bodyExpression?.toAstBlock(this)
             }
         }
     }
@@ -266,7 +270,11 @@ class Psi2AstTranslator(
     }
 
     // todo
-    private fun AnnotationDescriptor.toAstAnnotation() = AstCall(type.toAstType())
+    private fun AnnotationDescriptor.toAstAnnotation() = AstCall(
+        type.toAstType(),
+        TODO()
+    )
+
     private fun List<AnnotationDescriptor>.toAstAnnotations() = map { it.toAstAnnotation() }
     private fun Annotations.toAstAnnotations() = map { it.toAstAnnotation() }
 
@@ -309,37 +317,19 @@ class Psi2AstTranslator(
     private fun List<ValueParameterDescriptor>.toAstValueParameters() =
         map { it.toAstValueParameter() }
 
+    private fun KtElement.toAstStatement(): AstStatement = when (this) {
+        is KtExpression -> toAstExpression()
+        is KtDeclaration -> toAstDeclaration()
+        else -> error("Unexpected element $this $javaClass $text")
+    }
+
     private fun KtExpression.toAstExpression(): AstExpression =
         when (this) {
-            is KtBlockExpression -> toAstBlock()
             is KtConstantExpression -> toAstConst()
+            is KtBlockExpression -> toAstBlock()
+            is KtCallExpression -> toAstCall()
             else -> error("Unexpected expression $this $javaClass $text")
         }
-
-    private fun KtExpression.toAstBlock(
-        scopeOwnerDescriptor: DeclarationDescriptor,
-        scopeOwnerDeclaration: AstDeclaration
-    ): AstBlock {
-        return if (this is KtBlockExpression) {
-            toAstBlock()
-        } else {
-            val type = getTypeInferredByFrontendOrFail(this).toAstType()
-            val expression = toAstExpression()
-            AstBlock(type).apply {
-                statements += AstReturn(
-                    type,
-                    scopeOwnerDeclaration as AstTarget,
-                    expression
-                )
-            }
-        }
-    }
-
-    private fun KtBlockExpression.toAstBlock(): AstBlock {
-        return AstBlock(getExpressionTypeWithCoercionToUnitOrFail(this).toAstType()).apply {
-            statements += this@toAstBlock.statements.map { it.toAstStatement() }
-        }
-    }
 
     private fun KtConstantExpression.toAstConst(): AstConst<*> {
         val constantValue =
@@ -366,10 +356,63 @@ class Psi2AstTranslator(
         }
     }
 
-    private fun KtElement.toAstStatement(): AstStatement = when (this) {
-        is KtExpression -> toAstExpression()
-        is KtDeclaration -> toAstDeclaration()
-        else -> error("Unexpected element $this $javaClass $text")
+    private fun KtExpression.toAstBlock(scopeOwner: AstDeclaration): AstBlock {
+        return if (this is KtBlockExpression) {
+            toAstBlock()
+        } else {
+            val type = getTypeInferredByFrontendOrFail(this).toAstType()
+            val expression = toAstExpression()
+            AstBlock(type).apply {
+                statements += AstReturn(
+                    type,
+                    scopeOwner as AstTarget,
+                    expression
+                )
+            }
+        }
+    }
+
+    private fun KtBlockExpression.toAstBlock(): AstBlock {
+        return AstBlock(getExpressionTypeWithCoercionToUnitOrFail(this).toAstType()).apply {
+            statements += this@toAstBlock.statements.map { it.toAstStatement() }
+        }
+    }
+
+    private fun KtCallExpression.toAstCall(): AstCall {
+        val resolvedCall = getResolvedCall(this)
+            ?: error("Couldn't find call for $this $javaClass $text")
+        return AstCall(
+            type = resolvedCall.getReturnType().toAstType(),
+            callee = when (val callee = resolvedCall.resultingDescriptor) {
+                is SimpleFunctionDescriptor -> callee.toAstSimpleFunction()
+                else -> error("Unexpected callee $callee")
+            }
+        ).apply {
+            typeArguments += resolvedCall.typeArguments.values.map { it.toAstType() }
+            //receiver = calleeExpression?.toAstExpression()
+
+            val sortedValueArguments = resolvedCall.valueArguments
+                .toList()
+                .sortedBy { it.first.index }
+
+            valueArguments += sortedValueArguments.map { (_, valueArgument) ->
+                when (valueArgument) {
+                    is DefaultValueArgument -> null
+                    is ExpressionValueArgument -> {
+                        val valueArgument1 = valueArgument.valueArgument
+                            ?: throw AssertionError("No value argument: $valueArgument")
+                        val argumentExpression = valueArgument1.getArgumentExpression()
+                            ?: throw AssertionError("No argument expression: $valueArgument1")
+                        argumentExpression.toAstExpression()
+                    }
+                    is VarargValueArgument -> {
+                        TODO()
+                        //generateVarargExpressionUsing(valueArgument, valueParameter, resolvedCall, generateArgumentExpression)
+                    }
+                    else -> TODO("Unexpected valueArgument: ${valueArgument::class.java.simpleName}")
+                }
+            }
+        }
     }
 
     fun KotlinType.toAstType(): AstType {

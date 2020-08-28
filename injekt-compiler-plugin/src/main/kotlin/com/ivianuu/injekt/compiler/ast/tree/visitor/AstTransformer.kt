@@ -15,6 +15,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
@@ -94,6 +95,9 @@ interface AstTransformer<D> : AstVisitor<AstTransformResult<AstElement>, D> {
     override fun visitBlock(block: AstBlock, data: D) =
         visitExpression(block, data)
 
+    override fun visitCall(call: AstCall, data: D) =
+        visitExpression(call, data)
+
     override fun visitReturn(astReturn: AstReturn, data: D) =
         visitExpression(astReturn, data)
 
@@ -141,24 +145,25 @@ fun <T : AstElement> T.compose() =
 fun <T : AstElement, D> T.transformSingle(transformer: AstTransformer<D>, data: D): T =
     transform(transformer, data).element as T
 
-fun <T : AstElement, D> MutableList<T>.transformInplace(transformer: AstTransformer<D>, data: D) {
+fun <T : AstElement?, D> MutableList<T>.transformInplace(transformer: AstTransformer<D>, data: D) {
     val iterator = this.listIterator()
     while (iterator.hasNext()) {
-        val next = iterator.next() as AstElement
-        val result = next.transform(transformer, data)
-        if (result is AstTransformResult.Single) {
-            iterator.set(result.element as T)
-        } else {
-            val resultIterator = result.elements.listIterator() as ListIterator<T>
-            if (!resultIterator.hasNext()) {
-                iterator.remove()
+        val next = iterator.next() as? AstElement
+        val result = next?.transform(transformer, data)
+        if (result != null) {
+            if (result is AstTransformResult.Single) {
+                iterator.set(result.element as T)
             } else {
-                iterator.set(resultIterator.next())
-            }
-            while (resultIterator.hasNext()) {
-                iterator.add(resultIterator.next())
+                val resultIterator = result.elements.listIterator() as ListIterator<T>
+                if (!resultIterator.hasNext()) {
+                    iterator.remove()
+                } else {
+                    iterator.set(resultIterator.next())
+                }
+                while (resultIterator.hasNext()) {
+                    iterator.add(resultIterator.next())
+                }
             }
         }
-
     }
 }

@@ -8,7 +8,7 @@ interface AstExpression : AstStatement
 
 abstract class AstExpressionBase : AstExpression {
 
-    abstract val type: AstType
+    abstract var type: AstType
     override val annotations: MutableList<AstCall> = mutableListOf()
 
     override fun <D> transform(

@@ -36,11 +36,11 @@ class AstTest {
                         fun <T, S> aFunction(a: T, b: S) {
                         }
                         
-                        fun higherOrder(block: (Int, Long) -> String) { 
-                            block()
+                        fun higherOrder(block: (Int, Long) -> String) {
+                            returningString(0f, 0)
                         }
                         
-                        fun returningString() = 0
+                        fun returningString(a: Float, b: Int, c: Long = 0L) = 0
                         
                         typealias MyTypeAlias = () -> String
                         
