@@ -13,7 +13,7 @@ class AstTypeAlias(
     var type: AstType,
     override var visibility: AstVisibility = AstVisibility.PUBLIC,
     override var expectActual: AstExpectActual? = null
-) : AstDeclarationBase(), AstDeclarationWithName, AstTypeParameterContainer,
+) : AstDeclarationBase(), AstDeclarationWithName, AstTypeParameterContainer, AstDeclarationParent,
     AstDeclarationWithVisibility,
     AstDeclarationWithExpectActual {
 

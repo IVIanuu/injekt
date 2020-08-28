@@ -134,6 +134,7 @@ class Psi2AstTranslator(
                 classes[this@toAstClass] = this
                 annotations += this@toAstClass.annotations.toAstAnnotations()
                 typeParameters += declaredTypeParameters.toAstTypeParameters()
+                    .onEach { it.parent = this }
                 declaration.declarations.toAstDeclarations()
                     .forEach { addChild(it) }
             }
@@ -156,7 +157,9 @@ class Psi2AstTranslator(
                 simpleFunctions[this@toAstSimpleFunction] = this
                 annotations += this@toAstSimpleFunction.annotations.toAstAnnotations()
                 typeParameters += this@toAstSimpleFunction.typeParameters.toAstTypeParameters()
+                    .onEach { it.parent = this }
                 valueParameters += this@toAstSimpleFunction.valueParameters.toAstValueParameters()
+                    .onEach { it.parent = this }
                 overriddenFunctions += overriddenDescriptors
                     .map { (it as SimpleFunctionDescriptor).toAstSimpleFunction() }
             }
@@ -174,7 +177,9 @@ class Psi2AstTranslator(
                 constructors[this@toAstConstructor] = this// todo fixes recursion issues
                 annotations += this@toAstConstructor.annotations.toAstAnnotations()
                 typeParameters += this@toAstConstructor.typeParameters.toAstTypeParameters()
+                    .onEach { it.parent = this }
                 valueParameters += this@toAstConstructor.valueParameters.toAstValueParameters()
+                    .onEach { it.parent = this }
             }
         }
     }
@@ -190,6 +195,7 @@ class Psi2AstTranslator(
                 typeAliases[this@toAstTypeAlias] = this
                 annotations += this@toAstTypeAlias.annotations.toAstAnnotations()
                 typeParameters += this@toAstTypeAlias.declaredTypeParameters.toAstTypeParameters()
+                    .onEach { it.parent = this }
             }
         }
     }
