@@ -6,6 +6,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstConstructor
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstProperty
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
@@ -21,6 +22,7 @@ import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjectionImpl
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
@@ -33,6 +35,7 @@ import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
+import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtTypeAlias
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -57,6 +60,7 @@ class Psi2AstTranslator(
     private val classes = mutableMapOf<ClassDescriptor, AstClass>()
     private val simpleFunctions = mutableMapOf<SimpleFunctionDescriptor, AstSimpleFunction>()
     private val constructors = mutableMapOf<ConstructorDescriptor, AstConstructor>()
+    private val properties = mutableMapOf<PropertyDescriptor, AstProperty>()
     private val typeParameters = mutableMapOf<TypeParameterDescriptor, AstTypeParameter>()
     private val valueParameters = mutableMapOf<ValueParameterDescriptor, AstValueParameter>()
     private val typeAliases = mutableMapOf<TypeAliasDescriptor, AstTypeAlias>()
@@ -103,6 +107,12 @@ class Psi2AstTranslator(
                         this
                     ) as ConstructorDescriptor
                     ).toAstConstructor()
+            is KtProperty -> (
+                    bindingTrace.get(
+                        BindingContext.DECLARATION_TO_DESCRIPTOR,
+                        this
+                    ) as PropertyDescriptor
+                    ).toAstProperty()
             is KtTypeAlias -> (
                     bindingTrace.get(
                         BindingContext.DECLARATION_TO_DESCRIPTOR,
@@ -179,6 +189,30 @@ class Psi2AstTranslator(
                 typeParameters += this@toAstConstructor.typeParameters.toAstTypeParameters()
                     .onEach { it.parent = this }
                 valueParameters += this@toAstConstructor.valueParameters.toAstValueParameters()
+                    .onEach { it.parent = this }
+            }
+        }
+    }
+
+    private fun PropertyDescriptor.toAstProperty(): AstProperty {
+        return properties.getOrPut(this) {
+            AstProperty(
+                name = name,
+                type = type.toAstType(),
+                kind = when {
+                    isConst -> AstProperty.Kind.CONST_VAL
+                    isLateInit -> AstProperty.Kind.LATEINIT_VAR
+                    isVar -> AstProperty.Kind.VAR
+                    else -> AstProperty.Kind.VAl
+                },
+                modality = modality.toAstModality(),
+                visibility = visibility.toAstVisibility(),
+                expectActual = expectActualOf(isActual, isExpect),
+                isExternal = isExternal
+            ).apply {
+                properties[this@toAstProperty] = this
+                annotations += this@toAstProperty.annotations.toAstAnnotations()
+                typeParameters += this@toAstProperty.typeParameters.toAstTypeParameters()
                     .onEach { it.parent = this }
             }
         }

@@ -1,9 +1,10 @@
 package com.ivianuu.injekt.compiler.ast.tree.declaration
 
+import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
 import org.jetbrains.kotlin.name.FqName
 
-interface AstAnnotationContainer {
+interface AstAnnotationContainer : AstElement {
     val annotations: MutableList<AstCall>
 }
 

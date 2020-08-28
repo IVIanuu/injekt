@@ -19,6 +19,7 @@ class AstTypeParameter(
         visitor.visitTypeParameter(this, data)
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+        val prop: String
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {

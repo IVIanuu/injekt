@@ -3,7 +3,7 @@ package com.ivianuu.injekt.compiler.ast.tree.declaration
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import org.jetbrains.kotlin.name.FqName
 
-interface AstPackageFragment : AstElement, AstDeclarationContainer {
+interface AstPackageFragment : AstDeclarationContainer {
     var packageFqName: FqName
 }
 

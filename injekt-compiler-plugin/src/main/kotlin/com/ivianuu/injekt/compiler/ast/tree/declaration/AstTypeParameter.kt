@@ -1,5 +1,7 @@
 package com.ivianuu.injekt.compiler.ast.tree.declaration
 
-interface AstTypeParameterContainer {
+import com.ivianuu.injekt.compiler.ast.tree.AstElement
+
+interface AstTypeParameterContainer : AstElement {
     val typeParameters: MutableList<AstTypeParameter>
 }

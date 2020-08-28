@@ -6,7 +6,7 @@ import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
 import org.jetbrains.kotlin.name.FqName
 
-interface AstDeclaration : AstElement, AstAnnotationContainer {
+interface AstDeclaration : AstAnnotationContainer {
     var parent: AstDeclarationParent
 }
 
