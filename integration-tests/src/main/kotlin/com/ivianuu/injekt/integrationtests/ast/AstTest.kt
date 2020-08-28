@@ -34,6 +34,8 @@ class AstTest {
                         fun higherOrder(block: (Int, Long) -> String) { 
                             block()
                         }
+                        
+                        typealias MyTypeAlias = () -> String
                         """,
                     injektImports = false,
                     initializeInjekt = false

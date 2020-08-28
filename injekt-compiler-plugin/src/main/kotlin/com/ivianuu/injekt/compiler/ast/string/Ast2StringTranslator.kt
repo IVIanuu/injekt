@@ -10,6 +10,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationWithModali
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationWithVisibility
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.fqName
 import com.ivianuu.injekt.compiler.ast.tree.type.AstStarProjection
@@ -70,6 +71,10 @@ object Ast2StringTranslator {
             val result = appendIndented(block)
             appendIndentedLine("}")
             result
+        }
+
+        override fun visitElement(element: AstElement) {
+            error("Unhandled $element")
         }
 
         override fun visitFile(declaration: AstFile) {
@@ -171,6 +176,15 @@ object Ast2StringTranslator {
                 append(" = ")
                 declaration.defaultValue!!.accept(this)
             }
+        }
+
+        override fun visitTypeAlias(declaration: AstTypeAlias) {
+            declaration.renderAnnotations()
+            append("typealias ")
+            append("${declaration.name}")
+            // todo type parameters
+            append(" = ")
+            declaration.type.render()
         }
 
         private fun AstDeclarationWithVisibility.renderVisibility(appendSpace: Boolean = true) {

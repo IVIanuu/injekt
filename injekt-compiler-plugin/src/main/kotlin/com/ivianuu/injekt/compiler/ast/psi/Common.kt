@@ -34,7 +34,7 @@ fun ClassKind.toAstClassKind() = when (this) {
     ClassKind.OBJECT -> AstClass.Kind.OBJECT
 }
 
-fun multiPlatformModalityOf(
+fun expectActualOf(
     isActual: Boolean,
     isExpect: Boolean
 ): AstExpectActual? = when {

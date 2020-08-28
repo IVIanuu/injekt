@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
+import org.jetbrains.kotlin.psi.KtTypeAlias
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.components.hasDefaultValue
@@ -54,6 +55,7 @@ class Psi2AstTranslator(
     private val classes = mutableMapOf<ClassDescriptor, AstClass>()
     private val simpleFunctions = mutableMapOf<SimpleFunctionDescriptor, AstSimpleFunction>()
     private val constructors = mutableMapOf<ConstructorDescriptor, AstConstructor>()
+    private val typeAliases = mutableMapOf<TypeAliasDescriptor, AstTypeAlias>()
 
     fun generateModule(files: List<KtFile>): AstModuleFragment {
         return AstModuleFragment(moduleDescriptor.name).apply {
@@ -77,7 +79,7 @@ class Psi2AstTranslator(
             this += declarations
                 .filter {
                     // todo
-                    it is KtClassOrObject || it is KtFunction
+                    it is KtClassOrObject || it is KtFunction || it is KtTypeAlias
                 }
                 .map { generateDeclaration(it) }
         }
@@ -102,6 +104,12 @@ class Psi2AstTranslator(
                     declaration
                 ) as ConstructorDescriptor
             )
+            is KtTypeAlias -> getOrCreateTypeAlias(
+                bindingTrace.get(
+                    BindingContext.DECLARATION_TO_DESCRIPTOR,
+                    declaration
+                ) as TypeAliasDescriptor
+            )
             else -> error("Unexpected declaration $declaration")
         }
 
@@ -113,7 +121,7 @@ class Psi2AstTranslator(
                 name = descriptor.name,
                 kind = descriptor.kind.toAstClassKind(),
                 visibility = descriptor.visibility.toAstVisibility(),
-                expectActual = multiPlatformModalityOf(
+                expectActual = expectActualOf(
                     descriptor.isActual,
                     descriptor.isExpect
                 ),
@@ -138,7 +146,7 @@ class Psi2AstTranslator(
             AstSimpleFunction(
                 name = descriptor.name,
                 visibility = descriptor.visibility.toAstVisibility(),
-                expectActual = multiPlatformModalityOf(
+                expectActual = expectActualOf(
                     descriptor.isActual,
                     descriptor.isExpect
                 ),
@@ -163,7 +171,7 @@ class Psi2AstTranslator(
         return constructors.getOrPut(descriptor) {
             AstConstructor(
                 visibility = descriptor.visibility.toAstVisibility(),
-                expectActual = multiPlatformModalityOf(
+                expectActual = expectActualOf(
                     descriptor.isActual,
                     descriptor.isExpect
                 ),
@@ -177,8 +185,18 @@ class Psi2AstTranslator(
         }
     }
 
-    fun getOrCreateTypeAlias(typeAlias: TypeAliasDescriptor): AstTypeAlias {
-        return TODO()
+    fun getOrCreateTypeAlias(descriptor: TypeAliasDescriptor): AstTypeAlias {
+        return typeAliases.getOrPut(descriptor) {
+            AstTypeAlias(
+                name = descriptor.name,
+                type = descriptor.expandedType.toAstType(),
+                visibility = descriptor.visibility.toAstVisibility(),
+                expectActual = expectActualOf(descriptor.isActual, descriptor.isExpect)
+            ).apply {
+                typeAliases[descriptor] = this
+                annotations += descriptor.annotations.toAstAnnotations()
+            }
+        }
     }
 
     private fun KotlinType.toAstType(): AstType {

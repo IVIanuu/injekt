@@ -19,7 +19,7 @@ class Psi2AstStubGenerator {
             name = descriptor.name,
             kind = descriptor.kind.toAstClassKind(),
             visibility = descriptor.visibility.toAstVisibility(),
-            expectActual = multiPlatformModalityOf(
+            expectActual = expectActualOf(
                 descriptor.isActual,
                 descriptor.isExpect
             ),
