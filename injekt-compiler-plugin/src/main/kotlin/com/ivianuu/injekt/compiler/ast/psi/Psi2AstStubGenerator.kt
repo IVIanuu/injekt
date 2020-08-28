@@ -9,36 +9,36 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.name.FqName
 
-class Psi2AstStubGenerator {
+class Psi2AstStubGenerator(
+    private val storage: Psi2AstStorage
+) {
 
-    private val packageFragments = mutableMapOf<FqName, AstExternalPackageFragment>()
-    private val classes = mutableMapOf<ClassDescriptor, AstClass>()
+    fun get(descriptor: DeclarationDescriptor): AstDeclaration {
+        return when (descriptor) {
+            is ClassDescriptor -> descriptor.toAstClassStub()
+            else -> error("Unexpected descriptor $descriptor")
+        }
+    }
 
-    fun getOrCreateClass(descriptor: ClassDescriptor): AstClass = classes.getOrPut(descriptor) {
+    private fun ClassDescriptor.toAstClassStub() = storage.classes.getOrPut(this) {
         AstClass(
-            name = descriptor.name,
-            kind = descriptor.kind.toAstClassKind(),
-            visibility = descriptor.visibility.toAstVisibility(),
-            expectActual = expectActualOf(
-                descriptor.isActual,
-                descriptor.isExpect
-            ),
-            modality = descriptor.modality.toAstModality(),
-            isCompanion = descriptor.isCompanionObject,
-            isFun = descriptor.isFun,
-            isData = descriptor.isData,
-            isExternal = descriptor.isExternal,
-            isInner = descriptor.isInner
-        ).also { descriptor.findPackage().fqName.getPackageFragment().addChild(it) }
+            name = name,
+            kind = kind.toAstClassKind(),
+            visibility = visibility.toAstVisibility(),
+            expectActual = expectActualOf(isActual, isExpect),
+            modality = modality.toAstModality(),
+            isCompanion = isCompanionObject,
+            isFun = isFun,
+            isData = isData,
+            isExternal = isExternal,
+            isInner = isInner
+        ).also {
+            findPackage().fqName.getPackageFragment().addChild(it)
+        }
     }
 
-    private fun FqName.getPackageFragment() = packageFragments.getOrPut(this) {
+    private fun FqName.getPackageFragment() = storage.externalPackageFragments.getOrPut(this) {
         AstExternalPackageFragment(this)
-    }
-
-    private fun DeclarationDescriptor.toAst(): AstDeclaration = when (this) {
-        is ClassDescriptor -> this.toAst()
-        else -> error("Unexpected declaration $this")
     }
 
 }

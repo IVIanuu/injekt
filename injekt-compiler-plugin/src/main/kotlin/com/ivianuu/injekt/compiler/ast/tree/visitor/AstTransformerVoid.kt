@@ -14,7 +14,11 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
@@ -44,7 +48,9 @@ interface AstTransformerVoid : AstTransformer<Nothing?> {
     fun visitFile(file: AstFile) = file.transformChildrenAndCompose()
     override fun visitFile(file: AstFile, data: Nothing?) = visitFile(file)
 
-    fun visitDeclaration(declaration: AstDeclaration) = declaration.transformChildrenAndCompose()
+    fun visitDeclaration(declaration: AstDeclaration): AstTransformResult<AstStatement> =
+        declaration.transformChildrenAndCompose() as AstTransformResult<AstStatement>
+
     override fun visitDeclaration(declaration: AstDeclaration, data: Nothing?) =
         visitDeclaration(declaration)
 
@@ -85,9 +91,20 @@ interface AstTransformerVoid : AstTransformer<Nothing?> {
     override fun visitTypeAlias(typeAlias: AstTypeAlias, data: Nothing?) =
         visitTypeAlias(typeAlias)
 
-    fun visitExpression(expression: AstExpression) = expression.transformChildrenAndCompose()
+    fun visitExpression(expression: AstExpression): AstTransformResult<AstStatement> =
+        expression.transformChildrenAndCompose() as AstTransformResult<AstStatement>
+
     override fun visitExpression(expression: AstExpression, data: Nothing?) =
         visitExpression(expression)
+
+    fun <T> visitConst(const: AstConst<T>) = visitExpression(const)
+    override fun <T> visitConst(const: AstConst<T>, data: Nothing?) = visitConst(const)
+
+    fun visitBlock(block: AstBlock) = visitExpression(block)
+    override fun visitBlock(block: AstBlock, data: Nothing?) = visitBlock(block)
+
+    fun visitReturn(astReturn: AstReturn) = visitExpression(astReturn)
+    override fun visitReturn(astReturn: AstReturn, data: Nothing?) = visitReturn(astReturn)
 
     fun visitTypeArgument(typeArgument: AstTypeArgument) =
         typeArgument.transformChildrenAndCompose()

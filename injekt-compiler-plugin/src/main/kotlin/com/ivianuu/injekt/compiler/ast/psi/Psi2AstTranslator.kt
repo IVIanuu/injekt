@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.ast.psi
 
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.ast.tree.AstTarget
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstConstructor
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
@@ -12,15 +13,22 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.addChild
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
 import com.ivianuu.injekt.compiler.ast.tree.type.AstStarProjection
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeAbbreviation
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjectionImpl
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
@@ -30,21 +38,46 @@ import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtConstantExpression
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
+import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtReturnExpression
 import org.jetbrains.kotlin.psi.KtTypeAlias
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.BindingContextUtils
 import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.calls.components.hasDefaultValue
+import org.jetbrains.kotlin.resolve.bindingContextUtil.isUsedAsExpression
+import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.components.isVararg
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.resolve.constants.BooleanValue
+import org.jetbrains.kotlin.resolve.constants.ByteValue
+import org.jetbrains.kotlin.resolve.constants.CharValue
+import org.jetbrains.kotlin.resolve.constants.DoubleValue
+import org.jetbrains.kotlin.resolve.constants.FloatValue
+import org.jetbrains.kotlin.resolve.constants.IntValue
+import org.jetbrains.kotlin.resolve.constants.LongValue
+import org.jetbrains.kotlin.resolve.constants.NullValue
+import org.jetbrains.kotlin.resolve.constants.ShortValue
+import org.jetbrains.kotlin.resolve.constants.StringValue
+import org.jetbrains.kotlin.resolve.constants.UByteValue
+import org.jetbrains.kotlin.resolve.constants.UIntValue
+import org.jetbrains.kotlin.resolve.constants.ULongValue
+import org.jetbrains.kotlin.resolve.constants.UShortValue
+import org.jetbrains.kotlin.resolve.constants.evaluate.ConstantExpressionEvaluator
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjection
+import org.jetbrains.kotlin.types.expressions.ExpressionTypingUtils
 import org.jetbrains.kotlin.types.getAbbreviation
 import org.jetbrains.kotlin.types.model.TypeArgumentMarker
 import org.jetbrains.kotlin.types.upperIfFlexible
@@ -52,23 +85,9 @@ import org.jetbrains.kotlin.types.upperIfFlexible
 class Psi2AstTranslator(
     private val bindingTrace: BindingTrace,
     private val moduleDescriptor: ModuleDescriptor,
-    private val stubGenerator: Psi2AstStubGenerator
+    private val stubGenerator: Psi2AstStubGenerator,
+    private val storage: Psi2AstStorage
 ) {
-
-    private val files = mutableMapOf<KtFile, AstFile>()
-
-    private val classes = mutableMapOf<ClassDescriptor, AstClass>()
-    private val simpleFunctions = mutableMapOf<SimpleFunctionDescriptor, AstSimpleFunction>()
-    private val constructors = mutableMapOf<ConstructorDescriptor, AstConstructor>()
-    private val properties = mutableMapOf<PropertyDescriptor, AstProperty>()
-    private val typeParameters = mutableMapOf<TypeParameterDescriptor, AstTypeParameter>()
-    private val valueParameters = mutableMapOf<ValueParameterDescriptor, AstValueParameter>()
-    private val typeAliases = mutableMapOf<TypeAliasDescriptor, AstTypeAlias>()
-
-    private val types = mutableMapOf<KotlinType, AstType>()
-    private val typeAbbreviations = mutableMapOf<SimpleType, AstTypeAbbreviation>()
-    private val typeArguments = mutableMapOf<TypeArgumentMarker, AstTypeArgument>()
-    private val typeProjections = mutableMapOf<TypeProjection, AstTypeProjection>()
 
     fun generateModule(files: List<KtFile>): AstModuleFragment {
         return AstModuleFragment(moduleDescriptor.name).apply {
@@ -77,7 +96,7 @@ class Psi2AstTranslator(
     }
 
     private fun KtFile.toAstFile(): AstFile {
-        return files.getOrPut(this) {
+        return storage.files.getOrPut(this) {
             AstFile(
                 packageFqName = packageFqName,
                 name = name.asNameId()
@@ -119,7 +138,7 @@ class Psi2AstTranslator(
                         this
                     ) as TypeAliasDescriptor
                     ).toAstTypeAlias()
-            else -> error("Unexpected declaration $this")
+            else -> error("Unexpected declaration $this $javaClass $text")
         }
 
     private fun List<KtDeclaration>.toAstDeclarations() =
@@ -127,8 +146,8 @@ class Psi2AstTranslator(
 
     private fun ClassDescriptor.toAstClass(): AstClass {
         val declaration = findPsi() as? KtClassOrObject
-            ?: return stubGenerator.getOrCreateClass(this)
-        return classes.getOrPut(this) {
+            ?: return stubGenerator.get(this) as AstClass
+        return storage.classes.getOrPut(this) {
             AstClass(
                 name = name,
                 kind = kind.toAstClassKind(),
@@ -141,7 +160,7 @@ class Psi2AstTranslator(
                 isInner = isInner,
                 isExternal = isExternal
             ).apply {
-                classes[this@toAstClass] = this
+                storage.classes[this@toAstClass] = this
                 annotations += this@toAstClass.annotations.toAstAnnotations()
                 typeParameters += declaredTypeParameters.toAstTypeParameters()
                     .onEach { it.parent = this }
@@ -152,7 +171,9 @@ class Psi2AstTranslator(
     }
 
     private fun SimpleFunctionDescriptor.toAstSimpleFunction(): AstSimpleFunction {
-        return simpleFunctions.getOrPut(this) {
+        val declaration = findPsi() as? KtFunction
+            ?: return stubGenerator.get(this) as AstSimpleFunction
+        return storage.simpleFunctions.getOrPut(this) {
             AstSimpleFunction(
                 name = name,
                 visibility = visibility.toAstVisibility(),
@@ -164,7 +185,7 @@ class Psi2AstTranslator(
                 isTailrec = isTailrec,
                 isSuspend = isSuspend
             ).apply {
-                simpleFunctions[this@toAstSimpleFunction] = this
+                storage.simpleFunctions[this@toAstSimpleFunction] = this
                 annotations += this@toAstSimpleFunction.annotations.toAstAnnotations()
                 typeParameters += this@toAstSimpleFunction.typeParameters.toAstTypeParameters()
                     .onEach { it.parent = this }
@@ -172,30 +193,38 @@ class Psi2AstTranslator(
                     .onEach { it.parent = this }
                 overriddenFunctions += overriddenDescriptors
                     .map { (it as SimpleFunctionDescriptor).toAstSimpleFunction() }
+                body = declaration.bodyExpression
+                    ?.toAstBlock(this@toAstSimpleFunction, this)
             }
         }
     }
 
     private fun ConstructorDescriptor.toAstConstructor(): AstConstructor {
-        return constructors.getOrPut(this) {
+        val declaration = findPsi() as? KtConstructor<*>
+            ?: return stubGenerator.get(this) as AstConstructor
+        return storage.constructors.getOrPut(this) {
             AstConstructor(
                 visibility = visibility.toAstVisibility(),
                 expectActual = expectActualOf(isActual, isExpect),
                 returnType = returnType.toAstType(),
                 isPrimary = isPrimary
             ).apply {
-                constructors[this@toAstConstructor] = this// todo fixes recursion issues
+                storage.constructors[this@toAstConstructor] = this// todo fixes recursion issues
                 annotations += this@toAstConstructor.annotations.toAstAnnotations()
                 typeParameters += this@toAstConstructor.typeParameters.toAstTypeParameters()
                     .onEach { it.parent = this }
                 valueParameters += this@toAstConstructor.valueParameters.toAstValueParameters()
                     .onEach { it.parent = this }
+                body = declaration.bodyExpression
+                    ?.toAstBlock(this@toAstConstructor, this)
             }
         }
     }
 
     private fun PropertyDescriptor.toAstProperty(): AstProperty {
-        return properties.getOrPut(this) {
+        val declaration = findPsi() as? KtProperty
+            ?: return stubGenerator.get(this) as AstProperty
+        return storage.properties.getOrPut(this) {
             AstProperty(
                 name = name,
                 type = type.toAstType(),
@@ -210,7 +239,7 @@ class Psi2AstTranslator(
                 expectActual = expectActualOf(isActual, isExpect),
                 isExternal = isExternal
             ).apply {
-                properties[this@toAstProperty] = this
+                storage.properties[this@toAstProperty] = this
                 annotations += this@toAstProperty.annotations.toAstAnnotations()
                 typeParameters += this@toAstProperty.typeParameters.toAstTypeParameters()
                     .onEach { it.parent = this }
@@ -219,14 +248,16 @@ class Psi2AstTranslator(
     }
 
     private fun TypeAliasDescriptor.toAstTypeAlias(): AstTypeAlias {
-        return typeAliases.getOrPut(this) {
+        val declaration = findPsi() as? KtTypeAlias
+            ?: return stubGenerator.get(this) as AstTypeAlias
+        return storage.typeAliases.getOrPut(this) {
             AstTypeAlias(
                 name = name,
                 type = expandedType.toAstType(),
                 visibility = visibility.toAstVisibility(),
                 expectActual = expectActualOf(isActual, isExpect)
             ).apply {
-                typeAliases[this@toAstTypeAlias] = this
+                storage.typeAliases[this@toAstTypeAlias] = this
                 annotations += this@toAstTypeAlias.annotations.toAstAnnotations()
                 typeParameters += this@toAstTypeAlias.declaredTypeParameters.toAstTypeParameters()
                     .onEach { it.parent = this }
@@ -235,12 +266,12 @@ class Psi2AstTranslator(
     }
 
     // todo
-    private fun AnnotationDescriptor.toAstAnnotation() = AstCall()
+    private fun AnnotationDescriptor.toAstAnnotation() = AstCall(type.toAstType())
     private fun List<AnnotationDescriptor>.toAstAnnotations() = map { it.toAstAnnotation() }
     private fun Annotations.toAstAnnotations() = map { it.toAstAnnotation() }
 
     private fun TypeParameterDescriptor.toAstTypeParameter(): AstTypeParameter {
-        return typeParameters.getOrPut(this) {
+        return storage.typeParameters.getOrPut(this) {
             AstTypeParameter(
                 name = name,
                 isReified = isReified,
@@ -256,7 +287,9 @@ class Psi2AstTranslator(
         map { it.toAstTypeParameter() }
 
     private fun ValueParameterDescriptor.toAstValueParameter(): AstValueParameter {
-        return this@Psi2AstTranslator.valueParameters.getOrPut(this) {
+        val declaration = findPsi() as KtParameter
+        val defaultValueExpression = declaration.defaultValue
+        return storage.valueParameters.getOrPut(this) {
             AstValueParameter(
                 name = name,
                 type = type.toAstType(),
@@ -266,7 +299,7 @@ class Psi2AstTranslator(
                     isNoinline -> AstValueParameter.InlineHint.NOINLINE
                     else -> null
                 },
-                defaultValue = if (hasDefaultValue()) AstCall() else null // todo
+                defaultValue = defaultValueExpression?.toAstExpression()
             ).apply {
                 annotations += this@toAstValueParameter.annotations.toAstAnnotations()
             }
@@ -276,8 +309,71 @@ class Psi2AstTranslator(
     private fun List<ValueParameterDescriptor>.toAstValueParameters() =
         map { it.toAstValueParameter() }
 
-    private fun KotlinType.toAstType(): AstType {
-        return types.getOrPut(this) {
+    private fun KtExpression.toAstExpression(): AstExpression =
+        when (this) {
+            is KtBlockExpression -> toAstBlock()
+            is KtConstantExpression -> toAstConst()
+            else -> error("Unexpected expression $this $javaClass $text")
+        }
+
+    private fun KtExpression.toAstBlock(
+        scopeOwnerDescriptor: DeclarationDescriptor,
+        scopeOwnerDeclaration: AstDeclaration
+    ): AstBlock {
+        return if (this is KtBlockExpression) {
+            toAstBlock()
+        } else {
+            val type = getTypeInferredByFrontendOrFail(this).toAstType()
+            val expression = toAstExpression()
+            AstBlock(type).apply {
+                statements += AstReturn(
+                    type,
+                    scopeOwnerDeclaration as AstTarget,
+                    expression
+                )
+            }
+        }
+    }
+
+    private fun KtBlockExpression.toAstBlock(): AstBlock {
+        return AstBlock(getExpressionTypeWithCoercionToUnitOrFail(this).toAstType()).apply {
+            statements += this@toAstBlock.statements.map { it.toAstStatement() }
+        }
+    }
+
+    private fun KtConstantExpression.toAstConst(): AstConst<*> {
+        val constantValue =
+            ConstantExpressionEvaluator.getConstant(this, bindingTrace.bindingContext)
+                ?.toConstantValue(getTypeInferredByFrontendOrFail(this))
+                ?: error("KtConstantExpression was not evaluated: $text")
+        val constantType = constantValue.getType(moduleDescriptor).toAstType()
+        return when (constantValue) {
+            is StringValue -> AstConst.string(constantType, constantValue.value)
+            is IntValue -> AstConst.int(constantType, constantValue.value)
+            is UIntValue -> AstConst.int(constantType, constantValue.value)
+            is NullValue -> AstConst.constNull(constantType)
+            is BooleanValue -> AstConst.boolean(constantType, constantValue.value)
+            is LongValue -> AstConst.long(constantType, constantValue.value)
+            is ULongValue -> AstConst.long(constantType, constantValue.value)
+            is DoubleValue -> AstConst.double(constantType, constantValue.value)
+            is FloatValue -> AstConst.float(constantType, constantValue.value)
+            is CharValue -> AstConst.char(constantType, constantValue.value)
+            is ByteValue -> AstConst.byte(constantType, constantValue.value)
+            is UByteValue -> AstConst.byte(constantType, constantValue.value)
+            is ShortValue -> AstConst.short(constantType, constantValue.value)
+            is UShortValue -> AstConst.short(constantType, constantValue.value)
+            else -> TODO("Unexpected constant value: ${constantValue.javaClass.simpleName} $constantValue")
+        }
+    }
+
+    private fun KtElement.toAstStatement(): AstStatement = when (this) {
+        is KtExpression -> toAstExpression()
+        is KtDeclaration -> toAstDeclaration()
+        else -> error("Unexpected element $this $javaClass $text")
+    }
+
+    fun KotlinType.toAstType(): AstType {
+        return storage.types.getOrPut(this) {
             val approximatedType = upperIfFlexible()
             AstType().apply {
                 classifier =
@@ -294,7 +390,7 @@ class Psi2AstTranslator(
     }
 
     private fun SimpleType.toAstTypeAbbreviation(): AstTypeAbbreviation {
-        return typeAbbreviations.getOrPut(this) {
+        return storage.typeAbbreviations.getOrPut(this) {
             val typeAliasDescriptor = constructor.declarationDescriptor.let {
                 it as? TypeAliasDescriptor
                     ?: throw AssertionError("TypeAliasDescriptor expected: $it")
@@ -308,7 +404,7 @@ class Psi2AstTranslator(
     }
 
     private fun TypeArgumentMarker.toAstTypeArgument(): AstTypeArgument {
-        return typeArguments.getOrPut(this) {
+        return storage.typeArguments.getOrPut(this) {
             when (this) {
                 is StarProjectionImpl -> AstStarProjection
                 is TypeProjection -> toAstTypeProjection()
@@ -318,7 +414,7 @@ class Psi2AstTranslator(
     }
 
     private fun TypeProjection.toAstTypeProjection(): AstTypeProjection {
-        return typeProjections.getOrPut(this) {
+        return storage.typeProjections.getOrPut(this) {
             AstTypeProjectionImpl(
                 variance = projectionKind.toAstVariance(),
                 type = type.toAstType()
@@ -326,4 +422,56 @@ class Psi2AstTranslator(
         }
     }
 
+    private fun getTypeInferredByFrontend(key: KtExpression): KotlinType? =
+        bindingTrace.getType(key)
+
+    private fun getTypeInferredByFrontendOrFail(key: KtExpression): KotlinType =
+        getTypeInferredByFrontend(key) ?: error("No type for expression: ${key.text}")
+
+    private fun getExpressionTypeWithCoercionToUnit(key: KtExpression): KotlinType? =
+        if (key.isUsedAsExpression(bindingTrace.bindingContext))
+            getTypeInferredByFrontend(key)
+        else
+            moduleDescriptor.builtIns.unitType
+
+    private fun getExpressionTypeWithCoercionToUnitOrFail(key: KtExpression): KotlinType =
+        getExpressionTypeWithCoercionToUnit(key) ?: error("No type for expression: ${key.text}")
+
+    private fun getResolvedCall(key: KtElement): ResolvedCall<out CallableDescriptor>? =
+        key.getResolvedCall(bindingTrace.bindingContext)
+
+    private fun scopeOwnerAsCallable(scopeOwner: DeclarationDescriptor) =
+        (scopeOwner as? CallableDescriptor)
+            ?: throw AssertionError("'return' in a non-callable: $scopeOwner")
+
+    private fun getReturnExpressionTarget(
+        expression: KtReturnExpression,
+        scopeOwner: DeclarationDescriptor
+    ): CallableDescriptor =
+        if (!ExpressionTypingUtils.isFunctionLiteral(scopeOwner) && !ExpressionTypingUtils.isFunctionExpression(
+                scopeOwner
+            )
+        ) {
+            scopeOwnerAsCallable(scopeOwner)
+        } else {
+            val label = expression.getTargetLabel()
+            when {
+                label != null -> {
+                    val labelTarget =
+                        bindingTrace.get(BindingContext.LABEL_TARGET, label)!!
+                    val labelTargetDescriptor =
+                        bindingTrace.get(BindingContext.DECLARATION_TO_DESCRIPTOR, labelTarget)!!
+                    labelTargetDescriptor as CallableDescriptor
+                }
+                ExpressionTypingUtils.isFunctionLiteral(scopeOwner) -> {
+                    BindingContextUtils.getContainingFunctionSkipFunctionLiterals(
+                        scopeOwner,
+                        true
+                    ).first
+                }
+                else -> {
+                    scopeOwnerAsCallable(scopeOwner)
+                }
+            }
+        }
 }

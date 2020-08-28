@@ -1,9 +1,12 @@
 package com.ivianuu.injekt.compiler.ast.tree.expression
 
+import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
 
-class AstCall : AstExpressionBase() {
+class AstCall(
+    override var type: AstType
+) : AstExpressionBase() {
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R {
         TODO()

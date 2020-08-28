@@ -7,6 +7,7 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.extensions.ProjectExtensionDescriptor
 import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.FqName
 
 interface AstGenerationExtension {
     companion object : ProjectExtensionDescriptor<AstGenerationExtension>(
@@ -18,15 +19,15 @@ interface AstGenerationExtension {
 }
 
 class AstPluginContext(
-    private val moduleDescriptor: ModuleDescriptor
+    private val moduleDescriptor: ModuleDescriptor,
+    private val stubGenerator: Psi2AstStubGenerator
 ) {
 
-    private val classesByFqName = mutableMapOf<String, AstClass?>()
-    private val stubGenerator = Psi2AstStubGenerator()
+    private val classesByFqName = mutableMapOf<FqName, AstClass?>()
 
-    fun referenceClass(fqName: String): AstClass? = classesByFqName.getOrPut(fqName) {
-        moduleDescriptor.findClassAcrossModuleDependencies(ClassId.fromString(fqName))
-            ?.let { stubGenerator.getOrCreateClass(it) }
+    fun referenceClass(fqName: FqName): AstClass? = classesByFqName.getOrPut(fqName) {
+        moduleDescriptor.findClassAcrossModuleDependencies(ClassId.fromString(fqName.asString()))
+            ?.let { stubGenerator.get(it) as AstClass }
     }
 
 }

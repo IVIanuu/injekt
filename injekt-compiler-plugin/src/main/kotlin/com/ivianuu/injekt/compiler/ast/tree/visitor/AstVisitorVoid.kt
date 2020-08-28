@@ -14,7 +14,10 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
@@ -79,6 +82,16 @@ interface AstVisitorVoid : AstVisitor<Unit, Nothing?> {
     fun visitExpression(expression: AstExpression) = visitElement(expression)
     override fun visitExpression(expression: AstExpression, data: Nothing?) =
         visitExpression(expression)
+
+    fun <T> visitConst(const: AstConst<T>) = visitExpression(const)
+    override fun <T> visitConst(const: AstConst<T>, data: Nothing?) =
+        visitConst(const)
+
+    fun visitBlock(block: AstBlock) = visitExpression(block)
+    override fun visitBlock(block: AstBlock, data: Nothing?) = visitBlock(block)
+
+    fun visitReturn(astReturn: AstReturn) = visitExpression(astReturn)
+    override fun visitReturn(astReturn: AstReturn, data: Nothing?) = visitReturn(astReturn)
 
     fun visitTypeArgument(typeArgument: AstTypeArgument) = visitElement(typeArgument)
     override fun visitTypeArgument(typeArgument: AstTypeArgument, data: Nothing?) =

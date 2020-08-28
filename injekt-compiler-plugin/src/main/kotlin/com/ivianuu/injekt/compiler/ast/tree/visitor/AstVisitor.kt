@@ -14,7 +14,10 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
@@ -51,6 +54,11 @@ interface AstVisitor<R, D> {
         visitDeclaration(typeAlias, data)
 
     fun visitExpression(expression: AstExpression, data: D) = visitElement(expression, data)
+    fun <T> visitConst(const: AstConst<T>, data: D) = visitExpression(const, data)
+
+    fun visitBlock(block: AstBlock, data: D) = visitExpression(block, data)
+
+    fun visitReturn(astReturn: AstReturn, data: D) = visitExpression(astReturn, data)
 
     fun visitTypeArgument(typeArgument: AstTypeArgument, data: D) = visitElement(typeArgument, data)
     fun visitType(type: AstType, data: D) = visitTypeArgument(type, data)

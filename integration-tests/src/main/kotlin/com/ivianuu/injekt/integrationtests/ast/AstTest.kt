@@ -4,10 +4,10 @@ import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.ast.extension.AstGenerationExtension
 import com.ivianuu.injekt.compiler.ast.extension.AstPluginContext
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
-import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
 import com.ivianuu.injekt.compiler.ast.tree.declaration.addChild
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformerVoid
 import com.ivianuu.injekt.test.codegen
@@ -40,12 +40,14 @@ class AstTest {
                             block()
                         }
                         
+                        fun returningString() = 0
+                        
                         typealias MyTypeAlias = () -> String
                         
                         typealias MyTypeAlias2<T> = () -> String
                         
-                        val prop = "hello world"
-                        val prop2 by lazy { "lol" }
+                        //val prop = "hello world"
+                        //val prop2 by lazy { "lol" }
                         
                         
                         """,
@@ -74,7 +76,7 @@ class AstTest {
                                     moduleFragment.files.toList().forEach { file ->
                                         file.transformChildren(
                                             object : AstTransformerVoid {
-                                                override fun visitClass(klass: AstClass): AstTransformResult<AstDeclaration> {
+                                                override fun visitClass(klass: AstClass): AstTransformResult<AstStatement> {
                                                     moduleFragment.files += AstFile(
                                                         packageFqName = file.packageFqName,
                                                         name = (klass.name.asString() + "Context.kt").asNameId()

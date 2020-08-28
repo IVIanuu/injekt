@@ -1,16 +1,22 @@
 package com.ivianuu.injekt.compiler.ast.tree.declaration
 
+import com.ivianuu.injekt.compiler.ast.tree.AstTarget
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 
 abstract class AstFunction : AstDeclarationBase(), AstAnnotationContainer,
     AstDeclarationParent,
     AstDeclarationWithVisibility,
-    AstTypeParameterContainer {
+    AstTypeParameterContainer,
+    AstTarget {
 
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
     val valueParameters: MutableList<AstValueParameter> = mutableListOf()
 
     abstract var returnType: AstType
 
-    //var body: AstBody? = null
+    var body: AstBlock? = null
+
+    override var label: String? = null
+
 }

@@ -16,6 +16,9 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.fqName
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.type.AstStarProjection
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
@@ -136,12 +139,12 @@ object Ast2StringTranslator {
         override fun visitSimpleFunction(simpleFunction: AstSimpleFunction) {
             simpleFunction.renderAnnotations()
             appendIndent()
-            if (simpleFunction.overriddenFunctions.isNotEmpty()) {
-                append("override ")
-            }
             simpleFunction.renderVisibility()
             simpleFunction.renderExpectActual()
             if (simpleFunction.parent is AstClass) simpleFunction.renderModality()
+            if (simpleFunction.overriddenFunctions.isNotEmpty()) {
+                append("override ")
+            }
             if (simpleFunction.isInline) {
                 append("inline ")
             }
@@ -179,8 +182,7 @@ object Ast2StringTranslator {
                 simpleFunction.typeParameters.renderWhere()
                 appendSpace()
             }
-            appendBraced {
-            }
+            appendBraced { simpleFunction.body!!.accept(this) }
         }
 
         override fun visitConstructor(constructor: AstConstructor) {
@@ -196,8 +198,7 @@ object Ast2StringTranslator {
             }
             append(")")
             append(": ${constructor.returnType.render()} ")
-            appendBraced {
-            }
+            appendBraced { constructor.body!!.accept(this) }
         }
 
         override fun visitPropertyAccessor(propertyAccessor: AstPropertyAccessor) {
@@ -214,9 +215,7 @@ object Ast2StringTranslator {
                 if (index != propertyAccessor.valueParameters.lastIndex) append(", ")
             }
             append(")")
-            appendBraced {
-
-            }
+            appendBraced { propertyAccessor.body!!.accept(this) }
         }
 
         override fun visitProperty(property: AstProperty) {
@@ -224,6 +223,9 @@ object Ast2StringTranslator {
             appendIndent()
             property.renderVisibility()
             if (property.parent is AstClass) property.renderModality()
+            if (property.overriddenProperties.isNotEmpty()) {
+                append("override ")
+            }
             append("val ")
             if (property.typeParameters.isNotEmpty()) {
                 property.typeParameters.renderList()
@@ -316,7 +318,6 @@ object Ast2StringTranslator {
             }
         }
 
-
         override fun visitTypeAlias(typeAlias: AstTypeAlias) {
             typeAlias.renderAnnotations()
             append("typealias ")
@@ -358,6 +359,27 @@ object Ast2StringTranslator {
                 appendIndentedLine("@TODO")
                 if (index != annotations.lastIndex) appendLine()
             }
+        }
+
+        override fun <T> visitConst(const: AstConst<T>) {
+            append(
+                if (const.kind is AstConst.Kind.Null) "null"
+                else const.value.toString()
+            )
+        }
+
+        override fun visitBlock(block: AstBlock) {
+            block.acceptChildren(this)
+        }
+
+        override fun visitReturn(astReturn: AstReturn) {
+            appendIndent()
+            append("return")
+            astReturn.target.label?.let {
+                append("@$it ")
+            } ?: append(" ")
+            astReturn.expression.accept(this)
+            appendLine()
         }
 
         private fun AstType.render() {

@@ -2,11 +2,12 @@ package com.ivianuu.injekt.compiler.ast.tree.declaration
 
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
 import org.jetbrains.kotlin.name.FqName
 
-interface AstDeclaration : AstAnnotationContainer {
+interface AstDeclaration : AstStatement {
     var parent: AstDeclarationParent
 }
 
@@ -22,6 +23,7 @@ fun AstDeclarationContainer.addChild(declaration: AstDeclaration) {
 interface AstDeclarationParent : AstElement
 
 abstract class AstDeclarationBase : AstDeclaration {
+
     override lateinit var parent: AstDeclarationParent
     override val annotations: MutableList<AstCall> = mutableListOf()
 

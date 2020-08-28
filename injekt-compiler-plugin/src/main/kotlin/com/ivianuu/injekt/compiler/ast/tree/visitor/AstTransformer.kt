@@ -14,7 +14,11 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
@@ -48,8 +52,8 @@ interface AstTransformer<D> : AstVisitor<AstTransformResult<AstElement>, D> {
     override fun visitDeclaration(
         declaration: AstDeclaration,
         data: D
-    ): AstTransformResult<AstDeclaration> =
-        visitElement(declaration, data) as AstTransformResult<AstDeclaration>
+    ): AstTransformResult<AstStatement> =
+        visitElement(declaration, data) as AstTransformResult<AstStatement>
 
     override fun visitClass(klass: AstClass, data: D) =
         visitDeclaration(klass, data)
@@ -81,8 +85,17 @@ interface AstTransformer<D> : AstVisitor<AstTransformResult<AstElement>, D> {
     override fun visitExpression(
         expression: AstExpression,
         data: D
-    ): AstTransformResult<AstExpression> =
-        visitElement(expression, data) as AstTransformResult<AstExpression>
+    ): AstTransformResult<AstStatement> =
+        visitElement(expression, data) as AstTransformResult<AstStatement>
+
+    override fun <T> visitConst(const: AstConst<T>, data: D) =
+        visitExpression(const, data)
+
+    override fun visitBlock(block: AstBlock, data: D) =
+        visitExpression(block, data)
+
+    override fun visitReturn(astReturn: AstReturn, data: D) =
+        visitExpression(astReturn, data)
 
     override fun visitTypeArgument(
         typeArgument: AstTypeArgument,
