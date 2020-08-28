@@ -89,13 +89,13 @@ import org.jetbrains.kotlin.types.upperIfFlexible
 
 class Psi2AstTranslator(
     private val bindingTrace: BindingTrace,
-    private val moduleDescriptor: ModuleDescriptor,
+    private val module: ModuleDescriptor,
     private val stubGenerator: Psi2AstStubGenerator,
     private val storage: Psi2AstStorage
 ) {
 
     fun generateModule(files: List<KtFile>): AstModuleFragment {
-        return AstModuleFragment(moduleDescriptor.name).apply {
+        return AstModuleFragment(module.name).apply {
             this.files += files.map { it.toAstFile() }
         }
     }
@@ -336,7 +336,7 @@ class Psi2AstTranslator(
             ConstantExpressionEvaluator.getConstant(this, bindingTrace.bindingContext)
                 ?.toConstantValue(getTypeInferredByFrontendOrFail(this))
                 ?: error("KtConstantExpression was not evaluated: $text")
-        val constantType = constantValue.getType(moduleDescriptor).toAstType()
+        val constantType = constantValue.getType(module).toAstType()
         return when (constantValue) {
             is StringValue -> AstConst.string(constantType, constantValue.value)
             is IntValue -> AstConst.int(constantType, constantValue.value)
@@ -475,7 +475,7 @@ class Psi2AstTranslator(
         if (key.isUsedAsExpression(bindingTrace.bindingContext))
             getTypeInferredByFrontend(key)
         else
-            moduleDescriptor.builtIns.unitType
+            module.builtIns.unitType
 
     private fun getExpressionTypeWithCoercionToUnitOrFail(key: KtExpression): KotlinType =
         getExpressionTypeWithCoercionToUnit(key) ?: error("No type for expression: ${key.text}")

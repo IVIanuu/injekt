@@ -83,7 +83,7 @@ class AstAnalysisHandlerExtension(
 
         println("generated module $moduleFragment for ${files.map { it.name }}")
 
-        val pluginContext = AstPluginContext(module, stubGenerator)
+        val pluginContext = AstPluginContext(module, storage, stubGenerator)
         extensions.forEach { it.generate(moduleFragment, pluginContext) }
 
         return moduleFragment.files
