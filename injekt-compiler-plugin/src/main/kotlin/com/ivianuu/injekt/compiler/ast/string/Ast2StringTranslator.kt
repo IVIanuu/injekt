@@ -141,6 +141,7 @@ object Ast2StringTranslator {
             }
             simpleFunction.renderVisibility()
             simpleFunction.renderExpectActual()
+            if (simpleFunction.parent is AstClass) simpleFunction.renderModality()
             if (simpleFunction.isInline) {
                 append("inline ")
             }
@@ -222,7 +223,7 @@ object Ast2StringTranslator {
             property.renderAnnotations()
             appendIndent()
             property.renderVisibility()
-            property.renderModality()
+            if (property.parent is AstClass) property.renderModality()
             append("val ")
             if (property.typeParameters.isNotEmpty()) {
                 property.typeParameters.renderList()
