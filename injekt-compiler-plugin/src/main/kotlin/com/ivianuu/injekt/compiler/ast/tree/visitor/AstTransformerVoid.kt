@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
@@ -103,6 +104,15 @@ interface AstTransformerVoid : AstTransformer<Nothing?> {
 
     fun visitBlock(block: AstBlock) = visitExpression(block)
     override fun visitBlock(block: AstBlock, data: Nothing?) = visitBlock(block)
+
+    fun visitStringConcatenation(stringConcatenation: AstStringConcatenation) =
+        visitExpression(stringConcatenation)
+
+    override fun visitStringConcatenation(
+        stringConcatenation: AstStringConcatenation,
+        data: Nothing?
+    ) =
+        visitStringConcatenation(stringConcatenation)
 
     fun visitCall(call: AstCall) = visitExpression(call)
     override fun visitCall(call: AstCall, data: Nothing?) = visitCall(call)

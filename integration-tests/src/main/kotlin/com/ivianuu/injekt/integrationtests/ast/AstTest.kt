@@ -46,10 +46,8 @@ class AstTest {
                         
                         typealias MyTypeAlias2<T> = () -> String
                         
-                        //val prop = "hello world"
+                        val prop = "hello world"
                         //val prop2 by lazy { "lol" }
-                        
-                        
                         """,
                     injektImports = false,
                     initializeInjekt = false

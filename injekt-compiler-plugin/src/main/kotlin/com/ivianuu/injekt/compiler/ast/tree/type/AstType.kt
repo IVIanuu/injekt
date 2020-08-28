@@ -8,11 +8,14 @@ package com.ivianuu.injekt.compiler.ast.tree.type
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.AstVariance
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstAnnotationContainer
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
+import com.ivianuu.injekt.compiler.ast.tree.declaration.fqName
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
+import org.jetbrains.kotlin.name.FqName
 
 class AstType : AstAnnotationContainer, AstTypeArgument, AstTypeProjection {
 
@@ -114,3 +117,20 @@ class AstTypeAbbreviation(
     }
 
 }
+
+fun AstType.copy(
+    classifier: AstClassifier = this.classifier,
+    annotations: MutableList<AstCall> = this.annotations,
+    hasQuestionMark: Boolean = this.hasQuestionMark,
+    arguments: MutableList<AstTypeArgument> = this.arguments,
+    abbreviation: AstTypeAbbreviation? = this.abbreviation
+) = AstType().apply {
+    this.classifier = classifier
+    this.annotations += annotations
+    this.hasQuestionMark = hasQuestionMark
+    this.arguments += arguments
+    this.abbreviation = abbreviation
+}
+
+fun AstType.isClassType(fqName: FqName) =
+    (classifier as? AstClass)?.fqName == fqName

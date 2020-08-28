@@ -15,12 +15,12 @@ import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.SimpleType
@@ -31,7 +31,8 @@ class Psi2AstStorage {
 
     val files = mutableMapOf<KtFile, AstFile>()
 
-    val externalPackageFragments = mutableMapOf<FqName, AstExternalPackageFragment>()
+    val externalPackageFragments =
+        mutableMapOf<PackageFragmentDescriptor, AstExternalPackageFragment>()
 
     val classes = mutableMapOf<ClassDescriptor, AstClass>()
     val simpleFunctions = mutableMapOf<SimpleFunctionDescriptor, AstSimpleFunction>()

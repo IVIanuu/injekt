@@ -20,11 +20,14 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
 import com.ivianuu.injekt.compiler.ast.tree.type.AstStarProjection
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
+import com.ivianuu.injekt.compiler.ast.tree.type.isClassType
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitorVoid
+import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.name.FqName
 
 object Ast2StringTranslator {
@@ -382,6 +385,16 @@ object Ast2StringTranslator {
 
         override fun visitBlock(block: AstBlock) {
             block.acceptChildren(this)
+        }
+
+        override fun visitStringConcatenation(stringConcatenation: AstStringConcatenation) {
+            append("\"")
+            stringConcatenation.arguments.forEach {
+                if (it.type.isClassType(KotlinBuiltIns.FQ_NAMES.string.toSafe())) append("\${")
+                it.accept(this)
+                append("}")
+            }
+            append("\"")
         }
 
         override fun visitCall(call: AstCall) {

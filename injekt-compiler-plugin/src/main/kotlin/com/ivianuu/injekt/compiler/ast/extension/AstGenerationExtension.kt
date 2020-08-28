@@ -29,6 +29,20 @@ class AstPluginContext(
     private val stubGenerator: Psi2AstStubGenerator
 ) {
 
+    val builtIns = AstBuiltIns(
+        module.builtIns,
+        {
+            with(stubGenerator.translator) {
+                it.toAstClass()
+            }
+        },
+        {
+            with(stubGenerator.translator) {
+                it.toAstType()
+            }
+        }
+    )
+
     private val classes = mutableMapOf<FqName, AstClass?>()
     private val simpleFunctions = mutableMapOf<FqName, List<AstSimpleFunction>>()
     private val constructors = mutableMapOf<FqName, List<AstConstructor>>()
