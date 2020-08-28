@@ -10,6 +10,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstPackageFragment
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
 
@@ -55,6 +56,10 @@ interface AstTransformerVoid : AstTransformer<Nothing?> {
     fun visitConstructor(declaration: AstConstructor) = visitFunction(declaration)
     override fun visitConstructor(declaration: AstConstructor, data: Nothing?) =
         visitConstructor(declaration)
+
+    fun visitTypeParameter(declaration: AstTypeParameter) = visitDeclaration(declaration)
+    override fun visitTypeParameter(declaration: AstTypeParameter, data: Nothing?) =
+        visitTypeParameter(declaration)
 
     fun visitValueParameter(declaration: AstValueParameter) = visitDeclaration(declaration)
     override fun visitValueParameter(declaration: AstValueParameter, data: Nothing?) =

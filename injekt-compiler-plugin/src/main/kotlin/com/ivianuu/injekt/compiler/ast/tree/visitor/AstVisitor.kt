@@ -10,6 +10,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstPackageFragment
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
 
@@ -31,9 +32,11 @@ interface AstVisitor<R, D> {
         visitFunction(declaration, data)
 
     fun visitConstructor(declaration: AstConstructor, data: D) = visitFunction(declaration, data)
-    fun visitValueParameter(declaration: AstValueParameter, data: D) =
+    fun visitTypeParameter(declaration: AstTypeParameter, data: D) =
         visitDeclaration(declaration, data)
 
+    fun visitValueParameter(declaration: AstValueParameter, data: D) =
+        visitDeclaration(declaration, data)
     fun visitTypeAlias(declaration: AstTypeAlias, data: D) =
         visitDeclaration(declaration, data)
 

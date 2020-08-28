@@ -11,6 +11,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationWithVisibi
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.fqName
 import com.ivianuu.injekt.compiler.ast.tree.type.AstStarProjection
@@ -115,6 +116,12 @@ object Ast2StringTranslator {
             }.let { }
 
             append("${declaration.name} ")
+            if (declaration.typeParameters.isNotEmpty()) {
+                declaration.typeParameters.renderList()
+                appendSpace()
+                declaration.typeParameters.renderWhere()
+                appendSpace()
+            }
             if (declaration.declarations.isNotEmpty()) {
                 appendBraced {
                     declaration.renderDeclarations()
@@ -130,7 +137,10 @@ object Ast2StringTranslator {
             declaration.renderVisibility()
             declaration.renderExpectActual()
             append("fun ")
-            // todo type parameters
+            if (declaration.typeParameters.isNotEmpty()) {
+                declaration.typeParameters.renderList()
+                append(" ")
+            }
             append("${declaration.name}")
             append("(")
             declaration.valueParameters.forEachIndexed { index, valueParameter ->
@@ -141,6 +151,10 @@ object Ast2StringTranslator {
             append(": ")
             declaration.returnType.render()
             appendSpace()
+            if (declaration.typeParameters.isNotEmpty()) {
+                declaration.typeParameters.renderWhere()
+                appendSpace()
+            }
             appendBraced {
             }
         }
@@ -162,6 +176,48 @@ object Ast2StringTranslator {
             }
         }
 
+        override fun visitTypeParameter(declaration: AstTypeParameter) {
+            declaration.render(null)
+        }
+
+        private fun List<AstTypeParameter>.renderList() {
+            if (isNotEmpty()) {
+                append("<")
+                forEachIndexed { index, typeParameter ->
+                    typeParameter.accept(this@Writer)
+                    if (index != lastIndex) append(", ")
+                }
+                append(">")
+            }
+        }
+
+        private fun List<AstTypeParameter>.renderWhere() {
+            if (isNotEmpty()) {
+                append("where ")
+                val typeParametersWithSuperTypes = flatMap { typeParameter ->
+                    typeParameter.superTypes
+                        .map { typeParameter to it }
+                }
+
+                typeParametersWithSuperTypes.forEachIndexed { index, (typeParameter, superType) ->
+                    typeParameter.render(superType)
+                    if (index != typeParametersWithSuperTypes.lastIndex) append(", ")
+                }
+            }
+        }
+
+        private fun AstTypeParameter.render(superTypeToRender: AstType?) {
+            if (isReified) {
+                append("reified ")
+            }
+            renderAnnotations()
+            append("$name")
+            if (superTypeToRender != null) {
+                append(" : ")
+                superTypeToRender.render()
+            }
+        }
+
         override fun visitValueParameter(declaration: AstValueParameter) {
             declaration.renderAnnotations()
             if (declaration.isVarArg) {
@@ -178,11 +234,15 @@ object Ast2StringTranslator {
             }
         }
 
+
         override fun visitTypeAlias(declaration: AstTypeAlias) {
             declaration.renderAnnotations()
             append("typealias ")
             append("${declaration.name}")
-            // todo type parameters
+            if (declaration.typeParameters.isNotEmpty()) {
+                declaration.typeParameters.renderList()
+
+            }
             append(" = ")
             declaration.type.render()
         }
@@ -223,6 +283,7 @@ object Ast2StringTranslator {
 
             when (val classifier = classifier) {
                 is AstClass -> append(classifier.fqName)
+                is AstTypeParameter -> append(classifier.name)
                 else -> error("Unexpected classifier $classifier")
             }
 

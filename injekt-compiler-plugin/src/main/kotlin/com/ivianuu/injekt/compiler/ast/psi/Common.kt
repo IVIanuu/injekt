@@ -2,12 +2,14 @@ package com.ivianuu.injekt.compiler.ast.psi
 
 import com.ivianuu.injekt.compiler.ast.tree.AstExpectActual
 import com.ivianuu.injekt.compiler.ast.tree.AstModality
+import com.ivianuu.injekt.compiler.ast.tree.AstVariance
 import com.ivianuu.injekt.compiler.ast.tree.AstVisibility
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
+import org.jetbrains.kotlin.types.Variance
 
 fun Modality.toAstModality() = when (this) {
     Modality.FINAL -> AstModality.FINAL
@@ -32,6 +34,12 @@ fun ClassKind.toAstClassKind() = when (this) {
     ClassKind.ENUM_ENTRY -> AstClass.Kind.ENUM_ENTRY
     ClassKind.ANNOTATION_CLASS -> AstClass.Kind.ANNOTATION
     ClassKind.OBJECT -> AstClass.Kind.OBJECT
+}
+
+fun Variance.toAstVariance() = when (this) {
+    Variance.INVARIANT -> null
+    Variance.IN_VARIANCE -> AstVariance.IN
+    Variance.OUT_VARIANCE -> AstVariance.OUT
 }
 
 fun expectActualOf(

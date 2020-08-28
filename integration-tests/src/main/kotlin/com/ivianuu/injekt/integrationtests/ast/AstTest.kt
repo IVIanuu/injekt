@@ -28,7 +28,12 @@ class AstTest {
                     """
                         class NotTransformed
                         
+                        class Other<T>
+                        
                         fun aFunction() {
+                        }
+                        
+                        fun <T, S> aFunction(a: T, b: S) {
                         }
                         
                         fun higherOrder(block: (Int, Long) -> String) { 
@@ -36,6 +41,8 @@ class AstTest {
                         }
                         
                         typealias MyTypeAlias = () -> String
+                        
+                        typealias MyTypeAlias2<T> = () -> String
                         """,
                     injektImports = false,
                     initializeInjekt = false

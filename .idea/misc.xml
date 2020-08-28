@@ -1,16 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ProjectPlainTextFileTypeManager">
-    <file url="file://$PROJECT_DIR$/injekt-compiler-plugin/src/main/kotlin/com/ivianuu/injekt/compiler/ast/tree/declaration/IrConstructorImpl" />
     <file url="file://$PROJECT_DIR$/injekt-compiler-plugin/src/main/kotlin/com/ivianuu/injekt/compiler/ast/tree/declaration/IrEnumEntryImpl" />
-    <file url="file://$PROJECT_DIR$/injekt-compiler-plugin/src/main/kotlin/com/ivianuu/injekt/compiler/ast/tree/declaration/IrExternalPackageFragmentImpl" />
-    <file url="file://$PROJECT_DIR$/injekt-compiler-plugin/src/main/kotlin/com/ivianuu/injekt/compiler/ast/tree/declaration/IrFunctionBase" />
-    <file url="file://$PROJECT_DIR$/injekt-compiler-plugin/src/main/kotlin/com/ivianuu/injekt/compiler/ast/tree/declaration/IrFunctionImpl" />
     <file url="file://$PROJECT_DIR$/injekt-compiler-plugin/src/main/kotlin/com/ivianuu/injekt/compiler/ast/tree/declaration/IrPropertyImpl" />
     <file url="file://$PROJECT_DIR$/injekt-compiler-plugin/src/main/kotlin/com/ivianuu/injekt/compiler/ast/tree/declaration/IrScriptImpl" />
-    <file url="file://$PROJECT_DIR$/injekt-compiler-plugin/src/main/kotlin/com/ivianuu/injekt/compiler/ast/tree/declaration/IrTypeAliasImpl" />
-    <file url="file://$PROJECT_DIR$/injekt-compiler-plugin/src/main/kotlin/com/ivianuu/injekt/compiler/ast/tree/declaration/IrTypeParameterImpl" />
-    <file url="file://$PROJECT_DIR$/injekt-compiler-plugin/src/main/kotlin/com/ivianuu/injekt/compiler/ast/tree/declaration/IrValueParameterImpl" />
     <file url="file://$PROJECT_DIR$/injekt-compiler-plugin/src/main/kotlin/com/ivianuu/injekt/compiler/ast/tree/expression/IrBlockBodyImpl" />
     <file url="file://$PROJECT_DIR$/injekt-compiler-plugin/src/main/kotlin/com/ivianuu/injekt/compiler/ast/tree/expression/IrBlockImpl" />
     <file url="file://$PROJECT_DIR$/injekt-compiler-plugin/src/main/kotlin/com/ivianuu/injekt/compiler/ast/tree/expression/IrBreakContinueBase" />

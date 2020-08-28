@@ -28,10 +28,12 @@ class AstSimpleFunction(
         visitor.visitSimpleFunction(this, data)
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+        typeParameters.forEach { it.accept(visitor, data) }
         valueParameters.forEach { it.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
+        typeParameters.transformInplace(transformer, data)
         valueParameters.transformInplace(transformer, data)
     }
 
