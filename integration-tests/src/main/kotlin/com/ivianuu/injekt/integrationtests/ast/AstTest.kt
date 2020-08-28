@@ -28,7 +28,11 @@ class AstTest {
                     """
                         class NotTransformed
                         
-                        class Other<T>
+                        class Other<T> {
+                            init {
+                                println("hello")
+                            }
+                        }
                         
                         fun aFunction() {
                         }

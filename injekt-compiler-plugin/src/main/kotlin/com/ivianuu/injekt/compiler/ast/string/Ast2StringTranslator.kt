@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.ast.string
 
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstAnnotationContainer
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstAnonymousInitializer
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstConstructor
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationContainer
@@ -262,6 +263,14 @@ object Ast2StringTranslator {
                 indented {
                     property.setter!!.accept(this)
                 }
+            }
+        }
+
+        override fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer) {
+            appendIndent()
+            append("init ")
+            appendBraced {
+                anonymousInitializer.body?.accept(this)
             }
         }
 

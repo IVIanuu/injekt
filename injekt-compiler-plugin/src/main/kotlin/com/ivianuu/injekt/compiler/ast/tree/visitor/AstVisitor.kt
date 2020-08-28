@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.ast.tree.visitor
 
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstAnonymousInitializer
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstConstructor
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
@@ -46,9 +47,11 @@ interface AstVisitor<R, D> {
 
     fun visitConstructor(constructor: AstConstructor, data: D) = visitFunction(constructor, data)
     fun visitProperty(property: AstProperty, data: D) = visitDeclaration(property, data)
+    fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer, data: D) =
+        visitDeclaration(anonymousInitializer, data)
+
     fun visitTypeParameter(typeParameter: AstTypeParameter, data: D) =
         visitDeclaration(typeParameter, data)
-
     fun visitValueParameter(valueParameter: AstValueParameter, data: D) =
         visitDeclaration(valueParameter, data)
 

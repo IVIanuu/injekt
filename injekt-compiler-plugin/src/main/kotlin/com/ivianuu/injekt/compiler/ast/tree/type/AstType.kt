@@ -134,3 +134,6 @@ fun AstType.copy(
 
 fun AstType.isClassType(fqName: FqName) =
     (classifier as? AstClass)?.fqName == fqName
+
+val AstType.classOrNull: AstClass? get() = classifier as? AstClass
+val AstType.classOrFail: AstClass get() = classOrNull ?: error("Expected class classifier $this")

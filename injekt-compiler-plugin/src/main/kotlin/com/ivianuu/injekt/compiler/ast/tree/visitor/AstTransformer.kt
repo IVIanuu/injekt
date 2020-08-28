@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.ast.tree.visitor
 
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstAnonymousInitializer
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstConstructor
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
@@ -74,6 +75,9 @@ interface AstTransformer<D> : AstVisitor<AstTransformResult<AstElement>, D> {
 
     override fun visitProperty(property: AstProperty, data: D) =
         visitDeclaration(property, data)
+
+    override fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer, data: D) =
+        visitDeclaration(anonymousInitializer, data)
 
     override fun visitTypeParameter(typeParameter: AstTypeParameter, data: D) =
         visitDeclaration(typeParameter, data)

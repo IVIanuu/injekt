@@ -24,7 +24,7 @@ fun Visibility.toAstVisibility() = when (this) {
     Visibilities.PROTECTED -> AstVisibility.PROTECTED
     Visibilities.PRIVATE -> AstVisibility.PRIVATE
     Visibilities.LOCAL -> AstVisibility.LOCAL
-    else -> error("Unexpected visibility $this")
+    else -> AstVisibility.PUBLIC
 }
 
 fun ClassKind.toAstClassKind() = when (this) {

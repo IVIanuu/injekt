@@ -9,4 +9,4 @@ interface AstAnnotationContainer : AstElement {
 }
 
 fun AstAnnotationContainer.hasAnnotation(fqName: FqName): Boolean =
-    TODO()//annotations.any { it.callee.returnType.classIdOrFail == classId }
+    annotations.any { (it.callee.returnType.classifier as AstClass).fqName == fqName }
