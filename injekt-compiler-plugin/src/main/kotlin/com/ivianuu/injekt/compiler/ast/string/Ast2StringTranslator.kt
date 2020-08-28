@@ -9,6 +9,8 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationWithExpect
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationWithModality
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationWithVisibility
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstProperty
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstPropertyAccessor
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
@@ -60,7 +62,7 @@ object Ast2StringTranslator {
 
         private fun appendSpace() = append(" ")
 
-        private inline fun <T> appendIndented(block: () -> T): T {
+        private inline fun <T> indented(block: () -> T): T {
             indent += "    "
             val result = block()
             indent = indent.dropLast(4)
@@ -69,7 +71,7 @@ object Ast2StringTranslator {
 
         private inline fun <T> appendBraced(block: () -> T): T = run {
             appendLine("{")
-            val result = appendIndented(block)
+            val result = indented(block)
             appendIndentedLine("}")
             result
         }
@@ -78,106 +80,185 @@ object Ast2StringTranslator {
             error("Unhandled $element")
         }
 
-        override fun visitFile(declaration: AstFile) {
-            if (declaration.packageFqName != FqName.ROOT)
-                appendIndentedLine("package ${declaration.packageFqName}")
-            if (declaration.declarations.isNotEmpty()) appendLine()
-            declaration.renderDeclarations()
+        override fun visitFile(file: AstFile) {
+            if (file.packageFqName != FqName.ROOT)
+                appendIndentedLine("package ${file.packageFqName}")
+            if (file.declarations.isNotEmpty()) appendLine()
+            file.renderDeclarations()
         }
 
-        override fun visitClass(declaration: AstClass) {
-            declaration.renderAnnotations()
+        override fun visitClass(klass: AstClass) {
+            klass.renderAnnotations()
             appendIndent()
-            declaration.renderVisibility()
-            declaration.renderExpectActual()
-            if (declaration.kind != AstClass.Kind.INTERFACE) declaration.renderModality()
-            if (declaration.isFun) {
+            klass.renderVisibility()
+            klass.renderExpectActual()
+            if (klass.kind != AstClass.Kind.INTERFACE) klass.renderModality()
+            if (klass.isFun) {
                 append("fun ")
             }
-            if (declaration.isData) {
+            if (klass.isData) {
                 append("data ")
             }
-            if (declaration.isInner) {
+            if (klass.isInner) {
                 append("inner ")
             }
-            if (declaration.isExternal) {
+            if (klass.isExternal) {
                 append("external ")
             }
-            when (declaration.kind) {
+            when (klass.kind) {
                 AstClass.Kind.CLASS -> append("class ")
                 AstClass.Kind.INTERFACE -> append("interface ")
                 AstClass.Kind.ENUM_CLASS -> append("enum class ")
                 AstClass.Kind.ENUM_ENTRY -> TODO()
                 AstClass.Kind.ANNOTATION -> append("annotation class ")
                 AstClass.Kind.OBJECT -> {
-                    if (declaration.isCompanion) append("companion ")
+                    if (klass.isCompanion) append("companion ")
                     append("object ")
                 }
             }.let { }
 
-            append("${declaration.name} ")
-            if (declaration.typeParameters.isNotEmpty()) {
-                declaration.typeParameters.renderList()
+            append("${klass.name} ")
+            if (klass.typeParameters.isNotEmpty()) {
+                klass.typeParameters.renderList()
                 appendSpace()
-                declaration.typeParameters.renderWhere()
+                klass.typeParameters.renderWhere()
                 appendSpace()
             }
-            if (declaration.declarations.isNotEmpty()) {
+            if (klass.declarations.isNotEmpty()) {
                 appendBraced {
-                    declaration.renderDeclarations()
+                    klass.renderDeclarations()
                 }
             } else {
                 appendLine()
             }
         }
 
-        override fun visitSimpleFunction(declaration: AstSimpleFunction) {
-            declaration.renderAnnotations()
+        override fun visitSimpleFunction(simpleFunction: AstSimpleFunction) {
+            simpleFunction.renderAnnotations()
             appendIndent()
-            declaration.renderVisibility()
-            declaration.renderExpectActual()
+            if (simpleFunction.overriddenFunctions.isNotEmpty()) {
+                append("override ")
+            }
+            simpleFunction.renderVisibility()
+            simpleFunction.renderExpectActual()
+            if (simpleFunction.isInline) {
+                append("inline ")
+            }
+            if (simpleFunction.isExternal) {
+                append("external ")
+            }
+            if (simpleFunction.isInfix) {
+                append("infix ")
+            }
+            if (simpleFunction.isOperator) {
+                append("operator ")
+            }
+            if (simpleFunction.isTailrec) {
+                append("tailrec ")
+            }
+            if (simpleFunction.isSuspend) {
+                append("suspend ")
+            }
             append("fun ")
-            if (declaration.typeParameters.isNotEmpty()) {
-                declaration.typeParameters.renderList()
+            if (simpleFunction.typeParameters.isNotEmpty()) {
+                simpleFunction.typeParameters.renderList()
                 append(" ")
             }
-            append("${declaration.name}")
+            append("${simpleFunction.name}")
             append("(")
-            declaration.valueParameters.forEachIndexed { index, valueParameter ->
+            simpleFunction.valueParameters.forEachIndexed { index, valueParameter ->
                 valueParameter.accept(this)
-                if (index != declaration.valueParameters.lastIndex) append(", ")
+                if (index != simpleFunction.valueParameters.lastIndex) append(", ")
             }
             append(")")
             append(": ")
-            declaration.returnType.render()
+            simpleFunction.returnType.render()
             appendSpace()
-            if (declaration.typeParameters.isNotEmpty()) {
-                declaration.typeParameters.renderWhere()
+            if (simpleFunction.typeParameters.isNotEmpty()) {
+                simpleFunction.typeParameters.renderWhere()
                 appendSpace()
             }
             appendBraced {
             }
         }
 
-        override fun visitConstructor(declaration: AstConstructor) {
-            declaration.renderAnnotations()
+        override fun visitConstructor(constructor: AstConstructor) {
+            constructor.renderAnnotations()
             appendIndent()
-            declaration.renderVisibility()
-            declaration.renderExpectActual()
+            constructor.renderVisibility()
+            constructor.renderExpectActual()
             append("constructor")
             append("(")
-            declaration.valueParameters.forEachIndexed { index, valueParameter ->
+            constructor.valueParameters.forEachIndexed { index, valueParameter ->
                 valueParameter.accept(this)
-                if (index != declaration.valueParameters.lastIndex) append(", ")
+                if (index != constructor.valueParameters.lastIndex) append(", ")
             }
             append(")")
-            append(": ${declaration.returnType.render()} ")
+            append(": ${constructor.returnType.render()} ")
             appendBraced {
             }
         }
 
-        override fun visitTypeParameter(declaration: AstTypeParameter) {
-            declaration.render(null)
+        override fun visitPropertyAccessor(propertyAccessor: AstPropertyAccessor) {
+            propertyAccessor.renderAnnotations()
+            appendIndent()
+            if (propertyAccessor.isSetter) {
+                append("set")
+            } else {
+                append("get")
+            }
+            append("(")
+            propertyAccessor.valueParameters.forEachIndexed { index, valueParameter ->
+                valueParameter.accept(this)
+                if (index != propertyAccessor.valueParameters.lastIndex) append(", ")
+            }
+            append(")")
+            appendBraced {
+
+            }
+        }
+
+        override fun visitProperty(property: AstProperty) {
+            property.renderAnnotations()
+            appendIndent()
+            property.renderVisibility()
+            property.renderModality()
+            append("val ")
+            if (property.typeParameters.isNotEmpty()) {
+                property.typeParameters.renderList()
+                append(" ")
+            }
+            append("${property.name}")
+            append(": ")
+            property.type.render()
+            appendSpace()
+            if (property.typeParameters.isNotEmpty()) {
+                property.typeParameters.renderWhere()
+            }
+            if (property.initializer != null) {
+                append(" = ")
+                property.initializer!!.accept(this)
+            }
+            if (property.delegate != null) {
+                append(" by ")
+                property.delegate!!.accept(this)
+            }
+            if (property.getter != null) {
+                appendLine()
+                indented {
+                    property.getter!!.accept(this)
+                }
+            }
+            if (property.setter != null) {
+                appendLine()
+                indented {
+                    property.setter!!.accept(this)
+                }
+            }
+        }
+
+        override fun visitTypeParameter(typeParameter: AstTypeParameter) {
+            typeParameter.render(null)
         }
 
         private fun List<AstTypeParameter>.renderList() {
@@ -218,33 +299,33 @@ object Ast2StringTranslator {
             }
         }
 
-        override fun visitValueParameter(declaration: AstValueParameter) {
-            declaration.renderAnnotations()
-            if (declaration.isVarArg) {
+        override fun visitValueParameter(valueParameter: AstValueParameter) {
+            valueParameter.renderAnnotations()
+            if (valueParameter.isVarArg) {
                 append("vararg ")
             }
-            declaration.inlineHint?.let {
+            valueParameter.inlineHint?.let {
                 append("${it.name.toLowerCase()} ")
             }
-            append("${declaration.name}: ")
-            declaration.type.render()
-            if (declaration.defaultValue != null) {
+            append("${valueParameter.name}: ")
+            valueParameter.type.render()
+            if (valueParameter.defaultValue != null) {
                 append(" = ")
-                declaration.defaultValue!!.accept(this)
+                valueParameter.defaultValue!!.accept(this)
             }
         }
 
 
-        override fun visitTypeAlias(declaration: AstTypeAlias) {
-            declaration.renderAnnotations()
+        override fun visitTypeAlias(typeAlias: AstTypeAlias) {
+            typeAlias.renderAnnotations()
             append("typealias ")
-            append("${declaration.name}")
-            if (declaration.typeParameters.isNotEmpty()) {
-                declaration.typeParameters.renderList()
+            append("${typeAlias.name}")
+            if (typeAlias.typeParameters.isNotEmpty()) {
+                typeAlias.typeParameters.renderList()
 
             }
             append(" = ")
-            declaration.type.render()
+            typeAlias.type.render()
         }
 
         private fun AstDeclarationWithVisibility.renderVisibility(appendSpace: Boolean = true) {

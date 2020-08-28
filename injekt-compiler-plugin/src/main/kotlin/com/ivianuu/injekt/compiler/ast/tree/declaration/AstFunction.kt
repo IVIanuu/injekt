@@ -5,7 +5,6 @@ import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 abstract class AstFunction : AstDeclarationBase(), AstAnnotationContainer,
     AstDeclarationParent,
     AstDeclarationWithVisibility,
-    AstDeclarationWithExpectActual,
     AstTypeParameterContainer {
 
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()

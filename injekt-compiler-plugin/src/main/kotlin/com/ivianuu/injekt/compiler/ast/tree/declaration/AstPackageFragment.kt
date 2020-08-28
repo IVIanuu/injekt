@@ -9,8 +9,7 @@ interface AstPackageFragment : AstDeclarationContainer {
 
 tailrec fun AstElement.getPackageFragment(): AstPackageFragment? {
     if (this is AstPackageFragment) return this
-    val vParent = (this as? AstDeclaration)?.parent
-    return when (vParent) {
+    return when (val vParent = (this as? AstDeclaration)?.parent) {
         is AstPackageFragment -> vParent
         else -> vParent?.getPackageFragment()
     }

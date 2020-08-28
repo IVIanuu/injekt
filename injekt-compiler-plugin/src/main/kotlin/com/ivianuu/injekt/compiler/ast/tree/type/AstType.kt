@@ -5,10 +5,14 @@
 
 package com.ivianuu.injekt.compiler.ast.tree.type
 
+import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.AstVariance
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstAnnotationContainer
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
+import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
+import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
+import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
 
 class AstType : AstAnnotationContainer, AstTypeArgument, AstTypeProjection {
 
@@ -23,11 +27,42 @@ class AstType : AstAnnotationContainer, AstTypeArgument, AstTypeProjection {
     var hasQuestionMark: Boolean = false
     val arguments: MutableList<AstTypeArgument> = mutableListOf()
     var abbreviation: AstTypeAbbreviation? = null
+
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
+        visitor.visitType(this, data)
+
+    override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+    }
+
+    override fun <D> transform(
+        transformer: AstTransformer<D>,
+        data: D
+    ): AstTransformResult<AstType> = accept(transformer, data) as AstTransformResult<AstType>
+
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
+    }
+
 }
 
-interface AstTypeArgument
+interface AstTypeArgument : AstElement
 
-object AstStarProjection : AstTypeArgument
+object AstStarProjection : AstTypeArgument {
+
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
+        visitor.visitTypeArgument(this, data)
+
+    override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+    }
+
+    override fun <D> transform(
+        transformer: AstTransformer<D>,
+        data: D
+    ): AstTransformResult<AstType> = accept(transformer, data) as AstTransformResult<AstType>
+
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
+    }
+
+}
 
 interface AstTypeProjection : AstTypeArgument {
     val variance: AstVariance?
@@ -37,7 +72,24 @@ interface AstTypeProjection : AstTypeArgument {
 class AstTypeProjectionImpl(
     override val variance: AstVariance?,
     override val type: AstType
-) : AstTypeProjection
+) : AstTypeProjection {
+
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
+        visitor.visitTypeProjection(this, data)
+
+    override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+    }
+
+    override fun <D> transform(
+        transformer: AstTransformer<D>,
+        data: D
+    ): AstTransformResult<AstTypeProjection> =
+        accept(transformer, data) as AstTransformResult<AstTypeProjection>
+
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
+    }
+
+}
 
 class AstTypeAbbreviation(
     var typeAlias: AstTypeAlias,
@@ -45,4 +97,20 @@ class AstTypeAbbreviation(
     override val annotations: MutableList<AstCall> = mutableListOf()
     var hasQuestionMark: Boolean = false
     val arguments: MutableList<AstTypeArgument> = mutableListOf()
+
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
+        visitor.visitElement(this, data)
+
+    override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+    }
+
+    override fun <D> transform(
+        transformer: AstTransformer<D>,
+        data: D
+    ): AstTransformResult<AstTypeProjection> =
+        accept(transformer, data) as AstTransformResult<AstTypeProjection>
+
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
+    }
+
 }

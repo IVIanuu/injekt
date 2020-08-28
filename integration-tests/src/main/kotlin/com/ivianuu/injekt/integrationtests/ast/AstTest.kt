@@ -43,6 +43,11 @@ class AstTest {
                         typealias MyTypeAlias = () -> String
                         
                         typealias MyTypeAlias2<T> = () -> String
+                        
+                        val prop = "hello world"
+                        val prop2 by lazy { "lol" }
+                        
+                        
                         """,
                     injektImports = false,
                     initializeInjekt = false
@@ -69,18 +74,18 @@ class AstTest {
                                     moduleFragment.files.toList().forEach { file ->
                                         file.transformChildren(
                                             object : AstTransformerVoid {
-                                                override fun visitClass(declaration: AstClass): AstTransformResult<AstDeclaration> {
+                                                override fun visitClass(klass: AstClass): AstTransformResult<AstDeclaration> {
                                                     moduleFragment.files += AstFile(
                                                         packageFqName = file.packageFqName,
-                                                        name = (declaration.name.asString() + "Context.kt").asNameId()
+                                                        name = (klass.name.asString() + "Context.kt").asNameId()
                                                     ).apply {
                                                         addChild(
                                                             AstClass(
-                                                                name = (declaration.name.asString() + "Context").asNameId()
+                                                                name = (klass.name.asString() + "Context").asNameId()
                                                             )
                                                         )
                                                     }
-                                                    return super.visitClass(declaration)
+                                                    return super.visitClass(klass)
                                                 }
                                             }
                                         )

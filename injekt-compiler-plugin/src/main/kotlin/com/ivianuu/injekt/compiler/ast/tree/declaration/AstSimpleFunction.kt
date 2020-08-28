@@ -21,8 +21,10 @@ class AstSimpleFunction(
     var isOperator: Boolean = false,
     var isTailrec: Boolean = false,
     var isSuspend: Boolean = false
-) : AstFunction(), AstDeclarationWithName, AstDeclarationWithModality {
-    var overriddenFunctions: List<AstSimpleFunction> = emptyList()
+) : AstFunction(), AstDeclarationWithName, AstDeclarationWithModality,
+    AstDeclarationWithExpectActual {
+
+    val overriddenFunctions: MutableList<AstSimpleFunction> = mutableListOf()
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
         visitor.visitSimpleFunction(this, data)

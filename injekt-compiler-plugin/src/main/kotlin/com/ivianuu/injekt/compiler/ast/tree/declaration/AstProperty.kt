@@ -29,13 +29,13 @@ class AstProperty(
 
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
 
-    var overriddenProperties: List<AstProperty> = emptyList()
+    val overriddenProperties: MutableList<AstProperty> = mutableListOf()
 
     var initializer: AstExpression? = null
     var delegate: AstExpression? = null
 
-    var getter: AstSimpleFunction? = null
-    var setter: AstSimpleFunction? = null
+    var getter: AstPropertyAccessor? = null
+    var setter: AstPropertyAccessor? = null
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
         visitor.visitProperty(this, data)

@@ -9,11 +9,15 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstPackageFragment
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstProperty
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstPropertyAccessor
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
+import com.ivianuu.injekt.compiler.ast.tree.type.AstType
+import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
+import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
 
 interface AstTransformer<D> : AstVisitor<AstTransformResult<AstElement>, D> {
 
@@ -23,23 +27,23 @@ interface AstTransformer<D> : AstVisitor<AstTransformResult<AstElement>, D> {
     }
 
     override fun visitModuleFragment(
-        declaration: AstModuleFragment,
+        moduleFragment: AstModuleFragment,
         data: D
     ): AstTransformResult<AstModuleFragment> {
-        declaration.transformChildren(this, data)
-        return declaration.compose()
+        moduleFragment.transformChildren(this, data)
+        return moduleFragment.compose()
     }
 
     override fun visitPackageFragment(
-        declaration: AstPackageFragment,
+        packageFragment: AstPackageFragment,
         data: D
     ): AstTransformResult<AstPackageFragment> {
-        declaration.transformChildren(this, data)
-        return declaration.compose()
+        packageFragment.transformChildren(this, data)
+        return packageFragment.compose()
     }
 
-    override fun visitFile(declaration: AstFile, data: D): AstTransformResult<AstFile> =
-        visitPackageFragment(declaration, data) as AstTransformResult<AstFile>
+    override fun visitFile(file: AstFile, data: D): AstTransformResult<AstFile> =
+        visitPackageFragment(file, data) as AstTransformResult<AstFile>
 
     override fun visitDeclaration(
         declaration: AstDeclaration,
@@ -47,35 +51,53 @@ interface AstTransformer<D> : AstVisitor<AstTransformResult<AstElement>, D> {
     ): AstTransformResult<AstDeclaration> =
         visitElement(declaration, data) as AstTransformResult<AstDeclaration>
 
-    override fun visitClass(declaration: AstClass, data: D) =
-        visitDeclaration(declaration, data)
+    override fun visitClass(klass: AstClass, data: D) =
+        visitDeclaration(klass, data)
 
-    override fun visitFunction(declaration: AstFunction, data: D) =
-        visitDeclaration(declaration, data)
+    override fun visitFunction(function: AstFunction, data: D) =
+        visitDeclaration(function, data)
 
-    override fun visitSimpleFunction(declaration: AstSimpleFunction, data: D) =
-        visitFunction(declaration, data)
+    override fun visitSimpleFunction(simpleFunction: AstSimpleFunction, data: D) =
+        visitFunction(simpleFunction, data)
 
-    override fun visitConstructor(declaration: AstConstructor, data: D) =
-        visitFunction(declaration, data)
+    override fun visitPropertyAccessor(propertyAccessor: AstPropertyAccessor, data: D) =
+        visitFunction(propertyAccessor, data)
 
-    override fun visitProperty(declaration: AstProperty, data: D) =
-        visitDeclaration(declaration, data)
+    override fun visitConstructor(constructor: AstConstructor, data: D) =
+        visitFunction(constructor, data)
 
-    override fun visitTypeParameter(declaration: AstTypeParameter, data: D) =
-        visitDeclaration(declaration, data)
+    override fun visitProperty(property: AstProperty, data: D) =
+        visitDeclaration(property, data)
 
-    override fun visitValueParameter(declaration: AstValueParameter, data: D) =
-        visitDeclaration(declaration, data)
+    override fun visitTypeParameter(typeParameter: AstTypeParameter, data: D) =
+        visitDeclaration(typeParameter, data)
 
-    override fun visitTypeAlias(declaration: AstTypeAlias, data: D) =
-        visitDeclaration(declaration, data)
+    override fun visitValueParameter(valueParameter: AstValueParameter, data: D) =
+        visitDeclaration(valueParameter, data)
+
+    override fun visitTypeAlias(typeAlias: AstTypeAlias, data: D) =
+        visitDeclaration(typeAlias, data)
 
     override fun visitExpression(
         expression: AstExpression,
         data: D
     ): AstTransformResult<AstExpression> =
         visitElement(expression, data) as AstTransformResult<AstExpression>
+
+    override fun visitTypeArgument(
+        typeArgument: AstTypeArgument,
+        data: D
+    ): AstTransformResult<AstTypeArgument> =
+        visitElement(typeArgument, data) as AstTransformResult<AstTypeArgument>
+
+    override fun visitType(type: AstType, data: D): AstTransformResult<AstType> =
+        visitTypeArgument(type, data) as AstTransformResult<AstType>
+
+    override fun visitTypeProjection(
+        typeProjection: AstTypeProjection,
+        data: D
+    ): AstTransformResult<AstTypeProjection> =
+        visitTypeArgument(typeProjection, data) as AstTransformResult<AstTypeProjection>
 
 }
 
