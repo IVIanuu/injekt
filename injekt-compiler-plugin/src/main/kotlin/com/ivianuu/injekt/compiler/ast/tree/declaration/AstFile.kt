@@ -10,9 +10,9 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 class AstFile(
-    var packageFqName: FqName,
+    override var packageFqName: FqName,
     var name: Name
-) : AstElement, AstAnnotationContainer, AstDeclarationContainer {
+) : AstElement, AstPackageFragment, AstAnnotationContainer {
 
     override val annotations: MutableList<AstCall> = mutableListOf()
     override val declarations: MutableList<AstDeclaration> = mutableListOf()

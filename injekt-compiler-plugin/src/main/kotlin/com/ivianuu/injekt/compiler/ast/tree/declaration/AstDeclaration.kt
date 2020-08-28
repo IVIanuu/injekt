@@ -18,7 +18,7 @@ fun AstDeclarationContainer.addChild(declaration: AstDeclaration) {
     declaration.parent = this
 }
 
-interface AstDeclarationParent
+interface AstDeclarationParent : AstElement
 
 abstract class AstDeclarationBase : AstDeclaration {
     override lateinit var parent: AstDeclarationParent

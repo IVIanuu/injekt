@@ -7,6 +7,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstPackageFragment
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
@@ -20,7 +21,11 @@ interface AstVisitorVoid : AstVisitor<Unit, Nothing?> {
     override fun visitModuleFragment(declaration: AstModuleFragment, data: Nothing?) =
         visitModuleFragment(declaration)
 
-    fun visitFile(declaration: AstFile) = visitElement(declaration)
+    fun visitPackageFragment(declaration: AstPackageFragment) = visitElement(declaration)
+    override fun visitPackageFragment(declaration: AstPackageFragment, data: Nothing?) =
+        visitPackageFragment(declaration)
+
+    fun visitFile(declaration: AstFile) = visitPackageFragment(declaration)
     override fun visitFile(declaration: AstFile, data: Nothing?) = visitFile(declaration)
 
     fun visitDeclaration(declaration: AstDeclaration) = visitElement(declaration)

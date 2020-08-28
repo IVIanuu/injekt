@@ -158,7 +158,8 @@ object Ast2StringTranslator {
 
         override fun visitValueParameter(declaration: AstValueParameter) {
             declaration.renderAnnotations()
-            append("$declaration.name: ${declaration.type.render()}")
+            append("${declaration.name}: ")
+            declaration.type.render()
             if (declaration.defaultValue != null) {
                 append(" = ")
                 declaration.defaultValue!!.accept(this)
@@ -219,7 +220,7 @@ object Ast2StringTranslator {
                 is AstStarProjection -> append("*")
                 is AstTypeProjection -> {
                     variance?.let { append("${it.name.toLowerCase()} ") }
-                    append(type.render())
+                    type.render()
                 }
                 else -> error("Unexpected type argument $this")
             }

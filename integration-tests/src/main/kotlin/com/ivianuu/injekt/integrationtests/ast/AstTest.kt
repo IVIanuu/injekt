@@ -31,6 +31,10 @@ class AstTest {
                         
                         fun aFunction() {
                         }
+                        
+                        fun higherOrder(block: (Int, Long) -> String) { 
+                            block()
+                        }
                         """,
                     injektImports = false,
                     initializeInjekt = false

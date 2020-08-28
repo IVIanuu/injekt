@@ -1,9 +1,18 @@
 package com.ivianuu.injekt.compiler.ast.tree.declaration
 
+import com.ivianuu.injekt.compiler.ast.tree.AstClassId
+import com.ivianuu.injekt.compiler.ast.tree.AstExpectActual
+import com.ivianuu.injekt.compiler.ast.tree.AstVisibility
+import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
 
-class AstTypeAlias : AstDeclarationBase() {
+class AstTypeAlias(
+    var classId: AstClassId,
+    var type: AstType,
+    override var visibility: AstVisibility = AstVisibility.PUBLIC,
+    override var expectActual: AstExpectActual? = null
+) : AstDeclarationBase(), AstDeclarationWithVisibility, AstDeclarationWithExpectActual {
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R {
         TODO()

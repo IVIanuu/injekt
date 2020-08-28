@@ -7,6 +7,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstPackageFragment
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
@@ -26,6 +27,12 @@ interface AstTransformerVoid : AstTransformer<Nothing?> {
 
     override fun visitModuleFragment(declaration: AstModuleFragment, data: Nothing?) =
         visitModuleFragment(declaration)
+
+    fun visitPackageFragment(declaration: AstPackageFragment) =
+        declaration.transformChildrenAndCompose()
+
+    override fun visitPackageFragment(declaration: AstPackageFragment, data: Nothing?) =
+        visitPackageFragment(declaration)
 
     fun visitFile(declaration: AstFile) = declaration.transformChildrenAndCompose()
     override fun visitFile(declaration: AstFile, data: Nothing?) = visitFile(declaration)
