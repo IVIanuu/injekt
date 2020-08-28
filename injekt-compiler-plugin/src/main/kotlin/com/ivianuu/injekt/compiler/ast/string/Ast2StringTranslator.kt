@@ -3,11 +3,18 @@ package com.ivianuu.injekt.compiler.ast.string
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstAnnotationContainer
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstConstructor
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationContainer
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationWithExpectActual
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationWithModality
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationWithVisibility
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
+import com.ivianuu.injekt.compiler.ast.tree.type.AstStarProjection
+import com.ivianuu.injekt.compiler.ast.tree.type.AstType
+import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
+import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitorVoid
 import org.jetbrains.kotlin.name.FqName
 
@@ -111,31 +118,52 @@ object Ast2StringTranslator {
             }
         }
 
-        /*override fun transform(element: AstElement): AstTransformResult<AstElement> {
-            when (element) {
-                is AstModuleFragment -> TODO()
-                is AstFile -> {
+        override fun visitSimpleFunction(declaration: AstSimpleFunction) {
+            declaration.renderAnnotations()
+            appendIndent()
+            declaration.renderVisibility()
+            declaration.renderExpectActual()
+            append("fun ")
+            // todo type parameters
+            append("${declaration.callableId.callableName}")
+            append("(")
+            declaration.valueParameters.forEachIndexed { index, valueParameter ->
+                valueParameter.accept(this)
+                if (index != declaration.valueParameters.lastIndex) append(", ")
+            }
+            append(")")
+            append(": ")
+            declaration.returnType.render()
+            appendSpace()
+            appendBraced {
+            }
+        }
 
-                }
-                is AstClass -> {
+        override fun visitConstructor(declaration: AstConstructor) {
+            declaration.renderAnnotations()
+            appendIndent()
+            declaration.renderVisibility()
+            declaration.renderExpectActual()
+            append("constructor")
+            append("(")
+            declaration.valueParameters.forEachIndexed { index, valueParameter ->
+                valueParameter.accept(this)
+                if (index != declaration.valueParameters.lastIndex) append(", ")
+            }
+            append(")")
+            append(": ${declaration.returnType.render()} ")
+            appendBraced {
+            }
+        }
 
-                }
-                is AstFunction -> {
-                    element.renderAnnotations()
-                    appendIndent()
-                    //element.renderModifiers(appendSpace = true)
-                    append("fun ")
-                    //element.renderName(appendSpace = true)
-                    appendBraced { }
-                }
-                is AstBody -> TODO()
-                is AstGetValueParameter -> TODO()
-                is AstTypeParameter -> TODO()
-                is AstValueParameter -> TODO()
-                is AstCall -> TODO()
-            }.let { }
-            return element.compose()
-        }*/
+        override fun visitValueParameter(declaration: AstValueParameter) {
+            declaration.renderAnnotations()
+            append("$declaration.name: ${declaration.type.render()}")
+            if (declaration.defaultValue != null) {
+                append(" = ")
+                declaration.defaultValue!!.accept(this)
+            }
+        }
 
         private fun AstDeclarationWithVisibility.renderVisibility(appendSpace: Boolean = true) {
             append(visibility.name.toLowerCase())
@@ -168,6 +196,34 @@ object Ast2StringTranslator {
             }
         }
 
+        private fun AstType.render() {
+            renderAnnotations()
+
+            when (val classifier = classifier) {
+                is AstClass -> append(classifier.classId.packageName.child(classifier.classId.className))
+                else -> error("Unexpected classifier $classifier")
+            }
+
+            if (arguments.isNotEmpty()) {
+                append("<")
+                arguments.forEachIndexed { index, typeArgument ->
+                    typeArgument.renderTypeArgument()
+                    if (index != arguments.lastIndex) append(", ")
+                }
+                append(">")
+            }
+        }
+
+        private fun AstTypeArgument.renderTypeArgument() {
+            when (this) {
+                is AstStarProjection -> append("*")
+                is AstTypeProjection -> {
+                    variance?.let { append("${it.name.toLowerCase()} ") }
+                    append(type.render())
+                }
+                else -> error("Unexpected type argument $this")
+            }
+        }
     }
 }
 

@@ -28,6 +28,9 @@ class AstTest {
                 source(
                     """
                         class NotTransformed
+                        
+                        fun aFunction() {
+                        }
                         """,
                     injektImports = false,
                     initializeInjekt = false

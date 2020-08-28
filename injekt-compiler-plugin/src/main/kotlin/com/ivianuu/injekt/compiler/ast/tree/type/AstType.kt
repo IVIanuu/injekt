@@ -34,6 +34,11 @@ interface AstTypeProjection : AstTypeArgument {
     val type: AstType
 }
 
+class AstTypeProjectionImpl(
+    override val variance: AstVariance?,
+    override val type: AstType
+) : AstTypeProjection
+
 class AstTypeAbbreviation(
     var typeAlias: AstTypeAlias,
 ) : AstAnnotationContainer {

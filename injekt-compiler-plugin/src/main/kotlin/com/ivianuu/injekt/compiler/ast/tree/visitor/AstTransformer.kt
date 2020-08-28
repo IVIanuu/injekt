@@ -8,6 +8,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
 
 interface AstTransformer<D> : AstVisitor<AstTransformResult<AstElement>, D> {
@@ -16,7 +17,6 @@ interface AstTransformer<D> : AstVisitor<AstTransformResult<AstElement>, D> {
         element.transformChildren(this, data)
         return element.compose()
     }
-
     override fun visitModuleFragment(
         declaration: AstModuleFragment,
         data: D
@@ -24,7 +24,6 @@ interface AstTransformer<D> : AstVisitor<AstTransformResult<AstElement>, D> {
         declaration.transformChildren(this, data)
         return declaration.compose()
     }
-
     override fun visitFile(declaration: AstFile, data: D): AstTransformResult<AstFile> {
         declaration.transformChildren(this, data)
         return declaration.compose()
@@ -47,6 +46,9 @@ interface AstTransformer<D> : AstVisitor<AstTransformResult<AstElement>, D> {
 
     override fun visitConstructor(declaration: AstConstructor, data: D) =
         visitFunction(declaration, data)
+
+    override fun visitValueParameter(declaration: AstValueParameter, data: D) =
+        visitDeclaration(declaration, data)
 
     override fun visitExpression(
         expression: AstExpression,

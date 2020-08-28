@@ -9,6 +9,17 @@ interface AstDeclaration : AstElement, AstAnnotationContainer {
     var parent: AstDeclarationParent
 }
 
+interface AstDeclarationContainer : AstDeclarationParent {
+    val declarations: MutableList<AstDeclaration>
+}
+
+fun AstDeclarationContainer.addChild(declaration: AstDeclaration) {
+    declarations += declaration
+    declaration.parent = this
+}
+
+interface AstDeclarationParent
+
 abstract class AstDeclarationBase : AstDeclaration {
     override lateinit var parent: AstDeclarationParent
     override val annotations: MutableList<AstCall> = mutableListOf()
@@ -20,14 +31,3 @@ abstract class AstDeclarationBase : AstDeclaration {
         accept(transformer, data) as AstTransformResult<AstDeclaration>
 
 }
-
-interface AstDeclarationContainer : AstDeclarationParent {
-    val declarations: MutableList<AstDeclaration>
-}
-
-fun AstDeclarationContainer.addChild(declaration: AstDeclaration) {
-    declarations += declaration
-    declaration.parent = this
-}
-
-interface AstDeclarationParent

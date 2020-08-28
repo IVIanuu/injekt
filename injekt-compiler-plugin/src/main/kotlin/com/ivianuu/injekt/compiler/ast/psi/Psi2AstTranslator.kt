@@ -1,34 +1,63 @@
 package com.ivianuu.injekt.compiler.ast.psi
 
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.ast.tree.AstCallableId
+import com.ivianuu.injekt.compiler.ast.tree.AstVariance
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstConstructor
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.addChild
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
+import com.ivianuu.injekt.compiler.ast.tree.type.AstStarProjection
+import com.ivianuu.injekt.compiler.ast.tree.type.AstType
+import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeAbbreviation
+import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
+import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
+import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjectionImpl
+import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
+import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.calls.components.hasDefaultValue
+import org.jetbrains.kotlin.resolve.calls.components.isVararg
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.SimpleType
+import org.jetbrains.kotlin.types.StarProjectionImpl
+import org.jetbrains.kotlin.types.TypeProjection
+import org.jetbrains.kotlin.types.Variance
+import org.jetbrains.kotlin.types.getAbbreviation
+import org.jetbrains.kotlin.types.model.TypeArgumentMarker
+import org.jetbrains.kotlin.types.upperIfFlexible
 
 class Psi2AstTranslator(
     private val bindingTrace: BindingTrace,
-    private val moduleDescriptor: ModuleDescriptor
+    private val moduleDescriptor: ModuleDescriptor,
+    private val stubGenerator: Psi2AstStubGenerator
 ) {
 
-    private val classes =
-        mutableMapOf<ClassDescriptor, AstClass>()
-    /*private val simpleFunctions =
-        mutableMapOf<SimpleFunctionDescriptor, AstSimpleFunction>()
-    private val constructors =
-        mutableMapOf<ConstructorDescriptor, AstConstructor>()*/
+    private val classes = mutableMapOf<ClassDescriptor, AstClass>()
+    private val simpleFunctions = mutableMapOf<SimpleFunctionDescriptor, AstSimpleFunction>()
+    private val constructors = mutableMapOf<ConstructorDescriptor, AstConstructor>()
 
     fun generateModule(files: List<KtFile>): AstModuleFragment {
         return AstModuleFragment(moduleDescriptor.name).apply {
@@ -41,7 +70,7 @@ class Psi2AstTranslator(
             packageFqName = file.packageFqName,
             name = file.name.asNameId()
         ).apply {
-            annotations += generateAnnotations()
+            // todo annotations += generateAnnotations()
             generateDeclarations(file.declarations)
                 .forEach { addChild(it) }
         }
@@ -65,7 +94,7 @@ class Psi2AstTranslator(
                     declaration
                 ) as ClassDescriptor
             )
-            /*is KtFunction -> getOrCreateFunction(
+            is KtFunction -> getOrCreateFunction(
                 bindingTrace.get(
                     BindingContext.DECLARATION_TO_DESCRIPTOR,
                     declaration
@@ -76,12 +105,13 @@ class Psi2AstTranslator(
                     BindingContext.DECLARATION_TO_DESCRIPTOR,
                     declaration
                 ) as ConstructorDescriptor
-            )*/
+            )
             else -> error("Unexpected declaration $declaration")
         }
 
     fun getOrCreateClass(descriptor: ClassDescriptor): AstClass {
-        val declaration = descriptor.findPsi() as KtClassOrObject
+        val declaration = descriptor.findPsi() as? KtClassOrObject
+            ?: return stubGenerator.generateClass(descriptor)
         return classes.getOrPut(descriptor) {
             AstClass(
                 classId = descriptor.classId!!.toAstClassId(),
@@ -99,7 +129,7 @@ class Psi2AstTranslator(
                 isExternal = descriptor.isExternal
             ).apply {
                 classes[descriptor] = this// todo fixes recursion issues
-                annotations += generateAnnotations()
+                annotations += descriptor.annotations.toAstAnnotations()
                 // todo typeParameters += generateTypeParameters(descriptor.declaredTypeParameters)
                 generateDeclarations(declaration.declarations)
                     .forEach { addChild(it) }
@@ -107,7 +137,7 @@ class Psi2AstTranslator(
         }
     }
 
-    /*fun getOrCreateFunction(descriptor: SimpleFunctionDescriptor): AstSimpleFunction {
+    fun getOrCreateFunction(descriptor: SimpleFunctionDescriptor): AstSimpleFunction {
         return simpleFunctions.getOrPut(descriptor) {
             AstSimpleFunction(
                 callableId = AstCallableId(
@@ -129,9 +159,9 @@ class Psi2AstTranslator(
                 isSuspend = descriptor.isSuspend
             ).apply {
                 simpleFunctions[descriptor] = this// todo fixes recursion issues
-                annotations += generateAnnotations()
-                typeParameters += generateTypeParameters(descriptor.typeParameters)
-                valueParameters += generateValueParameters(descriptor.valueParameters)
+                annotations += descriptor.annotations.toAstAnnotations()
+                //typeParameters += generateTypeParameters(descriptor.typeParameters)
+                valueParameters += descriptor.valueParameters.toAstValueParameters()
                 overriddenFunctions += descriptor.overriddenDescriptors
                     .map { getOrCreateFunction(it as SimpleFunctionDescriptor) }
             }
@@ -155,33 +185,85 @@ class Psi2AstTranslator(
                 isPrimary = descriptor.isPrimary
             ).apply {
                 constructors[descriptor] = this// todo fixes recursion issues
-                annotations += generateAnnotations()
-                valueParameters += generateValueParameters(descriptor.valueParameters)
+                annotations += descriptor.annotations.toAstAnnotations()
+                valueParameters += descriptor.valueParameters.toAstValueParameters()
             }
         }
     }
-     */
 
-    //private fun KotlinType.toAstType(): AstType = TODO()
+    fun getOrCreateTypeAlias(typeAlias: TypeAliasDescriptor): AstTypeAlias {
+        return TODO()
+    }
+
+    private fun KotlinType.toAstType(): AstType {
+        val approximatedType = upperIfFlexible()
+        return AstType().apply {
+            classifier =
+                when (val classifier = approximatedType.constructor.declarationDescriptor) {
+                    is ClassDescriptor -> getOrCreateClass(classifier)
+                    else -> error("Unexpected classifier $classifier")
+                }
+            hasQuestionMark = approximatedType.isMarkedNullable
+            arguments += approximatedType.arguments.map { it.toAstTypeArgument() }
+            abbreviation = approximatedType.getAbbreviation()?.toAstTypeAbbreviation()
+        }
+    }
+
+    private fun SimpleType.toAstTypeAbbreviation(): AstTypeAbbreviation {
+        val typeAliasDescriptor = constructor.declarationDescriptor.let {
+            it as? TypeAliasDescriptor
+                ?: throw AssertionError("TypeAliasDescriptor expected: $it")
+        }
+        return AstTypeAbbreviation(getOrCreateTypeAlias(typeAliasDescriptor)).apply {
+            hasQuestionMark = isMarkedNullable
+            arguments += this@toAstTypeAbbreviation.arguments.map { it.toAstTypeArgument() }
+            annotations += this@toAstTypeAbbreviation.annotations.toList().toAstAnnotations()
+        }
+    }
+
+    private fun TypeArgumentMarker.toAstTypeArgument(): AstTypeArgument {
+        return when (this) {
+            is StarProjectionImpl -> AstStarProjection
+            is TypeProjection -> toAstTypeProjection()
+            else -> error("Unexpected type $this")
+        }
+    }
+
+    private fun TypeProjection.toAstTypeProjection(): AstTypeProjection {
+        return AstTypeProjectionImpl(
+            variance = when (projectionKind) {
+                Variance.INVARIANT -> null
+                Variance.IN_VARIANCE -> AstVariance.IN
+                Variance.OUT_VARIANCE -> AstVariance.OUT
+            },
+            type = type.toAstType()
+        )
+    }
 
     // todo
-    private fun generateAnnotations() = mutableListOf<AstCall>()
+    private fun AnnotationDescriptor.toAstAnnotation() = AstCall()
+    private fun List<AnnotationDescriptor>.toAstAnnotations() = map { it.toAstAnnotation() }
+    private fun Annotations.toAstAnnotations() = map { it.toAstAnnotation() }
 
-    /*private fun generateModifiers(modifiers: KtModifierList?) =
-        modifiers?.node?.children().orEmpty().mapNotNull { node ->
-            when (node) {
-                is KtAnnotationEntry -> null
-                is KtAnnotation -> null
-                is PsiWhiteSpace -> null
-                else -> AstModifier.values().singleOrNull { it.name.toLowerCase() == node.text }
-            }
-        }.toMutableList()*/
+    private fun ValueParameterDescriptor.toAstValueParameter() = AstValueParameter(
+        name = name,
+        type = type.toAstType(),
+        isVarArg = isVararg,
+        inlineHint = when {
+            isCrossinline -> AstValueParameter.InlineHint.CROSSINLINE
+            isNoinline -> AstValueParameter.InlineHint.NOINLINE
+            else -> null
+        },
+        defaultValue = if (hasDefaultValue()) AstCall() else null // todo
+    ).apply {
+        annotations += this@toAstValueParameter.annotations.toList().map { it.toAstAnnotation() }
+    }
 
-    /*private fun generateValueParameters(valueParameters: List<ValueParameterDescriptor>) =
-        mutableListOf<AstValueParameter>()
+    private fun List<ValueParameterDescriptor>.toAstValueParameters() =
+        map { it.toAstValueParameter() }
 
     // todo
-    private fun generateTypeParameters(typeParameters: List<TypeParameterDescriptor>) =
+    /*private fun generateTypeParameters(typeParameters: List<TypeParameterDescriptor>) =
         mutableListOf<AstTypeParameter>()*/
 
 }

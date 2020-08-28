@@ -1,6 +1,6 @@
 package com.ivianuu.injekt.compiler.ast.extension
 
-import com.ivianuu.injekt.compiler.ast.stub.AstDescriptorStubGenerator
+import com.ivianuu.injekt.compiler.ast.psi.Psi2AstStubGenerator
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -22,7 +22,7 @@ class AstPluginContext(
 ) {
 
     private val classesByFqName = mutableMapOf<String, AstClass?>()
-    private val stubGenerator = AstDescriptorStubGenerator()
+    private val stubGenerator = Psi2AstStubGenerator()
 
     fun referenceClass(fqName: String): AstClass? = classesByFqName.getOrPut(fqName) {
         moduleDescriptor.findClassAcrossModuleDependencies(ClassId.fromString(fqName))

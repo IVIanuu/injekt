@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler.ast.extension
 
+import com.ivianuu.injekt.compiler.ast.psi.Psi2AstStubGenerator
 import com.ivianuu.injekt.compiler.ast.psi.Psi2AstTranslator
 import com.ivianuu.injekt.compiler.ast.string.toAstString
 import org.jetbrains.kotlin.analyzer.AnalysisResult
@@ -73,11 +74,11 @@ class AstAnalysisHandlerExtension(
         extensions: List<AstGenerationExtension>,
         files: List<KtFile>
     ): List<KtFile> {
-        val generator = Psi2AstTranslator(bindingTrace, module)
+        val generator = Psi2AstTranslator(bindingTrace, module, Psi2AstStubGenerator())
 
         val moduleFragment = generator.generateModule(files)
 
-        println("generated module ${moduleFragment} for ${files.map { it.name }}")
+        println("generated module $moduleFragment for ${files.map { it.name }}")
 
         val pluginContext = AstPluginContext(module)
         extensions.forEach { it.generate(moduleFragment, pluginContext) }

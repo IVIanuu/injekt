@@ -1,17 +1,12 @@
-package com.ivianuu.injekt.compiler.ast.stub
+package com.ivianuu.injekt.compiler.ast.psi
 
-import com.ivianuu.injekt.compiler.ast.psi.multiPlatformModalityOf
-import com.ivianuu.injekt.compiler.ast.psi.toAstClassId
-import com.ivianuu.injekt.compiler.ast.psi.toAstClassKind
-import com.ivianuu.injekt.compiler.ast.psi.toAstModality
-import com.ivianuu.injekt.compiler.ast.psi.toAstVisibility
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 
-class AstDescriptorStubGenerator {
+class Psi2AstStubGenerator {
 
     private val classes = mutableMapOf<ClassDescriptor, AstClass>()
 

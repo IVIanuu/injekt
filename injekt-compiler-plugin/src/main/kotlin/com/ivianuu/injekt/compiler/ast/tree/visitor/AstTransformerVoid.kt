@@ -8,6 +8,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
 
 interface AstTransformerVoid : AstTransformer<Nothing?> {
@@ -47,6 +48,10 @@ interface AstTransformerVoid : AstTransformer<Nothing?> {
     fun visitConstructor(declaration: AstConstructor) = visitFunction(declaration)
     override fun visitConstructor(declaration: AstConstructor, data: Nothing?) =
         visitConstructor(declaration)
+
+    fun visitValueParameter(declaration: AstValueParameter) = visitDeclaration(declaration)
+    override fun visitValueParameter(declaration: AstValueParameter, data: Nothing?) =
+        visitValueParameter(declaration)
 
     fun visitExpression(expression: AstExpression) = expression.transformChildrenAndCompose()
     override fun visitExpression(expression: AstExpression, data: Nothing?) =
