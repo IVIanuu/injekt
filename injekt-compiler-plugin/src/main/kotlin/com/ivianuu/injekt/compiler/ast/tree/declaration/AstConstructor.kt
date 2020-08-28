@@ -1,6 +1,5 @@
 package com.ivianuu.injekt.compiler.ast.tree.declaration
 
-import com.ivianuu.injekt.compiler.ast.tree.AstCallableId
 import com.ivianuu.injekt.compiler.ast.tree.AstExpectActual
 import com.ivianuu.injekt.compiler.ast.tree.AstVisibility
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
@@ -9,7 +8,6 @@ import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
 import com.ivianuu.injekt.compiler.ast.tree.visitor.transformInplace
 
 class AstConstructor(
-    override var callableId: AstCallableId,
     override var visibility: AstVisibility = AstVisibility.PUBLIC,
     override var expectActual: AstExpectActual? = null,
     override var returnType: AstType,

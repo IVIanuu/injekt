@@ -8,12 +8,12 @@ import com.ivianuu.injekt.compiler.ast.tree.visitor.transformSingle
 import org.jetbrains.kotlin.name.Name
 
 class AstValueParameter(
-    var name: Name,
+    override var name: Name,
     var type: AstType,
-    var isVarArg: Boolean?,
-    var inlineHint: InlineHint?,
-    var defaultValue: AstExpression?
-) : AstDeclarationBase() {
+    var isVarArg: Boolean = false,
+    var inlineHint: InlineHint? = null,
+    var defaultValue: AstExpression? = null
+) : AstDeclarationBase(), AstDeclarationWithName {
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
         visitor.visitValueParameter(this, data)

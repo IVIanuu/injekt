@@ -4,6 +4,7 @@ import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
+import org.jetbrains.kotlin.name.FqName
 
 interface AstDeclaration : AstElement, AstAnnotationContainer {
     var parent: AstDeclarationParent
@@ -31,3 +32,7 @@ abstract class AstDeclarationBase : AstDeclaration {
         accept(transformer, data) as AstTransformResult<AstDeclaration>
 
 }
+
+val AstDeclarationWithName.fqName: FqName
+    get() = getPackageFragment()!!.packageFqName
+        .child(name)

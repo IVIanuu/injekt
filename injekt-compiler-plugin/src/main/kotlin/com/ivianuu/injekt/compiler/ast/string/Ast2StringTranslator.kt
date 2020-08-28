@@ -11,6 +11,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationWithVisibi
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
+import com.ivianuu.injekt.compiler.ast.tree.declaration.fqName
 import com.ivianuu.injekt.compiler.ast.tree.type.AstStarProjection
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
@@ -108,7 +109,7 @@ object Ast2StringTranslator {
                 }
             }.let { }
 
-            append("${declaration.classId.className} ")
+            append("${declaration.name} ")
             if (declaration.declarations.isNotEmpty()) {
                 appendBraced {
                     declaration.renderDeclarations()
@@ -125,7 +126,7 @@ object Ast2StringTranslator {
             declaration.renderExpectActual()
             append("fun ")
             // todo type parameters
-            append("${declaration.callableId.callableName}")
+            append("${declaration.name}")
             append("(")
             declaration.valueParameters.forEachIndexed { index, valueParameter ->
                 valueParameter.accept(this)
@@ -158,6 +159,12 @@ object Ast2StringTranslator {
 
         override fun visitValueParameter(declaration: AstValueParameter) {
             declaration.renderAnnotations()
+            if (declaration.isVarArg) {
+                append("vararg ")
+            }
+            declaration.inlineHint?.let {
+                append("${it.name.toLowerCase()} ")
+            }
             append("${declaration.name}: ")
             declaration.type.render()
             if (declaration.defaultValue != null) {
@@ -201,7 +208,7 @@ object Ast2StringTranslator {
             renderAnnotations()
 
             when (val classifier = classifier) {
-                is AstClass -> append(classifier.classId.packageName.child(classifier.classId.className))
+                is AstClass -> append(classifier.fqName)
                 else -> error("Unexpected classifier $classifier")
             }
 

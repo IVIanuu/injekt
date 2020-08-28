@@ -26,7 +26,7 @@ class AstPluginContext(
 
     fun referenceClass(fqName: String): AstClass? = classesByFqName.getOrPut(fqName) {
         moduleDescriptor.findClassAcrossModuleDependencies(ClassId.fromString(fqName))
-            ?.let { stubGenerator.generateClass(it) }
+            ?.let { stubGenerator.getOrCreateClass(it) }
     }
 
 }

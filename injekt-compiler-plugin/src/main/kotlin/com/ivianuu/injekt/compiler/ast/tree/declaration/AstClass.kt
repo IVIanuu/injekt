@@ -1,6 +1,5 @@
 package com.ivianuu.injekt.compiler.ast.tree.declaration
 
-import com.ivianuu.injekt.compiler.ast.tree.AstClassId
 import com.ivianuu.injekt.compiler.ast.tree.AstExpectActual
 import com.ivianuu.injekt.compiler.ast.tree.AstModality
 import com.ivianuu.injekt.compiler.ast.tree.AstVisibility
@@ -8,9 +7,10 @@ import com.ivianuu.injekt.compiler.ast.tree.type.AstClassifier
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
 import com.ivianuu.injekt.compiler.ast.tree.visitor.transformInplace
+import org.jetbrains.kotlin.name.Name
 
 class AstClass(
-    var classId: AstClassId,
+    override var name: Name,
     var kind: Kind = Kind.CLASS,
     override var visibility: AstVisibility = AstVisibility.PUBLIC,
     override var expectActual: AstExpectActual? = null,
@@ -22,6 +22,7 @@ class AstClass(
     var isExternal: Boolean = false
 ) : AstDeclarationBase(),
     AstClassifier,
+    AstDeclarationWithName,
     AstDeclarationWithVisibility,
     AstDeclarationWithExpectActual,
     AstDeclarationWithModality,

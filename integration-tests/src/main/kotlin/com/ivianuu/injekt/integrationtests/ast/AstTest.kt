@@ -3,7 +3,6 @@ package com.ivianuu.injekt.integrationtests.ast
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.ast.extension.AstGenerationExtension
 import com.ivianuu.injekt.compiler.ast.extension.AstPluginContext
-import com.ivianuu.injekt.compiler.ast.tree.AstClassId
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
@@ -64,14 +63,11 @@ class AstTest {
                                                 override fun visitClass(declaration: AstClass): AstTransformResult<AstDeclaration> {
                                                     moduleFragment.files += AstFile(
                                                         packageFqName = file.packageFqName,
-                                                        name = (declaration.classId.className.asString() + "Context.kt").asNameId()
+                                                        name = (declaration.name.asString() + "Context.kt").asNameId()
                                                     ).apply {
                                                         addChild(
                                                             AstClass(
-                                                                classId = AstClassId(
-                                                                    packageName = declaration.classId.packageName,
-                                                                    className = (declaration.classId.className.asString() + "Context").asNameId()
-                                                                )
+                                                                name = (declaration.name.asString() + "Context").asNameId()
                                                             )
                                                         )
                                                     }

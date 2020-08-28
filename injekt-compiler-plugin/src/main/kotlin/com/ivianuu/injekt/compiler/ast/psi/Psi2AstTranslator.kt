@@ -1,7 +1,6 @@
 package com.ivianuu.injekt.compiler.ast.psi
 
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.ast.tree.AstCallableId
 import com.ivianuu.injekt.compiler.ast.tree.AstVariance
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstConstructor
@@ -19,7 +18,6 @@ import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeAbbreviation
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjectionImpl
-import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -38,8 +36,6 @@ import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.components.hasDefaultValue
 import org.jetbrains.kotlin.resolve.calls.components.isVararg
-import org.jetbrains.kotlin.resolve.descriptorUtil.classId
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
@@ -111,10 +107,10 @@ class Psi2AstTranslator(
 
     fun getOrCreateClass(descriptor: ClassDescriptor): AstClass {
         val declaration = descriptor.findPsi() as? KtClassOrObject
-            ?: return stubGenerator.generateClass(descriptor)
+            ?: return stubGenerator.getOrCreateClass(descriptor)
         return classes.getOrPut(descriptor) {
             AstClass(
-                classId = descriptor.classId!!.toAstClassId(),
+                name = descriptor.name,
                 kind = descriptor.kind.toAstClassKind(),
                 visibility = descriptor.visibility.toAstVisibility(),
                 expectActual = multiPlatformModalityOf(
@@ -140,12 +136,7 @@ class Psi2AstTranslator(
     fun getOrCreateFunction(descriptor: SimpleFunctionDescriptor): AstSimpleFunction {
         return simpleFunctions.getOrPut(descriptor) {
             AstSimpleFunction(
-                callableId = AstCallableId(
-                    descriptor.findPackage().fqName,
-                    descriptor.dispatchReceiverParameter?.value?.type?.constructor?.declarationDescriptor
-                        ?.let { it as ClassDescriptor }?.fqNameSafe,
-                    descriptor.name
-                ),
+                name = descriptor.name,
                 visibility = descriptor.visibility.toAstVisibility(),
                 expectActual = multiPlatformModalityOf(
                     descriptor.isActual,
@@ -171,11 +162,6 @@ class Psi2AstTranslator(
     fun getOrCreateConstructor(descriptor: ConstructorDescriptor): AstConstructor {
         return constructors.getOrPut(descriptor) {
             AstConstructor(
-                callableId = AstCallableId(
-                    descriptor.findPackage().fqName,
-                    null,
-                    descriptor.name
-                ),
                 visibility = descriptor.visibility.toAstVisibility(),
                 expectActual = multiPlatformModalityOf(
                     descriptor.isActual,

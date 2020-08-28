@@ -1,6 +1,5 @@
 package com.ivianuu.injekt.compiler.ast.psi
 
-import com.ivianuu.injekt.compiler.ast.tree.AstClassId
 import com.ivianuu.injekt.compiler.ast.tree.AstExpectActual
 import com.ivianuu.injekt.compiler.ast.tree.AstModality
 import com.ivianuu.injekt.compiler.ast.tree.AstVisibility
@@ -9,12 +8,6 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
-import org.jetbrains.kotlin.name.ClassId
-
-fun ClassId.toAstClassId() = AstClassId(
-    packageFqName,
-    shortClassName
-)
 
 fun Modality.toAstModality() = when (this) {
     Modality.FINAL -> AstModality.FINAL
