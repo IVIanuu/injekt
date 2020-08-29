@@ -71,9 +71,12 @@ object Ast2StringTranslator {
 
         override fun visitClass(klass: AstClass, data: Nothing?): String = buildString {
             append(klass.renderAnnotations())
-            append(klass.renderVisibility())
-            append(klass.renderExpectActual())
-            if (klass.kind != AstClass.Kind.INTERFACE) append(klass.renderModality())
+            if (klass.kind != AstClass.Kind.ENUM_ENTRY) append(klass.renderVisibility())
+            if (klass.kind != AstClass.Kind.ENUM_ENTRY) append(klass.renderExpectActual())
+            if (klass.kind != AstClass.Kind.INTERFACE &&
+                klass.kind != AstClass.Kind.ENUM_CLASS &&
+                klass.kind != AstClass.Kind.ENUM_ENTRY
+            ) append(klass.renderModality())
             if (klass.isFun) {
                 append("fun ")
             }
@@ -90,7 +93,7 @@ object Ast2StringTranslator {
                 AstClass.Kind.CLASS -> append("class ")
                 AstClass.Kind.INTERFACE -> append("interface ")
                 AstClass.Kind.ENUM_CLASS -> append("enum class ")
-                AstClass.Kind.ENUM_ENTRY -> TODO()
+                AstClass.Kind.ENUM_ENTRY -> append("")
                 AstClass.Kind.ANNOTATION -> append("annotation class ")
                 AstClass.Kind.OBJECT -> {
                     if (klass.isCompanion) append("companion ")
@@ -111,6 +114,10 @@ object Ast2StringTranslator {
                 .filterIsInstance<AstConstructor>()
                 .singleOrNull { it.isPrimary }
 
+            if (klass.kind == AstClass.Kind.ENUM_ENTRY) {
+                println("${klass.name} constructors ${klass.declarations.filterIsInstance<AstConstructor>()}")
+            }
+
             if (primaryConstructor != null) {
                 append("(")
                 primaryConstructor.valueParameters.forEachIndexed { index, valueParameter ->
@@ -124,17 +131,29 @@ object Ast2StringTranslator {
                 appendSpace()
             }
 
-            val declarationsExpectPrimaryConstructor = klass.declarations
+            val declarationsExceptPrimaryConstructor = klass.declarations
                 .filter { it !is AstConstructor || !it.isPrimary }
 
-            if (declarationsExpectPrimaryConstructor.isNotEmpty()) {
+            if (declarationsExceptPrimaryConstructor.isNotEmpty()) {
                 append(
                     braced(
                         buildString {
                             appendLine()
-                            declarationsExpectPrimaryConstructor
+                            val (enumEntryDeclarations, otherDeclarations) = declarationsExceptPrimaryConstructor
+                                .partition { it is AstClass && it.kind == AstClass.Kind.ENUM_ENTRY }
+
+                            enumEntryDeclarations.forEachIndexed { index, declaration ->
+                                append(declaration.accept(this@Writer, null))
+                                if (index != enumEntryDeclarations.lastIndex) {
+                                    appendLine(",")
+                                } else {
+                                    appendLine(";")
+                                }
+                            }
+
+                            otherDeclarations
                                 .forEach { declaration ->
-                                    append(declaration.accept(this@Writer, null))
+                                    appendLine(declaration.accept(this@Writer, null))
                                 }
                         }
                     )

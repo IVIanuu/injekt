@@ -43,6 +43,16 @@ class AstTest {
                         
                         object AObject
                         
+                        interface AInterface
+                        
+                        enum class AEnum(val value: String) {
+                            A("a"), B("b")
+                        }
+                        
+                        sealed class ASealed {
+                            class AInner : ASealed()
+                        }
+                        
                         abstract class SuperClass {
                             abstract fun abstractFun(): String
                         }

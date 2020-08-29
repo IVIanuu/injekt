@@ -58,12 +58,10 @@ import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtReferenceExpression
-import org.jetbrains.kotlin.psi.KtReturnExpression
 import org.jetbrains.kotlin.psi.KtStringTemplateEntryWithExpression
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 import org.jetbrains.kotlin.psi.KtTypeAlias
 import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.BindingContextUtils
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.bindingContextUtil.isUsedAsExpression
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
@@ -92,7 +90,6 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjection
-import org.jetbrains.kotlin.types.expressions.ExpressionTypingUtils
 import org.jetbrains.kotlin.types.getAbbreviation
 import org.jetbrains.kotlin.types.model.TypeArgumentMarker
 import org.jetbrains.kotlin.types.upperIfFlexible
@@ -568,34 +565,4 @@ class Psi2AstTranslator(
         (scopeOwner as? CallableDescriptor)
             ?: throw AssertionError("'return' in a non-callable: $scopeOwner")
 
-    fun getReturnExpressionTarget(
-        expression: KtReturnExpression,
-        scopeOwner: DeclarationDescriptor
-    ): CallableDescriptor =
-        if (!ExpressionTypingUtils.isFunctionLiteral(scopeOwner) && !ExpressionTypingUtils.isFunctionExpression(
-                scopeOwner
-            )
-        ) {
-            scopeOwnerAsCallable(scopeOwner)
-        } else {
-            val label = expression.getTargetLabel()
-            when {
-                label != null -> {
-                    val labelTarget =
-                        bindingTrace.get(BindingContext.LABEL_TARGET, label)!!
-                    val labelTargetDescriptor =
-                        bindingTrace.get(BindingContext.DECLARATION_TO_DESCRIPTOR, labelTarget)!!
-                    labelTargetDescriptor as CallableDescriptor
-                }
-                ExpressionTypingUtils.isFunctionLiteral(scopeOwner) -> {
-                    BindingContextUtils.getContainingFunctionSkipFunctionLiterals(
-                        scopeOwner,
-                        true
-                    ).first
-                }
-                else -> {
-                    scopeOwnerAsCallable(scopeOwner)
-                }
-            }
-        }
 }

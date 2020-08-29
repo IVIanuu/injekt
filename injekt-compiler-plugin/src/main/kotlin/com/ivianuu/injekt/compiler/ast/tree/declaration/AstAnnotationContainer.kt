@@ -10,5 +10,5 @@ interface AstAnnotationContainer : AstElement {
 
 fun AstAnnotationContainer.hasAnnotation(fqName: FqName): Boolean =
     annotations.any {
-        ((it.callee as AstFunction).returnType.classifier as AstClass).fqName == fqName
+        ((it.callee as AstConstructor).constructedClass).fqName == fqName
     }
