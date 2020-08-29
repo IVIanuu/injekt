@@ -222,8 +222,7 @@ object Ast2StringTranslator {
                     append(valueParameter.accept(this@Writer, null))
                     if (index != constructor.valueParameters.lastIndex) append(", ")
                 }
-                append(")")
-                append(": ${constructor.returnType.render()} ")
+                append(") ")
                 constructor.body?.let { body ->
                     append(braced(body.accept(this@Writer, null)))
                 } ?: if (!constructor.isPrimary) appendLine()
