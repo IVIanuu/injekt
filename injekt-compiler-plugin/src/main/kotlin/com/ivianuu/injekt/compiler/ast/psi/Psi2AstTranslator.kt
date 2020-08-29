@@ -15,10 +15,9 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.addChild
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
-import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
-import com.ivianuu.injekt.compiler.ast.tree.expression.AstGetValueParameter
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
@@ -44,7 +43,6 @@ import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.js.translate.callTranslator.getReturnType
 import org.jetbrains.kotlin.psi.KtBlockExpression
-import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClassInitializer
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstantExpression
@@ -59,6 +57,7 @@ import org.jetbrains.kotlin.psi.KtLiteralStringTemplateEntry
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtReturnExpression
 import org.jetbrains.kotlin.psi.KtStringTemplateEntryWithExpression
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
@@ -73,6 +72,7 @@ import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ExpressionValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.VarargValueArgument
+import org.jetbrains.kotlin.resolve.calls.util.FakeCallableDescriptorForObject
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
 import org.jetbrains.kotlin.resolve.constants.ByteValue
 import org.jetbrains.kotlin.resolve.constants.CharValue
@@ -285,7 +285,7 @@ class Psi2AstTranslator(
                 declaration.delegateExpression?.toAstExpression()
             else null
             initializer = when {
-                valueParameter != null -> AstGetValueParameter(valueParameter)
+                valueParameter != null -> AstQualifiedAccess(valueParameter, valueParameter.type)
                 declaration is KtProperty -> declaration.initializer?.toAstExpression()
                 else -> null
             }
@@ -310,17 +310,18 @@ class Psi2AstTranslator(
     }
 
     // todo
-    fun AnnotationDescriptor.toAstAnnotation() = AstCall(
-        type.toAstType(),
-        type.toAstType().classOrFail.declarations.filterIsInstance<AstConstructor>().first()
+    fun AnnotationDescriptor.toAstAnnotation() = AstQualifiedAccess(
+        type.toAstType().classOrFail.declarations.filterIsInstance<AstConstructor>().first(),
+        type.toAstType()
     )
 
     // todo
     fun List<AnnotationDescriptor>.toAstAnnotations() =
-        emptyList<AstCall>() //map { it.toAstAnnotation() }
+        emptyList<AstQualifiedAccess>() //map { it.toAstAnnotation() }
 
     // todo
-    fun Annotations.toAstAnnotations() = emptyList<AstCall>()//map { it.toAstAnnotation() }
+    fun Annotations.toAstAnnotations() =
+        emptyList<AstQualifiedAccess>()//map { it.toAstAnnotation() }
 
     fun KtClassInitializer.toAstAnonymousInitializer() = AstAnonymousInitializer().apply {
         body = this@toAstAnonymousInitializer.body?.toAstBlock(this)
@@ -376,7 +377,7 @@ class Psi2AstTranslator(
             is KtConstantExpression -> toAstConst()
             is KtBlockExpression -> toAstBlock()
             is KtStringTemplateExpression -> toAstExpression()
-            is KtCallExpression -> toAstCall()
+            is KtReferenceExpression -> toAstQualifiedAccess()
             else -> error("Unexpected expression $this $javaClass $text")
         }
 
@@ -457,18 +458,22 @@ class Psi2AstTranslator(
     fun KtStringTemplateEntryWithExpression.toAstExpression2() =
         expression!!.toAstExpression()
 
-    fun KtCallExpression.toAstCall(): AstCall {
+    fun KtReferenceExpression.toAstQualifiedAccess(): AstQualifiedAccess {
         val resolvedCall = getResolvedCall(this)
             ?: error("Couldn't find call for $this $javaClass $text")
-        return AstCall(
+        return AstQualifiedAccess(
             type = resolvedCall.getReturnType().toAstType(),
             callee = when (val callee = resolvedCall.resultingDescriptor) {
+                is ConstructorDescriptor -> callee.toAstConstructor()
                 is SimpleFunctionDescriptor -> callee.toAstSimpleFunction()
+                is PropertyDescriptor -> callee.toAstProperty()
+                is FakeCallableDescriptorForObject -> callee.classDescriptor.toAstClass()
+                is ValueParameterDescriptor -> callee.toAstValueParameter()
                 else -> error("Unexpected callee $callee")
             }
         ).apply {
             typeArguments += resolvedCall.typeArguments.values.map { it.toAstType() }
-            //receiver = calleeExpression?.toAstExpression()
+            // todo receiver = calleeExpression?.toAstExpression()
 
             val sortedValueArguments = resolvedCall.valueArguments
                 .toList()

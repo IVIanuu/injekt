@@ -1,7 +1,7 @@
 package com.ivianuu.injekt.compiler.ast.tree.declaration
 
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
-import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
@@ -14,7 +14,7 @@ class AstFile(
     var name: Name
 ) : AstElement, AstPackageFragment, AstAnnotationContainer {
 
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    override val annotations: MutableList<AstQualifiedAccess> = mutableListOf()
     override val declarations: MutableList<AstDeclaration> = mutableListOf()
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =

@@ -10,7 +10,7 @@ interface AstExpression : AstStatement {
 
 abstract class AstExpressionBase : AstExpression {
 
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    override val annotations: MutableList<AstQualifiedAccess> = mutableListOf()
 
     override fun <D> transform(
         transformer: AstTransformer<D>,

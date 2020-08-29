@@ -26,13 +26,22 @@ class AstTest {
             sources = arrayOf(
                 source(
                     """
-                        class NotTransformed(val param: String)
+                        class NotTransformed(val param: String) {
+                            init {
+                                param
+                            }
+                        }
                         
                         class Other<T> {
                             init {
                                 println("hello")
+                                prop
+                                AObject
+                                NotTransformed("lol")
                             }
                         }
+                        
+                        object AObject
                         
                         abstract class SuperClass {
                             abstract fun abstractFun(): String
@@ -43,6 +52,10 @@ class AstTest {
                         }
                         
                         fun aFunction() {
+                        }
+                        
+                        fun bFunction(param: String) {
+                            param
                         }
                         
                         fun <T, S> aFunction(a: T, b: S) {

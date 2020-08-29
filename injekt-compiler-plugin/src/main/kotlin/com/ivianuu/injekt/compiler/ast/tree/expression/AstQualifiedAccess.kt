@@ -1,15 +1,15 @@
 package com.ivianuu.injekt.compiler.ast.tree.expression
 
-import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
 import com.ivianuu.injekt.compiler.ast.tree.visitor.transformInplace
 import com.ivianuu.injekt.compiler.ast.tree.visitor.transformSingle
 
-class AstCall(
-    override var type: AstType,
-    var callee: AstFunction
+class AstQualifiedAccess(
+    var callee: AstDeclaration,
+    override var type: AstType
 ) : AstExpressionBase() {
 
     var receiver: AstExpression? = null
@@ -18,7 +18,7 @@ class AstCall(
     val valueArguments: MutableList<AstExpression?> = mutableListOf()
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitCall(this, data)
+        visitor.visitQualifiedAccess(this, data)
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         receiver?.accept(visitor, data)

@@ -3,7 +3,7 @@ package com.ivianuu.injekt.compiler.ast.psi
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
-import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 
 class AstLazyClass(
@@ -23,7 +23,7 @@ class AstLazyClass(
     descriptor.isExternal
 ) {
 
-    override val annotations: MutableList<AstCall> by lazy {
+    override val annotations: MutableList<AstQualifiedAccess> by lazy {
         with(translator) {
             descriptor.annotations.toAstAnnotations()
                 .toMutableList()

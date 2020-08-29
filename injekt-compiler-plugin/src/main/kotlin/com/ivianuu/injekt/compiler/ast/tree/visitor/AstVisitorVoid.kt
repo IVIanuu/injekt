@@ -16,10 +16,9 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
-import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
-import com.ivianuu.injekt.compiler.ast.tree.expression.AstGetValueParameter
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
@@ -111,14 +110,11 @@ interface AstVisitorVoid : AstVisitor<Unit, Nothing?> {
     ) =
         visitStringConcatenation(stringConcatenation)
 
-    fun visitGetValueParameter(getValueParameter: AstGetValueParameter) =
-        visitExpression(getValueParameter)
+    fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess) =
+        visitExpression(qualifiedAccess)
 
-    override fun visitGetValueParameter(getValueParameter: AstGetValueParameter, data: Nothing?) =
-        visitGetValueParameter(getValueParameter)
-
-    fun visitCall(call: AstCall) = visitExpression(call)
-    override fun visitCall(call: AstCall, data: Nothing?) = visitCall(call)
+    override fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess, data: Nothing?) =
+        visitQualifiedAccess(qualifiedAccess)
 
     fun visitReturn(astReturn: AstReturn) = visitExpression(astReturn)
     override fun visitReturn(astReturn: AstReturn, data: Nothing?) = visitReturn(astReturn)

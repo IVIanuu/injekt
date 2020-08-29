@@ -1,7 +1,7 @@
 package com.ivianuu.injekt.compiler.ast.tree.declaration
 
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
-import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
@@ -25,7 +25,7 @@ interface AstDeclarationParent : AstElement
 abstract class AstDeclarationBase : AstDeclaration {
 
     override lateinit var parent: AstDeclarationParent
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    override val annotations: MutableList<AstQualifiedAccess> = mutableListOf()
 
     override fun <D> transform(
         transformer: AstTransformer<D>,

@@ -8,8 +8,10 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstConstructor
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationContainer
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationWithExpectActual
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationWithModality
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationWithName
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationWithVisibility
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstProperty
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstPropertyAccessor
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
@@ -18,9 +20,8 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.fqName
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
-import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
-import com.ivianuu.injekt.compiler.ast.tree.expression.AstGetValueParameter
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
 import com.ivianuu.injekt.compiler.ast.tree.type.AstStarProjection
@@ -439,42 +440,38 @@ object Ast2StringTranslator {
             append("\"")
         }
 
-        override fun visitGetValueParameter(getValueParameter: AstGetValueParameter) {
-            append(getValueParameter.valueParameter.name)
-        }
-
-        override fun visitCall(call: AstCall) {
-            appendIndent()
-            if (call.receiver != null) {
-                call.receiver!!.accept(this)
+        override fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess) {
+            if (qualifiedAccess.receiver != null) {
+                qualifiedAccess.receiver!!.accept(this)
                 append(".")
             }
-            val callee = call.callee
+            val callee = qualifiedAccess.callee
             if (callee is AstConstructor) {
                 append(callee.constructedClass.name)
-            } else if (callee is AstSimpleFunction) {
+            } else if (callee is AstDeclarationWithName) {
                 append("${callee.name}")
             }
-            if (call.typeArguments.isNotEmpty()) {
+            if (qualifiedAccess.typeArguments.isNotEmpty()) {
                 append("<")
-                call.typeArguments.forEachIndexed { index, typeArgument ->
+                qualifiedAccess.typeArguments.forEachIndexed { index, typeArgument ->
                     typeArgument.render()
-                    if (index != call.typeArguments.lastIndex) append(", ")
+                    if (index != qualifiedAccess.typeArguments.lastIndex) append(", ")
                 }
                 append(">")
             }
-            append("(")
-            call.valueArguments.forEachIndexed { index, valueArgument ->
-                if (valueArgument != null) {
-                    append("${callee.valueParameters[index].name} = ")
-                    valueArgument.accept(this)
-                    if (index != call.valueArguments.lastIndex &&
-                        call.valueArguments[index + 1] != null
-                    ) append(", ")
+            if (callee is AstFunction) {
+                append("(")
+                qualifiedAccess.valueArguments.forEachIndexed { index, valueArgument ->
+                    if (valueArgument != null) {
+                        append("${callee.valueParameters[index].name} = ")
+                        valueArgument.accept(this)
+                        if (index != qualifiedAccess.valueArguments.lastIndex &&
+                            qualifiedAccess.valueArguments[index + 1] != null
+                        ) append(", ")
+                    }
                 }
+                append(")")
             }
-            append(")")
-            appendLine()
         }
 
         override fun visitReturn(astReturn: AstReturn) {

@@ -16,10 +16,9 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
-import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
-import com.ivianuu.injekt.compiler.ast.tree.expression.AstGetValueParameter
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
@@ -104,11 +103,8 @@ interface AstTransformer<D> : AstVisitor<AstTransformResult<AstElement>, D> {
     override fun visitStringConcatenation(stringConcatenation: AstStringConcatenation, data: D) =
         visitExpression(stringConcatenation, data)
 
-    override fun visitCall(call: AstCall, data: D) =
-        visitExpression(call, data)
-
-    override fun visitGetValueParameter(getValueParameter: AstGetValueParameter, data: D) =
-        visitExpression(getValueParameter, data)
+    override fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess, data: D) =
+        visitExpression(qualifiedAccess, data)
 
     override fun visitReturn(astReturn: AstReturn, data: D) =
         visitExpression(astReturn, data)

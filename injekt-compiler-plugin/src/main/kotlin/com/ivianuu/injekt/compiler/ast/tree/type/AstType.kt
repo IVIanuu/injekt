@@ -11,7 +11,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstAnnotationContainer
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.fqName
-import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
@@ -26,7 +26,7 @@ class AstType : AstAnnotationContainer, AstTypeArgument, AstTypeProjection {
         get() = this
 
     lateinit var classifier: AstClassifier
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    override val annotations: MutableList<AstQualifiedAccess> = mutableListOf()
     var hasQuestionMark: Boolean = false
     val arguments: MutableList<AstTypeArgument> = mutableListOf()
     var abbreviation: AstTypeAbbreviation? = null
@@ -97,7 +97,7 @@ class AstTypeProjectionImpl(
 class AstTypeAbbreviation(
     var typeAlias: AstTypeAlias,
 ) : AstAnnotationContainer {
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    override val annotations: MutableList<AstQualifiedAccess> = mutableListOf()
     var hasQuestionMark: Boolean = false
     val arguments: MutableList<AstTypeArgument> = mutableListOf()
 
@@ -120,7 +120,7 @@ class AstTypeAbbreviation(
 
 fun AstType.copy(
     classifier: AstClassifier = this.classifier,
-    annotations: MutableList<AstCall> = this.annotations,
+    annotations: MutableList<AstQualifiedAccess> = this.annotations,
     hasQuestionMark: Boolean = this.hasQuestionMark,
     arguments: MutableList<AstTypeArgument> = this.arguments,
     abbreviation: AstTypeAbbreviation? = this.abbreviation
