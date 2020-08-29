@@ -49,6 +49,7 @@ class AstAnalysisHandlerExtension(
 
         files as ArrayList<KtFile>
 
+        forceAlwaysAllowRewrites(bindingTrace)
         forceResolveContents(componentProvider, files)
 
         val originalFiles = files.toList()
@@ -132,18 +133,13 @@ class AstAnalysisHandlerExtension(
         }
     }
 
-    private fun resetBindingTrace(
-        bindingTrace: BindingTrace
-    ) {
-        (bindingTrace as BindingTraceContext)
-            .clearDiagnostics()
+    private fun forceAlwaysAllowRewrites(bindingTrace: BindingTrace) {
         val map = BindingTraceContext::class.java
             .declaredFields
             .single { it.name == "map" }
             .also { it.isAccessible = true }
             .get(bindingTrace)
             .let { it as SlicedMapImpl }
-
         SlicedMapImpl::class.java
             .declaredFields
             .single { it.name == "alwaysAllowRewrite" }
@@ -156,6 +152,18 @@ class AstAnalysisHandlerExtension(
                     }
             }
             .set(map, true)
+    }
+
+    private fun resetBindingTrace(bindingTrace: BindingTrace) {
+        (bindingTrace as BindingTraceContext)
+            .clearDiagnostics()
+        val map = BindingTraceContext::class.java
+            .declaredFields
+            .single { it.name == "map" }
+            .also { it.isAccessible = true }
+            .get(bindingTrace)
+            .let { it as SlicedMapImpl }
+        map.clear()
     }
 
 }

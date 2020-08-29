@@ -9,7 +9,6 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstProperty
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.addChild
-import com.ivianuu.injekt.compiler.ast.tree.declaration.ast.AstLazyClass
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor

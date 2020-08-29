@@ -1,11 +1,5 @@
-package com.ivianuu.injekt.compiler.ast.tree.declaration.ast
+package com.ivianuu.injekt.compiler.ast.psi
 
-import com.ivianuu.injekt.compiler.ast.psi.Psi2AstStubGenerator
-import com.ivianuu.injekt.compiler.ast.psi.Psi2AstTranslator
-import com.ivianuu.injekt.compiler.ast.psi.expectActualOf
-import com.ivianuu.injekt.compiler.ast.psi.toAstClassKind
-import com.ivianuu.injekt.compiler.ast.psi.toAstModality
-import com.ivianuu.injekt.compiler.ast.psi.toAstVisibility
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter

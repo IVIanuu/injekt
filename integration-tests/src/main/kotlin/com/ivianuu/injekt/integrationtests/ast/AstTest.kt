@@ -34,6 +34,14 @@ class AstTest {
                             }
                         }
                         
+                        abstract class SuperClass {
+                            abstract fun abstractFun(): String
+                        }
+                        
+                        class ImplementingClass : SuperClass() {
+                            override fun abstractFun(): String = ""
+                        }
+                        
                         fun aFunction() {
                         }
                         

@@ -188,7 +188,9 @@ object Ast2StringTranslator {
                 simpleFunction.typeParameters.renderWhere()
                 appendSpace()
             }
-            appendBraced { simpleFunction.body!!.accept(this) }
+            simpleFunction.body?.let { body ->
+                appendBraced { body.accept(this) }
+            } ?: appendLine()
         }
 
         override fun visitConstructor(constructor: AstConstructor) {
@@ -269,9 +271,9 @@ object Ast2StringTranslator {
         override fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer) {
             appendIndent()
             append("init ")
-            appendBraced {
-                anonymousInitializer.body?.accept(this)
-            }
+            anonymousInitializer.body?.let { body ->
+                appendBraced { body.accept(this) }
+            } ?: appendLine()
         }
 
         override fun visitTypeParameter(typeParameter: AstTypeParameter) {
