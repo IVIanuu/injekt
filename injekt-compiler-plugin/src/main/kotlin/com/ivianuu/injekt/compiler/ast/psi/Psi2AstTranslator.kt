@@ -324,7 +324,7 @@ class Psi2AstTranslator(
         emptyList<AstQualifiedAccess>()//map { it.toAstAnnotation() }
 
     fun KtClassInitializer.toAstAnonymousInitializer() = AstAnonymousInitializer().apply {
-        body = this@toAstAnonymousInitializer.body?.toAstBlock(this)
+        body = this@toAstAnonymousInitializer.body!!.toAstBlock(this)
     }
 
     fun TypeParameterDescriptor.toAstTypeParameter(): AstTypeParameter {

@@ -29,81 +29,51 @@ import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
 import com.ivianuu.injekt.compiler.ast.tree.type.isClassType
-import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitorVoid
+import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.name.FqName
 
 object Ast2StringTranslator {
 
-    fun generate(element: AstElement): String {
-        val builder = StringBuilder()
-        element.accept(Writer(builder))
-        return builder.toString()
-    }
+    fun generate(element: AstElement): String = element.accept(Writer(), null)
 
-    // todo use AstVisitor<String>
-    private class Writer(private val builder: StringBuilder) : AstVisitorVoid {
+    private class Writer : AstVisitor<String, Nothing?> {
 
         private var indent = ""
 
-        private fun append(value: Any) {
-            builder.append("$value")
-        }
-
-        private fun appendLine() {
-            builder.appendLine()
-        }
-
-        private fun appendLine(value: Any) {
-            builder.appendLine("$value")
-        }
-
-        private fun appendIndented(value: Any) {
-            append(indent)
-            append(value)
-        }
-
-        private fun appendIndentedLine(value: Any) {
-            appendLine("$indent$value")
-        }
-
-        private fun appendIndent() {
-            append(indent)
-        }
-
-        private fun appendSpace() = append(" ")
-
-        private inline fun <T> indented(block: () -> T): T {
+        private fun indented(value: Any?): String {
             indent += "    "
-            val result = block()
+            val result = "$indent$value"
             indent = indent.dropLast(4)
             return result
         }
 
-        private inline fun <T> appendBraced(block: () -> T): T = run {
-            appendLine("{")
-            val result = indented(block)
-            appendIndentedLine("}")
-            result
+        private fun braced(value: String, header: String? = null): String = buildString {
+            appendLine("$indent${header?.let { "$it " }.orEmpty()}{")
+            appendLine(indented(value))
+            appendLine("$indent}")
         }
 
-        override fun visitElement(element: AstElement) {
+        private fun StringBuilder.appendSpace() {
+            append(" ")
+        }
+
+        override fun visitElement(element: AstElement, data: Nothing?): String {
             error("Unhandled $element")
         }
 
-        override fun visitFile(file: AstFile) {
+        override fun visitFile(file: AstFile, data: Nothing?): String = buildString {
             if (file.packageFqName != FqName.ROOT)
-                appendIndentedLine("package ${file.packageFqName}")
+                append("package ${file.packageFqName}")
             if (file.declarations.isNotEmpty()) appendLine()
-            file.renderDeclarations()
+            append(file.renderDeclarations())
         }
 
-        override fun visitClass(klass: AstClass) {
-            klass.renderAnnotations()
-            appendIndent()
-            klass.renderVisibility()
-            klass.renderExpectActual()
-            if (klass.kind != AstClass.Kind.INTERFACE) klass.renderModality()
+        override fun visitClass(klass: AstClass, data: Nothing?): String = buildString {
+            append(klass.renderAnnotations())
+            append(klass.renderVisibility())
+            append(klass.renderExpectActual())
+            if (klass.kind != AstClass.Kind.INTERFACE) append(klass.renderModality())
             if (klass.isFun) {
                 append("fun ")
             }
@@ -130,9 +100,9 @@ object Ast2StringTranslator {
 
             append("${klass.name}")
             if (klass.typeParameters.isNotEmpty()) {
-                klass.typeParameters.renderList()
+                append(klass.typeParameters.renderList())
                 appendSpace()
-                klass.typeParameters.renderWhere()
+                append(klass.typeParameters.renderWhere())
                 appendSpace()
             }
 
@@ -144,7 +114,7 @@ object Ast2StringTranslator {
             if (primaryConstructor != null) {
                 append("(")
                 primaryConstructor.valueParameters.forEachIndexed { index, valueParameter ->
-                    valueParameter.accept(this)
+                    append(valueParameter.accept(this@Writer, null))
                     if (index != primaryConstructor.valueParameters.lastIndex) append(", ")
                 }
                 append(") ")
@@ -154,23 +124,33 @@ object Ast2StringTranslator {
                 appendSpace()
             }
 
-            if (klass.declarations.isNotEmpty()) {
-                appendBraced {
-                    klass.declarations
-                        .filter { it !is AstConstructor || !it.isPrimary }
-                        .forEach { it.accept(this) }
-                }
-            } else {
-                appendLine()
+            val declarationsExpectPrimaryConstructor = klass.declarations
+                .filter { it !is AstConstructor || !it.isPrimary }
+
+            if (declarationsExpectPrimaryConstructor.isNotEmpty()) {
+                append(
+                    braced(
+                        buildString {
+                            appendLine()
+                            declarationsExpectPrimaryConstructor
+                                .forEach { declaration ->
+                                    append(declaration.accept(this@Writer, null))
+                                }
+                        }
+                    )
+                )
             }
+            appendLine()
         }
 
-        override fun visitSimpleFunction(simpleFunction: AstSimpleFunction) {
-            simpleFunction.renderAnnotations()
-            appendIndent()
-            simpleFunction.renderVisibility()
-            simpleFunction.renderExpectActual()
-            if (simpleFunction.parent is AstClass) simpleFunction.renderModality()
+        override fun visitSimpleFunction(
+            simpleFunction: AstSimpleFunction,
+            data: Nothing?
+        ): String = buildString {
+            append(simpleFunction.renderAnnotations())
+            append(simpleFunction.renderVisibility())
+            append(simpleFunction.renderExpectActual())
+            if (simpleFunction.parent is AstClass) append(simpleFunction.renderModality())
             if (simpleFunction.overriddenFunctions.isNotEmpty()) {
                 append("override ")
             }
@@ -194,49 +174,51 @@ object Ast2StringTranslator {
             }
             append("fun ")
             if (simpleFunction.typeParameters.isNotEmpty()) {
-                simpleFunction.typeParameters.renderList()
-                append(" ")
+                append(simpleFunction.typeParameters.renderList())
+                appendSpace()
             }
             append("${simpleFunction.name}")
             append("(")
             simpleFunction.valueParameters.forEachIndexed { index, valueParameter ->
-                valueParameter.accept(this)
+                append(valueParameter.accept(this@Writer, null))
                 if (index != simpleFunction.valueParameters.lastIndex) append(", ")
             }
             append(")")
             append(": ")
-            simpleFunction.returnType.render()
+            append(simpleFunction.returnType.render())
             appendSpace()
             if (simpleFunction.typeParameters.isNotEmpty()) {
-                simpleFunction.typeParameters.renderWhere()
+                append(simpleFunction.typeParameters.renderWhere())
                 appendSpace()
             }
             simpleFunction.body?.let { body ->
-                appendBraced { body.accept(this) }
+                append(braced(body.accept(this@Writer, null)))
             } ?: appendLine()
         }
 
-        override fun visitConstructor(constructor: AstConstructor) {
-            constructor.renderAnnotations()
-            appendIndent()
-            constructor.renderVisibility()
-            constructor.renderExpectActual()
-            append("constructor")
-            append("(")
-            constructor.valueParameters.forEachIndexed { index, valueParameter ->
-                valueParameter.accept(this)
-                if (index != constructor.valueParameters.lastIndex) append(", ")
+        override fun visitConstructor(constructor: AstConstructor, data: Nothing?): String =
+            buildString {
+                append(constructor.renderAnnotations())
+                append(constructor.renderVisibility())
+                append(constructor.renderExpectActual())
+                append("constructor")
+                append("(")
+                constructor.valueParameters.forEachIndexed { index, valueParameter ->
+                    append(valueParameter.accept(this@Writer, null))
+                    if (index != constructor.valueParameters.lastIndex) append(", ")
+                }
+                append(")")
+                append(": ${constructor.returnType.render()} ")
+                constructor.body?.let { body ->
+                    append(braced(body.accept(this@Writer, null)))
+                } ?: if (!constructor.isPrimary) appendLine()
             }
-            append(")")
-            append(": ${constructor.returnType.render()} ")
-            constructor.body?.let { body ->
-                appendBraced { body.accept(this) }
-            } ?: if (!constructor.isPrimary) appendLine()
-        }
 
-        override fun visitPropertyAccessor(propertyAccessor: AstPropertyAccessor) {
-            propertyAccessor.renderAnnotations()
-            appendIndent()
+        override fun visitPropertyAccessor(
+            propertyAccessor: AstPropertyAccessor,
+            data: Nothing?
+        ): String = buildString {
+            append(propertyAccessor.renderAnnotations())
             if (propertyAccessor.isSetter) {
                 append("set")
             } else {
@@ -244,20 +226,21 @@ object Ast2StringTranslator {
             }
             append("(")
             propertyAccessor.valueParameters.forEachIndexed { index, valueParameter ->
-                valueParameter.accept(this)
+                append(valueParameter.accept(this@Writer, null))
                 if (index != propertyAccessor.valueParameters.lastIndex) append(", ")
             }
             append(")")
             propertyAccessor.body?.let { body ->
-                appendBraced { body.accept(this) }
+                append(
+                    braced(body.accept(this@Writer, null))
+                )
             } ?: appendLine()
         }
 
-        override fun visitProperty(property: AstProperty) {
-            property.renderAnnotations()
-            appendIndent()
-            property.renderVisibility()
-            if (property.parent is AstClass) property.renderModality()
+        override fun visitProperty(property: AstProperty, data: Nothing?): String = buildString {
+            append(property.renderAnnotations())
+            append(property.renderVisibility())
+            if (property.parent is AstClass) append(property.renderModality())
             if (property.overriddenProperties.isNotEmpty()) {
                 append("override ")
             }
@@ -267,91 +250,93 @@ object Ast2StringTranslator {
                 append("val ")
             }
             if (property.typeParameters.isNotEmpty()) {
-                property.typeParameters.renderList()
-                append(" ")
+                append(property.typeParameters.renderList())
+                appendSpace()
             }
             append("${property.name}")
             append(": ")
-            property.type.render()
+            append(property.type.render())
             if (property.typeParameters.isNotEmpty()) {
                 appendSpace()
-                property.typeParameters.renderWhere()
+                append(property.typeParameters.renderWhere())
             }
             if (property.initializer != null) {
                 append(" = ")
-                property.initializer!!.accept(this)
+                append(property.initializer!!.accept(this@Writer, null))
             }
             if (property.delegate != null) {
                 append(" by ")
-                property.delegate!!.accept(this)
+                append(property.delegate!!.accept(this@Writer, null))
             }
             if (property.getter != null) {
                 appendLine()
                 indented {
-                    property.getter!!.accept(this)
+                    property.getter!!.accept(this@Writer, null)
                 }
             }
             if (property.setter != null) {
                 appendLine()
                 indented {
-                    property.setter!!.accept(this)
+                    property.setter!!.accept(this@Writer, null)
                 }
             }
             appendLine()
         }
 
-        override fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer) {
-            appendIndent()
-            append("init ")
-            anonymousInitializer.body?.let { body ->
-                appendBraced { body.accept(this) }
-            } ?: appendLine()
-        }
+        override fun visitAnonymousInitializer(
+            anonymousInitializer: AstAnonymousInitializer,
+            data: Nothing?
+        ): String = braced(
+            header = "init",
+            value = anonymousInitializer.body.accept(this@Writer, null)
+        )
 
-        override fun visitTypeParameter(typeParameter: AstTypeParameter) {
+        override fun visitTypeParameter(typeParameter: AstTypeParameter, data: Nothing?): String =
             typeParameter.render(null)
-        }
 
-        private fun List<AstTypeParameter>.renderList() {
-            if (isNotEmpty()) {
+        private fun List<AstTypeParameter>.renderList(): String = buildString {
+            if (this@renderList.isNotEmpty()) {
                 append("<")
-                forEachIndexed { index, typeParameter ->
-                    typeParameter.accept(this@Writer)
-                    if (index != lastIndex) append(", ")
+                this@renderList.forEachIndexed { index, typeParameter ->
+                    append(typeParameter.accept(this@Writer, null))
+                    if (index != this@renderList.lastIndex) append(", ")
                 }
                 append(">")
             }
         }
 
-        private fun List<AstTypeParameter>.renderWhere() {
-            if (isNotEmpty()) {
+        private fun List<AstTypeParameter>.renderWhere(): String = buildString {
+            if (this@renderWhere.isNotEmpty()) {
                 append("where ")
-                val typeParametersWithSuperTypes = flatMap { typeParameter ->
+                val typeParametersWithSuperTypes = this@renderWhere.flatMap { typeParameter ->
                     typeParameter.superTypes
                         .map { typeParameter to it }
                 }
 
                 typeParametersWithSuperTypes.forEachIndexed { index, (typeParameter, superType) ->
-                    typeParameter.render(superType)
+                    append(typeParameter.render(superType))
                     if (index != typeParametersWithSuperTypes.lastIndex) append(", ")
                 }
             }
         }
 
-        private fun AstTypeParameter.render(superTypeToRender: AstType?) {
+        private fun AstTypeParameter.render(superTypeToRender: AstType?): String = buildString {
             if (isReified) {
                 append("reified ")
             }
-            renderAnnotations()
+            append(renderAnnotations())
             append("$name")
             if (superTypeToRender != null) {
                 append(" : ")
-                superTypeToRender.render()
+                append(superTypeToRender.render())
             }
         }
 
-        override fun visitValueParameter(valueParameter: AstValueParameter) {
-            valueParameter.renderAnnotations()
+        override fun visitValueParameter(
+            valueParameter: AstValueParameter,
+            data: Nothing?
+        ): String = buildString {
+            append(valueParameter.renderAnnotations())
             if (valueParameter.isVarArg) {
                 append("vararg ")
             }
@@ -359,90 +344,99 @@ object Ast2StringTranslator {
                 append("${it.name.toLowerCase()} ")
             }
             append("${valueParameter.name}: ")
-            valueParameter.type.render()
+            append(valueParameter.type.render())
             if (valueParameter.defaultValue != null) {
                 append(" = ")
-                valueParameter.defaultValue!!.accept(this)
+                append(valueParameter.defaultValue!!.accept(this@Writer, null))
             }
         }
 
-        override fun visitTypeAlias(typeAlias: AstTypeAlias) {
-            typeAlias.renderAnnotations()
+        override fun visitTypeAlias(typeAlias: AstTypeAlias, data: Nothing?): String = buildString {
+            append(typeAlias.renderAnnotations())
             append("typealias ")
             append("${typeAlias.name}")
             if (typeAlias.typeParameters.isNotEmpty()) {
-                typeAlias.typeParameters.renderList()
-
+                append(typeAlias.typeParameters.renderList())
             }
             append(" = ")
-            typeAlias.type.render()
+            append(typeAlias.type.render())
         }
 
-        private fun AstDeclarationWithVisibility.renderVisibility(appendSpace: Boolean = true) {
-            append(visibility.name.toLowerCase())
-            if (appendSpace) appendSpace()
-        }
-
-        private fun AstDeclarationWithExpectActual.renderExpectActual(appendSpace: Boolean = true) {
-            if (expectActual != null) {
-                append(expectActual!!.name.toLowerCase())
+        private fun AstDeclarationWithVisibility.renderVisibility(appendSpace: Boolean = true): String {
+            return buildString {
+                append(visibility.name.toLowerCase())
                 if (appendSpace) appendSpace()
             }
         }
 
-        private fun AstDeclarationWithModality.renderModality(appendSpace: Boolean = true) {
-            append(modality.name.toLowerCase())
-            if (appendSpace) appendSpace()
-        }
+        private fun AstDeclarationWithExpectActual.renderExpectActual(appendSpace: Boolean = true) =
+            buildString {
+                if (expectActual != null) {
+                    append(expectActual!!.name.toLowerCase())
+                    if (appendSpace) appendSpace()
+                }
+            }
 
-        private fun AstDeclarationContainer.renderDeclarations() {
+        private fun AstDeclarationWithModality.renderModality(appendSpace: Boolean = true): String =
+            buildString {
+                append(modality.name.toLowerCase())
+                if (appendSpace) appendSpace()
+            }
+
+        private fun AstDeclarationContainer.renderDeclarations(): String = buildString {
             declarations.forEachIndexed { index, declaration ->
-                declaration.accept(this@Writer)
+                append(declaration.accept(this@Writer, null))
                 if (index != declarations.lastIndex) appendLine()
             }
         }
 
-        private fun AstAnnotationContainer.renderAnnotations() {
+        private fun AstAnnotationContainer.renderAnnotations(): String = buildString {
             annotations.forEachIndexed { index, annotation ->
-                appendIndentedLine("@TODO")
+                append("@TODO")
                 if (index != annotations.lastIndex) appendLine()
             }
         }
 
-        override fun <T> visitConst(const: AstConst<T>) {
-            append(
-                when (const.kind) {
-                    AstConst.Kind.Null -> "null"
-                    AstConst.Kind.Boolean -> const.value.toString()
-                    AstConst.Kind.Char -> "'${const.value}'"
-                    AstConst.Kind.Byte -> const.value.toString()
-                    AstConst.Kind.Short -> const.value.toString()
-                    AstConst.Kind.Int -> const.value.toString()
-                    AstConst.Kind.Long -> "${const.value}L"
-                    AstConst.Kind.String -> "\"${const.value}\""
-                    AstConst.Kind.Float -> "${const.value}f"
-                    AstConst.Kind.Double -> const.value.toString()
-                }
-            )
+        override fun <T> visitConst(const: AstConst<T>, data: Nothing?): String =
+            when (const.kind) {
+                AstConst.Kind.Null -> "null"
+                AstConst.Kind.Boolean -> const.value.toString()
+                AstConst.Kind.Char -> "'${const.value}'"
+                AstConst.Kind.Byte -> const.value.toString()
+                AstConst.Kind.Short -> const.value.toString()
+                AstConst.Kind.Int -> const.value.toString()
+                AstConst.Kind.Long -> "${const.value}L"
+                AstConst.Kind.String -> "\"${const.value}\""
+                AstConst.Kind.Float -> "${const.value}f"
+                AstConst.Kind.Double -> const.value.toString()
+            }
+
+        override fun visitBlock(block: AstBlock, data: Nothing?): String = buildString {
+            block.statements.forEachIndexed { index, statement ->
+                append(statement.accept(this@Writer, null))
+                if (index != block.statements.lastIndex) appendLine()
+            }
         }
 
-        override fun visitBlock(block: AstBlock) {
-            block.acceptChildren(this)
-        }
-
-        override fun visitStringConcatenation(stringConcatenation: AstStringConcatenation) {
+        override fun visitStringConcatenation(
+            stringConcatenation: AstStringConcatenation,
+            data: Nothing?
+        ): String = buildString {
             append("\"")
             stringConcatenation.arguments.forEach {
                 if (it.type.isClassType(KotlinBuiltIns.FQ_NAMES.string.toSafe())) append("\${")
-                it.accept(this)
+                it.accept(this@Writer, null)
                 append("}")
             }
             append("\"")
         }
 
-        override fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess) {
+        override fun visitQualifiedAccess(
+            qualifiedAccess: AstQualifiedAccess,
+            data: Nothing?
+        ): String = buildString {
             if (qualifiedAccess.receiver != null) {
-                qualifiedAccess.receiver!!.accept(this)
+                qualifiedAccess.receiver!!.accept(this@Writer, null)
                 append(".")
             }
             val callee = qualifiedAccess.callee
@@ -464,7 +458,7 @@ object Ast2StringTranslator {
                 qualifiedAccess.valueArguments.forEachIndexed { index, valueArgument ->
                     if (valueArgument != null) {
                         append("${callee.valueParameters[index].name} = ")
-                        valueArgument.accept(this)
+                        append(valueArgument.accept(this@Writer, null))
                         if (index != qualifiedAccess.valueArguments.lastIndex &&
                             qualifiedAccess.valueArguments[index + 1] != null
                         ) append(", ")
@@ -474,18 +468,16 @@ object Ast2StringTranslator {
             }
         }
 
-        override fun visitReturn(astReturn: AstReturn) {
-            appendIndent()
+        override fun visitReturn(astReturn: AstReturn, data: Nothing?): String = buildString {
             append("return")
             astReturn.target.label?.let {
                 append("@$it ")
-            } ?: append(" ")
-            astReturn.expression.accept(this)
-            appendLine()
+            } ?: appendSpace()
+            append(astReturn.expression.accept(this@Writer, null))
         }
 
-        private fun AstType.render() {
-            renderAnnotations()
+        private fun AstType.render(): String = buildString {
+            append(renderAnnotations())
 
             when (val classifier = classifier) {
                 is AstClass -> append(classifier.fqName)
@@ -496,22 +488,20 @@ object Ast2StringTranslator {
             if (arguments.isNotEmpty()) {
                 append("<")
                 arguments.forEachIndexed { index, typeArgument ->
-                    typeArgument.renderTypeArgument()
+                    append(typeArgument.renderTypeArgument())
                     if (index != arguments.lastIndex) append(", ")
                 }
                 append(">")
             }
         }
 
-        private fun AstTypeArgument.renderTypeArgument() {
-            when (this) {
-                is AstStarProjection -> append("*")
-                is AstTypeProjection -> {
-                    variance?.let { append("${it.name.toLowerCase()} ") }
-                    type.render()
-                }
-                else -> error("Unexpected type argument $this")
+        private fun AstTypeArgument.renderTypeArgument(): String = when (this) {
+            is AstStarProjection -> "*"
+            is AstTypeProjection -> {
+                variance?.let { "${it.name.toLowerCase()} " }
+                    .orEmpty() + type.render()
             }
+            else -> error("Unexpected type argument $this")
         }
     }
 }
