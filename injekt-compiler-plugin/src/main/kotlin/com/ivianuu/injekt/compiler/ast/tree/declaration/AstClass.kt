@@ -9,10 +9,6 @@ import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
 import com.ivianuu.injekt.compiler.ast.tree.visitor.transformInplace
 import org.jetbrains.kotlin.name.Name
 
-data class Lol(
-    val lol: String
-)
-
 open class AstClass(
     override var name: Name,
     var kind: Kind = Kind.CLASS,
