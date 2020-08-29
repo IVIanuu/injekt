@@ -26,7 +26,7 @@ class AstTest {
             sources = arrayOf(
                 source(
                     """
-                        class NotTransformed
+                        class NotTransformed(val param: String)
                         
                         class Other<T> {
                             init {

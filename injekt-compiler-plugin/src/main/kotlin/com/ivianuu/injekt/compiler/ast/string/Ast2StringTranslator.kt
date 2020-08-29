@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.fqName
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstGetValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
 import com.ivianuu.injekt.compiler.ast.tree.type.AstStarProjection
@@ -126,16 +127,37 @@ object Ast2StringTranslator {
                 }
             }.let { }
 
-            append("${klass.name} ")
+            append("${klass.name}")
             if (klass.typeParameters.isNotEmpty()) {
                 klass.typeParameters.renderList()
                 appendSpace()
                 klass.typeParameters.renderWhere()
                 appendSpace()
             }
+
+            val primaryConstructor = klass
+                .declarations
+                .filterIsInstance<AstConstructor>()
+                .singleOrNull { it.isPrimary }
+
+            if (primaryConstructor != null) {
+                append("(")
+                primaryConstructor.valueParameters.forEachIndexed { index, valueParameter ->
+                    valueParameter.accept(this)
+                    if (index != primaryConstructor.valueParameters.lastIndex) append(", ")
+                }
+                append(") ")
+            }
+
+            if (klass.typeParameters.isEmpty() && primaryConstructor == null) {
+                appendSpace()
+            }
+
             if (klass.declarations.isNotEmpty()) {
                 appendBraced {
-                    klass.renderDeclarations()
+                    klass.declarations
+                        .filter { it !is AstConstructor || !it.isPrimary }
+                        .forEach { it.accept(this) }
                 }
             } else {
                 appendLine()
@@ -206,7 +228,9 @@ object Ast2StringTranslator {
             }
             append(")")
             append(": ${constructor.returnType.render()} ")
-            appendBraced { constructor.body!!.accept(this) }
+            constructor.body?.let { body ->
+                appendBraced { body.accept(this) }
+            } ?: if (!constructor.isPrimary) appendLine()
         }
 
         override fun visitPropertyAccessor(propertyAccessor: AstPropertyAccessor) {
@@ -223,7 +247,9 @@ object Ast2StringTranslator {
                 if (index != propertyAccessor.valueParameters.lastIndex) append(", ")
             }
             append(")")
-            appendBraced { propertyAccessor.body!!.accept(this) }
+            propertyAccessor.body?.let { body ->
+                appendBraced { body.accept(this) }
+            } ?: appendLine()
         }
 
         override fun visitProperty(property: AstProperty) {
@@ -234,7 +260,11 @@ object Ast2StringTranslator {
             if (property.overriddenProperties.isNotEmpty()) {
                 append("override ")
             }
-            append("val ")
+            if (property.setter != null) {
+                append("var ")
+            } else {
+                append("val ")
+            }
             if (property.typeParameters.isNotEmpty()) {
                 property.typeParameters.renderList()
                 append(" ")
@@ -242,8 +272,8 @@ object Ast2StringTranslator {
             append("${property.name}")
             append(": ")
             property.type.render()
-            appendSpace()
             if (property.typeParameters.isNotEmpty()) {
+                appendSpace()
                 property.typeParameters.renderWhere()
             }
             if (property.initializer != null) {
@@ -266,6 +296,7 @@ object Ast2StringTranslator {
                     property.setter!!.accept(this)
                 }
             }
+            appendLine()
         }
 
         override fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer) {
@@ -406,6 +437,10 @@ object Ast2StringTranslator {
                 append("}")
             }
             append("\"")
+        }
+
+        override fun visitGetValueParameter(getValueParameter: AstGetValueParameter) {
+            append(getValueParameter.valueParameter.name)
         }
 
         override fun visitCall(call: AstCall) {

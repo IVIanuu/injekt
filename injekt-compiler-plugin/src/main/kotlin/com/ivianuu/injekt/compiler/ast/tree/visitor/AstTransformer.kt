@@ -19,6 +19,7 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstGetValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
@@ -105,6 +106,9 @@ interface AstTransformer<D> : AstVisitor<AstTransformResult<AstElement>, D> {
 
     override fun visitCall(call: AstCall, data: D) =
         visitExpression(call, data)
+
+    override fun visitGetValueParameter(getValueParameter: AstGetValueParameter, data: D) =
+        visitExpression(getValueParameter, data)
 
     override fun visitReturn(astReturn: AstReturn, data: D) =
         visitExpression(astReturn, data)

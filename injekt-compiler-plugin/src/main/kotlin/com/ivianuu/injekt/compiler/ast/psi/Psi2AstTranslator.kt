@@ -18,6 +18,7 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstGetValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
@@ -55,6 +56,7 @@ import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtLiteralStringTemplateEntry
+import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtReturnExpression
@@ -130,7 +132,7 @@ class Psi2AstTranslator(
                 BindingContext.DECLARATION_TO_DESCRIPTOR,
                 this
             ) as ClassDescriptor).toAstClass()
-            is KtFunction -> (
+            is KtNamedFunction -> (
                     bindingTrace.get(
                         BindingContext.DECLARATION_TO_DESCRIPTOR,
                         this
@@ -181,6 +183,28 @@ class Psi2AstTranslator(
             annotations += this@toAstClass.annotations.toAstAnnotations()
             typeParameters += declaredTypeParameters.toAstTypeParameters()
                 .onEach { it.parent = this }
+
+            val primaryConstructor = declaration.primaryConstructor
+            if (primaryConstructor != null) {
+                val astPrimaryConstructor = primaryConstructor.toAstDeclaration() as AstConstructor
+                addChild(astPrimaryConstructor)
+                primaryConstructor
+                    .valueParameters
+                    .mapNotNull {
+                        bindingTrace.get(
+                            BindingContext.PRIMARY_CONSTRUCTOR_PARAMETER,
+                            it
+                        )
+                    }
+                    .map { property ->
+                        property.toAstProperty(
+                            astPrimaryConstructor.valueParameters
+                                .single { it.name == property.name }
+                        )
+                    }
+                    .forEach { addChild(it) }
+            }
+
             declaration.declarations.toAstDeclarations()
                 .forEach { addChild(it) }
         }
@@ -234,10 +258,11 @@ class Psi2AstTranslator(
         }
     }
 
-    fun PropertyDescriptor.toAstProperty(): AstProperty {
+    fun PropertyDescriptor.toAstProperty(
+        valueParameter: AstValueParameter? = null
+    ): AstProperty {
         storage.properties[this]?.let { return it }
-        val declaration = findPsi() as? KtProperty
-            ?: return stubGenerator.get(this) as AstProperty
+        val declaration = findPsi() ?: return stubGenerator.get(this) as AstProperty
         return AstProperty(
             name = name,
             type = type.toAstType(),
@@ -256,8 +281,14 @@ class Psi2AstTranslator(
             annotations += this@toAstProperty.annotations.toAstAnnotations()
             typeParameters += this@toAstProperty.typeParameters.toAstTypeParameters()
                 .onEach { it.parent = this }
-            delegate = declaration.delegateExpression?.toAstExpression()
-            initializer = declaration.initializer?.toAstExpression()
+            delegate = if (declaration is KtProperty)
+                declaration.delegateExpression?.toAstExpression()
+            else null
+            initializer = when {
+                valueParameter != null -> AstGetValueParameter(valueParameter)
+                declaration is KtProperty -> declaration.initializer?.toAstExpression()
+                else -> null
+            }
         }
     }
 
@@ -345,7 +376,6 @@ class Psi2AstTranslator(
             is KtConstantExpression -> toAstConst()
             is KtBlockExpression -> toAstBlock()
             is KtStringTemplateExpression -> toAstExpression()
-                .also { println("$text") }
             is KtCallExpression -> toAstCall()
             else -> error("Unexpected expression $this $javaClass $text")
         }

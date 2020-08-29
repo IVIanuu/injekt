@@ -19,6 +19,7 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstGetValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
@@ -65,6 +66,9 @@ interface AstVisitor<R, D> {
 
     fun visitStringConcatenation(stringConcatenation: AstStringConcatenation, data: D) =
         visitExpression(stringConcatenation, data)
+
+    fun visitGetValueParameter(getValueParameter: AstGetValueParameter, data: D) =
+        visitExpression(getValueParameter, data)
 
     fun visitCall(call: AstCall, data: D) = visitExpression(call, data)
 

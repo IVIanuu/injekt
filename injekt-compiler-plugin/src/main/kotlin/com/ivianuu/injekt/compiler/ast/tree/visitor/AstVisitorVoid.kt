@@ -19,6 +19,7 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstCall
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstGetValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
@@ -109,6 +110,12 @@ interface AstVisitorVoid : AstVisitor<Unit, Nothing?> {
         data: Nothing?
     ) =
         visitStringConcatenation(stringConcatenation)
+
+    fun visitGetValueParameter(getValueParameter: AstGetValueParameter) =
+        visitExpression(getValueParameter)
+
+    override fun visitGetValueParameter(getValueParameter: AstGetValueParameter, data: Nothing?) =
+        visitGetValueParameter(getValueParameter)
 
     fun visitCall(call: AstCall) = visitExpression(call)
     override fun visitCall(call: AstCall, data: Nothing?) = visitCall(call)
