@@ -47,7 +47,7 @@ object ActivityScoping {
     @Reader
     fun <T> scope(key: Any, init: () -> T) = storage.getOrPut(given<Activity>(), Storage()).scope(key, init)
 }
-
+```
 You can also do something like that for custom scopes:
 ```
 class User
