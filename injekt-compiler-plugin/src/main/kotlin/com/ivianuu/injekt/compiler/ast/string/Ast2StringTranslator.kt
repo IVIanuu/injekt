@@ -114,10 +114,6 @@ object Ast2StringTranslator {
                 .filterIsInstance<AstConstructor>()
                 .singleOrNull { it.isPrimary }
 
-            if (klass.kind == AstClass.Kind.ENUM_ENTRY) {
-                println("${klass.name} constructors ${klass.declarations.filterIsInstance<AstConstructor>()}")
-            }
-
             if (primaryConstructor != null) {
                 append("(")
                 primaryConstructor.valueParameters.forEachIndexed { index, valueParameter ->
