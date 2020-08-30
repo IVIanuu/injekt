@@ -3,15 +3,12 @@ package com.ivianuu.injekt.compiler.ast.tree.visitor
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstAnonymousInitializer
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
-import com.ivianuu.injekt.compiler.ast.tree.declaration.AstConstructor
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstPackageFragment
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstProperty
-import com.ivianuu.injekt.compiler.ast.tree.declaration.AstPropertyAccessor
-import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
@@ -39,13 +36,6 @@ interface AstVisitor<R, D> {
     fun visitDeclaration(declaration: AstDeclaration, data: D) = visitElement(declaration, data)
     fun visitClass(klass: AstClass, data: D) = visitElement(klass, data)
     fun visitFunction(function: AstFunction, data: D) = visitDeclaration(function, data)
-    fun visitSimpleFunction(simpleFunction: AstSimpleFunction, data: D) =
-        visitFunction(simpleFunction, data)
-
-    fun visitPropertyAccessor(propertyAccessor: AstPropertyAccessor, data: D) =
-        visitFunction(propertyAccessor, data)
-
-    fun visitConstructor(constructor: AstConstructor, data: D) = visitFunction(constructor, data)
     fun visitProperty(property: AstProperty, data: D) = visitDeclaration(property, data)
     fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer, data: D) =
         visitDeclaration(anonymousInitializer, data)

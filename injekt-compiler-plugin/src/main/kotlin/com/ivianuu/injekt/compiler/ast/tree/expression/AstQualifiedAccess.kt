@@ -12,22 +12,24 @@ class AstQualifiedAccess(
     override var type: AstType
 ) : AstExpressionBase() {
 
-    var receiver: AstExpression? = null
-
     val typeArguments: MutableList<AstType> = mutableListOf()
+    var dispatchReceiver: AstExpression? = null
+    var extensionReceiver: AstExpression? = null
     val valueArguments: MutableList<AstExpression?> = mutableListOf()
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
         visitor.visitQualifiedAccess(this, data)
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        receiver?.accept(visitor, data)
+        dispatchReceiver?.accept(visitor, data)
+        extensionReceiver?.accept(visitor, data)
         typeArguments.forEach { it.accept(visitor, data) }
         valueArguments.forEach { it?.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
-        receiver = receiver?.transformSingle(transformer, data)
+        dispatchReceiver = dispatchReceiver?.transformSingle(transformer, data)
+        extensionReceiver = extensionReceiver?.transformSingle(transformer, data)
         typeArguments.transformInplace(transformer, data)
         valueArguments.transformInplace(transformer, data)
     }

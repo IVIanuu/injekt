@@ -3,15 +3,12 @@ package com.ivianuu.injekt.compiler.ast.tree.visitor
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstAnonymousInitializer
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
-import com.ivianuu.injekt.compiler.ast.tree.declaration.AstConstructor
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstPackageFragment
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstProperty
-import com.ivianuu.injekt.compiler.ast.tree.declaration.AstPropertyAccessor
-import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
@@ -63,20 +60,6 @@ interface AstTransformerVoid : AstTransformer<Nothing?> {
     fun visitFunction(function: AstFunction) = visitDeclaration(function)
     override fun visitFunction(function: AstFunction, data: Nothing?) =
         visitFunction(function)
-
-    fun visitSimpleFunction(simpleFunction: AstSimpleFunction) = visitFunction(simpleFunction)
-    override fun visitSimpleFunction(simpleFunction: AstSimpleFunction, data: Nothing?) =
-        visitSimpleFunction(simpleFunction)
-
-    fun visitConstructor(constructor: AstConstructor) = visitFunction(constructor)
-    override fun visitConstructor(constructor: AstConstructor, data: Nothing?) =
-        visitConstructor(constructor)
-
-    fun visitPropertyAccessor(propertyAccessor: AstPropertyAccessor) =
-        visitFunction(propertyAccessor)
-
-    override fun visitPropertyAccessor(propertyAccessor: AstPropertyAccessor, data: Nothing?) =
-        visitPropertyAccessor(propertyAccessor)
 
     fun visitProperty(property: AstProperty) = visitDeclaration(property)
     override fun visitProperty(property: AstProperty, data: Nothing?) =

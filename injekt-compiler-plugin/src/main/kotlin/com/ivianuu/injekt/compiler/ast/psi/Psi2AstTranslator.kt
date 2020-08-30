@@ -4,12 +4,11 @@ import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.ast.tree.AstTarget
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstAnonymousInitializer
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
-import com.ivianuu.injekt.compiler.ast.tree.declaration.AstConstructor
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstProperty
-import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
@@ -21,6 +20,7 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstThis
 import com.ivianuu.injekt.compiler.ast.tree.type.AstStarProjection
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeAbbreviation
@@ -30,11 +30,9 @@ import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjectionImpl
 import com.ivianuu.injekt.compiler.ast.tree.type.classOrFail
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
@@ -46,20 +44,22 @@ import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtClassInitializer
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstantExpression
-import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtEscapeStringTemplateEntry
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtLiteralStringTemplateEntry
-import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.KtReferenceExpression
+import org.jetbrains.kotlin.psi.KtSafeQualifiedExpression
 import org.jetbrains.kotlin.psi.KtStringTemplateEntryWithExpression
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
+import org.jetbrains.kotlin.psi.KtThisExpression
 import org.jetbrains.kotlin.psi.KtTypeAlias
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -86,6 +86,12 @@ import org.jetbrains.kotlin.resolve.constants.UIntValue
 import org.jetbrains.kotlin.resolve.constants.ULongValue
 import org.jetbrains.kotlin.resolve.constants.UShortValue
 import org.jetbrains.kotlin.resolve.constants.evaluate.ConstantExpressionEvaluator
+import org.jetbrains.kotlin.resolve.scopes.receivers.ClassValueReceiver
+import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
+import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
+import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
+import org.jetbrains.kotlin.resolve.scopes.receivers.SuperCallReceiverValue
+import org.jetbrains.kotlin.resolve.scopes.receivers.ThisClassReceiver
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
@@ -129,24 +135,24 @@ class Psi2AstTranslator(
                 BindingContext.DECLARATION_TO_DESCRIPTOR,
                 this
             ) as ClassDescriptor).toAstClass()
-            is KtNamedFunction -> (
+            is KtFunction -> (
                     bindingTrace.get(
                         BindingContext.DECLARATION_TO_DESCRIPTOR,
                         this
-                    ) as SimpleFunctionDescriptor
-                    ).toAstSimpleFunction()
-            is KtConstructor<*> -> (
-                    bindingTrace.get(
-                        BindingContext.DECLARATION_TO_DESCRIPTOR,
-                        this
-                    ) as ConstructorDescriptor
-                    ).toAstConstructor()
+                    ) as FunctionDescriptor
+                    ).toAstFunction(null)
             is KtProperty -> (
                     bindingTrace.get(
                         BindingContext.DECLARATION_TO_DESCRIPTOR,
                         this
                     ) as PropertyDescriptor
                     ).toAstProperty()
+            is KtPropertyAccessor -> (
+                    bindingTrace.get(
+                        BindingContext.DECLARATION_TO_DESCRIPTOR,
+                        this
+                    ) as FunctionDescriptor
+                    ).toAstFunction(this)
             is KtClassInitializer -> toAstAnonymousInitializer()
             is KtTypeAlias -> (
                     bindingTrace.get(
@@ -161,9 +167,9 @@ class Psi2AstTranslator(
         map { it.toAstDeclaration() }
 
     fun ClassDescriptor.toAstClass(): AstClass {
-        storage.classes[this]?.let { return it }
-        val declaration = findPsi() as? KtClassOrObject
-            ?: return stubGenerator.get(this) as AstClass
+        storage.classes[original]?.let { return it }
+        val declaration = original.findPsi() as? KtClassOrObject
+            ?: return stubGenerator.get(original) as AstClass
         return AstClass(
             name = name,
             kind = kind.toAstClassKind(),
@@ -176,15 +182,16 @@ class Psi2AstTranslator(
             isInner = isInner,
             isExternal = isExternal
         ).apply {
-            storage.classes[this@toAstClass] = this
+            storage.classes[original] = this
             annotations += this@toAstClass.annotations.toAstAnnotations()
             typeParameters += declaredTypeParameters.toAstTypeParameters()
                 .onEach { it.parent = this }
 
             val primaryConstructor = declaration.primaryConstructor
             if (primaryConstructor != null) {
-                val astPrimaryConstructor = primaryConstructor.toAstDeclaration() as AstConstructor
-                addChild(astPrimaryConstructor)
+                val astPrimaryConstructor = primaryConstructor.toAstDeclaration() as AstFunction
+                this.primaryConstructor = astPrimaryConstructor
+                // todo? addChild(astPrimaryConstructor)
                 primaryConstructor
                     .valueParameters
                     .mapNotNull {
@@ -202,17 +209,22 @@ class Psi2AstTranslator(
                     .forEach { addChild(it) }
             }
 
-            declaration.declarations.toAstDeclarations()
+            declaration.declarations
+                .filterNot { it is KtPropertyAccessor }
+                .toAstDeclarations()
                 .forEach { addChild(it) }
         }
     }
 
-    fun SimpleFunctionDescriptor.toAstSimpleFunction(): AstSimpleFunction {
-        storage.simpleFunctions[this]?.let { return it }
-        val declaration = findPsi() as? KtFunction
-            ?: return stubGenerator.get(this) as AstSimpleFunction
-        return AstSimpleFunction(
+    fun FunctionDescriptor.toAstFunction(
+        propertyAccessor: KtPropertyAccessor?
+    ): AstFunction {
+        storage.functions[original]?.let { return it }
+        val declaration = propertyAccessor ?: original.findPsi() as? KtFunction
+        ?: return stubGenerator.get(original) as AstFunction
+        return AstFunction(
             name = name,
+            kind = toAstFunctionKind(),
             visibility = visibility.toAstVisibility(),
             expectActual = expectActualOf(isActual, isExpect),
             modality = modality.toAstModality(),
@@ -222,35 +234,16 @@ class Psi2AstTranslator(
             isTailrec = isTailrec,
             isSuspend = isSuspend
         ).apply {
-            storage.simpleFunctions[this@toAstSimpleFunction] = this
-            annotations += this@toAstSimpleFunction.annotations.toAstAnnotations()
-            typeParameters += this@toAstSimpleFunction.typeParameters.toAstTypeParameters()
+            storage.functions[original] = this
+            annotations += this@toAstFunction.annotations.toAstAnnotations()
+            typeParameters += this@toAstFunction.typeParameters.toAstTypeParameters()
                 .onEach { it.parent = this }
-            valueParameters += this@toAstSimpleFunction.valueParameters.toAstValueParameters()
+            dispatchReceiverType = dispatchReceiverParameter?.type?.toAstType()
+            extensionReceiverType = extensionReceiverParameter?.type?.toAstType()
+            valueParameters += this@toAstFunction.valueParameters.toAstValueParameters()
                 .onEach { it.parent = this }
-            overriddenFunctions += overriddenDescriptors
-                .map { (it as SimpleFunctionDescriptor).toAstSimpleFunction() }
-            body = declaration.bodyExpression?.toAstBlock(this)
-        }
-    }
-
-    fun ConstructorDescriptor.toAstConstructor(): AstConstructor {
-        storage.constructors[this]?.let { return it }
-        val declaration = findPsi() as? KtConstructor<*>
-            ?: return stubGenerator.get(this) as AstConstructor
-        return AstConstructor(
-            constructedClass = returnType.toAstType().classifier as AstClass,
-            returnType = returnType.toAstType(),
-            visibility = visibility.toAstVisibility(),
-            expectActual = expectActualOf(isActual, isExpect),
-            isPrimary = isPrimary
-        ).apply {
-            storage.constructors[this@toAstConstructor] = this// todo fixes recursion issues
-            annotations += this@toAstConstructor.annotations.toAstAnnotations()
-            typeParameters += this@toAstConstructor.typeParameters.toAstTypeParameters()
-                .onEach { it.parent = this }
-            valueParameters += this@toAstConstructor.valueParameters.toAstValueParameters()
-                .onEach { it.parent = this }
+            overriddenDeclarations += overriddenDescriptors
+                .map { (it as FunctionDescriptor).toAstFunction(null) }
             body = declaration.bodyExpression?.toAstBlock(this)
         }
     }
@@ -258,8 +251,9 @@ class Psi2AstTranslator(
     fun PropertyDescriptor.toAstProperty(
         valueParameter: AstValueParameter? = null
     ): AstProperty {
-        storage.properties[this]?.let { return it }
-        val declaration = findPsi() ?: return stubGenerator.get(this) as AstProperty
+        storage.properties[original]?.let { return it }
+        val declaration = original.findPsi()
+            ?: return stubGenerator.get(original) as AstProperty
         return AstProperty(
             name = name,
             type = type.toAstType(),
@@ -274,32 +268,46 @@ class Psi2AstTranslator(
             expectActual = expectActualOf(isActual, isExpect),
             isExternal = isExternal
         ).apply {
-            storage.properties[this@toAstProperty] = this
+            storage.properties[original] = this
             annotations += this@toAstProperty.annotations.toAstAnnotations()
             typeParameters += this@toAstProperty.typeParameters.toAstTypeParameters()
                 .onEach { it.parent = this }
-            delegate = if (declaration is KtProperty)
-                declaration.delegateExpression?.toAstExpression()
-            else null
+            dispatchReceiverType = dispatchReceiverParameter?.type?.toAstType()
+            extensionReceiverType = extensionReceiverParameter?.type?.toAstType()
+            getter = declaration
+                .let { it as? KtProperty }
+                ?.getter
+                ?.toAstDeclaration()
+                ?.let { it as AstFunction }
+                ?.also { it.parent = this }
+            setter = declaration
+                .let { it as? KtProperty }
+                ?.setter
+                ?.toAstDeclaration()
+                ?.let { it as AstFunction }
+                ?.also { it.parent = this }
             initializer = when {
                 valueParameter != null -> AstQualifiedAccess(valueParameter, valueParameter.type)
                 declaration is KtProperty -> declaration.initializer?.toAstExpression()
                 else -> null
             }
+            delegate = if (declaration is KtProperty)
+                declaration.delegateExpression?.toAstExpression()
+            else null
         }
     }
 
     fun TypeAliasDescriptor.toAstTypeAlias(): AstTypeAlias {
-        storage.typeAliases[this]?.let { return it }
-        val declaration = findPsi() as? KtTypeAlias
-            ?: return stubGenerator.get(this) as AstTypeAlias
+        storage.typeAliases[original]?.let { return it }
+        val declaration = original.findPsi() as? KtTypeAlias
+            ?: return stubGenerator.get(original) as AstTypeAlias
         return AstTypeAlias(
             name = name,
             type = expandedType.toAstType(),
             visibility = visibility.toAstVisibility(),
             expectActual = expectActualOf(isActual, isExpect)
         ).apply {
-            storage.typeAliases[this@toAstTypeAlias] = this
+            storage.typeAliases[original] = this
             annotations += this@toAstTypeAlias.annotations.toAstAnnotations()
             typeParameters += this@toAstTypeAlias.declaredTypeParameters.toAstTypeParameters()
                 .onEach { it.parent = this }
@@ -308,7 +316,7 @@ class Psi2AstTranslator(
 
     // todo
     fun AnnotationDescriptor.toAstAnnotation() = AstQualifiedAccess(
-        type.toAstType().classOrFail.declarations.filterIsInstance<AstConstructor>().first(),
+        type.toAstType().classOrFail.declarations.filterIsInstance<AstFunction>().first(),
         type.toAstType()
     )
 
@@ -351,7 +359,7 @@ class Psi2AstTranslator(
                 else -> null
             },
             // todo what to do for stubs?
-            defaultValue = (findPsi() as? KtParameter)?.defaultValue?.toAstExpression()
+            defaultValue = (original.findPsi() as? KtParameter)?.defaultValue?.toAstExpression()
         ).apply {
             annotations += this@toAstValueParameter.annotations.toAstAnnotations()
         }
@@ -375,6 +383,9 @@ class Psi2AstTranslator(
             is KtBlockExpression -> toAstBlock()
             is KtStringTemplateExpression -> toAstExpression()
             is KtReferenceExpression -> toAstQualifiedAccess()
+            is KtThisExpression -> toAstThis()
+            is KtDotQualifiedExpression -> selectorExpression!!.toAstExpression()
+            is KtSafeQualifiedExpression -> selectorExpression!!.toAstExpression()
             else -> error("Unexpected expression $this $javaClass $text")
         }
 
@@ -461,8 +472,7 @@ class Psi2AstTranslator(
         return AstQualifiedAccess(
             type = resolvedCall.getReturnType().toAstType(),
             callee = when (val callee = resolvedCall.resultingDescriptor) {
-                is ConstructorDescriptor -> callee.toAstConstructor()
-                is SimpleFunctionDescriptor -> callee.toAstSimpleFunction()
+                is FunctionDescriptor -> callee.toAstFunction(null)
                 is PropertyDescriptor -> callee.toAstProperty()
                 is FakeCallableDescriptorForObject -> callee.classDescriptor.toAstClass()
                 is ValueParameterDescriptor -> callee.toAstValueParameter()
@@ -470,7 +480,9 @@ class Psi2AstTranslator(
             }
         ).apply {
             typeArguments += resolvedCall.typeArguments.values.map { it.toAstType() }
-            // todo receiver = calleeExpression?.toAstExpression()
+
+            dispatchReceiver = resolvedCall.dispatchReceiver?.toAstExpression()
+            extensionReceiver = resolvedCall.extensionReceiver?.toAstExpression()
 
             val sortedValueArguments = resolvedCall.valueArguments
                 .toList()
@@ -486,14 +498,41 @@ class Psi2AstTranslator(
                             ?: throw AssertionError("No argument expression: $valueArgument1")
                         argumentExpression.toAstExpression()
                     }
-                    is VarargValueArgument -> {
-                        TODO()
-                        //generateVarargExpressionUsing(valueArgument, valueParameter, resolvedCall, generateArgumentExpression)
-                    }
+                    // todo
+                    is VarargValueArgument -> null
                     else -> TODO("Unexpected valueArgument: ${valueArgument::class.java.simpleName}")
                 }
             }
         }
+    }
+
+    fun ReceiverValue.toAstExpression(): AstExpression {
+        return when (this) {
+            is ImplicitClassReceiver -> {
+                val receiverClass = classDescriptor.toAstClass()
+                AstThis(type.toAstType(), receiverClass)
+            }
+            is ThisClassReceiver -> {
+                val receiverClass = classDescriptor.toAstClass()
+                AstThis(type.toAstType(), receiverClass)
+            }
+            is SuperCallReceiverValue -> TODO()
+            is ExpressionReceiver -> expression.toAstExpression()
+            is ClassValueReceiver -> {
+                val receiverClass = (classQualifier.descriptor as ClassDescriptor).toAstClass()
+                AstThis(type.toAstType(), receiverClass)
+            }
+            /*is ExtensionReceiver -> {
+                AstQualifiedAccess(declarationDescriptor.extensionReceiverParameter!!)
+            }*/
+            else -> error("Unexpected receiver value $this")
+        }
+    }
+
+    fun KtThisExpression.toAstThis(): AstThis {
+        val referenceTarget = bindingTrace.get(BindingContext.REFERENCE_TARGET, instanceReference)
+            ?: error("No reference target for this")
+        TODO("What $referenceTarget")
     }
 
     fun KotlinType.toAstType(): AstType {
@@ -560,9 +599,5 @@ class Psi2AstTranslator(
 
     fun getResolvedCall(key: KtElement): ResolvedCall<out CallableDescriptor>? =
         key.getResolvedCall(bindingTrace.bindingContext)
-
-    fun scopeOwnerAsCallable(scopeOwner: DeclarationDescriptor) =
-        (scopeOwner as? CallableDescriptor)
-            ?: throw AssertionError("'return' in a non-callable: $scopeOwner")
 
 }

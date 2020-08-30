@@ -5,6 +5,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 
 class AstLazyClass(
     private val descriptor: ClassDescriptor,
@@ -41,8 +42,9 @@ class AstLazyClass(
     override val declarations: MutableList<AstDeclaration> by lazy {
         with(translator) {
             mutableListOf<AstDeclaration>().apply {
-                this += descriptor.constructors.map { it.toAstConstructor() }
+                this += descriptor.constructors.map { it.toAstFunction(null) }
                 this += descriptor.defaultType.memberScope.getContributedDescriptors()
+                    .filterNot { it is PropertyAccessorDescriptor }
                     .map { stubGenerator.get(it) as AstDeclaration }
                 this += descriptor.staticScope.getContributedDescriptors()
                     .map { stubGenerator.get(it) as AstDeclaration }

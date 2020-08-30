@@ -3,10 +3,9 @@ package com.ivianuu.injekt.compiler.ast.extension
 import com.ivianuu.injekt.compiler.ast.psi.Psi2AstStorage
 import com.ivianuu.injekt.compiler.ast.psi.Psi2AstStubGenerator
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
-import com.ivianuu.injekt.compiler.ast.tree.declaration.AstConstructor
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstProperty
-import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.ProjectExtensionDescriptor
@@ -44,8 +43,8 @@ class AstPluginContext(
     )
 
     private val classes = mutableMapOf<FqName, AstClass?>()
-    private val simpleFunctions = mutableMapOf<FqName, List<AstSimpleFunction>>()
-    private val constructors = mutableMapOf<FqName, List<AstConstructor>>()
+    private val functions = mutableMapOf<FqName, List<AstFunction>>()
+    private val constructors = mutableMapOf<FqName, List<AstFunction>>()
     private val properties = mutableMapOf<FqName, List<AstProperty>>()
 
     fun referenceClass(fqName: FqName): AstClass? = classes.getOrPut(fqName) {
@@ -56,22 +55,22 @@ class AstPluginContext(
             ?.let { storage.classes[it] ?: stubGenerator.get(it) as? AstClass }
     }
 
-    fun referenceFunctions(fqName: FqName): List<AstSimpleFunction> =
-        simpleFunctions.getOrPut(fqName) {
+    fun referenceFunctions(fqName: FqName): List<AstFunction> =
+        functions.getOrPut(fqName) {
             val scope = resolveMemberScope(fqName.parent())
             scope?.getContributedFunctions(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
                 ?.mapNotNull {
-                    storage.simpleFunctions[it] ?: stubGenerator.get(it) as? AstSimpleFunction
+                    storage.functions[it] ?: stubGenerator.get(it) as? AstFunction
                 }
                 ?: emptyList()
         }
 
-    fun referenceConstructors(classFqName: FqName): List<AstConstructor> =
+    fun referenceConstructors(classFqName: FqName): List<AstFunction> =
         constructors.getOrPut(classFqName) {
             val kclass = referenceClass(classFqName)
             kclass
                 ?.declarations
-                ?.filterIsInstance<AstConstructor>()
+                ?.filterIsInstance<AstFunction>()
                 ?: emptyList()
         }
 

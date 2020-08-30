@@ -5,11 +5,25 @@ import com.ivianuu.injekt.compiler.ast.tree.AstModality
 import com.ivianuu.injekt.compiler.ast.tree.AstVariance
 import com.ivianuu.injekt.compiler.ast.tree.AstVisibility
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
+import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
+import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.types.Variance
+
+fun FunctionDescriptor.toAstFunctionKind() = when (this) {
+    is ConstructorDescriptor -> AstFunction.Kind.CONSTRUCTOR
+    is PropertyGetterDescriptor -> AstFunction.Kind.PROPERTY_GETTER
+    is PropertySetterDescriptor -> AstFunction.Kind.PROPERTY_SETTER
+    is SimpleFunctionDescriptor -> AstFunction.Kind.SIMPLE_FUNCTION
+    else -> error("Unexpected function $this")
+}
 
 fun Modality.toAstModality() = when (this) {
     Modality.FINAL -> AstModality.FINAL

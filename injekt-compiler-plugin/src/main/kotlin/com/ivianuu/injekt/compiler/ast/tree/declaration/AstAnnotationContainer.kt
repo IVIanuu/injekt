@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.ast.tree.declaration
 
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
+import com.ivianuu.injekt.compiler.ast.tree.type.classOrFail
 import org.jetbrains.kotlin.name.FqName
 
 interface AstAnnotationContainer : AstElement {
@@ -10,5 +11,5 @@ interface AstAnnotationContainer : AstElement {
 
 fun AstAnnotationContainer.hasAnnotation(fqName: FqName): Boolean =
     annotations.any {
-        ((it.callee as AstConstructor).constructedClass).fqName == fqName
+        (it.callee as AstFunction).returnType.classOrFail.fqName == fqName
     }

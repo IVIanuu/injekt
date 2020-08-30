@@ -25,17 +25,21 @@ class AstProperty(
     AstDeclarationWithModality,
     AstDeclarationWithVisibility,
     AstDeclarationWithExpectActual,
-    AstTypeParameterContainer {
+    AstTypeParameterContainer,
+    AstOverridableDeclaration<AstProperty> {
+
+    override val overriddenDeclarations: MutableList<AstProperty> = mutableListOf()
 
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
 
-    val overriddenProperties: MutableList<AstProperty> = mutableListOf()
+    var dispatchReceiverType: AstType? = null
+    var extensionReceiverType: AstType? = null
 
     var initializer: AstExpression? = null
     var delegate: AstExpression? = null
 
-    var getter: AstPropertyAccessor? = null
-    var setter: AstPropertyAccessor? = null
+    var getter: AstFunction? = null
+    var setter: AstFunction? = null
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
         visitor.visitProperty(this, data)

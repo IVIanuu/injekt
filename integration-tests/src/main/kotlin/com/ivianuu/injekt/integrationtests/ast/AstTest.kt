@@ -27,8 +27,21 @@ class AstTest {
                 source(
                     """
                         class NotTransformed(val param: String) {
+                        
+                            val lol: String = "hello world"
+                                get() = "hello world"
+                                set(value) {  }
+                        
                             init {
-                                param
+                                //param
+                                //member()
+                                //this.member()
+                                //param.plus("lol")
+                                //com.ivianuu.injekt.given<String>()
+                            }
+                            
+                            fun member() {
+                                
                             }
                         }
                         
@@ -45,20 +58,20 @@ class AstTest {
                         
                         interface AInterface
                         
-                        enum class AEnum(val value: String) {
-                            A("a"), B("b")
-                        }
+                        //enum class AEnum(val value: String) {
+                        //    A("a"), B("b")
+                        //}
                         
                         sealed class ASealed {
                             class AInner : ASealed()
                         }
                         
                         abstract class SuperClass {
-                            abstract fun abstractFun(): String
+                            //abstract fun abstractFun(): String
                         }
                         
                         class ImplementingClass : SuperClass() {
-                            override fun abstractFun(): String = ""
+                            //override fun abstractFun(): String = ""
                         }
                         
                         fun aFunction() {

@@ -4,7 +4,6 @@ import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstAnnotationContainer
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstAnonymousInitializer
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
-import com.ivianuu.injekt.compiler.ast.tree.declaration.AstConstructor
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationContainer
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationWithExpectActual
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationWithModality
@@ -13,8 +12,6 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationWithVisibi
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstProperty
-import com.ivianuu.injekt.compiler.ast.tree.declaration.AstPropertyAccessor
-import com.ivianuu.injekt.compiler.ast.tree.declaration.AstSimpleFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
@@ -24,10 +21,12 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstThis
 import com.ivianuu.injekt.compiler.ast.tree.type.AstStarProjection
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
+import com.ivianuu.injekt.compiler.ast.tree.type.classOrFail
 import com.ivianuu.injekt.compiler.ast.tree.type.isClassType
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
@@ -58,15 +57,32 @@ object Ast2StringTranslator {
             append(" ")
         }
 
+        private var currentFile: AstFile? = null
+        private val potentialImports = mutableSetOf<FqName>()
+
         override fun visitElement(element: AstElement, data: Nothing?): String {
             error("Unhandled $element")
         }
 
         override fun visitFile(file: AstFile, data: Nothing?): String = buildString {
+            val previousFile = currentFile
+            currentFile = file
             if (file.packageFqName != FqName.ROOT)
                 append("package ${file.packageFqName}")
+
+            val declarationsContent = file.renderDeclarations()
+
+            if (potentialImports.isNotEmpty()) appendLine()
+
+            potentialImports
+                .filterNot { it.parent().isRoot || it.parent() == file.packageFqName }
+                .forEach { appendLine("import $it") }
+
             if (file.declarations.isNotEmpty()) appendLine()
-            append(file.renderDeclarations())
+
+            append(declarationsContent)
+
+            currentFile = previousFile
         }
 
         override fun visitClass(klass: AstClass, data: Nothing?): String = buildString {
@@ -109,10 +125,7 @@ object Ast2StringTranslator {
                 appendSpace()
             }
 
-            val primaryConstructor = klass
-                .declarations
-                .filterIsInstance<AstConstructor>()
-                .singleOrNull { it.isPrimary }
+            val primaryConstructor = klass.primaryConstructor
 
             if (primaryConstructor != null) {
                 append("(")
@@ -128,7 +141,7 @@ object Ast2StringTranslator {
             }
 
             val declarationsExceptPrimaryConstructor = klass.declarations
-                .filter { it !is AstConstructor || !it.isPrimary }
+                .filter { it != primaryConstructor }
 
             if (declarationsExceptPrimaryConstructor.isNotEmpty()) {
                 append(
@@ -158,104 +171,81 @@ object Ast2StringTranslator {
             appendLine()
         }
 
-        override fun visitSimpleFunction(
-            simpleFunction: AstSimpleFunction,
+        override fun visitFunction(
+            function: AstFunction,
             data: Nothing?
         ): String = buildString {
-            append(simpleFunction.renderAnnotations())
-            append(simpleFunction.renderVisibility())
-            append(simpleFunction.renderExpectActual())
-            if (simpleFunction.parent is AstClass) append(simpleFunction.renderModality())
-            if (simpleFunction.overriddenFunctions.isNotEmpty()) {
+            append(function.renderAnnotations())
+            append(function.renderVisibility())
+            append(function.renderExpectActual())
+            if (function.parent is AstClass) append(function.renderModality())
+            if (function.overriddenDeclarations.isNotEmpty()) {
                 append("override ")
             }
-            if (simpleFunction.isInline) {
+            if (function.isInline) {
                 append("inline ")
             }
-            if (simpleFunction.isExternal) {
+            if (function.isExternal) {
                 append("external ")
             }
-            if (simpleFunction.isInfix) {
+            if (function.isInfix) {
                 append("infix ")
             }
-            if (simpleFunction.isOperator) {
+            if (function.isOperator) {
                 append("operator ")
             }
-            if (simpleFunction.isTailrec) {
+            if (function.isTailrec) {
                 append("tailrec ")
             }
-            if (simpleFunction.isSuspend) {
+            if (function.isSuspend) {
                 append("suspend ")
             }
             append("fun ")
-            if (simpleFunction.typeParameters.isNotEmpty()) {
-                append(simpleFunction.typeParameters.renderList())
+            if (function.typeParameters.isNotEmpty()) {
+                append(function.typeParameters.renderList())
                 appendSpace()
             }
-            append("${simpleFunction.name}")
+            when (function.kind) {
+                AstFunction.Kind.SIMPLE_FUNCTION -> append(function.name)
+                AstFunction.Kind.PROPERTY_GETTER -> append("get")
+                AstFunction.Kind.PROPERTY_SETTER -> append("set")
+                AstFunction.Kind.CONSTRUCTOR -> append("constructor")
+            }.let {}
             append("(")
-            simpleFunction.valueParameters.forEachIndexed { index, valueParameter ->
+            function.valueParameters.forEachIndexed { index, valueParameter ->
                 append(valueParameter.accept(this@Writer, null))
-                if (index != simpleFunction.valueParameters.lastIndex) append(", ")
+                if (index != function.valueParameters.lastIndex) append(", ")
             }
             append(")")
-            append(": ")
-            append(simpleFunction.returnType.render())
-            appendSpace()
-            if (simpleFunction.typeParameters.isNotEmpty()) {
-                append(simpleFunction.typeParameters.renderWhere())
+            if (function.kind != AstFunction.Kind.PROPERTY_SETTER &&
+                function.kind != AstFunction.Kind.PROPERTY_GETTER &&
+                function.kind != AstFunction.Kind.CONSTRUCTOR
+            ) {
+                append(": ")
+                append(function.returnType.render())
                 appendSpace()
+                if (function.typeParameters.isNotEmpty()) {
+                    append(function.typeParameters.renderWhere())
+                }
             }
-            simpleFunction.body?.let { body ->
+            appendSpace()
+
+            function.body?.let { body ->
                 append(braced(body.accept(this@Writer, null)))
             } ?: appendLine()
         }
 
-        override fun visitConstructor(constructor: AstConstructor, data: Nothing?): String =
-            buildString {
-                append(constructor.renderAnnotations())
-                append(constructor.renderVisibility())
-                append(constructor.renderExpectActual())
-                append("constructor")
-                append("(")
-                constructor.valueParameters.forEachIndexed { index, valueParameter ->
-                    append(valueParameter.accept(this@Writer, null))
-                    if (index != constructor.valueParameters.lastIndex) append(", ")
-                }
-                append(") ")
-                constructor.body?.let { body ->
-                    append(braced(body.accept(this@Writer, null)))
-                } ?: if (!constructor.isPrimary) appendLine()
-            }
-
-        override fun visitPropertyAccessor(
-            propertyAccessor: AstPropertyAccessor,
-            data: Nothing?
-        ): String = buildString {
-            append(propertyAccessor.renderAnnotations())
-            if (propertyAccessor.isSetter) {
-                append("set")
-            } else {
-                append("get")
-            }
-            append("(")
-            propertyAccessor.valueParameters.forEachIndexed { index, valueParameter ->
-                append(valueParameter.accept(this@Writer, null))
-                if (index != propertyAccessor.valueParameters.lastIndex) append(", ")
-            }
-            append(")")
-            propertyAccessor.body?.let { body ->
-                append(
-                    braced(body.accept(this@Writer, null))
-                )
-            } ?: appendLine()
-        }
-
         override fun visitProperty(property: AstProperty, data: Nothing?): String = buildString {
+            try {
+                error("visit property ${property.name} ${property.getter} ${property.setter}")
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
             append(property.renderAnnotations())
             append(property.renderVisibility())
             if (property.parent is AstClass) append(property.renderModality())
-            if (property.overriddenProperties.isNotEmpty()) {
+            if (property.overriddenDeclarations.isNotEmpty()) {
                 append("override ")
             }
             if (property.setter != null) {
@@ -284,15 +274,19 @@ object Ast2StringTranslator {
             }
             if (property.getter != null) {
                 appendLine()
-                indented {
-                    property.getter!!.accept(this@Writer, null)
-                }
+                append(
+                    indented {
+                        property.getter!!.accept(this@Writer, null)
+                    }
+                )
             }
             if (property.setter != null) {
                 appendLine()
-                indented {
-                    property.setter!!.accept(this@Writer, null)
-                }
+                append(
+                    indented {
+                        property.setter!!.accept(this@Writer, null)
+                    }
+                )
             }
             appendLine()
         }
@@ -449,20 +443,47 @@ object Ast2StringTranslator {
             qualifiedAccess: AstQualifiedAccess,
             data: Nothing?
         ): String = buildString {
-            if (qualifiedAccess.receiver != null) {
-                qualifiedAccess.receiver!!.accept(this@Writer, null)
+            val explicitReceiver = if (qualifiedAccess.extensionReceiver != null)
+                qualifiedAccess.extensionReceiver
+            else qualifiedAccess.dispatchReceiver
+                ?.takeIf { it !is AstThis }
+
+            if (explicitReceiver != null) {
+                explicitReceiver.accept(this@Writer, null)
                 append(".")
             }
             val callee = qualifiedAccess.callee
-            if (callee is AstConstructor) {
-                append(callee.constructedClass.name)
+            if (callee is AstFunction && callee.kind == AstFunction.Kind.CONSTRUCTOR) {
+                append(callee.returnType.classOrFail.name)
+                potentialImports += callee.returnType.classOrFail.fqName
             } else if (callee is AstDeclarationWithName) {
                 append("${callee.name}")
+                when (callee) {
+                    is AstClass -> potentialImports += callee.fqName
+                    is AstFunction -> {
+                        callee.dispatchReceiverType.let { dispatchReceiverType ->
+                            if (dispatchReceiverType == null ||
+                                dispatchReceiverType.classOrFail.kind == AstClass.Kind.OBJECT
+                            ) {
+                                potentialImports += callee.fqName
+                            }
+                        }
+                    }
+                    is AstProperty -> {
+                        callee.dispatchReceiverType.let { dispatchReceiverType ->
+                            if (dispatchReceiverType == null ||
+                                dispatchReceiverType.classOrFail.kind == AstClass.Kind.OBJECT
+                            ) {
+                                potentialImports += callee.fqName
+                            }
+                        }
+                    }
+                }
             }
             if (qualifiedAccess.typeArguments.isNotEmpty()) {
                 append("<")
                 qualifiedAccess.typeArguments.forEachIndexed { index, typeArgument ->
-                    typeArgument.render()
+                    append(typeArgument.render())
                     if (index != qualifiedAccess.typeArguments.lastIndex) append(", ")
                 }
                 append(">")
@@ -484,9 +505,9 @@ object Ast2StringTranslator {
 
         override fun visitReturn(astReturn: AstReturn, data: Nothing?): String = buildString {
             append("return")
-            astReturn.target.label?.let {
-                append("@$it ")
-            } ?: appendSpace()
+            /*astReturn.target?.let {
+                append("@$")
+            } ?:*/ appendSpace()
             append(astReturn.expression.accept(this@Writer, null))
         }
 
@@ -498,6 +519,8 @@ object Ast2StringTranslator {
                 is AstTypeParameter -> append(classifier.name)
                 else -> error("Unexpected classifier $classifier")
             }
+
+            (classifier as? AstClass)?.let { potentialImports += it.fqName }
 
             if (arguments.isNotEmpty()) {
                 append("<")

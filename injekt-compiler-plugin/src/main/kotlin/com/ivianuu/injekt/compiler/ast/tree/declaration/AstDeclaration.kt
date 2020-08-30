@@ -1,11 +1,15 @@
 package com.ivianuu.injekt.compiler.ast.tree.declaration
 
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
+import com.ivianuu.injekt.compiler.ast.tree.AstExpectActual
+import com.ivianuu.injekt.compiler.ast.tree.AstModality
+import com.ivianuu.injekt.compiler.ast.tree.AstVisibility
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 
 interface AstDeclaration : AstStatement {
     var parent: AstDeclarationParent
@@ -21,6 +25,26 @@ fun AstDeclarationContainer.addChild(declaration: AstDeclaration) {
 }
 
 interface AstDeclarationParent : AstElement
+
+interface AstDeclarationWithExpectActual : AstDeclaration {
+    var expectActual: AstExpectActual?
+}
+
+interface AstDeclarationWithModality : AstDeclaration {
+    var modality: AstModality
+}
+
+interface AstDeclarationWithName : AstDeclaration {
+    var name: Name
+}
+
+interface AstDeclarationWithVisibility : AstDeclaration {
+    var visibility: AstVisibility
+}
+
+interface AstOverridableDeclaration<T> : AstDeclaration {
+    val overriddenDeclarations: MutableList<T>
+}
 
 abstract class AstDeclarationBase : AstDeclaration {
 
