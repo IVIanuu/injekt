@@ -5,19 +5,6 @@ import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
 
-fun String.lol(block: String.() -> Unit) {
-
-}
-
-fun Long.hehe() {
-    "hello".lol lol2@{
-        "bye".lol lol1@{
-            this@lol1.toInt()
-            this@hehe
-        }
-    }
-}
-
 class AstThis(
     override var type: AstType,
     var target: AstTarget
