@@ -5,6 +5,7 @@ import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstAnonymousInitializer
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationParent
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstProperty
@@ -28,6 +29,8 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstThis
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThrow
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstTry
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstWhileLoop
+import org.jetbrains.kotlin.backend.common.pop
+import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -111,9 +114,23 @@ class Psi2AstVisitor(
 ) : KtVisitor<AstElement, Nothing?>(), Generator {
 
     private val functionStack = mutableListOf<AstFunction>()
+    private val parentStack = mutableListOf<AstDeclarationParent>()
     private val loops = mutableMapOf<KtLoopExpression, AstLoop>()
 
     private fun <T : AstElement> KtElement.accept() = accept(this@Psi2AstVisitor, null) as T
+
+    private inline fun <R> withDeclarationParent(
+        parent: AstDeclarationParent,
+        block: () -> R
+    ): R {
+        parentStack.push(parent)
+        val result = block()
+        parentStack.pop()
+        return result
+    }
+
+    private fun <T : AstDeclaration> T.applyParentFromStack() =
+        apply { parent = parentStack.last() }
 
     override fun visitElement(element: PsiElement?) {
         error("Unhandled element $element ${element?.javaClass} ${element?.text}")
@@ -124,10 +141,11 @@ class Psi2AstVisitor(
             packageFqName = file.packageFqName,
             name = file.name.asNameId()
         ).apply {
-            // todo annotations += generateAnnotations()
-            declarations += file.declarations
-                .map { it.accept<AstDeclaration>() }
-                .onEach { it.parent = this }
+            withDeclarationParent(this) {
+                // todo annotations += generateAnnotations()
+                declarations += file.declarations
+                    .map { it.accept() }
+            }
         }
     }
 
@@ -147,41 +165,45 @@ class Psi2AstVisitor(
             isExternal = descriptor.isExternal
         ).apply {
             context.storage.classes[descriptor] = this
-            annotations += classOrObject.annotationEntries.map { it.accept() }
-            typeParameters += classOrObject.typeParameters
-                .map { it.accept() }
+            applyParentFromStack()
+            withDeclarationParent(this) {
+                annotations += classOrObject.annotationEntries.map { it.accept() }
+                typeParameters += classOrObject.typeParameters
+                    .map { it.accept() }
 
-            val primaryConstructor = classOrObject.primaryConstructor
-            val primaryConstructorDescriptor = descriptor.unsubstitutedPrimaryConstructor
+                val primaryConstructor = classOrObject.primaryConstructor
+                val primaryConstructorDescriptor = descriptor.unsubstitutedPrimaryConstructor
 
-            if (primaryConstructor != null || primaryConstructorDescriptor != null) {
-                val astPrimaryConstructor = primaryConstructor?.accept()
-                    ?: AstFunction(
-                        name = primaryConstructorDescriptor!!.name,
-                        kind = AstFunction.Kind.CONSTRUCTOR,
-                        returnType = primaryConstructorDescriptor.returnType.toAstType(),
-                        visibility = primaryConstructorDescriptor.visibility.toAstVisibility()
-                    ).also {
-                        context.storage.functions[primaryConstructorDescriptor] = it
-                    }
-                this.primaryConstructor = astPrimaryConstructor
-                // todo? addChild(astPrimaryConstructor)
-                /*primaryConstructor
-                    .valueParameters
-                    .mapNotNull { get(BindingContext.PRIMARY_CONSTRUCTOR_PARAMETER, it) }
-                    .map { property ->
-                        property.toAstProperty(
-                            astPrimaryConstructor.valueParameters
-                                .single { it.name == property.name }
-                        )
-                    }
-                    .forEach { addChild(it) }*/
+                if (primaryConstructor != null || primaryConstructorDescriptor != null) {
+                    val astPrimaryConstructor = primaryConstructor?.accept()
+                        ?: AstFunction(
+                            name = primaryConstructorDescriptor!!.name,
+                            kind = AstFunction.Kind.CONSTRUCTOR,
+                            returnType = primaryConstructorDescriptor.returnType.toAstType(),
+                            visibility = primaryConstructorDescriptor.visibility.toAstVisibility()
+                        ).also {
+                            context.storage.functions[primaryConstructorDescriptor] = it
+                            it.applyParentFromStack()
+                        }
+                    this.primaryConstructor = astPrimaryConstructor
+                    // todo? addChild(astPrimaryConstructor)
+                    /*primaryConstructor
+                        .valueParameters
+                        .mapNotNull { get(BindingContext.PRIMARY_CONSTRUCTOR_PARAMETER, it) }
+                        .map { property ->
+                            property.toAstProperty(
+                                astPrimaryConstructor.valueParameters
+                                    .single { it.name == property.name }
+                            )
+                        }
+                        .forEach { addChild(it) }*/
+                }
+
+                classOrObject.declarations
+                    .filterNot { it is KtPropertyAccessor }
+                    .map { it.accept<AstDeclaration>() }
+                    .forEach { addChild(it) }
             }
-
-            classOrObject.declarations
-                .filterNot { it is KtPropertyAccessor }
-                .map { it.accept<AstDeclaration>() }
-                .forEach { addChild(it) }
         }
     }
 
@@ -214,16 +236,19 @@ class Psi2AstVisitor(
             isSuspend = descriptor.isSuspend
         ).apply {
             context.storage.functions[descriptor] = this
-            annotations += function.annotationEntries.map { it.accept() }
-            typeParameters += function.typeParameters
-                .map { it.accept() }
-            dispatchReceiverType = descriptor.dispatchReceiverParameter?.type?.toAstType()
-            extensionReceiverType = descriptor.extensionReceiverParameter?.type?.toAstType()
-            valueParameters += function.valueParameters
-                .map { it.accept() }
-            overriddenDeclarations += descriptor.overriddenDescriptors
-                .map { context.astProvider.get(it) }
-            body = function.bodyExpression?.let { visitExpressionForBlock(it) }
+            applyParentFromStack()
+            withDeclarationParent(this) {
+                annotations += function.annotationEntries.map { it.accept() }
+                typeParameters += function.typeParameters
+                    .map { it.accept() }
+                dispatchReceiverType = descriptor.dispatchReceiverParameter?.type?.toAstType()
+                extensionReceiverType = descriptor.extensionReceiverParameter?.type?.toAstType()
+                valueParameters += function.valueParameters
+                    .map { it.accept() }
+                overriddenDeclarations += descriptor.overriddenDescriptors
+                    .map { context.astProvider.get(it) }
+                body = function.bodyExpression?.let { visitExpressionForBlock(it) }
+            }
         }
     }
 
@@ -245,6 +270,7 @@ class Psi2AstVisitor(
             isExternal = descriptor.isExternal
         ).apply {
             context.storage.properties[descriptor] = this
+            applyParentFromStack()
             annotations += property.annotations.map { it.accept() }
             typeParameters += property.typeParameters
                 .map { it.accept() }
@@ -300,6 +326,7 @@ class Psi2AstVisitor(
             variance = descriptor.variance.toAstVariance()
         ).apply {
             context.storage.typeParameters[descriptor] = this
+            applyParentFromStack()
             annotations += parameter.annotationEntries.map { it.accept() }
             superTypes += descriptor.upperBounds.map { it.toAstType() }
         }
@@ -319,6 +346,7 @@ class Psi2AstVisitor(
             }
         ).apply {
             context.storage.valueParameters[descriptor] = this
+            applyParentFromStack()
             defaultValue = (descriptor.findPsi() as? KtParameter)?.defaultValue?.accept()
             annotations += parameter.annotationEntries.map { it.accept() }
         }
@@ -334,6 +362,7 @@ class Psi2AstVisitor(
             expectActual = expectActualOf(descriptor.isActual, descriptor.isExpect)
         ).apply {
             context.storage.typeAliases[descriptor] = this
+            applyParentFromStack()
             annotations += typeAlias.annotationEntries.map { it.accept() }
             typeParameters += typeAlias.typeParameters
                 .map { it.accept() }
