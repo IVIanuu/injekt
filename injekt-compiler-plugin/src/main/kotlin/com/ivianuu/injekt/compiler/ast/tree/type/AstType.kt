@@ -15,15 +15,23 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
+import com.ivianuu.injekt.compiler.ast.tree.visitor.transformInplace
+import com.ivianuu.injekt.compiler.ast.tree.visitor.transformSingle
 import org.jetbrains.kotlin.name.FqName
 
 class AstType : AstAnnotationContainer, AstTypeArgument, AstTypeProjection {
 
-    override val variance: AstVariance?
+    override var variance: AstVariance?
         get() = null
+        set(value) {
+            TODO()
+        }
 
-    override val type: AstType
+    override var type: AstType
         get() = this
+        set(value) {
+            TODO()
+        }
 
     lateinit var classifier: AstClassifier
     override val annotations: MutableList<AstQualifiedAccess> = mutableListOf()
@@ -35,6 +43,9 @@ class AstType : AstAnnotationContainer, AstTypeArgument, AstTypeProjection {
         visitor.visitType(this, data)
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+        annotations.forEach { it.accept(visitor, data) }
+        arguments.forEach { it.accept(visitor, data) }
+        abbreviation?.accept(visitor, data)
     }
 
     override fun <D> transform(
@@ -43,6 +54,9 @@ class AstType : AstAnnotationContainer, AstTypeArgument, AstTypeProjection {
     ): AstTransformResult<AstType> = accept(transformer, data) as AstTransformResult<AstType>
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
+        annotations.transformInplace(transformer, data)
+        arguments.transformInplace(transformer, data)
+        abbreviation = abbreviation?.transformSingle(transformer, data)
     }
 
 }
@@ -68,19 +82,20 @@ object AstStarProjection : AstTypeArgument {
 }
 
 interface AstTypeProjection : AstTypeArgument {
-    val variance: AstVariance?
-    val type: AstType
+    var variance: AstVariance?
+    var type: AstType
 }
 
 class AstTypeProjectionImpl(
-    override val variance: AstVariance?,
-    override val type: AstType
+    override var variance: AstVariance?,
+    override var type: AstType
 ) : AstTypeProjection {
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
         visitor.visitTypeProjection(this, data)
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+        type.accept(visitor, data)
     }
 
     override fun <D> transform(
@@ -90,6 +105,7 @@ class AstTypeProjectionImpl(
         accept(transformer, data) as AstTransformResult<AstTypeProjection>
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
+        type = type.transformSingle(transformer, data)
     }
 
 }
@@ -105,6 +121,8 @@ class AstTypeAbbreviation(
         visitor.visitElement(this, data)
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+        annotations.forEach { it.accept(visitor, data) }
+        arguments.forEach { it.accept(visitor, data) }
     }
 
     override fun <D> transform(
@@ -114,6 +132,8 @@ class AstTypeAbbreviation(
         accept(transformer, data) as AstTransformResult<AstTypeProjection>
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
+        annotations.transformInplace(transformer, data)
+        arguments.transformInplace(transformer, data)
     }
 
 }

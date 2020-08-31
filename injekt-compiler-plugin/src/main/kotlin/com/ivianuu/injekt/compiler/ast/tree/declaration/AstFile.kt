@@ -20,6 +20,7 @@ class AstFile(
         visitor.visitFile(this, data)
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+        annotations.forEach { it.accept(visitor, data) }
         declarations.forEach { it.accept(visitor, data) }
     }
 
@@ -29,6 +30,7 @@ class AstFile(
     ) = transformer.visitFile(this, data)
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
+        annotations.transformInplace(transformer, data)
         declarations.transformInplace(transformer, data)
     }
 

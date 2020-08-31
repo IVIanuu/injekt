@@ -39,11 +39,13 @@ open class AstClass(
         visitor.visitClass(this, data)
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+        annotations.forEach { it.accept(visitor, data) }
         typeParameters.forEach { it.accept(visitor, data) }
         declarations.forEach { it.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
+        annotations.transformInplace(transformer, data)
         typeParameters.transformInplace(transformer, data)
         declarations.transformInplace(transformer, data)
     }

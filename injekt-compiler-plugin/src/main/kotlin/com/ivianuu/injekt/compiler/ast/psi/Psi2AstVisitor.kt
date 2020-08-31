@@ -291,7 +291,6 @@ class Psi2AstVisitor(
     }
 
     override fun visitParameter(parameter: KtParameter, data: Nothing?): AstValueParameter {
-        println(parameter.text)
         val descriptor = parameter.descriptor<VariableDescriptor>()
         context.storage.valueParameters[descriptor]?.let { return it }
         return AstValueParameter(

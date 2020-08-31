@@ -18,11 +18,15 @@ class AstWhen(
         visitor.visitWhen(this, data)
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+        annotations.forEach { it.accept(visitor, data) }
         branches.forEach { it.accept(visitor, data) }
+        type.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
+        annotations.transformInplace(transformer, data)
         branches.transformInplace(transformer, data)
+        type = type.transformSingle(transformer, data)
     }
 
 }

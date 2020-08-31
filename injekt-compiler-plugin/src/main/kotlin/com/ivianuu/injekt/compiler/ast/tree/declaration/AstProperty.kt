@@ -45,6 +45,7 @@ class AstProperty(
         visitor.visitProperty(this, data)
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+        annotations.forEach { it.accept(visitor, data) }
         typeParameters.forEach { it.accept(visitor, data) }
         initializer?.accept(visitor, data)
         delegate?.accept(visitor, data)
@@ -53,6 +54,7 @@ class AstProperty(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
+        annotations.transformInplace(transformer, data)
         typeParameters.transformInplace(transformer, data)
         initializer = initializer?.transformSingle(transformer, data)
         delegate = delegate?.transformSingle(transformer, data)

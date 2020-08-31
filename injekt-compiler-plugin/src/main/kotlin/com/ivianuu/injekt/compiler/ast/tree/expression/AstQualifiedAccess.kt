@@ -22,17 +22,21 @@ class AstQualifiedAccess(
         visitor.visitQualifiedAccess(this, data)
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+        annotations.forEach { it.accept(visitor, data) }
         dispatchReceiver?.accept(visitor, data)
         extensionReceiver?.accept(visitor, data)
         typeArguments.forEach { it.accept(visitor, data) }
         valueArguments.forEach { it?.accept(visitor, data) }
+        type.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
+        annotations.transformInplace(transformer, data)
         dispatchReceiver = dispatchReceiver?.transformSingle(transformer, data)
         extensionReceiver = extensionReceiver?.transformSingle(transformer, data)
         typeArguments.transformInplace(transformer, data)
         valueArguments.transformInplace(transformer, data)
+        type = type.transformSingle(transformer, data)
     }
 
 }

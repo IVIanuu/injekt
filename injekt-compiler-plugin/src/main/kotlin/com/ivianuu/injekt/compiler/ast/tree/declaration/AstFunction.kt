@@ -49,12 +49,20 @@ class AstFunction(
         visitor.visitFunction(this, data)
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+        annotations.forEach { it.accept(visitor, data) }
+        dispatchReceiverType?.accept(visitor, data)
+        extensionReceiverType?.accept(visitor, data)
+        returnType.accept(visitor, data)
         typeParameters.forEach { it.accept(visitor, data) }
         valueParameters.forEach { it.accept(visitor, data) }
         body?.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
+        annotations.transformInplace(transformer, data)
+        dispatchReceiverType = dispatchReceiverType?.transformSingle(transformer, data)
+        extensionReceiverType = extensionReceiverType?.transformSingle(transformer, data)
+        returnType = returnType.transformSingle(transformer, data)
         typeParameters.transformInplace(transformer, data)
         valueParameters.transformInplace(transformer, data)
         body = body?.transformSingle(transformer, data)

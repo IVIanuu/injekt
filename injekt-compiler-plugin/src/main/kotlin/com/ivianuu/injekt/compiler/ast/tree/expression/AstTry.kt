@@ -3,7 +3,6 @@ package com.ivianuu.injekt.compiler.ast.tree.expression
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
-import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
 import com.ivianuu.injekt.compiler.ast.tree.visitor.transformInplace
@@ -20,15 +19,19 @@ class AstTry(
         visitor.visitTry(this, data)
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+        annotations.forEach { it.accept(visitor, data) }
         tryResult.accept(visitor, data)
         catches.forEach { it.accept(visitor, data) }
         finally?.accept(visitor, data)
+        type.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
+        annotations.transformInplace(transformer, data)
         tryResult = tryResult.transformSingle(transformer, data)
         catches.transformInplace(transformer, data)
         finally = finally?.transformSingle(transformer, data)
+        type = type.transformSingle(transformer, data)
     }
 
 }
@@ -49,8 +52,7 @@ class AstCatch(
     override fun <D> transform(
         transformer: AstTransformer<D>,
         data: D
-    ): AstTransformResult<AstCatch> =
-        transformer.visitCatch(this, data) as AstTransformResult<AstCatch>
+    ) = transformer.visitCatch(this, data)
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
         catchParameter = catchParameter.transformSingle(transformer, data)
