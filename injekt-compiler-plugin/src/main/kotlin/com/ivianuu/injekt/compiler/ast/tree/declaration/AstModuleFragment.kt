@@ -7,9 +7,7 @@ import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
 import com.ivianuu.injekt.compiler.ast.tree.visitor.transformInplace
 import org.jetbrains.kotlin.name.Name
 
-class AstModuleFragment(
-    val name: Name
-) : AstElement {
+class AstModuleFragment(val name: Name) : AstElement {
 
     val files = mutableListOf<AstFile>()
 

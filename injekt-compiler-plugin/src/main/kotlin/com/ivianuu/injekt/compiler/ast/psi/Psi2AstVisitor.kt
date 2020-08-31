@@ -142,7 +142,7 @@ class Psi2AstVisitor(
             name = file.name.asNameId()
         ).apply {
             withDeclarationParent(this) {
-                // todo annotations += generateAnnotations()
+                annotations += file.annotationEntries.map { it.accept() }
                 declarations += file.declarations
                     .map { it.accept() }
             }

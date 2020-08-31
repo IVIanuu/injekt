@@ -7,6 +7,7 @@ import com.ivianuu.injekt.compiler.ast.tree.visitor.transformInplace
 import org.jetbrains.kotlin.name.FqName
 
 class AstExternalPackageFragment(override var packageFqName: FqName) : AstPackageFragment {
+
     override val declarations: MutableList<AstDeclaration> = mutableListOf()
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
