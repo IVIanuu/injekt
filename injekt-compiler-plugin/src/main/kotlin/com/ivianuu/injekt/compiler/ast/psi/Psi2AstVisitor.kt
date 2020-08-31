@@ -35,12 +35,16 @@ import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.NotFoundClasses
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.js.translate.callTranslator.getReturnType
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
@@ -87,12 +91,18 @@ import org.jetbrains.kotlin.resolve.calls.components.isVararg
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ExpressionValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.VarargValueArgument
+import org.jetbrains.kotlin.resolve.constants.AnnotationValue
+import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
 import org.jetbrains.kotlin.resolve.constants.ByteValue
 import org.jetbrains.kotlin.resolve.constants.CharValue
+import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.constants.DoubleValue
+import org.jetbrains.kotlin.resolve.constants.EnumValue
+import org.jetbrains.kotlin.resolve.constants.ErrorValue
 import org.jetbrains.kotlin.resolve.constants.FloatValue
 import org.jetbrains.kotlin.resolve.constants.IntValue
+import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.constants.LongValue
 import org.jetbrains.kotlin.resolve.constants.NullValue
 import org.jetbrains.kotlin.resolve.constants.ShortValue
@@ -108,7 +118,9 @@ import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
 import org.jetbrains.kotlin.resolve.scopes.receivers.SuperCallReceiverValue
 import org.jetbrains.kotlin.resolve.scopes.receivers.ThisClassReceiver
+import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.expressions.ExpressionTypingUtils
+import org.jetbrains.kotlin.types.typeUtil.builtIns
 
 class Psi2AstVisitor(
     override val context: GeneratorContext
@@ -126,7 +138,8 @@ class Psi2AstVisitor(
         cache: MutableMap<K, V>,
         init: () -> V,
         block: V.() -> Unit
-    ) = cache.getOrPut(this, init).apply(block)
+    ) = cache.getOrPut(if (this is DeclarationDescriptor) original as K else this, init)
+        .apply(block)
 
     private fun <T : AstElement> KtElement.accept(mode: Mode) =
         accept(this@Psi2AstVisitor, mode) as T
@@ -162,6 +175,7 @@ class Psi2AstVisitor(
         ) {
             withDeclarationParent(this) {
                 if (mode == Mode.Full) {
+                    annotations.clear()
                     annotations += file.annotationEntries.map { it.accept(mode) }
                 }
 
@@ -201,25 +215,9 @@ class Psi2AstVisitor(
                     .map { it.accept(mode) }
 
                 val primaryConstructor = classOrObject.primaryConstructor
-                val primaryConstructorDescriptor = descriptor.unsubstitutedPrimaryConstructor
 
-                if (primaryConstructor != null || primaryConstructorDescriptor != null) {
-                    val astPrimaryConstructor = primaryConstructorDescriptor!!.cached(
-                        context.storage.functions,
-                        {
-                            (primaryConstructor?.accept(mode)
-                                ?: AstFunction(
-                                    name = primaryConstructorDescriptor.name,
-                                    kind = AstFunction.Kind.CONSTRUCTOR,
-                                    returnType = UninitializedType,
-                                    visibility = primaryConstructorDescriptor.visibility.toAstVisibility()
-                                )).applyParentFromStack()
-                        }
-                    ) {
-                        if (mode == Mode.Full) {
-                            returnType = primaryConstructorDescriptor.returnType.toAstType()
-                        }
-                    }
+                if (primaryConstructor != null) {
+                    val astPrimaryConstructor = primaryConstructor.accept<AstFunction>(mode)
                     this.primaryConstructor = astPrimaryConstructor
                     // todo? addChild(astPrimaryConstructor)
                     /*primaryConstructor
@@ -261,6 +259,7 @@ class Psi2AstVisitor(
         mode: Mode
     ): AstFunction {
         val descriptor = function.descriptor<FunctionDescriptor>()
+        println("visit $descriptor $mode")
         return descriptor.cached(
             context.storage.functions,
             {
@@ -393,6 +392,7 @@ class Psi2AstVisitor(
 
     override fun visitParameter(parameter: KtParameter, mode: Mode): AstValueParameter {
         val descriptor = parameter.descriptor<VariableDescriptor>()
+        println("visit param ${descriptor.name} $mode")
         return descriptor.cached(
             context.storage.valueParameters,
             {
@@ -409,10 +409,10 @@ class Psi2AstVisitor(
             }
         ) {
             if (mode == Mode.Full) {
-                type = descriptor.type.toAstType()
-                defaultValue = (descriptor.findPsi() as? KtParameter)?.defaultValue?.accept(mode)
                 annotations.clear()
                 annotations += parameter.annotationEntries.map { it.accept(mode) }
+                type = descriptor.type.toAstType()
+                defaultValue = (descriptor.findPsi() as? KtParameter)?.defaultValue?.accept(mode)
             }
         }
     }
@@ -446,17 +446,12 @@ class Psi2AstVisitor(
         expression: KtObjectLiteralExpression,
         mode: Mode
     ): AstAnonymousObjectExpression {
+        // important to compute the ast declaration before asking for it's type
+        val anonymousObject = expression.objectDeclaration.accept<AstClass>(mode)
         return AstAnonymousObjectExpression(
             expression.getTypeInferredByFrontendOrFail().toAstType(),
-            expression.objectDeclaration.accept(mode)
+            anonymousObject
         )
-    }
-
-    override fun visitAnnotationEntry(
-        annotationEntry: KtAnnotationEntry,
-        mode: Mode
-    ): AstQualifiedAccess {
-        TODO("$annotationEntry")
     }
 
     override fun visitBlockExpression(expression: KtBlockExpression, mode: Mode): AstBlock {
@@ -778,5 +773,113 @@ class Psi2AstVisitor(
         }
         return null
     }
+
+    override fun visitAnnotationEntry(annotationEntry: KtAnnotationEntry, data: Mode?): AstElement {
+        val descriptor = getOrFail(BindingContext.ANNOTATION, annotationEntry)
+        return generateAnnotationConstructorCall(descriptor)!!
+    }
+
+    private fun generateConstantValueAsExpression(
+        constantValue: ConstantValue<*>,
+        varargElementType: KotlinType? = null
+    ): AstExpression =
+        // Assertion is safe here because annotation calls and class literals are not allowed in constant initializers
+        generateConstantOrAnnotationValueAsExpression(constantValue, varargElementType)!!
+
+    private fun generateConstantOrAnnotationValueAsExpression(
+        constantValue: ConstantValue<*>,
+        varargElementType: KotlinType? = null
+    ): AstExpression? {
+        val constantKtType = constantValue.getType(context.module)
+        val constantType = constantKtType.toAstType()
+
+        return when (constantValue) {
+            is StringValue -> AstConst.string(constantType, constantValue.value)
+            is IntValue -> AstConst.int(constantType, constantValue.value)
+            is UIntValue -> AstConst.int(constantType, constantValue.value)
+            is NullValue -> AstConst.constNull(constantType)
+            is BooleanValue -> AstConst.boolean(constantType, constantValue.value)
+            is LongValue -> AstConst.long(constantType, constantValue.value)
+            is ULongValue -> AstConst.long(constantType, constantValue.value)
+            is DoubleValue -> AstConst.double(constantType, constantValue.value)
+            is FloatValue -> AstConst.float(constantType, constantValue.value)
+            is CharValue -> AstConst.char(constantType, constantValue.value)
+            is ByteValue -> AstConst.byte(constantType, constantValue.value)
+            is UByteValue -> AstConst.byte(constantType, constantValue.value)
+            is ShortValue -> AstConst.short(constantType, constantValue.value)
+            is UShortValue -> AstConst.short(constantType, constantValue.value)
+            is ArrayValue -> {
+                /*val arrayElementType = varargElementType ?: constantKtType.getArrayElementType()
+                IrVarargImpl(
+                    startOffset, endOffset,
+                    constantType,
+                    arrayElementType.toAstType(),
+                    constantValue.value.mapNotNull {
+                        generateConstantOrAnnotationValueAsExpression(it, null)
+                    }
+                )*/
+                TODO()
+            }
+            is EnumValue -> {
+                val enumEntryDescriptor =
+                    constantKtType.memberScope.getContributedClassifier(
+                        constantValue.enumEntryName,
+                        NoLookupLocation.FROM_BACKEND
+                    )!!
+                AstQualifiedAccess(
+                    callee = context.astProvider.get(enumEntryDescriptor) as AstClass,
+                    type = constantType
+                )
+            }
+            is AnnotationValue -> generateAnnotationConstructorCall(constantValue.value)
+            is KClassValue -> {
+                /*val classifierKtType = constantValue.getArgumentType(moduleDescriptor)
+                if (classifierKtType.isError) null
+                else {
+                    val classifierDescriptor = classifierKtType.constructor.declarationDescriptor
+                        ?: throw AssertionError("Unexpected KClassValue: $classifierKtType")
+
+                    IrClassReferenceImpl(
+                        startOffset, endOffset,
+                        constantValue.getType(moduleDescriptor).toIrType(),
+                        symbolTable.referenceClassifier(classifierDescriptor),
+                        classifierKtType.toIrType()
+                    )
+                }*/ TODO()
+            }
+            is ErrorValue -> null
+            else -> error("Unexpected constant value: ${constantValue.javaClass.simpleName} $constantValue")
+        }
+    }
+
+    private fun generateAnnotationConstructorCall(annotationDescriptor: AnnotationDescriptor): AstQualifiedAccess? {
+        val annotationType = annotationDescriptor.type
+        val annotationClassDescriptor = annotationType.constructor.declarationDescriptor
+        if (annotationClassDescriptor !is ClassDescriptor) return null
+        if (annotationClassDescriptor is NotFoundClasses.MockClassDescriptor) return null
+
+        val primaryConstructorDescriptor = annotationClassDescriptor.unsubstitutedPrimaryConstructor
+            ?: annotationClassDescriptor.constructors.singleOrNull()
+            ?: throw AssertionError("No constructor for annotation class $annotationClassDescriptor")
+        val astPrimaryConstructor =
+            context.astProvider.get<AstFunction>(primaryConstructorDescriptor)
+
+        return AstQualifiedAccess(
+            callee = astPrimaryConstructor,
+            type = annotationType.toAstType()
+        ).apply {
+            valueArguments += primaryConstructorDescriptor.valueParameters
+                .map { valueParameter ->
+                    val argumentValue = annotationDescriptor.allValueArguments[valueParameter.name]
+                        ?: return null
+                    generateConstantOrAnnotationValueAsExpression(
+                        argumentValue,
+                        valueParameter.varargElementType
+                    )
+                }
+        }
+    }
+
+    private fun KotlinType.getArrayElementType() = builtIns.getArrayElementType(this)
 
 }

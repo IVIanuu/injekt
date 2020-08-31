@@ -42,7 +42,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.utils.Printer
 
 fun AstElement.toAstString(): String {
-    return buildString { accept(Writer(this)) }
+    return buildString { accept(Ast2StringWriter(this)) }
         // replace tabs at beginning of line with white space
         .replace(Regex("\\n(%tab%)+", RegexOption.MULTILINE)) {
             val size = it.range.last - it.range.first - 1
@@ -56,7 +56,7 @@ fun AstElement.toAstString(): String {
         .replace(Regex("}\\n(\\s)*,", RegexOption.MULTILINE), "},")
 }
 
-private class Writer(out: Appendable) : AstVisitorVoid {
+private class Ast2StringWriter(out: Appendable) : AstVisitorVoid {
 
     private val printer = Printer(out, "%tab%")
     private fun emit(value: Any?) {
@@ -76,7 +76,7 @@ private class Writer(out: Appendable) : AstVisitorVoid {
     }
 
     private fun AstElement.emit() {
-        accept(this@Writer)
+        accept(this@Ast2StringWriter)
     }
 
     private inline fun indented(body: () -> Unit) {
@@ -428,9 +428,10 @@ private class Writer(out: Appendable) : AstVisitorVoid {
     }
 
     private fun AstAnnotationContainer.emitAnnotations() {
-        annotations.forEachIndexed { index, annotation ->
-            emit("@TODO")
-            if (index != annotations.lastIndex) emitLine()
+        annotations.forEach { annotation ->
+            emit("@")
+            annotation.emit()
+            emitLine()
         }
     }
 

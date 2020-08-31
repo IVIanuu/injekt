@@ -28,7 +28,7 @@ class AstTest {
         codegen(
             sources = arrayOf(
                 source(
-                    """
+                    """ 
                         class NotTransformed(val param: String) {
                             var lol: String = "hello world"
                             
@@ -97,9 +97,10 @@ class AstTest {
                         
                         fun aFunction() {
                         }
-                        
-                        fun bFunction(param: String) {
-                            param
+
+                        @com.ivianuu.injekt.Reader
+                        fun bFunction(p: String) {
+                            p
                         }
                         
                         fun <T, S> aFunction(a: T, b: S) {
@@ -124,6 +125,10 @@ class AstTest {
                                 println("finally")
                             }
                         }
+                        
+                        /*fun withVararg(vararg params: String) {
+                            withVararg(*params)
+                        }*/
                         
                         fun whileF() {
                             while (true) {

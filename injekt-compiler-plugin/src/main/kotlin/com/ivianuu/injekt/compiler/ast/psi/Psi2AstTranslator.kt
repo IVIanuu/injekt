@@ -1,12 +1,11 @@
 package com.ivianuu.injekt.compiler.ast.psi
 
 import com.ivianuu.injekt.compiler.ast.extension.AstBuiltIns
+import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
-import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
-import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
-import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformerVoid
+import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitorVoid
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingContext
@@ -15,7 +14,6 @@ class Psi2AstTranslator(
     private val astProvider: AstProvider,
     private val bindingContext: BindingContext,
     private val module: ModuleDescriptor,
-    private val stubGenerator: Psi2AstStubGenerator,
     private val storage: Psi2AstStorage,
     private val typeMapper: TypeMapper
 ) {
@@ -34,25 +32,28 @@ class Psi2AstTranslator(
         )
         val visitor = Psi2AstVisitor(context)
 
-        files.forEach { visitor.visitKtFile(it, Psi2AstVisitor.Mode.Partial) }
+        files.forEach { it.accept(visitor, Psi2AstVisitor.Mode.Partial) }
 
         astProvider.psi2AstVisitor = visitor
-        astProvider.stubGenerator = stubGenerator
 
         val moduleFragment = AstModuleFragment(module.name).apply {
             this.files += files.map {
-                visitor.visitKtFile(it, Psi2AstVisitor.Mode.Full) as AstFile
+                it.accept(visitor, Psi2AstVisitor.Mode.Full) as AstFile
             }
         }
 
-        moduleFragment.transform(object : AstTransformerVoid {
-            override fun visitDeclaration(declaration: AstDeclaration): AstTransformResult<AstStatement> {
+        moduleFragment.accept(object : AstVisitorVoid {
+            override fun visitElement(element: AstElement) {
+                element.acceptChildren(this)
+            }
+
+            override fun visitDeclaration(declaration: AstDeclaration) {
                 try {
                     declaration.parent
                 } catch (e: Throwable) {
                     error("Parent not set $declaration")
                 }
-                return super.visitDeclaration(declaration)
+                super.visitDeclaration(declaration)
             }
         })
 
