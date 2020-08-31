@@ -30,532 +30,563 @@ import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
 import com.ivianuu.injekt.compiler.ast.tree.type.classOrFail
 import com.ivianuu.injekt.compiler.ast.tree.type.classOrNull
-import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
+import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
+import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformerVoid
+import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitorVoid
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.utils.Printer
 
 object Ast2StringTranslator {
 
-    fun generate(element: AstElement): String = element.accept(Writer(), null)
+    fun generate(element: AstElement): String {
+        return buildString {
+            element.accept(
+                Writer(this)
+            )
+        }
+            // replace tabs at beginning of line with white space
+            .replace(Regex("\\n(%tab%)+", RegexOption.MULTILINE)) {
+                val size = it.range.last - it.range.first - 1
+                "\n" + (0..(size / 5)).joinToString("") { "    " }
+            }
+            // tabs that are inserted in the middle of lines should be replaced with empty strings
+            .replace(Regex("%tab%", RegexOption.MULTILINE), "")
+            // remove empty lines
+            .replace(Regex("\\n(\\s)*$", RegexOption.MULTILINE), "")
+            // brackets with comma on new line
+            .replace(Regex("}\\n(\\s)*,", RegexOption.MULTILINE), "},")
+    }
 
-    private class Writer : AstVisitor<String, Nothing?> {
+    private class Writer(out: Appendable) : AstVisitorVoid {
 
-        private var indent = ""
-
-        private fun indented(value: Any?): String {
-            indent += "    "
-            val result = "$indent$value"
-            indent = indent.dropLast(4)
-            return result
+        private val printer = Printer(out, "%tab%")
+        private fun emit(value: Any?) {
+            printer.print(value)
         }
 
-        private fun braced(value: String, header: String? = null): String = buildString {
-            appendLine("$indent${header?.let { "$it " }.orEmpty()}{")
-            appendLine(indented(value))
-            appendLine("$indent}")
+        private fun emitLine(value: Any?) {
+            printer.println(value)
         }
 
-        private fun StringBuilder.appendSpace() {
-            append(" ")
+        private fun emitLine() {
+            printer.println()
+        }
+
+        private fun emitSpace() {
+            emit(" ")
+        }
+
+        private fun AstElement.emit() {
+            accept(this@Writer)
+        }
+
+        private inline fun indented(body: () -> Unit) {
+            printer.pushIndent()
+            body()
+            printer.popIndent()
+        }
+
+        private inline fun bracedBlock(
+            header: String = "",
+            body: () -> Unit
+        ) {
+            emitLine("$header {")
+            indented(body)
+            emitLine()
+            emitLine("}")
         }
 
         private var currentFile: AstFile? = null
-        private val potentialImports = mutableSetOf<FqName>()
 
-        override fun visitElement(element: AstElement, data: Nothing?): String {
+        override fun visitElement(element: AstElement, data: Nothing?) {
             error("Unhandled $element")
         }
 
-        override fun visitFile(file: AstFile, data: Nothing?): String = buildString {
+        override fun visitFile(file: AstFile, data: Nothing?) {
             val previousFile = currentFile
             currentFile = file
             if (file.packageFqName != FqName.ROOT)
-                append("package ${file.packageFqName}")
+                emitLine("package ${file.packageFqName}")
 
-            val declarationsContent = file.renderDeclarations()
+            val imports = mutableSetOf<FqName>()
+            file.transform(
+                object : AstTransformerVoid {
+                    override fun visitType(type: AstType): AstTransformResult<AstType> {
+                        type.classOrNull?.fqName?.let { imports += it }
+                        return super.visitType(type)
+                    }
+                }
+            )
 
-            if (potentialImports.isNotEmpty()) appendLine()
+            if (imports.isNotEmpty()) {
+                emitLine()
+                imports
+                    .filterNot { it.parent().isRoot || it.parent() == file.packageFqName }
+                    .forEach { emitLine("import $it") }
+            }
 
-            potentialImports
-                .filterNot { it.parent().isRoot || it.parent() == file.packageFqName }
-                .forEach { appendLine("import $it") }
+            if (file.declarations.isNotEmpty()) emitLine()
 
-            if (file.declarations.isNotEmpty()) appendLine()
-
-            append(declarationsContent)
+            file.emitDeclarations()
 
             currentFile = previousFile
         }
 
-        override fun visitClass(klass: AstClass, data: Nothing?): String = buildString {
-            append(klass.renderAnnotations())
-            if (klass.kind != AstClass.Kind.ENUM_ENTRY) append(klass.renderVisibility())
-            if (klass.kind != AstClass.Kind.ENUM_ENTRY) append(klass.renderExpectActual())
+        override fun visitClass(klass: AstClass, data: Nothing?) {
+            klass.emitAnnotations()
+            if (klass.kind != AstClass.Kind.ENUM_ENTRY) klass.emitVisibility()
+            if (klass.kind != AstClass.Kind.ENUM_ENTRY) klass.emitExpectActual()
             if (klass.kind != AstClass.Kind.INTERFACE &&
                 klass.kind != AstClass.Kind.ENUM_CLASS &&
                 klass.kind != AstClass.Kind.ENUM_ENTRY
-            ) append(klass.renderModality())
+            ) klass.emitModality()
             if (klass.isFun) {
-                append("fun ")
+                emit("fun ")
             }
             if (klass.isData) {
-                append("data ")
+                emit("data ")
             }
             if (klass.isInner) {
-                append("inner ")
+                emit("inner ")
             }
             if (klass.isExternal) {
-                append("external ")
+                emit("external ")
             }
             when (klass.kind) {
-                AstClass.Kind.CLASS -> append("class ")
-                AstClass.Kind.INTERFACE -> append("interface ")
-                AstClass.Kind.ENUM_CLASS -> append("enum class ")
-                AstClass.Kind.ENUM_ENTRY -> append("")
-                AstClass.Kind.ANNOTATION -> append("annotation class ")
+                AstClass.Kind.CLASS -> emit("class ")
+                AstClass.Kind.INTERFACE -> emit("interface ")
+                AstClass.Kind.ENUM_CLASS -> emit("enum class ")
+                AstClass.Kind.ENUM_ENTRY -> emit("")
+                AstClass.Kind.ANNOTATION -> emit("annotation class ")
                 AstClass.Kind.OBJECT -> {
-                    if (klass.isCompanion) append("companion ")
-                    append("object ")
+                    if (klass.isCompanion) emit("companion ")
+                    emit("object ")
                 }
             }.let { }
 
-            append("${klass.name}")
+            emit("${klass.name}")
             if (klass.typeParameters.isNotEmpty()) {
-                append(klass.typeParameters.renderList())
-                appendSpace()
-                append(klass.typeParameters.renderWhere())
-                appendSpace()
+                klass.typeParameters.emitList()
+                emitSpace()
+                klass.typeParameters.emitWhere()
+                emitSpace()
             }
 
             val primaryConstructor = klass.primaryConstructor
 
             if (primaryConstructor != null) {
-                append("(")
+                emit("(")
                 primaryConstructor.valueParameters.forEachIndexed { index, valueParameter ->
-                    append(valueParameter.accept(this@Writer, null))
-                    if (index != primaryConstructor.valueParameters.lastIndex) append(", ")
+                    valueParameter.emit()
+                    if (index != primaryConstructor.valueParameters.lastIndex) emit(", ")
                 }
-                append(") ")
+                emit(") ")
             }
 
             if (klass.typeParameters.isEmpty() && primaryConstructor == null) {
-                appendSpace()
+                emitSpace()
             }
 
             val declarationsExceptPrimaryConstructor = klass.declarations
                 .filter { it != primaryConstructor }
 
             if (declarationsExceptPrimaryConstructor.isNotEmpty()) {
-                append(
-                    braced(
-                        buildString {
-                            appendLine()
-                            val (enumEntryDeclarations, otherDeclarations) = declarationsExceptPrimaryConstructor
-                                .partition { it is AstClass && it.kind == AstClass.Kind.ENUM_ENTRY }
+                bracedBlock {
+                    val (enumEntryDeclarations, otherDeclarations) = declarationsExceptPrimaryConstructor
+                        .partition { it is AstClass && it.kind == AstClass.Kind.ENUM_ENTRY }
 
-                            enumEntryDeclarations.forEachIndexed { index, declaration ->
-                                append(declaration.accept(this@Writer, null))
-                                if (index != enumEntryDeclarations.lastIndex) {
-                                    appendLine(",")
-                                } else {
-                                    appendLine(";")
-                                }
-                            }
-
-                            otherDeclarations
-                                .forEach { declaration ->
-                                    appendLine(declaration.accept(this@Writer, null))
-                                }
+                    enumEntryDeclarations.forEachIndexed { index, declaration ->
+                        declaration.emit()
+                        if (index != enumEntryDeclarations.lastIndex) {
+                            emitLine(",")
+                        } else {
+                            emitLine(";")
                         }
-                    )
-                )
+                    }
+
+                    otherDeclarations
+                        .forEach { declaration ->
+                            declaration.emit()
+                            emitLine()
+                        }
+                }
             }
-            appendLine()
+            emitLine()
         }
 
         override fun visitFunction(
             function: AstFunction,
             data: Nothing?
-        ): String = buildString {
-            append(function.renderAnnotations())
-            append(function.renderVisibility())
-            append(function.renderExpectActual())
-            if (function.parent is AstClass) append(function.renderModality())
+        ) {
+            function.emitAnnotations()
+            function.emitVisibility()
+            function.emitExpectActual()
+            if (function.parent is AstClass) function.emitModality()
             if (function.overriddenDeclarations.isNotEmpty()) {
-                append("override ")
+                emit("override ")
             }
             if (function.isInline) {
-                append("inline ")
+                emit("inline ")
             }
             if (function.isExternal) {
-                append("external ")
+                emit("external ")
             }
             if (function.isInfix) {
-                append("infix ")
+                emit("infix ")
             }
             if (function.isOperator) {
-                append("operator ")
+                emit("operator ")
             }
             if (function.isTailrec) {
-                append("tailrec ")
+                emit("tailrec ")
             }
             if (function.isSuspend) {
-                append("suspend ")
+                emit("suspend ")
             }
-            append("fun ")
+            emit("fun ")
             if (function.typeParameters.isNotEmpty()) {
-                append(function.typeParameters.renderList())
-                appendSpace()
+                function.typeParameters.emitList()
+                emitSpace()
             }
             when (function.kind) {
-                AstFunction.Kind.SIMPLE_FUNCTION -> append(function.name)
-                AstFunction.Kind.PROPERTY_GETTER -> append("get")
-                AstFunction.Kind.PROPERTY_SETTER -> append("set")
-                AstFunction.Kind.CONSTRUCTOR -> append("constructor")
+                AstFunction.Kind.SIMPLE_FUNCTION -> emit(function.name)
+                AstFunction.Kind.PROPERTY_GETTER -> emit("get")
+                AstFunction.Kind.PROPERTY_SETTER -> emit("set")
+                AstFunction.Kind.CONSTRUCTOR -> emit("constructor")
             }.let {}
-            append("(")
+            emit("(")
             function.valueParameters.forEachIndexed { index, valueParameter ->
-                append(valueParameter.accept(this@Writer, null))
-                if (index != function.valueParameters.lastIndex) append(", ")
+                valueParameter.emit()
+                if (index != function.valueParameters.lastIndex) emit(", ")
             }
-            append(")")
+            emit(")")
             if (function.kind != AstFunction.Kind.PROPERTY_SETTER &&
                 function.kind != AstFunction.Kind.PROPERTY_GETTER &&
                 function.kind != AstFunction.Kind.CONSTRUCTOR
             ) {
-                append(": ")
-                append(function.returnType.render())
-                appendSpace()
-                if (function.typeParameters.isNotEmpty()) {
-                    append(function.typeParameters.renderWhere())
-                }
+                emit(": ")
+                function.returnType.emit()
+                emitSpace()
+                function.typeParameters.emitWhere()
             }
-            appendSpace()
+            emitSpace()
 
             function.body?.let { body ->
-                append(braced(body.accept(this@Writer, null)))
-            } ?: appendLine()
+                bracedBlock {
+                    body.emit()
+                }
+            } ?: emitLine()
         }
 
-        override fun visitProperty(property: AstProperty, data: Nothing?): String = buildString {
-            append(property.renderAnnotations())
-            append(property.renderVisibility())
-            if (property.parent is AstClass) append(property.renderModality())
+        override fun visitProperty(property: AstProperty, data: Nothing?) {
+            property.emitAnnotations()
+            property.emitVisibility()
+            if (property.parent is AstClass) property.emitModality()
             if (property.overriddenDeclarations.isNotEmpty()) {
-                append("override ")
+                emit("override ")
             }
             if (property.setter != null) {
-                append("var ")
+                emit("var ")
             } else {
-                append("val ")
+                emit("val ")
             }
             if (property.typeParameters.isNotEmpty()) {
-                append(property.typeParameters.renderList())
-                appendSpace()
+                property.typeParameters.emitList()
+                emitSpace()
             }
-            append("${property.name}")
-            append(": ")
-            append(property.type.render())
+            emit("${property.name}")
+            emit(": ")
+            property.type.emit()
             if (property.typeParameters.isNotEmpty()) {
-                appendSpace()
-                append(property.typeParameters.renderWhere())
+                emitSpace()
+                property.typeParameters.emitWhere()
             }
             if (property.initializer != null) {
-                append(" = ")
-                append(property.initializer!!.accept(this@Writer, null))
+                emit(" = ")
+                property.initializer!!.emit()
             }
             if (property.delegate != null) {
-                append(" by ")
-                append(property.delegate!!.accept(this@Writer, null))
+                emit(" by ")
+                property.delegate!!.emit()
             }
             if (property.getter != null) {
-                appendLine()
-                append(
+                emitLine()
+                emit(
                     indented {
-                        property.getter!!.accept(this@Writer, null)
+                        property.getter!!.emit()
                     }
                 )
             }
             if (property.setter != null) {
-                appendLine()
-                append(
+                emitLine()
+                emit(
                     indented {
-                        property.setter!!.accept(this@Writer, null)
+                        property.setter!!.emit()
                     }
                 )
             }
-            appendLine()
+            emitLine()
         }
 
         override fun visitAnonymousInitializer(
             anonymousInitializer: AstAnonymousInitializer,
             data: Nothing?
-        ): String = braced(
-            header = "init",
-            value = anonymousInitializer.body.accept(this@Writer, null)
-        )
-
-        override fun visitTypeParameter(typeParameter: AstTypeParameter, data: Nothing?): String =
-            typeParameter.render(null)
-
-        private fun List<AstTypeParameter>.renderList(): String = buildString {
-            if (this@renderList.isNotEmpty()) {
-                append("<")
-                this@renderList.forEachIndexed { index, typeParameter ->
-                    append(typeParameter.accept(this@Writer, null))
-                    if (index != this@renderList.lastIndex) append(", ")
-                }
-                append(">")
+        ) {
+            bracedBlock(header = "init") {
+                anonymousInitializer.body.emit()
             }
         }
 
-        private fun List<AstTypeParameter>.renderWhere(): String = buildString {
-            if (this@renderWhere.isNotEmpty()) {
-                append("where ")
-                val typeParametersWithSuperTypes = this@renderWhere.flatMap { typeParameter ->
+        override fun visitTypeParameter(typeParameter: AstTypeParameter, data: Nothing?) {
+            typeParameter.emit(null)
+        }
+
+        private fun List<AstTypeParameter>.emitList() {
+            if (isNotEmpty()) {
+                emit("<")
+                forEachIndexed { index, typeParameter ->
+                    typeParameter.emit()
+                    if (index != lastIndex) emit(", ")
+                }
+                emit(">")
+            }
+        }
+
+        private fun List<AstTypeParameter>.emitWhere() {
+            if (isNotEmpty()) {
+                emit("where ")
+                val typeParametersWithSuperTypes = flatMap { typeParameter ->
                     typeParameter.superTypes
                         .map { typeParameter to it }
                 }
 
                 typeParametersWithSuperTypes.forEachIndexed { index, (typeParameter, superType) ->
-                    append(typeParameter.render(superType))
-                    if (index != typeParametersWithSuperTypes.lastIndex) append(", ")
+                    typeParameter.emit(superType)
+                    if (index != typeParametersWithSuperTypes.lastIndex) emit(", ")
                 }
             }
         }
 
-        private fun AstTypeParameter.render(superTypeToRender: AstType?): String = buildString {
+        private fun AstTypeParameter.emit(superTypeToRender: AstType?) {
             if (isReified) {
-                append("reified ")
+                emit("reified ")
             }
-            append(renderAnnotations())
-            append("$name")
+            emitAnnotations()
+            emit("$name")
             if (superTypeToRender != null) {
-                append(" : ")
-                append(superTypeToRender.render())
+                emit(" : ")
+                superTypeToRender.emit()
             }
         }
 
         override fun visitValueParameter(
             valueParameter: AstValueParameter,
             data: Nothing?
-        ): String = buildString {
-            append(valueParameter.renderAnnotations())
+        ) {
+            valueParameter.emitAnnotations()
             if (valueParameter.isVarArg) {
-                append("vararg ")
+                emit("vararg ")
             }
             valueParameter.inlineHint?.let {
-                append("${it.name.toLowerCase()} ")
+                emit("${it.name.toLowerCase()} ")
             }
-            append("${valueParameter.name}: ")
-            append(valueParameter.type.render())
+            emit("${valueParameter.name}: ")
+            valueParameter.type.emit()
             if (valueParameter.defaultValue != null) {
-                append(" = ")
-                append(valueParameter.defaultValue!!.accept(this@Writer, null))
+                emit(" = ")
+                valueParameter.defaultValue!!.emit()
             }
         }
 
-        override fun visitTypeAlias(typeAlias: AstTypeAlias, data: Nothing?): String = buildString {
-            append(typeAlias.renderAnnotations())
-            append("typealias ")
-            append("${typeAlias.name}")
-            if (typeAlias.typeParameters.isNotEmpty()) {
-                append(typeAlias.typeParameters.renderList())
-            }
-            append(" = ")
-            append(typeAlias.type.render())
+        override fun visitTypeAlias(typeAlias: AstTypeAlias, data: Nothing?) {
+            typeAlias.emitAnnotations()
+            emit("typealias ")
+            emit("${typeAlias.name}")
+            typeAlias.typeParameters.emitList()
+            emit(" = ")
+            typeAlias.type.emit()
         }
 
-        private fun AstDeclarationWithVisibility.renderVisibility(appendSpace: Boolean = true): String {
-            return buildString {
-                append(visibility.name.toLowerCase())
-                if (appendSpace) appendSpace()
+        private fun AstDeclarationWithVisibility.emitVisibility(emitSpace: Boolean = true) {
+            emit(visibility.name.toLowerCase())
+            if (emitSpace) emitSpace()
+        }
+
+        private fun AstDeclarationWithExpectActual.emitExpectActual(emitSpace: Boolean = true) {
+            if (expectActual != null) {
+                emit(expectActual!!.name.toLowerCase())
+                if (emitSpace) emitSpace()
             }
         }
 
-        private fun AstDeclarationWithExpectActual.renderExpectActual(appendSpace: Boolean = true) =
-            buildString {
-                if (expectActual != null) {
-                    append(expectActual!!.name.toLowerCase())
-                    if (appendSpace) appendSpace()
-                }
-            }
+        private fun AstDeclarationWithModality.emitModality(emitSpace: Boolean = true) {
+            emit(modality.name.toLowerCase())
+            if (emitSpace) emitSpace()
+        }
 
-        private fun AstDeclarationWithModality.renderModality(appendSpace: Boolean = true): String =
-            buildString {
-                append(modality.name.toLowerCase())
-                if (appendSpace) appendSpace()
-            }
-
-        private fun AstDeclarationContainer.renderDeclarations(): String = buildString {
+        private fun AstDeclarationContainer.emitDeclarations() {
             declarations.forEachIndexed { index, declaration ->
-                append(declaration.accept(this@Writer, null))
-                if (index != declarations.lastIndex) appendLine()
+                declaration.emit()
+                if (index != declarations.lastIndex) emitLine()
             }
         }
 
-        private fun AstAnnotationContainer.renderAnnotations(): String = buildString {
+        private fun AstAnnotationContainer.emitAnnotations() {
             annotations.forEachIndexed { index, annotation ->
-                append("@TODO")
-                if (index != annotations.lastIndex) appendLine()
+                emit("@TODO")
+                if (index != annotations.lastIndex) emitLine()
             }
         }
 
-        override fun <T> visitConst(const: AstConst<T>, data: Nothing?): String =
-            when (const.kind) {
-                AstConst.Kind.Null -> "null"
-                AstConst.Kind.Boolean -> const.value.toString()
-                AstConst.Kind.Char -> "'${const.value}'"
-                AstConst.Kind.Byte -> const.value.toString()
-                AstConst.Kind.Short -> const.value.toString()
-                AstConst.Kind.Int -> const.value.toString()
-                AstConst.Kind.Long -> "${const.value}L"
-                AstConst.Kind.String -> "\"${const.value}\""
-                AstConst.Kind.Float -> "${const.value}f"
-                AstConst.Kind.Double -> const.value.toString()
-            }
+        override fun <T> visitConst(const: AstConst<T>, data: Nothing?) {
+            emit(
+                when (const.kind) {
+                    AstConst.Kind.Null -> "null"
+                    AstConst.Kind.Boolean -> const.value.toString()
+                    AstConst.Kind.Char -> "'${const.value}'"
+                    AstConst.Kind.Byte -> const.value.toString()
+                    AstConst.Kind.Short -> const.value.toString()
+                    AstConst.Kind.Int -> const.value.toString()
+                    AstConst.Kind.Long -> "${const.value}L"
+                    AstConst.Kind.String -> "\"${const.value}\""
+                    AstConst.Kind.Float -> "${const.value}f"
+                    AstConst.Kind.Double -> const.value.toString()
+                }
+            )
+        }
 
-        override fun visitBlock(block: AstBlock, data: Nothing?): String = buildString {
+        override fun visitBlock(block: AstBlock, data: Nothing?) {
             block.statements.forEachIndexed { index, statement ->
-                append(statement.accept(this@Writer, null))
-                if (index != block.statements.lastIndex) appendLine()
+                statement.emit()
+                if (index != block.statements.lastIndex) emitLine()
             }
         }
 
         override fun visitStringConcatenation(
             stringConcatenation: AstStringConcatenation,
             data: Nothing?
-        ): String = buildString {
+        ) {
             stringConcatenation.arguments.forEachIndexed { index, expression ->
-                append(expression.accept(this@Writer, null))
+                expression.emit()
                 if (expression.type.classOrNull?.fqName != KotlinBuiltIns.FQ_NAMES.string.toSafe())
-                    append(".toString()")
+                    emit(".toString()")
                 if (index != stringConcatenation.arguments.lastIndex)
-                    append(" + ")
+                    emit(" + ")
             }
         }
 
         override fun visitQualifiedAccess(
             qualifiedAccess: AstQualifiedAccess,
             data: Nothing?
-        ): String = buildString {
+        ) {
             val explicitReceiver = if (qualifiedAccess.extensionReceiver != null)
                 qualifiedAccess.extensionReceiver
             else qualifiedAccess.dispatchReceiver
                 ?.takeIf { it !is AstThis }
 
             if (explicitReceiver != null) {
-                explicitReceiver.accept(this@Writer, null)
-                append(".")
+                explicitReceiver.emit()
+                emit(".")
             }
             val callee = qualifiedAccess.callee
             if (callee is AstFunction && callee.kind == AstFunction.Kind.CONSTRUCTOR) {
-                append(callee.returnType.classOrFail.name)
-                potentialImports += callee.returnType.classOrFail.fqName
+                emit(callee.returnType.classOrFail.name)
             } else if (callee is AstDeclarationWithName) {
-                append("${callee.name}")
-                when (callee) {
-                    is AstClass -> potentialImports += callee.fqName
-                    is AstFunction -> {
-                        callee.dispatchReceiverType.let { dispatchReceiverType ->
-                            if (dispatchReceiverType == null ||
-                                dispatchReceiverType.classOrFail.kind == AstClass.Kind.OBJECT
-                            ) {
-                                potentialImports += callee.fqName
-                            }
-                        }
-                    }
-                    is AstProperty -> {
-                        callee.dispatchReceiverType.let { dispatchReceiverType ->
-                            if (dispatchReceiverType == null ||
-                                dispatchReceiverType.classOrFail.kind == AstClass.Kind.OBJECT
-                            ) {
-                                potentialImports += callee.fqName
-                            }
-                        }
-                    }
-                }
+                emit("${callee.name}")
             }
             if (qualifiedAccess.typeArguments.isNotEmpty()) {
-                append("<")
+                emit("<")
                 qualifiedAccess.typeArguments.forEachIndexed { index, typeArgument ->
-                    append(typeArgument.render())
-                    if (index != qualifiedAccess.typeArguments.lastIndex) append(", ")
+                    typeArgument.emit()
+                    if (index != qualifiedAccess.typeArguments.lastIndex) emit(", ")
                 }
-                append(">")
+                emit(">")
             }
             if (callee is AstFunction) {
-                append("(")
+                emit("(")
                 qualifiedAccess.valueArguments.forEachIndexed { index, valueArgument ->
                     if (valueArgument != null) {
-                        append("${callee.valueParameters[index].name} = ")
-                        append(valueArgument.accept(this@Writer, null))
+                        emit("${callee.valueParameters[index].name} = ")
+                        valueArgument.emit()
                         if (index != qualifiedAccess.valueArguments.lastIndex &&
                             qualifiedAccess.valueArguments[index + 1] != null
-                        ) append(", ")
+                        ) emit(", ")
                     }
                 }
-                append(")")
+                emit(")")
             }
         }
 
-        override fun visitTry(astTry: AstTry, data: Nothing?): String = buildString {
-            appendLine("${indent}try {")
-            appendLine(indented(astTry.tryResult.accept(this@Writer, null)))
-            astTry.catches.forEach {
-                appendLine("} catch(${it.catchParameter.accept(this@Writer, null)}) {")
-                append(indented(it.result.accept(this@Writer, null)))
-                appendLine()
+        override fun visitTry(astTry: AstTry, data: Nothing?) {
+            emitLine("try {")
+            indented {
+                astTry.tryResult.emit()
+            }
+            emitLine()
+            if (astTry.catches.isNotEmpty()) {
+                astTry.catches.forEach {
+                    emit("} catch(")
+                    it.catchParameter.emit()
+                    emitLine(") {")
+                    indented {
+                        it.emit()
+                    }
+                    emitLine()
+                }
             }
             astTry.finally?.let {
-                appendLine("} finally {")
-                append(indented(it.accept(this@Writer, null)))
-                appendLine()
+                emitLine("} finally {")
+                indented {
+                    it.emit()
+                }
+                emitLine()
             }
-            appendLine("}")
+            emitLine("}")
         }
 
-        override fun visitReturn(astReturn: AstReturn, data: Nothing?): String = buildString {
-            append("return")
+        override fun visitReturn(astReturn: AstReturn, data: Nothing?) {
+            emit("return")
             /*astReturn.target?.let {
-                append("@$")
-            } ?:*/ appendSpace()
-            append(astReturn.expression.accept(this@Writer, null))
+                emit("@$")
+            } ?:*/ emitSpace()
+            astReturn.expression.emit()
         }
 
-        override fun visitThrow(astThrow: AstThrow, data: Nothing?): String = buildString {
-            append("throw ")
-            append(astThrow.expression.accept(this@Writer, null))
+        override fun visitThrow(astThrow: AstThrow, data: Nothing?) {
+            emit("throw ")
+            astThrow.expression.emit()
         }
 
-        private fun AstType.render(): String = buildString {
-            append(renderAnnotations())
+        private fun AstType.emit() {
+            emitAnnotations()
 
             when (val classifier = classifier) {
-                is AstClass -> append(classifier.fqName)
-                is AstTypeParameter -> append(classifier.name)
+                is AstClass -> emit(classifier.fqName)
+                is AstTypeParameter -> emit(classifier.name)
                 else -> error("Unexpected classifier $classifier")
             }
 
-            (classifier as? AstClass)?.let { potentialImports += it.fqName }
-
             if (arguments.isNotEmpty()) {
-                append("<")
+                emit("<")
                 arguments.forEachIndexed { index, typeArgument ->
-                    append(typeArgument.renderTypeArgument())
-                    if (index != arguments.lastIndex) append(", ")
+                    typeArgument.emit()
+                    if (index != arguments.lastIndex) emit(", ")
                 }
-                append(">")
+                emit(">")
             }
         }
 
-        private fun AstTypeArgument.renderTypeArgument(): String = when (this) {
-            is AstStarProjection -> "*"
-            is AstTypeProjection -> {
-                variance?.let { "${it.name.toLowerCase()} " }
-                    .orEmpty() + type.render()
+        private fun AstTypeArgument.emit() {
+            when (this) {
+                is AstStarProjection -> emit("*")
+                is AstTypeProjection -> {
+                    emit(variance?.let { "${it.name.toLowerCase()} " }
+                        .orEmpty())
+                    type.emit()
+                }
+                else -> error("Unexpected type argument $this")
             }
-            else -> error("Unexpected type argument $this")
         }
     }
 }
