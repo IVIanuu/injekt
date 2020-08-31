@@ -7,6 +7,7 @@ import com.ivianuu.injekt.compiler.ast.tree.AstVariance
 import com.ivianuu.injekt.compiler.ast.tree.AstVisibility
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
+import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -130,3 +131,5 @@ fun expectActualOf(
     isExpect -> AstExpectActual.EXPECT
     else -> null
 }
+
+val UninitializedType = AstType()

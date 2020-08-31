@@ -14,7 +14,8 @@ class AstProvider {
         if (descriptor.findPsi() == null) return stubGenerator.get(descriptor)
 
         val psi = descriptor.findPsi()!! as KtDeclaration
-        return psi.accept(psi2AstVisitor, null) as T
+        psi.accept(psi2AstVisitor, Psi2AstVisitor.Mode.Partial)
+        return psi.accept(psi2AstVisitor, Psi2AstVisitor.Mode.Full) as T
     }
 
 }

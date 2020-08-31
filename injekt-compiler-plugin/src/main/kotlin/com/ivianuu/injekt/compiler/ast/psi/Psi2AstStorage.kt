@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler.ast.psi
 
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstAnonymousInitializer
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstExternalPackageFragment
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
@@ -19,6 +20,7 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import org.jetbrains.kotlin.psi.KtAnonymousInitializer
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.SimpleType
@@ -34,6 +36,7 @@ class Psi2AstStorage {
     val classes = mutableMapOf<ClassDescriptor, AstClass>()
     val functions = mutableMapOf<FunctionDescriptor, AstFunction>()
     val properties = mutableMapOf<PropertyDescriptor, AstProperty>()
+    val anonymousInitializers = mutableMapOf<KtAnonymousInitializer, AstAnonymousInitializer>()
     val typeParameters = mutableMapOf<TypeParameterDescriptor, AstTypeParameter>()
     val valueParameters = mutableMapOf<VariableDescriptor, AstValueParameter>()
     val typeAliases = mutableMapOf<TypeAliasDescriptor, AstTypeAlias>()

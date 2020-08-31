@@ -33,11 +33,15 @@ class Psi2AstTranslator(
             astProvider
         )
         val visitor = Psi2AstVisitor(context)
+
+        files.forEach { visitor.visitKtFile(it, Psi2AstVisitor.Mode.Partial) }
+
         astProvider.psi2AstVisitor = visitor
         astProvider.stubGenerator = stubGenerator
+
         val moduleFragment = AstModuleFragment(module.name).apply {
             this.files += files.map {
-                visitor.visitKtFile(it, null) as AstFile
+                visitor.visitKtFile(it, Psi2AstVisitor.Mode.Full) as AstFile
             }
         }
 

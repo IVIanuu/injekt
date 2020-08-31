@@ -5,6 +5,7 @@ import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstAnonymousInitializer
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationBase
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclarationParent
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
@@ -111,13 +112,24 @@ import org.jetbrains.kotlin.types.expressions.ExpressionTypingUtils
 
 class Psi2AstVisitor(
     override val context: GeneratorContext
-) : KtVisitor<AstElement, Nothing?>(), Generator {
+) : KtVisitor<AstElement, Psi2AstVisitor.Mode>(), Generator {
+
+    enum class Mode {
+        Partial, Full
+    }
 
     private val functionStack = mutableListOf<AstFunction>()
     private val parentStack = mutableListOf<AstDeclarationParent>()
     private val loops = mutableMapOf<KtLoopExpression, AstLoop>()
 
-    private fun <T : AstElement> KtElement.accept() = accept(this@Psi2AstVisitor, null) as T
+    private fun <K, V> K.cached(
+        cache: MutableMap<K, V>,
+        init: () -> V,
+        block: V.() -> Unit
+    ) = cache.getOrPut(this, init).apply(block)
+
+    private fun <T : AstElement> KtElement.accept(mode: Mode) =
+        accept(this@Psi2AstVisitor, mode) as T
 
     private inline fun <R> withDeclarationParent(
         parent: AstDeclarationParent,
@@ -129,62 +141,85 @@ class Psi2AstVisitor(
         return result
     }
 
-    private fun <T : AstDeclaration> T.applyParentFromStack() =
-        apply { parent = parentStack.last() }
+    private fun <T : AstDeclarationBase> T.applyParentFromStack() =
+        apply {
+            parent = parentStack.last()
+        }
 
     override fun visitElement(element: PsiElement?) {
         error("Unhandled element $element ${element?.javaClass} ${element?.text}")
     }
 
-    override fun visitKtFile(file: KtFile, data: Nothing?): AstElement {
-        return AstFile(
-            packageFqName = file.packageFqName,
-            name = file.name.asNameId()
-        ).apply {
+    override fun visitKtFile(file: KtFile, mode: Mode): AstElement {
+        return file.cached(
+            context.storage.files,
+            {
+                AstFile(
+                    packageFqName = file.packageFqName,
+                    name = file.name.asNameId()
+                )
+            }
+        ) {
             withDeclarationParent(this) {
-                annotations += file.annotationEntries.map { it.accept() }
+                if (mode == Mode.Full) {
+                    annotations += file.annotationEntries.map { it.accept(mode) }
+                }
+
+                declarations.clear()
                 declarations += file.declarations
-                    .map { it.accept() }
+                    .map { it.accept(mode) }
             }
         }
     }
 
-    override fun visitClassOrObject(classOrObject: KtClassOrObject, data: Nothing?): AstElement {
+    override fun visitClassOrObject(classOrObject: KtClassOrObject, mode: Mode): AstElement {
         val descriptor = classOrObject.descriptor<ClassDescriptor>()
-        context.storage.classes[descriptor]?.let { return it }
-        return AstClass(
-            name = descriptor.name,
-            kind = descriptor.toAstClassKind(),
-            visibility = descriptor.visibility.toAstVisibility(),
-            expectActual = expectActualOf(descriptor.isActual, descriptor.isExpect),
-            modality = descriptor.modality.toAstModality(),
-            isCompanion = descriptor.isCompanionObject,
-            isFun = descriptor.isFun,
-            isData = descriptor.isData,
-            isInner = descriptor.isInner,
-            isExternal = descriptor.isExternal
-        ).apply {
-            context.storage.classes[descriptor] = this
-            applyParentFromStack()
+        return descriptor.cached(
+            context.storage.classes,
+            {
+                AstClass(
+                    name = descriptor.name,
+                    kind = descriptor.toAstClassKind(),
+                    visibility = descriptor.visibility.toAstVisibility(),
+                    expectActual = expectActualOf(descriptor.isActual, descriptor.isExpect),
+                    modality = descriptor.modality.toAstModality(),
+                    isCompanion = descriptor.isCompanionObject,
+                    isFun = descriptor.isFun,
+                    isData = descriptor.isData,
+                    isInner = descriptor.isInner,
+                    isExternal = descriptor.isExternal
+                ).applyParentFromStack()
+            }
+        ) {
             withDeclarationParent(this) {
-                annotations += classOrObject.annotationEntries.map { it.accept() }
+                if (mode == Mode.Full) {
+                    annotations.clear()
+                    annotations += classOrObject.annotationEntries.map { it.accept(mode) }
+                }
+                typeParameters.clear()
                 typeParameters += classOrObject.typeParameters
-                    .map { it.accept() }
+                    .map { it.accept(mode) }
 
                 val primaryConstructor = classOrObject.primaryConstructor
                 val primaryConstructorDescriptor = descriptor.unsubstitutedPrimaryConstructor
 
                 if (primaryConstructor != null || primaryConstructorDescriptor != null) {
-                    val astPrimaryConstructor = primaryConstructor?.accept()
-                        ?: AstFunction(
-                            name = primaryConstructorDescriptor!!.name,
-                            kind = AstFunction.Kind.CONSTRUCTOR,
-                            returnType = primaryConstructorDescriptor.returnType.toAstType(),
-                            visibility = primaryConstructorDescriptor.visibility.toAstVisibility()
-                        ).also {
-                            context.storage.functions[primaryConstructorDescriptor] = it
-                            it.applyParentFromStack()
+                    val astPrimaryConstructor = primaryConstructorDescriptor!!.cached(
+                        context.storage.functions,
+                        {
+                            (primaryConstructor?.accept(mode)
+                                ?: AstFunction(
+                                    name = primaryConstructorDescriptor.name,
+                                    kind = AstFunction.Kind.CONSTRUCTOR,
+                                    returnType = UninitializedType,
+                                    visibility = primaryConstructorDescriptor.visibility.toAstVisibility()
+                                )).applyParentFromStack()
                         }
+                    ) {
+                        if (mode == Mode.Full) {
+                            returnType = primaryConstructorDescriptor.returnType.toAstType()
+                        }
+                    }
                     this.primaryConstructor = astPrimaryConstructor
                     // todo? addChild(astPrimaryConstructor)
                     /*primaryConstructor
@@ -199,110 +234,242 @@ class Psi2AstVisitor(
                         .forEach { addChild(it) }*/
                 }
 
+                declarations.clear()
                 classOrObject.declarations
                     .filterNot { it is KtPropertyAccessor }
-                    .map { it.accept<AstDeclaration>() }
+                    .map { it.accept<AstDeclaration>(mode) }
                     .forEach { addChild(it) }
             }
         }
     }
 
-    override fun visitNamedFunction(function: KtNamedFunction, data: Nothing?): AstFunction =
-        visitFunction(function)
+    override fun visitNamedFunction(function: KtNamedFunction, mode: Mode): AstFunction =
+        visitFunction(function, mode)
 
     override fun visitPrimaryConstructor(
         constructor: KtPrimaryConstructor,
-        data: Nothing?
-    ): AstFunction = visitFunction(constructor)
+        mode: Mode
+    ): AstFunction = visitFunction(constructor, mode)
 
     override fun visitSecondaryConstructor(
         constructor: KtSecondaryConstructor,
-        data: Nothing?
-    ): AstFunction = visitFunction(constructor)
+        mode: Mode
+    ): AstFunction = visitFunction(constructor, mode)
 
-    private fun visitFunction(function: KtFunction): AstFunction {
+    private fun visitFunction(
+        function: KtFunction,
+        mode: Mode
+    ): AstFunction {
         val descriptor = function.descriptor<FunctionDescriptor>()
-        context.storage.functions[descriptor]?.let { return it }
-        return AstFunction(
-            name = descriptor.name,
-            kind = descriptor.toAstFunctionKind(),
-            visibility = descriptor.visibility.toAstVisibility(),
-            expectActual = expectActualOf(descriptor.isActual, descriptor.isExpect),
-            modality = descriptor.modality.toAstModality(),
-            returnType = descriptor.returnType!!.toAstType(),
-            isInfix = descriptor.isInfix,
-            isOperator = descriptor.isOperator,
-            isTailrec = descriptor.isTailrec,
-            isSuspend = descriptor.isSuspend
-        ).apply {
-            context.storage.functions[descriptor] = this
-            applyParentFromStack()
+        return descriptor.cached(
+            context.storage.functions,
+            {
+                AstFunction(
+                    name = descriptor.name,
+                    kind = descriptor.toAstFunctionKind(),
+                    visibility = descriptor.visibility.toAstVisibility(),
+                    expectActual = expectActualOf(descriptor.isActual, descriptor.isExpect),
+                    modality = descriptor.modality.toAstModality(),
+                    returnType = UninitializedType,
+                    isInfix = descriptor.isInfix,
+                    isOperator = descriptor.isOperator,
+                    isTailrec = descriptor.isTailrec,
+                    isSuspend = descriptor.isSuspend
+                ).applyParentFromStack()
+            }
+        ) {
+            if (mode == Mode.Full) {
+                returnType = descriptor.returnType!!.toAstType()
+            }
             withDeclarationParent(this) {
-                annotations += function.annotationEntries.map { it.accept() }
+                functionStack.push(this)
+                if (mode == Mode.Full) {
+                    annotations.clear()
+                    annotations += function.annotationEntries.map { it.accept(mode) }
+                }
+                typeParameters.clear()
                 typeParameters += function.typeParameters
-                    .map { it.accept() }
-                dispatchReceiverType = descriptor.dispatchReceiverParameter?.type?.toAstType()
-                extensionReceiverType = descriptor.extensionReceiverParameter?.type?.toAstType()
+                    .map { it.accept(mode) }
+                if (mode == Mode.Full) {
+                    dispatchReceiverType = descriptor.dispatchReceiverParameter?.type?.toAstType()
+                    extensionReceiverType = descriptor.extensionReceiverParameter?.type?.toAstType()
+                }
+                valueParameters.clear()
                 valueParameters += function.valueParameters
-                    .map { it.accept() }
+                    .map { it.accept(mode) }
+                overriddenDeclarations.clear()
                 overriddenDeclarations += descriptor.overriddenDescriptors
                     .map { context.astProvider.get(it) }
-                body = function.bodyExpression?.let { visitExpressionForBlock(it) }
+                if (mode == Mode.Full) {
+                    body = function.bodyExpression?.let { visitExpressionForBlock(it, mode) }
+                }
+                functionStack.pop()
             }
         }
     }
 
-    override fun visitProperty(property: KtProperty, data: Nothing?): AstElement {
+    override fun visitProperty(property: KtProperty, mode: Mode): AstElement {
         val descriptor = property.descriptor<PropertyDescriptor>()
-        context.storage.properties[descriptor]?.let { return it }
-        return AstProperty(
-            name = descriptor.name,
-            type = descriptor.type.toAstType(),
-            kind = when {
-                descriptor.isConst -> AstProperty.Kind.CONST_VAL
-                descriptor.isLateInit -> AstProperty.Kind.LATEINIT_VAR
-                descriptor.isVar -> AstProperty.Kind.VAR
-                else -> AstProperty.Kind.VAl
-            },
-            modality = descriptor.modality.toAstModality(),
-            visibility = descriptor.visibility.toAstVisibility(),
-            expectActual = expectActualOf(descriptor.isActual, descriptor.isExpect),
-            isExternal = descriptor.isExternal
-        ).apply {
-            context.storage.properties[descriptor] = this
-            applyParentFromStack()
-            annotations += property.annotations.map { it.accept() }
-            typeParameters += property.typeParameters
-                .map { it.accept() }
-            dispatchReceiverType = descriptor.dispatchReceiverParameter?.type?.toAstType()
-            extensionReceiverType = descriptor.extensionReceiverParameter?.type?.toAstType()
-            getter = property.getter?.accept()
-            setter = property.setter?.accept()
-            initializer = when {
-                // todo valueParameter != null -> AstQualifiedAccess(valueParameter, valueParameter.type)
-                property is KtProperty -> property.initializer?.accept()
-                else -> null
+        return descriptor.cached(
+            context.storage.properties,
+            {
+                AstProperty(
+                    name = descriptor.name,
+                    type = UninitializedType,
+                    kind = when {
+                        descriptor.isConst -> AstProperty.Kind.CONST_VAL
+                        descriptor.isLateInit -> AstProperty.Kind.LATEINIT_VAR
+                        descriptor.isVar -> AstProperty.Kind.VAR
+                        else -> AstProperty.Kind.VAl
+                    },
+                    modality = descriptor.modality.toAstModality(),
+                    visibility = descriptor.visibility.toAstVisibility(),
+                    expectActual = expectActualOf(descriptor.isActual, descriptor.isExpect),
+                    isExternal = descriptor.isExternal
+                ).applyParentFromStack()
             }
-            delegate = if (property is KtProperty)
-                property.delegateExpression?.accept()
-            else null
+        ) {
+            if (mode == Mode.Full) {
+                type = descriptor.type.toAstType()
+                annotations.clear()
+                annotations += property.annotations.map { it.accept(mode) }
+            }
+            typeParameters.clear()
+            typeParameters += property.typeParameters
+                .map { it.accept(mode) }
+            if (mode == Mode.Full) {
+                dispatchReceiverType = descriptor.dispatchReceiverParameter?.type?.toAstType()
+                extensionReceiverType = descriptor.extensionReceiverParameter?.type?.toAstType()
+            }
+            getter = property.getter?.accept(mode)
+            setter = property.setter?.accept(mode)
+            if (mode == Mode.Full) {
+                initializer = when {
+                    // todo valueParameter != null -> AstQualifiedAccess(valueParameter, valueParameter.type)
+                    property is KtProperty -> property.initializer?.accept(mode)
+                    else -> null
+                }
+                delegate = if (property is KtProperty)
+                    property.delegateExpression?.accept(mode)
+                else null
+            }
         }
     }
 
     override fun visitAnonymousInitializer(
         initializer: KtAnonymousInitializer,
-        data: Nothing?
+        mode: Mode
     ): AstAnonymousInitializer {
-        return AstAnonymousInitializer().apply {
-            body = visitExpressionForBlock(initializer.body!!)
+        return initializer.cached(
+            context.storage.anonymousInitializers,
+            { AstAnonymousInitializer().applyParentFromStack() }
+        ) {
+            if (mode == Mode.Full) {
+                body = visitExpressionForBlock(initializer.body!!, mode)
+            }
         }
     }
 
-    private fun visitExpressionForBlock(expression: KtExpression): AstBlock {
-        return if (expression is KtBlockExpression) expression.accept()
+    override fun visitTypeParameter(parameter: KtTypeParameter, mode: Mode): AstTypeParameter {
+        val descriptor = parameter.descriptor<TypeParameterDescriptor>()
+        return descriptor.cached(
+            context.storage.typeParameters,
+            {
+                AstTypeParameter(
+                    name = descriptor.name,
+                    isReified = descriptor.isReified,
+                    variance = descriptor.variance.toAstVariance()
+                ).applyParentFromStack()
+            }
+        ) {
+            if (mode == Mode.Full) {
+                annotations.clear()
+                annotations += parameter.annotationEntries.map { it.accept(mode) }
+                superTypes.clear()
+                superTypes += descriptor.upperBounds.map { it.toAstType() }
+            }
+        }
+    }
+
+    override fun visitParameter(parameter: KtParameter, mode: Mode): AstValueParameter {
+        val descriptor = parameter.descriptor<VariableDescriptor>()
+        return descriptor.cached(
+            context.storage.valueParameters,
+            {
+                AstValueParameter(
+                    name = descriptor.name,
+                    type = UninitializedType,
+                    isVarArg = if (descriptor is ValueParameterDescriptor) descriptor.isVararg else false,
+                    inlineHint = when {
+                        descriptor is ValueParameterDescriptor && descriptor.isCrossinline -> AstValueParameter.InlineHint.CROSSINLINE
+                        descriptor is ValueParameterDescriptor && descriptor.isNoinline -> AstValueParameter.InlineHint.NOINLINE
+                        else -> null
+                    }
+                ).applyParentFromStack()
+            }
+        ) {
+            if (mode == Mode.Full) {
+                type = descriptor.type.toAstType()
+                defaultValue = (descriptor.findPsi() as? KtParameter)?.defaultValue?.accept(mode)
+                annotations.clear()
+                annotations += parameter.annotationEntries.map { it.accept(mode) }
+            }
+        }
+    }
+
+    override fun visitTypeAlias(typeAlias: KtTypeAlias, mode: Mode): AstTypeAlias {
+        val descriptor = typeAlias.descriptor<TypeAliasDescriptor>()
+        return descriptor.cached(
+            context.storage.typeAliases,
+            {
+                AstTypeAlias(
+                    name = descriptor.name,
+                    type = UninitializedType,
+                    visibility = descriptor.visibility.toAstVisibility(),
+                    expectActual = expectActualOf(descriptor.isActual, descriptor.isExpect)
+                ).applyParentFromStack()
+            }
+        ) {
+            if (mode == Mode.Full) {
+                annotations.clear()
+                annotations += typeAlias.annotationEntries.map { it.accept(mode) }
+                type = descriptor.expandedType.toAstType()
+            }
+
+            typeParameters.clear()
+            typeParameters += typeAlias.typeParameters
+                .map { it.accept(mode) }
+        }
+    }
+
+    override fun visitObjectLiteralExpression(
+        expression: KtObjectLiteralExpression,
+        mode: Mode
+    ): AstAnonymousObjectExpression {
+        return AstAnonymousObjectExpression(
+            expression.getTypeInferredByFrontendOrFail().toAstType(),
+            expression.objectDeclaration.accept(mode)
+        )
+    }
+
+    override fun visitAnnotationEntry(
+        annotationEntry: KtAnnotationEntry,
+        mode: Mode
+    ): AstQualifiedAccess {
+        TODO("$annotationEntry")
+    }
+
+    override fun visitBlockExpression(expression: KtBlockExpression, mode: Mode): AstBlock {
+        return AstBlock(expression.getExpressionTypeWithCoercionToUnitOrFail().toAstType()).apply {
+            statements += expression.statements.map { it.accept(mode) }
+        }
+    }
+
+    private fun visitExpressionForBlock(expression: KtExpression, mode: Mode): AstBlock {
+        return if (expression is KtBlockExpression) expression.accept(mode)
         else {
             val type = expression.getTypeInferredByFrontendOrFail().toAstType()
-            val astExpression = expression.accept<AstExpression>()
+            val astExpression = expression.accept<AstExpression>(mode)
             AstBlock(type).apply {
                 statements += if (functionStack.isNotEmpty()) {
                     AstReturn(
@@ -317,87 +484,12 @@ class Psi2AstVisitor(
         }
     }
 
-    override fun visitTypeParameter(parameter: KtTypeParameter, data: Nothing?): AstTypeParameter {
-        val descriptor = parameter.descriptor<TypeParameterDescriptor>()
-        context.storage.typeParameters[descriptor]?.let { return it }
-        return AstTypeParameter(
-            name = descriptor.name,
-            isReified = descriptor.isReified,
-            variance = descriptor.variance.toAstVariance()
-        ).apply {
-            context.storage.typeParameters[descriptor] = this
-            applyParentFromStack()
-            annotations += parameter.annotationEntries.map { it.accept() }
-            superTypes += descriptor.upperBounds.map { it.toAstType() }
-        }
-    }
-
-    override fun visitParameter(parameter: KtParameter, data: Nothing?): AstValueParameter {
-        val descriptor = parameter.descriptor<VariableDescriptor>()
-        context.storage.valueParameters[descriptor]?.let { return it }
-        return AstValueParameter(
-            name = descriptor.name,
-            type = descriptor.type.toAstType(),
-            isVarArg = if (descriptor is ValueParameterDescriptor) descriptor.isVararg else false,
-            inlineHint = when {
-                descriptor is ValueParameterDescriptor && descriptor.isCrossinline -> AstValueParameter.InlineHint.CROSSINLINE
-                descriptor is ValueParameterDescriptor && descriptor.isNoinline -> AstValueParameter.InlineHint.NOINLINE
-                else -> null
-            }
-        ).apply {
-            context.storage.valueParameters[descriptor] = this
-            applyParentFromStack()
-            defaultValue = (descriptor.findPsi() as? KtParameter)?.defaultValue?.accept()
-            annotations += parameter.annotationEntries.map { it.accept() }
-        }
-    }
-
-    override fun visitTypeAlias(typeAlias: KtTypeAlias, data: Nothing?): AstTypeAlias {
-        val descriptor = typeAlias.descriptor<TypeAliasDescriptor>()
-        context.storage.typeAliases[descriptor]?.let { return it }
-        return AstTypeAlias(
-            name = descriptor.name,
-            type = descriptor.expandedType.toAstType(),
-            visibility = descriptor.visibility.toAstVisibility(),
-            expectActual = expectActualOf(descriptor.isActual, descriptor.isExpect)
-        ).apply {
-            context.storage.typeAliases[descriptor] = this
-            applyParentFromStack()
-            annotations += typeAlias.annotationEntries.map { it.accept() }
-            typeParameters += typeAlias.typeParameters
-                .map { it.accept() }
-        }
-    }
-
-    override fun visitObjectLiteralExpression(
-        expression: KtObjectLiteralExpression,
-        data: Nothing?
-    ): AstAnonymousObjectExpression {
-        return AstAnonymousObjectExpression(
-            expression.getTypeInferredByFrontendOrFail().toAstType(),
-            expression.objectDeclaration.accept()
-        )
-    }
-
-    override fun visitAnnotationEntry(
-        annotationEntry: KtAnnotationEntry,
-        data: Nothing?
-    ): AstQualifiedAccess {
-        TODO("$annotationEntry")
-    }
-
-    override fun visitBlockExpression(expression: KtBlockExpression, data: Nothing?): AstBlock {
-        return AstBlock(expression.getExpressionTypeWithCoercionToUnitOrFail().toAstType()).apply {
-            statements += expression.statements.map { it.accept() }
-        }
-    }
-
     override fun visitStringTemplateExpression(
         expression: KtStringTemplateExpression,
-        data: Nothing?
+        mode: Mode
     ): AstElement {
         val resultType = expression.getTypeInferredByFrontendOrFail().toAstType()
-        val entries = expression.entries.map { it.accept<AstExpression>() }
+        val entries = expression.entries.map { it.accept<AstExpression>(mode) }
         return when (entries.size) {
             0 -> AstConst.string(resultType, "")
             1 -> {
@@ -417,22 +509,22 @@ class Psi2AstVisitor(
 
     override fun visitLiteralStringTemplateEntry(
         entry: KtLiteralStringTemplateEntry,
-        data: Nothing?
+        mode: Mode
     ): AstConst<String> = AstConst.string(context.builtIns.stringType, entry.text)
 
     override fun visitEscapeStringTemplateEntry(
         entry: KtEscapeStringTemplateEntry,
-        data: Nothing?
+        mode: Mode
     ): AstConst<String> = AstConst.string(context.builtIns.stringType, entry.unescapedValue)
 
     override fun visitStringTemplateEntryWithExpression(
         entry: KtStringTemplateEntryWithExpression,
-        data: Nothing?
-    ): AstExpression = entry.expression!!.accept()
+        mode: Mode
+    ): AstExpression = entry.expression!!.accept(mode)
 
     override fun visitReferenceExpression(
         expression: KtReferenceExpression,
-        data: Nothing?
+        mode: Mode
     ): AstElement {
         val resolvedCall = expression.getResolvedCall()
             ?: error("Couldn't find call for $this $javaClass ${expression.text}")
@@ -442,8 +534,8 @@ class Psi2AstVisitor(
         ).apply {
             typeArguments += resolvedCall.typeArguments.values.map { it.toAstType() }
 
-            dispatchReceiver = resolvedCall.dispatchReceiver?.toAstExpression()
-            extensionReceiver = resolvedCall.extensionReceiver?.toAstExpression()
+            dispatchReceiver = resolvedCall.dispatchReceiver?.toAstExpression(mode)
+            extensionReceiver = resolvedCall.extensionReceiver?.toAstExpression(mode)
 
             val sortedValueArguments = resolvedCall.valueArguments
                 .toList()
@@ -457,7 +549,7 @@ class Psi2AstVisitor(
                             ?: throw AssertionError("No value argument: $valueArgument")
                         val argumentExpression = valueArgument1.getArgumentExpression()
                             ?: throw AssertionError("No argument expression: $valueArgument1")
-                        argumentExpression.accept<AstExpression>()
+                        argumentExpression.accept<AstExpression>(mode)
                     }
                     // todo
                     is VarargValueArgument -> null
@@ -467,7 +559,7 @@ class Psi2AstVisitor(
         }
     }
 
-    override fun visitThisExpression(expression: KtThisExpression, data: Nothing?): AstElement {
+    override fun visitThisExpression(expression: KtThisExpression, mode: Mode): AstElement {
         val referenceTarget =
             getOrFail(BindingContext.REFERENCE_TARGET, expression.instanceReference)
         TODO("What $referenceTarget")
@@ -475,7 +567,7 @@ class Psi2AstVisitor(
 
     override fun visitConstantExpression(
         expression: KtConstantExpression,
-        data: Nothing?
+        mode: Mode
     ) = visitExpressionForConstant(expression)
 
     private fun visitExpressionForConstant(expression: KtExpression): AstConst<*> {
@@ -504,11 +596,11 @@ class Psi2AstVisitor(
         }
     }
 
-    override fun visitWhileExpression(expression: KtWhileExpression, data: Nothing?): AstElement {
+    override fun visitWhileExpression(expression: KtWhileExpression, mode: Mode): AstElement {
         return loops.getOrPut(expression) {
             AstWhileLoop(
-                body = visitExpressionForBlock(expression.body!!),
-                condition = expression.condition!!.accept(),
+                body = visitExpressionForBlock(expression.body!!, mode),
+                condition = expression.condition!!.accept(mode),
                 type = context.builtIns.unitType
             )
         }
@@ -516,18 +608,18 @@ class Psi2AstVisitor(
 
     override fun visitDoWhileExpression(
         expression: KtDoWhileExpression,
-        data: Nothing?
+        mode: Mode
     ): AstElement {
         return loops.getOrPut(expression) {
             AstDoWhileLoop(
-                body = visitExpressionForBlock(expression.body!!),
-                condition = expression.condition!!.accept(),
+                body = visitExpressionForBlock(expression.body!!, mode),
+                condition = expression.condition!!.accept(mode),
                 type = context.builtIns.unitType
             )
         }
     }
 
-    override fun visitBreakExpression(expression: KtBreakExpression, data: Nothing?): AstElement {
+    override fun visitBreakExpression(expression: KtBreakExpression, mode: Mode): AstElement {
         val parentLoop = findParentLoop(expression)
             ?: error("No loop found for ${expression.text}")
         return AstBreak(
@@ -538,7 +630,7 @@ class Psi2AstVisitor(
 
     override fun visitContinueExpression(
         expression: KtContinueExpression,
-        data: Nothing?
+        mode: Mode
     ): AstElement {
         val parentLoop = findParentLoop(expression)
             ?: error("No loop found for ${expression.text}")
@@ -548,60 +640,60 @@ class Psi2AstVisitor(
         )
     }
 
-    override fun visitTryExpression(expression: KtTryExpression, data: Nothing?): AstElement {
+    override fun visitTryExpression(expression: KtTryExpression, mode: Mode): AstElement {
         return AstTry(
             type = expression.getExpressionTypeWithCoercionToUnitOrFail().toAstType(),
-            tryResult = expression.tryBlock.accept(),
+            tryResult = expression.tryBlock.accept(mode),
             catches = expression.catchClauses
                 .map { catchClause ->
                     AstCatch(
-                        catchParameter = catchClause.catchParameter!!.accept(),
-                        result = visitExpressionForBlock(catchClause.catchBody!!)
+                        catchParameter = catchClause.catchParameter!!.accept(mode),
+                        result = visitExpressionForBlock(catchClause.catchBody!!, mode)
                     )
                 }
                 .toMutableList(),
-            finally = expression.finallyBlock?.finalExpression?.accept()
+            finally = expression.finallyBlock?.finalExpression?.accept(mode)
         )
     }
 
-    override fun visitReturnExpression(expression: KtReturnExpression, data: Nothing?): AstElement {
+    override fun visitReturnExpression(expression: KtReturnExpression, mode: Mode): AstElement {
         val returnTarget = getReturnExpressionTarget(expression, null) as FunctionDescriptor
         return AstReturn(
             type = context.builtIns.nothingType,
             target = context.astProvider.get(returnTarget),
-            expression = expression.returnedExpression?.accept() ?: AstQualifiedAccess(
+            expression = expression.returnedExpression?.accept(mode) ?: AstQualifiedAccess(
                 callee = context.builtIns.unitClass,
                 type = context.builtIns.unitType
             )
         )
     }
 
-    override fun visitThrowExpression(expression: KtThrowExpression, data: Nothing?): AstElement {
+    override fun visitThrowExpression(expression: KtThrowExpression, mode: Mode): AstElement {
         return AstThrow(
             type = context.builtIns.nothingType,
-            expression = expression.thrownExpression!!.accept()
+            expression = expression.thrownExpression!!.accept(mode)
         )
     }
 
     override fun visitDotQualifiedExpression(
         expression: KtDotQualifiedExpression,
-        data: Nothing?
+        mode: Mode
     ): AstElement {
-        return expression.selectorExpression!!.accept<AstQualifiedAccess>().also {
+        return expression.selectorExpression!!.accept<AstQualifiedAccess>(mode).also {
             it.safe = false
         }
     }
 
     override fun visitSafeQualifiedExpression(
         expression: KtSafeQualifiedExpression,
-        data: Nothing?
+        mode: Mode
     ): AstElement {
-        return expression.selectorExpression!!.accept<AstQualifiedAccess>().also {
+        return expression.selectorExpression!!.accept<AstQualifiedAccess>(mode).also {
             it.safe = true
         }
     }
 
-    fun ReceiverValue.toAstExpression(): AstExpression {
+    fun ReceiverValue.toAstExpression(mode: Mode): AstExpression {
         return when (this) {
             is ImplicitClassReceiver -> {
                 val receiverClass = context.astProvider.get<AstClass>(classDescriptor)
@@ -612,7 +704,7 @@ class Psi2AstVisitor(
                 AstThis(type.toAstType(), receiverClass)
             }
             is SuperCallReceiverValue -> TODO()
-            is ExpressionReceiver -> expression.accept()
+            is ExpressionReceiver -> expression.accept(mode)
             is ClassValueReceiver -> {
                 val receiverClass = context.astProvider.get<AstClass>(
                     classQualifier.descriptor as ClassDescriptor
