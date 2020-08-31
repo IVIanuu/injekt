@@ -86,10 +86,10 @@ private class Writer(out: Appendable) : AstVisitorVoid {
     }
 
     private inline fun bracedBlock(
-        header: String = "",
+        header: String? = null,
         body: () -> Unit
     ) {
-        emitLine("$header {")
+        emitLine("${header?.let { "$it " }.orEmpty()}{")
         indented(body)
         emitLine()
         emitLine("}")
@@ -187,7 +187,6 @@ private class Writer(out: Appendable) : AstVisitorVoid {
         }
 
         klass.typeParameters.emitWhere()
-        emitSpace()
 
         val declarationsExceptPrimaryConstructor = klass.declarations
             .filter { it != primaryConstructor }
@@ -195,6 +194,8 @@ private class Writer(out: Appendable) : AstVisitorVoid {
         if (declarationsExceptPrimaryConstructor.isNotEmpty() ||
             klass.kind == AstClass.Kind.ANONYMOUS_OBJECT
         ) {
+            emitSpace()
+
             bracedBlock {
                 val (enumEntryDeclarations, otherDeclarations) = declarationsExceptPrimaryConstructor
                     .partition { it is AstClass && it.kind == AstClass.Kind.ENUM_ENTRY }
