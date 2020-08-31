@@ -17,9 +17,13 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBreak
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBreakContinue
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstCatch
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstConditionBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstContinue
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstDoWhileLoop
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstElseBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
@@ -27,6 +31,7 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThrow
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstTry
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstWhen
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstWhileLoop
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
@@ -107,6 +112,21 @@ interface AstTransformer<D> : AstVisitor<AstTransformResult<AstElement>, D> {
 
     override fun visitBranch(branch: AstBranch, data: D): AstTransformResult<AstBranch> =
         visitElement(branch, data) as AstTransformResult<AstBranch>
+
+    override fun visitConditionBranch(conditionBranch: AstConditionBranch, data: D) =
+        visitBranch(conditionBranch, data)
+
+    override fun visitElseBranch(elseBranch: AstElseBranch, data: D) =
+        visitBranch(elseBranch, data)
+
+    override fun visitLoop(loop: AstLoop, data: D) =
+        visitExpression(loop, data)
+
+    override fun visitWhileLoop(whileLoop: AstWhileLoop, data: D) =
+        visitLoop(whileLoop, data)
+
+    override fun visitDoWhileLoop(doWhileLoop: AstDoWhileLoop, data: D) =
+        visitLoop(doWhileLoop, data)
 
     override fun visitTry(astTry: AstTry, data: D) =
         visitExpression(astTry, data)

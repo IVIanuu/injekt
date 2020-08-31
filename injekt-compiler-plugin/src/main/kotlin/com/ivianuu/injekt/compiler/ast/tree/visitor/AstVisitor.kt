@@ -17,15 +17,20 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBreak
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBreakContinue
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstCatch
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstConditionBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstContinue
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstDoWhileLoop
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstElseBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThrow
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstTry
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstWhen
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstWhileLoop
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
@@ -47,41 +52,38 @@ interface AstVisitor<R, D> {
     fun visitProperty(property: AstProperty, data: D) = visitDeclaration(property, data)
     fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer, data: D) =
         visitDeclaration(anonymousInitializer, data)
-
     fun visitTypeParameter(typeParameter: AstTypeParameter, data: D) =
         visitDeclaration(typeParameter, data)
     fun visitValueParameter(valueParameter: AstValueParameter, data: D) =
         visitDeclaration(valueParameter, data)
-
     fun visitTypeAlias(typeAlias: AstTypeAlias, data: D) =
         visitDeclaration(typeAlias, data)
 
     fun visitExpression(expression: AstExpression, data: D) = visitElement(expression, data)
     fun <T> visitConst(const: AstConst<T>, data: D) = visitExpression(const, data)
-
     fun visitBlock(block: AstBlock, data: D) = visitExpression(block, data)
-
     fun visitStringConcatenation(stringConcatenation: AstStringConcatenation, data: D) =
         visitExpression(stringConcatenation, data)
 
     fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess, data: D) =
         visitExpression(qualifiedAccess, data)
 
-    fun visitWhen(astWhen: AstWhen, data: D) =
-        visitExpression(astWhen, data)
+    fun visitWhen(astWhen: AstWhen, data: D) = visitExpression(astWhen, data)
+    fun visitBranch(branch: AstBranch, data: D) = visitElement(branch, data)
+    fun visitConditionBranch(conditionBranch: AstConditionBranch, data: D) =
+        visitBranch(conditionBranch, data)
 
-    fun visitBranch(branch: AstBranch, data: D) =
-        visitElement(branch, data)
-
+    fun visitElseBranch(elseBranch: AstElseBranch, data: D) = visitBranch(elseBranch, data)
+    fun visitLoop(loop: AstLoop, data: D) = visitExpression(loop, data)
+    fun visitWhileLoop(whileLoop: AstWhileLoop, data: D) = visitLoop(whileLoop, data)
+    fun visitDoWhileLoop(doWhileLoop: AstDoWhileLoop, data: D) = visitLoop(doWhileLoop, data)
     fun visitTry(astTry: AstTry, data: D) = visitExpression(astTry, data)
     fun visitCatch(astCatch: AstCatch, data: D) = visitElement(astCatch, data)
-
     fun visitBreakContinue(breakContinue: AstBreakContinue, data: D) =
         visitExpression(breakContinue, data)
 
     fun visitBreak(astBreak: AstBreak, data: D) = visitBreakContinue(astBreak, data)
     fun visitContinue(astContinue: AstContinue, data: D) = visitBreakContinue(astContinue, data)
-
     fun visitReturn(astReturn: AstReturn, data: D) = visitExpression(astReturn, data)
     fun visitThrow(astThrow: AstThrow, data: D) = visitExpression(astThrow, data)
 

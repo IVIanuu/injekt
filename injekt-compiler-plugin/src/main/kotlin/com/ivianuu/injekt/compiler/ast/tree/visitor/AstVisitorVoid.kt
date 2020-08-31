@@ -17,15 +17,20 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBreak
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBreakContinue
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstCatch
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstConditionBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstContinue
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstDoWhileLoop
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstElseBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThrow
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstTry
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstWhen
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstWhileLoop
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
@@ -112,6 +117,24 @@ interface AstVisitorVoid : AstVisitor<Unit, Nothing?> {
 
     fun visitBranch(branch: AstBranch) = visitElement(branch)
     override fun visitBranch(branch: AstBranch, data: Nothing?) = visitBranch(branch)
+
+    fun visitConditionBranch(conditionBranch: AstConditionBranch) = visitBranch(conditionBranch)
+    override fun visitConditionBranch(conditionBranch: AstConditionBranch, data: Nothing?) =
+        visitConditionBranch(conditionBranch)
+
+    fun visitElseBranch(elseBranch: AstElseBranch) = visitBranch(elseBranch)
+    override fun visitElseBranch(elseBranch: AstElseBranch, data: Nothing?) =
+        visitElseBranch(elseBranch)
+
+    fun visitLoop(loop: AstLoop) = visitExpression(loop)
+    override fun visitLoop(loop: AstLoop, data: Nothing?) = visitLoop(loop)
+
+    fun visitWhileLoop(whileLoop: AstWhileLoop) = visitLoop(whileLoop)
+    override fun visitWhileLoop(whileLoop: AstWhileLoop, data: Nothing?) = visitWhileLoop(whileLoop)
+
+    fun visitDoWhileLoop(doWhileLoop: AstDoWhileLoop) = visitLoop(doWhileLoop)
+    override fun visitDoWhileLoop(doWhileLoop: AstDoWhileLoop, data: Nothing?) =
+        visitDoWhileLoop(doWhileLoop)
 
     fun visitTry(astTry: AstTry) = visitExpression(astTry)
     override fun visitTry(astTry: AstTry, data: Nothing?) = visitTry(astTry)
