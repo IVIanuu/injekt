@@ -12,6 +12,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstProperty
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstAnonymousObjectExpression
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBreak
@@ -26,6 +27,7 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThrow
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstTry
@@ -46,20 +48,25 @@ interface AstVisitor<R, D> {
 
     fun visitFile(file: AstFile, data: D) = visitPackageFragment(file, data)
 
-    fun visitDeclaration(declaration: AstDeclaration, data: D) = visitElement(declaration, data)
-    fun visitClass(klass: AstClass, data: D) = visitElement(klass, data)
+    fun visitStatement(statement: AstStatement, data: D) = visitElement(statement, data)
+
+    fun visitDeclaration(declaration: AstDeclaration, data: D) = visitStatement(declaration, data)
+    fun visitClass(klass: AstClass, data: D) = visitDeclaration(klass, data)
     fun visitFunction(function: AstFunction, data: D) = visitDeclaration(function, data)
     fun visitProperty(property: AstProperty, data: D) = visitDeclaration(property, data)
     fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer, data: D) =
         visitDeclaration(anonymousInitializer, data)
+
     fun visitTypeParameter(typeParameter: AstTypeParameter, data: D) =
         visitDeclaration(typeParameter, data)
+
     fun visitValueParameter(valueParameter: AstValueParameter, data: D) =
         visitDeclaration(valueParameter, data)
+
     fun visitTypeAlias(typeAlias: AstTypeAlias, data: D) =
         visitDeclaration(typeAlias, data)
 
-    fun visitExpression(expression: AstExpression, data: D) = visitElement(expression, data)
+    fun visitExpression(expression: AstExpression, data: D) = visitStatement(expression, data)
     fun <T> visitConst(const: AstConst<T>, data: D) = visitExpression(const, data)
     fun visitBlock(block: AstBlock, data: D) = visitExpression(block, data)
     fun visitStringConcatenation(stringConcatenation: AstStringConcatenation, data: D) =
@@ -67,6 +74,9 @@ interface AstVisitor<R, D> {
 
     fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess, data: D) =
         visitExpression(qualifiedAccess, data)
+
+    fun visitAnonymousObjectExpression(expression: AstAnonymousObjectExpression, data: D) =
+        visitExpression(expression, data)
 
     fun visitWhen(astWhen: AstWhen, data: D) = visitExpression(astWhen, data)
     fun visitBranch(branch: AstBranch, data: D) = visitElement(branch, data)

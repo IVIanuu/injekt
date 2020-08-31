@@ -56,7 +56,8 @@ open class AstClass(
         ENUM_CLASS,
         ENUM_ENTRY,
         ANNOTATION,
-        OBJECT
+        OBJECT,
+        ANONYMOUS_OBJECT
     }
 
 }

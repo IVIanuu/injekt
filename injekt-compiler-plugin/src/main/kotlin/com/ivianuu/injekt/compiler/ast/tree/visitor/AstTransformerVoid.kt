@@ -12,6 +12,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstProperty
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstAnonymousObjectExpression
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBreak
@@ -61,8 +62,14 @@ interface AstTransformerVoid : AstTransformer<Nothing?> {
     fun visitFile(file: AstFile) = visitPackageFragment(file)
     override fun visitFile(file: AstFile, data: Nothing?) = visitFile(file)
 
+    fun visitStatement(statement: AstStatement) =
+        visitElement(statement) as AstTransformResult<AstStatement>
+
+    override fun visitStatement(statement: AstStatement, data: Nothing?) =
+        visitStatement(statement)
+
     fun visitDeclaration(declaration: AstDeclaration): AstTransformResult<AstStatement> =
-        declaration.transformChildrenAndCompose() as AstTransformResult<AstStatement>
+        declaration.transformChildrenAndCompose()
 
     override fun visitDeclaration(declaration: AstDeclaration, data: Nothing?) =
         visitDeclaration(declaration)
@@ -124,6 +131,15 @@ interface AstTransformerVoid : AstTransformer<Nothing?> {
 
     override fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess, data: Nothing?) =
         visitQualifiedAccess(qualifiedAccess)
+
+    fun visitAnonymousObjectExpression(expression: AstAnonymousObjectExpression) =
+        visitExpression(expression)
+
+    override fun visitAnonymousObjectExpression(
+        expression: AstAnonymousObjectExpression,
+        data: Nothing?
+    ) =
+        visitAnonymousObjectExpression(expression)
 
     fun visitWhen(astWhen: AstWhen) = visitExpression(astWhen)
     override fun visitWhen(astWhen: AstWhen, data: Nothing?) = visitWhen(astWhen)

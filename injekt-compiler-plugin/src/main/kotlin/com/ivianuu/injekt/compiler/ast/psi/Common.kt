@@ -6,6 +6,7 @@ import com.ivianuu.injekt.compiler.ast.tree.AstVariance
 import com.ivianuu.injekt.compiler.ast.tree.AstVisibility
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -41,13 +42,17 @@ fun Visibility.toAstVisibility() = when (this) {
     else -> AstVisibility.PUBLIC
 }
 
-fun ClassKind.toAstClassKind() = when (this) {
-    ClassKind.CLASS -> AstClass.Kind.CLASS
-    ClassKind.INTERFACE -> AstClass.Kind.INTERFACE
-    ClassKind.ENUM_CLASS -> AstClass.Kind.ENUM_CLASS
-    ClassKind.ENUM_ENTRY -> AstClass.Kind.ENUM_ENTRY
-    ClassKind.ANNOTATION_CLASS -> AstClass.Kind.ANNOTATION
-    ClassKind.OBJECT -> AstClass.Kind.OBJECT
+fun ClassDescriptor.toAstClassKind() = when {
+    // todo find a better way to detect this
+    visibility == Visibilities.LOCAL && name.isSpecial -> AstClass.Kind.ANONYMOUS_OBJECT
+    else -> when (kind) {
+        ClassKind.CLASS -> AstClass.Kind.CLASS
+        ClassKind.INTERFACE -> AstClass.Kind.INTERFACE
+        ClassKind.ENUM_CLASS -> AstClass.Kind.ENUM_CLASS
+        ClassKind.ENUM_ENTRY -> AstClass.Kind.ENUM_ENTRY
+        ClassKind.ANNOTATION_CLASS -> AstClass.Kind.ANNOTATION
+        ClassKind.OBJECT -> AstClass.Kind.OBJECT
+    }
 }
 
 fun Variance.toAstVariance() = when (this) {

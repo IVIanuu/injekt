@@ -13,7 +13,7 @@ class AstLazyClass(
     private val stubGenerator: Psi2AstStubGenerator
 ) : AstClass(
     descriptor.name,
-    descriptor.kind.toAstClassKind(),
+    descriptor.toAstClassKind(),
     descriptor.visibility.toAstVisibility(),
     expectActualOf(descriptor.isActual, descriptor.isExpect),
     descriptor.modality.toAstModality(),

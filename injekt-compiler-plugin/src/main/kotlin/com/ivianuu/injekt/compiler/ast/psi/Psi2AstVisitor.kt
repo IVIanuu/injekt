@@ -12,18 +12,22 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.addChild
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstAnonymousObjectExpression
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstBreak
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstCatch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstContinue
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstDoWhileLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThis
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThrow
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstTry
-import org.jetbrains.kotlin.backend.common.pop
-import org.jetbrains.kotlin.backend.common.push
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstWhileLoop
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -38,16 +42,23 @@ import org.jetbrains.kotlin.js.translate.callTranslator.getReturnType
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtAnonymousInitializer
 import org.jetbrains.kotlin.psi.KtBlockExpression
+import org.jetbrains.kotlin.psi.KtBreakExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstantExpression
+import org.jetbrains.kotlin.psi.KtContinueExpression
+import org.jetbrains.kotlin.psi.KtDoWhileExpression
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtEscapeStringTemplateEntry
 import org.jetbrains.kotlin.psi.KtExpression
+import org.jetbrains.kotlin.psi.KtExpressionWithLabel
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
+import org.jetbrains.kotlin.psi.KtLabeledExpression
 import org.jetbrains.kotlin.psi.KtLiteralStringTemplateEntry
+import org.jetbrains.kotlin.psi.KtLoopExpression
 import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtObjectLiteralExpression
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtPrimaryConstructor
 import org.jetbrains.kotlin.psi.KtProperty
@@ -64,6 +75,8 @@ import org.jetbrains.kotlin.psi.KtTryExpression
 import org.jetbrains.kotlin.psi.KtTypeAlias
 import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.KtVisitor
+import org.jetbrains.kotlin.psi.KtWhileExpression
+import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingContextUtils
 import org.jetbrains.kotlin.resolve.calls.components.isVararg
@@ -98,6 +111,9 @@ class Psi2AstVisitor(
 ) : KtVisitor<AstElement, Nothing?>(), Generator {
 
     private val functionStack = mutableListOf<AstFunction>()
+    private val loops = mutableMapOf<KtLoopExpression, AstLoop>()
+
+    private fun <T : AstElement> KtElement.accept() = accept(this@Psi2AstVisitor, null) as T
 
     override fun visitElement(element: PsiElement?) {
         error("Unhandled element $element ${element?.javaClass} ${element?.text}")
@@ -109,9 +125,9 @@ class Psi2AstVisitor(
             name = file.name.asNameId()
         ).apply {
             // todo annotations += generateAnnotations()
-            file.declarations
+            declarations += file.declarations
                 .map { it.accept<AstDeclaration>() }
-                .forEach { addChild(it) }
+                .onEach { it.parent = this }
         }
     }
 
@@ -120,7 +136,7 @@ class Psi2AstVisitor(
         context.storage.classes[descriptor]?.let { return it }
         return AstClass(
             name = descriptor.name,
-            kind = descriptor.kind.toAstClassKind(),
+            kind = descriptor.toAstClassKind(),
             visibility = descriptor.visibility.toAstVisibility(),
             expectActual = expectActualOf(descriptor.isActual, descriptor.isExpect),
             modality = descriptor.modality.toAstModality(),
@@ -133,12 +149,21 @@ class Psi2AstVisitor(
             context.storage.classes[descriptor] = this
             annotations += classOrObject.annotationEntries.map { it.accept() }
             typeParameters += classOrObject.typeParameters
-                .map { it.accept<AstTypeParameter>() }
-                .onEach { it.parent = this }
+                .map { it.accept() }
 
             val primaryConstructor = classOrObject.primaryConstructor
-            if (primaryConstructor != null) {
-                val astPrimaryConstructor = primaryConstructor.accept<AstFunction>()
+            val primaryConstructorDescriptor = descriptor.unsubstitutedPrimaryConstructor
+
+            if (primaryConstructor != null || primaryConstructorDescriptor != null) {
+                val astPrimaryConstructor = primaryConstructor?.accept()
+                    ?: AstFunction(
+                        name = primaryConstructorDescriptor!!.name,
+                        kind = AstFunction.Kind.CONSTRUCTOR,
+                        returnType = primaryConstructorDescriptor.returnType.toAstType(),
+                        visibility = primaryConstructorDescriptor.visibility.toAstVisibility()
+                    ).also {
+                        context.storage.functions[primaryConstructorDescriptor] = it
+                    }
                 this.primaryConstructor = astPrimaryConstructor
                 // todo? addChild(astPrimaryConstructor)
                 /*primaryConstructor
@@ -189,20 +214,16 @@ class Psi2AstVisitor(
             isSuspend = descriptor.isSuspend
         ).apply {
             context.storage.functions[descriptor] = this
-            functionStack.push(this)
             annotations += function.annotationEntries.map { it.accept() }
             typeParameters += function.typeParameters
-                .map { it.accept<AstTypeParameter>() }
-                .onEach { it.parent = this }
+                .map { it.accept() }
             dispatchReceiverType = descriptor.dispatchReceiverParameter?.type?.toAstType()
             extensionReceiverType = descriptor.extensionReceiverParameter?.type?.toAstType()
             valueParameters += function.valueParameters
-                .map { it.accept<AstValueParameter>() }
-                .onEach { it.parent = this }
+                .map { it.accept() }
             overriddenDeclarations += descriptor.overriddenDescriptors
                 .map { context.astProvider.get(it) }
             body = function.bodyExpression?.let { visitExpressionForBlock(it) }
-            functionStack.pop()
         }
     }
 
@@ -226,18 +247,11 @@ class Psi2AstVisitor(
             context.storage.properties[descriptor] = this
             annotations += property.annotations.map { it.accept() }
             typeParameters += property.typeParameters
-                .map { it.accept<AstTypeParameter>() }
-                .onEach { it.parent = this }
+                .map { it.accept() }
             dispatchReceiverType = descriptor.dispatchReceiverParameter?.type?.toAstType()
             extensionReceiverType = descriptor.extensionReceiverParameter?.type?.toAstType()
-            getter = property
-                .getter
-                ?.accept<AstFunction>()
-                ?.also { it.parent = this }
-            setter = property
-                .setter
-                ?.accept<AstFunction>()
-                ?.also { it.parent = this }
+            getter = property.getter?.accept()
+            setter = property.setter?.accept()
             initializer = when {
                 // todo valueParameter != null -> AstQualifiedAccess(valueParameter, valueParameter.type)
                 property is KtProperty -> property.initializer?.accept()
@@ -285,6 +299,7 @@ class Psi2AstVisitor(
             isReified = descriptor.isReified,
             variance = descriptor.variance.toAstVariance()
         ).apply {
+            context.storage.typeParameters[descriptor] = this
             annotations += parameter.annotationEntries.map { it.accept() }
             superTypes += descriptor.upperBounds.map { it.toAstType() }
         }
@@ -321,9 +336,18 @@ class Psi2AstVisitor(
             context.storage.typeAliases[descriptor] = this
             annotations += typeAlias.annotationEntries.map { it.accept() }
             typeParameters += typeAlias.typeParameters
-                .map { it.accept<AstTypeParameter>() }
-                .onEach { it.parent = this }
+                .map { it.accept() }
         }
+    }
+
+    override fun visitObjectLiteralExpression(
+        expression: KtObjectLiteralExpression,
+        data: Nothing?
+    ): AstAnonymousObjectExpression {
+        return AstAnonymousObjectExpression(
+            expression.getTypeInferredByFrontendOrFail().toAstType(),
+            expression.objectDeclaration.accept()
+        )
     }
 
     override fun visitAnnotationEntry(
@@ -451,6 +475,50 @@ class Psi2AstVisitor(
         }
     }
 
+    override fun visitWhileExpression(expression: KtWhileExpression, data: Nothing?): AstElement {
+        return loops.getOrPut(expression) {
+            AstWhileLoop(
+                body = visitExpressionForBlock(expression.body!!),
+                condition = expression.condition!!.accept(),
+                type = context.builtIns.unitType
+            )
+        }
+    }
+
+    override fun visitDoWhileExpression(
+        expression: KtDoWhileExpression,
+        data: Nothing?
+    ): AstElement {
+        return loops.getOrPut(expression) {
+            AstDoWhileLoop(
+                body = visitExpressionForBlock(expression.body!!),
+                condition = expression.condition!!.accept(),
+                type = context.builtIns.unitType
+            )
+        }
+    }
+
+    override fun visitBreakExpression(expression: KtBreakExpression, data: Nothing?): AstElement {
+        val parentLoop = findParentLoop(expression)
+            ?: error("No loop found for ${expression.text}")
+        return AstBreak(
+            type = context.builtIns.nothingType,
+            loop = parentLoop
+        )
+    }
+
+    override fun visitContinueExpression(
+        expression: KtContinueExpression,
+        data: Nothing?
+    ): AstElement {
+        val parentLoop = findParentLoop(expression)
+            ?: error("No loop found for ${expression.text}")
+        return AstContinue(
+            type = context.builtIns.nothingType,
+            loop = parentLoop
+        )
+    }
+
     override fun visitTryExpression(expression: KtTryExpression, data: Nothing?): AstElement {
         return AstTry(
             type = expression.getExpressionTypeWithCoercionToUnitOrFail().toAstType(),
@@ -563,6 +631,31 @@ class Psi2AstVisitor(
             }
         }
 
-    fun <T : AstElement> KtElement.accept() = accept(this@Psi2AstVisitor, null) as T
+    private fun findParentLoop(ktWithLabel: KtExpressionWithLabel): AstLoop? =
+        findParentLoop(ktWithLabel, ktWithLabel.getLabelName())
+
+    private fun findParentLoop(ktExpression: KtExpression, targetLabel: String?): AstLoop? {
+        var current: KtExpression? = ktExpression
+
+        loops@ while (current != null) {
+            current = current.getParentOfType<KtLoopExpression>(true)
+            if (current == null) {
+                break
+            }
+            if (targetLabel == null) {
+                return loops[current] ?: continue@loops
+            } else {
+                var parent = current.parent
+                while (parent is KtLabeledExpression) {
+                    val label = parent.getLabelName()!!
+                    if (targetLabel == label) {
+                        return loops[current] ?: continue@loops
+                    }
+                    parent = parent.parent
+                }
+            }
+        }
+        return null
+    }
 
 }

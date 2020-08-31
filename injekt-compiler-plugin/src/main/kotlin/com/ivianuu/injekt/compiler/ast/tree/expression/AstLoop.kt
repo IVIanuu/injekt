@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.ast.tree.expression
 
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
+import com.ivianuu.injekt.compiler.ast.tree.AstTarget
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
@@ -8,7 +9,7 @@ import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
 import com.ivianuu.injekt.compiler.ast.tree.visitor.transformInplace
 import com.ivianuu.injekt.compiler.ast.tree.visitor.transformSingle
 
-interface AstLoop : AstExpression {
+interface AstLoop : AstExpression, AstTarget {
     var body: AstExpression?
     var condition: AstExpression
 }
@@ -28,6 +29,7 @@ class AstWhileLoop(
         annotations.forEach { it.accept(visitor, data) }
         body?.accept(visitor, data)
         condition.accept(visitor, data)
+        type.accept(visitor, data)
     }
 
     override fun <D> transform(
@@ -40,6 +42,7 @@ class AstWhileLoop(
         annotations.transformInplace(transformer, data)
         body = body?.transformSingle(transformer, data)
         condition = condition.transformSingle(transformer, data)
+        type = type.transformSingle(transformer, data)
     }
 
 }
@@ -59,6 +62,7 @@ class AstDoWhileLoop(
         annotations.forEach { it.accept(visitor, data) }
         body?.accept(visitor, data)
         condition.accept(visitor, data)
+        type.accept(visitor, data)
     }
 
     override fun <D> transform(
@@ -71,6 +75,7 @@ class AstDoWhileLoop(
         annotations.transformInplace(transformer, data)
         body = body?.transformSingle(transformer, data)
         condition = condition.transformSingle(transformer, data)
+        type = type.transformSingle(transformer, data)
     }
 
 }

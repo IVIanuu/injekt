@@ -10,6 +10,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.addChild
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformerVoid
+import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.source
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
@@ -29,7 +30,6 @@ class AstTest {
                 source(
                     """
                         class NotTransformed(val param: String) {
-                        
                             var lol: String = "hello world"
                             
                             /*var lol2: String 
@@ -46,6 +46,23 @@ class AstTest {
                             
                             fun member() {
                                 
+                            }
+                            
+                            fun anonymous() {
+                                println(object {
+                                })
+                            }
+                            
+                            fun localFun() {
+                                fun local() {
+                                    
+                                }
+                            }
+                            
+                            fun localClass() {
+                                class LocalClass {
+                                    
+                                }
                             }
                         }
                         
@@ -108,6 +125,18 @@ class AstTest {
                             }
                         }
                         
+                        fun whileF() {
+                            while (true) {
+                                println("while")
+                            }
+                        }
+                        
+                        fun doWhile() {
+                            do {
+                                println("do")
+                            } while (true)
+                        }
+                        
                         fun returningString(a: Float = 0f, b: Int = 0, c: Long = 0L) = 0
                         
                         typealias MyTypeAlias = () -> String
@@ -145,11 +174,13 @@ class AstTest {
                                                 override fun visitClass(klass: AstClass): AstTransformResult<AstStatement> {
                                                     moduleFragment.files += AstFile(
                                                         packageFqName = file.packageFqName,
-                                                        name = (klass.name.asString() + "Context.kt").asNameId()
+                                                        name = (klass.name.asString()
+                                                            .removeIllegalChars() + "Context.kt").asNameId()
                                                     ).apply {
                                                         addChild(
                                                             AstClass(
-                                                                name = (klass.name.asString() + "Context").asNameId()
+                                                                name = (klass.name.asString()
+                                                                    .removeIllegalChars() + "Context").asNameId()
                                                             )
                                                         )
                                                     }

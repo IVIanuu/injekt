@@ -12,6 +12,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstProperty
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstAnonymousObjectExpression
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBreak
@@ -62,11 +63,13 @@ interface AstTransformer<D> : AstVisitor<AstTransformResult<AstElement>, D> {
     override fun visitFile(file: AstFile, data: D) =
         visitPackageFragment(file, data)
 
+    override fun visitStatement(statement: AstStatement, data: D) =
+        visitElement(statement, data) as AstTransformResult<AstStatement>
+
     override fun visitDeclaration(
         declaration: AstDeclaration,
         data: D
-    ): AstTransformResult<AstStatement> =
-        visitElement(declaration, data) as AstTransformResult<AstStatement>
+    ) = visitStatement(declaration, data)
 
     override fun visitClass(klass: AstClass, data: D) =
         visitDeclaration(klass, data)
@@ -92,8 +95,7 @@ interface AstTransformer<D> : AstVisitor<AstTransformResult<AstElement>, D> {
     override fun visitExpression(
         expression: AstExpression,
         data: D
-    ): AstTransformResult<AstStatement> =
-        visitElement(expression, data) as AstTransformResult<AstStatement>
+    ) = visitStatement(expression, data)
 
     override fun <T> visitConst(const: AstConst<T>, data: D) =
         visitExpression(const, data)
@@ -106,6 +108,9 @@ interface AstTransformer<D> : AstVisitor<AstTransformResult<AstElement>, D> {
 
     override fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess, data: D) =
         visitExpression(qualifiedAccess, data)
+
+    override fun visitAnonymousObjectExpression(expression: AstAnonymousObjectExpression, data: D) =
+        visitExpression(expression, data)
 
     override fun visitWhen(astWhen: AstWhen, data: D) =
         visitExpression(astWhen, data)

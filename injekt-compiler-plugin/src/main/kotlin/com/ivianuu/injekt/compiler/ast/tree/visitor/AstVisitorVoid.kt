@@ -12,6 +12,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstProperty
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstAnonymousObjectExpression
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBreak
@@ -26,6 +27,7 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThrow
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstTry
@@ -51,11 +53,15 @@ interface AstVisitorVoid : AstVisitor<Unit, Nothing?> {
     fun visitFile(file: AstFile) = visitPackageFragment(file)
     override fun visitFile(file: AstFile, data: Nothing?) = visitFile(file)
 
-    fun visitDeclaration(declaration: AstDeclaration) = visitElement(declaration)
+    fun visitStatement(statement: AstStatement) = visitElement(statement)
+    override fun visitStatement(statement: AstStatement, data: Nothing?) =
+        visitStatement(statement)
+
+    fun visitDeclaration(declaration: AstDeclaration) = visitStatement(declaration)
     override fun visitDeclaration(declaration: AstDeclaration, data: Nothing?) =
         visitDeclaration(declaration)
 
-    fun visitClass(klass: AstClass) = visitElement(klass)
+    fun visitClass(klass: AstClass) = visitDeclaration(klass)
     override fun visitClass(klass: AstClass, data: Nothing?) = visitClass(klass)
 
     fun visitFunction(function: AstFunction) = visitDeclaration(function)
@@ -86,7 +92,7 @@ interface AstVisitorVoid : AstVisitor<Unit, Nothing?> {
     override fun visitTypeAlias(typeAlias: AstTypeAlias, data: Nothing?) =
         visitTypeAlias(typeAlias)
 
-    fun visitExpression(expression: AstExpression) = visitElement(expression)
+    fun visitExpression(expression: AstExpression) = visitStatement(expression)
     override fun visitExpression(expression: AstExpression, data: Nothing?) =
         visitExpression(expression)
 
@@ -111,6 +117,15 @@ interface AstVisitorVoid : AstVisitor<Unit, Nothing?> {
 
     override fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess, data: Nothing?) =
         visitQualifiedAccess(qualifiedAccess)
+
+    fun visitAnonymousObjectExpression(expression: AstAnonymousObjectExpression) =
+        visitExpression(expression)
+
+    override fun visitAnonymousObjectExpression(
+        expression: AstAnonymousObjectExpression,
+        data: Nothing?
+    ) =
+        visitAnonymousObjectExpression(expression)
 
     fun visitWhen(astWhen: AstWhen) = visitExpression(astWhen)
     override fun visitWhen(astWhen: AstWhen, data: Nothing?) = visitWhen(astWhen)
