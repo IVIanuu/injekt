@@ -18,7 +18,7 @@ import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
+import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.SimpleType
@@ -27,16 +27,15 @@ import org.jetbrains.kotlin.types.model.TypeArgumentMarker
 
 class Psi2AstStorage {
 
-    val files = mutableMapOf<KtFile, AstFile>()
-
     val externalPackageFragments =
         mutableMapOf<PackageFragmentDescriptor, AstExternalPackageFragment>()
 
+    val files = mutableMapOf<KtFile, AstFile>()
     val classes = mutableMapOf<ClassDescriptor, AstClass>()
     val functions = mutableMapOf<FunctionDescriptor, AstFunction>()
     val properties = mutableMapOf<PropertyDescriptor, AstProperty>()
     val typeParameters = mutableMapOf<TypeParameterDescriptor, AstTypeParameter>()
-    val valueParameters = mutableMapOf<ValueParameterDescriptor, AstValueParameter>()
+    val valueParameters = mutableMapOf<VariableDescriptor, AstValueParameter>()
     val typeAliases = mutableMapOf<TypeAliasDescriptor, AstTypeAlias>()
 
     val types = mutableMapOf<KotlinType, AstType>()

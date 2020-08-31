@@ -22,12 +22,14 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThis
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstThrow
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstTry
 import com.ivianuu.injekt.compiler.ast.tree.type.AstStarProjection
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
 import com.ivianuu.injekt.compiler.ast.tree.type.classOrFail
-import com.ivianuu.injekt.compiler.ast.tree.type.isClassType
+import com.ivianuu.injekt.compiler.ast.tree.type.classOrNull
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.name.FqName
@@ -236,12 +238,6 @@ object Ast2StringTranslator {
         }
 
         override fun visitProperty(property: AstProperty, data: Nothing?): String = buildString {
-            try {
-                error("visit property ${property.name} ${property.getter} ${property.setter}")
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-
             append(property.renderAnnotations())
             append(property.renderVisibility())
             if (property.parent is AstClass) append(property.renderModality())
@@ -430,13 +426,13 @@ object Ast2StringTranslator {
             stringConcatenation: AstStringConcatenation,
             data: Nothing?
         ): String = buildString {
-            append("\"")
-            stringConcatenation.arguments.forEach {
-                if (it.type.isClassType(KotlinBuiltIns.FQ_NAMES.string.toSafe())) append("\${")
-                it.accept(this@Writer, null)
-                append("}")
+            stringConcatenation.arguments.forEachIndexed { index, expression ->
+                append(expression.accept(this@Writer, null))
+                if (expression.type.classOrNull?.fqName != KotlinBuiltIns.FQ_NAMES.string.toSafe())
+                    append(".toString()")
+                if (index != stringConcatenation.arguments.lastIndex)
+                    append(" + ")
             }
-            append("\"")
         }
 
         override fun visitQualifiedAccess(
@@ -503,12 +499,33 @@ object Ast2StringTranslator {
             }
         }
 
+        override fun visitTry(astTry: AstTry, data: Nothing?): String = buildString {
+            appendLine("${indent}try {")
+            appendLine(indented(astTry.tryResult.accept(this@Writer, null)))
+            astTry.catches.forEach {
+                appendLine("} catch(${it.catchParameter.accept(this@Writer, null)}) {")
+                append(indented(it.result.accept(this@Writer, null)))
+                appendLine()
+            }
+            astTry.finally?.let {
+                appendLine("} finally {")
+                append(indented(it.accept(this@Writer, null)))
+                appendLine()
+            }
+            appendLine("}")
+        }
+
         override fun visitReturn(astReturn: AstReturn, data: Nothing?): String = buildString {
             append("return")
             /*astReturn.target?.let {
                 append("@$")
             } ?:*/ appendSpace()
             append(astReturn.expression.accept(this@Writer, null))
+        }
+
+        override fun visitThrow(astThrow: AstThrow, data: Nothing?): String = buildString {
+            append("throw ")
+            append(astThrow.expression.accept(this@Writer, null))
         }
 
         private fun AstType.render(): String = buildString {

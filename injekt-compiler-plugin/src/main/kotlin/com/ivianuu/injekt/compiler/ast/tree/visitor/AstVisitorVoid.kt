@@ -13,11 +13,19 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstBranch
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstBreak
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstBreakContinue
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstCatch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstContinue
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstThrow
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstTry
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstWhen
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
@@ -99,8 +107,34 @@ interface AstVisitorVoid : AstVisitor<Unit, Nothing?> {
     override fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess, data: Nothing?) =
         visitQualifiedAccess(qualifiedAccess)
 
+    fun visitWhen(astWhen: AstWhen) = visitExpression(astWhen)
+    override fun visitWhen(astWhen: AstWhen, data: Nothing?) = visitWhen(astWhen)
+
+    fun visitBranch(branch: AstBranch) = visitElement(branch)
+    override fun visitBranch(branch: AstBranch, data: Nothing?) = visitBranch(branch)
+
+    fun visitTry(astTry: AstTry) = visitExpression(astTry)
+    override fun visitTry(astTry: AstTry, data: Nothing?) = visitTry(astTry)
+
+    fun visitCatch(astCatch: AstCatch) = visitElement(astCatch)
+    override fun visitCatch(astCatch: AstCatch, data: Nothing?) = visitCatch(astCatch)
+
+    fun visitBreakContinue(breakContinue: AstBreakContinue) = visitExpression(breakContinue)
+    override fun visitBreakContinue(breakContinue: AstBreakContinue, data: Nothing?) =
+        visitBreakContinue(breakContinue)
+
+    fun visitBreak(astBreak: AstBreak) = visitBreakContinue(astBreak)
+    override fun visitBreak(astBreak: AstBreak, data: Nothing?) = visitBreak(astBreak)
+
+    fun visitContinue(astContinue: AstContinue) = visitBreakContinue(astContinue)
+    override fun visitContinue(astContinue: AstContinue, data: Nothing?) =
+        visitContinue(astContinue)
+
     fun visitReturn(astReturn: AstReturn) = visitExpression(astReturn)
     override fun visitReturn(astReturn: AstReturn, data: Nothing?) = visitReturn(astReturn)
+
+    fun visitThrow(astThrow: AstThrow) = visitExpression(astThrow)
+    override fun visitThrow(astThrow: AstThrow, data: Nothing?) = visitThrow(astThrow)
 
     fun visitTypeArgument(typeArgument: AstTypeArgument) = visitElement(typeArgument)
     override fun visitTypeArgument(typeArgument: AstTypeArgument, data: Nothing?) =

@@ -13,12 +13,20 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstBranch
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstBreak
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstBreakContinue
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstCatch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstContinue
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstThrow
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstTry
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstWhen
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
@@ -45,7 +53,7 @@ interface AstTransformerVoid : AstTransformer<Nothing?> {
     override fun visitPackageFragment(packageFragment: AstPackageFragment, data: Nothing?) =
         visitPackageFragment(packageFragment)
 
-    fun visitFile(file: AstFile) = file.transformChildrenAndCompose()
+    fun visitFile(file: AstFile) = visitPackageFragment(file)
     override fun visitFile(file: AstFile, data: Nothing?) = visitFile(file)
 
     fun visitDeclaration(declaration: AstDeclaration): AstTransformResult<AstStatement> =
@@ -112,20 +120,54 @@ interface AstTransformerVoid : AstTransformer<Nothing?> {
     override fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess, data: Nothing?) =
         visitQualifiedAccess(qualifiedAccess)
 
+    fun visitWhen(astWhen: AstWhen) = visitExpression(astWhen)
+    override fun visitWhen(astWhen: AstWhen, data: Nothing?) = visitWhen(astWhen)
+
+    fun visitBranch(branch: AstBranch): AstTransformResult<AstBranch> =
+        visitElement(branch) as AstTransformResult<AstBranch>
+
+    override fun visitBranch(branch: AstBranch, data: Nothing?) =
+        visitBranch(branch)
+
+    fun visitTry(astThrow: AstTry) = visitExpression(astThrow)
+    override fun visitTry(astTry: AstTry, data: Nothing?) = visitTry(astTry)
+
+    fun visitCatch(astCatch: AstCatch): AstTransformResult<AstCatch> =
+        visitElement(astCatch) as AstTransformResult<AstCatch>
+
+    override fun visitCatch(astCatch: AstCatch, data: Nothing?) =
+        visitCatch(astCatch)
+
+    fun visitBreakContinue(breakContinue: AstBreakContinue) = visitExpression(breakContinue)
+    override fun visitBreakContinue(breakContinue: AstBreakContinue, data: Nothing?) =
+        visitBreakContinue(breakContinue)
+
+    fun visitBreak(astBreak: AstBreak) = visitExpression(astBreak)
+    override fun visitBreak(astBreak: AstBreak, data: Nothing?) = visitBreak(astBreak)
+
+    fun visitContinue(astContinue: AstContinue) = visitExpression(astContinue)
+    override fun visitContinue(astContinue: AstContinue, data: Nothing?) =
+        visitContinue(astContinue)
+
     fun visitReturn(astReturn: AstReturn) = visitExpression(astReturn)
     override fun visitReturn(astReturn: AstReturn, data: Nothing?) = visitReturn(astReturn)
 
+    fun visitThrow(astThrow: AstThrow) = visitExpression(astThrow)
+    override fun visitThrow(astThrow: AstThrow, data: Nothing?) = visitThrow(astThrow)
+
     fun visitTypeArgument(typeArgument: AstTypeArgument) =
-        typeArgument.transformChildrenAndCompose()
+        visitElement(typeArgument) as AstTransformResult<AstTypeArgument>
 
     override fun visitTypeArgument(typeArgument: AstTypeArgument, data: Nothing?) =
         visitTypeArgument(typeArgument)
 
-    fun visitType(type: AstType) = type.transformChildrenAndCompose()
+    fun visitType(type: AstType): AstTransformResult<AstType> =
+        visitElement(type) as AstTransformResult<AstType>
+
     override fun visitType(type: AstType, data: Nothing?) = visitType(type)
 
-    fun visitTypeProjection(typeProjection: AstTypeProjection) =
-        typeProjection.transformChildrenAndCompose()
+    fun visitTypeProjection(typeProjection: AstTypeProjection): AstTransformResult<AstTypeProjection> =
+        visitElement(typeProjection) as AstTransformResult<AstTypeProjection>
 
     override fun visitTypeProjection(typeProjection: AstTypeProjection, data: Nothing?) =
         visitTypeProjection(typeProjection)

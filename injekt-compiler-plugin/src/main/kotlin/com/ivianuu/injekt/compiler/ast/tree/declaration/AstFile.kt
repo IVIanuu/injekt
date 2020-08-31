@@ -2,7 +2,6 @@ package com.ivianuu.injekt.compiler.ast.tree.declaration
 
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
-import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
 import com.ivianuu.injekt.compiler.ast.tree.visitor.transformInplace
@@ -27,7 +26,7 @@ class AstFile(
     override fun <D> transform(
         transformer: AstTransformer<D>,
         data: D
-    ): AstTransformResult<AstFile> = transformer.visitFile(this, data)
+    ) = transformer.visitFile(this, data)
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
         declarations.transformInplace(transformer, data)

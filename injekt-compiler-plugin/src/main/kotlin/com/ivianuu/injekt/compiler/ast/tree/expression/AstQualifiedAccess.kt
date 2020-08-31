@@ -9,7 +9,8 @@ import com.ivianuu.injekt.compiler.ast.tree.visitor.transformSingle
 
 class AstQualifiedAccess(
     var callee: AstDeclaration,
-    override var type: AstType
+    override var type: AstType,
+    var safe: Boolean = false
 ) : AstExpressionBase() {
 
     val typeArguments: MutableList<AstType> = mutableListOf()

@@ -1,8 +1,10 @@
 package com.ivianuu.injekt.compiler.ast.extension
 
+import com.ivianuu.injekt.compiler.ast.psi.AstProvider
 import com.ivianuu.injekt.compiler.ast.psi.Psi2AstStorage
 import com.ivianuu.injekt.compiler.ast.psi.Psi2AstStubGenerator
 import com.ivianuu.injekt.compiler.ast.psi.Psi2AstTranslator
+import com.ivianuu.injekt.compiler.ast.psi.TypeMapper
 import com.ivianuu.injekt.compiler.ast.string.toAstString
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.editor.Document
@@ -16,6 +18,7 @@ import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.BindingTraceContext
@@ -52,6 +55,11 @@ class AstAnalysisHandlerExtension(
         forceAlwaysAllowRewrites(bindingTrace)
         forceResolveContents(componentProvider, files)
 
+        // do not do anything if the project does contain errors
+        if (bindingTrace.bindingContext.diagnostics.any {
+                it.severity == Severity.ERROR
+            }) return null
+
         val originalFiles = files.toList()
         val newFiles = transformModule(project, bindingTrace, module, extensions, originalFiles)
         files.clear()
@@ -77,8 +85,16 @@ class AstAnalysisHandlerExtension(
         files: List<KtFile>
     ): List<KtFile> {
         val storage = Psi2AstStorage()
-        val stubGenerator = Psi2AstStubGenerator(storage)
-        val generator = Psi2AstTranslator(bindingTrace, module, stubGenerator, storage)
+        val astProvider = AstProvider()
+        val typeMapper = TypeMapper(astProvider, storage)
+        val stubGenerator = Psi2AstStubGenerator(storage, typeMapper)
+        astProvider.stubGenerator = stubGenerator
+        val generator = Psi2AstTranslator(
+            astProvider, bindingTrace.bindingContext,
+            module, stubGenerator, storage, typeMapper
+        )
+        val builtIns = AstBuiltIns(module.builtIns, astProvider, typeMapper)
+        generator.builtIns = builtIns
 
         val moduleFragment = generator.generateModule(files)
 

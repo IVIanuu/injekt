@@ -7,29 +7,37 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstExternalPackageFragme
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstProperty
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.addChild
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
+import org.jetbrains.kotlin.resolve.calls.components.hasDefaultValue
+import org.jetbrains.kotlin.resolve.calls.components.isVararg
 
 class Psi2AstStubGenerator(
-    private val storage: Psi2AstStorage
+    private val storage: Psi2AstStorage,
+    private val typeMapper: TypeMapper
 ) {
 
-    lateinit var translator: Psi2AstTranslator
-
-    fun get(descriptor: DeclarationDescriptor): AstElement {
+    fun <T : AstElement> get(descriptor: DeclarationDescriptor): T {
         return when (descriptor) {
             is PackageFragmentDescriptor -> descriptor.toAstPackageFragment()
-            is ClassDescriptor -> descriptor.toAstClassStub()
-            is FunctionDescriptor -> descriptor.toAstFunctionStub()
-            is PropertyDescriptor -> descriptor.toAstPropertyStub()
-            is TypeAliasDescriptor -> descriptor.toAstTypeAliasStub()
+            is ClassDescriptor -> getClassStub(descriptor)
+            is FunctionDescriptor -> getFunctionStub(descriptor)
+            is PropertyDescriptor -> getPropertyStub(descriptor)
+            is TypeParameterDescriptor -> getTypeParameterStub(descriptor)
+            is ValueParameterDescriptor -> getValueParameterStub(descriptor)
+            is TypeAliasDescriptor -> getTypeAliasStub(descriptor)
             else -> error("Unexpected descriptor $descriptor ${descriptor.javaClass}")
-        }
+        } as T
     }
 
     private fun PackageFragmentDescriptor.toAstPackageFragment() =
@@ -37,96 +45,134 @@ class Psi2AstStubGenerator(
             AstExternalPackageFragment(fqName)
         }
 
-    private fun ClassDescriptor.toAstClassStub(): AstClass {
-        storage.classes[original]?.let { return it }
+    private fun getClassStub(descriptor: ClassDescriptor): AstClass {
+        storage.classes[descriptor.original]?.let { return it }
         return AstLazyClass(
-            descriptor = this,
-            translator = translator,
-            stubGenerator = this@Psi2AstStubGenerator
+            descriptor = descriptor,
+            stubGenerator = this
         ).apply {
-            storage.classes[original] = this
-            (get(containingDeclaration) as AstDeclarationContainer).addChild(this)
+            storage.classes[descriptor.original] = this
+            descriptor.getContainingDeclarationContainer().addChild(this)
         }
     }
 
-    private fun FunctionDescriptor.toAstFunctionStub(): AstFunction {
-        storage.functions[original]?.let { return it }
+    private fun getFunctionStub(descriptor: FunctionDescriptor): AstFunction {
+        storage.functions[descriptor.original]?.let { return it }
         return AstFunction(
-            name = name,
-            kind = toAstFunctionKind(),
-            visibility = visibility.toAstVisibility(),
-            expectActual = expectActualOf(isActual, isExpect),
-            modality = modality.toAstModality(),
-            returnType = with(translator) {
-                returnType!!.toAstType()
-            },
-            isInline = isInline,
-            isExternal = isExternal,
-            isInfix = isInfix,
-            isOperator = isOperator,
-            isTailrec = isTailrec,
-            isSuspend = isSuspend
+            name = descriptor.name,
+            kind = descriptor.toAstFunctionKind(),
+            visibility = descriptor.visibility.toAstVisibility(),
+            expectActual = expectActualOf(descriptor.isActual, descriptor.isExpect),
+            modality = descriptor.modality.toAstModality(),
+            returnType = typeMapper.translate(descriptor.returnType!!),
+            isInline = descriptor.isInline,
+            isExternal = descriptor.isExternal,
+            isInfix = descriptor.isInfix,
+            isOperator = descriptor.isOperator,
+            isTailrec = descriptor.isTailrec,
+            isSuspend = descriptor.isSuspend
         ).apply {
-            storage.functions[original] = this
-            (get(containingDeclaration) as AstDeclarationContainer).addChild(this)
-            with(translator) {
-                annotations += this@toAstFunctionStub.annotations.toAstAnnotations()
-                typeParameters += this@toAstFunctionStub.typeParameters.toAstTypeParameters()
-                    .onEach { it.parent = this@apply }
-                dispatchReceiverType = dispatchReceiverParameter?.type?.toAstType()
-                extensionReceiverType = extensionReceiverParameter?.type?.toAstType()
-                valueParameters += this@toAstFunctionStub.valueParameters.toAstValueParameters()
-                    .onEach { it.parent = this@apply }
-                overriddenDeclarations += overriddenDescriptors
-                    .map { it.toAstFunctionStub() }
-            }
+            storage.functions[descriptor.original] = this
+            descriptor.getContainingDeclarationContainer().addChild(this)
+            // todo annotations += this@toAstFunctionStub.annotations
+            typeParameters += descriptor.typeParameters
+                .map { get<AstTypeParameter>(it) }
+                .onEach { it.parent = this@apply }
+            dispatchReceiverType =
+                descriptor.dispatchReceiverParameter?.type?.let { typeMapper.translate(it) }
+            extensionReceiverType =
+                descriptor.extensionReceiverParameter?.type?.let { typeMapper.translate(it) }
+            valueParameters += descriptor.valueParameters
+                .map { get<AstValueParameter>(it) }
+                .onEach { it.parent = this@apply }
+            overriddenDeclarations += descriptor.overriddenDescriptors
+                .map { getFunctionStub(it) }
         }
     }
 
-    private fun PropertyDescriptor.toAstPropertyStub(): AstProperty {
-        storage.properties[original]?.let { return it }
+    private fun getPropertyStub(descriptor: PropertyDescriptor): AstProperty {
+        storage.properties[descriptor.original]?.let { return it }
         return AstProperty(
-            name = name,
-            type = with(translator) { type.toAstType() },
+            name = descriptor.name,
+            type = typeMapper.translate(descriptor.type),
             kind = when {
-                isConst -> AstProperty.Kind.CONST_VAL
-                isLateInit -> AstProperty.Kind.LATEINIT_VAR
-                isVar -> AstProperty.Kind.VAR
+                descriptor.isConst -> AstProperty.Kind.CONST_VAL
+                descriptor.isLateInit -> AstProperty.Kind.LATEINIT_VAR
+                descriptor.isVar -> AstProperty.Kind.VAR
                 else -> AstProperty.Kind.VAl
             },
-            modality = modality.toAstModality(),
-            visibility = visibility.toAstVisibility(),
-            expectActual = expectActualOf(isActual, isExpect),
-            isExternal = isExternal
+            modality = descriptor.modality.toAstModality(),
+            visibility = descriptor.visibility.toAstVisibility(),
+            expectActual = expectActualOf(descriptor.isActual, descriptor.isExpect),
+            isExternal = descriptor.isExternal
         ).apply {
-            storage.properties[original] = this
-            (get(containingDeclaration) as AstDeclarationContainer).addChild(this)
-            with(translator) {
-                annotations += this@toAstPropertyStub.annotations.toAstAnnotations()
-                typeParameters += this@toAstPropertyStub.typeParameters.toAstTypeParameters()
-                    .onEach { it.parent = this@apply }
-                dispatchReceiverType = dispatchReceiverParameter?.type?.toAstType()
-                extensionReceiverType = extensionReceiverParameter?.type?.toAstType()
-            }
+            storage.properties[descriptor.original] = this
+            descriptor.getContainingDeclarationContainer().addChild(this)
+            // todo annotations += this@toAstPropertyStub.annotations.toAstAnnotations()
+            typeParameters += descriptor.typeParameters
+                .map { get<AstTypeParameter>(it) }
+                .onEach { it.parent = this@apply }
+            dispatchReceiverType =
+                descriptor.dispatchReceiverParameter?.type?.let { typeMapper.translate(it) }
+            extensionReceiverType =
+                descriptor.extensionReceiverParameter?.type?.let { typeMapper.translate(it) }
         }
     }
 
-    private fun TypeAliasDescriptor.toAstTypeAliasStub(): AstTypeAlias {
-        storage.typeAliases.get(original)?.let { return it }
-        return AstTypeAlias(
-            name = name,
-            type = with(translator) { expandedType.toAstType() },
-            visibility = visibility.toAstVisibility(),
-            expectActual = expectActualOf(isActual, isExpect)
+    private fun getTypeParameterStub(descriptor: TypeParameterDescriptor): AstTypeParameter {
+        storage.typeParameters[descriptor.original]?.let { return it }
+        return AstTypeParameter(
+            name = descriptor.name,
+            isReified = descriptor.isReified,
+            variance = descriptor.variance.toAstVariance()
         ).apply {
-            storage.typeAliases[original] = this
-            (get(containingDeclaration) as AstDeclarationContainer).addChild(this)
-            with(translator) {
-                annotations += this@toAstTypeAliasStub.annotations.toAstAnnotations()
-                typeParameters += this@toAstTypeAliasStub.declaredTypeParameters.toAstTypeParameters()
-                    .onEach { it.parent = this@apply }
-            }
+            // todo annotations += tdes.annotationEntries.map { it.accept() }
+            superTypes += descriptor.upperBounds.map { typeMapper.translate(it) }
         }
     }
+
+    private fun getValueParameterStub(descriptor: ValueParameterDescriptor): AstValueParameter {
+        storage.valueParameters[descriptor]?.let { return it }
+        return AstValueParameter(
+            name = descriptor.name,
+            type = typeMapper.translate(descriptor.type),
+            isVarArg = descriptor.isVararg,
+            inlineHint = when {
+                descriptor.isCrossinline -> AstValueParameter.InlineHint.CROSSINLINE
+                descriptor.isNoinline -> AstValueParameter.InlineHint.NOINLINE
+                else -> null
+            }
+        ).apply {
+            storage.valueParameters[descriptor] = this
+            // todo annotations += parameter.annotationEntries.map { it.accept() }
+            defaultValue = if (descriptor.hasDefaultValue()) AstBlock(type) else null
+        }
+    }
+
+    private fun getTypeAliasStub(descriptor: TypeAliasDescriptor): AstTypeAlias {
+        storage.typeAliases[descriptor.original]?.let { return it }
+        return AstTypeAlias(
+            name = descriptor.name,
+            type = typeMapper.translate(descriptor.expandedType),
+            visibility = descriptor.visibility.toAstVisibility(),
+            expectActual = expectActualOf(descriptor.isActual, descriptor.isExpect)
+        ).apply {
+            storage.typeAliases[descriptor.original] = this
+            descriptor.getContainingDeclarationContainer().addChild(this)
+            // todo annotations += this@toAstTypeAliasStub.annotations.toAstAnnotations()
+            typeParameters += descriptor.declaredTypeParameters
+                .map { get<AstTypeParameter>(it) }
+                .onEach { it.parent = this@apply }
+        }
+    }
+
+    private fun DeclarationDescriptor.getContainingDeclarationContainer() =
+        containingDeclaration!!.asContainingDeclaration()
+
+    private fun DeclarationDescriptor.asContainingDeclaration(): AstDeclarationContainer =
+        when (this) {
+            is TypeAliasDescriptor -> classDescriptor!!.asContainingDeclaration()
+            else -> get(this) as AstDeclarationContainer
+        }
 
 }

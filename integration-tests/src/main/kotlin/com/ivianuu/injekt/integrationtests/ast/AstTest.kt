@@ -20,6 +20,8 @@ import org.junit.Test
 
 class AstTest {
 
+    val DOLLAR_SIGN = "$"
+
     @Test
     fun testSimple() {
         codegen(
@@ -28,9 +30,11 @@ class AstTest {
                     """
                         class NotTransformed(val param: String) {
                         
-                            val lol: String = "hello world"
+                            var lol: String = "hello world"
+                            
+                            /*var lol2: String 
                                 get() = "hello world"
-                                set(value) {  }
+                                set(value) {  }*/
                         
                             init {
                                 //param
@@ -88,13 +92,29 @@ class AstTest {
                             returningString(0f, 0)
                         }
                         
-                        fun returningString(a: Float, b: Int, c: Long = 0L) = 0
+                        fun throwing() {
+                            throw RuntimeException("")
+                        }
+                        
+                        fun tryCatch() {
+                            try {
+                                println("do work")
+                            } catch (e: RuntimeException) {
+                                println("runtime ${DOLLAR_SIGN}e")
+                            } catch(e: Exception) { 
+                                println("exception ${DOLLAR_SIGN}e")
+                            } finally {
+                                println("finally")
+                            }
+                        }
+                        
+                        fun returningString(a: Float = 0f, b: Int = 0, c: Long = 0L) = 0
                         
                         typealias MyTypeAlias = () -> String
                         
                         typealias MyTypeAlias2<T> = () -> String
                         
-                        val prop = "hello world"
+                        val prop = "hello world ${DOLLAR_SIGN}{aFunction()}lol${DOLLAR_SIGN}{returningString(0f)}"
                         //val prop2 by lazy { "lol" }
                         """,
                     injektImports = false,

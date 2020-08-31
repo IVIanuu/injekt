@@ -1,7 +1,8 @@
 package com.ivianuu.injekt.compiler.ast.extension
 
+import com.ivianuu.injekt.compiler.ast.psi.AstProvider
+import com.ivianuu.injekt.compiler.ast.psi.TypeMapper
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
-import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.type.copy
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -9,12 +10,9 @@ import org.jetbrains.kotlin.types.KotlinType
 
 class AstBuiltIns(
     private val builtIns: KotlinBuiltIns,
-    private val toAstClass: (ClassDescriptor) -> AstClass,
-    private val toAstType: (KotlinType) -> AstType
+    private val astProvider: AstProvider,
+    private val typeMapper: TypeMapper
 ) {
-
-    private fun ClassDescriptor.toAstClass() = toAstClass.invoke(this)
-    private fun KotlinType.toAstType() = toAstType.invoke(this)
 
     val anyType = builtIns.anyType.toAstType()
     val anyClass = builtIns.any.toAstClass()
@@ -62,5 +60,8 @@ class AstBuiltIns(
 
     fun kFunction(n: Int) = builtIns.getKFunction(n).toAstClass()
     fun kSuspendFunction(n: Int) = builtIns.getKSuspendFunction(n).toAstClass()
+
+    private fun ClassDescriptor.toAstClass() = astProvider.get<AstClass>(this)
+    private fun KotlinType.toAstType() = typeMapper.translate(this)
 
 }
