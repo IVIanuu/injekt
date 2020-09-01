@@ -15,7 +15,6 @@ import com.ivianuu.ast.tree.generator.FieldSets.initializer
 import com.ivianuu.ast.tree.generator.FieldSets.modality
 import com.ivianuu.ast.tree.generator.FieldSets.name
 import com.ivianuu.ast.tree.generator.FieldSets.receivers
-import com.ivianuu.ast.tree.generator.FieldSets.returnType
 import com.ivianuu.ast.tree.generator.FieldSets.status
 import com.ivianuu.ast.tree.generator.FieldSets.superTypes
 import com.ivianuu.ast.tree.generator.FieldSets.symbol
@@ -24,7 +23,6 @@ import com.ivianuu.ast.tree.generator.FieldSets.typeArguments
 import com.ivianuu.ast.tree.generator.FieldSets.typeParameterRefs
 import com.ivianuu.ast.tree.generator.FieldSets.typeParameters
 import com.ivianuu.ast.tree.generator.FieldSets.typeField
-import com.ivianuu.ast.tree.generator.FieldSets.valueParameters
 import com.ivianuu.ast.tree.generator.FieldSets.visibility
 import com.ivianuu.ast.tree.generator.context.AbstractFieldConfigurator
 import com.ivianuu.ast.tree.generator.model.AbstractElement
@@ -34,12 +32,8 @@ import com.ivianuu.ast.tree.generator.model.SimpleTypeArgument
 import com.ivianuu.ast.tree.generator.model.booleanField
 import com.ivianuu.ast.tree.generator.model.field
 import com.ivianuu.ast.tree.generator.model.fieldList
-import com.ivianuu.ast.tree.generator.model.intField
 import com.ivianuu.ast.tree.generator.model.stringField
 import com.ivianuu.ast.tree.generator.model.withTransform
-import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
-import org.jetbrains.kotlin.ir.types.IrTypeAbbreviation
-import org.jetbrains.kotlin.ir.types.IrTypeArgument
 
 object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuilder) {
     fun configureFields() = configure {
@@ -49,7 +43,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         symbolOwner.configure {
             withArg("E", symbolOwner, declaration)
-            +symbolWithPackage("ast.symbols", "AbstractAstBasedSymbol", "E")
+            +symbolWithPackage("ast.symbols", "AbstractAstSymbol", "E")
         }
 
         typeParameterRef.configure {
@@ -386,11 +380,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +field("classType", type)
         }
 
-        componentCall.configure {
-            +field("explicitReceiver", expression)
-            +intField("componentIndex")
-        }
-
         expressionWithSmartcast.configure {
             +field("originalExpression", qualifiedAccessExpression)
             +field(
@@ -475,11 +464,11 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         namedReference.configure {
             +name
-            +field("candidateSymbol", abstractAstBasedSymbolType, "*", nullable = true)
+            +field("candidateSymbol", abstractAstSymbolType, "*", nullable = true)
         }
 
         resolvedNamedReference.configure {
-            +field("resolvedSymbol", abstractAstBasedSymbolType, "*")
+            +field("resolvedSymbol", abstractAstSymbolType, "*")
         }
 
         resolvedCallableReference.configure {
@@ -503,7 +492,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +stringField("labelName", nullable = true)
             +field(
                 "boundSymbol",
-                abstractAstBasedSymbolType,
+                abstractAstSymbolType,
                 "*",
                 nullable = true,
                 withReplace = true

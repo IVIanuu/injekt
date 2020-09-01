@@ -3,7 +3,7 @@ package com.ivianuu.ast.references.builder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.references.AstThisReference
 import com.ivianuu.ast.references.impl.AstImplicitThisReference
-import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
+import com.ivianuu.ast.symbols.AbstractAstSymbol
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 
@@ -14,7 +14,7 @@ import kotlin.contracts.*
 
 @AstBuilderDsl
 class AstImplicitThisReferenceBuilder {
-    var boundSymbol: AbstractAstBasedSymbol<*>? = null
+    var boundSymbol: AbstractAstSymbol<*>? = null
 
     fun build(): AstThisReference {
         return AstImplicitThisReference(

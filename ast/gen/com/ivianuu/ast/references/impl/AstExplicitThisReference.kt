@@ -1,7 +1,7 @@
 package com.ivianuu.ast.references.impl
 
 import com.ivianuu.ast.references.AstThisReference
-import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
+import com.ivianuu.ast.symbols.AbstractAstSymbol
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -12,7 +12,7 @@ import com.ivianuu.ast.visitors.*
 internal class AstExplicitThisReference(
     override val labelName: String?,
 ) : AstThisReference() {
-    override var boundSymbol: AbstractAstBasedSymbol<*>? = null
+    override var boundSymbol: AbstractAstSymbol<*>? = null
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {}
 
@@ -20,7 +20,7 @@ internal class AstExplicitThisReference(
         return this
     }
 
-    override fun replaceBoundSymbol(newBoundSymbol: AbstractAstBasedSymbol<*>?) {
+    override fun replaceBoundSymbol(newBoundSymbol: AbstractAstSymbol<*>?) {
         boundSymbol = newBoundSymbol
     }
 }

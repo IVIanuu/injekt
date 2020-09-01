@@ -1,6 +1,6 @@
 package com.ivianuu.ast.references
 
-import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
+import com.ivianuu.ast.symbols.AbstractAstSymbol
 import com.ivianuu.ast.symbols.impl.AstBackingFieldSymbol
 import org.jetbrains.kotlin.name.Name
 import com.ivianuu.ast.visitors.*
@@ -12,7 +12,7 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstBackingFieldReference : AstResolvedNamedReference() {
     abstract override val name: Name
-    abstract override val candidateSymbol: AbstractAstBasedSymbol<*>?
+    abstract override val candidateSymbol: AbstractAstSymbol<*>?
     abstract override val resolvedSymbol: AstBackingFieldSymbol
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitBackingFieldReference(this, data)

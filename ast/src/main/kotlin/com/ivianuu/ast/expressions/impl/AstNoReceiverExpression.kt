@@ -13,7 +13,7 @@ import com.ivianuu.ast.visitors.AstTransformer
 import com.ivianuu.ast.visitors.AstVisitor
 
 object AstNoReceiverExpression : AstExpression() {
-    override val Type: AstType = AstImplicitTypeImpl(null)
+    override val type: AstType = AstImplicitTypeImpl()
     override val annotations: List<AstAnnotationCall> get() = emptyList()
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {}

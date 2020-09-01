@@ -150,7 +150,6 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         element("QualifiedAccessExpression", Expression, expression, qualifiedAccess)
     val functionCall = element("FunctionCall", Expression, qualifiedAccessExpression, call)
     val delegatedConstructorCall = element("DelegatedConstructorCall", Expression, resolvable, call)
-    val componentCall = element("ComponentCall", Expression, functionCall)
     val callableReferenceAccess =
         element("CallableReferenceAccess", Expression, qualifiedAccessExpression)
     val thisReceiverExpression =

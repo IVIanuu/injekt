@@ -1,6 +1,6 @@
 package com.ivianuu.ast.references
 
-import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
+import com.ivianuu.ast.symbols.AbstractAstSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
 import com.ivianuu.ast.visitors.*
@@ -12,8 +12,8 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstResolvedCallableReference : AstResolvedNamedReference() {
     abstract override val name: Name
-    abstract override val candidateSymbol: AbstractAstBasedSymbol<*>?
-    abstract override val resolvedSymbol: AbstractAstBasedSymbol<*>
+    abstract override val candidateSymbol: AbstractAstSymbol<*>?
+    abstract override val resolvedSymbol: AbstractAstSymbol<*>
     abstract val inferredTypeArguments: List<AstType>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitResolvedCallableReference(this, data)

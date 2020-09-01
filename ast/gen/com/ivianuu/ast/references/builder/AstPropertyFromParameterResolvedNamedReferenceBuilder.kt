@@ -4,7 +4,7 @@ import com.ivianuu.ast.AstImplementationDetail
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.references.AstResolvedNamedReference
 import com.ivianuu.ast.references.impl.AstPropertyFromParameterResolvedNamedReference
-import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
+import com.ivianuu.ast.symbols.AbstractAstSymbol
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 import org.jetbrains.kotlin.name.Name
@@ -17,7 +17,7 @@ import org.jetbrains.kotlin.name.Name
 @AstBuilderDsl
 class AstPropertyFromParameterResolvedNamedReferenceBuilder {
     lateinit var name: Name
-    lateinit var resolvedSymbol: AbstractAstBasedSymbol<*>
+    lateinit var resolvedSymbol: AbstractAstSymbol<*>
 
     @OptIn(AstImplementationDetail::class)
     fun build(): AstResolvedNamedReference {

@@ -107,15 +107,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             defaultFalse("hasQuestionMarkAtLHS")
         }
 
-        builder(componentCall) {
-            parents += callBuilder
-            defaultNoReceivers(notNullExplicitReceiver = true)
-            default("argumentList") {
-                value = "AstEmptyArgumentList"
-            }
-            useTypes(emptyArgumentListType)
-        }
-
         builder(whileLoop) {
             parents += loopBuilder
             defaultNull("label")

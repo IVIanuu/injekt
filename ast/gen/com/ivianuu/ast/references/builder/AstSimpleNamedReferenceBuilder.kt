@@ -4,7 +4,7 @@ import com.ivianuu.ast.AstImplementationDetail
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.references.AstNamedReference
 import com.ivianuu.ast.references.impl.AstSimpleNamedReference
-import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
+import com.ivianuu.ast.symbols.AbstractAstSymbol
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 import org.jetbrains.kotlin.name.Name
@@ -17,7 +17,7 @@ import org.jetbrains.kotlin.name.Name
 @AstBuilderDsl
 class AstSimpleNamedReferenceBuilder {
     lateinit var name: Name
-    var candidateSymbol: AbstractAstBasedSymbol<*>? = null
+    var candidateSymbol: AbstractAstSymbol<*>? = null
 
     @OptIn(AstImplementationDetail::class)
     fun build(): AstNamedReference {

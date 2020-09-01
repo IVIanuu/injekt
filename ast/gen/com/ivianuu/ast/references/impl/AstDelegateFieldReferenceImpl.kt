@@ -1,7 +1,7 @@
 package com.ivianuu.ast.references.impl
 
 import com.ivianuu.ast.references.AstDelegateFieldReference
-import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
+import com.ivianuu.ast.symbols.AbstractAstSymbol
 import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
 import org.jetbrains.kotlin.name.Name
 import com.ivianuu.ast.visitors.*
@@ -12,7 +12,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstDelegateFieldReferenceImpl(
-    override val candidateSymbol: AbstractAstBasedSymbol<*>?,
+    override val candidateSymbol: AbstractAstSymbol<*>?,
     override val resolvedSymbol: AstDelegateFieldSymbol<*>,
 ) : AstDelegateFieldReference() {
     override val name: Name get() = Name.identifier("\$delegate")

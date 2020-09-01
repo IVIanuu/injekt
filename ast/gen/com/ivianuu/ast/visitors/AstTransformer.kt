@@ -68,7 +68,6 @@ import com.ivianuu.ast.expressions.AstClassReferenceExpression
 import com.ivianuu.ast.expressions.AstQualifiedAccessExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
-import com.ivianuu.ast.expressions.AstComponentCall
 import com.ivianuu.ast.expressions.AstCallableReferenceAccess
 import com.ivianuu.ast.expressions.AstThisReceiverExpression
 import com.ivianuu.ast.expressions.AstExpressionWithSmartcast
@@ -374,10 +373,6 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     open fun transformDelegatedConstructorCall(delegatedConstructorCall: AstDelegatedConstructorCall, data: D): CompositeTransformResult<AstStatement> {
         return transformElement(delegatedConstructorCall, data)
-    }
-
-    open fun transformComponentCall(componentCall: AstComponentCall, data: D): CompositeTransformResult<AstStatement> {
-        return transformElement(componentCall, data)
     }
 
     open fun transformCallableReferenceAccess(callableReferenceAccess: AstCallableReferenceAccess, data: D): CompositeTransformResult<AstStatement> {
@@ -762,10 +757,6 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     final override fun visitDelegatedConstructorCall(delegatedConstructorCall: AstDelegatedConstructorCall, data: D): CompositeTransformResult<AstStatement> {
         return transformDelegatedConstructorCall(delegatedConstructorCall, data)
-    }
-
-    final override fun visitComponentCall(componentCall: AstComponentCall, data: D): CompositeTransformResult<AstStatement> {
-        return transformComponentCall(componentCall, data)
     }
 
     final override fun visitCallableReferenceAccess(callableReferenceAccess: AstCallableReferenceAccess, data: D): CompositeTransformResult<AstStatement> {

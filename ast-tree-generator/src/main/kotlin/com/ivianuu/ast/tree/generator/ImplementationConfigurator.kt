@@ -42,15 +42,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
 
         impl(callableReferenceAccess)
 
-        impl(componentCall) {
-            default(
-                "calleeReference",
-                "AstSimpleNamedReference(Name.identifier(\"component\$componentIndex\"), null)"
-            )
-            useTypes(simpleNamedReferenceType, nameType)
-            optInToInternals()
-        }
-
         impl(whileLoop)
 
         impl(doWhileLoop)

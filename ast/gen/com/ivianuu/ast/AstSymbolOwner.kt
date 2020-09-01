@@ -1,7 +1,7 @@
 package com.ivianuu.ast
 
 import com.ivianuu.ast.declarations.AstDeclaration
-import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
+import com.ivianuu.ast.symbols.AbstractAstSymbol
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -10,7 +10,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 interface AstSymbolOwner<E> : AstElement where E : AstSymbolOwner<E>, E : AstDeclaration {
-    val symbol: AbstractAstBasedSymbol<E>
+    val symbol: AbstractAstSymbol<E>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitSymbolOwner(this, data)
 }

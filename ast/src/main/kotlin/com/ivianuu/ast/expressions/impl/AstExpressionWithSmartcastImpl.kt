@@ -18,7 +18,7 @@ import com.ivianuu.ast.visitors.transformSingle
 
 internal class AstExpressionWithSmartcastImpl(
     override var originalExpression: AstQualifiedAccessExpression,
-    override val Type: AstType,
+    override val type: AstType,
     override val typesFromSmartCast: Collection<AstType>
 ) : AstExpressionWithSmartcast() {
 
@@ -28,7 +28,7 @@ internal class AstExpressionWithSmartcastImpl(
     override val dispatchReceiver: AstExpression get() = originalExpression.dispatchReceiver
     override val extensionReceiver: AstExpression get() = originalExpression.extensionReceiver
     override val calleeReference: AstReference get() = originalExpression.calleeReference
-    override val originalType: AstType get() = originalExpression.Type
+    override val originalType: AstType get() = originalExpression.type
 
     override fun <D> transformChildren(
         transformer: AstTransformer<D>,

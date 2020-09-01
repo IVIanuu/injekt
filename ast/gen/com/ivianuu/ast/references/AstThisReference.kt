@@ -1,6 +1,6 @@
 package com.ivianuu.ast.references
 
-import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
+import com.ivianuu.ast.symbols.AbstractAstSymbol
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -10,9 +10,9 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstThisReference : AstReference() {
     abstract val labelName: String?
-    abstract val boundSymbol: AbstractAstBasedSymbol<*>?
+    abstract val boundSymbol: AbstractAstSymbol<*>?
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitThisReference(this, data)
 
-    abstract fun replaceBoundSymbol(newBoundSymbol: AbstractAstBasedSymbol<*>?)
+    abstract fun replaceBoundSymbol(newBoundSymbol: AbstractAstSymbol<*>?)
 }

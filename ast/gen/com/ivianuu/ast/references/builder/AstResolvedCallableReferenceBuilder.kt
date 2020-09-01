@@ -3,7 +3,7 @@ package com.ivianuu.ast.references.builder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.references.AstResolvedCallableReference
 import com.ivianuu.ast.references.impl.AstResolvedCallableReferenceImpl
-import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
+import com.ivianuu.ast.symbols.AbstractAstSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
@@ -17,7 +17,7 @@ import org.jetbrains.kotlin.name.Name
 @AstBuilderDsl
 class AstResolvedCallableReferenceBuilder {
     lateinit var name: Name
-    lateinit var resolvedSymbol: AbstractAstBasedSymbol<*>
+    lateinit var resolvedSymbol: AbstractAstSymbol<*>
     val inferredTypeArguments: MutableList<AstType> = mutableListOf()
 
     fun build(): AstResolvedCallableReference {

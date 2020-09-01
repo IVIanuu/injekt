@@ -68,7 +68,6 @@ import com.ivianuu.ast.expressions.AstClassReferenceExpression
 import com.ivianuu.ast.expressions.AstQualifiedAccessExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
-import com.ivianuu.ast.expressions.AstComponentCall
 import com.ivianuu.ast.expressions.AstCallableReferenceAccess
 import com.ivianuu.ast.expressions.AstThisReceiverExpression
 import com.ivianuu.ast.expressions.AstExpressionWithSmartcast
@@ -239,8 +238,6 @@ abstract class AstVisitor<out R, in D> {
     open fun visitFunctionCall(functionCall: AstFunctionCall, data: D): R  = visitElement(functionCall, data)
 
     open fun visitDelegatedConstructorCall(delegatedConstructorCall: AstDelegatedConstructorCall, data: D): R  = visitElement(delegatedConstructorCall, data)
-
-    open fun visitComponentCall(componentCall: AstComponentCall, data: D): R  = visitElement(componentCall, data)
 
     open fun visitCallableReferenceAccess(callableReferenceAccess: AstCallableReferenceAccess, data: D): R  = visitElement(callableReferenceAccess, data)
 

@@ -7,55 +7,16 @@ package com.ivianuu.ast.visitors
 
 import com.ivianuu.ast.expressions.AstBreakExpression
 import com.ivianuu.ast.expressions.AstCallableReferenceAccess
-import com.ivianuu.ast.expressions.AstComponentCall
 import com.ivianuu.ast.expressions.AstContinueExpression
 import com.ivianuu.ast.expressions.AstLambdaArgumentExpression
 import com.ivianuu.ast.expressions.AstNamedArgumentExpression
 import com.ivianuu.ast.expressions.AstReturnExpression
 import com.ivianuu.ast.expressions.AstSpreadArgumentExpression
-import com.ivianuu.ast.types.AstDynamicType
-import com.ivianuu.ast.types.AstFunctionType
-import com.ivianuu.ast.types.AstImplicitType
-import com.ivianuu.ast.types.AstResolvedFunctionType
-import com.ivianuu.ast.types.AstResolvedType
-import com.ivianuu.ast.types.AstTypeWithNullability
-import com.ivianuu.ast.types.AstUserType
 
 abstract class AstDefaultVisitorVoid : AstVisitorVoid() {
-    override fun visitImplicitType(implicitType: AstImplicitType) {
-        return visitType(implicitType)
-    }
-
-    override fun visitResolvedType(resolvedType: AstResolvedType) {
-        return visitType(resolvedType)
-    }
-
-    override fun visitResolvedFunctionType(resolvedFunctionType: AstResolvedFunctionType) {
-        return visitResolvedType(resolvedFunctionType)
-    }
-
-    override fun visitTypeWithNullability(TypeWithNullability: AstTypeWithNullability) {
-        return visitType(TypeWithNullability)
-    }
-
-    override fun visitDynamicType(dynamicType: AstDynamicType) {
-        return visitTypeWithNullability(dynamicType)
-    }
-
-    override fun visitFunctionType(functionType: AstFunctionType) {
-        return visitTypeWithNullability(functionType)
-    }
-
-    override fun visitUserType(userType: AstUserType) {
-        return visitTypeWithNullability(userType)
-    }
 
     override fun visitCallableReferenceAccess(callableReferenceAccess: AstCallableReferenceAccess) {
         return visitQualifiedAccessExpression(callableReferenceAccess)
-    }
-
-    override fun visitComponentCall(componentCall: AstComponentCall) {
-        return visitFunctionCall(componentCall)
     }
 
     override fun visitReturnExpression(returnExpression: AstReturnExpression) {

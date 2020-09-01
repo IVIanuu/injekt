@@ -68,7 +68,6 @@ import com.ivianuu.ast.expressions.AstClassReferenceExpression
 import com.ivianuu.ast.expressions.AstQualifiedAccessExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
-import com.ivianuu.ast.expressions.AstComponentCall
 import com.ivianuu.ast.expressions.AstCallableReferenceAccess
 import com.ivianuu.ast.expressions.AstThisReceiverExpression
 import com.ivianuu.ast.expressions.AstExpressionWithSmartcast
@@ -372,10 +371,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     open fun visitDelegatedConstructorCall(delegatedConstructorCall: AstDelegatedConstructorCall) {
         visitElement(delegatedConstructorCall)
-    }
-
-    open fun visitComponentCall(componentCall: AstComponentCall) {
-        visitElement(componentCall)
     }
 
     open fun visitCallableReferenceAccess(callableReferenceAccess: AstCallableReferenceAccess) {
@@ -760,10 +755,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     final override fun visitDelegatedConstructorCall(delegatedConstructorCall: AstDelegatedConstructorCall, data: Nothing?) {
         visitDelegatedConstructorCall(delegatedConstructorCall)
-    }
-
-    final override fun visitComponentCall(componentCall: AstComponentCall, data: Nothing?) {
-        visitComponentCall(componentCall)
     }
 
     final override fun visitCallableReferenceAccess(callableReferenceAccess: AstCallableReferenceAccess, data: Nothing?) {

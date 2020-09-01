@@ -51,7 +51,7 @@ val implicitUnitTypeType = generatedType("types.impl", "AstImplicitUnitType")
 val stubReferenceType = generatedType("references.impl", "AstStubReference")
 val compositeTransformResultType = type("ast.visitors", "CompositeTransformResult")
 
-val abstractAstBasedSymbolType = type("ast.symbols", "AbstractAstBasedSymbol")
+val abstractAstSymbolType = type("ast.symbols", "AbstractAstSymbol")
 val backingFieldSymbolType = type("ast.symbols.impl", "AstBackingFieldSymbol")
 val delegateFieldSymbolType = type("ast.symbols.impl", "AstDelegateFieldSymbol")
 val classSymbolType = type("ast.symbols.impl", "AstClassSymbol")

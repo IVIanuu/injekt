@@ -1,7 +1,7 @@
 package com.ivianuu.ast.references.impl
 
 import com.ivianuu.ast.references.AstResolvedNamedReference
-import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
+import com.ivianuu.ast.symbols.AbstractAstSymbol
 import org.jetbrains.kotlin.name.Name
 import com.ivianuu.ast.visitors.*
 
@@ -12,9 +12,9 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstResolvedNamedReferenceImpl(
     override val name: Name,
-    override val resolvedSymbol: AbstractAstBasedSymbol<*>,
+    override val resolvedSymbol: AbstractAstSymbol<*>,
 ) : AstResolvedNamedReference() {
-    override val candidateSymbol: AbstractAstBasedSymbol<*>? get() = null
+    override val candidateSymbol: AbstractAstSymbol<*>? get() = null
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {}
 

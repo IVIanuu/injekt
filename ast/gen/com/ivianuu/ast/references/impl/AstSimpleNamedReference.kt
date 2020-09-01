@@ -2,7 +2,7 @@ package com.ivianuu.ast.references.impl
 
 import com.ivianuu.ast.AstImplementationDetail
 import com.ivianuu.ast.references.AstNamedReference
-import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
+import com.ivianuu.ast.symbols.AbstractAstSymbol
 import org.jetbrains.kotlin.name.Name
 import com.ivianuu.ast.visitors.*
 
@@ -13,7 +13,7 @@ import com.ivianuu.ast.visitors.*
 
 open class AstSimpleNamedReference @AstImplementationDetail constructor(
     override val name: Name,
-    override val candidateSymbol: AbstractAstBasedSymbol<*>?,
+    override val candidateSymbol: AbstractAstSymbol<*>?,
 ) : AstNamedReference() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {}
 
