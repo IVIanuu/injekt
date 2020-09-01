@@ -27,19 +27,13 @@ internal class AstBreakExpressionImpl(
         annotations.forEach { it.accept(visitor, data) }
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstBreakExpressionImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstBreakExpressionImpl {
         typeRef = typeRef.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstBreakExpressionImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstBreakExpressionImpl {
         annotations.transformInplace(transformer, data)
         return this
     }

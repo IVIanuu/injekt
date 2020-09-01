@@ -29,10 +29,7 @@ class AstComparisonExpressionBuilder : AstAnnotationContainerBuilder, AstExpress
         )
     }
 
-    @Deprecated(
-        "Modification of 'typeRef' has no impact for AstComparisonExpressionBuilder",
-        level = DeprecationLevel.HIDDEN
-    )
+    @Deprecated("Modification of 'typeRef' has no impact for AstComparisonExpressionBuilder", level = DeprecationLevel.HIDDEN)
     override var typeRef: AstTypeRef
         get() = throw IllegalStateException()
         set(value) {

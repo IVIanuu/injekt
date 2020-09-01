@@ -14,8 +14,7 @@ import org.jetbrains.kotlin.name.Name
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstSimpleFunction : AstPureAbstractElement(), AstFunction<AstSimpleFunction>,
-    AstCallableMemberDeclaration<AstSimpleFunction>, AstTypeParametersOwner {
+abstract class AstSimpleFunction : AstPureAbstractElement(), AstFunction<AstSimpleFunction>, AstCallableMemberDeclaration<AstSimpleFunction>, AstTypeParametersOwner {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
     abstract override val returnTypeRef: AstTypeRef
@@ -28,8 +27,7 @@ abstract class AstSimpleFunction : AstPureAbstractElement(), AstFunction<AstSimp
     abstract override val annotations: List<AstAnnotationCall>
     abstract override val typeParameters: List<AstTypeParameter>
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitSimpleFunction(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitSimpleFunction(this, data)
 
     abstract override fun replaceReturnTypeRef(newReturnTypeRef: AstTypeRef)
 
@@ -37,38 +35,17 @@ abstract class AstSimpleFunction : AstPureAbstractElement(), AstFunction<AstSimp
 
     abstract override fun replaceValueParameters(newValueParameters: List<AstValueParameter>)
 
-    abstract override fun <D> transformReturnTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstSimpleFunction
+    abstract override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstSimpleFunction
 
-    abstract override fun <D> transformReceiverTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstSimpleFunction
+    abstract override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstSimpleFunction
 
-    abstract override fun <D> transformValueParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstSimpleFunction
+    abstract override fun <D> transformValueParameters(transformer: AstTransformer<D>, data: D): AstSimpleFunction
 
-    abstract override fun <D> transformBody(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstSimpleFunction
+    abstract override fun <D> transformBody(transformer: AstTransformer<D>, data: D): AstSimpleFunction
 
-    abstract override fun <D> transformStatus(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstSimpleFunction
+    abstract override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstSimpleFunction
 
-    abstract override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstSimpleFunction
+    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstSimpleFunction
 
-    abstract override fun <D> transformTypeParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstSimpleFunction
+    abstract override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstSimpleFunction
 }

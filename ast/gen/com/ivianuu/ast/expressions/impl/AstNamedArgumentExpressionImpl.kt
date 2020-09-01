@@ -28,19 +28,13 @@ internal class AstNamedArgumentExpressionImpl(
         expression.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstNamedArgumentExpressionImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstNamedArgumentExpressionImpl {
         transformAnnotations(transformer, data)
         expression = expression.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstNamedArgumentExpressionImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstNamedArgumentExpressionImpl {
         annotations.transformInplace(transformer, data)
         return this
     }

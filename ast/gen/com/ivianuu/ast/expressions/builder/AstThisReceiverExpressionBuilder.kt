@@ -18,8 +18,7 @@ import kotlin.contracts.ExperimentalContracts
  */
 
 @AstBuilderDsl
-class AstThisReceiverExpressionBuilder : AstQualifiedAccessBuilder, AstAnnotationContainerBuilder,
-    AstExpressionBuilder {
+class AstThisReceiverExpressionBuilder : AstQualifiedAccessBuilder, AstAnnotationContainerBuilder, AstExpressionBuilder {
     override var typeRef: AstTypeRef = AstImplicitTypeRefImpl()
     override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
     override val typeArguments: MutableList<AstTypeProjection> = mutableListOf()
@@ -34,30 +33,21 @@ class AstThisReceiverExpressionBuilder : AstQualifiedAccessBuilder, AstAnnotatio
         )
     }
 
-    @Deprecated(
-        "Modification of 'explicitReceiver' has no impact for AstThisReceiverExpressionBuilder",
-        level = DeprecationLevel.HIDDEN
-    )
+    @Deprecated("Modification of 'explicitReceiver' has no impact for AstThisReceiverExpressionBuilder", level = DeprecationLevel.HIDDEN)
     override var explicitReceiver: AstExpression?
         get() = throw IllegalStateException()
         set(value) {
             throw IllegalStateException()
         }
 
-    @Deprecated(
-        "Modification of 'dispatchReceiver' has no impact for AstThisReceiverExpressionBuilder",
-        level = DeprecationLevel.HIDDEN
-    )
+    @Deprecated("Modification of 'dispatchReceiver' has no impact for AstThisReceiverExpressionBuilder", level = DeprecationLevel.HIDDEN)
     override var dispatchReceiver: AstExpression
         get() = throw IllegalStateException()
         set(value) {
             throw IllegalStateException()
         }
 
-    @Deprecated(
-        "Modification of 'extensionReceiver' has no impact for AstThisReceiverExpressionBuilder",
-        level = DeprecationLevel.HIDDEN
-    )
+    @Deprecated("Modification of 'extensionReceiver' has no impact for AstThisReceiverExpressionBuilder", level = DeprecationLevel.HIDDEN)
     override var extensionReceiver: AstExpression
         get() = throw IllegalStateException()
         set(value) {

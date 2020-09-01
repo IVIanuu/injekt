@@ -19,8 +19,7 @@ import kotlin.contracts.ExperimentalContracts
  */
 
 @AstBuilderDsl
-class AstCallableReferenceAccessBuilder : AstQualifiedAccessBuilder, AstAnnotationContainerBuilder,
-    AstExpressionBuilder {
+class AstCallableReferenceAccessBuilder : AstQualifiedAccessBuilder, AstAnnotationContainerBuilder, AstExpressionBuilder {
     override var typeRef: AstTypeRef = AstImplicitTypeRefImpl()
     override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
     override val typeArguments: MutableList<AstTypeProjection> = mutableListOf()

@@ -2,10 +2,9 @@ package com.ivianuu.ast.references.impl
 
 import com.ivianuu.ast.references.AstResolvedCallableReference
 import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.name.Name
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -21,10 +20,7 @@ internal class AstResolvedCallableReferenceImpl(
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {}
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstResolvedCallableReferenceImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstResolvedCallableReferenceImpl {
         return this
     }
 }

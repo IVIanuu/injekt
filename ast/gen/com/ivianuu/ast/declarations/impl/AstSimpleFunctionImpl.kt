@@ -46,10 +46,7 @@ open class AstSimpleFunctionImpl @AstImplementationDetail constructor(
         typeParameters.forEach { it.accept(visitor, data) }
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstSimpleFunctionImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstSimpleFunctionImpl {
         transformReturnTypeRef(transformer, data)
         transformReceiverTypeRef(transformer, data)
         transformValueParameters(transformer, data)
@@ -60,26 +57,17 @@ open class AstSimpleFunctionImpl @AstImplementationDetail constructor(
         return this
     }
 
-    override fun <D> transformReturnTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstSimpleFunctionImpl {
+    override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstSimpleFunctionImpl {
         returnTypeRef = returnTypeRef.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformReceiverTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstSimpleFunctionImpl {
+    override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstSimpleFunctionImpl {
         receiverTypeRef = receiverTypeRef?.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformValueParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstSimpleFunctionImpl {
+    override fun <D> transformValueParameters(transformer: AstTransformer<D>, data: D): AstSimpleFunctionImpl {
         valueParameters.transformInplace(transformer, data)
         return this
     }
@@ -89,26 +77,17 @@ open class AstSimpleFunctionImpl @AstImplementationDetail constructor(
         return this
     }
 
-    override fun <D> transformStatus(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstSimpleFunctionImpl {
+    override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstSimpleFunctionImpl {
         status = status.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstSimpleFunctionImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstSimpleFunctionImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformTypeParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstSimpleFunctionImpl {
+    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstSimpleFunctionImpl {
         typeParameters.transformInplace(transformer, data)
         return this
     }

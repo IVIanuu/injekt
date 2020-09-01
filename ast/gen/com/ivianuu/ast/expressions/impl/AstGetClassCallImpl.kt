@@ -29,20 +29,14 @@ internal class AstGetClassCallImpl(
         argumentList.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstGetClassCallImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstGetClassCallImpl {
         typeRef = typeRef.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         argumentList = argumentList.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstGetClassCallImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstGetClassCallImpl {
         annotations.transformInplace(transformer, data)
         return this
     }

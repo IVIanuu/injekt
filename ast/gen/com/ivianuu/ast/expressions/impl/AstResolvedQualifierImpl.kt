@@ -5,12 +5,9 @@ import com.ivianuu.ast.expressions.AstResolvedQualifier
 import com.ivianuu.ast.symbols.impl.AstClassLikeSymbol
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -26,10 +23,9 @@ internal class AstResolvedQualifierImpl(
     override var isNullableLHSForCallableReference: Boolean,
     override val typeArguments: MutableList<AstTypeProjection>,
 ) : AstResolvedQualifier() {
-    override val classId: ClassId?
-        get() = relativeClassFqName?.let {
-            ClassId(packageFqName, it, false)
-        }
+    override val classId: ClassId? get() = relativeClassFqName?.let {
+    ClassId(packageFqName, it, false)
+}
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         typeRef.accept(visitor, data)
@@ -37,28 +33,19 @@ internal class AstResolvedQualifierImpl(
         typeArguments.forEach { it.accept(visitor, data) }
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstResolvedQualifierImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstResolvedQualifierImpl {
         typeRef = typeRef.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         transformTypeArguments(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstResolvedQualifierImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstResolvedQualifierImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformTypeArguments(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstResolvedQualifierImpl {
+    override fun <D> transformTypeArguments(transformer: AstTransformer<D>, data: D): AstResolvedQualifierImpl {
         typeArguments.transformInplace(transformer, data)
         return this
     }

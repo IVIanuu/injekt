@@ -2,9 +2,7 @@ package com.ivianuu.ast.types.impl
 
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.types.AstDynamicTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -19,18 +17,12 @@ internal class AstDynamicTypeRefImpl(
         annotations.forEach { it.accept(visitor, data) }
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstDynamicTypeRefImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstDynamicTypeRefImpl {
         transformAnnotations(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstDynamicTypeRefImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstDynamicTypeRefImpl {
         annotations.transformInplace(transformer, data)
         return this
     }

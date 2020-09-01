@@ -33,8 +33,7 @@ internal class AstComponentCallImpl(
     override val componentIndex: Int,
 ) : AstComponentCall() {
     override var typeRef: AstTypeRef = AstImplicitTypeRefImpl()
-    override var calleeReference: AstNamedReference =
-        AstSimpleNamedReference(Name.identifier("component$componentIndex"), null)
+    override var calleeReference: AstNamedReference = AstSimpleNamedReference(Name.identifier("component$componentIndex"), null)
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         typeRef.accept(visitor, data)
@@ -51,10 +50,7 @@ internal class AstComponentCallImpl(
         }
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstComponentCallImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstComponentCallImpl {
         typeRef = typeRef.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         transformTypeArguments(transformer, data)
@@ -70,50 +66,32 @@ internal class AstComponentCallImpl(
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstComponentCallImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstComponentCallImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformTypeArguments(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstComponentCallImpl {
+    override fun <D> transformTypeArguments(transformer: AstTransformer<D>, data: D): AstComponentCallImpl {
         typeArguments.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformDispatchReceiver(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstComponentCallImpl {
+    override fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstComponentCallImpl {
         dispatchReceiver = dispatchReceiver.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformExtensionReceiver(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstComponentCallImpl {
+    override fun <D> transformExtensionReceiver(transformer: AstTransformer<D>, data: D): AstComponentCallImpl {
         extensionReceiver = extensionReceiver.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformCalleeReference(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstComponentCallImpl {
+    override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstComponentCallImpl {
         calleeReference = calleeReference.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformExplicitReceiver(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstComponentCallImpl {
+    override fun <D> transformExplicitReceiver(transformer: AstTransformer<D>, data: D): AstComponentCallImpl {
         explicitReceiver = explicitReceiver.transformSingle(transformer, data)
         return this
     }

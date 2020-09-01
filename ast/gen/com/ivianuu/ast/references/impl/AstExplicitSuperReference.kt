@@ -2,9 +2,7 @@ package com.ivianuu.ast.references.impl
 
 import com.ivianuu.ast.references.AstSuperReference
 import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -19,10 +17,7 @@ internal class AstExplicitSuperReference(
         superTypeRef.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstExplicitSuperReference {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstExplicitSuperReference {
         superTypeRef = superTypeRef.transformSingle(transformer, data)
         return this
     }

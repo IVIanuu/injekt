@@ -25,19 +25,13 @@ class AstElseIfTrueCondition @AstImplementationDetail constructor(
         annotations.forEach { it.accept(visitor, data) }
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstElseIfTrueCondition {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstElseIfTrueCondition {
         typeRef = typeRef.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstElseIfTrueCondition {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstElseIfTrueCondition {
         annotations.transformInplace(transformer, data)
         return this
     }

@@ -44,32 +44,22 @@ internal class AstRegularClassImpl(
         superTypeRefs.forEach { it.accept(visitor, data) }
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstRegularClassImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
         transformAnnotations(transformer, data)
         transformTypeParameters(transformer, data)
         transformStatus(transformer, data)
         transformDeclarations(transformer, data)
-        companionObject = declarations.asSequence().filterIsInstance<AstRegularClass>()
-            .firstOrNull { it.status.isCompanion }
+        companionObject = declarations.asSequence().filterIsInstance<AstRegularClass>().firstOrNull { it.status.isCompanion }
         transformSuperTypeRefs(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstRegularClassImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformTypeParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstRegularClassImpl {
+    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
         typeParameters.transformInplace(transformer, data)
         return this
     }
@@ -79,26 +69,17 @@ internal class AstRegularClassImpl(
         return this
     }
 
-    override fun <D> transformDeclarations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstRegularClassImpl {
+    override fun <D> transformDeclarations(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
         declarations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformCompanionObject(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstRegularClassImpl {
+    override fun <D> transformCompanionObject(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
         companionObject = companionObject?.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformSuperTypeRefs(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstRegularClassImpl {
+    override fun <D> transformSuperTypeRefs(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
         superTypeRefs.transformInplace(transformer, data)
         return this
     }

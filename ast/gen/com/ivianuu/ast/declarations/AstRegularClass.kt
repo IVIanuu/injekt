@@ -14,8 +14,7 @@ import org.jetbrains.kotlin.name.Name
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstRegularClass : AstPureAbstractElement(), AstMemberDeclaration,
-    AstTypeParameterRefsOwner, AstClass<AstRegularClass> {
+abstract class AstRegularClass : AstPureAbstractElement(), AstMemberDeclaration, AstTypeParameterRefsOwner, AstClass<AstRegularClass> {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
     abstract override val annotations: List<AstAnnotationCall>
@@ -29,38 +28,19 @@ abstract class AstRegularClass : AstPureAbstractElement(), AstMemberDeclaration,
     abstract val hasLazyNestedClassifiers: Boolean
     abstract override val superTypeRefs: List<AstTypeRef>
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitRegularClass(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitRegularClass(this, data)
 
     abstract override fun replaceSuperTypeRefs(newSuperTypeRefs: List<AstTypeRef>)
 
-    abstract override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstRegularClass
+    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstRegularClass
 
-    abstract override fun <D> transformTypeParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstRegularClass
+    abstract override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstRegularClass
 
-    abstract override fun <D> transformStatus(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstRegularClass
+    abstract override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstRegularClass
 
-    abstract override fun <D> transformDeclarations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstRegularClass
+    abstract override fun <D> transformDeclarations(transformer: AstTransformer<D>, data: D): AstRegularClass
 
-    abstract fun <D> transformCompanionObject(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstRegularClass
+    abstract fun <D> transformCompanionObject(transformer: AstTransformer<D>, data: D): AstRegularClass
 
-    abstract override fun <D> transformSuperTypeRefs(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstRegularClass
+    abstract override fun <D> transformSuperTypeRefs(transformer: AstTransformer<D>, data: D): AstRegularClass
 }

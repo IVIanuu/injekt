@@ -18,8 +18,6 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val typeRef = element("TypeRef", TypeRef, annotationContainer)
     val reference = element("Reference", Reference)
     val label = element("Label", Other)
-    val import = element("Import", Declaration)
-    val resolvedImport = element("ResolvedImport", Declaration, import)
     val symbolOwner = element("SymbolOwner", Other)
     val resolvable = element("Resolvable", Expression)
 
@@ -147,11 +145,8 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val whenExpression = element("WhenExpression", Expression, expression, resolvable)
     val whenBranch = element("WhenBranch", Expression)
     val qualifiedAccess = element("QualifiedAccess", Expression, resolvable, statement)
-    val checkNotNullCall = element("CheckNotNullCall", Expression, expression, call, resolvable)
     val elvisExpression = element("ElvisExpression", Expression, expression, resolvable)
 
-    val arrayOfCall = element("ArrayOfCall", Expression, expression, call)
-    val arraySetCall = element("AugmentedArraySetCall", Expression, statement)
     val classReferenceExpression = element("ClassReferenceExpression", Expression, expression)
     val qualifiedAccessExpression =
         element("QualifiedAccessExpression", Expression, expression, qualifiedAccess)

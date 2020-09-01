@@ -12,6 +12,5 @@ interface AstDeclaration : AstElement {
     val origin: AstDeclarationOrigin
     val attributes: AstDeclarationAttributes
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitDeclaration(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitDeclaration(this, data)
 }

@@ -2,9 +2,8 @@ package com.ivianuu.ast.types
 
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.expressions.AstAnnotationCall
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -21,11 +20,7 @@ abstract class AstResolvedFunctionTypeRef : AstResolvedTypeRef(), AstFunctionTyp
     abstract override val valueParameters: List<AstValueParameter>
     abstract override val returnTypeRef: AstTypeRef
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitResolvedFunctionTypeRef(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitResolvedFunctionTypeRef(this, data)
 
-    abstract override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstResolvedFunctionTypeRef
+    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstResolvedFunctionTypeRef
 }

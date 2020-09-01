@@ -19,8 +19,7 @@ import kotlin.contracts.ExperimentalContracts
  */
 
 @AstBuilderDsl
-class AstResolvedQualifierBuilder : AstAbstractResolvedQualifierBuilder,
-    AstAnnotationContainerBuilder, AstExpressionBuilder {
+class AstResolvedQualifierBuilder : AstAbstractResolvedQualifierBuilder, AstAnnotationContainerBuilder, AstExpressionBuilder {
     override var typeRef: AstTypeRef = AstImplicitTypeRefImpl()
     override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
     override lateinit var packageFqName: FqName
@@ -42,10 +41,7 @@ class AstResolvedQualifierBuilder : AstAbstractResolvedQualifierBuilder,
     }
 
 
-    @Deprecated(
-        "Modification of 'classId' has no impact for AstResolvedQualifierBuilder",
-        level = DeprecationLevel.HIDDEN
-    )
+    @Deprecated("Modification of 'classId' has no impact for AstResolvedQualifierBuilder", level = DeprecationLevel.HIDDEN)
     override var classId: ClassId?
         get() = throw IllegalStateException()
         set(value) {

@@ -46,10 +46,7 @@ internal class AstAnonymousFunctionImpl(
         typeParameters.forEach { it.accept(visitor, data) }
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnonymousFunctionImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
         transformAnnotations(transformer, data)
         transformReturnTypeRef(transformer, data)
         transformReceiverTypeRef(transformer, data)
@@ -61,50 +58,32 @@ internal class AstAnonymousFunctionImpl(
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnonymousFunctionImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformReturnTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnonymousFunctionImpl {
+    override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
         returnTypeRef = returnTypeRef.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformReceiverTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnonymousFunctionImpl {
+    override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
         receiverTypeRef = receiverTypeRef?.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformValueParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnonymousFunctionImpl {
+    override fun <D> transformValueParameters(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
         valueParameters.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformBody(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnonymousFunctionImpl {
+    override fun <D> transformBody(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
         body = body?.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformTypeParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnonymousFunctionImpl {
+    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
         typeParameters.transformInplace(transformer, data)
         return this
     }

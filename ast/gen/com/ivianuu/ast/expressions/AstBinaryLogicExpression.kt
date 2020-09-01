@@ -1,8 +1,7 @@
 package com.ivianuu.ast.expressions
 
 import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -16,28 +15,15 @@ abstract class AstBinaryLogicExpression : AstExpression() {
     abstract val rightOperand: AstExpression
     abstract val kind: LogicOperationKind
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitBinaryLogicExpression(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitBinaryLogicExpression(this, data)
 
     abstract override fun replaceTypeRef(newTypeRef: AstTypeRef)
 
-    abstract override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstBinaryLogicExpression
+    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstBinaryLogicExpression
 
-    abstract fun <D> transformLeftOperand(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstBinaryLogicExpression
+    abstract fun <D> transformLeftOperand(transformer: AstTransformer<D>, data: D): AstBinaryLogicExpression
 
-    abstract fun <D> transformRightOperand(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstBinaryLogicExpression
+    abstract fun <D> transformRightOperand(transformer: AstTransformer<D>, data: D): AstBinaryLogicExpression
 
-    abstract fun <D> transformOtherChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstBinaryLogicExpression
+    abstract fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstBinaryLogicExpression
 }

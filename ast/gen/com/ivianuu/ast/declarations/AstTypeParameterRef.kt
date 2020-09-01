@@ -12,6 +12,5 @@ import com.ivianuu.ast.visitors.AstVisitor
 interface AstTypeParameterRef : AstElement {
     val symbol: AstTypeParameterSymbol
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitTypeParameterRef(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitTypeParameterRef(this, data)
 }

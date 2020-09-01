@@ -4,8 +4,7 @@ import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.references.AstThisReference
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -21,8 +20,7 @@ abstract class AstThisReceiverExpression : AstQualifiedAccessExpression() {
     abstract override val extensionReceiver: AstExpression
     abstract override val calleeReference: AstThisReference
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitThisReceiverExpression(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitThisReceiverExpression(this, data)
 
     abstract override fun replaceTypeRef(newTypeRef: AstTypeRef)
 
@@ -34,33 +32,15 @@ abstract class AstThisReceiverExpression : AstQualifiedAccessExpression() {
 
     abstract override fun replaceCalleeReference(newCalleeReference: AstReference)
 
-    abstract override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstThisReceiverExpression
+    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstThisReceiverExpression
 
-    abstract override fun <D> transformTypeArguments(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstThisReceiverExpression
+    abstract override fun <D> transformTypeArguments(transformer: AstTransformer<D>, data: D): AstThisReceiverExpression
 
-    abstract override fun <D> transformExplicitReceiver(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstThisReceiverExpression
+    abstract override fun <D> transformExplicitReceiver(transformer: AstTransformer<D>, data: D): AstThisReceiverExpression
 
-    abstract override fun <D> transformDispatchReceiver(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstThisReceiverExpression
+    abstract override fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstThisReceiverExpression
 
-    abstract override fun <D> transformExtensionReceiver(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstThisReceiverExpression
+    abstract override fun <D> transformExtensionReceiver(transformer: AstTransformer<D>, data: D): AstThisReceiverExpression
 
-    abstract override fun <D> transformCalleeReference(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstThisReceiverExpression
+    abstract override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstThisReceiverExpression
 }

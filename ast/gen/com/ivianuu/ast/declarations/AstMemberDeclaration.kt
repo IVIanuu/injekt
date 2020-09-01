@@ -16,18 +16,11 @@ interface AstMemberDeclaration : AstAnnotatedDeclaration, AstTypeParameterRefsOw
     override val typeParameters: List<AstTypeParameterRef>
     val status: AstDeclarationStatus
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitMemberDeclaration(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitMemberDeclaration(this, data)
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstMemberDeclaration
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstMemberDeclaration
 
-    override fun <D> transformTypeParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstMemberDeclaration
+    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstMemberDeclaration
 
     fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstMemberDeclaration
 }

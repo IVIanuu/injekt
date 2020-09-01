@@ -23,32 +23,20 @@ class AstEmptyExpressionBlock : AstBlock() {
         typeRef.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstEmptyExpressionBlock {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstEmptyExpressionBlock {
         transformOtherChildren(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstEmptyExpressionBlock {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstEmptyExpressionBlock {
         return this
     }
 
-    override fun <D> transformStatements(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstEmptyExpressionBlock {
+    override fun <D> transformStatements(transformer: AstTransformer<D>, data: D): AstEmptyExpressionBlock {
         return this
     }
 
-    override fun <D> transformOtherChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstEmptyExpressionBlock {
+    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstEmptyExpressionBlock {
         typeRef = typeRef.transformSingle(transformer, data)
         return this
     }

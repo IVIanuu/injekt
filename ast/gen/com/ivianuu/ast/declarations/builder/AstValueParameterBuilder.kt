@@ -53,10 +53,7 @@ inline fun buildValueParameter(init: AstValueParameterBuilder.() -> Unit): AstVa
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildValueParameterCopy(
-    original: AstValueParameter,
-    init: AstValueParameterBuilder.() -> Unit
-): AstValueParameter {
+inline fun buildValueParameterCopy(original: AstValueParameter, init: AstValueParameterBuilder.() -> Unit): AstValueParameter {
     val copyBuilder = AstValueParameterBuilder()
     copyBuilder.origin = original.origin
     copyBuilder.returnTypeRef = original.returnTypeRef

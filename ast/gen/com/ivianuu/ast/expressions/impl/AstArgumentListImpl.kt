@@ -18,18 +18,12 @@ internal class AstArgumentListImpl(
         arguments.forEach { it.accept(visitor, data) }
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstArgumentListImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstArgumentListImpl {
         transformArguments(transformer, data)
         return this
     }
 
-    override fun <D> transformArguments(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstArgumentListImpl {
+    override fun <D> transformArguments(transformer: AstTransformer<D>, data: D): AstArgumentListImpl {
         arguments.transformInplace(transformer, data)
         return this
     }

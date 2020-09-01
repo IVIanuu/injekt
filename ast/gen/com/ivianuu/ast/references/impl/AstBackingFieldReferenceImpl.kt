@@ -3,9 +3,8 @@ package com.ivianuu.ast.references.impl
 import com.ivianuu.ast.references.AstBackingFieldReference
 import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
 import com.ivianuu.ast.symbols.impl.AstBackingFieldSymbol
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
 import org.jetbrains.kotlin.name.Name
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -20,10 +19,7 @@ internal class AstBackingFieldReferenceImpl(
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {}
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstBackingFieldReferenceImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstBackingFieldReferenceImpl {
         return this
     }
 }

@@ -34,36 +34,12 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
 
         impl(typeAlias)
 
-        impl(import)
-
-        impl(resolvedImport) {
-            delegateFields(listOf("aliasName", "importedFqName", "isAllUnder"), "delegate")
-
-            default("resolvedClassId") {
-                delegate = "relativeClassName"
-                delegateCall = "let { ClassId(packageFqName, it, false) }"
-                withGetter = true
-            }
-
-            default("importedName") {
-                delegate = "importedFqName"
-                delegateCall = "shortName()"
-                withGetter = true
-            }
-
-            default("delegate") {
-                needAcceptAndTransform = false
-            }
-        }
-
         impl(annotationCall) {
             default("typeRef") {
                 value = "annotationTypeRef"
                 withGetter = true
             }
         }
-
-        impl(arrayOfCall)
 
         impl(callableReferenceAccess)
 

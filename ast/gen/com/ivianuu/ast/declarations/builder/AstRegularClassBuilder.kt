@@ -22,8 +22,7 @@ import kotlin.contracts.ExperimentalContracts
  */
 
 @AstBuilderDsl
-open class AstRegularClassBuilder : AstClassBuilder, AstTypeParameterRefsOwnerBuilder,
-    AstAnnotationContainerBuilder {
+open class AstRegularClassBuilder : AstClassBuilder, AstTypeParameterRefsOwnerBuilder, AstAnnotationContainerBuilder {
     override lateinit var origin: AstDeclarationOrigin
     override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
     override val typeParameters: MutableList<AstTypeParameterRef> = mutableListOf()
@@ -51,10 +50,7 @@ open class AstRegularClassBuilder : AstClassBuilder, AstTypeParameterRefsOwnerBu
     }
 
 
-    @Deprecated(
-        "Modification of 'attributes' has no impact for AstRegularClassBuilder",
-        level = DeprecationLevel.HIDDEN
-    )
+    @Deprecated("Modification of 'attributes' has no impact for AstRegularClassBuilder", level = DeprecationLevel.HIDDEN)
     override var attributes: AstDeclarationAttributes
         get() = throw IllegalStateException()
         set(value) {

@@ -32,10 +32,7 @@ internal class AstElvisExpressionImpl(
         rhs.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstElvisExpressionImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstElvisExpressionImpl {
         typeRef = typeRef.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         transformCalleeReference(transformer, data)
@@ -44,18 +41,12 @@ internal class AstElvisExpressionImpl(
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstElvisExpressionImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstElvisExpressionImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformCalleeReference(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstElvisExpressionImpl {
+    override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstElvisExpressionImpl {
         calleeReference = calleeReference.transformSingle(transformer, data)
         return this
     }

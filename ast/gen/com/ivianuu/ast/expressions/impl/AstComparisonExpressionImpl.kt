@@ -29,20 +29,14 @@ internal class AstComparisonExpressionImpl(
         compareToCall.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstComparisonExpressionImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstComparisonExpressionImpl {
         typeRef = typeRef.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         compareToCall = compareToCall.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstComparisonExpressionImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstComparisonExpressionImpl {
         annotations.transformInplace(transformer, data)
         return this
     }

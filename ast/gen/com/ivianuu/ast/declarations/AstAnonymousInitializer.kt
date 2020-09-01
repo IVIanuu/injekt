@@ -11,13 +11,11 @@ import com.ivianuu.ast.visitors.AstVisitor
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstAnonymousInitializer : AstPureAbstractElement(), AstDeclaration,
-    AstSymbolOwner<AstAnonymousInitializer> {
+abstract class AstAnonymousInitializer : AstPureAbstractElement(), AstDeclaration, AstSymbolOwner<AstAnonymousInitializer> {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
     abstract val body: AstBlock?
     abstract override val symbol: AstAnonymousInitializerSymbol
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitAnonymousInitializer(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitAnonymousInitializer(this, data)
 }

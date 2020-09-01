@@ -28,10 +28,7 @@ class AstWrappedDelegateExpressionBuilder : AstAnnotationContainerBuilder, AstEx
         )
     }
 
-    @Deprecated(
-        "Modification of 'typeRef' has no impact for AstWrappedDelegateExpressionBuilder",
-        level = DeprecationLevel.HIDDEN
-    )
+    @Deprecated("Modification of 'typeRef' has no impact for AstWrappedDelegateExpressionBuilder", level = DeprecationLevel.HIDDEN)
     override var typeRef: AstTypeRef
         get() = throw IllegalStateException()
         set(value) {

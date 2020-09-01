@@ -1,8 +1,7 @@
 package com.ivianuu.ast.expressions
 
 import com.ivianuu.ast.AstPureAbstractElement
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -15,21 +14,11 @@ abstract class AstAssignmentOperatorStatement : AstPureAbstractElement(), AstSta
     abstract val leftArgument: AstExpression
     abstract val rightArgument: AstExpression
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitAssignmentOperatorStatement(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitAssignmentOperatorStatement(this, data)
 
-    abstract override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAssignmentOperatorStatement
+    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstAssignmentOperatorStatement
 
-    abstract fun <D> transformLeftArgument(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAssignmentOperatorStatement
+    abstract fun <D> transformLeftArgument(transformer: AstTransformer<D>, data: D): AstAssignmentOperatorStatement
 
-    abstract fun <D> transformRightArgument(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAssignmentOperatorStatement
+    abstract fun <D> transformRightArgument(transformer: AstTransformer<D>, data: D): AstAssignmentOperatorStatement
 }

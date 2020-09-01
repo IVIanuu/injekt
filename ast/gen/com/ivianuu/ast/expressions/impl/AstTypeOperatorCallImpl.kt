@@ -6,10 +6,7 @@ import com.ivianuu.ast.expressions.AstOperation
 import com.ivianuu.ast.expressions.AstTypeOperatorCall
 import com.ivianuu.ast.types.AstTypeRef
 import com.ivianuu.ast.types.impl.AstImplicitTypeRefImpl
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -31,35 +28,23 @@ internal class AstTypeOperatorCallImpl(
         conversionTypeRef.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTypeOperatorCallImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstTypeOperatorCallImpl {
         transformConversionTypeRef(transformer, data)
         transformOtherChildren(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTypeOperatorCallImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstTypeOperatorCallImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformConversionTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTypeOperatorCallImpl {
+    override fun <D> transformConversionTypeRef(transformer: AstTransformer<D>, data: D): AstTypeOperatorCallImpl {
         conversionTypeRef = conversionTypeRef.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformOtherChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTypeOperatorCallImpl {
+    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstTypeOperatorCallImpl {
         typeRef = typeRef.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         argumentList = argumentList.transformSingle(transformer, data)

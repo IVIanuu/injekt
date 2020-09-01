@@ -1,8 +1,8 @@
 package com.ivianuu.ast.references.impl
 
+import com.ivianuu.ast.AstImplementationDetail
 import com.ivianuu.ast.references.AstReference
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically

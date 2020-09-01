@@ -1,6 +1,6 @@
 package com.ivianuu.ast
 
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -10,6 +10,5 @@ import com.ivianuu.ast.visitors.AstVisitor
 abstract class AstLabel : AstPureAbstractElement(), AstElement {
     abstract val name: String
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitLabel(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitLabel(this, data)
 }

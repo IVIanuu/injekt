@@ -1,5 +1,6 @@
 package com.ivianuu.ast.types.builder
 
+import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstValueParameter
@@ -7,7 +8,8 @@ import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.types.AstFunctionTypeRef
 import com.ivianuu.ast.types.AstTypeRef
 import com.ivianuu.ast.types.impl.AstFunctionTypeRefImpl
-import kotlin.contracts.ExperimentalContracts
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 
 /*
  * This file was generated automatically
@@ -42,10 +44,7 @@ inline fun buildFunctionTypeRef(init: AstFunctionTypeRefBuilder.() -> Unit): Ast
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildFunctionTypeRefCopy(
-    original: AstFunctionTypeRef,
-    init: AstFunctionTypeRefBuilder.() -> Unit
-): AstFunctionTypeRef {
+inline fun buildFunctionTypeRefCopy(original: AstFunctionTypeRef, init: AstFunctionTypeRefBuilder.() -> Unit): AstFunctionTypeRef {
     val copyBuilder = AstFunctionTypeRefBuilder()
     copyBuilder.annotations.addAll(original.annotations)
     copyBuilder.isMarkedNullable = original.isMarkedNullable

@@ -47,10 +47,7 @@ internal class AstPrimaryConstructor(
         body?.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPrimaryConstructor {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstPrimaryConstructor {
         transformReturnTypeRef(transformer, data)
         transformReceiverTypeRef(transformer, data)
         transformTypeParameters(transformer, data)
@@ -62,58 +59,37 @@ internal class AstPrimaryConstructor(
         return this
     }
 
-    override fun <D> transformReturnTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPrimaryConstructor {
+    override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstPrimaryConstructor {
         returnTypeRef = returnTypeRef.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformReceiverTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPrimaryConstructor {
+    override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstPrimaryConstructor {
         receiverTypeRef = receiverTypeRef?.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformTypeParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPrimaryConstructor {
+    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstPrimaryConstructor {
         typeParameters.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformValueParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPrimaryConstructor {
+    override fun <D> transformValueParameters(transformer: AstTransformer<D>, data: D): AstPrimaryConstructor {
         valueParameters.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformStatus(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPrimaryConstructor {
+    override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstPrimaryConstructor {
         status = status.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPrimaryConstructor {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstPrimaryConstructor {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformDelegatedConstructor(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPrimaryConstructor {
+    override fun <D> transformDelegatedConstructor(transformer: AstTransformer<D>, data: D): AstPrimaryConstructor {
         delegatedConstructor = delegatedConstructor?.transformSingle(transformer, data)
         return this
     }

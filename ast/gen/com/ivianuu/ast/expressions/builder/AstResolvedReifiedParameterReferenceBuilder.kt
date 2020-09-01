@@ -16,8 +16,7 @@ import kotlin.contracts.ExperimentalContracts
  */
 
 @AstBuilderDsl
-class AstResolvedReifiedParameterReferenceBuilder : AstAnnotationContainerBuilder,
-    AstExpressionBuilder {
+class AstResolvedReifiedParameterReferenceBuilder : AstAnnotationContainerBuilder, AstExpressionBuilder {
     override var typeRef: AstTypeRef = AstImplicitTypeRefImpl()
     override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
     lateinit var symbol: AstTypeParameterSymbol

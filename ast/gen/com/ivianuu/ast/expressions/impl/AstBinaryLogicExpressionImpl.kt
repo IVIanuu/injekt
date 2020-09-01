@@ -31,44 +31,29 @@ internal class AstBinaryLogicExpressionImpl(
         rightOperand.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstBinaryLogicExpressionImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstBinaryLogicExpressionImpl {
         transformLeftOperand(transformer, data)
         transformRightOperand(transformer, data)
         transformOtherChildren(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstBinaryLogicExpressionImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstBinaryLogicExpressionImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformLeftOperand(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstBinaryLogicExpressionImpl {
+    override fun <D> transformLeftOperand(transformer: AstTransformer<D>, data: D): AstBinaryLogicExpressionImpl {
         leftOperand = leftOperand.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformRightOperand(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstBinaryLogicExpressionImpl {
+    override fun <D> transformRightOperand(transformer: AstTransformer<D>, data: D): AstBinaryLogicExpressionImpl {
         rightOperand = rightOperand.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformOtherChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstBinaryLogicExpressionImpl {
+    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstBinaryLogicExpressionImpl {
         typeRef = typeRef.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         return this

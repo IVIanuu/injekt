@@ -42,8 +42,7 @@ internal class AstPropertyImpl(
 ) : AstProperty() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override val isVal: Boolean get() = !isVar
-    override val backingFieldSymbol: AstBackingFieldSymbol =
-        AstBackingFieldSymbol(symbol.callableId)
+    override val backingFieldSymbol: AstBackingFieldSymbol = AstBackingFieldSymbol(symbol.callableId)
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         returnTypeRef.accept(visitor, data)
@@ -70,26 +69,17 @@ internal class AstPropertyImpl(
         return this
     }
 
-    override fun <D> transformReturnTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPropertyImpl {
+    override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstPropertyImpl {
         returnTypeRef = returnTypeRef.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformReceiverTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPropertyImpl {
+    override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstPropertyImpl {
         receiverTypeRef = receiverTypeRef?.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformInitializer(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPropertyImpl {
+    override fun <D> transformInitializer(transformer: AstTransformer<D>, data: D): AstPropertyImpl {
         initializer = initializer?.transformSingle(transformer, data)
         return this
     }
@@ -109,18 +99,12 @@ internal class AstPropertyImpl(
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPropertyImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstPropertyImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformTypeParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPropertyImpl {
+    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstPropertyImpl {
         typeParameters.transformInplace(transformer, data)
         return this
     }
@@ -130,10 +114,7 @@ internal class AstPropertyImpl(
         return this
     }
 
-    override fun <D> transformOtherChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPropertyImpl {
+    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstPropertyImpl {
         transformAnnotations(transformer, data)
         return this
     }

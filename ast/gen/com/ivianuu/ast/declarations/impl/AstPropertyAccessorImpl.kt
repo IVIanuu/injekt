@@ -45,10 +45,7 @@ open class AstPropertyAccessorImpl @AstImplementationDetail constructor(
         typeParameters.forEach { it.accept(visitor, data) }
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPropertyAccessorImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
         transformReturnTypeRef(transformer, data)
         transformValueParameters(transformer, data)
         transformBody(transformer, data)
@@ -58,57 +55,36 @@ open class AstPropertyAccessorImpl @AstImplementationDetail constructor(
         return this
     }
 
-    override fun <D> transformReturnTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPropertyAccessorImpl {
+    override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
         returnTypeRef = returnTypeRef.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformReceiverTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPropertyAccessorImpl {
+    override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
         return this
     }
 
-    override fun <D> transformValueParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPropertyAccessorImpl {
+    override fun <D> transformValueParameters(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
         valueParameters.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformBody(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPropertyAccessorImpl {
+    override fun <D> transformBody(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
         body = body?.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformStatus(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPropertyAccessorImpl {
+    override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
         status = status.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPropertyAccessorImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformTypeParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstPropertyAccessorImpl {
+    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
         typeParameters.transformInplace(transformer, data)
         return this
     }

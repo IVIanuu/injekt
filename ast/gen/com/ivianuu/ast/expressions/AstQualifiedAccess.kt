@@ -2,8 +2,7 @@ package com.ivianuu.ast.expressions
 
 import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.types.AstTypeProjection
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -18,8 +17,7 @@ interface AstQualifiedAccess : AstResolvable, AstStatement {
     val dispatchReceiver: AstExpression
     val extensionReceiver: AstExpression
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitQualifiedAccess(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitQualifiedAccess(this, data)
 
     override fun replaceCalleeReference(newCalleeReference: AstReference)
 
@@ -27,15 +25,9 @@ interface AstQualifiedAccess : AstResolvable, AstStatement {
 
     fun replaceExplicitReceiver(newExplicitReceiver: AstExpression?)
 
-    override fun <D> transformCalleeReference(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstQualifiedAccess
+    override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstQualifiedAccess
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstQualifiedAccess
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstQualifiedAccess
 
     fun <D> transformTypeArguments(transformer: AstTransformer<D>, data: D): AstQualifiedAccess
 

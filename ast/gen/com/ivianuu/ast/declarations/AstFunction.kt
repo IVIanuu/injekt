@@ -14,8 +14,7 @@ import com.ivianuu.ast.visitors.AstVisitor
  * DO NOT MODIFY IT MANUALLY
  */
 
-interface AstFunction<F : AstFunction<F>> : AstCallableDeclaration<F>, AstTargetElement,
-    AstTypeParameterRefsOwner, AstStatement {
+interface AstFunction<F : AstFunction<F>> : AstCallableDeclaration<F>, AstTargetElement, AstTypeParameterRefsOwner, AstStatement {
     override val origin: AstDeclarationOrigin
     override val attributes: AstDeclarationAttributes
     override val annotations: List<AstAnnotationCall>
@@ -26,8 +25,7 @@ interface AstFunction<F : AstFunction<F>> : AstCallableDeclaration<F>, AstTarget
     val valueParameters: List<AstValueParameter>
     val body: AstBlock?
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitFunction(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitFunction(this, data)
 
     override fun replaceReturnTypeRef(newReturnTypeRef: AstTypeRef)
 
@@ -39,15 +37,9 @@ interface AstFunction<F : AstFunction<F>> : AstCallableDeclaration<F>, AstTarget
 
     override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstFunction<F>
 
-    override fun <D> transformReceiverTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstFunction<F>
+    override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstFunction<F>
 
-    override fun <D> transformTypeParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstFunction<F>
+    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstFunction<F>
 
     fun <D> transformValueParameters(transformer: AstTransformer<D>, data: D): AstFunction<F>
 

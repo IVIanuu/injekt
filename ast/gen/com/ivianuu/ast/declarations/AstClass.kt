@@ -13,8 +13,7 @@ import org.jetbrains.kotlin.descriptors.ClassKind
  * DO NOT MODIFY IT MANUALLY
  */
 
-interface AstClass<F : AstClass<F>> : AstClassLikeDeclaration<F>, AstStatement,
-    AstTypeParameterRefsOwner {
+interface AstClass<F : AstClass<F>> : AstClassLikeDeclaration<F>, AstStatement, AstTypeParameterRefsOwner {
     override val origin: AstDeclarationOrigin
     override val attributes: AstDeclarationAttributes
     override val typeParameters: List<AstTypeParameterRef>
@@ -24,8 +23,7 @@ interface AstClass<F : AstClass<F>> : AstClassLikeDeclaration<F>, AstStatement,
     val declarations: List<AstDeclaration>
     override val annotations: List<AstAnnotationCall>
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitClass(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitClass(this, data)
 
     fun replaceSuperTypeRefs(newSuperTypeRefs: List<AstTypeRef>)
 

@@ -5,7 +5,8 @@ import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.types.AstDynamicTypeRef
 import com.ivianuu.ast.types.impl.AstDynamicTypeRefImpl
-import kotlin.contracts.ExperimentalContracts
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 
 /*
  * This file was generated automatically

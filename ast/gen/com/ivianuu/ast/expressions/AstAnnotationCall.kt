@@ -2,9 +2,8 @@ package com.ivianuu.ast.expressions
 
 import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -20,8 +19,7 @@ abstract class AstAnnotationCall : AstExpression(), AstCall, AstResolvable {
     abstract val annotationTypeRef: AstTypeRef
     abstract val resolveStatus: AstAnnotationResolveStatus
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitAnnotationCall(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitAnnotationCall(this, data)
 
     abstract override fun replaceTypeRef(newTypeRef: AstTypeRef)
 
@@ -31,18 +29,9 @@ abstract class AstAnnotationCall : AstExpression(), AstCall, AstResolvable {
 
     abstract fun replaceResolveStatus(newResolveStatus: AstAnnotationResolveStatus)
 
-    abstract override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnnotationCall
+    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstAnnotationCall
 
-    abstract override fun <D> transformCalleeReference(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnnotationCall
+    abstract override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstAnnotationCall
 
-    abstract fun <D> transformAnnotationTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnnotationCall
+    abstract fun <D> transformAnnotationTypeRef(transformer: AstTransformer<D>, data: D): AstAnnotationCall
 }

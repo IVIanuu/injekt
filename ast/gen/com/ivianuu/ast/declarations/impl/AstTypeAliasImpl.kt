@@ -50,18 +50,12 @@ internal class AstTypeAliasImpl(
         return this
     }
 
-    override fun <D> transformTypeParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTypeAliasImpl {
+    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstTypeAliasImpl {
         typeParameters.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTypeAliasImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstTypeAliasImpl {
         annotations.transformInplace(transformer, data)
         return this
     }

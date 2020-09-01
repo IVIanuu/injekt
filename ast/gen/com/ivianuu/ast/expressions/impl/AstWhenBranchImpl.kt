@@ -3,9 +3,7 @@ package com.ivianuu.ast.expressions.impl
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstWhenBranch
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -28,10 +26,7 @@ internal class AstWhenBranchImpl(
         return this
     }
 
-    override fun <D> transformCondition(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstWhenBranchImpl {
+    override fun <D> transformCondition(transformer: AstTransformer<D>, data: D): AstWhenBranchImpl {
         condition = condition.transformSingle(transformer, data)
         return this
     }
@@ -41,10 +36,7 @@ internal class AstWhenBranchImpl(
         return this
     }
 
-    override fun <D> transformOtherChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstWhenBranchImpl {
+    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstWhenBranchImpl {
         return this
     }
 }

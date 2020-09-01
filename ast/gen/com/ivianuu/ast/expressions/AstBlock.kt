@@ -1,8 +1,7 @@
 package com.ivianuu.ast.expressions
 
 import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -14,15 +13,11 @@ abstract class AstBlock : AstExpression() {
     abstract val statements: List<AstStatement>
     abstract override val typeRef: AstTypeRef
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitBlock(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitBlock(this, data)
 
     abstract override fun replaceTypeRef(newTypeRef: AstTypeRef)
 
-    abstract override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstBlock
+    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstBlock
 
     abstract fun <D> transformStatements(transformer: AstTransformer<D>, data: D): AstBlock
 

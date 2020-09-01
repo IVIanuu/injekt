@@ -1,8 +1,7 @@
 package com.ivianuu.ast.impl
 
 import com.ivianuu.ast.AstLabel
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically

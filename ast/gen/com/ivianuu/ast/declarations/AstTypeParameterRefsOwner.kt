@@ -12,11 +12,7 @@ import com.ivianuu.ast.visitors.AstVisitor
 interface AstTypeParameterRefsOwner : AstElement {
     val typeParameters: List<AstTypeParameterRef>
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitTypeParameterRefsOwner(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitTypeParameterRefsOwner(this, data)
 
-    fun <D> transformTypeParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTypeParameterRefsOwner
+    fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstTypeParameterRefsOwner
 }

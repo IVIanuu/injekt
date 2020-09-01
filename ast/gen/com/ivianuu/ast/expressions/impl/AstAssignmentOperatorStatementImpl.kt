@@ -26,36 +26,24 @@ internal class AstAssignmentOperatorStatementImpl(
         rightArgument.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAssignmentOperatorStatementImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstAssignmentOperatorStatementImpl {
         transformAnnotations(transformer, data)
         transformLeftArgument(transformer, data)
         transformRightArgument(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAssignmentOperatorStatementImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstAssignmentOperatorStatementImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformLeftArgument(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAssignmentOperatorStatementImpl {
+    override fun <D> transformLeftArgument(transformer: AstTransformer<D>, data: D): AstAssignmentOperatorStatementImpl {
         leftArgument = leftArgument.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformRightArgument(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAssignmentOperatorStatementImpl {
+    override fun <D> transformRightArgument(transformer: AstTransformer<D>, data: D): AstAssignmentOperatorStatementImpl {
         rightArgument = rightArgument.transformSingle(transformer, data)
         return this
     }

@@ -3,7 +3,9 @@ package com.ivianuu.ast.references.builder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.references.AstThisReference
 import com.ivianuu.ast.references.impl.AstExplicitThisReference
-import kotlin.contracts.ExperimentalContracts
+import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 
 /*
  * This file was generated automatically

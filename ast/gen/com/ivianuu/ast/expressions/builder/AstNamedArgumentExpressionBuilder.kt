@@ -31,10 +31,7 @@ class AstNamedArgumentExpressionBuilder : AstAnnotationContainerBuilder, AstExpr
         )
     }
 
-    @Deprecated(
-        "Modification of 'typeRef' has no impact for AstNamedArgumentExpressionBuilder",
-        level = DeprecationLevel.HIDDEN
-    )
+    @Deprecated("Modification of 'typeRef' has no impact for AstNamedArgumentExpressionBuilder", level = DeprecationLevel.HIDDEN)
     override var typeRef: AstTypeRef
         get() = throw IllegalStateException()
         set(value) {

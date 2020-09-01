@@ -101,15 +101,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             useTypes(emptyArgumentListType)
         }
 
-        builder(arrayOfCall) {
-            parents += callBuilder
-        }
-
-        builder(arraySetCall) {
-            default("calleeReference", "AstStubReference")
-            useTypes(stubReferenceType)
-        }
-
         builder(callableReferenceAccess) {
             parents += qualifiedAccessBuilder
             defaultNull("explicitReceiver")
@@ -270,11 +261,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             useTypes(stubReferenceType)
         }
 
-        builder(checkNotNullCall) {
-            default("calleeReference", "AstStubReference")
-            useTypes(stubReferenceType)
-        }
-
         builder(elvisExpression) {
             default("calleeReference", "AstStubReference")
             useTypes(stubReferenceType)
@@ -298,7 +284,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             anonymousFunction,
             whenExpression,
             tryExpression,
-            checkNotNullCall,
             resolvedQualifier,
             resolvedReifiedParameterReference,
             expression to "AstExpressionStub",

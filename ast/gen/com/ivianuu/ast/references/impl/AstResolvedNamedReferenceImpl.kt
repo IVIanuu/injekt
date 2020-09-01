@@ -2,9 +2,8 @@ package com.ivianuu.ast.references.impl
 
 import com.ivianuu.ast.references.AstResolvedNamedReference
 import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
 import org.jetbrains.kotlin.name.Name
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -19,10 +18,7 @@ internal class AstResolvedNamedReferenceImpl(
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {}
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstResolvedNamedReferenceImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstResolvedNamedReferenceImpl {
         return this
     }
 }

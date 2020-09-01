@@ -5,7 +5,6 @@ import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclaration
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstFile
-import com.ivianuu.ast.declarations.AstImport
 import com.ivianuu.ast.declarations.impl.AstFileImpl
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import org.jetbrains.kotlin.name.FqName
@@ -20,7 +19,6 @@ import kotlin.contracts.ExperimentalContracts
 class AstFileBuilder : AstAnnotationContainerBuilder {
     lateinit var origin: AstDeclarationOrigin
     override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
-    val imports: MutableList<AstImport> = mutableListOf()
     val declarations: MutableList<AstDeclaration> = mutableListOf()
     lateinit var name: String
     lateinit var packageFqName: FqName
@@ -29,7 +27,6 @@ class AstFileBuilder : AstAnnotationContainerBuilder {
         return AstFileImpl(
             origin,
             annotations,
-            imports,
             declarations,
             name,
             packageFqName,

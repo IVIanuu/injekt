@@ -4,8 +4,7 @@ import com.ivianuu.ast.references.AstNamedReference
 import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -22,8 +21,7 @@ abstract class AstFunctionCall : AstQualifiedAccessExpression(), AstCall {
     abstract override val argumentList: AstArgumentList
     abstract override val calleeReference: AstNamedReference
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitFunctionCall(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitFunctionCall(this, data)
 
     abstract override fun replaceTypeRef(newTypeRef: AstTypeRef)
 
@@ -37,33 +35,15 @@ abstract class AstFunctionCall : AstQualifiedAccessExpression(), AstCall {
 
     abstract override fun replaceCalleeReference(newCalleeReference: AstReference)
 
-    abstract override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstFunctionCall
+    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstFunctionCall
 
-    abstract override fun <D> transformTypeArguments(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstFunctionCall
+    abstract override fun <D> transformTypeArguments(transformer: AstTransformer<D>, data: D): AstFunctionCall
 
-    abstract override fun <D> transformExplicitReceiver(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstFunctionCall
+    abstract override fun <D> transformExplicitReceiver(transformer: AstTransformer<D>, data: D): AstFunctionCall
 
-    abstract override fun <D> transformDispatchReceiver(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstFunctionCall
+    abstract override fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstFunctionCall
 
-    abstract override fun <D> transformExtensionReceiver(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstFunctionCall
+    abstract override fun <D> transformExtensionReceiver(transformer: AstTransformer<D>, data: D): AstFunctionCall
 
-    abstract override fun <D> transformCalleeReference(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstFunctionCall
+    abstract override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstFunctionCall
 }

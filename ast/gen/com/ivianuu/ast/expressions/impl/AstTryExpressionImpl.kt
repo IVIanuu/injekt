@@ -6,10 +6,7 @@ import com.ivianuu.ast.expressions.AstCatch
 import com.ivianuu.ast.expressions.AstTryExpression
 import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -33,10 +30,7 @@ internal class AstTryExpressionImpl(
         finallyBlock?.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTryExpressionImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstTryExpressionImpl {
         transformCalleeReference(transformer, data)
         transformTryBlock(transformer, data)
         transformCatches(transformer, data)
@@ -45,50 +39,32 @@ internal class AstTryExpressionImpl(
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTryExpressionImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstTryExpressionImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformCalleeReference(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTryExpressionImpl {
+    override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstTryExpressionImpl {
         calleeReference = calleeReference.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformTryBlock(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTryExpressionImpl {
+    override fun <D> transformTryBlock(transformer: AstTransformer<D>, data: D): AstTryExpressionImpl {
         tryBlock = tryBlock.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformCatches(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTryExpressionImpl {
+    override fun <D> transformCatches(transformer: AstTransformer<D>, data: D): AstTryExpressionImpl {
         catches.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformFinallyBlock(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTryExpressionImpl {
+    override fun <D> transformFinallyBlock(transformer: AstTransformer<D>, data: D): AstTryExpressionImpl {
         finallyBlock = finallyBlock?.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformOtherChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTryExpressionImpl {
+    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstTryExpressionImpl {
         typeRef = typeRef.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         return this

@@ -374,41 +374,15 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         file.configure {
-            +fieldList(import).withTransform()
             +declarations.withTransform()
             +stringField("name")
             +field("packageFqName", fqNameType)
-        }
-
-        import.configure {
-            +field("importedFqName", fqNameType, nullable = true)
-            +booleanField("isAllUnder")
-            +field("aliasName", nameType, nullable = true)
-        }
-
-        resolvedImport.configure {
-            +field("delegate", import)
-            +field("packageFqName", fqNameType)
-            +field("relativeClassName", fqNameType, nullable = true)
-            +field("resolvedClassId", classIdType, nullable = true)
-            +field(
-                "importedName",
-                nameType,
-                nullable = true
-            )
         }
 
         annotationCall.configure {
             +field("useSiteTarget", annotationUseSiteTargetType, nullable = true)
             +field("annotationTypeRef", typeRef).withTransform()
             +field("resolveStatus", annotationResolveStatusType, withReplace = true)
-        }
-
-        arraySetCall.configure {
-            +field("assignCall", functionCall)
-            +field("setGetBlock", block)
-            +field("operation", operationType)
-            +field("calleeReference", reference, withReplace = true)
         }
 
         classReferenceExpression.configure {

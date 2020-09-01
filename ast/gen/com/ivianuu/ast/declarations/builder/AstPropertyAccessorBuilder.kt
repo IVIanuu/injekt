@@ -49,10 +49,7 @@ class AstPropertyAccessorBuilder : AstFunctionBuilder, AstAnnotationContainerBui
     }
 
 
-    @Deprecated(
-        "Modification of 'attributes' has no impact for AstPropertyAccessorBuilder",
-        level = DeprecationLevel.HIDDEN
-    )
+    @Deprecated("Modification of 'attributes' has no impact for AstPropertyAccessorBuilder", level = DeprecationLevel.HIDDEN)
     override var attributes: AstDeclarationAttributes
         get() = throw IllegalStateException()
         set(value) {

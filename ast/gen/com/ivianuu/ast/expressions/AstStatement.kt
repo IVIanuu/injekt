@@ -1,8 +1,7 @@
 package com.ivianuu.ast.expressions
 
 import com.ivianuu.ast.AstAnnotationContainer
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -12,8 +11,7 @@ import com.ivianuu.ast.visitors.AstVisitor
 interface AstStatement : AstAnnotationContainer {
     override val annotations: List<AstAnnotationCall>
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitStatement(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitStatement(this, data)
 
     override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstStatement
 }

@@ -23,8 +23,7 @@ import kotlin.contracts.ExperimentalContracts
  */
 
 @AstBuilderDsl
-class AstAnonymousFunctionBuilder : AstFunctionBuilder, AstAnnotationContainerBuilder,
-    AstExpressionBuilder {
+class AstAnonymousFunctionBuilder : AstFunctionBuilder, AstAnnotationContainerBuilder, AstExpressionBuilder {
     override lateinit var origin: AstDeclarationOrigin
     override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
     override lateinit var returnTypeRef: AstTypeRef
@@ -54,10 +53,7 @@ class AstAnonymousFunctionBuilder : AstFunctionBuilder, AstAnnotationContainerBu
     }
 
 
-    @Deprecated(
-        "Modification of 'attributes' has no impact for AstAnonymousFunctionBuilder",
-        level = DeprecationLevel.HIDDEN
-    )
+    @Deprecated("Modification of 'attributes' has no impact for AstAnonymousFunctionBuilder", level = DeprecationLevel.HIDDEN)
     override var attributes: AstDeclarationAttributes
         get() = throw IllegalStateException()
         set(value) {

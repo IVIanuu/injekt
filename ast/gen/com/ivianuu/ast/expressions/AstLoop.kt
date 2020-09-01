@@ -3,8 +3,7 @@ package com.ivianuu.ast.expressions
 import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.AstTargetElement
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -17,8 +16,7 @@ abstract class AstLoop : AstPureAbstractElement(), AstStatement, AstTargetElemen
     abstract val condition: AstExpression
     abstract val label: AstLabel?
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitLoop(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitLoop(this, data)
 
     abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstLoop
 

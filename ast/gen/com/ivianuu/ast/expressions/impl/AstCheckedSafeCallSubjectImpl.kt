@@ -25,19 +25,13 @@ internal class AstCheckedSafeCallSubjectImpl(
         annotations.forEach { it.accept(visitor, data) }
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstCheckedSafeCallSubjectImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstCheckedSafeCallSubjectImpl {
         typeRef = typeRef.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstCheckedSafeCallSubjectImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstCheckedSafeCallSubjectImpl {
         annotations.transformInplace(transformer, data)
         return this
     }

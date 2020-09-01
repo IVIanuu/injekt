@@ -23,8 +23,7 @@ import kotlin.contracts.ExperimentalContracts
  */
 
 @AstBuilderDsl
-open class AstSimpleFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwnerBuilder,
-    AstAnnotationContainerBuilder {
+open class AstSimpleFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwnerBuilder, AstAnnotationContainerBuilder {
     override lateinit var origin: AstDeclarationOrigin
     override lateinit var returnTypeRef: AstTypeRef
     open var receiverTypeRef: AstTypeRef? = null
@@ -53,10 +52,7 @@ open class AstSimpleFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwner
     }
 
 
-    @Deprecated(
-        "Modification of 'attributes' has no impact for AstSimpleFunctionBuilder",
-        level = DeprecationLevel.HIDDEN
-    )
+    @Deprecated("Modification of 'attributes' has no impact for AstSimpleFunctionBuilder", level = DeprecationLevel.HIDDEN)
     override var attributes: AstDeclarationAttributes
         get() = throw IllegalStateException()
         set(value) {
@@ -70,10 +66,7 @@ inline fun buildSimpleFunction(init: AstSimpleFunctionBuilder.() -> Unit): AstSi
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildSimpleFunctionCopy(
-    original: AstSimpleFunction,
-    init: AstSimpleFunctionBuilder.() -> Unit
-): AstSimpleFunction {
+inline fun buildSimpleFunctionCopy(original: AstSimpleFunction, init: AstSimpleFunctionBuilder.() -> Unit): AstSimpleFunction {
     val copyBuilder = AstSimpleFunctionBuilder()
     copyBuilder.origin = original.origin
     copyBuilder.returnTypeRef = original.returnTypeRef

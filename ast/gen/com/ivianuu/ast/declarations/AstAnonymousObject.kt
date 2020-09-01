@@ -24,30 +24,17 @@ abstract class AstAnonymousObject : AstClass<AstAnonymousObject>, AstExpression(
     abstract override val typeRef: AstTypeRef
     abstract override val symbol: AstAnonymousObjectSymbol
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitAnonymousObject(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitAnonymousObject(this, data)
 
     abstract override fun replaceSuperTypeRefs(newSuperTypeRefs: List<AstTypeRef>)
 
     abstract override fun replaceTypeRef(newTypeRef: AstTypeRef)
 
-    abstract override fun <D> transformTypeParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnonymousObject
+    abstract override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstAnonymousObject
 
-    abstract override fun <D> transformSuperTypeRefs(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnonymousObject
+    abstract override fun <D> transformSuperTypeRefs(transformer: AstTransformer<D>, data: D): AstAnonymousObject
 
-    abstract override fun <D> transformDeclarations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnonymousObject
+    abstract override fun <D> transformDeclarations(transformer: AstTransformer<D>, data: D): AstAnonymousObject
 
-    abstract override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnonymousObject
+    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstAnonymousObject
 }

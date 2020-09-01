@@ -7,8 +7,9 @@ import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.types.AstResolvedFunctionTypeRef
 import com.ivianuu.ast.types.AstTypeRef
 import com.ivianuu.ast.types.impl.AstResolvedFunctionTypeRefImpl
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
-import kotlin.contracts.ExperimentalContracts
 
 /*
  * This file was generated automatically
@@ -45,10 +46,7 @@ inline fun buildResolvedFunctionTypeRef(init: AstResolvedFunctionTypeRefBuilder.
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildResolvedFunctionTypeRefCopy(
-    original: AstResolvedFunctionTypeRef,
-    init: AstResolvedFunctionTypeRefBuilder.() -> Unit
-): AstResolvedFunctionTypeRef {
+inline fun buildResolvedFunctionTypeRefCopy(original: AstResolvedFunctionTypeRef, init: AstResolvedFunctionTypeRefBuilder.() -> Unit): AstResolvedFunctionTypeRef {
     val copyBuilder = AstResolvedFunctionTypeRefBuilder()
     copyBuilder.annotations.addAll(original.annotations)
     copyBuilder.type = original.type

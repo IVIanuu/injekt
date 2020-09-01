@@ -33,10 +33,7 @@ internal class AstAnnotationCallImpl(
         annotationTypeRef.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnnotationCallImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstAnnotationCallImpl {
         transformAnnotations(transformer, data)
         argumentList = argumentList.transformSingle(transformer, data)
         transformCalleeReference(transformer, data)
@@ -44,26 +41,17 @@ internal class AstAnnotationCallImpl(
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnnotationCallImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstAnnotationCallImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformCalleeReference(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnnotationCallImpl {
+    override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstAnnotationCallImpl {
         calleeReference = calleeReference.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotationTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnnotationCallImpl {
+    override fun <D> transformAnnotationTypeRef(transformer: AstTransformer<D>, data: D): AstAnnotationCallImpl {
         annotationTypeRef = annotationTypeRef.transformSingle(transformer, data)
         return this
     }

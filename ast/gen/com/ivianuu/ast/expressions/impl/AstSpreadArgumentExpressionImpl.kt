@@ -4,10 +4,7 @@ import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstSpreadArgumentExpression
 import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -26,19 +23,13 @@ internal class AstSpreadArgumentExpressionImpl(
         expression.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstSpreadArgumentExpressionImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstSpreadArgumentExpressionImpl {
         transformAnnotations(transformer, data)
         expression = expression.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstSpreadArgumentExpressionImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstSpreadArgumentExpressionImpl {
         annotations.transformInplace(transformer, data)
         return this
     }

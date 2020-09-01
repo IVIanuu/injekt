@@ -1,8 +1,7 @@
 package com.ivianuu.ast.expressions
 
 import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -14,15 +13,11 @@ abstract class AstStringConcatenationCall : AstCall, AstExpression() {
     abstract override val argumentList: AstArgumentList
     abstract override val typeRef: AstTypeRef
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitStringConcatenationCall(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitStringConcatenationCall(this, data)
 
     abstract override fun replaceArgumentList(newArgumentList: AstArgumentList)
 
     abstract override fun replaceTypeRef(newTypeRef: AstTypeRef)
 
-    abstract override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstStringConcatenationCall
+    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstStringConcatenationCall
 }

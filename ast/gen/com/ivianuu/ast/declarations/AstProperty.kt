@@ -15,8 +15,7 @@ import org.jetbrains.kotlin.name.Name
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstProperty : AstVariable<AstProperty>(), AstTypeParametersOwner,
-    AstCallableMemberDeclaration<AstProperty> {
+abstract class AstProperty : AstVariable<AstProperty>(), AstTypeParametersOwner, AstCallableMemberDeclaration<AstProperty> {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
     abstract override val returnTypeRef: AstTypeRef
@@ -36,51 +35,29 @@ abstract class AstProperty : AstVariable<AstProperty>(), AstTypeParametersOwner,
     abstract val isLocal: Boolean
     abstract override val status: AstDeclarationStatus
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitProperty(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitProperty(this, data)
 
     abstract override fun replaceReturnTypeRef(newReturnTypeRef: AstTypeRef)
 
     abstract override fun replaceReceiverTypeRef(newReceiverTypeRef: AstTypeRef?)
 
-    abstract override fun <D> transformReturnTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstProperty
+    abstract override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstProperty
 
-    abstract override fun <D> transformReceiverTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstProperty
+    abstract override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstProperty
 
-    abstract override fun <D> transformInitializer(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstProperty
+    abstract override fun <D> transformInitializer(transformer: AstTransformer<D>, data: D): AstProperty
 
-    abstract override fun <D> transformDelegate(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstProperty
+    abstract override fun <D> transformDelegate(transformer: AstTransformer<D>, data: D): AstProperty
 
     abstract override fun <D> transformGetter(transformer: AstTransformer<D>, data: D): AstProperty
 
     abstract override fun <D> transformSetter(transformer: AstTransformer<D>, data: D): AstProperty
 
-    abstract override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstProperty
+    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstProperty
 
-    abstract override fun <D> transformTypeParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstProperty
+    abstract override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstProperty
 
     abstract override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstProperty
 
-    abstract override fun <D> transformOtherChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstProperty
+    abstract override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstProperty
 }

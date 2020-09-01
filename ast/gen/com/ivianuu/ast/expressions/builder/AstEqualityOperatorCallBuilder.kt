@@ -29,10 +29,7 @@ class AstEqualityOperatorCallBuilder : AstAnnotationContainerBuilder, AstExpress
         )
     }
 
-    @Deprecated(
-        "Modification of 'typeRef' has no impact for AstEqualityOperatorCallBuilder",
-        level = DeprecationLevel.HIDDEN
-    )
+    @Deprecated("Modification of 'typeRef' has no impact for AstEqualityOperatorCallBuilder", level = DeprecationLevel.HIDDEN)
     override var typeRef: AstTypeRef
         get() = throw IllegalStateException()
         set(value) {

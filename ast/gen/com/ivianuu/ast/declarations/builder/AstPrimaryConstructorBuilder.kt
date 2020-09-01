@@ -50,10 +50,7 @@ class AstPrimaryConstructorBuilder : AstAbstractConstructorBuilder, AstAnnotatio
     }
 
 
-    @Deprecated(
-        "Modification of 'attributes' has no impact for AstPrimaryConstructorBuilder",
-        level = DeprecationLevel.HIDDEN
-    )
+    @Deprecated("Modification of 'attributes' has no impact for AstPrimaryConstructorBuilder", level = DeprecationLevel.HIDDEN)
     override var attributes: AstDeclarationAttributes
         get() = throw IllegalStateException()
         set(value) {

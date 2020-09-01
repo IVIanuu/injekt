@@ -1,115 +1,110 @@
 package com.ivianuu.ast.visitors
 
-import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.AstElement
+import com.ivianuu.ast.AstAnnotationContainer
+import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.AstSymbolOwner
+import com.ivianuu.ast.expressions.AstResolvable
 import com.ivianuu.ast.AstTargetElement
-import com.ivianuu.ast.declarations.AstAnnotatedDeclaration
-import com.ivianuu.ast.declarations.AstAnonymousFunction
-import com.ivianuu.ast.declarations.AstAnonymousInitializer
-import com.ivianuu.ast.declarations.AstAnonymousObject
-import com.ivianuu.ast.declarations.AstCallableDeclaration
-import com.ivianuu.ast.declarations.AstCallableMemberDeclaration
-import com.ivianuu.ast.declarations.AstClass
-import com.ivianuu.ast.declarations.AstClassLikeDeclaration
-import com.ivianuu.ast.declarations.AstConstructor
-import com.ivianuu.ast.declarations.AstDeclaration
 import com.ivianuu.ast.declarations.AstDeclarationStatus
-import com.ivianuu.ast.declarations.AstEnumEntry
-import com.ivianuu.ast.declarations.AstField
-import com.ivianuu.ast.declarations.AstFile
-import com.ivianuu.ast.declarations.AstFunction
-import com.ivianuu.ast.declarations.AstImport
-import com.ivianuu.ast.declarations.AstMemberDeclaration
-import com.ivianuu.ast.declarations.AstProperty
-import com.ivianuu.ast.declarations.AstPropertyAccessor
-import com.ivianuu.ast.declarations.AstRegularClass
 import com.ivianuu.ast.declarations.AstResolvedDeclarationStatus
-import com.ivianuu.ast.declarations.AstResolvedImport
-import com.ivianuu.ast.declarations.AstSimpleFunction
-import com.ivianuu.ast.declarations.AstTypeAlias
-import com.ivianuu.ast.declarations.AstTypeParameter
+import com.ivianuu.ast.expressions.AstStatement
+import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.declarations.AstDeclaration
+import com.ivianuu.ast.declarations.AstAnnotatedDeclaration
+import com.ivianuu.ast.declarations.AstAnonymousInitializer
+import com.ivianuu.ast.declarations.AstTypedDeclaration
+import com.ivianuu.ast.declarations.AstCallableDeclaration
 import com.ivianuu.ast.declarations.AstTypeParameterRef
+import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.AstTypeParameterRefsOwner
 import com.ivianuu.ast.declarations.AstTypeParametersOwner
-import com.ivianuu.ast.declarations.AstTypedDeclaration
-import com.ivianuu.ast.declarations.AstValueParameter
+import com.ivianuu.ast.declarations.AstMemberDeclaration
+import com.ivianuu.ast.declarations.AstCallableMemberDeclaration
 import com.ivianuu.ast.declarations.AstVariable
-import com.ivianuu.ast.expressions.AstAnnotationCall
-import com.ivianuu.ast.expressions.AstArgumentList
-import com.ivianuu.ast.expressions.AstArrayOfCall
-import com.ivianuu.ast.expressions.AstAssignmentOperatorStatement
-import com.ivianuu.ast.expressions.AstAugmentedArraySetCall
-import com.ivianuu.ast.expressions.AstBinaryLogicExpression
-import com.ivianuu.ast.expressions.AstBlock
-import com.ivianuu.ast.expressions.AstBreakExpression
-import com.ivianuu.ast.expressions.AstCall
-import com.ivianuu.ast.expressions.AstCallableReferenceAccess
-import com.ivianuu.ast.expressions.AstCatch
-import com.ivianuu.ast.expressions.AstCheckNotNullCall
-import com.ivianuu.ast.expressions.AstCheckedSafeCallSubject
-import com.ivianuu.ast.expressions.AstClassReferenceExpression
-import com.ivianuu.ast.expressions.AstComparisonExpression
-import com.ivianuu.ast.expressions.AstComponentCall
-import com.ivianuu.ast.expressions.AstConstExpression
-import com.ivianuu.ast.expressions.AstContinueExpression
-import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
-import com.ivianuu.ast.expressions.AstDoWhileLoop
-import com.ivianuu.ast.expressions.AstElvisExpression
-import com.ivianuu.ast.expressions.AstEqualityOperatorCall
-import com.ivianuu.ast.expressions.AstExpression
-import com.ivianuu.ast.expressions.AstExpressionWithSmartcast
-import com.ivianuu.ast.expressions.AstFunctionCall
-import com.ivianuu.ast.expressions.AstGetClassCall
-import com.ivianuu.ast.expressions.AstJump
-import com.ivianuu.ast.expressions.AstLambdaArgumentExpression
+import com.ivianuu.ast.declarations.AstValueParameter
+import com.ivianuu.ast.declarations.AstProperty
+import com.ivianuu.ast.declarations.AstField
+import com.ivianuu.ast.declarations.AstEnumEntry
+import com.ivianuu.ast.declarations.AstClassLikeDeclaration
+import com.ivianuu.ast.declarations.AstClass
+import com.ivianuu.ast.declarations.AstRegularClass
+import com.ivianuu.ast.declarations.AstTypeAlias
+import com.ivianuu.ast.declarations.AstFunction
+import com.ivianuu.ast.declarations.AstSimpleFunction
+import com.ivianuu.ast.declarations.AstPropertyAccessor
+import com.ivianuu.ast.declarations.AstConstructor
+import com.ivianuu.ast.declarations.AstFile
+import com.ivianuu.ast.declarations.AstAnonymousFunction
+import com.ivianuu.ast.declarations.AstAnonymousObject
 import com.ivianuu.ast.expressions.AstLoop
+import com.ivianuu.ast.expressions.AstDoWhileLoop
+import com.ivianuu.ast.expressions.AstWhileLoop
+import com.ivianuu.ast.expressions.AstBlock
+import com.ivianuu.ast.expressions.AstBinaryLogicExpression
+import com.ivianuu.ast.expressions.AstJump
 import com.ivianuu.ast.expressions.AstLoopJump
-import com.ivianuu.ast.expressions.AstNamedArgumentExpression
+import com.ivianuu.ast.expressions.AstBreakExpression
+import com.ivianuu.ast.expressions.AstContinueExpression
+import com.ivianuu.ast.expressions.AstCatch
+import com.ivianuu.ast.expressions.AstTryExpression
+import com.ivianuu.ast.expressions.AstConstExpression
+import com.ivianuu.ast.types.AstTypeProjection
+import com.ivianuu.ast.types.AstStarProjection
+import com.ivianuu.ast.types.AstTypeProjectionWithVariance
+import com.ivianuu.ast.expressions.AstArgumentList
+import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstComparisonExpression
+import com.ivianuu.ast.expressions.AstTypeOperatorCall
+import com.ivianuu.ast.expressions.AstAssignmentOperatorStatement
+import com.ivianuu.ast.expressions.AstEqualityOperatorCall
+import com.ivianuu.ast.expressions.AstWhenExpression
+import com.ivianuu.ast.expressions.AstWhenBranch
 import com.ivianuu.ast.expressions.AstQualifiedAccess
+import com.ivianuu.ast.expressions.AstElvisExpression
+import com.ivianuu.ast.expressions.AstClassReferenceExpression
 import com.ivianuu.ast.expressions.AstQualifiedAccessExpression
-import com.ivianuu.ast.expressions.AstResolvable
+import com.ivianuu.ast.expressions.AstFunctionCall
+import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
+import com.ivianuu.ast.expressions.AstComponentCall
+import com.ivianuu.ast.expressions.AstCallableReferenceAccess
+import com.ivianuu.ast.expressions.AstThisReceiverExpression
+import com.ivianuu.ast.expressions.AstExpressionWithSmartcast
+import com.ivianuu.ast.expressions.AstSafeCallExpression
+import com.ivianuu.ast.expressions.AstCheckedSafeCallSubject
+import com.ivianuu.ast.expressions.AstGetClassCall
+import com.ivianuu.ast.expressions.AstWrappedExpression
+import com.ivianuu.ast.expressions.AstWrappedArgumentExpression
+import com.ivianuu.ast.expressions.AstLambdaArgumentExpression
+import com.ivianuu.ast.expressions.AstSpreadArgumentExpression
+import com.ivianuu.ast.expressions.AstNamedArgumentExpression
+import com.ivianuu.ast.expressions.AstVarargArgumentsExpression
 import com.ivianuu.ast.expressions.AstResolvedQualifier
 import com.ivianuu.ast.expressions.AstResolvedReifiedParameterReference
 import com.ivianuu.ast.expressions.AstReturnExpression
-import com.ivianuu.ast.expressions.AstSafeCallExpression
-import com.ivianuu.ast.expressions.AstSpreadArgumentExpression
-import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.expressions.AstStringConcatenationCall
-import com.ivianuu.ast.expressions.AstThisReceiverExpression
 import com.ivianuu.ast.expressions.AstThrowExpression
-import com.ivianuu.ast.expressions.AstTryExpression
-import com.ivianuu.ast.expressions.AstTypeOperatorCall
-import com.ivianuu.ast.expressions.AstVarargArgumentsExpression
 import com.ivianuu.ast.expressions.AstVariableAssignment
-import com.ivianuu.ast.expressions.AstWhenBranch
-import com.ivianuu.ast.expressions.AstWhenExpression
 import com.ivianuu.ast.expressions.AstWhenSubjectExpression
-import com.ivianuu.ast.expressions.AstWhileLoop
-import com.ivianuu.ast.expressions.AstWrappedArgumentExpression
 import com.ivianuu.ast.expressions.AstWrappedDelegateExpression
-import com.ivianuu.ast.expressions.AstWrappedExpression
-import com.ivianuu.ast.references.AstBackingFieldReference
-import com.ivianuu.ast.references.AstDelegateFieldReference
 import com.ivianuu.ast.references.AstNamedReference
-import com.ivianuu.ast.references.AstReference
-import com.ivianuu.ast.references.AstResolvedCallableReference
-import com.ivianuu.ast.references.AstResolvedNamedReference
 import com.ivianuu.ast.references.AstSuperReference
 import com.ivianuu.ast.references.AstThisReference
-import com.ivianuu.ast.types.AstComposedSuperTypeRef
-import com.ivianuu.ast.types.AstDynamicTypeRef
-import com.ivianuu.ast.types.AstFunctionTypeRef
-import com.ivianuu.ast.types.AstImplicitTypeRef
-import com.ivianuu.ast.types.AstResolvedFunctionTypeRef
+import com.ivianuu.ast.references.AstResolvedNamedReference
+import com.ivianuu.ast.references.AstDelegateFieldReference
+import com.ivianuu.ast.references.AstBackingFieldReference
+import com.ivianuu.ast.references.AstResolvedCallableReference
 import com.ivianuu.ast.types.AstResolvedTypeRef
-import com.ivianuu.ast.types.AstStarProjection
-import com.ivianuu.ast.types.AstTypeProjection
-import com.ivianuu.ast.types.AstTypeProjectionWithVariance
-import com.ivianuu.ast.types.AstTypeRef
 import com.ivianuu.ast.types.AstTypeRefWithNullability
 import com.ivianuu.ast.types.AstUserTypeRef
+import com.ivianuu.ast.types.AstDynamicTypeRef
+import com.ivianuu.ast.types.AstFunctionTypeRef
+import com.ivianuu.ast.types.AstResolvedFunctionTypeRef
+import com.ivianuu.ast.types.AstImplicitTypeRef
+import com.ivianuu.ast.types.AstComposedSuperTypeRef
 
 /*
  * This file was generated automatically
@@ -133,14 +128,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     open fun visitLabel(label: AstLabel) {
         visitElement(label)
-    }
-
-    open fun visitImport(import: AstImport) {
-        visitElement(import)
-    }
-
-    open fun visitResolvedImport(resolvedImport: AstResolvedImport) {
-        visitElement(resolvedImport)
     }
 
     open fun <E> visitSymbolOwner(symbolOwner: AstSymbolOwner<E>) where E : AstSymbolOwner<E>, E : AstDeclaration {
@@ -211,9 +198,7 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(memberDeclaration)
     }
 
-    open fun <F : AstCallableMemberDeclaration<F>> visitCallableMemberDeclaration(
-        callableMemberDeclaration: AstCallableMemberDeclaration<F>
-    ) {
+    open fun <F : AstCallableMemberDeclaration<F>> visitCallableMemberDeclaration(callableMemberDeclaration: AstCallableMemberDeclaration<F>) {
         visitElement(callableMemberDeclaration)
     }
 
@@ -381,20 +366,8 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(qualifiedAccess)
     }
 
-    open fun visitCheckNotNullCall(checkNotNullCall: AstCheckNotNullCall) {
-        visitElement(checkNotNullCall)
-    }
-
     open fun visitElvisExpression(elvisExpression: AstElvisExpression) {
         visitElement(elvisExpression)
-    }
-
-    open fun visitArrayOfCall(arrayOfCall: AstArrayOfCall) {
-        visitElement(arrayOfCall)
-    }
-
-    open fun visitAugmentedArraySetCall(augmentedArraySetCall: AstAugmentedArraySetCall) {
-        visitElement(augmentedArraySetCall)
     }
 
     open fun visitClassReferenceExpression(classReferenceExpression: AstClassReferenceExpression) {
@@ -561,10 +534,7 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(element)
     }
 
-    final override fun visitAnnotationContainer(
-        annotationContainer: AstAnnotationContainer,
-        data: Nothing?
-    ) {
+    final override fun visitAnnotationContainer(annotationContainer: AstAnnotationContainer, data: Nothing?) {
         visitAnnotationContainer(annotationContainer)
     }
 
@@ -580,18 +550,7 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitLabel(label)
     }
 
-    final override fun visitImport(import: AstImport, data: Nothing?) {
-        visitImport(import)
-    }
-
-    final override fun visitResolvedImport(resolvedImport: AstResolvedImport, data: Nothing?) {
-        visitResolvedImport(resolvedImport)
-    }
-
-    final override fun <E> visitSymbolOwner(
-        symbolOwner: AstSymbolOwner<E>,
-        data: Nothing?
-    ) where E : AstSymbolOwner<E>, E : AstDeclaration {
+    final override fun <E> visitSymbolOwner(symbolOwner: AstSymbolOwner<E>, data: Nothing?) where E : AstSymbolOwner<E>, E : AstDeclaration {
         visitSymbolOwner(symbolOwner)
     }
 
@@ -603,17 +562,11 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitTargetElement(targetElement)
     }
 
-    final override fun visitDeclarationStatus(
-        declarationStatus: AstDeclarationStatus,
-        data: Nothing?
-    ) {
+    final override fun visitDeclarationStatus(declarationStatus: AstDeclarationStatus, data: Nothing?) {
         visitDeclarationStatus(declarationStatus)
     }
 
-    final override fun visitResolvedDeclarationStatus(
-        resolvedDeclarationStatus: AstResolvedDeclarationStatus,
-        data: Nothing?
-    ) {
+    final override fun visitResolvedDeclarationStatus(resolvedDeclarationStatus: AstResolvedDeclarationStatus, data: Nothing?) {
         visitResolvedDeclarationStatus(resolvedDeclarationStatus)
     }
 
@@ -629,38 +582,23 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitDeclaration(declaration)
     }
 
-    final override fun visitAnnotatedDeclaration(
-        annotatedDeclaration: AstAnnotatedDeclaration,
-        data: Nothing?
-    ) {
+    final override fun visitAnnotatedDeclaration(annotatedDeclaration: AstAnnotatedDeclaration, data: Nothing?) {
         visitAnnotatedDeclaration(annotatedDeclaration)
     }
 
-    final override fun visitAnonymousInitializer(
-        anonymousInitializer: AstAnonymousInitializer,
-        data: Nothing?
-    ) {
+    final override fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer, data: Nothing?) {
         visitAnonymousInitializer(anonymousInitializer)
     }
 
-    final override fun visitTypedDeclaration(
-        typedDeclaration: AstTypedDeclaration,
-        data: Nothing?
-    ) {
+    final override fun visitTypedDeclaration(typedDeclaration: AstTypedDeclaration, data: Nothing?) {
         visitTypedDeclaration(typedDeclaration)
     }
 
-    final override fun <F : AstCallableDeclaration<F>> visitCallableDeclaration(
-        callableDeclaration: AstCallableDeclaration<F>,
-        data: Nothing?
-    ) {
+    final override fun <F : AstCallableDeclaration<F>> visitCallableDeclaration(callableDeclaration: AstCallableDeclaration<F>, data: Nothing?) {
         visitCallableDeclaration(callableDeclaration)
     }
 
-    final override fun visitTypeParameterRef(
-        typeParameterRef: AstTypeParameterRef,
-        data: Nothing?
-    ) {
+    final override fun visitTypeParameterRef(typeParameterRef: AstTypeParameterRef, data: Nothing?) {
         visitTypeParameterRef(typeParameterRef)
     }
 
@@ -668,38 +606,23 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitTypeParameter(typeParameter)
     }
 
-    final override fun visitTypeParameterRefsOwner(
-        typeParameterRefsOwner: AstTypeParameterRefsOwner,
-        data: Nothing?
-    ) {
+    final override fun visitTypeParameterRefsOwner(typeParameterRefsOwner: AstTypeParameterRefsOwner, data: Nothing?) {
         visitTypeParameterRefsOwner(typeParameterRefsOwner)
     }
 
-    final override fun visitTypeParametersOwner(
-        typeParametersOwner: AstTypeParametersOwner,
-        data: Nothing?
-    ) {
+    final override fun visitTypeParametersOwner(typeParametersOwner: AstTypeParametersOwner, data: Nothing?) {
         visitTypeParametersOwner(typeParametersOwner)
     }
 
-    final override fun visitMemberDeclaration(
-        memberDeclaration: AstMemberDeclaration,
-        data: Nothing?
-    ) {
+    final override fun visitMemberDeclaration(memberDeclaration: AstMemberDeclaration, data: Nothing?) {
         visitMemberDeclaration(memberDeclaration)
     }
 
-    final override fun <F : AstCallableMemberDeclaration<F>> visitCallableMemberDeclaration(
-        callableMemberDeclaration: AstCallableMemberDeclaration<F>,
-        data: Nothing?
-    ) {
+    final override fun <F : AstCallableMemberDeclaration<F>> visitCallableMemberDeclaration(callableMemberDeclaration: AstCallableMemberDeclaration<F>, data: Nothing?) {
         visitCallableMemberDeclaration(callableMemberDeclaration)
     }
 
-    final override fun <F : AstVariable<F>> visitVariable(
-        variable: AstVariable<F>,
-        data: Nothing?
-    ) {
+    final override fun <F : AstVariable<F>> visitVariable(variable: AstVariable<F>, data: Nothing?) {
         visitVariable(variable)
     }
 
@@ -719,10 +642,7 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitEnumEntry(enumEntry)
     }
 
-    final override fun <F : AstClassLikeDeclaration<F>> visitClassLikeDeclaration(
-        classLikeDeclaration: AstClassLikeDeclaration<F>,
-        data: Nothing?
-    ) {
+    final override fun <F : AstClassLikeDeclaration<F>> visitClassLikeDeclaration(classLikeDeclaration: AstClassLikeDeclaration<F>, data: Nothing?) {
         visitClassLikeDeclaration(classLikeDeclaration)
     }
 
@@ -738,10 +658,7 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitTypeAlias(typeAlias)
     }
 
-    final override fun <F : AstFunction<F>> visitFunction(
-        function: AstFunction<F>,
-        data: Nothing?
-    ) {
+    final override fun <F : AstFunction<F>> visitFunction(function: AstFunction<F>, data: Nothing?) {
         visitFunction(function)
     }
 
@@ -749,10 +666,7 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitSimpleFunction(simpleFunction)
     }
 
-    final override fun visitPropertyAccessor(
-        propertyAccessor: AstPropertyAccessor,
-        data: Nothing?
-    ) {
+    final override fun visitPropertyAccessor(propertyAccessor: AstPropertyAccessor, data: Nothing?) {
         visitPropertyAccessor(propertyAccessor)
     }
 
@@ -764,10 +678,7 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitFile(file)
     }
 
-    final override fun visitAnonymousFunction(
-        anonymousFunction: AstAnonymousFunction,
-        data: Nothing?
-    ) {
+    final override fun visitAnonymousFunction(anonymousFunction: AstAnonymousFunction, data: Nothing?) {
         visitAnonymousFunction(anonymousFunction)
     }
 
@@ -791,10 +702,7 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitBlock(block)
     }
 
-    final override fun visitBinaryLogicExpression(
-        binaryLogicExpression: AstBinaryLogicExpression,
-        data: Nothing?
-    ) {
+    final override fun visitBinaryLogicExpression(binaryLogicExpression: AstBinaryLogicExpression, data: Nothing?) {
         visitBinaryLogicExpression(binaryLogicExpression)
     }
 
@@ -810,10 +718,7 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitBreakExpression(breakExpression)
     }
 
-    final override fun visitContinueExpression(
-        continueExpression: AstContinueExpression,
-        data: Nothing?
-    ) {
+    final override fun visitContinueExpression(continueExpression: AstContinueExpression, data: Nothing?) {
         visitContinueExpression(continueExpression)
     }
 
@@ -825,10 +730,7 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitTryExpression(tryExpression)
     }
 
-    final override fun <T> visitConstExpression(
-        constExpression: AstConstExpression<T>,
-        data: Nothing?
-    ) {
+    final override fun <T> visitConstExpression(constExpression: AstConstExpression<T>, data: Nothing?) {
         visitConstExpression(constExpression)
     }
 
@@ -840,10 +742,7 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitStarProjection(starProjection)
     }
 
-    final override fun visitTypeProjectionWithVariance(
-        typeProjectionWithVariance: AstTypeProjectionWithVariance,
-        data: Nothing?
-    ) {
+    final override fun visitTypeProjectionWithVariance(typeProjectionWithVariance: AstTypeProjectionWithVariance, data: Nothing?) {
         visitTypeProjectionWithVariance(typeProjectionWithVariance)
     }
 
@@ -859,31 +758,19 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitAnnotationCall(annotationCall)
     }
 
-    final override fun visitComparisonExpression(
-        comparisonExpression: AstComparisonExpression,
-        data: Nothing?
-    ) {
+    final override fun visitComparisonExpression(comparisonExpression: AstComparisonExpression, data: Nothing?) {
         visitComparisonExpression(comparisonExpression)
     }
 
-    final override fun visitTypeOperatorCall(
-        typeOperatorCall: AstTypeOperatorCall,
-        data: Nothing?
-    ) {
+    final override fun visitTypeOperatorCall(typeOperatorCall: AstTypeOperatorCall, data: Nothing?) {
         visitTypeOperatorCall(typeOperatorCall)
     }
 
-    final override fun visitAssignmentOperatorStatement(
-        assignmentOperatorStatement: AstAssignmentOperatorStatement,
-        data: Nothing?
-    ) {
+    final override fun visitAssignmentOperatorStatement(assignmentOperatorStatement: AstAssignmentOperatorStatement, data: Nothing?) {
         visitAssignmentOperatorStatement(assignmentOperatorStatement)
     }
 
-    final override fun visitEqualityOperatorCall(
-        equalityOperatorCall: AstEqualityOperatorCall,
-        data: Nothing?
-    ) {
+    final override fun visitEqualityOperatorCall(equalityOperatorCall: AstEqualityOperatorCall, data: Nothing?) {
         visitEqualityOperatorCall(equalityOperatorCall)
     }
 
@@ -899,39 +786,15 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitQualifiedAccess(qualifiedAccess)
     }
 
-    final override fun visitCheckNotNullCall(
-        checkNotNullCall: AstCheckNotNullCall,
-        data: Nothing?
-    ) {
-        visitCheckNotNullCall(checkNotNullCall)
-    }
-
     final override fun visitElvisExpression(elvisExpression: AstElvisExpression, data: Nothing?) {
         visitElvisExpression(elvisExpression)
     }
 
-    final override fun visitArrayOfCall(arrayOfCall: AstArrayOfCall, data: Nothing?) {
-        visitArrayOfCall(arrayOfCall)
-    }
-
-    final override fun visitAugmentedArraySetCall(
-        augmentedArraySetCall: AstAugmentedArraySetCall,
-        data: Nothing?
-    ) {
-        visitAugmentedArraySetCall(augmentedArraySetCall)
-    }
-
-    final override fun visitClassReferenceExpression(
-        classReferenceExpression: AstClassReferenceExpression,
-        data: Nothing?
-    ) {
+    final override fun visitClassReferenceExpression(classReferenceExpression: AstClassReferenceExpression, data: Nothing?) {
         visitClassReferenceExpression(classReferenceExpression)
     }
 
-    final override fun visitQualifiedAccessExpression(
-        qualifiedAccessExpression: AstQualifiedAccessExpression,
-        data: Nothing?
-    ) {
+    final override fun visitQualifiedAccessExpression(qualifiedAccessExpression: AstQualifiedAccessExpression, data: Nothing?) {
         visitQualifiedAccessExpression(qualifiedAccessExpression)
     }
 
@@ -939,10 +802,7 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitFunctionCall(functionCall)
     }
 
-    final override fun visitDelegatedConstructorCall(
-        delegatedConstructorCall: AstDelegatedConstructorCall,
-        data: Nothing?
-    ) {
+    final override fun visitDelegatedConstructorCall(delegatedConstructorCall: AstDelegatedConstructorCall, data: Nothing?) {
         visitDelegatedConstructorCall(delegatedConstructorCall)
     }
 
@@ -950,38 +810,23 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitComponentCall(componentCall)
     }
 
-    final override fun visitCallableReferenceAccess(
-        callableReferenceAccess: AstCallableReferenceAccess,
-        data: Nothing?
-    ) {
+    final override fun visitCallableReferenceAccess(callableReferenceAccess: AstCallableReferenceAccess, data: Nothing?) {
         visitCallableReferenceAccess(callableReferenceAccess)
     }
 
-    final override fun visitThisReceiverExpression(
-        thisReceiverExpression: AstThisReceiverExpression,
-        data: Nothing?
-    ) {
+    final override fun visitThisReceiverExpression(thisReceiverExpression: AstThisReceiverExpression, data: Nothing?) {
         visitThisReceiverExpression(thisReceiverExpression)
     }
 
-    final override fun visitExpressionWithSmartcast(
-        expressionWithSmartcast: AstExpressionWithSmartcast,
-        data: Nothing?
-    ) {
+    final override fun visitExpressionWithSmartcast(expressionWithSmartcast: AstExpressionWithSmartcast, data: Nothing?) {
         visitExpressionWithSmartcast(expressionWithSmartcast)
     }
 
-    final override fun visitSafeCallExpression(
-        safeCallExpression: AstSafeCallExpression,
-        data: Nothing?
-    ) {
+    final override fun visitSafeCallExpression(safeCallExpression: AstSafeCallExpression, data: Nothing?) {
         visitSafeCallExpression(safeCallExpression)
     }
 
-    final override fun visitCheckedSafeCallSubject(
-        checkedSafeCallSubject: AstCheckedSafeCallSubject,
-        data: Nothing?
-    ) {
+    final override fun visitCheckedSafeCallSubject(checkedSafeCallSubject: AstCheckedSafeCallSubject, data: Nothing?) {
         visitCheckedSafeCallSubject(checkedSafeCallSubject)
     }
 
@@ -989,73 +834,43 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitGetClassCall(getClassCall)
     }
 
-    final override fun visitWrappedExpression(
-        wrappedExpression: AstWrappedExpression,
-        data: Nothing?
-    ) {
+    final override fun visitWrappedExpression(wrappedExpression: AstWrappedExpression, data: Nothing?) {
         visitWrappedExpression(wrappedExpression)
     }
 
-    final override fun visitWrappedArgumentExpression(
-        wrappedArgumentExpression: AstWrappedArgumentExpression,
-        data: Nothing?
-    ) {
+    final override fun visitWrappedArgumentExpression(wrappedArgumentExpression: AstWrappedArgumentExpression, data: Nothing?) {
         visitWrappedArgumentExpression(wrappedArgumentExpression)
     }
 
-    final override fun visitLambdaArgumentExpression(
-        lambdaArgumentExpression: AstLambdaArgumentExpression,
-        data: Nothing?
-    ) {
+    final override fun visitLambdaArgumentExpression(lambdaArgumentExpression: AstLambdaArgumentExpression, data: Nothing?) {
         visitLambdaArgumentExpression(lambdaArgumentExpression)
     }
 
-    final override fun visitSpreadArgumentExpression(
-        spreadArgumentExpression: AstSpreadArgumentExpression,
-        data: Nothing?
-    ) {
+    final override fun visitSpreadArgumentExpression(spreadArgumentExpression: AstSpreadArgumentExpression, data: Nothing?) {
         visitSpreadArgumentExpression(spreadArgumentExpression)
     }
 
-    final override fun visitNamedArgumentExpression(
-        namedArgumentExpression: AstNamedArgumentExpression,
-        data: Nothing?
-    ) {
+    final override fun visitNamedArgumentExpression(namedArgumentExpression: AstNamedArgumentExpression, data: Nothing?) {
         visitNamedArgumentExpression(namedArgumentExpression)
     }
 
-    final override fun visitVarargArgumentsExpression(
-        varargArgumentsExpression: AstVarargArgumentsExpression,
-        data: Nothing?
-    ) {
+    final override fun visitVarargArgumentsExpression(varargArgumentsExpression: AstVarargArgumentsExpression, data: Nothing?) {
         visitVarargArgumentsExpression(varargArgumentsExpression)
     }
 
-    final override fun visitResolvedQualifier(
-        resolvedQualifier: AstResolvedQualifier,
-        data: Nothing?
-    ) {
+    final override fun visitResolvedQualifier(resolvedQualifier: AstResolvedQualifier, data: Nothing?) {
         visitResolvedQualifier(resolvedQualifier)
     }
 
-    final override fun visitResolvedReifiedParameterReference(
-        resolvedReifiedParameterReference: AstResolvedReifiedParameterReference,
-        data: Nothing?
-    ) {
+    final override fun visitResolvedReifiedParameterReference(resolvedReifiedParameterReference: AstResolvedReifiedParameterReference, data: Nothing?) {
         visitResolvedReifiedParameterReference(resolvedReifiedParameterReference)
     }
 
-    final override fun visitReturnExpression(
-        returnExpression: AstReturnExpression,
-        data: Nothing?
-    ) {
+    final override fun visitReturnExpression(returnExpression: AstReturnExpression, data: Nothing?) {
         visitReturnExpression(returnExpression)
     }
 
-    final override fun visitStringConcatenationCall(
-        stringConcatenationCall: AstStringConcatenationCall,
-        data: Nothing?
-    ) {
+    final override fun visitStringConcatenationCall(stringConcatenationCall: AstStringConcatenationCall, data: Nothing?) {
         visitStringConcatenationCall(stringConcatenationCall)
     }
 
@@ -1063,24 +878,15 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitThrowExpression(throwExpression)
     }
 
-    final override fun visitVariableAssignment(
-        variableAssignment: AstVariableAssignment,
-        data: Nothing?
-    ) {
+    final override fun visitVariableAssignment(variableAssignment: AstVariableAssignment, data: Nothing?) {
         visitVariableAssignment(variableAssignment)
     }
 
-    final override fun visitWhenSubjectExpression(
-        whenSubjectExpression: AstWhenSubjectExpression,
-        data: Nothing?
-    ) {
+    final override fun visitWhenSubjectExpression(whenSubjectExpression: AstWhenSubjectExpression, data: Nothing?) {
         visitWhenSubjectExpression(whenSubjectExpression)
     }
 
-    final override fun visitWrappedDelegateExpression(
-        wrappedDelegateExpression: AstWrappedDelegateExpression,
-        data: Nothing?
-    ) {
+    final override fun visitWrappedDelegateExpression(wrappedDelegateExpression: AstWrappedDelegateExpression, data: Nothing?) {
         visitWrappedDelegateExpression(wrappedDelegateExpression)
     }
 
@@ -1096,31 +902,19 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitThisReference(thisReference)
     }
 
-    final override fun visitResolvedNamedReference(
-        resolvedNamedReference: AstResolvedNamedReference,
-        data: Nothing?
-    ) {
+    final override fun visitResolvedNamedReference(resolvedNamedReference: AstResolvedNamedReference, data: Nothing?) {
         visitResolvedNamedReference(resolvedNamedReference)
     }
 
-    final override fun visitDelegateFieldReference(
-        delegateFieldReference: AstDelegateFieldReference,
-        data: Nothing?
-    ) {
+    final override fun visitDelegateFieldReference(delegateFieldReference: AstDelegateFieldReference, data: Nothing?) {
         visitDelegateFieldReference(delegateFieldReference)
     }
 
-    final override fun visitBackingFieldReference(
-        backingFieldReference: AstBackingFieldReference,
-        data: Nothing?
-    ) {
+    final override fun visitBackingFieldReference(backingFieldReference: AstBackingFieldReference, data: Nothing?) {
         visitBackingFieldReference(backingFieldReference)
     }
 
-    final override fun visitResolvedCallableReference(
-        resolvedCallableReference: AstResolvedCallableReference,
-        data: Nothing?
-    ) {
+    final override fun visitResolvedCallableReference(resolvedCallableReference: AstResolvedCallableReference, data: Nothing?) {
         visitResolvedCallableReference(resolvedCallableReference)
     }
 
@@ -1128,10 +922,7 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitResolvedTypeRef(resolvedTypeRef)
     }
 
-    final override fun visitTypeRefWithNullability(
-        typeRefWithNullability: AstTypeRefWithNullability,
-        data: Nothing?
-    ) {
+    final override fun visitTypeRefWithNullability(typeRefWithNullability: AstTypeRefWithNullability, data: Nothing?) {
         visitTypeRefWithNullability(typeRefWithNullability)
     }
 
@@ -1147,10 +938,7 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitFunctionTypeRef(functionTypeRef)
     }
 
-    final override fun visitResolvedFunctionTypeRef(
-        resolvedFunctionTypeRef: AstResolvedFunctionTypeRef,
-        data: Nothing?
-    ) {
+    final override fun visitResolvedFunctionTypeRef(resolvedFunctionTypeRef: AstResolvedFunctionTypeRef, data: Nothing?) {
         visitResolvedFunctionTypeRef(resolvedFunctionTypeRef)
     }
 
@@ -1158,10 +946,7 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitImplicitTypeRef(implicitTypeRef)
     }
 
-    final override fun visitComposedSuperTypeRef(
-        composedSuperTypeRef: AstComposedSuperTypeRef,
-        data: Nothing?
-    ) {
+    final override fun visitComposedSuperTypeRef(composedSuperTypeRef: AstComposedSuperTypeRef, data: Nothing?) {
         visitComposedSuperTypeRef(composedSuperTypeRef)
     }
 

@@ -1,7 +1,6 @@
 package com.ivianuu.ast.expressions
 
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -12,8 +11,7 @@ interface AstCall : AstStatement {
     override val annotations: List<AstAnnotationCall>
     val argumentList: AstArgumentList
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitCall(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitCall(this, data)
 
     fun replaceArgumentList(newArgumentList: AstArgumentList)
 

@@ -6,7 +6,8 @@ import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.types.AstComposedSuperTypeRef
 import com.ivianuu.ast.types.AstResolvedTypeRef
 import com.ivianuu.ast.types.impl.AstComposedSuperTypeRefImpl
-import kotlin.contracts.ExperimentalContracts
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 
 /*
  * This file was generated automatically
@@ -32,10 +33,7 @@ inline fun buildComposedSuperTypeRef(init: AstComposedSuperTypeRefBuilder.() -> 
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildComposedSuperTypeRefCopy(
-    original: AstComposedSuperTypeRef,
-    init: AstComposedSuperTypeRefBuilder.() -> Unit = {}
-): AstComposedSuperTypeRef {
+inline fun buildComposedSuperTypeRefCopy(original: AstComposedSuperTypeRef, init: AstComposedSuperTypeRefBuilder.() -> Unit = {}): AstComposedSuperTypeRef {
     val copyBuilder = AstComposedSuperTypeRefBuilder()
     copyBuilder.annotations.addAll(original.annotations)
     copyBuilder.superTypeRefs.addAll(original.superTypeRefs)

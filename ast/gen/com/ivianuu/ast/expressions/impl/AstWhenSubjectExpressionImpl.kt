@@ -5,9 +5,7 @@ import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstWhenExpression
 import com.ivianuu.ast.expressions.AstWhenSubjectExpression
 import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -24,18 +22,12 @@ internal class AstWhenSubjectExpressionImpl(
         annotations.forEach { it.accept(visitor, data) }
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstWhenSubjectExpressionImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstWhenSubjectExpressionImpl {
         transformAnnotations(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstWhenSubjectExpressionImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstWhenSubjectExpressionImpl {
         annotations.transformInplace(transformer, data)
         return this
     }

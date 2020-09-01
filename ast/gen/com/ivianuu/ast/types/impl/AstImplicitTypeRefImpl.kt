@@ -2,8 +2,7 @@ package com.ivianuu.ast.types.impl
 
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.types.AstImplicitTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -16,17 +15,11 @@ internal class AstImplicitTypeRefImpl : AstImplicitTypeRef() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstImplicitTypeRefImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstImplicitTypeRefImpl {
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstImplicitTypeRefImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstImplicitTypeRefImpl {
         return this
     }
 }

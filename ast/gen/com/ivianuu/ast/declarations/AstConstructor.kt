@@ -14,8 +14,7 @@ import com.ivianuu.ast.visitors.AstVisitor
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstConstructor : AstPureAbstractElement(), AstFunction<AstConstructor>,
-    AstCallableMemberDeclaration<AstConstructor>, AstTypeParameterRefsOwner {
+abstract class AstConstructor : AstPureAbstractElement(), AstFunction<AstConstructor>, AstCallableMemberDeclaration<AstConstructor>, AstTypeParameterRefsOwner {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
     abstract override val returnTypeRef: AstTypeRef
@@ -29,8 +28,7 @@ abstract class AstConstructor : AstPureAbstractElement(), AstFunction<AstConstru
     abstract override val body: AstBlock?
     abstract val isPrimary: Boolean
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitConstructor(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitConstructor(this, data)
 
     abstract override fun replaceReturnTypeRef(newReturnTypeRef: AstTypeRef)
 
@@ -38,40 +36,19 @@ abstract class AstConstructor : AstPureAbstractElement(), AstFunction<AstConstru
 
     abstract override fun replaceValueParameters(newValueParameters: List<AstValueParameter>)
 
-    abstract override fun <D> transformReturnTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstConstructor
+    abstract override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstConstructor
 
-    abstract override fun <D> transformReceiverTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstConstructor
+    abstract override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstConstructor
 
-    abstract override fun <D> transformTypeParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstConstructor
+    abstract override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstConstructor
 
-    abstract override fun <D> transformValueParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstConstructor
+    abstract override fun <D> transformValueParameters(transformer: AstTransformer<D>, data: D): AstConstructor
 
-    abstract override fun <D> transformStatus(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstConstructor
+    abstract override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstConstructor
 
-    abstract override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstConstructor
+    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstConstructor
 
-    abstract fun <D> transformDelegatedConstructor(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstConstructor
+    abstract fun <D> transformDelegatedConstructor(transformer: AstTransformer<D>, data: D): AstConstructor
 
     abstract override fun <D> transformBody(transformer: AstTransformer<D>, data: D): AstConstructor
 }

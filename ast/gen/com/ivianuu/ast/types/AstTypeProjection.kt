@@ -2,7 +2,7 @@ package com.ivianuu.ast.types
 
 import com.ivianuu.ast.AstElement
 import com.ivianuu.ast.AstPureAbstractElement
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -10,6 +10,5 @@ import com.ivianuu.ast.visitors.AstVisitor
  */
 
 abstract class AstTypeProjection : AstPureAbstractElement(), AstElement {
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitTypeProjection(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitTypeProjection(this, data)
 }

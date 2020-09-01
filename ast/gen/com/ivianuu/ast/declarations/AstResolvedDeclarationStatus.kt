@@ -30,6 +30,5 @@ interface AstResolvedDeclarationStatus : AstDeclarationStatus {
     override val isFromEnumClass: Boolean
     override val isFun: Boolean
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitResolvedDeclarationStatus(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitResolvedDeclarationStatus(this, data)
 }

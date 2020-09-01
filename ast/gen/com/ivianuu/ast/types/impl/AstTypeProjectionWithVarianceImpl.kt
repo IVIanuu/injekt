@@ -2,10 +2,8 @@ package com.ivianuu.ast.types.impl
 
 import com.ivianuu.ast.types.AstTypeProjectionWithVariance
 import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformSingle
 import org.jetbrains.kotlin.types.Variance
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -20,10 +18,7 @@ internal class AstTypeProjectionWithVarianceImpl(
         typeRef.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTypeProjectionWithVarianceImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstTypeProjectionWithVarianceImpl {
         typeRef = typeRef.transformSingle(transformer, data)
         return this
     }

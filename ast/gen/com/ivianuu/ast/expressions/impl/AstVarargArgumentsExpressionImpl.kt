@@ -4,10 +4,7 @@ import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstVarargArgumentsExpression
 import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -27,10 +24,7 @@ internal class AstVarargArgumentsExpressionImpl(
         varargElementType.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstVarargArgumentsExpressionImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstVarargArgumentsExpressionImpl {
         typeRef = typeRef.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         arguments.transformInplace(transformer, data)
@@ -38,10 +32,7 @@ internal class AstVarargArgumentsExpressionImpl(
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstVarargArgumentsExpressionImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstVarargArgumentsExpressionImpl {
         annotations.transformInplace(transformer, data)
         return this
     }

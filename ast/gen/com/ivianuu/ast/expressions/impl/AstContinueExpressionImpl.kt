@@ -27,19 +27,13 @@ internal class AstContinueExpressionImpl(
         annotations.forEach { it.accept(visitor, data) }
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstContinueExpressionImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstContinueExpressionImpl {
         typeRef = typeRef.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstContinueExpressionImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstContinueExpressionImpl {
         annotations.transformInplace(transformer, data)
         return this
     }

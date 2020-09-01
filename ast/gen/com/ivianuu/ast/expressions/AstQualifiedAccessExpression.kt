@@ -3,8 +3,7 @@ package com.ivianuu.ast.expressions
 import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -20,8 +19,7 @@ abstract class AstQualifiedAccessExpression : AstExpression(), AstQualifiedAcces
     abstract override val dispatchReceiver: AstExpression
     abstract override val extensionReceiver: AstExpression
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitQualifiedAccessExpression(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitQualifiedAccessExpression(this, data)
 
     abstract override fun replaceTypeRef(newTypeRef: AstTypeRef)
 
@@ -31,33 +29,15 @@ abstract class AstQualifiedAccessExpression : AstExpression(), AstQualifiedAcces
 
     abstract override fun replaceExplicitReceiver(newExplicitReceiver: AstExpression?)
 
-    abstract override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstQualifiedAccessExpression
+    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstQualifiedAccessExpression
 
-    abstract override fun <D> transformCalleeReference(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstQualifiedAccessExpression
+    abstract override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstQualifiedAccessExpression
 
-    abstract override fun <D> transformTypeArguments(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstQualifiedAccessExpression
+    abstract override fun <D> transformTypeArguments(transformer: AstTransformer<D>, data: D): AstQualifiedAccessExpression
 
-    abstract override fun <D> transformExplicitReceiver(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstQualifiedAccessExpression
+    abstract override fun <D> transformExplicitReceiver(transformer: AstTransformer<D>, data: D): AstQualifiedAccessExpression
 
-    abstract override fun <D> transformDispatchReceiver(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstQualifiedAccessExpression
+    abstract override fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstQualifiedAccessExpression
 
-    abstract override fun <D> transformExtensionReceiver(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstQualifiedAccessExpression
+    abstract override fun <D> transformExtensionReceiver(transformer: AstTransformer<D>, data: D): AstQualifiedAccessExpression
 }

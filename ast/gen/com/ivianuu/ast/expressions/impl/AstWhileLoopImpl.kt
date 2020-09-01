@@ -5,10 +5,7 @@ import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstWhileLoop
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -35,10 +32,7 @@ internal class AstWhileLoopImpl(
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstWhileLoopImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstWhileLoopImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
@@ -53,10 +47,7 @@ internal class AstWhileLoopImpl(
         return this
     }
 
-    override fun <D> transformOtherChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstWhileLoopImpl {
+    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstWhileLoopImpl {
         transformAnnotations(transformer, data)
         label = label?.transformSingle(transformer, data)
         return this

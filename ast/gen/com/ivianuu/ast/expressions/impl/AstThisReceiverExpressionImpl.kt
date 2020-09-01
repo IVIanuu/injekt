@@ -3,14 +3,12 @@ package com.ivianuu.ast.expressions.impl
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstThisReceiverExpression
+import com.ivianuu.ast.expressions.impl.AstNoReceiverExpression
 import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.references.AstThisReference
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -41,10 +39,7 @@ internal class AstThisReceiverExpressionImpl(
         calleeReference.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstThisReceiverExpressionImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstThisReceiverExpressionImpl {
         typeRef = typeRef.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         transformTypeArguments(transformer, data)
@@ -59,50 +54,32 @@ internal class AstThisReceiverExpressionImpl(
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstThisReceiverExpressionImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstThisReceiverExpressionImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformTypeArguments(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstThisReceiverExpressionImpl {
+    override fun <D> transformTypeArguments(transformer: AstTransformer<D>, data: D): AstThisReceiverExpressionImpl {
         typeArguments.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformExplicitReceiver(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstThisReceiverExpressionImpl {
+    override fun <D> transformExplicitReceiver(transformer: AstTransformer<D>, data: D): AstThisReceiverExpressionImpl {
         explicitReceiver = explicitReceiver?.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformDispatchReceiver(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstThisReceiverExpressionImpl {
+    override fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstThisReceiverExpressionImpl {
         dispatchReceiver = dispatchReceiver.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformExtensionReceiver(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstThisReceiverExpressionImpl {
+    override fun <D> transformExtensionReceiver(transformer: AstTransformer<D>, data: D): AstThisReceiverExpressionImpl {
         extensionReceiver = extensionReceiver.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformCalleeReference(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstThisReceiverExpressionImpl {
+    override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstThisReceiverExpressionImpl {
         calleeReference = calleeReference.transformSingle(transformer, data)
         return this
     }

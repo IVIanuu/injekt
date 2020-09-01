@@ -39,10 +39,7 @@ internal class AstAnonymousObjectImpl(
         typeRef.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnonymousObjectImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstAnonymousObjectImpl {
         transformTypeParameters(transformer, data)
         transformSuperTypeRefs(transformer, data)
         transformDeclarations(transformer, data)
@@ -51,34 +48,22 @@ internal class AstAnonymousObjectImpl(
         return this
     }
 
-    override fun <D> transformTypeParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnonymousObjectImpl {
+    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstAnonymousObjectImpl {
         typeParameters.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformSuperTypeRefs(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnonymousObjectImpl {
+    override fun <D> transformSuperTypeRefs(transformer: AstTransformer<D>, data: D): AstAnonymousObjectImpl {
         superTypeRefs.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformDeclarations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnonymousObjectImpl {
+    override fun <D> transformDeclarations(transformer: AstTransformer<D>, data: D): AstAnonymousObjectImpl {
         declarations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnonymousObjectImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstAnonymousObjectImpl {
         annotations.transformInplace(transformer, data)
         return this
     }

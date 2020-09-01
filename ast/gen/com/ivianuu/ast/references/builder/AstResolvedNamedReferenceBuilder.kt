@@ -4,8 +4,9 @@ import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.references.AstResolvedNamedReference
 import com.ivianuu.ast.references.impl.AstResolvedNamedReferenceImpl
 import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 import org.jetbrains.kotlin.name.Name
-import kotlin.contracts.ExperimentalContracts
 
 /*
  * This file was generated automatically

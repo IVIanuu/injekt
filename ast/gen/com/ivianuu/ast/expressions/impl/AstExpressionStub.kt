@@ -29,10 +29,7 @@ class AstExpressionStub @AstImplementationDetail constructor(
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstExpressionStub {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstExpressionStub {
         annotations.transformInplace(transformer, data)
         return this
     }

@@ -15,11 +15,7 @@ interface AstAnnotatedDeclaration : AstDeclaration, AstAnnotationContainer {
     override val attributes: AstDeclarationAttributes
     override val annotations: List<AstAnnotationCall>
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitAnnotatedDeclaration(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitAnnotatedDeclaration(this, data)
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnnotatedDeclaration
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstAnnotatedDeclaration
 }

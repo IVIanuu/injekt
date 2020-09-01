@@ -7,10 +7,7 @@ import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstReturnExpression
 import com.ivianuu.ast.types.AstTypeRef
 import com.ivianuu.ast.types.impl.AstImplicitNothingTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -30,35 +27,23 @@ internal class AstReturnExpressionImpl(
         result.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstReturnExpressionImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstReturnExpressionImpl {
         transformResult(transformer, data)
         transformOtherChildren(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstReturnExpressionImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstReturnExpressionImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformResult(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstReturnExpressionImpl {
+    override fun <D> transformResult(transformer: AstTransformer<D>, data: D): AstReturnExpressionImpl {
         result = result.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformOtherChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstReturnExpressionImpl {
+    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstReturnExpressionImpl {
         typeRef = typeRef.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         return this

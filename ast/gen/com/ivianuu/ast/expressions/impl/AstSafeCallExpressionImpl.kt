@@ -7,10 +7,7 @@ import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstQualifiedAccess
 import com.ivianuu.ast.expressions.AstSafeCallExpression
 import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -31,10 +28,7 @@ internal class AstSafeCallExpressionImpl(
         regularQualifiedAccess.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstSafeCallExpressionImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstSafeCallExpressionImpl {
         typeRef = typeRef.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         transformReceiver(transformer, data)
@@ -42,26 +36,17 @@ internal class AstSafeCallExpressionImpl(
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstSafeCallExpressionImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstSafeCallExpressionImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformReceiver(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstSafeCallExpressionImpl {
+    override fun <D> transformReceiver(transformer: AstTransformer<D>, data: D): AstSafeCallExpressionImpl {
         receiver = receiver.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformRegularQualifiedAccess(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstSafeCallExpressionImpl {
+    override fun <D> transformRegularQualifiedAccess(transformer: AstTransformer<D>, data: D): AstSafeCallExpressionImpl {
         regularQualifiedAccess = regularQualifiedAccess.transformSingle(transformer, data)
         return this
     }

@@ -5,10 +5,7 @@ import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.types.AstTypeRef
 import com.ivianuu.ast.types.impl.AstImplicitUnitTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -31,10 +28,7 @@ class AstUnitExpression @AstImplementationDetail constructor(
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstUnitExpression {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstUnitExpression {
         annotations.transformInplace(transformer, data)
         return this
     }

@@ -61,10 +61,7 @@ internal class AstFieldImpl(
         return this
     }
 
-    override fun <D> transformReceiverTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstFieldImpl {
+    override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstFieldImpl {
         return this
     }
 
@@ -89,10 +86,7 @@ internal class AstFieldImpl(
         return this
     }
 
-    override fun <D> transformTypeParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstFieldImpl {
+    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstFieldImpl {
         typeParameters.transformInplace(transformer, data)
         return this
     }

@@ -15,8 +15,7 @@ import kotlin.contracts.ExperimentalContracts
  */
 
 @AstBuilderDsl
-class AstStringConcatenationCallBuilder : AstCallBuilder, AstAnnotationContainerBuilder,
-    AstExpressionBuilder {
+class AstStringConcatenationCallBuilder : AstCallBuilder, AstAnnotationContainerBuilder, AstExpressionBuilder {
     override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
     override lateinit var argumentList: AstArgumentList
 
@@ -27,10 +26,7 @@ class AstStringConcatenationCallBuilder : AstCallBuilder, AstAnnotationContainer
         )
     }
 
-    @Deprecated(
-        "Modification of 'typeRef' has no impact for AstStringConcatenationCallBuilder",
-        level = DeprecationLevel.HIDDEN
-    )
+    @Deprecated("Modification of 'typeRef' has no impact for AstStringConcatenationCallBuilder", level = DeprecationLevel.HIDDEN)
     override var typeRef: AstTypeRef
         get() = throw IllegalStateException()
         set(value) {

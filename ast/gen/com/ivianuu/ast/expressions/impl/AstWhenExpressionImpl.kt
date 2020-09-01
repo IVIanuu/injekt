@@ -7,10 +7,7 @@ import com.ivianuu.ast.expressions.AstWhenBranch
 import com.ivianuu.ast.expressions.AstWhenExpression
 import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -39,10 +36,7 @@ internal class AstWhenExpressionImpl(
         branches.forEach { it.accept(visitor, data) }
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstWhenExpressionImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstWhenExpressionImpl {
         transformCalleeReference(transformer, data)
         transformSubject(transformer, data)
         transformBranches(transformer, data)
@@ -50,26 +44,17 @@ internal class AstWhenExpressionImpl(
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstWhenExpressionImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstWhenExpressionImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformCalleeReference(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstWhenExpressionImpl {
+    override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstWhenExpressionImpl {
         calleeReference = calleeReference.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformSubject(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstWhenExpressionImpl {
+    override fun <D> transformSubject(transformer: AstTransformer<D>, data: D): AstWhenExpressionImpl {
         if (subjectVariable != null) {
             subjectVariable = subjectVariable?.transformSingle(transformer, data)
             subject = subjectVariable?.initializer
@@ -79,18 +64,12 @@ internal class AstWhenExpressionImpl(
         return this
     }
 
-    override fun <D> transformBranches(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstWhenExpressionImpl {
+    override fun <D> transformBranches(transformer: AstTransformer<D>, data: D): AstWhenExpressionImpl {
         branches.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformOtherChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstWhenExpressionImpl {
+    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstWhenExpressionImpl {
         typeRef = typeRef.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         return this

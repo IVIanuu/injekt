@@ -47,10 +47,7 @@ internal class AstConstructorImpl(
         body?.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstConstructorImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstConstructorImpl {
         transformReturnTypeRef(transformer, data)
         transformReceiverTypeRef(transformer, data)
         transformTypeParameters(transformer, data)
@@ -62,34 +59,22 @@ internal class AstConstructorImpl(
         return this
     }
 
-    override fun <D> transformReturnTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstConstructorImpl {
+    override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstConstructorImpl {
         returnTypeRef = returnTypeRef.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformReceiverTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstConstructorImpl {
+    override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstConstructorImpl {
         receiverTypeRef = receiverTypeRef?.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformTypeParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstConstructorImpl {
+    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstConstructorImpl {
         typeParameters.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformValueParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstConstructorImpl {
+    override fun <D> transformValueParameters(transformer: AstTransformer<D>, data: D): AstConstructorImpl {
         valueParameters.transformInplace(transformer, data)
         return this
     }
@@ -99,18 +84,12 @@ internal class AstConstructorImpl(
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstConstructorImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstConstructorImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformDelegatedConstructor(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstConstructorImpl {
+    override fun <D> transformDelegatedConstructor(transformer: AstTransformer<D>, data: D): AstConstructorImpl {
         delegatedConstructor = delegatedConstructor?.transformSingle(transformer, data)
         return this
     }

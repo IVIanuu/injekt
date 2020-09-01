@@ -16,8 +16,7 @@ import kotlin.contracts.ExperimentalContracts
  */
 
 @AstBuilderDsl
-class AstContinueExpressionBuilder : AstLoopJumpBuilder, AstAnnotationContainerBuilder,
-    AstExpressionBuilder {
+class AstContinueExpressionBuilder : AstLoopJumpBuilder, AstAnnotationContainerBuilder, AstExpressionBuilder {
     override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
     override lateinit var target: AstTarget<AstLoop>
 
@@ -28,10 +27,7 @@ class AstContinueExpressionBuilder : AstLoopJumpBuilder, AstAnnotationContainerB
         )
     }
 
-    @Deprecated(
-        "Modification of 'typeRef' has no impact for AstContinueExpressionBuilder",
-        level = DeprecationLevel.HIDDEN
-    )
+    @Deprecated("Modification of 'typeRef' has no impact for AstContinueExpressionBuilder", level = DeprecationLevel.HIDDEN)
     override var typeRef: AstTypeRef
         get() = throw IllegalStateException()
         set(value) {

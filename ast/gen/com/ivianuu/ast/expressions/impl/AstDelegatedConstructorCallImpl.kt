@@ -25,11 +25,7 @@ internal class AstDelegatedConstructorCallImpl(
     override var dispatchReceiver: AstExpression,
     override val isThis: Boolean,
 ) : AstDelegatedConstructorCall() {
-    override var calleeReference: AstReference =
-        if (isThis) AstExplicitThisReference(null) else AstExplicitSuperReference(
-            null,
-            constructedTypeRef
-        )
+    override var calleeReference: AstReference = if (isThis) AstExplicitThisReference(null) else AstExplicitSuperReference(null, constructedTypeRef)
     override val isSuper: Boolean get() = !isThis
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
@@ -39,10 +35,7 @@ internal class AstDelegatedConstructorCallImpl(
         calleeReference.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstDelegatedConstructorCallImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstDelegatedConstructorCallImpl {
         transformAnnotations(transformer, data)
         argumentList = argumentList.transformSingle(transformer, data)
         constructedTypeRef = constructedTypeRef.transformSingle(transformer, data)
@@ -50,26 +43,17 @@ internal class AstDelegatedConstructorCallImpl(
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstDelegatedConstructorCallImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstDelegatedConstructorCallImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformDispatchReceiver(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstDelegatedConstructorCallImpl {
+    override fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstDelegatedConstructorCallImpl {
         dispatchReceiver = dispatchReceiver.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformCalleeReference(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstDelegatedConstructorCallImpl {
+    override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstDelegatedConstructorCallImpl {
         calleeReference = calleeReference.transformSingle(transformer, data)
         return this
     }

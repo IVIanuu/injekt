@@ -5,7 +5,9 @@ import com.ivianuu.ast.references.AstBackingFieldReference
 import com.ivianuu.ast.references.impl.AstBackingFieldReferenceImpl
 import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
 import com.ivianuu.ast.symbols.impl.AstBackingFieldSymbol
-import kotlin.contracts.ExperimentalContracts
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
+import org.jetbrains.kotlin.name.Name
 
 /*
  * This file was generated automatically

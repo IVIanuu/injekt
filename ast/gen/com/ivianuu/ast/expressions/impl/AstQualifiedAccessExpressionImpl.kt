@@ -6,10 +6,7 @@ import com.ivianuu.ast.expressions.AstQualifiedAccessExpression
 import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -39,10 +36,7 @@ internal class AstQualifiedAccessExpressionImpl(
         }
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstQualifiedAccessExpressionImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstQualifiedAccessExpressionImpl {
         typeRef = typeRef.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         transformCalleeReference(transformer, data)
@@ -57,50 +51,32 @@ internal class AstQualifiedAccessExpressionImpl(
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstQualifiedAccessExpressionImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstQualifiedAccessExpressionImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformCalleeReference(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstQualifiedAccessExpressionImpl {
+    override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstQualifiedAccessExpressionImpl {
         calleeReference = calleeReference.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformTypeArguments(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstQualifiedAccessExpressionImpl {
+    override fun <D> transformTypeArguments(transformer: AstTransformer<D>, data: D): AstQualifiedAccessExpressionImpl {
         typeArguments.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformExplicitReceiver(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstQualifiedAccessExpressionImpl {
+    override fun <D> transformExplicitReceiver(transformer: AstTransformer<D>, data: D): AstQualifiedAccessExpressionImpl {
         explicitReceiver = explicitReceiver?.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformDispatchReceiver(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstQualifiedAccessExpressionImpl {
+    override fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstQualifiedAccessExpressionImpl {
         dispatchReceiver = dispatchReceiver.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformExtensionReceiver(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstQualifiedAccessExpressionImpl {
+    override fun <D> transformExtensionReceiver(transformer: AstTransformer<D>, data: D): AstQualifiedAccessExpressionImpl {
         extensionReceiver = extensionReceiver.transformSingle(transformer, data)
         return this
     }

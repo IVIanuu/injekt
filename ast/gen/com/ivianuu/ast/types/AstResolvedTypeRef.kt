@@ -2,9 +2,8 @@ package com.ivianuu.ast.types
 
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.expressions.AstAnnotationCall
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -17,11 +16,7 @@ abstract class AstResolvedTypeRef : AstPureAbstractElement(), AstTypeRef {
     abstract val delegatedTypeRef: AstTypeRef?
     abstract val isSuspend: Boolean
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitResolvedTypeRef(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitResolvedTypeRef(this, data)
 
-    abstract override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstResolvedTypeRef
+    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstResolvedTypeRef
 }

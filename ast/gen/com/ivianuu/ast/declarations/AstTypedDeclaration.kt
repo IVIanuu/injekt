@@ -16,15 +16,11 @@ interface AstTypedDeclaration : AstAnnotatedDeclaration {
     override val annotations: List<AstAnnotationCall>
     val returnTypeRef: AstTypeRef
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitTypedDeclaration(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitTypedDeclaration(this, data)
 
     fun replaceReturnTypeRef(newReturnTypeRef: AstTypeRef)
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTypedDeclaration
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstTypedDeclaration
 
     fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstTypedDeclaration
 }

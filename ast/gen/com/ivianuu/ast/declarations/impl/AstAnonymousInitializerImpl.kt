@@ -25,10 +25,7 @@ internal class AstAnonymousInitializerImpl(
         body?.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstAnonymousInitializerImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstAnonymousInitializerImpl {
         body = body?.transformSingle(transformer, data)
         return this
     }

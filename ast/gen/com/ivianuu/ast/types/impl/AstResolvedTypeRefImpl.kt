@@ -4,11 +4,8 @@ import com.ivianuu.ast.AstImplementationDetail
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.types.AstResolvedTypeRef
 import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -26,19 +23,13 @@ class AstResolvedTypeRefImpl @AstImplementationDetail constructor(
         delegatedTypeRef?.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstResolvedTypeRefImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstResolvedTypeRefImpl {
         transformAnnotations(transformer, data)
         delegatedTypeRef = delegatedTypeRef?.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstResolvedTypeRefImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstResolvedTypeRefImpl {
         annotations.transformInplace(transformer, data)
         return this
     }

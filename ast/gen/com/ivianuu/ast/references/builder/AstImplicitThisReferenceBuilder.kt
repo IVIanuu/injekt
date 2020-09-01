@@ -4,7 +4,8 @@ import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.references.AstThisReference
 import com.ivianuu.ast.references.impl.AstImplicitThisReference
 import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
-import kotlin.contracts.ExperimentalContracts
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 
 /*
  * This file was generated automatically

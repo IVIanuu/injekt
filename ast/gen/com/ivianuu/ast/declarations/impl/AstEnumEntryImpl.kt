@@ -58,25 +58,16 @@ internal class AstEnumEntryImpl(
         return this
     }
 
-    override fun <D> transformReturnTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstEnumEntryImpl {
+    override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
         returnTypeRef = returnTypeRef.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformReceiverTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstEnumEntryImpl {
+    override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
         return this
     }
 
-    override fun <D> transformInitializer(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstEnumEntryImpl {
+    override fun <D> transformInitializer(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
         initializer = initializer?.transformSingle(transformer, data)
         return this
     }
@@ -93,18 +84,12 @@ internal class AstEnumEntryImpl(
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstEnumEntryImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformTypeParameters(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstEnumEntryImpl {
+    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
         typeParameters.transformInplace(transformer, data)
         return this
     }
@@ -114,10 +99,7 @@ internal class AstEnumEntryImpl(
         return this
     }
 
-    override fun <D> transformOtherChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstEnumEntryImpl {
+    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
         transformAnnotations(transformer, data)
         return this
     }

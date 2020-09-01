@@ -15,7 +15,7 @@ import com.ivianuu.ast.visitors.transformSingle
  * DO NOT MODIFY IT MANUALLY
  */
 
-internal class AstConstExpressionImpl<T>(
+internal class AstConstExpressionImpl<T> (
     override val annotations: MutableList<AstAnnotationCall>,
     override var kind: AstConstKind<T>,
     override val value: T,
@@ -27,19 +27,13 @@ internal class AstConstExpressionImpl<T>(
         annotations.forEach { it.accept(visitor, data) }
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstConstExpressionImpl<T> {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstConstExpressionImpl<T> {
         typeRef = typeRef.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstConstExpressionImpl<T> {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstConstExpressionImpl<T> {
         annotations.transformInplace(transformer, data)
         return this
     }

@@ -33,19 +33,13 @@ internal class AstTypeParameterImpl(
         annotations.forEach { it.accept(visitor, data) }
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTypeParameterImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstTypeParameterImpl {
         bounds.transformInplace(transformer, data)
         transformAnnotations(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTypeParameterImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstTypeParameterImpl {
         annotations.transformInplace(transformer, data)
         return this
     }

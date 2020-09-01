@@ -2,8 +2,7 @@ package com.ivianuu.ast.types
 
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.expressions.AstAnnotationCall
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -15,11 +14,7 @@ abstract class AstUserTypeRef : AstPureAbstractElement(), AstTypeRefWithNullabil
     abstract override val isMarkedNullable: Boolean
     abstract val qualifier: List<AstQualifierPart>
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitUserTypeRef(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitUserTypeRef(this, data)
 
-    abstract override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstUserTypeRef
+    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstUserTypeRef
 }

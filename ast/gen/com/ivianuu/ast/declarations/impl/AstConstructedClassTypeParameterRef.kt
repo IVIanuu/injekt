@@ -16,10 +16,7 @@ internal class AstConstructedClassTypeParameterRef(
 ) : AstPureAbstractElement(), AstTypeParameterRef {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {}
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstConstructedClassTypeParameterRef {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstConstructedClassTypeParameterRef {
         return this
     }
 }

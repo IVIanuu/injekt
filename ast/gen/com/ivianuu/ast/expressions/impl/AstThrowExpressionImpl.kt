@@ -5,10 +5,7 @@ import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstThrowExpression
 import com.ivianuu.ast.types.AstTypeRef
 import com.ivianuu.ast.types.impl.AstImplicitNothingTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -27,20 +24,14 @@ internal class AstThrowExpressionImpl(
         exception.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstThrowExpressionImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstThrowExpressionImpl {
         typeRef = typeRef.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         exception = exception.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstThrowExpressionImpl {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstThrowExpressionImpl {
         annotations.transformInplace(transformer, data)
         return this
     }

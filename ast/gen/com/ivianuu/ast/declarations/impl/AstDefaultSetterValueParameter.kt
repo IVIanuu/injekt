@@ -52,10 +52,7 @@ internal class AstDefaultSetterValueParameter(
         defaultValue?.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstDefaultSetterValueParameter {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstDefaultSetterValueParameter {
         transformReturnTypeRef(transformer, data)
         transformReceiverTypeRef(transformer, data)
         transformInitializer(transformer, data)
@@ -66,66 +63,42 @@ internal class AstDefaultSetterValueParameter(
         return this
     }
 
-    override fun <D> transformReturnTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstDefaultSetterValueParameter {
+    override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstDefaultSetterValueParameter {
         returnTypeRef = returnTypeRef.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformReceiverTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstDefaultSetterValueParameter {
+    override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstDefaultSetterValueParameter {
         receiverTypeRef = receiverTypeRef?.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformInitializer(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstDefaultSetterValueParameter {
+    override fun <D> transformInitializer(transformer: AstTransformer<D>, data: D): AstDefaultSetterValueParameter {
         initializer = initializer?.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformDelegate(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstDefaultSetterValueParameter {
+    override fun <D> transformDelegate(transformer: AstTransformer<D>, data: D): AstDefaultSetterValueParameter {
         delegate = delegate?.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformGetter(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstDefaultSetterValueParameter {
+    override fun <D> transformGetter(transformer: AstTransformer<D>, data: D): AstDefaultSetterValueParameter {
         getter = getter?.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformSetter(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstDefaultSetterValueParameter {
+    override fun <D> transformSetter(transformer: AstTransformer<D>, data: D): AstDefaultSetterValueParameter {
         setter = setter?.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstDefaultSetterValueParameter {
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstDefaultSetterValueParameter {
         annotations.transformInplace(transformer, data)
         return this
     }
 
-    override fun <D> transformOtherChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstDefaultSetterValueParameter {
+    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstDefaultSetterValueParameter {
         transformAnnotations(transformer, data)
         defaultValue = defaultValue?.transformSingle(transformer, data)
         return this

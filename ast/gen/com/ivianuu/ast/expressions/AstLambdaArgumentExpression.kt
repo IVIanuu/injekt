@@ -1,8 +1,7 @@
 package com.ivianuu.ast.expressions
 
 import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -15,13 +14,9 @@ abstract class AstLambdaArgumentExpression : AstWrappedArgumentExpression() {
     abstract override val expression: AstExpression
     abstract override val isSpread: Boolean
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitLambdaArgumentExpression(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitLambdaArgumentExpression(this, data)
 
     abstract override fun replaceTypeRef(newTypeRef: AstTypeRef)
 
-    abstract override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstLambdaArgumentExpression
+    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstLambdaArgumentExpression
 }

@@ -34,50 +34,25 @@ abstract class AstValueParameter : AstVariable<AstValueParameter>() {
     abstract val isNoinline: Boolean
     abstract val isVararg: Boolean
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
-        visitor.visitValueParameter(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitValueParameter(this, data)
 
     abstract override fun replaceReturnTypeRef(newReturnTypeRef: AstTypeRef)
 
     abstract override fun replaceReceiverTypeRef(newReceiverTypeRef: AstTypeRef?)
 
-    abstract override fun <D> transformReturnTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstValueParameter
+    abstract override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstValueParameter
 
-    abstract override fun <D> transformReceiverTypeRef(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstValueParameter
+    abstract override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstValueParameter
 
-    abstract override fun <D> transformInitializer(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstValueParameter
+    abstract override fun <D> transformInitializer(transformer: AstTransformer<D>, data: D): AstValueParameter
 
-    abstract override fun <D> transformDelegate(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstValueParameter
+    abstract override fun <D> transformDelegate(transformer: AstTransformer<D>, data: D): AstValueParameter
 
-    abstract override fun <D> transformGetter(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstValueParameter
+    abstract override fun <D> transformGetter(transformer: AstTransformer<D>, data: D): AstValueParameter
 
-    abstract override fun <D> transformSetter(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstValueParameter
+    abstract override fun <D> transformSetter(transformer: AstTransformer<D>, data: D): AstValueParameter
 
-    abstract override fun <D> transformAnnotations(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstValueParameter
+    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstValueParameter
 
-    abstract override fun <D> transformOtherChildren(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstValueParameter
+    abstract override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstValueParameter
 }
