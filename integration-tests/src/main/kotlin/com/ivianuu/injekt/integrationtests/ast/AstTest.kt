@@ -149,6 +149,30 @@ class AstTest {
                             }
                         }
                         
+                        fun ifElse() {
+                            if ("a".equals("b")) {
+                                println("first")
+                            } else if ("a".equals("c")) {
+                                println("second")
+                            } else {
+                                println("third")
+                            }
+                        }
+                        
+                        /*fun whenBasic() {
+                            when {
+                                "a".equals("b") -> {
+                                    println("first")
+                                }
+                                "a".equals("c") -> {
+                                    println("second")
+                                }
+                                else -> {
+                                    println("second")
+                                }
+                            }
+                        }*/
+                        
                         fun returningString(a: Float = 0f, b: Int = 0, c: Long = 0L) = 0
                         
                         typealias MyTypeAlias = () -> String

@@ -31,26 +31,23 @@ class AstWhen(
 }
 
 interface AstBranch : AstElement {
-    var condition: AstExpression
     var result: AstExpression
 }
 
 abstract class AstBranchBase : AstBranch {
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        condition.accept(visitor, data)
         result.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
-        condition = condition.transformSingle(transformer, data)
         result = result.transformSingle(transformer, data)
     }
 
 }
 
 class AstConditionBranch(
-    override var condition: AstExpression,
+    var condition: AstExpression,
     override var result: AstExpression
 ) : AstBranchBase() {
 
@@ -59,10 +56,7 @@ class AstConditionBranch(
 
 }
 
-class AstElseBranch(
-    override var condition: AstExpression,
-    override var result: AstExpression
-) : AstBranchBase() {
+class AstElseBranch(override var result: AstExpression) : AstBranchBase() {
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R =
         visitor.visitElseBranch(this, data)

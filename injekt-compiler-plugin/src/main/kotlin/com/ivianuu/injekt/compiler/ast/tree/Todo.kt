@@ -1,7 +1,6 @@
 package com.ivianuu.injekt.compiler.ast.tree
 
 // todo annotations
-// todo loop
 // todo references function property class
 // todo lambda
 // todo when/if

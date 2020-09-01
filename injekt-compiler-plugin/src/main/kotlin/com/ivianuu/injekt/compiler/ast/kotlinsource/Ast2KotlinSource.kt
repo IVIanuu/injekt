@@ -19,13 +19,16 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.fqName
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstAnonymousObjectExpression
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstConditionBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstElseBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstForLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThis
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThrow
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstTry
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstWhen
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstWhileLoop
 import com.ivianuu.injekt.compiler.ast.tree.type.AstStarProjection
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
@@ -549,6 +552,29 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
         data: Nothing?
     ) {
         expression.anonymousObject.emit()
+    }
+
+    override fun visitWhen(astWhen: AstWhen, data: Nothing?) {
+        emitLine("when {")
+        indented {
+            astWhen.branches.forEach { branch ->
+                when (branch) {
+                    is AstConditionBranch -> {
+                        branch.condition.emit()
+                        emitLine(" -> {")
+                    }
+                    is AstElseBranch -> {
+                        emitLine("else -> {")
+                    }
+                    else -> error("Unexpected branch $branch")
+                }.let {}
+                indented {
+                    branch.result.emit()
+                }
+                emitLine("}")
+            }
+        }
+        emitLine("}")
     }
 
     override fun visitWhileLoop(whileLoop: AstWhileLoop, data: Nothing?) {

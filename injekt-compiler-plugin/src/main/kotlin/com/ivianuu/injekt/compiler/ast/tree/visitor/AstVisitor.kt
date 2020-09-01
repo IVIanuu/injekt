@@ -81,6 +81,7 @@ interface AstVisitor<R, D> {
         visitBranch(conditionBranch, data)
 
     fun visitElseBranch(elseBranch: AstElseBranch, data: D) = visitBranch(elseBranch, data)
+
     fun visitLoop(loop: AstLoop, data: D) = visitExpression(loop, data)
     fun visitWhileLoop(whileLoop: AstWhileLoop, data: D) = visitLoop(whileLoop, data)
     fun visitForLoop(forLoop: AstForLoop, data: D) = visitLoop(forLoop, data)
