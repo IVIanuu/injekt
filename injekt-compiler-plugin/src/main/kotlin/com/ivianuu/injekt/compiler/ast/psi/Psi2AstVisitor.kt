@@ -35,7 +35,6 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstThrow
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstTry
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstWhen
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstWhileLoop
-import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
@@ -51,6 +50,7 @@ import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.js.translate.callTranslator.getReturnType
 import org.jetbrains.kotlin.name.Name
@@ -93,6 +93,11 @@ import org.jetbrains.kotlin.psi.KtTryExpression
 import org.jetbrains.kotlin.psi.KtTypeAlias
 import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.KtVisitor
+import org.jetbrains.kotlin.psi.KtWhenCondition
+import org.jetbrains.kotlin.psi.KtWhenConditionInRange
+import org.jetbrains.kotlin.psi.KtWhenConditionIsPattern
+import org.jetbrains.kotlin.psi.KtWhenConditionWithExpression
+import org.jetbrains.kotlin.psi.KtWhenExpression
 import org.jetbrains.kotlin.psi.KtWhileExpression
 import org.jetbrains.kotlin.psi.KtWhileExpressionBase
 import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
@@ -677,89 +682,56 @@ class Psi2AstVisitor(
             }
         }
 
-        return createWhen(
-            expression, astBranches, astElseBranch,
-            expression.getTypeInferredByFrontendOrFail().toAstType()
-        )
+        return AstWhen(expression.getTypeInferredByFrontendOrFail().toAstType()).apply {
+            branches += astBranches
+            if (astElseBranch != null) branches += AstElseBranch(astElseBranch)
+        }
     }
 
-    /*override fun visitWhenExpression(expression: KtWhenExpression, data: Mode?): AstElement {
-        val irSubject = generateWhenSubject(expression)
+    override fun visitWhenExpression(expression: KtWhenExpression, mode: Mode): AstElement {
+        val subjectVariable = expression.subjectVariable
+        val subjectExpression = expression.subjectExpression
 
-        val irWhen = IrWhenImpl(
-            expression.startOffsetSkippingComments, expression.endOffset,
-            getExpressionTypeWithCoercionToUnitOrFail(expression).toIrType(), IrStatementOrigin.WHEN
-        )
+        val astSubject = when {
+            subjectVariable != null -> subjectVariable.accept(mode)
+            subjectExpression != null -> {
+                val astSubjectExpression = subjectExpression.accept<AstExpression>(mode)
+                AstProperty(
+                    name = Name.special("<when subject>"),
+                    type = astSubjectExpression.type,
+                    visibility = AstVisibility.LOCAL
+                ).apply {
+                    applyParentFromStack()
+                    initializer = astSubjectExpression
+                }
+            }
+            else -> null
+        }
+
+        val astWhen = AstWhen(expression.getTypeInferredByFrontendOrFail().toAstType())
 
         for (ktEntry in expression.entries) {
             if (ktEntry.isElse) {
-                val irElseResult = ktEntry.expression!!.genExpr()
-                irWhen.branches.add(elseBranch(irElseResult))
+                val astElseResult = ktEntry.expression!!.accept<AstExpression>(mode)
+                astWhen.branches.add(AstElseBranch(astElseResult))
                 break
             }
 
-            var irBranchCondition: IrExpression? = null
+            var astBranchCondition: AstExpression? = null
             for (ktCondition in ktEntry.conditions) {
-                val irCondition =
-                    if (irSubject != null)
-                        generateWhenConditionWithSubject(ktCondition, irSubject)
-                    else
-                        generateWhenConditionNoSubject(ktCondition)
-                irBranchCondition = irBranchCondition?.let { context.whenComma(it, irCondition) } ?: irCondition
+                val astCondition = if (astSubject != null)
+                    generateWhenConditionWithSubject(ktCondition, astSubject)
+                else
+                    generateWhenConditionNoSubject(ktCondition)
+                astBranchCondition =
+                    astBranchCondition?.let { context.whenComma(it, astCondition) } ?: astCondition
             }
 
-            val irBranchResult = ktEntry.expression!!.genExpr()
-            irWhen.branches.add(IrBranchImpl(irBranchCondition!!, irBranchResult))
+            val astBranchResult = ktEntry.expression!!.accept<AstExpression>(mode)
+            astWhen.branches += AstConditionBranch(astBranchCondition!!, astBranchResult)
         }
         addElseBranchForExhaustiveWhenIfNeeded(irWhen, expression)
 
-        return generateWhenBody(expression, irSubject, irWhen)
-    }*/
-
-    private fun createWhen(
-        ktIf: KtIfExpression,
-        astBranches: List<AstBranch>,
-        astElseResult: AstExpression?,
-        resultType: AstType
-    ): AstWhen {
-        return AstWhen(resultType).apply {
-            branches += astBranches
-            if (astElseResult != null) branches += AstElseBranch(astElseResult)
-        }
-    }
-
-    /*private fun generateWhenSubject(expression: KtWhenExpression): IrVariable? {
-        val subjectVariable = expression.subjectVariable
-        val subjectExpression = expression.subjectExpression
-        return when {
-            subjectVariable != null -> statementGenerator.visitProperty(subjectVariable, null) as IrVariable
-            subjectExpression != null -> scope.createTemporaryVariable(subjectExpression.genExpr(), "subject")
-            else -> null
-        }
-    }
-
-    private fun addElseBranchForExhaustiveWhenIfNeeded(irWhen: IrWhen, whenExpression: KtWhenExpression) {
-        if (irWhen.branches.filterIsInstance<IrElseBranch>().isEmpty()) {
-            //TODO: check condition: seems it's safe to always generate exception
-            val isExhaustive = whenExpression.isExhaustiveWhen()
-
-            if (isExhaustive) {
-                val call = IrCallImpl(
-                    UNDEFINED_OFFSET, UNDEFINED_OFFSET,
-                    context.irBuiltIns.nothingType,
-                    context.irBuiltIns.noWhenBranchMatchedExceptionSymbol
-                )
-                irWhen.branches.add(elseBranch(call))
-            }
-        }
-    }
-
-    private fun KtWhenExpression.isExhaustiveWhen(): Boolean =
-        elseExpression != null // TODO front-end should provide correct exhaustiveness information
-                || true == get(BindingContext.EXHAUSTIVE_WHEN, this)
-                || true == get(BindingContext.IMPLICIT_EXHAUSTIVE_WHEN, this)
-
-    private fun generateWhenBody(expression: KtWhenExpression, irSubject: IrVariable?, irWhen: IrWhen): IrExpression =
         if (irSubject == null) {
             if (irWhen.branches.isEmpty())
                 IrBlockImpl(
@@ -781,17 +753,50 @@ class Psi2AstVisitor(
                 irBlock.statements.add(irSubject)
                 irBlock
             } else {
-                val irBlock = IrBlockImpl(expression.startOffsetSkippingComments, expression.endOffset, irWhen.type, IrStatementOrigin.WHEN)
+                val irBlock = IrBlockImpl(
+                    expression.startOffsetSkippingComments,
+                    expression.endOffset,
+                    irWhen.type,
+                    IrStatementOrigin.WHEN
+                )
                 irBlock.statements.add(irSubject)
                 irBlock.statements.add(irWhen)
                 irBlock
             }
         }
+    }
+
+    private fun addElseBranchForExhaustiveWhenIfNeeded(
+        irWhen: IrWhen,
+        whenExpression: KtWhenExpression
+    ) {
+        if (irWhen.branches.filterIsInstance<IrElseBranch>().isEmpty()) {
+            //TODO: check condition: seems it's safe to always generate exception
+            val isExhaustive = whenExpression.isExhaustiveWhen()
+
+            if (isExhaustive) {
+                val call = IrCallImpl(
+                    UNDEFINED_OFFSET, UNDEFINED_OFFSET,
+                    context.irBuiltIns.nothingType,
+                    context.irBuiltIns.noWhenBranchMatchedExceptionSymbol
+                )
+                irWhen.branches.add(elseBranch(call))
+            }
+        }
+    }
+
+    private fun KtWhenExpression.isExhaustiveWhen(): Boolean =
+        elseExpression != null // TODO front-end should provide correct exhaustiveness information
+                || true == get(BindingContext.EXHAUSTIVE_WHEN, this)
+                || true == get(BindingContext.IMPLICIT_EXHAUSTIVE_WHEN, this)
 
     private fun generateWhenConditionNoSubject(ktCondition: KtWhenCondition): IrExpression =
         (ktCondition as KtWhenConditionWithExpression).expression!!.genExpr()
 
-    private fun generateWhenConditionWithSubject(ktCondition: KtWhenCondition, irSubject: IrVariable): IrExpression {
+    private fun generateWhenConditionWithSubject(
+        ktCondition: KtWhenCondition,
+        irSubject: IrVariable
+    ): IrExpression {
         return when (ktCondition) {
             is KtWhenConditionWithExpression ->
                 generateEqualsCondition(irSubject, ktCondition)
@@ -860,7 +865,7 @@ class Psi2AstVisitor(
             irSubject.loadAt(startOffset, startOffset), irExpression,
             context.bindingContext[BindingContext.PRIMITIVE_NUMERIC_COMPARISON_INFO, ktExpression]
         )
-    }*/
+    }
 
     override fun visitWhileExpression(expression: KtWhileExpression, mode: Mode) =
         visitWhile(expression, mode)
