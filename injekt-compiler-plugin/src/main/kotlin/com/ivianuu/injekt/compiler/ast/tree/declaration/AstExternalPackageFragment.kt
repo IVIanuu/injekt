@@ -1,6 +1,5 @@
 package com.ivianuu.injekt.compiler.ast.tree.declaration
 
-import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
 import com.ivianuu.injekt.compiler.ast.tree.visitor.transformInplace
@@ -16,12 +15,6 @@ class AstExternalPackageFragment(override var packageFqName: FqName) : AstPackag
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         declarations.forEach { it.accept(visitor, data) }
     }
-
-    override fun <D> transform(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTransformResult<AstPackageFragment> =
-        accept(transformer, data) as AstTransformResult<AstPackageFragment>
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
         declarations.transformInplace(transformer, data)

@@ -21,9 +21,9 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstCatch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConditionBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstContinue
-import com.ivianuu.injekt.compiler.ast.tree.expression.AstDoWhileLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstElseBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstForLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
@@ -86,7 +86,7 @@ interface AstVisitor<R, D> {
     fun visitElseBranch(elseBranch: AstElseBranch, data: D) = visitBranch(elseBranch, data)
     fun visitLoop(loop: AstLoop, data: D) = visitExpression(loop, data)
     fun visitWhileLoop(whileLoop: AstWhileLoop, data: D) = visitLoop(whileLoop, data)
-    fun visitDoWhileLoop(doWhileLoop: AstDoWhileLoop, data: D) = visitLoop(doWhileLoop, data)
+    fun visitForLoop(forLoop: AstForLoop, data: D) = visitLoop(forLoop, data)
     fun visitTry(astTry: AstTry, data: D) = visitExpression(astTry, data)
     fun visitCatch(astCatch: AstCatch, data: D) = visitElement(astCatch, data)
     fun visitBreakContinue(breakContinue: AstBreakContinue, data: D) =
@@ -103,3 +103,5 @@ interface AstVisitor<R, D> {
         visitTypeArgument(typeProjection, data)
 
 }
+
+typealias AstVisitorVoid = AstVisitor<Unit, Nothing?>

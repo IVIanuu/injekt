@@ -24,11 +24,6 @@ class AstFile(
         declarations.forEach { it.accept(visitor, data) }
     }
 
-    override fun <D> transform(
-        transformer: AstTransformer<D>,
-        data: D
-    ) = transformer.visitFile(this, data)
-
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
         annotations.transformInplace(transformer, data)
         declarations.transformInplace(transformer, data)

@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstBreak
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstCatch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstContinue
-import com.ivianuu.injekt.compiler.ast.tree.expression.AstDoWhileLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
@@ -65,6 +64,7 @@ import org.jetbrains.kotlin.psi.KtEscapeStringTemplateEntry
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtExpressionWithLabel
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtForExpression
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtLabeledExpression
 import org.jetbrains.kotlin.psi.KtLiteralStringTemplateEntry
@@ -88,6 +88,7 @@ import org.jetbrains.kotlin.psi.KtTypeAlias
 import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.KtVisitor
 import org.jetbrains.kotlin.psi.KtWhileExpression
+import org.jetbrains.kotlin.psi.KtWhileExpressionBase
 import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingContextUtils
@@ -131,7 +132,7 @@ class Psi2AstVisitor(
 ) : KtVisitor<AstElement, Psi2AstVisitor.Mode>(), Generator {
 
     enum class Mode {
-        Partial, Full
+        PARTIAL, FULL
     }
 
     private val functionStack = mutableListOf<AstFunction>()
@@ -178,7 +179,7 @@ class Psi2AstVisitor(
             }
         ) {
             withDeclarationParent(this) {
-                if (mode == Mode.Full) {
+                if (mode == Mode.FULL) {
                     annotations.clear()
                     annotations += file.annotationEntries.map { it.accept(mode) }
                 }
@@ -210,7 +211,7 @@ class Psi2AstVisitor(
             }
         ) {
             withDeclarationParent(this) {
-                if (mode == Mode.Full) {
+                if (mode == Mode.FULL) {
                     annotations.clear()
                     annotations += classOrObject.annotationEntries.map { it.accept(mode) }
                 }
@@ -280,19 +281,19 @@ class Psi2AstVisitor(
                 ).applyParentFromStack()
             }
         ) {
-            if (mode == Mode.Full) {
+            if (mode == Mode.FULL) {
                 returnType = descriptor.returnType!!.toAstType()
             }
             withDeclarationParent(this) {
                 functionStack.push(this)
-                if (mode == Mode.Full) {
+                if (mode == Mode.FULL) {
                     annotations.clear()
                     annotations += function.annotationEntries.map { it.accept(mode) }
                 }
                 typeParameters.clear()
                 typeParameters += function.typeParameters
                     .map { it.accept(mode) }
-                if (mode == Mode.Full) {
+                if (mode == Mode.FULL) {
                     dispatchReceiverType = descriptor.dispatchReceiverParameter?.type?.toAstType()
                     extensionReceiverType = descriptor.extensionReceiverParameter?.type?.toAstType()
                 }
@@ -302,7 +303,7 @@ class Psi2AstVisitor(
                 overriddenDeclarations.clear()
                 overriddenDeclarations += descriptor.overriddenDescriptors
                     .map { context.astProvider.get(it) }
-                if (mode == Mode.Full) {
+                if (mode == Mode.FULL) {
                     body = function.bodyExpression?.let { visitExpressionForBlock(it, mode) }
                 }
                 functionStack.pop()
@@ -336,7 +337,7 @@ class Psi2AstVisitor(
                 ).applyParentFromStack()
             }
         ) {
-            if (mode == Mode.Full) {
+            if (mode == Mode.FULL) {
                 type = descriptor.type.toAstType()
                 annotations.clear()
                 annotations += property.annotations.map { it.accept(mode) }
@@ -344,13 +345,13 @@ class Psi2AstVisitor(
             typeParameters.clear()
             typeParameters += property.typeParameters
                 .map { it.accept(mode) }
-            if (mode == Mode.Full) {
+            if (mode == Mode.FULL) {
                 dispatchReceiverType = descriptor.dispatchReceiverParameter?.type?.toAstType()
                 extensionReceiverType = descriptor.extensionReceiverParameter?.type?.toAstType()
             }
             getter = property.getter?.accept(mode)
             setter = property.setter?.accept(mode)
-            if (mode == Mode.Full) {
+            if (mode == Mode.FULL) {
                 initializer = when {
                     // todo valueParameter != null -> AstQualifiedAccess(valueParameter, valueParameter.type)
                     property is KtProperty -> property.initializer?.accept(mode)
@@ -371,7 +372,7 @@ class Psi2AstVisitor(
             context.storage.anonymousInitializers,
             { AstAnonymousInitializer().applyParentFromStack() }
         ) {
-            if (mode == Mode.Full) {
+            if (mode == Mode.FULL) {
                 body = visitExpressionForBlock(initializer.body!!, mode)
             }
         }
@@ -389,7 +390,7 @@ class Psi2AstVisitor(
                 ).applyParentFromStack()
             }
         ) {
-            if (mode == Mode.Full) {
+            if (mode == Mode.FULL) {
                 annotations.clear()
                 annotations += parameter.annotationEntries.map { it.accept(mode) }
                 superTypes.clear()
@@ -415,7 +416,7 @@ class Psi2AstVisitor(
                 ).applyParentFromStack()
             }
         ) {
-            if (mode == Mode.Full) {
+            if (mode == Mode.FULL) {
                 annotations.clear()
                 annotations += parameter.annotationEntries.map { it.accept(mode) }
                 type = descriptor.type.toAstType()
@@ -437,7 +438,7 @@ class Psi2AstVisitor(
                 ).applyParentFromStack()
             }
         ) {
-            if (mode == Mode.Full) {
+            if (mode == Mode.FULL) {
                 annotations.clear()
                 annotations += typeAlias.annotationEntries.map { it.accept(mode) }
                 type = descriptor.expandedType.toAstType()
@@ -626,27 +627,99 @@ class Psi2AstVisitor(
         return generateConstantValueAsExpression(constantValue)
     }
 
-    override fun visitWhileExpression(expression: KtWhileExpression, mode: Mode): AstElement {
-        return loops.getOrPut(expression) {
-            AstWhileLoop(
-                body = visitExpressionForBlock(expression.body!!, mode),
-                condition = expression.condition!!.accept(mode),
-                type = context.builtIns.unitType
-            )
-        }
-    }
+    override fun visitWhileExpression(expression: KtWhileExpression, mode: Mode) =
+        visitWhile(expression, mode)
 
     override fun visitDoWhileExpression(
         expression: KtDoWhileExpression,
         mode: Mode
-    ): AstElement {
-        return loops.getOrPut(expression) {
-            AstDoWhileLoop(
-                body = visitExpressionForBlock(expression.body!!, mode),
-                condition = expression.condition!!.accept(mode),
-                type = context.builtIns.unitType
+    ) = visitWhile(expression, mode)
+
+    private fun visitWhile(expression: KtWhileExpressionBase, mode: Mode) =
+        AstWhileLoop(
+            context.builtIns.unitType,
+            when (expression) {
+                is KtWhileExpression -> AstWhileLoop.Kind.WHILE
+                is KtDoWhileExpression -> AstWhileLoop.Kind.DO_WHILE
+                else -> error("Unexpected while expression $expression")
+            }
+        ).apply {
+            loops[expression] = this
+            body = visitExpressionForBlock(expression.body!!, mode)
+            condition = expression.condition!!.accept(mode)
+        }
+
+    override fun visitForExpression(expression: KtForExpression, data: Mode?): AstElement {
+        val ktLoopParameter = expression.loopParameter
+        val ktLoopDestructuringDeclaration = expression.destructuringDeclaration
+        if (ktLoopParameter == null && ktLoopDestructuringDeclaration == null) {
+            throw AssertionError("Either loopParameter or destructuringParameter should be present:\n${expression.text}")
+        }
+
+        for ((first, second) in listOf(0 to 1, 1 to 2)) {
+
+        }
+
+        val ktLoopRange = expression.loopRange!!
+        val ktForBody = expression.body
+        val iteratorResolvedCall =
+            getOrFail(BindingContext.LOOP_RANGE_ITERATOR_RESOLVED_CALL, ktLoopRange)
+        val hasNextResolvedCall =
+            getOrFail(BindingContext.LOOP_RANGE_HAS_NEXT_RESOLVED_CALL, ktLoopRange)
+        val nextResolvedCall = getOrFail(BindingContext.LOOP_RANGE_NEXT_RESOLVED_CALL, ktLoopRange)
+
+        val astForBlock = AstBlock(context.builtIns.unitType)
+
+        /*val astIteratorCall = iteratorResolvedCall.call.callElement.accept<AstExpression>(Mode.FULL)
+        val astIterator = AstProperty(
+            name = Name.special("<iterator>"),
+            type = astIteratorCall.type,
+            visibility = AstVisibility.LOCAL
+        ).apply {
+            applyParentFromStack()
+            initializer = astIteratorCall
+        }
+        astForBlock.statements += astIterator
+
+        val astInnerWhile = AstWhileLoop(type = context.builtIns.unitType)
+        loops[expression] = astInnerWhile
+        astForBlock.statements += astInnerWhile
+
+        val astHasNextCall = hasNextResolvedCall.call.callElement.accept<AstExpression>(Mode.FULL)
+        astInnerWhile.condition = astHasNextCall
+
+        val astInnerBody = AstBlock(context.builtIns.unitType)
+        astInnerWhile.body = astInnerBody
+
+        val nextCall = statementGenerator.pregenerateCall(nextResolvedCall)
+        nextCall.setExplicitReceiverValue(iteratorValue)
+        val irNextCall = callGenerator.generateCall(ktLoopRange, nextCall, IrStatementOrigin.FOR_LOOP_NEXT)
+        val irLoopParameter =
+            if (ktLoopParameter != null && ktLoopDestructuringDeclaration == null) {
+                val loopParameter = getOrFail(BindingContext.VALUE_PARAMETER, ktLoopParameter)
+                context.symbolTable.declareVariable(
+                    ktLoopParameter.startOffsetSkippingComments, ktLoopParameter.endOffset, IrDeclarationOrigin.FOR_LOOP_VARIABLE,
+                    loopParameter, loopParameter.type.toIrType(),
+                    irNextCall
+                )
+            } else {
+                scope.createTemporaryVariable(irNextCall, "loop_parameter")
+            }
+        irInnerBody.statements.add(irLoopParameter)
+
+        if (ktLoopDestructuringDeclaration != null) {
+            statementGenerator.declareComponentVariablesInBlock(
+                ktLoopDestructuringDeclaration,
+                irInnerBody,
+                VariableLValue(context, irLoopParameter)
             )
         }
+
+        if (ktForBody != null) {
+            irInnerBody.statements.add(ktForBody.genExpr())
+        }*/
+
+        return astForBlock
     }
 
     override fun visitBreakExpression(expression: KtBreakExpression, mode: Mode): AstElement {

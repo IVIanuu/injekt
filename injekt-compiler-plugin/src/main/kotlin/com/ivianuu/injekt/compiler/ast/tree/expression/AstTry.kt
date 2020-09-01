@@ -49,11 +49,6 @@ class AstCatch(
         result.accept(visitor, data)
     }
 
-    override fun <D> transform(
-        transformer: AstTransformer<D>,
-        data: D
-    ) = transformer.visitCatch(this, data)
-
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
         catchParameter = catchParameter.transformSingle(transformer, data)
         result = result.transformSingle(transformer, data)

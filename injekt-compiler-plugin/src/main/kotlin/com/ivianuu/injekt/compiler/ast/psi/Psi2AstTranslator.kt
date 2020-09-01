@@ -32,30 +32,30 @@ class Psi2AstTranslator(
         )
         val visitor = Psi2AstVisitor(context)
 
-        files.forEach { it.accept(visitor, Psi2AstVisitor.Mode.Partial) }
+        files.forEach { it.accept(visitor, Psi2AstVisitor.Mode.PARTIAL) }
 
         astProvider.psi2AstVisitor = visitor
 
         val moduleFragment = AstModuleFragment(module.name).apply {
             this.files += files.map {
-                it.accept(visitor, Psi2AstVisitor.Mode.Full) as AstFile
+                it.accept(visitor, Psi2AstVisitor.Mode.FULL) as AstFile
             }
         }
 
         moduleFragment.accept(object : AstVisitorVoid {
-            override fun visitElement(element: AstElement) {
-                element.acceptChildren(this)
+            override fun visitElement(element: AstElement, data: Nothing?) {
+                element.acceptChildren(this, null)
             }
 
-            override fun visitDeclaration(declaration: AstDeclaration) {
+            override fun visitDeclaration(declaration: AstDeclaration, data: Nothing?) {
                 try {
                     declaration.parent
                 } catch (e: Throwable) {
                     error("Parent not set $declaration")
                 }
-                super.visitDeclaration(declaration)
+                super.visitDeclaration(declaration, null)
             }
-        })
+        }, null)
 
         return moduleFragment
     }

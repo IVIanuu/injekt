@@ -3,11 +3,11 @@ package com.ivianuu.injekt.integrationtests.ast
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.ast.extension.AstGenerationExtension
 import com.ivianuu.injekt.compiler.ast.extension.AstPluginContext
+import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
 import com.ivianuu.injekt.compiler.ast.tree.declaration.addChild
-import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformerVoid
 import com.ivianuu.injekt.compiler.removeIllegalChars
@@ -177,7 +177,10 @@ class AstTest {
                                     moduleFragment.files.toList().forEach { file ->
                                         file.transformChildren(
                                             object : AstTransformerVoid {
-                                                override fun visitClass(klass: AstClass): AstTransformResult<AstStatement> {
+                                                override fun visitClass(
+                                                    klass: AstClass,
+                                                    data: Nothing?
+                                                ): AstTransformResult<AstElement> {
                                                     moduleFragment.files += AstFile(
                                                         packageFqName = file.packageFqName,
                                                         name = (klass.name.asString()
@@ -190,9 +193,10 @@ class AstTest {
                                                             )
                                                         )
                                                     }
-                                                    return super.visitClass(klass)
+                                                    return super.visitClass(klass, null)
                                                 }
-                                            }
+                                            },
+                                            null
                                         )
                                     }
                                 }

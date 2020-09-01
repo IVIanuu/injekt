@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.fqName
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstAnonymousObjectExpression
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
-import com.ivianuu.injekt.compiler.ast.tree.expression.AstDoWhileLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
@@ -42,7 +41,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.utils.Printer
 
 fun AstElement.toKotlinSource(): String {
-    return buildString { accept(Ast2KotlinSourceWriter(this)) }
+    return buildString { accept(Ast2KotlinSourceWriter(this), null) }
         // replace tabs at beginning of line with white space
         .replace(Regex("\\n(%tab%)+", RegexOption.MULTILINE)) {
             val size = it.range.last - it.range.first - 1
@@ -76,7 +75,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
     }
 
     private fun AstElement.emit() {
-        accept(this@Ast2KotlinSourceWriter)
+        accept(this@Ast2KotlinSourceWriter, null)
     }
 
     private inline fun indented(body: () -> Unit) {
@@ -117,11 +116,11 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
         }
     }
 
-    override fun visitElement(element: AstElement) {
+    override fun visitElement(element: AstElement, data: Nothing?) {
         error("Unhandled $element")
     }
 
-    override fun visitFile(file: AstFile) {
+    override fun visitFile(file: AstFile, data: Nothing?) {
         val previousFile = currentFile
         currentFile = file
         if (file.packageFqName != FqName.ROOT)
@@ -130,15 +129,19 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
         val imports = mutableSetOf<FqName>()
         file.transform(
             object : AstTransformerVoid {
-                override fun visitType(type: AstType): AstTransformResult<AstType> {
+                override fun visitType(
+                    type: AstType,
+                    data: Nothing?
+                ): AstTransformResult<AstElement> {
                     type.classOrNull?.let {
                         if (!it.name.isSpecial) {
                             imports += it.fqName
                         }
                     }
-                    return super.visitType(type)
+                    return super.visitType(type, null)
                 }
-            }
+            },
+            null
         )
 
         if (imports.isNotEmpty()) {
@@ -155,7 +158,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
         currentFile = previousFile
     }
 
-    override fun visitClass(klass: AstClass) {
+    override fun visitClass(klass: AstClass, data: Nothing?) {
         klass.emitAnnotations()
         if (klass.visibility != AstVisibility.LOCAL &&
             klass.kind != AstClass.Kind.ENUM_ENTRY
@@ -243,7 +246,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
         emitLine()
     }
 
-    override fun visitFunction(function: AstFunction) {
+    override fun visitFunction(function: AstFunction, data: Nothing?) {
         function.emitAnnotations()
         if (function.visibility != AstVisibility.LOCAL) function.emitVisibility()
         function.emitExpectActual()
@@ -304,13 +307,16 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
         } ?: emitLine()
     }
 
-    override fun visitProperty(property: AstProperty) {
+    override fun visitProperty(property: AstProperty, data: Nothing?) {
         property.emitAnnotations()
         if (property.visibility != AstVisibility.LOCAL) property.emitVisibility()
         property.emitExpectActual()
         if (property.parent is AstClass) property.emitModality()
         if (property.overriddenDeclarations.isNotEmpty()) {
             emit("override ")
+        }
+        if (property.isInline) {
+            emit("inline ")
         }
         if (property.setter != null) {
             emit("var ")
@@ -355,13 +361,16 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
         emitLine()
     }
 
-    override fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer) {
+    override fun visitAnonymousInitializer(
+        anonymousInitializer: AstAnonymousInitializer,
+        data: Nothing?
+    ) {
         bracedBlock(header = "init") {
             anonymousInitializer.body.emit()
         }
     }
 
-    override fun visitTypeParameter(typeParameter: AstTypeParameter) {
+    override fun visitTypeParameter(typeParameter: AstTypeParameter, data: Nothing?) {
         typeParameter.emit(null)
     }
 
@@ -403,7 +412,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
         }
     }
 
-    override fun visitValueParameter(valueParameter: AstValueParameter) {
+    override fun visitValueParameter(valueParameter: AstValueParameter, data: Nothing?) {
         valueParameter.emitAnnotations()
         if (valueParameter.isVarArg) {
             emit("vararg ")
@@ -419,7 +428,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
         }
     }
 
-    override fun visitTypeAlias(typeAlias: AstTypeAlias) {
+    override fun visitTypeAlias(typeAlias: AstTypeAlias, data: Nothing?) {
         typeAlias.emitAnnotations()
         emit("typealias ")
         emit("${typeAlias.name}")
@@ -460,7 +469,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
         }
     }
 
-    override fun <T> visitConst(const: AstConst<T>) {
+    override fun <T> visitConst(const: AstConst<T>, data: Nothing?) {
         emit(
             when (const.kind) {
                 AstConst.Kind.Null -> "null"
@@ -477,14 +486,17 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
         )
     }
 
-    override fun visitBlock(block: AstBlock) {
-        block.statements.forEachIndexed { index, statement ->
+    override fun visitBlock(block: AstBlock, data: Nothing?) {
+        block.statements.forEach { statement ->
             statement.emit()
             emitLine()
         }
     }
 
-    override fun visitStringConcatenation(stringConcatenation: AstStringConcatenation) {
+    override fun visitStringConcatenation(
+        stringConcatenation: AstStringConcatenation,
+        data: Nothing?
+    ) {
         stringConcatenation.arguments.forEachIndexed { index, expression ->
             expression.emit()
             if (expression.type.classOrNull?.fqName != KotlinBuiltIns.FQ_NAMES.string.toSafe())
@@ -494,7 +506,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
         }
     }
 
-    override fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess) {
+    override fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess, data: Nothing?) {
         val explicitReceiver = if (qualifiedAccess.extensionReceiver != null)
             qualifiedAccess.extensionReceiver
         else qualifiedAccess.dispatchReceiver
@@ -546,31 +558,37 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
         }
     }
 
-    override fun visitAnonymousObjectExpression(expression: AstAnonymousObjectExpression) {
+    override fun visitAnonymousObjectExpression(
+        expression: AstAnonymousObjectExpression,
+        data: Nothing?
+    ) {
         expression.anonymousObject.emit()
     }
 
-    override fun visitWhileLoop(whileLoop: AstWhileLoop) {
-        emit("while (")
-        whileLoop.condition.emit()
-        emitLine(") {")
-        indented {
-            whileLoop.body?.emit()
-        }
-        emitLine("}")
+    override fun visitWhileLoop(whileLoop: AstWhileLoop, data: Nothing?) {
+        when (whileLoop.kind) {
+            AstWhileLoop.Kind.WHILE -> {
+                emit("while (")
+                whileLoop.condition.emit()
+                emitLine(") {")
+                indented {
+                    whileLoop.body?.emit()
+                }
+                emitLine("}")
+            }
+            AstWhileLoop.Kind.DO_WHILE -> {
+                emitLine("do {")
+                indented {
+                    whileLoop.body?.emit()
+                }
+                emit("} while (")
+                whileLoop.condition.emit()
+                emitLine(")")
+            }
+        }.let {}
     }
 
-    override fun visitDoWhileLoop(doWhileLoop: AstDoWhileLoop) {
-        emitLine("do {")
-        indented {
-            doWhileLoop.body?.emit()
-        }
-        emit("} while (")
-        doWhileLoop.condition.emit()
-        emitLine(")")
-    }
-
-    override fun visitTry(astTry: AstTry) {
+    override fun visitTry(astTry: AstTry, data: Nothing?) {
         emitLine("try {")
         indented {
             astTry.tryResult.emit()
@@ -597,7 +615,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
         emitLine("}")
     }
 
-    override fun visitReturn(astReturn: AstReturn) {
+    override fun visitReturn(astReturn: AstReturn, data: Nothing?) {
         emit("return")
         /*astReturn.target?.let {
             emit("@$")
@@ -605,7 +623,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
         astReturn.expression.emit()
     }
 
-    override fun visitThrow(astThrow: AstThrow) {
+    override fun visitThrow(astThrow: AstThrow, data: Nothing?) {
         emit("throw ")
         astThrow.expression.emit()
     }

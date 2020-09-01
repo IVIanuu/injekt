@@ -2,7 +2,6 @@ package com.ivianuu.injekt.compiler.ast.tree.expression
 
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
-import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitor
 import com.ivianuu.injekt.compiler.ast.tree.visitor.transformInplace
@@ -42,12 +41,6 @@ abstract class AstBranchBase : AstBranch {
         condition.accept(visitor, data)
         result.accept(visitor, data)
     }
-
-    override fun <D> transform(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTransformResult<AstElement> =
-        transformer.visitBranch(this, data)
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
         condition = condition.transformSingle(transformer, data)

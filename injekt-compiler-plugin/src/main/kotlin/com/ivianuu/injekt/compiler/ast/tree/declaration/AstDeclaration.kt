@@ -6,8 +6,6 @@ import com.ivianuu.injekt.compiler.ast.tree.AstModality
 import com.ivianuu.injekt.compiler.ast.tree.AstVisibility
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
-import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
-import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformer
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -50,12 +48,6 @@ abstract class AstDeclarationBase : AstDeclaration {
 
     override lateinit var parent: AstDeclarationParent
     override val annotations: MutableList<AstQualifiedAccess> = mutableListOf()
-
-    override fun <D> transform(
-        transformer: AstTransformer<D>,
-        data: D
-    ): AstTransformResult<AstDeclaration> =
-        accept(transformer, data) as AstTransformResult<AstDeclaration>
 
 }
 
