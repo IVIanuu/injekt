@@ -131,16 +131,22 @@ class AstTest {
                             withVararg(*params)
                         }*/
                         
-                        fun whileF() {
+                        fun whileLoop() {
                             while (true) {
                                 println("while")
                             }
                         }
                         
-                        fun doWhile() {
+                        fun doWhileLoop() {
                             do {
                                 println("do")
                             } while (true)
+                        }
+                        
+                        fun forLoop() {
+                            for (i in 1.until(100)) {
+                                println("item ${DOLLAR_SIGN}i")
+                            }
                         }
                         
                         fun returningString(a: Float = 0f, b: Int = 0, c: Long = 0L) = 0

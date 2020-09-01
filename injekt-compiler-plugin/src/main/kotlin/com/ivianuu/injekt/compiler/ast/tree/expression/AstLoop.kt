@@ -15,7 +15,7 @@ interface AstLoop : AstExpression, AstTarget {
 class AstForLoop(override var type: AstType) : AstLoop {
 
     override var body: AstExpression? = null
-    lateinit var iterable: AstExpression
+    lateinit var loopRange: AstExpression
     lateinit var loopParameter: AstValueParameter
 
     override val annotations: MutableList<AstQualifiedAccess> = mutableListOf()
@@ -26,7 +26,7 @@ class AstForLoop(override var type: AstType) : AstLoop {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
         body?.accept(visitor, data)
-        iterable.accept(visitor, data)
+        loopRange.accept(visitor, data)
         loopParameter.accept(visitor, data)
         type.accept(visitor, data)
     }
@@ -34,7 +34,7 @@ class AstForLoop(override var type: AstType) : AstLoop {
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D) {
         annotations.transformInplace(transformer, data)
         body = body?.transformSingle(transformer, data)
-        iterable = iterable.transformSingle(transformer, data)
+        loopRange = loopRange.transformSingle(transformer, data)
         type = type.transformSingle(transformer, data)
     }
 

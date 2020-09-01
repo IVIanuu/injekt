@@ -23,6 +23,7 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstCatch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstContinue
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstForLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
@@ -669,77 +670,20 @@ class Psi2AstVisitor(
             condition = expression.condition!!.accept(mode)
         }
 
-    override fun visitForExpression(expression: KtForExpression, data: Mode?): AstElement {
+    override fun visitForExpression(expression: KtForExpression, mode: Mode): AstElement {
         val ktLoopParameter = expression.loopParameter
         val ktLoopDestructuringDeclaration = expression.destructuringDeclaration
         if (ktLoopParameter == null && ktLoopDestructuringDeclaration == null) {
             throw AssertionError("Either loopParameter or destructuringParameter should be present:\n${expression.text}")
         }
-
-        for ((first, second) in listOf(0 to 1, 1 to 2)) {
-
-        }
-
-        val ktLoopRange = expression.loopRange!!
-        val ktForBody = expression.body
-        val iteratorResolvedCall =
-            getOrFail(BindingContext.LOOP_RANGE_ITERATOR_RESOLVED_CALL, ktLoopRange)
-        val hasNextResolvedCall =
-            getOrFail(BindingContext.LOOP_RANGE_HAS_NEXT_RESOLVED_CALL, ktLoopRange)
-        val nextResolvedCall = getOrFail(BindingContext.LOOP_RANGE_NEXT_RESOLVED_CALL, ktLoopRange)
-
-        val astForBlock = AstBlock(context.builtIns.unitType)
-
-        /*val astIteratorCall = iteratorResolvedCall.call.callElement.accept<AstExpression>(Mode.FULL)
-        val astIterator = AstProperty(
-            name = Name.special("<iterator>"),
-            type = astIteratorCall.type,
-            visibility = AstVisibility.LOCAL
-        ).apply {
-            applyParentFromStack()
-            initializer = astIteratorCall
-        }
-        astForBlock.statements += astIterator
-
-        val astInnerWhile = AstWhileLoop(type = context.builtIns.unitType)
-        loops[expression] = astInnerWhile
-        astForBlock.statements += astInnerWhile
-
-        val astHasNextCall = hasNextResolvedCall.call.callElement.accept<AstExpression>(Mode.FULL)
-        astInnerWhile.condition = astHasNextCall
-
-        val astInnerBody = AstBlock(context.builtIns.unitType)
-        astInnerWhile.body = astInnerBody
-
-        val nextCall = statementGenerator.pregenerateCall(nextResolvedCall)
-        nextCall.setExplicitReceiverValue(iteratorValue)
-        val irNextCall = callGenerator.generateCall(ktLoopRange, nextCall, IrStatementOrigin.FOR_LOOP_NEXT)
-        val irLoopParameter =
-            if (ktLoopParameter != null && ktLoopDestructuringDeclaration == null) {
-                val loopParameter = getOrFail(BindingContext.VALUE_PARAMETER, ktLoopParameter)
-                context.symbolTable.declareVariable(
-                    ktLoopParameter.startOffsetSkippingComments, ktLoopParameter.endOffset, IrDeclarationOrigin.FOR_LOOP_VARIABLE,
-                    loopParameter, loopParameter.type.toIrType(),
-                    irNextCall
-                )
-            } else {
-                scope.createTemporaryVariable(irNextCall, "loop_parameter")
+        return AstForLoop(context.builtIns.unitType)
+            .apply {
+                loops[expression] = this
+                loopParameter =
+                    ktLoopParameter?.accept(mode) ?: TODO("Destructuring not supported in loops")
+                loopRange = expression.loopRange!!.accept(mode)
+                body = visitExpressionForBlock(expression.body!!, mode)
             }
-        irInnerBody.statements.add(irLoopParameter)
-
-        if (ktLoopDestructuringDeclaration != null) {
-            statementGenerator.declareComponentVariablesInBlock(
-                ktLoopDestructuringDeclaration,
-                irInnerBody,
-                VariableLValue(context, irLoopParameter)
-            )
-        }
-
-        if (ktForBody != null) {
-            irInnerBody.statements.add(ktForBody.genExpr())
-        }*/
-
-        return astForBlock
     }
 
     override fun visitBreakExpression(expression: KtBreakExpression, mode: Mode): AstElement {

@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.fqName
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstAnonymousObjectExpression
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstForLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThis
@@ -571,6 +572,18 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
                 emitLine(")")
             }
         }.let {}
+    }
+
+    override fun visitForLoop(forLoop: AstForLoop, data: Nothing?) {
+        emit("for (")
+        forLoop.loopParameter.emit()
+        emit(" in ")
+        forLoop.loopRange.emit()
+        emitLine(") {")
+        indented {
+            forLoop.body?.emit()
+        }
+        emitLine("}")
     }
 
     override fun visitTry(astTry: AstTry, data: Nothing?) {
