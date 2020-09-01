@@ -13,6 +13,8 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/android-integration-tests" />
             <option value="$PROJECT_DIR$/ast" />
+            <option value="$PROJECT_DIR$/ast-tree-generated" />
+            <option value="$PROJECT_DIR$/ast-tree-generator" />
             <option value="$PROJECT_DIR$/benchmark" />
             <option value="$PROJECT_DIR$/buildSrc" />
             <option value="$PROJECT_DIR$/comparison" />

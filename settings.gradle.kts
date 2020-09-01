@@ -1,6 +1,8 @@
 include(
     ":android-integration-tests",
     ":ast",
+    ":ast-tree-generated",
+    ":ast-tree-generator",
     ":benchmark",
     ":comparison",
     ":essentials-android-testing",
