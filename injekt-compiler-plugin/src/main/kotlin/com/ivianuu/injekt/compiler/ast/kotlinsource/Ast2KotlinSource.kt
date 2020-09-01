@@ -19,10 +19,13 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.fqName
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstAnonymousObjectExpression
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstComparisonOperation
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConditionBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstElseBranch
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstEqualityOperation
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstForLoop
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstLogicOperation
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstSpreadElement
@@ -542,6 +545,40 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
         data: Nothing?
     ) {
         expression.anonymousObject.emit()
+    }
+
+    override fun visitComparisonOperation(
+        comparisonOperation: AstComparisonOperation,
+        data: Nothing?
+    ) {
+        comparisonOperation.left.emit()
+        when (comparisonOperation.kind) {
+            AstComparisonOperation.Kind.LESS_THAN -> emit(" < ")
+            AstComparisonOperation.Kind.GREATER_THAN -> emit(" > ")
+            AstComparisonOperation.Kind.LESS_THEN_EQUALS -> emit(" <= ")
+            AstComparisonOperation.Kind.GREATER_THEN_EQUALS -> emit(" >= ")
+        }.let {}
+        comparisonOperation.right.emit()
+    }
+
+    override fun visitEqualityOperation(equalityOperation: AstEqualityOperation, data: Nothing?) {
+        equalityOperation.left.emit()
+        when (equalityOperation.kind) {
+            AstEqualityOperation.Kind.EQUALS -> emit(" == ")
+            AstEqualityOperation.Kind.NOT_EQUALS -> emit(" != ")
+            AstEqualityOperation.Kind.IDENTITY -> emit(" === ")
+            AstEqualityOperation.Kind.NOT_IDENTITY -> emit(" !== ")
+        }.let {}
+        equalityOperation.right.emit()
+    }
+
+    override fun visitLogicOperation(logicOperation: AstLogicOperation, data: Nothing?) {
+        logicOperation.left.emit()
+        when (logicOperation.kind) {
+            AstLogicOperation.Kind.AND -> emit(" && ")
+            AstLogicOperation.Kind.OR -> emit(" || ")
+        }.let {}
+        logicOperation.right.emit()
     }
 
     override fun visitWhen(astWhen: AstWhen, data: Nothing?) {

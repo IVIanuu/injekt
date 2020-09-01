@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.compiler.ast.extension
+package com.ivianuu.injekt.compiler.ast
 
 import com.ivianuu.injekt.compiler.ast.psi.AstProvider
 import com.ivianuu.injekt.compiler.ast.psi.TypeMapper

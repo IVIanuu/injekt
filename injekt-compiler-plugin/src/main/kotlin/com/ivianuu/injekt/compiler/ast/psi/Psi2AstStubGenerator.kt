@@ -22,10 +22,9 @@ import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.resolve.calls.components.hasDefaultValue
 import org.jetbrains.kotlin.resolve.calls.components.isVararg
 
-class Psi2AstStubGenerator(
-    private val storage: Psi2AstStorage,
-    private val typeMapper: TypeMapper
-) {
+class Psi2AstStubGenerator(private val storage: Psi2AstStorage) {
+
+    lateinit var typeMapper: TypeMapper
 
     fun <T : AstElement> get(descriptor: DeclarationDescriptor): T {
         return when (descriptor) {

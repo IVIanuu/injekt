@@ -1,8 +1,8 @@
 package com.ivianuu.injekt.integrationtests.ast
 
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.ast.AstGeneratorContext
 import com.ivianuu.injekt.compiler.ast.extension.AstGenerationExtension
-import com.ivianuu.injekt.compiler.ast.extension.AstPluginContext
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
@@ -135,6 +135,29 @@ class AstTest {
                             withVararg(*arrayOf("a", "b"), "c")
                         }
                         
+                        fun safeCall(name: String?) {
+                            name?.toList()?.size?.minus(1)
+                        }
+                        
+                        fun comparisonOperations() {
+                            0 > 1
+                            0f >= 1f
+                            0L < 1L
+                            0L >= 1L
+                        }
+                        
+                        fun equalityOperations() {
+                            "a" == "b"
+                            "b" != "a"
+                            "a" === "b"
+                            "b" === "a"
+                        }
+                        
+                        fun logicOperations() {
+                            val result =  "a" == "b" && "b" == "a"
+                            val result2 = "a" != "b" || "b" != "a"
+                        }
+                        
                         fun whileLoop() {
                             while (true) {
                                 println("while")
@@ -154,9 +177,9 @@ class AstTest {
                         }
                         
                         fun ifElse() {
-                            if ("a".equals("b")) {
+                            if ("a" == "b") {
                                 println("first")
-                            } else if ("a".equals("c")) {
+                            } else if ("a" == "c" || "a" == "d") {
                                 println("second")
                             } else {
                                 println("third")
@@ -165,10 +188,10 @@ class AstTest {
                         
                         /*fun whenBasic() {
                             when {
-                                "a".equals("b") -> {
+                                "a" == "b" -> {
                                     println("first")
                                 }
-                                "a".equals("c") -> {
+                                "a" == "c" -> {
                                     println("second")
                                 }
                                 else -> {
@@ -206,7 +229,7 @@ class AstTest {
                             object : AstGenerationExtension {
                                 override fun generate(
                                     moduleFragment: AstModuleFragment,
-                                    pluginContext: AstPluginContext
+                                    context: AstGeneratorContext
                                 ) {
                                     moduleFragment.files.toList().forEach { file ->
                                         file.transformChildren(

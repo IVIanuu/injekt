@@ -11,11 +11,10 @@ import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.resolve.calls.util.FakeCallableDescriptorForObject
 
-class AstProvider {
-
-    lateinit var stubGenerator: Psi2AstStubGenerator
-    lateinit var psi2AstVisitor: Psi2AstVisitor
-    lateinit var storage: Psi2AstStorage
+class AstProvider(
+    private val stubGenerator: Psi2AstStubGenerator,
+    private val storage: Psi2AstStorage
+) {
 
     fun <T : AstElement> get(descriptor: DeclarationDescriptor): T {
         when (descriptor) {

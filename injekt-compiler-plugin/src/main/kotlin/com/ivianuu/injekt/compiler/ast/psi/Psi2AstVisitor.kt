@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.ast.psi
 
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.ast.AstGeneratorContext
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.AstModality
 import com.ivianuu.injekt.compiler.ast.tree.AstVisibility
@@ -21,12 +22,15 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBreak
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstCatch
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstComparisonOperation
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConditionBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstContinue
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstElseBranch
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstEqualityOperation
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstForLoop
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstLogicOperation
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
@@ -54,9 +58,11 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.js.translate.callTranslator.getReturnType
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtAnonymousInitializer
+import org.jetbrains.kotlin.psi.KtBinaryExpression
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtBreakExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
@@ -134,7 +140,7 @@ import org.jetbrains.kotlin.resolve.scopes.receivers.ThisClassReceiver
 import org.jetbrains.kotlin.types.expressions.ExpressionTypingUtils
 
 class Psi2AstVisitor(
-    override val context: GeneratorContext
+    override val context: AstGeneratorContext
 ) : KtVisitor<AstElement, Psi2AstVisitor.Mode>(), Generator {
 
     enum class Mode {
@@ -310,7 +316,7 @@ class Psi2AstVisitor(
                     .map { it.accept(mode) }
                 overriddenDeclarations.clear()
                 overriddenDeclarations += descriptor.overriddenDescriptors
-                    .map { context.astProvider.get(it) }
+                    .map { context.provider.get(it) }
                 if (mode == Mode.FULL) {
                     body = function.bodyExpression?.let { visitExpressionForBlock(it, mode) }
                 }
@@ -562,7 +568,7 @@ class Psi2AstVisitor(
             ?: error("Couldn't find call for $this $javaClass ${expression.text}")
         return AstQualifiedAccess(
             type = resolvedCall.getReturnType().toAstType(),
-            callee = context.astProvider.get(resolvedCall.resultingDescriptor)
+            callee = context.provider.get(resolvedCall.resultingDescriptor)
         ).apply {
             typeArguments += resolvedCall.typeArguments.values.map { it.toAstType() }
 
@@ -640,7 +646,7 @@ class Psi2AstVisitor(
                     ).apply {
                         applyParentFromStack()
                         initializer = AstQualifiedAccess(
-                            callee = context.astProvider.get(componentResolvedCall.resultingDescriptor),
+                            callee = context.provider.get(componentResolvedCall.resultingDescriptor),
                             type = componentVariable.type.toAstType()
                         ).apply {
                             dispatchReceiver = AstQualifiedAccess(
@@ -670,6 +676,75 @@ class Psi2AstVisitor(
                 ?.toConstantValue(expression.getTypeInferredByFrontendOrFail())
                 ?: error("KtConstantExpression was not evaluated: ${expression.text}")
         return generateConstantValueAsExpression(constantValue)
+    }
+
+    override fun visitBinaryExpression(expression: KtBinaryExpression, mode: Mode): AstElement {
+        val ktOperator = expression.operationReference.getReferencedNameElementType()
+        if (ktOperator == KtTokens.IDENTIFIER) {
+            TODO()//return generateBinaryOperatorAsCall(expression, null)
+        }
+
+        val left = expression.left!!.accept<AstExpression>(mode)
+        val right = expression.right!!.accept<AstExpression>(mode)
+
+        return when (ktOperator) {
+            KtTokens.EQ -> TODO()
+
+            KtTokens.LT, KtTokens.LTEQ, KtTokens.GT, KtTokens.GTEQ -> AstComparisonOperation(
+                context.builtIns.booleanType,
+                when (ktOperator) {
+                    KtTokens.LT -> AstComparisonOperation.Kind.LESS_THAN
+                    KtTokens.LTEQ -> AstComparisonOperation.Kind.LESS_THEN_EQUALS
+                    KtTokens.GT -> AstComparisonOperation.Kind.GREATER_THAN
+                    KtTokens.GTEQ -> AstComparisonOperation.Kind.GREATER_THEN_EQUALS
+                    else -> error("Unexpected operator $ktOperator")
+                },
+                left,
+                right
+            )
+
+            KtTokens.EQEQ, KtTokens.EXCLEQ, KtTokens.EQEQEQ, KtTokens.EXCLEQEQEQ -> AstEqualityOperation(
+                context.builtIns.booleanType,
+                when (ktOperator) {
+                    KtTokens.EQEQ -> AstEqualityOperation.Kind.EQUALS
+                    KtTokens.EXCLEQ -> AstEqualityOperation.Kind.NOT_EQUALS
+                    KtTokens.EQEQEQ -> AstEqualityOperation.Kind.IDENTITY
+                    KtTokens.EXCLEQEQEQ -> AstEqualityOperation.Kind.NOT_IDENTITY
+                    else -> error("Unexpected operator $ktOperator")
+                },
+                left,
+                right
+            )
+
+            KtTokens.ANDAND, KtTokens.OROR -> AstLogicOperation(
+                context.builtIns.booleanType,
+                when (ktOperator) {
+                    KtTokens.ANDAND -> AstLogicOperation.Kind.AND
+                    KtTokens.OROR -> AstLogicOperation.Kind.OR
+                    else -> error("Unexpected operator $ktOperator")
+                },
+                left,
+                right
+            )
+
+            KtTokens.PLUSEQ -> TODO()
+            KtTokens.MINUSEQ -> TODO()
+            KtTokens.MULTEQ -> TODO()
+            KtTokens.DIVEQ -> TODO()
+            KtTokens.PERCEQ -> TODO()
+            KtTokens.PLUS -> TODO()
+            KtTokens.MINUS -> TODO()
+            KtTokens.MUL -> TODO()
+            KtTokens.DIV -> TODO()
+            KtTokens.PERC -> TODO()
+            KtTokens.RANGE -> TODO()
+
+            KtTokens.IN_KEYWORD -> TODO()
+            KtTokens.NOT_IN -> TODO()
+
+            KtTokens.ELVIS -> TODO()
+            else -> TODO()
+        }
     }
 
     override fun visitIfExpression(expression: KtIfExpression, mode: Mode): AstElement {
@@ -958,7 +1033,7 @@ class Psi2AstVisitor(
         val returnTarget = getReturnExpressionTarget(expression, null) as FunctionDescriptor
         return AstReturn(
             type = context.builtIns.nothingType,
-            target = context.astProvider.get(returnTarget),
+            target = context.provider.get(returnTarget),
             expression = expression.returnedExpression?.accept(mode) ?: AstQualifiedAccess(
                 callee = context.builtIns.unitClass,
                 type = context.builtIns.unitType
@@ -994,17 +1069,17 @@ class Psi2AstVisitor(
     fun ReceiverValue.toAstExpression(mode: Mode): AstExpression {
         return when (this) {
             is ImplicitClassReceiver -> {
-                val receiverClass = context.astProvider.get<AstClass>(classDescriptor)
+                val receiverClass = context.provider.get<AstClass>(classDescriptor)
                 AstThis(type.toAstType(), receiverClass)
             }
             is ThisClassReceiver -> {
-                val receiverClass = context.astProvider.get<AstClass>(classDescriptor)
+                val receiverClass = context.provider.get<AstClass>(classDescriptor)
                 AstThis(type.toAstType(), receiverClass)
             }
             is SuperCallReceiverValue -> TODO()
             is ExpressionReceiver -> expression.accept(mode)
             is ClassValueReceiver -> {
-                val receiverClass = context.astProvider.get<AstClass>(
+                val receiverClass = context.provider.get<AstClass>(
                     classQualifier.descriptor as ClassDescriptor
                 )
                 AstThis(type.toAstType(), receiverClass)
@@ -1123,7 +1198,7 @@ class Psi2AstVisitor(
                         NoLookupLocation.FROM_BACKEND
                     )!!
                 AstQualifiedAccess(
-                    callee = context.astProvider.get(enumEntryDescriptor) as AstClass,
+                    callee = context.provider.get(enumEntryDescriptor) as AstClass,
                     type = constantType
                 )
             }
@@ -1158,7 +1233,7 @@ class Psi2AstVisitor(
             ?: annotationClassDescriptor.constructors.singleOrNull()
             ?: throw AssertionError("No constructor for annotation class $annotationClassDescriptor")
         val astPrimaryConstructor =
-            context.astProvider.get<AstFunction>(primaryConstructorDescriptor)
+            context.provider.get<AstFunction>(primaryConstructorDescriptor)
 
         return AstQualifiedAccess(
             callee = astPrimaryConstructor,

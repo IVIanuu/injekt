@@ -13,17 +13,21 @@ import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstValueParameter
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstAnonymousObjectExpression
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstBinaryOperation
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBreak
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstBreakContinue
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstCatch
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstComparisonOperation
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConditionBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstContinue
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstElseBranch
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstEqualityOperation
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstForLoop
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstLogicOperation
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
@@ -80,6 +84,18 @@ interface AstVisitor<R, D> {
 
     fun visitAnonymousObjectExpression(expression: AstAnonymousObjectExpression, data: D) =
         visitExpression(expression, data)
+
+    fun visitBinaryOperation(binaryOperation: AstBinaryOperation, data: D) =
+        visitExpression(binaryOperation, data)
+
+    fun visitComparisonOperation(comparisonOperation: AstComparisonOperation, data: D) =
+        visitBinaryOperation(comparisonOperation, data)
+
+    fun visitEqualityOperation(equalityOperation: AstEqualityOperation, data: D) =
+        visitBinaryOperation(equalityOperation, data)
+
+    fun visitLogicOperation(logicOperation: AstLogicOperation, data: D) =
+        visitBinaryOperation(logicOperation, data)
 
     fun visitWhen(astWhen: AstWhen, data: D) = visitExpression(astWhen, data)
     fun visitBranch(branch: AstBranch, data: D) = visitElement(branch, data)

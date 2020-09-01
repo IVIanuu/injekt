@@ -1,5 +1,6 @@
-package com.ivianuu.injekt.compiler.ast.extension
+package com.ivianuu.injekt.compiler.ast
 
+import com.ivianuu.injekt.compiler.ast.extension.AstGenerationExtension
 import com.ivianuu.injekt.compiler.ast.kotlinsource.toKotlinSource
 import com.ivianuu.injekt.compiler.ast.psi.AstProvider
 import com.ivianuu.injekt.compiler.ast.psi.Psi2AstStorage
@@ -85,24 +86,27 @@ class AstAnalysisHandlerExtension(
         files: List<KtFile>
     ): List<KtFile> {
         val storage = Psi2AstStorage()
-        val astProvider = AstProvider()
+        val stubGenerator = Psi2AstStubGenerator(storage)
+        val astProvider = AstProvider(stubGenerator, storage)
         val typeMapper = TypeMapper(astProvider, storage)
-        val stubGenerator = Psi2AstStubGenerator(storage, typeMapper)
-        astProvider.stubGenerator = stubGenerator
-        astProvider.storage = storage
-        val generator = Psi2AstTranslator(
-            astProvider, bindingTrace.bindingContext,
-            module, storage, stubGenerator, typeMapper
-        )
+        stubGenerator.typeMapper = typeMapper
         val builtIns = AstBuiltIns(module.builtIns, astProvider, typeMapper)
-        generator.builtIns = builtIns
+        val context = AstGeneratorContext(
+            builtIns,
+            module,
+            astProvider,
+            bindingTrace.bindingContext,
+            module.builtIns,
+            typeMapper,
+            storage
+        )
+        val generator = Psi2AstTranslator(context)
 
         val moduleFragment = generator.generateModule(files)
 
         println("generated module $moduleFragment for ${files.map { it.name }}")
 
-        val pluginContext = AstPluginContext(module, storage, stubGenerator)
-        extensions.forEach { it.generate(moduleFragment, pluginContext) }
+        extensions.forEach { it.generate(moduleFragment, context) }
 
         return moduleFragment.files
             .map { file ->

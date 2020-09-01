@@ -1,44 +1,22 @@
 package com.ivianuu.injekt.compiler.ast.psi
 
-import com.ivianuu.injekt.compiler.ast.extension.AstBuiltIns
+import com.ivianuu.injekt.compiler.ast.AstGeneratorContext
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitorVoid
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.resolve.BindingContext
 
 class Psi2AstTranslator(
-    private val astProvider: AstProvider,
-    private val bindingContext: BindingContext,
-    private val module: ModuleDescriptor,
-    private val storage: Psi2AstStorage,
-    private val stubGenerator: Psi2AstStubGenerator,
-    private val typeMapper: TypeMapper
+    private val context: AstGeneratorContext
 ) {
 
-    lateinit var builtIns: AstBuiltIns
-
     fun generateModule(files: List<KtFile>): AstModuleFragment {
-        val context = GeneratorContext(
-            module,
-            bindingContext,
-            builtIns,
-            module.builtIns,
-            storage,
-            typeMapper,
-            astProvider,
-            stubGenerator
-        )
         val visitor = Psi2AstVisitor(context)
-
         files.forEach { it.accept(visitor, Psi2AstVisitor.Mode.PARTIAL) }
 
-        astProvider.psi2AstVisitor = visitor
-
-        val moduleFragment = AstModuleFragment(module.name).apply {
+        val moduleFragment = AstModuleFragment(context.module.name).apply {
             this.files += files.map {
                 it.accept(visitor, Psi2AstVisitor.Mode.FULL) as AstFile
             }
