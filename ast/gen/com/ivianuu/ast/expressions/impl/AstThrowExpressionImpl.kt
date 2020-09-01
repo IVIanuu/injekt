@@ -3,8 +3,8 @@ package com.ivianuu.ast.expressions.impl
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstThrowExpression
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.types.impl.AstImplicitNothingTypeRef
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.types.impl.AstImplicitNothingType
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -16,16 +16,16 @@ internal class AstThrowExpressionImpl(
     override val annotations: MutableList<AstAnnotationCall>,
     override var exception: AstExpression,
 ) : AstThrowExpression() {
-    override var typeRef: AstTypeRef = AstImplicitNothingTypeRef()
+    override var type: AstType = AstImplicitNothingType()
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        typeRef.accept(visitor, data)
+        type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
         exception.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstThrowExpressionImpl {
-        typeRef = typeRef.transformSingle(transformer, data)
+        type = type.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         exception = exception.transformSingle(transformer, data)
         return this
@@ -36,7 +36,7 @@ internal class AstThrowExpressionImpl(
         return this
     }
 
-    override fun replaceTypeRef(newTypeRef: AstTypeRef) {
-        typeRef = newTypeRef
+    override fun replaceType(newType: AstType) {
+        type = newType
     }
 }

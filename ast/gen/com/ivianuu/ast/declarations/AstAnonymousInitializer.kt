@@ -4,7 +4,7 @@ import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.symbols.impl.AstAnonymousInitializerSymbol
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically

@@ -10,12 +10,9 @@ import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -24,7 +21,7 @@ import org.jetbrains.kotlin.name.Name
 
 internal class AstFieldImpl(
     override val origin: AstDeclarationOrigin,
-    override var returnTypeRef: AstTypeRef,
+    override var returnType: AstType,
     override val name: Name,
     override val symbol: AstVariableSymbol<AstField>,
     override val isVar: Boolean,
@@ -33,7 +30,7 @@ internal class AstFieldImpl(
     override var status: AstDeclarationStatus,
 ) : AstField() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
-    override val receiverTypeRef: AstTypeRef? get() = null
+    override val receiverType: AstType? get() = null
     override val initializer: AstExpression? get() = null
     override val delegate: AstExpression? get() = null
     override val delegateFieldSymbol: AstDelegateFieldSymbol<AstField>? get() = null
@@ -42,26 +39,26 @@ internal class AstFieldImpl(
     override val setter: AstPropertyAccessor? get() = null
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        returnTypeRef.accept(visitor, data)
+        returnType.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
         typeParameters.forEach { it.accept(visitor, data) }
         status.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstFieldImpl {
-        transformReturnTypeRef(transformer, data)
+        transformReturnType(transformer, data)
         transformTypeParameters(transformer, data)
         transformStatus(transformer, data)
         transformOtherChildren(transformer, data)
         return this
     }
 
-    override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstFieldImpl {
-        returnTypeRef = returnTypeRef.transformSingle(transformer, data)
+    override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstFieldImpl {
+        returnType = returnType.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstFieldImpl {
+    override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstFieldImpl {
         return this
     }
 
@@ -101,9 +98,9 @@ internal class AstFieldImpl(
         return this
     }
 
-    override fun replaceReturnTypeRef(newReturnTypeRef: AstTypeRef) {
-        returnTypeRef = newReturnTypeRef
+    override fun replaceReturnType(newReturnType: AstType) {
+        returnType = newReturnType
     }
 
-    override fun replaceReceiverTypeRef(newReceiverTypeRef: AstTypeRef?) {}
+    override fun replaceReceiverType(newReceiverType: AstType?) {}
 }

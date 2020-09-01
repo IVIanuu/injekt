@@ -1,6 +1,6 @@
 package com.ivianuu.ast.references
 
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -10,9 +10,9 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstSuperReference : AstReference() {
     abstract val labelName: String?
-    abstract val superTypeRef: AstTypeRef
+    abstract val superType: AstType
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitSuperReference(this, data)
 
-    abstract fun replaceSuperTypeRef(newSuperTypeRef: AstTypeRef)
+    abstract fun replaceSuperType(newSuperType: AstType)
 }

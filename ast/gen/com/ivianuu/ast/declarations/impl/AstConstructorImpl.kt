@@ -10,11 +10,8 @@ import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
 import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -23,8 +20,8 @@ import com.ivianuu.ast.visitors.transformSingle
 
 internal class AstConstructorImpl(
     override val origin: AstDeclarationOrigin,
-    override var returnTypeRef: AstTypeRef,
-    override var receiverTypeRef: AstTypeRef?,
+    override var returnType: AstType,
+    override var receiverType: AstType?,
     override val typeParameters: MutableList<AstTypeParameterRef>,
     override val valueParameters: MutableList<AstValueParameter>,
     override var status: AstDeclarationStatus,
@@ -37,8 +34,8 @@ internal class AstConstructorImpl(
     override val isPrimary: Boolean get() = false
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        returnTypeRef.accept(visitor, data)
-        receiverTypeRef?.accept(visitor, data)
+        returnType.accept(visitor, data)
+        receiverType?.accept(visitor, data)
         typeParameters.forEach { it.accept(visitor, data) }
         valueParameters.forEach { it.accept(visitor, data) }
         status.accept(visitor, data)
@@ -48,8 +45,8 @@ internal class AstConstructorImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstConstructorImpl {
-        transformReturnTypeRef(transformer, data)
-        transformReceiverTypeRef(transformer, data)
+        transformReturnType(transformer, data)
+        transformReceiverType(transformer, data)
         transformTypeParameters(transformer, data)
         transformValueParameters(transformer, data)
         transformStatus(transformer, data)
@@ -59,13 +56,13 @@ internal class AstConstructorImpl(
         return this
     }
 
-    override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstConstructorImpl {
-        returnTypeRef = returnTypeRef.transformSingle(transformer, data)
+    override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstConstructorImpl {
+        returnType = returnType.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstConstructorImpl {
-        receiverTypeRef = receiverTypeRef?.transformSingle(transformer, data)
+    override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstConstructorImpl {
+        receiverType = receiverType?.transformSingle(transformer, data)
         return this
     }
 
@@ -99,12 +96,12 @@ internal class AstConstructorImpl(
         return this
     }
 
-    override fun replaceReturnTypeRef(newReturnTypeRef: AstTypeRef) {
-        returnTypeRef = newReturnTypeRef
+    override fun replaceReturnType(newReturnType: AstType) {
+        returnType = newReturnType
     }
 
-    override fun replaceReceiverTypeRef(newReceiverTypeRef: AstTypeRef?) {
-        receiverTypeRef = newReceiverTypeRef
+    override fun replaceReceiverType(newReceiverType: AstType?) {
+        receiverType = newReceiverType
     }
 
     override fun replaceValueParameters(newValueParameters: List<AstValueParameter>) {

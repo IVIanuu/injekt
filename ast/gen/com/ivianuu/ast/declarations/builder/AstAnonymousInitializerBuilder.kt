@@ -2,11 +2,13 @@ package com.ivianuu.ast.declarations.builder
 
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstAnonymousInitializer
+import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.impl.AstAnonymousInitializerImpl
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.symbols.impl.AstAnonymousInitializerSymbol
-import kotlin.contracts.ExperimentalContracts
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 
 /*
  * This file was generated automatically

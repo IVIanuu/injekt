@@ -1,8 +1,8 @@
 package com.ivianuu.ast.types.builder
 
 import com.ivianuu.ast.builder.AstBuilderDsl
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjectionWithVariance
-import com.ivianuu.ast.types.AstTypeRef
 import com.ivianuu.ast.types.impl.AstTypeProjectionWithVarianceImpl
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
@@ -15,12 +15,12 @@ import org.jetbrains.kotlin.types.Variance
 
 @AstBuilderDsl
 class AstTypeProjectionWithVarianceBuilder {
-    lateinit var typeRef: AstTypeRef
+    lateinit var type: AstType
     lateinit var variance: Variance
 
     fun build(): AstTypeProjectionWithVariance {
         return AstTypeProjectionWithVarianceImpl(
-            typeRef,
+            type,
             variance,
         )
     }

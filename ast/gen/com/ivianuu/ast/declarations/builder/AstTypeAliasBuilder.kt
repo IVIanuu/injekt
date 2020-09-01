@@ -2,16 +2,19 @@ package com.ivianuu.ast.declarations.builder
 
 import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
+import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstTypeAlias
 import com.ivianuu.ast.declarations.AstTypeParameter
+import com.ivianuu.ast.declarations.builder.AstTypeParametersOwnerBuilder
 import com.ivianuu.ast.declarations.impl.AstTypeAliasImpl
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.symbols.impl.AstTypeAliasSymbol
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 import org.jetbrains.kotlin.name.Name
-import kotlin.contracts.ExperimentalContracts
 
 /*
  * This file was generated automatically
@@ -25,7 +28,7 @@ class AstTypeAliasBuilder : AstTypeParametersOwnerBuilder, AstAnnotationContaine
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
     lateinit var name: Name
     lateinit var symbol: AstTypeAliasSymbol
-    lateinit var expandedTypeRef: AstTypeRef
+    lateinit var expandedType: AstType
     override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
 
     override fun build(): AstTypeAlias {
@@ -35,7 +38,7 @@ class AstTypeAliasBuilder : AstTypeParametersOwnerBuilder, AstAnnotationContaine
             typeParameters,
             name,
             symbol,
-            expandedTypeRef,
+            expandedType,
             annotations,
         )
     }

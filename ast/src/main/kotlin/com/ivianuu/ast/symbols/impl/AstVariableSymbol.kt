@@ -5,23 +5,18 @@ import com.ivianuu.ast.declarations.AstProperty
 import com.ivianuu.ast.declarations.AstVariable
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.symbols.CallableId
-import com.ivianuu.ast.symbols.PossiblyAstFakeOverrideSymbol
 import org.jetbrains.kotlin.name.Name
 
 open class AstVariableSymbol<D : AstVariable<D>>(override val callableId: CallableId) :
     AstCallableSymbol<D>() {
-
     constructor(name: Name) : this(CallableId(name))  // TODO?
 }
 
 open class AstPropertySymbol(
     callableId: CallableId,
-    override val isFakeOverride: Boolean = false,
-    // Actual for fake override only
     override val overriddenSymbol: AstPropertySymbol? = null,
     override val isIntersectionOverride: Boolean = false,
-) : AstVariableSymbol<AstProperty>(callableId),
-    PossiblyAstFakeOverrideSymbol<AstProperty, AstPropertySymbol> {
+) : AstVariableSymbol<AstProperty>(callableId) {
     // TODO: should we use this constructor for local variables?
     constructor(name: Name) : this(CallableId(name))
 }

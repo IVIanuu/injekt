@@ -3,9 +3,7 @@ package com.ivianuu.ast.expressions.impl
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstCatch
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically

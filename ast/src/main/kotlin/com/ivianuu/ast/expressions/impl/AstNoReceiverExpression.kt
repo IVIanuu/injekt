@@ -7,13 +7,13 @@ package com.ivianuu.ast.expressions.impl
 
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstExpression
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.types.impl.AstImplicitTypeRefImpl
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.types.impl.AstImplicitTypeImpl
 import com.ivianuu.ast.visitors.AstTransformer
 import com.ivianuu.ast.visitors.AstVisitor
 
 object AstNoReceiverExpression : AstExpression() {
-    override val typeRef: AstTypeRef = AstImplicitTypeRefImpl(null)
+    override val Type: AstType = AstImplicitTypeImpl(null)
     override val annotations: List<AstAnnotationCall> get() = emptyList()
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {}
@@ -29,5 +29,5 @@ object AstNoReceiverExpression : AstExpression() {
         return this
     }
 
-    override fun replaceTypeRef(newTypeRef: AstTypeRef) {}
+    override fun replaceType(newType: AstType) {}
 }

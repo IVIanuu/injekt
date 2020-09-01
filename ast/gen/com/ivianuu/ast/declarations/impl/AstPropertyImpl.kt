@@ -3,20 +3,19 @@ package com.ivianuu.ast.declarations.impl
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstDeclarationStatus
+import com.ivianuu.ast.declarations.AstField
 import com.ivianuu.ast.declarations.AstProperty
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.references.AstDelegateFieldReference
 import com.ivianuu.ast.symbols.impl.AstBackingFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstPropertySymbol
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -25,8 +24,8 @@ import org.jetbrains.kotlin.name.Name
 
 internal class AstPropertyImpl(
     override val origin: AstDeclarationOrigin,
-    override var returnTypeRef: AstTypeRef,
-    override var receiverTypeRef: AstTypeRef?,
+    override var returnType: AstType,
+    override var receiverType: AstType?,
     override val name: Name,
     override var initializer: AstExpression?,
     override var delegate: AstExpression?,
@@ -45,8 +44,8 @@ internal class AstPropertyImpl(
     override val backingFieldSymbol: AstBackingFieldSymbol = AstBackingFieldSymbol(symbol.callableId)
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        returnTypeRef.accept(visitor, data)
-        receiverTypeRef?.accept(visitor, data)
+        returnType.accept(visitor, data)
+        receiverType?.accept(visitor, data)
         initializer?.accept(visitor, data)
         delegate?.accept(visitor, data)
         getter?.accept(visitor, data)
@@ -57,8 +56,8 @@ internal class AstPropertyImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstPropertyImpl {
-        transformReturnTypeRef(transformer, data)
-        transformReceiverTypeRef(transformer, data)
+        transformReturnType(transformer, data)
+        transformReceiverType(transformer, data)
         transformInitializer(transformer, data)
         transformDelegate(transformer, data)
         transformGetter(transformer, data)
@@ -69,13 +68,13 @@ internal class AstPropertyImpl(
         return this
     }
 
-    override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstPropertyImpl {
-        returnTypeRef = returnTypeRef.transformSingle(transformer, data)
+    override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstPropertyImpl {
+        returnType = returnType.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstPropertyImpl {
-        receiverTypeRef = receiverTypeRef?.transformSingle(transformer, data)
+    override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstPropertyImpl {
+        receiverType = receiverType?.transformSingle(transformer, data)
         return this
     }
 
@@ -119,11 +118,11 @@ internal class AstPropertyImpl(
         return this
     }
 
-    override fun replaceReturnTypeRef(newReturnTypeRef: AstTypeRef) {
-        returnTypeRef = newReturnTypeRef
+    override fun replaceReturnType(newReturnType: AstType) {
+        returnType = newReturnType
     }
 
-    override fun replaceReceiverTypeRef(newReceiverTypeRef: AstTypeRef?) {
-        receiverTypeRef = newReceiverTypeRef
+    override fun replaceReceiverType(newReceiverType: AstType?) {
+        receiverType = newReceiverType
     }
 }

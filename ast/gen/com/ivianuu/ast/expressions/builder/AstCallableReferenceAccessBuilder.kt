@@ -5,13 +5,17 @@ import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstCallableReferenceAccess
 import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
+import com.ivianuu.ast.expressions.builder.AstQualifiedAccessBuilder
 import com.ivianuu.ast.expressions.impl.AstCallableReferenceAccessImpl
 import com.ivianuu.ast.expressions.impl.AstNoReceiverExpression
 import com.ivianuu.ast.references.AstNamedReference
+import com.ivianuu.ast.references.AstReference
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.types.impl.AstImplicitTypeRefImpl
-import kotlin.contracts.ExperimentalContracts
+import com.ivianuu.ast.types.impl.AstImplicitTypeImpl
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 
 /*
  * This file was generated automatically
@@ -20,7 +24,7 @@ import kotlin.contracts.ExperimentalContracts
 
 @AstBuilderDsl
 class AstCallableReferenceAccessBuilder : AstQualifiedAccessBuilder, AstAnnotationContainerBuilder, AstExpressionBuilder {
-    override var typeRef: AstTypeRef = AstImplicitTypeRefImpl()
+    override var type: AstType = AstImplicitTypeImpl()
     override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
     override val typeArguments: MutableList<AstTypeProjection> = mutableListOf()
     override var explicitReceiver: AstExpression? = null
@@ -31,7 +35,7 @@ class AstCallableReferenceAccessBuilder : AstQualifiedAccessBuilder, AstAnnotati
 
     override fun build(): AstCallableReferenceAccess {
         return AstCallableReferenceAccessImpl(
-            typeRef,
+            type,
             annotations,
             typeArguments,
             explicitReceiver,

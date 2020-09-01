@@ -251,7 +251,7 @@ class ReaderChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
 
         if (element is KtParameter) {
             isReader = element
-                .typeReference
+                .Typeerence
                 ?.annotationEntries
                 ?.mapNotNull { trace.bindingContext.get(BindingContext.ANNOTATION, it) }
                 ?.any { it.fqName == InjektFqNames.Reader } ?: false
@@ -267,7 +267,7 @@ class ReaderChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
                 element is KtNamedFunction -> element.annotationEntries
                 parent is KtAnnotatedExpression -> parent.annotationEntries
                 element is KtProperty -> element.annotationEntries
-                element is KtParameter -> element.typeReference?.annotationEntries ?: emptyList()
+                element is KtParameter -> element.Typeerence?.annotationEntries ?: emptyList()
                 else -> emptyList()
             }
 

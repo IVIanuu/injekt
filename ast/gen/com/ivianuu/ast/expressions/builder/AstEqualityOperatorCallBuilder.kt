@@ -6,9 +6,12 @@ import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstArgumentList
 import com.ivianuu.ast.expressions.AstEqualityOperatorCall
 import com.ivianuu.ast.expressions.AstOperation
+import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.impl.AstEqualityOperatorCallImpl
-import com.ivianuu.ast.types.AstTypeRef
-import kotlin.contracts.ExperimentalContracts
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.types.impl.AstImplicitBooleanType
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 
 /*
  * This file was generated automatically
@@ -29,8 +32,8 @@ class AstEqualityOperatorCallBuilder : AstAnnotationContainerBuilder, AstExpress
         )
     }
 
-    @Deprecated("Modification of 'typeRef' has no impact for AstEqualityOperatorCallBuilder", level = DeprecationLevel.HIDDEN)
-    override var typeRef: AstTypeRef
+    @Deprecated("Modification of 'type' has no impact for AstEqualityOperatorCallBuilder", level = DeprecationLevel.HIDDEN)
+    override var type: AstType
         get() = throw IllegalStateException()
         set(value) {
             throw IllegalStateException()

@@ -3,7 +3,7 @@ package com.ivianuu.ast.references.builder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.references.AstSuperReference
 import com.ivianuu.ast.references.impl.AstExplicitSuperReference
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 
@@ -15,12 +15,12 @@ import kotlin.contracts.*
 @AstBuilderDsl
 class AstExplicitSuperReferenceBuilder {
     var labelName: String? = null
-    lateinit var superTypeRef: AstTypeRef
+    lateinit var superType: AstType
 
     fun build(): AstSuperReference {
         return AstExplicitSuperReference(
             labelName,
-            superTypeRef,
+            superType,
         )
     }
 

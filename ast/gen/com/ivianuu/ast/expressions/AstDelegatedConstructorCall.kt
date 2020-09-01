@@ -2,7 +2,7 @@ package com.ivianuu.ast.expressions
 
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.references.AstReference
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -13,7 +13,7 @@ import com.ivianuu.ast.visitors.*
 abstract class AstDelegatedConstructorCall : AstPureAbstractElement(), AstResolvable, AstCall {
     abstract override val annotations: List<AstAnnotationCall>
     abstract override val argumentList: AstArgumentList
-    abstract val constructedTypeRef: AstTypeRef
+    abstract val constructedType: AstType
     abstract val dispatchReceiver: AstExpression
     abstract override val calleeReference: AstReference
     abstract val isThis: Boolean
@@ -23,7 +23,7 @@ abstract class AstDelegatedConstructorCall : AstPureAbstractElement(), AstResolv
 
     abstract override fun replaceArgumentList(newArgumentList: AstArgumentList)
 
-    abstract fun replaceConstructedTypeRef(newConstructedTypeRef: AstTypeRef)
+    abstract fun replaceConstructedType(newConstructedType: AstType)
 
     abstract override fun replaceCalleeReference(newCalleeReference: AstReference)
 

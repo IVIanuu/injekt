@@ -4,7 +4,7 @@ import com.ivianuu.ast.AstExpressionRef
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstWhenExpression
 import com.ivianuu.ast.expressions.AstWhenSubjectExpression
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -16,7 +16,7 @@ internal class AstWhenSubjectExpressionImpl(
     override val annotations: MutableList<AstAnnotationCall>,
     override val whenRef: AstExpressionRef<AstWhenExpression>,
 ) : AstWhenSubjectExpression() {
-    override val typeRef: AstTypeRef get() = whenRef.value.subject!!.typeRef
+    override val type: AstType get() = whenRef.value.subject!!.type
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
@@ -32,5 +32,5 @@ internal class AstWhenSubjectExpressionImpl(
         return this
     }
 
-    override fun replaceTypeRef(newTypeRef: AstTypeRef) {}
+    override fun replaceType(newType: AstType) {}
 }

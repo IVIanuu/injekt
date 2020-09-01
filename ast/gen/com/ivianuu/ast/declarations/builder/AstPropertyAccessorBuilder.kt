@@ -9,12 +9,15 @@ import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.AstValueParameter
+import com.ivianuu.ast.declarations.builder.AstFunctionBuilder
 import com.ivianuu.ast.declarations.impl.AstPropertyAccessorImpl
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.symbols.impl.AstPropertyAccessorSymbol
-import com.ivianuu.ast.types.AstTypeRef
-import kotlin.contracts.ExperimentalContracts
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
+import org.jetbrains.kotlin.descriptors.Modality
 
 /*
  * This file was generated automatically
@@ -24,7 +27,7 @@ import kotlin.contracts.ExperimentalContracts
 @AstBuilderDsl
 class AstPropertyAccessorBuilder : AstFunctionBuilder, AstAnnotationContainerBuilder {
     override lateinit var origin: AstDeclarationOrigin
-    override lateinit var returnTypeRef: AstTypeRef
+    override lateinit var returnType: AstType
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
     override var body: AstBlock? = null
     lateinit var symbol: AstPropertyAccessorSymbol
@@ -37,7 +40,7 @@ class AstPropertyAccessorBuilder : AstFunctionBuilder, AstAnnotationContainerBui
     override fun build(): AstPropertyAccessor {
         return AstPropertyAccessorImpl(
             origin,
-            returnTypeRef,
+            returnType,
             valueParameters,
             body,
             symbol,

@@ -4,9 +4,9 @@ import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.references.AstResolvedCallableReference
 import com.ivianuu.ast.references.impl.AstResolvedCallableReferenceImpl
 import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
-import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.name.Name
 
 /*
@@ -18,7 +18,7 @@ import org.jetbrains.kotlin.name.Name
 class AstResolvedCallableReferenceBuilder {
     lateinit var name: Name
     lateinit var resolvedSymbol: AbstractAstBasedSymbol<*>
-    val inferredTypeArguments: MutableList<ConeKotlinType> = mutableListOf()
+    val inferredTypeArguments: MutableList<AstType> = mutableListOf()
 
     fun build(): AstResolvedCallableReference {
         return AstResolvedCallableReferenceImpl(

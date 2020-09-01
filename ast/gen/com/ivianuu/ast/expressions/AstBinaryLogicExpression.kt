@@ -1,6 +1,6 @@
 package com.ivianuu.ast.expressions
 
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -9,7 +9,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstBinaryLogicExpression : AstExpression() {
-    abstract override val typeRef: AstTypeRef
+    abstract override val type: AstType
     abstract override val annotations: List<AstAnnotationCall>
     abstract val leftOperand: AstExpression
     abstract val rightOperand: AstExpression
@@ -17,7 +17,7 @@ abstract class AstBinaryLogicExpression : AstExpression() {
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitBinaryLogicExpression(this, data)
 
-    abstract override fun replaceTypeRef(newTypeRef: AstTypeRef)
+    abstract override fun replaceType(newType: AstType)
 
     abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstBinaryLogicExpression
 

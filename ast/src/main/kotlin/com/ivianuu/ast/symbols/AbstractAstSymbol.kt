@@ -8,8 +8,12 @@ package com.ivianuu.ast.symbols
 import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.declarations.AstDeclaration
 
-interface AstBasedSymbol<E> where E : AstSymbolOwner<E>, E : AstDeclaration {
-    val ast: E
+abstract class AbstractAstSymbol<E> :
+    AstSymbol<E> where E : AstSymbolOwner<E>, E : AstDeclaration {
 
-    fun bind(e: E)
+    override lateinit var ast: E
+
+    override fun bind(e: E) {
+        ast = e
+    }
 }

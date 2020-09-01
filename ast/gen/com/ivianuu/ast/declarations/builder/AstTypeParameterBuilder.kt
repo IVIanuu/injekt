@@ -2,15 +2,17 @@ package com.ivianuu.ast.declarations.builder
 
 import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
+import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.impl.AstTypeParameterImpl
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.symbols.impl.AstTypeParameterSymbol
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.Variance
-import kotlin.contracts.ExperimentalContracts
 
 /*
  * This file was generated automatically
@@ -24,7 +26,7 @@ class AstTypeParameterBuilder : AstAnnotationContainerBuilder {
     lateinit var symbol: AstTypeParameterSymbol
     lateinit var variance: Variance
     var isReified: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
-    val bounds: MutableList<AstTypeRef> = mutableListOf()
+    val bounds: MutableList<AstType> = mutableListOf()
     override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
 
     override fun build(): AstTypeParameter {

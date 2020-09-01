@@ -8,13 +8,16 @@ import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstRegularClass
 import com.ivianuu.ast.declarations.AstTypeParameterRef
+import com.ivianuu.ast.declarations.builder.AstClassBuilder
+import com.ivianuu.ast.declarations.builder.AstTypeParameterRefsOwnerBuilder
 import com.ivianuu.ast.declarations.impl.AstRegularClassImpl
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.name.Name
-import kotlin.contracts.ExperimentalContracts
 
 /*
  * This file was generated automatically
@@ -32,7 +35,7 @@ open class AstRegularClassBuilder : AstClassBuilder, AstTypeParameterRefsOwnerBu
     open lateinit var name: Name
     open lateinit var symbol: AstRegularClassSymbol
     open var companionObject: AstRegularClass? = null
-    override val superTypeRefs: MutableList<AstTypeRef> = mutableListOf()
+    override val superTypes: MutableList<AstType> = mutableListOf()
 
     override fun build(): AstRegularClass {
         return AstRegularClassImpl(
@@ -45,7 +48,7 @@ open class AstRegularClassBuilder : AstClassBuilder, AstTypeParameterRefsOwnerBu
             name,
             symbol,
             companionObject,
-            superTypeRefs,
+            superTypes,
         )
     }
 

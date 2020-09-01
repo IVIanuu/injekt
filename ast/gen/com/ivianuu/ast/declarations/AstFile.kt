@@ -2,9 +2,8 @@ package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.expressions.AstAnnotationCall
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
 import org.jetbrains.kotlin.name.FqName
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically

@@ -9,13 +9,16 @@ import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstSimpleFunction
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.AstValueParameter
+import com.ivianuu.ast.declarations.builder.AstFunctionBuilder
+import com.ivianuu.ast.declarations.builder.AstTypeParametersOwnerBuilder
 import com.ivianuu.ast.declarations.impl.AstSimpleFunctionImpl
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 import org.jetbrains.kotlin.name.Name
-import kotlin.contracts.ExperimentalContracts
 
 /*
  * This file was generated automatically
@@ -25,8 +28,8 @@ import kotlin.contracts.ExperimentalContracts
 @AstBuilderDsl
 open class AstSimpleFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwnerBuilder, AstAnnotationContainerBuilder {
     override lateinit var origin: AstDeclarationOrigin
-    override lateinit var returnTypeRef: AstTypeRef
-    open var receiverTypeRef: AstTypeRef? = null
+    override lateinit var returnType: AstType
+    open var receiverType: AstType? = null
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
     override var body: AstBlock? = null
     open lateinit var status: AstDeclarationStatus
@@ -39,8 +42,8 @@ open class AstSimpleFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwner
     override fun build(): AstSimpleFunction {
         return AstSimpleFunctionImpl(
             origin,
-            returnTypeRef,
-            receiverTypeRef,
+            returnType,
+            receiverType,
             valueParameters,
             body,
             status,
@@ -69,8 +72,8 @@ inline fun buildSimpleFunction(init: AstSimpleFunctionBuilder.() -> Unit): AstSi
 inline fun buildSimpleFunctionCopy(original: AstSimpleFunction, init: AstSimpleFunctionBuilder.() -> Unit): AstSimpleFunction {
     val copyBuilder = AstSimpleFunctionBuilder()
     copyBuilder.origin = original.origin
-    copyBuilder.returnTypeRef = original.returnTypeRef
-    copyBuilder.receiverTypeRef = original.receiverTypeRef
+    copyBuilder.returnType = original.returnType
+    copyBuilder.receiverType = original.receiverType
     copyBuilder.valueParameters.addAll(original.valueParameters)
     copyBuilder.body = original.body
     copyBuilder.status = original.status

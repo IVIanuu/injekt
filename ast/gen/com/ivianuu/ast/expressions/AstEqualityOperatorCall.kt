@@ -1,6 +1,6 @@
 package com.ivianuu.ast.expressions
 
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -9,14 +9,14 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstEqualityOperatorCall : AstExpression(), AstCall {
-    abstract override val typeRef: AstTypeRef
+    abstract override val type: AstType
     abstract override val annotations: List<AstAnnotationCall>
     abstract override val argumentList: AstArgumentList
     abstract val operation: AstOperation
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitEqualityOperatorCall(this, data)
 
-    abstract override fun replaceTypeRef(newTypeRef: AstTypeRef)
+    abstract override fun replaceType(newType: AstType)
 
     abstract override fun replaceArgumentList(newArgumentList: AstArgumentList)
 

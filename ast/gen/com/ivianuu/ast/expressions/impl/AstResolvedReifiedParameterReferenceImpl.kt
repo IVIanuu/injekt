@@ -3,7 +3,7 @@ package com.ivianuu.ast.expressions.impl
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstResolvedReifiedParameterReference
 import com.ivianuu.ast.symbols.impl.AstTypeParameterSymbol
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -12,17 +12,17 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstResolvedReifiedParameterReferenceImpl(
-    override var typeRef: AstTypeRef,
+    override var type: AstType,
     override val annotations: MutableList<AstAnnotationCall>,
     override val symbol: AstTypeParameterSymbol,
 ) : AstResolvedReifiedParameterReference() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        typeRef.accept(visitor, data)
+        type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstResolvedReifiedParameterReferenceImpl {
-        typeRef = typeRef.transformSingle(transformer, data)
+        type = type.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         return this
     }
@@ -32,7 +32,7 @@ internal class AstResolvedReifiedParameterReferenceImpl(
         return this
     }
 
-    override fun replaceTypeRef(newTypeRef: AstTypeRef) {
-        typeRef = newTypeRef
+    override fun replaceType(newType: AstType) {
+        type = newType
     }
 }

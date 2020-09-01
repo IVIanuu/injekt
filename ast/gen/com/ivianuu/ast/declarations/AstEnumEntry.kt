@@ -4,10 +4,9 @@ import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -17,8 +16,8 @@ import org.jetbrains.kotlin.name.Name
 abstract class AstEnumEntry : AstVariable<AstEnumEntry>(), AstCallableMemberDeclaration<AstEnumEntry> {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
-    abstract override val returnTypeRef: AstTypeRef
-    abstract override val receiverTypeRef: AstTypeRef?
+    abstract override val returnType: AstType
+    abstract override val receiverType: AstType?
     abstract override val name: Name
     abstract override val symbol: AstVariableSymbol<AstEnumEntry>
     abstract override val initializer: AstExpression?
@@ -34,13 +33,13 @@ abstract class AstEnumEntry : AstVariable<AstEnumEntry>(), AstCallableMemberDecl
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitEnumEntry(this, data)
 
-    abstract override fun replaceReturnTypeRef(newReturnTypeRef: AstTypeRef)
+    abstract override fun replaceReturnType(newReturnType: AstType)
 
-    abstract override fun replaceReceiverTypeRef(newReceiverTypeRef: AstTypeRef?)
+    abstract override fun replaceReceiverType(newReceiverType: AstType?)
 
-    abstract override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstEnumEntry
+    abstract override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstEnumEntry
 
-    abstract override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstEnumEntry
+    abstract override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstEnumEntry
 
     abstract override fun <D> transformInitializer(transformer: AstTransformer<D>, data: D): AstEnumEntry
 

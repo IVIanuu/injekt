@@ -2,9 +2,8 @@ package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.symbols.impl.AstCallableSymbol
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -15,23 +14,23 @@ interface AstCallableMemberDeclaration<F : AstCallableMemberDeclaration<F>> : As
     override val origin: AstDeclarationOrigin
     override val attributes: AstDeclarationAttributes
     override val annotations: List<AstAnnotationCall>
-    override val returnTypeRef: AstTypeRef
-    override val receiverTypeRef: AstTypeRef?
+    override val returnType: AstType
+    override val receiverType: AstType?
     override val symbol: AstCallableSymbol<F>
     override val typeParameters: List<AstTypeParameterRef>
     override val status: AstDeclarationStatus
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitCallableMemberDeclaration(this, data)
 
-    override fun replaceReturnTypeRef(newReturnTypeRef: AstTypeRef)
+    override fun replaceReturnType(newReturnType: AstType)
 
-    override fun replaceReceiverTypeRef(newReceiverTypeRef: AstTypeRef?)
+    override fun replaceReceiverType(newReceiverType: AstType?)
 
     override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstCallableMemberDeclaration<F>
 
-    override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstCallableMemberDeclaration<F>
+    override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstCallableMemberDeclaration<F>
 
-    override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstCallableMemberDeclaration<F>
+    override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstCallableMemberDeclaration<F>
 
     override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstCallableMemberDeclaration<F>
 

@@ -4,8 +4,8 @@ import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstQualifiedAccessExpression
 import com.ivianuu.ast.references.AstReference
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
-import com.ivianuu.ast.types.AstTypeRef
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -14,7 +14,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstQualifiedAccessExpressionImpl(
-    override var typeRef: AstTypeRef,
+    override var type: AstType,
     override val annotations: MutableList<AstAnnotationCall>,
     override var calleeReference: AstReference,
     override val typeArguments: MutableList<AstTypeProjection>,
@@ -23,7 +23,7 @@ internal class AstQualifiedAccessExpressionImpl(
     override var extensionReceiver: AstExpression,
 ) : AstQualifiedAccessExpression() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        typeRef.accept(visitor, data)
+        type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
         calleeReference.accept(visitor, data)
         typeArguments.forEach { it.accept(visitor, data) }
@@ -37,7 +37,7 @@ internal class AstQualifiedAccessExpressionImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstQualifiedAccessExpressionImpl {
-        typeRef = typeRef.transformSingle(transformer, data)
+        type = type.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         transformCalleeReference(transformer, data)
         transformTypeArguments(transformer, data)
@@ -81,8 +81,8 @@ internal class AstQualifiedAccessExpressionImpl(
         return this
     }
 
-    override fun replaceTypeRef(newTypeRef: AstTypeRef) {
-        typeRef = newTypeRef
+    override fun replaceType(newType: AstType) {
+        type = newType
     }
 
     override fun replaceCalleeReference(newCalleeReference: AstReference) {

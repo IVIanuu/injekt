@@ -10,12 +10,9 @@ import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -24,7 +21,7 @@ import org.jetbrains.kotlin.name.Name
 
 internal class AstEnumEntryImpl(
     override val origin: AstDeclarationOrigin,
-    override var returnTypeRef: AstTypeRef,
+    override var returnType: AstType,
     override val name: Name,
     override val symbol: AstVariableSymbol<AstEnumEntry>,
     override var initializer: AstExpression?,
@@ -33,7 +30,7 @@ internal class AstEnumEntryImpl(
     override var status: AstDeclarationStatus,
 ) : AstEnumEntry() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
-    override val receiverTypeRef: AstTypeRef? get() = null
+    override val receiverType: AstType? get() = null
     override val delegate: AstExpression? get() = null
     override val delegateFieldSymbol: AstDelegateFieldSymbol<AstEnumEntry>? get() = null
     override val isVar: Boolean get() = false
@@ -42,7 +39,7 @@ internal class AstEnumEntryImpl(
     override val setter: AstPropertyAccessor? get() = null
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        returnTypeRef.accept(visitor, data)
+        returnType.accept(visitor, data)
         initializer?.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
         typeParameters.forEach { it.accept(visitor, data) }
@@ -50,7 +47,7 @@ internal class AstEnumEntryImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
-        transformReturnTypeRef(transformer, data)
+        transformReturnType(transformer, data)
         transformInitializer(transformer, data)
         transformTypeParameters(transformer, data)
         transformStatus(transformer, data)
@@ -58,12 +55,12 @@ internal class AstEnumEntryImpl(
         return this
     }
 
-    override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
-        returnTypeRef = returnTypeRef.transformSingle(transformer, data)
+    override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
+        returnType = returnType.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
+    override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
         return this
     }
 
@@ -104,9 +101,9 @@ internal class AstEnumEntryImpl(
         return this
     }
 
-    override fun replaceReturnTypeRef(newReturnTypeRef: AstTypeRef) {
-        returnTypeRef = newReturnTypeRef
+    override fun replaceReturnType(newReturnType: AstType) {
+        returnType = newReturnType
     }
 
-    override fun replaceReceiverTypeRef(newReceiverTypeRef: AstTypeRef?) {}
+    override fun replaceReceiverType(newReceiverType: AstType?) {}
 }

@@ -7,12 +7,14 @@ import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstWhenBranch
 import com.ivianuu.ast.expressions.AstWhenExpression
+import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.impl.AstWhenExpressionImpl
 import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.references.impl.AstStubReference
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.types.impl.AstImplicitTypeRefImpl
-import kotlin.contracts.ExperimentalContracts
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.types.impl.AstImplicitTypeImpl
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 
 /*
  * This file was generated automatically
@@ -21,7 +23,7 @@ import kotlin.contracts.ExperimentalContracts
 
 @AstBuilderDsl
 class AstWhenExpressionBuilder : AstAnnotationContainerBuilder, AstExpressionBuilder {
-    override var typeRef: AstTypeRef = AstImplicitTypeRefImpl()
+    override var type: AstType = AstImplicitTypeImpl()
     override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
     var calleeReference: AstReference = AstStubReference
     var subject: AstExpression? = null
@@ -31,7 +33,7 @@ class AstWhenExpressionBuilder : AstAnnotationContainerBuilder, AstExpressionBui
 
     override fun build(): AstWhenExpression {
         return AstWhenExpressionImpl(
-            typeRef,
+            type,
             annotations,
             calleeReference,
             subject,

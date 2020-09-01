@@ -7,9 +7,13 @@ import com.ivianuu.ast.expressions.AstArgumentList
 import com.ivianuu.ast.expressions.AstEmptyArgumentList
 import com.ivianuu.ast.expressions.AstOperation
 import com.ivianuu.ast.expressions.AstTypeOperatorCall
+import com.ivianuu.ast.expressions.builder.AstCallBuilder
+import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.impl.AstTypeOperatorCallImpl
-import com.ivianuu.ast.types.AstTypeRef
-import kotlin.contracts.ExperimentalContracts
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.types.impl.AstImplicitTypeImpl
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 
 /*
  * This file was generated automatically
@@ -21,19 +25,19 @@ class AstTypeOperatorCallBuilder : AstCallBuilder, AstAnnotationContainerBuilder
     override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
     override var argumentList: AstArgumentList = AstEmptyArgumentList
     lateinit var operation: AstOperation
-    lateinit var conversionTypeRef: AstTypeRef
+    lateinit var conversionType: AstType
 
     override fun build(): AstTypeOperatorCall {
         return AstTypeOperatorCallImpl(
             annotations,
             argumentList,
             operation,
-            conversionTypeRef,
+            conversionType,
         )
     }
 
-    @Deprecated("Modification of 'typeRef' has no impact for AstTypeOperatorCallBuilder", level = DeprecationLevel.HIDDEN)
-    override var typeRef: AstTypeRef
+    @Deprecated("Modification of 'type' has no impact for AstTypeOperatorCallBuilder", level = DeprecationLevel.HIDDEN)
+    override var type: AstType
         get() = throw IllegalStateException()
         set(value) {
             throw IllegalStateException()

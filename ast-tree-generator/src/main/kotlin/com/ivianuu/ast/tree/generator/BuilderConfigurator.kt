@@ -54,13 +54,13 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             parents += annotationContainerBuilder
             fields from function without listOf(
                 "symbol",
-                "receiverTypeRef",
+                "receiverType",
                 "typeParameters"
             )
         }
 
         val loopJumpBuilder by builder {
-            fields from loopJump without "typeRef"
+            fields from loopJump without "type"
         }
 
         val abstractConstructorBuilder by builder {
@@ -97,7 +97,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             default("argumentList") {
                 value = "AstEmptyArgumentList"
             }
-            default("resolveStatus", "AstAnnotationResolveStatus.Unresolved")
             useTypes(emptyArgumentListType)
         }
 
@@ -199,26 +198,8 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             useTypes(stubReferenceType)
         }
 
-        builder(resolvedTypeRef) {
-            defaultFalse("isSuspend")
-            defaultNull("delegatedTypeRef")
-            withCopy()
-        }
-
-        builder(functionTypeRef) {
-            withCopy()
-        }
-
-        builder(resolvedFunctionTypeRef) {
-            withCopy()
-        }
-
-        builder(implicitTypeRef) {
-            withCopy()
-        }
-
-        builder(composedSuperTypeRef) {
-            withCopy()
+        builder("isMarkedNullable") {
+            defaultFalse("isMarkedNullable")
         }
 
         builder(breakExpression) {
@@ -239,7 +220,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
                 "defaultValue",
                 "initializer",
                 "delegate",
-                "receiverTypeRef",
+                "receiverType",
                 "delegateFieldSymbol",
                 "getter",
                 "setter"
@@ -275,7 +256,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             defaultFalse("isNullableLHSForCallableReference")
         }
 
-        val elementsWithDefaultTypeRef = listOf(
+        val elementsWithDefaultType = listOf(
             thisReceiverExpression,
             callableReferenceAccess,
             anonymousObject,
@@ -291,15 +272,15 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             checkedSafeCallSubject,
             safeCallExpression
         )
-        elementsWithDefaultTypeRef.forEach {
+        elementsWithDefaultType.forEach {
             val (element, name) = when (it) {
                 is Pair<*, *> -> it.first as Element to it.second as String
                 is Element -> it to null
                 else -> throw IllegalArgumentException()
             }
             builder(element, name) {
-                default("typeRef", "AstImplicitTypeRefImpl()")
-                useTypes(implicitTypeRefType)
+                default("type", "AstImplicitTypeImpl()")
+                useTypes(implicitTypeType)
             }
         }
 
@@ -308,7 +289,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         // -----------------------------------------------------------------------
 
         findImplementationsWithElementInParents(annotationContainer) {
-            it.type !in setOf("AstImplicitTypeRefImpl")
+            it.type !in setOf("AstImplicitTypeImpl")
         }.forEach {
             it.builder?.parents?.add(annotationContainerBuilder)
         }

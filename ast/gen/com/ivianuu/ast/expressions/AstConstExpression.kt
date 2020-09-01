@@ -1,6 +1,6 @@
 package com.ivianuu.ast.expressions
 
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -9,14 +9,14 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstConstExpression<T> : AstExpression() {
-    abstract override val typeRef: AstTypeRef
+    abstract override val type: AstType
     abstract override val annotations: List<AstAnnotationCall>
     abstract val kind: AstConstKind<T>
     abstract val value: T
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitConstExpression(this, data)
 
-    abstract override fun replaceTypeRef(newTypeRef: AstTypeRef)
+    abstract override fun replaceType(newType: AstType)
 
     abstract fun replaceKind(newKind: AstConstKind<T>)
 

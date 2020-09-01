@@ -3,8 +3,8 @@ package com.ivianuu.ast.expressions.impl
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstResolvedQualifier
 import com.ivianuu.ast.symbols.impl.AstClassLikeSymbol
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
-import com.ivianuu.ast.types.AstTypeRef
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import com.ivianuu.ast.visitors.*
@@ -15,7 +15,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstResolvedQualifierImpl(
-    override var typeRef: AstTypeRef,
+    override var type: AstType,
     override val annotations: MutableList<AstAnnotationCall>,
     override var packageFqName: FqName,
     override var relativeClassFqName: FqName?,
@@ -28,13 +28,13 @@ internal class AstResolvedQualifierImpl(
 }
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        typeRef.accept(visitor, data)
+        type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
         typeArguments.forEach { it.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstResolvedQualifierImpl {
-        typeRef = typeRef.transformSingle(transformer, data)
+        type = type.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         transformTypeArguments(transformer, data)
         return this
@@ -50,8 +50,8 @@ internal class AstResolvedQualifierImpl(
         return this
     }
 
-    override fun replaceTypeRef(newTypeRef: AstTypeRef) {
-        typeRef = newTypeRef
+    override fun replaceType(newType: AstType) {
+        type = newType
     }
 
     override fun replaceIsNullableLHSForCallableReference(newIsNullableLHSForCallableReference: Boolean) {

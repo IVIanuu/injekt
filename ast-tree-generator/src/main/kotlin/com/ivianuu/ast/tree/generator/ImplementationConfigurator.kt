@@ -24,7 +24,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         impl(typeParameterRef, "AstConstructedClassTypeParameterRef")
 
         noImpl(declarationStatus)
-        noImpl(resolvedDeclarationStatus)
 
         impl(regularClass) {
             defaultFalse("hasLazyNestedClassifiers", withGetter = true)
@@ -35,8 +34,8 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         impl(typeAlias)
 
         impl(annotationCall) {
-            default("typeRef") {
-                value = "annotationTypeRef"
+            default("type") {
+                value = "annotationType"
                 withGetter = true
             }
         }
@@ -59,7 +58,7 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         impl(delegatedConstructorCall) {
             default(
                 "calleeReference",
-                "if (isThis) AstExplicitThisReference(null) else AstExplicitSuperReference(null, constructedTypeRef)"
+                "if (isThis) AstExplicitThisReference(null) else AstExplicitSuperReference(null, constructedType)"
             )
             default("isSuper") {
                 value = "!isThis"
@@ -69,8 +68,8 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         }
 
         impl(expression, "AstElseIfTrueCondition") {
-            defaultTypeRefWithSource("AstImplicitBooleanTypeRef")
-            useTypes(implicitBooleanTypeRefType)
+            defaultType("AstImplicitBooleanType")
+            useTypes(implicitBooleanTypeType)
             publicImplementation()
         }
 
@@ -119,7 +118,7 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
 
             defaultNull(
                 "delegateFieldSymbol",
-                "receiverTypeRef",
+                "receiverType",
                 "initializer",
                 "delegate",
                 "getter",
@@ -133,7 +132,7 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             defaultFalse("isVar", withGetter = true)
             defaultNull(
                 "delegateFieldSymbol",
-                "receiverTypeRef",
+                "receiverType",
                 "delegate",
                 "getter",
                 "setter",
@@ -142,7 +141,7 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         }
 
         impl(namedArgumentExpression) {
-            default("typeRef") {
+            default("type") {
                 delegate = "expression"
             }
         }
@@ -152,7 +151,7 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
                 value = "false"
                 withGetter = true
             }
-            default("typeRef") {
+            default("type") {
                 delegate = "expression"
             }
         }
@@ -162,14 +161,14 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
                 value = "true"
                 withGetter = true
             }
-            default("typeRef") {
+            default("type") {
                 delegate = "expression"
             }
         }
 
         impl(comparisonExpression) {
-            default("typeRef", "AstImplicitBooleanTypeRef()")
-            useTypes(implicitBooleanTypeRefType)
+            default("type", "AstImplicitBooleanType()")
+            useTypes(implicitBooleanTypeType)
         }
 
         impl(typeOperatorCall)
@@ -177,8 +176,8 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         impl(assignmentOperatorStatement)
 
         impl(equalityOperatorCall) {
-            default("typeRef", "AstImplicitBooleanTypeRef()")
-            useTypes(implicitBooleanTypeRefType)
+            default("type", "AstImplicitBooleanType()")
+            useTypes(implicitBooleanTypeType)
         }
 
         impl(resolvedQualifier) {
@@ -196,18 +195,18 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         impl(resolvedReifiedParameterReference)
 
         impl(returnExpression) {
-            defaultTypeRefWithSource("AstImplicitNothingTypeRef")
-            useTypes(implicitNothingTypeRefType)
+            defaultType("AstImplicitNothingType")
+            useTypes(implicitNothingTypeType)
         }
 
         impl(stringConcatenationCall) {
-            defaultTypeRefWithSource("AstImplicitStringTypeRef")
-            useTypes(implicitStringTypeRefType)
+            defaultType("AstImplicitStringType")
+            useTypes(implicitStringTypeType)
         }
 
         impl(throwExpression) {
-            defaultTypeRefWithSource("AstImplicitNothingTypeRef")
-            useTypes(implicitNothingTypeRefType)
+            defaultType("AstImplicitNothingType")
+            useTypes(implicitNothingTypeType)
         }
 
         impl(thisReceiverExpression) {
@@ -215,8 +214,8 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         }
 
         impl(expression, "AstUnitExpression") {
-            defaultTypeRefWithSource("AstImplicitUnitTypeRef")
-            useTypes(implicitUnitTypeRefType)
+            defaultType("AstImplicitUnitType")
+            useTypes(implicitUnitTypeType)
             publicImplementation()
         }
 
@@ -228,7 +227,7 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         }
 
         impl(propertyAccessor) {
-            default("receiverTypeRef") {
+            default("receiverType") {
                 value = "null"
                 withGetter = true
             }
@@ -241,15 +240,15 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         }
 
         impl(whenSubjectExpression) {
-            default("typeRef") {
-                value = "whenRef.value.subject!!.typeRef"
+            default("type") {
+                value = "whenRef.value.subject!!.type"
                 withGetter = true
             }
             useTypes(whenExpressionType)
         }
 
         impl(wrappedDelegateExpression) {
-            default("typeRef") {
+            default("type") {
                 delegate = "expression"
             }
         }
@@ -304,24 +303,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
 
         impl(superReference, "AstExplicitSuperReference")
 
-        impl(resolvedTypeRef) {
-            publicImplementation()
-        }
-
-        impl(resolvedFunctionTypeRef) {
-            default("delegatedTypeRef") {
-                value = "null"
-                withGetter = true
-            }
-        }
-
-        impl(functionTypeRef)
-        impl(implicitTypeRef) {
-            defaultEmptyList("annotations")
-        }
-
-        impl(composedSuperTypeRef)
-
         impl(reference, "AstStubReference") {
             kind = Object
         }
@@ -331,13 +312,13 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         }
 
         impl(breakExpression) {
-            defaultTypeRefWithSource("AstImplicitNothingTypeRef")
-            useTypes(implicitNothingTypeRefType)
+            defaultType("AstImplicitNothingType")
+            useTypes(implicitNothingTypeType)
         }
 
         impl(continueExpression) {
-            defaultTypeRefWithSource("AstImplicitNothingTypeRef")
-            useTypes(implicitNothingTypeRefType)
+            defaultType("AstImplicitNothingType")
+            useTypes(implicitNothingTypeType)
         }
 
         impl(valueParameter) {
@@ -349,7 +330,7 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
                 "setter",
                 "initializer",
                 "delegate",
-                "receiverTypeRef",
+                "receiverType",
                 "delegateFieldSymbol",
                 withGetter = true
             )
@@ -370,8 +351,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         impl(checkedSafeCallSubject) {
             useTypes(expressionType)
         }
-
-        noImpl(userTypeRef)
     }
 
     private fun configureAllImplementations() {
@@ -382,7 +361,7 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             defaultNull(it)
         }
 
-        val implementationWithConfigurableTypeRef = listOf(
+        val implementationWithConfigurableType = listOf(
             "AstTypeProjectionWithVarianceImpl",
             "AstCallableReferenceAccessImpl",
             "AstThisReceiverExpressionImpl",
@@ -401,12 +380,12 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             "AstCheckedSafeCallSubjectImpl",
         )
         configureFieldInAllImplementations(
-            field = "typeRef",
-            implementationPredicate = { it.type !in implementationWithConfigurableTypeRef },
+            field = "type",
+            implementationPredicate = { it.type !in implementationWithConfigurableType },
             fieldPredicate = { it.defaultValueInImplementation == null }
         ) {
-            default(it, "AstImplicitTypeRefImpl()")
-            useTypes(implicitTypeRefType)
+            default(it, "AstImplicitTypeImpl()")
+            useTypes(implicitTypeType)
         }
 
         configureFieldInAllImplementations(

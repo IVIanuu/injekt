@@ -6,6 +6,7 @@
 package com.ivianuu.ast.declarations.impl
 
 import com.ivianuu.ast.AstPureAbstractElement
+import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.impl.AstDeclarationStatusImpl.Modifier.ACTUAL
 import com.ivianuu.ast.declarations.impl.AstDeclarationStatusImpl.Modifier.COMPANION
@@ -28,12 +29,11 @@ import com.ivianuu.ast.declarations.impl.AstDeclarationStatusImpl.Modifier.TAILR
 import com.ivianuu.ast.visitors.AstTransformer
 import com.ivianuu.ast.visitors.AstVisitor
 import org.jetbrains.kotlin.descriptors.Modality
-import org.jetbrains.kotlin.descriptors.Visibility
 
 open class AstDeclarationStatusImpl(
     override val visibility: Visibility,
-    override val modality: Modality?
-) : AstPureAbstractElement(), AstDeclarationStatus {
+    override val modality: Modality
+) : AstDeclarationStatus() {
     protected var flags: Int = 0
 
     private operator fun get(modifier: Modifier): Boolean = (flags and modifier.mask) != 0
@@ -184,7 +184,4 @@ open class AstDeclarationStatusImpl(
         return this
     }
 
-    fun resolved(visibility: Visibility, modality: Modality): AstDeclarationStatus {
-        return AstResolvedDeclarationStatusImpl(visibility, modality, flags)
-    }
 }

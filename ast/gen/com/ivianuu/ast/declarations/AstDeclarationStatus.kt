@@ -1,35 +1,37 @@
 package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstElement
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.AstPureAbstractElement
+import com.ivianuu.ast.Visibility
 import org.jetbrains.kotlin.descriptors.Modality
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
  * DO NOT MODIFY IT MANUALLY
  */
 
-interface AstDeclarationStatus : AstElement {
-    val visibility: Visibility
-    val modality: Modality?
-    val isExpect: Boolean
-    val isActual: Boolean
-    val isOverride: Boolean
-    val isOperator: Boolean
-    val isInfix: Boolean
-    val isInline: Boolean
-    val isTailRec: Boolean
-    val isExternal: Boolean
-    val isConst: Boolean
-    val isLateInit: Boolean
-    val isInner: Boolean
-    val isCompanion: Boolean
-    val isData: Boolean
-    val isSuspend: Boolean
-    val isStatic: Boolean
-    val isFromSealedClass: Boolean
-    val isFromEnumClass: Boolean
-    val isFun: Boolean
+abstract class AstDeclarationStatus : AstPureAbstractElement(), AstElement {
+    abstract val visibility: Visibility
+    abstract val modality: Modality
+    abstract val isExpect: Boolean
+    abstract val isActual: Boolean
+    abstract val isOverride: Boolean
+    abstract val isOperator: Boolean
+    abstract val isInfix: Boolean
+    abstract val isInline: Boolean
+    abstract val isTailRec: Boolean
+    abstract val isExternal: Boolean
+    abstract val isConst: Boolean
+    abstract val isLateInit: Boolean
+    abstract val isInner: Boolean
+    abstract val isCompanion: Boolean
+    abstract val isData: Boolean
+    abstract val isSuspend: Boolean
+    abstract val isStatic: Boolean
+    abstract val isFromSealedClass: Boolean
+    abstract val isFromEnumClass: Boolean
+    abstract val isFun: Boolean
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitDeclarationStatus(this, data)
 }

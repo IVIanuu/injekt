@@ -3,10 +3,9 @@ package com.ivianuu.ast.declarations
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.symbols.impl.AstTypeAliasSymbol
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -20,12 +19,12 @@ abstract class AstTypeAlias : AstPureAbstractElement(), AstClassLikeDeclaration<
     abstract override val typeParameters: List<AstTypeParameter>
     abstract val name: Name
     abstract override val symbol: AstTypeAliasSymbol
-    abstract val expandedTypeRef: AstTypeRef
+    abstract val expandedType: AstType
     abstract override val annotations: List<AstAnnotationCall>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitTypeAlias(this, data)
 
-    abstract fun replaceExpandedTypeRef(newExpandedTypeRef: AstTypeRef)
+    abstract fun replaceExpandedType(newExpandedType: AstType)
 
     abstract override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstTypeAlias
 

@@ -6,6 +6,7 @@ import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstLoop
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically

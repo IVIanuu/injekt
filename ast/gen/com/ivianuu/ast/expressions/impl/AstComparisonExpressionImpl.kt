@@ -4,12 +4,9 @@ import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstComparisonExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstOperation
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.types.impl.AstImplicitBooleanTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.types.impl.AstImplicitBooleanType
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -21,16 +18,16 @@ internal class AstComparisonExpressionImpl(
     override val operation: AstOperation,
     override var compareToCall: AstFunctionCall,
 ) : AstComparisonExpression() {
-    override var typeRef: AstTypeRef = AstImplicitBooleanTypeRef()
+    override var type: AstType = AstImplicitBooleanType()
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        typeRef.accept(visitor, data)
+        type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
         compareToCall.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstComparisonExpressionImpl {
-        typeRef = typeRef.transformSingle(transformer, data)
+        type = type.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         compareToCall = compareToCall.transformSingle(transformer, data)
         return this
@@ -41,7 +38,7 @@ internal class AstComparisonExpressionImpl(
         return this
     }
 
-    override fun replaceTypeRef(newTypeRef: AstTypeRef) {
-        typeRef = newTypeRef
+    override fun replaceType(newType: AstType) {
+        type = newType
     }
 }

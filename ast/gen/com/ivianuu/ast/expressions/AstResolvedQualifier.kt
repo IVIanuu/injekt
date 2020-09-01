@@ -1,8 +1,8 @@
 package com.ivianuu.ast.expressions
 
 import com.ivianuu.ast.symbols.impl.AstClassLikeSymbol
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
-import com.ivianuu.ast.types.AstTypeRef
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import com.ivianuu.ast.visitors.*
@@ -13,7 +13,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstResolvedQualifier : AstExpression() {
-    abstract override val typeRef: AstTypeRef
+    abstract override val type: AstType
     abstract override val annotations: List<AstAnnotationCall>
     abstract val packageFqName: FqName
     abstract val relativeClassFqName: FqName?
@@ -24,7 +24,7 @@ abstract class AstResolvedQualifier : AstExpression() {
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitResolvedQualifier(this, data)
 
-    abstract override fun replaceTypeRef(newTypeRef: AstTypeRef)
+    abstract override fun replaceType(newType: AstType)
 
     abstract fun replaceIsNullableLHSForCallableReference(newIsNullableLHSForCallableReference: Boolean)
 

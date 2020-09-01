@@ -1,8 +1,8 @@
 package com.ivianuu.ast.expressions
 
 import com.ivianuu.ast.references.AstReference
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
-import com.ivianuu.ast.types.AstTypeRef
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -11,7 +11,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstQualifiedAccessExpression : AstExpression(), AstQualifiedAccess {
-    abstract override val typeRef: AstTypeRef
+    abstract override val type: AstType
     abstract override val annotations: List<AstAnnotationCall>
     abstract override val calleeReference: AstReference
     abstract override val typeArguments: List<AstTypeProjection>
@@ -21,7 +21,7 @@ abstract class AstQualifiedAccessExpression : AstExpression(), AstQualifiedAcces
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitQualifiedAccessExpression(this, data)
 
-    abstract override fun replaceTypeRef(newTypeRef: AstTypeRef)
+    abstract override fun replaceType(newType: AstType)
 
     abstract override fun replaceCalleeReference(newCalleeReference: AstReference)
 

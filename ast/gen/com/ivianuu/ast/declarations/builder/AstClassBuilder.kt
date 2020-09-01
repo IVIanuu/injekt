@@ -8,7 +8,8 @@ import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstTypeParameterRef
 import com.ivianuu.ast.expressions.AstAnnotationCall
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.visitors.*
 import org.jetbrains.kotlin.descriptors.ClassKind
 
 /*
@@ -23,7 +24,7 @@ interface AstClassBuilder : AstAnnotationContainerBuilder {
     abstract var attributes: AstDeclarationAttributes
     abstract val typeParameters: MutableList<AstTypeParameterRef>
     abstract var classKind: ClassKind
-    abstract val superTypeRefs: MutableList<AstTypeRef>
+    abstract val superTypes: MutableList<AstType>
     abstract val declarations: MutableList<AstDeclaration>
 
     override fun build(): AstClass<*>

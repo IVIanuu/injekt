@@ -7,12 +7,9 @@ import com.ivianuu.ast.declarations.AstTypeAlias
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.symbols.impl.AstTypeAliasSymbol
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -25,7 +22,7 @@ internal class AstTypeAliasImpl(
     override val typeParameters: MutableList<AstTypeParameter>,
     override val name: Name,
     override val symbol: AstTypeAliasSymbol,
-    override var expandedTypeRef: AstTypeRef,
+    override var expandedType: AstType,
     override val annotations: MutableList<AstAnnotationCall>,
 ) : AstTypeAlias() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
@@ -33,14 +30,14 @@ internal class AstTypeAliasImpl(
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         status.accept(visitor, data)
         typeParameters.forEach { it.accept(visitor, data) }
-        expandedTypeRef.accept(visitor, data)
+        expandedType.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstTypeAliasImpl {
         transformStatus(transformer, data)
         transformTypeParameters(transformer, data)
-        expandedTypeRef = expandedTypeRef.transformSingle(transformer, data)
+        expandedType = expandedType.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         return this
     }
@@ -60,7 +57,7 @@ internal class AstTypeAliasImpl(
         return this
     }
 
-    override fun replaceExpandedTypeRef(newExpandedTypeRef: AstTypeRef) {
-        expandedTypeRef = newExpandedTypeRef
+    override fun replaceExpandedType(newExpandedType: AstType) {
+        expandedType = newExpandedType
     }
 }

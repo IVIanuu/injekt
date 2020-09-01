@@ -3,8 +3,8 @@ package com.ivianuu.ast.expressions.impl
 import com.ivianuu.ast.AstImplementationDetail
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstExpression
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.types.impl.AstImplicitUnitTypeRef
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.types.impl.AstImplicitUnitType
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -15,15 +15,15 @@ import com.ivianuu.ast.visitors.*
 class AstUnitExpression @AstImplementationDetail constructor(
     override val annotations: MutableList<AstAnnotationCall>,
 ) : AstExpression() {
-    override var typeRef: AstTypeRef = AstImplicitUnitTypeRef()
+    override var type: AstType = AstImplicitUnitType()
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        typeRef.accept(visitor, data)
+        type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstUnitExpression {
-        typeRef = typeRef.transformSingle(transformer, data)
+        type = type.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         return this
     }
@@ -33,7 +33,7 @@ class AstUnitExpression @AstImplementationDetail constructor(
         return this
     }
 
-    override fun replaceTypeRef(newTypeRef: AstTypeRef) {
-        typeRef = newTypeRef
+    override fun replaceType(newType: AstType) {
+        type = newType
     }
 }

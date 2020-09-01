@@ -8,13 +8,10 @@ import com.ivianuu.ast.declarations.AstRegularClass
 import com.ivianuu.ast.declarations.AstTypeParameterRef
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.name.Name
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -31,7 +28,7 @@ internal class AstRegularClassImpl(
     override val name: Name,
     override val symbol: AstRegularClassSymbol,
     override var companionObject: AstRegularClass?,
-    override val superTypeRefs: MutableList<AstTypeRef>,
+    override val superTypes: MutableList<AstType>,
 ) : AstRegularClass() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override val hasLazyNestedClassifiers: Boolean get() = false
@@ -41,7 +38,7 @@ internal class AstRegularClassImpl(
         typeParameters.forEach { it.accept(visitor, data) }
         status.accept(visitor, data)
         declarations.forEach { it.accept(visitor, data) }
-        superTypeRefs.forEach { it.accept(visitor, data) }
+        superTypes.forEach { it.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
@@ -50,7 +47,7 @@ internal class AstRegularClassImpl(
         transformStatus(transformer, data)
         transformDeclarations(transformer, data)
         companionObject = declarations.asSequence().filterIsInstance<AstRegularClass>().firstOrNull { it.status.isCompanion }
-        transformSuperTypeRefs(transformer, data)
+        transformSuperTypes(transformer, data)
         return this
     }
 
@@ -79,13 +76,13 @@ internal class AstRegularClassImpl(
         return this
     }
 
-    override fun <D> transformSuperTypeRefs(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
-        superTypeRefs.transformInplace(transformer, data)
+    override fun <D> transformSuperTypes(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
+        superTypes.transformInplace(transformer, data)
         return this
     }
 
-    override fun replaceSuperTypeRefs(newSuperTypeRefs: List<AstTypeRef>) {
-        superTypeRefs.clear()
-        superTypeRefs.addAll(newSuperTypeRefs)
+    override fun replaceSuperTypes(newSuperTypes: List<AstType>) {
+        superTypes.clear()
+        superTypes.addAll(newSuperTypes)
     }
 }

@@ -10,11 +10,9 @@ import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.symbols.impl.AstPropertyAccessorSymbol
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.types.AstType
+import org.jetbrains.kotlin.descriptors.Modality
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -23,7 +21,7 @@ import com.ivianuu.ast.visitors.transformSingle
 
 open class AstPropertyAccessorImpl @AstImplementationDetail constructor(
     override val origin: AstDeclarationOrigin,
-    override var returnTypeRef: AstTypeRef,
+    override var returnType: AstType,
     override val valueParameters: MutableList<AstValueParameter>,
     override var body: AstBlock?,
     override val symbol: AstPropertyAccessorSymbol,
@@ -33,11 +31,11 @@ open class AstPropertyAccessorImpl @AstImplementationDetail constructor(
     override val typeParameters: MutableList<AstTypeParameter>,
 ) : AstPropertyAccessor() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
-    override val receiverTypeRef: AstTypeRef? get() = null
+    override val receiverType: AstType? get() = null
     override val isSetter: Boolean get() = !isGetter
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        returnTypeRef.accept(visitor, data)
+        returnType.accept(visitor, data)
         valueParameters.forEach { it.accept(visitor, data) }
         body?.accept(visitor, data)
         status.accept(visitor, data)
@@ -46,7 +44,7 @@ open class AstPropertyAccessorImpl @AstImplementationDetail constructor(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
-        transformReturnTypeRef(transformer, data)
+        transformReturnType(transformer, data)
         transformValueParameters(transformer, data)
         transformBody(transformer, data)
         transformStatus(transformer, data)
@@ -55,12 +53,12 @@ open class AstPropertyAccessorImpl @AstImplementationDetail constructor(
         return this
     }
 
-    override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
-        returnTypeRef = returnTypeRef.transformSingle(transformer, data)
+    override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
+        returnType = returnType.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
+    override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
         return this
     }
 
@@ -89,11 +87,11 @@ open class AstPropertyAccessorImpl @AstImplementationDetail constructor(
         return this
     }
 
-    override fun replaceReturnTypeRef(newReturnTypeRef: AstTypeRef) {
-        returnTypeRef = newReturnTypeRef
+    override fun replaceReturnType(newReturnType: AstType) {
+        returnType = newReturnType
     }
 
-    override fun replaceReceiverTypeRef(newReceiverTypeRef: AstTypeRef?) {}
+    override fun replaceReceiverType(newReceiverType: AstType?) {}
 
     override fun replaceValueParameters(newValueParameters: List<AstValueParameter>) {
         valueParameters.clear()

@@ -5,10 +5,12 @@ import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstNamedArgumentExpression
+import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.impl.AstNamedArgumentExpressionImpl
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 import org.jetbrains.kotlin.name.Name
-import kotlin.contracts.ExperimentalContracts
 
 /*
  * This file was generated automatically
@@ -31,8 +33,8 @@ class AstNamedArgumentExpressionBuilder : AstAnnotationContainerBuilder, AstExpr
         )
     }
 
-    @Deprecated("Modification of 'typeRef' has no impact for AstNamedArgumentExpressionBuilder", level = DeprecationLevel.HIDDEN)
-    override var typeRef: AstTypeRef
+    @Deprecated("Modification of 'type' has no impact for AstNamedArgumentExpressionBuilder", level = DeprecationLevel.HIDDEN)
+    override var type: AstType
         get() = throw IllegalStateException()
         set(value) {
             throw IllegalStateException()

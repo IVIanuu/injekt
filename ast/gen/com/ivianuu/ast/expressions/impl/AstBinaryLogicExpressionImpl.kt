@@ -4,12 +4,9 @@ import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstBinaryLogicExpression
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.LogicOperationKind
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.types.impl.AstImplicitTypeRefImpl
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.types.impl.AstImplicitTypeImpl
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -22,10 +19,10 @@ internal class AstBinaryLogicExpressionImpl(
     override var rightOperand: AstExpression,
     override val kind: LogicOperationKind,
 ) : AstBinaryLogicExpression() {
-    override var typeRef: AstTypeRef = AstImplicitTypeRefImpl()
+    override var type: AstType = AstImplicitTypeImpl()
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        typeRef.accept(visitor, data)
+        type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
         leftOperand.accept(visitor, data)
         rightOperand.accept(visitor, data)
@@ -54,12 +51,12 @@ internal class AstBinaryLogicExpressionImpl(
     }
 
     override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstBinaryLogicExpressionImpl {
-        typeRef = typeRef.transformSingle(transformer, data)
+        type = type.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         return this
     }
 
-    override fun replaceTypeRef(newTypeRef: AstTypeRef) {
-        typeRef = newTypeRef
+    override fun replaceType(newType: AstType) {
+        type = newType
     }
 }

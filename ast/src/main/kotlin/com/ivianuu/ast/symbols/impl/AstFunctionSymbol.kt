@@ -7,15 +7,14 @@ import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstSimpleFunction
 import com.ivianuu.ast.symbols.AccessorSymbol
 import com.ivianuu.ast.symbols.CallableId
-import com.ivianuu.ast.symbols.PossiblyAstFakeOverrideSymbol
-import com.ivianuu.ast.types.ConeKotlinType
+import com.ivianuu.ast.types.AstTypeProjection
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 sealed class AstFunctionSymbol<D : AstFunction<D>>(
     override val callableId: CallableId
 ) : AstCallableSymbol<D>() {
-    open val parameters: List<ConeKotlinType>
+    open val parameters: List<AstTypeProjection>
         get() = emptyList()
 }
 
@@ -23,12 +22,10 @@ sealed class AstFunctionSymbol<D : AstFunction<D>>(
 
 open class AstNamedFunctionSymbol(
     callableId: CallableId,
-    override val isFakeOverride: Boolean = false,
     // Actual for fake override only
     override val overriddenSymbol: AstNamedFunctionSymbol? = null,
     override val isIntersectionOverride: Boolean = false,
-) : AstFunctionSymbol<AstSimpleFunction>(callableId),
-    PossiblyAstFakeOverrideSymbol<AstSimpleFunction, AstNamedFunctionSymbol>
+) : AstFunctionSymbol<AstSimpleFunction>(callableId)
 
 class AstConstructorSymbol(
     callableId: CallableId,
@@ -45,7 +42,7 @@ open class AstAccessorSymbol(
 sealed class AstFunctionWithoutNameSymbol<F : AstFunction<F>>(
     stubName: Name
 ) : AstFunctionSymbol<F>(CallableId(FqName("special"), stubName)) {
-    override val parameters: List<ConeKotlinType>
+    override val parameters: List<AstTypeProjection>
         get() = emptyList()
 }
 

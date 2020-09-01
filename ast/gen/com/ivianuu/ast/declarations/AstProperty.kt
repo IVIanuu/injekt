@@ -5,10 +5,9 @@ import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.symbols.impl.AstBackingFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstPropertySymbol
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -18,8 +17,8 @@ import org.jetbrains.kotlin.name.Name
 abstract class AstProperty : AstVariable<AstProperty>(), AstTypeParametersOwner, AstCallableMemberDeclaration<AstProperty> {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
-    abstract override val returnTypeRef: AstTypeRef
-    abstract override val receiverTypeRef: AstTypeRef?
+    abstract override val returnType: AstType
+    abstract override val receiverType: AstType?
     abstract override val name: Name
     abstract override val initializer: AstExpression?
     abstract override val delegate: AstExpression?
@@ -37,13 +36,13 @@ abstract class AstProperty : AstVariable<AstProperty>(), AstTypeParametersOwner,
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitProperty(this, data)
 
-    abstract override fun replaceReturnTypeRef(newReturnTypeRef: AstTypeRef)
+    abstract override fun replaceReturnType(newReturnType: AstType)
 
-    abstract override fun replaceReceiverTypeRef(newReceiverTypeRef: AstTypeRef?)
+    abstract override fun replaceReceiverType(newReceiverType: AstType?)
 
-    abstract override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstProperty
+    abstract override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstProperty
 
-    abstract override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstProperty
+    abstract override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstProperty
 
     abstract override fun <D> transformInitializer(transformer: AstTransformer<D>, data: D): AstProperty
 

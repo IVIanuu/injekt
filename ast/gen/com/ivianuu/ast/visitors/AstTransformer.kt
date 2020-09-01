@@ -2,14 +2,13 @@ package com.ivianuu.ast.visitors
 
 import com.ivianuu.ast.AstElement
 import com.ivianuu.ast.AstAnnotationContainer
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.expressions.AstResolvable
 import com.ivianuu.ast.AstTargetElement
 import com.ivianuu.ast.declarations.AstDeclarationStatus
-import com.ivianuu.ast.declarations.AstResolvedDeclarationStatus
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.declarations.AstDeclaration
@@ -97,14 +96,7 @@ import com.ivianuu.ast.references.AstResolvedNamedReference
 import com.ivianuu.ast.references.AstDelegateFieldReference
 import com.ivianuu.ast.references.AstBackingFieldReference
 import com.ivianuu.ast.references.AstResolvedCallableReference
-import com.ivianuu.ast.types.AstResolvedTypeRef
-import com.ivianuu.ast.types.AstTypeRefWithNullability
-import com.ivianuu.ast.types.AstUserTypeRef
-import com.ivianuu.ast.types.AstDynamicTypeRef
-import com.ivianuu.ast.types.AstFunctionTypeRef
-import com.ivianuu.ast.types.AstResolvedFunctionTypeRef
-import com.ivianuu.ast.types.AstImplicitTypeRef
-import com.ivianuu.ast.types.AstComposedSuperTypeRef
+import com.ivianuu.ast.types.AstSimpleType
 import com.ivianuu.ast.visitors.CompositeTransformResult
 
 /*
@@ -120,8 +112,8 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformElement(annotationContainer, data)
     }
 
-    open fun transformTypeRef(typeRef: AstTypeRef, data: D): CompositeTransformResult<AstTypeRef> {
-        return transformElement(typeRef, data)
+    open fun transformType(type: AstType, data: D): CompositeTransformResult<AstType> {
+        return transformElement(type, data)
     }
 
     open fun transformReference(reference: AstReference, data: D): CompositeTransformResult<AstReference> {
@@ -146,10 +138,6 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     open fun transformDeclarationStatus(declarationStatus: AstDeclarationStatus, data: D): CompositeTransformResult<AstDeclarationStatus> {
         return transformElement(declarationStatus, data)
-    }
-
-    open fun transformResolvedDeclarationStatus(resolvedDeclarationStatus: AstResolvedDeclarationStatus, data: D): CompositeTransformResult<AstDeclarationStatus> {
-        return transformElement(resolvedDeclarationStatus, data)
     }
 
     open fun transformStatement(statement: AstStatement, data: D): CompositeTransformResult<AstStatement> {
@@ -500,36 +488,8 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformElement(resolvedCallableReference, data)
     }
 
-    open fun transformResolvedTypeRef(resolvedTypeRef: AstResolvedTypeRef, data: D): CompositeTransformResult<AstTypeRef> {
-        return transformElement(resolvedTypeRef, data)
-    }
-
-    open fun transformTypeRefWithNullability(typeRefWithNullability: AstTypeRefWithNullability, data: D): CompositeTransformResult<AstTypeRef> {
-        return transformElement(typeRefWithNullability, data)
-    }
-
-    open fun transformUserTypeRef(userTypeRef: AstUserTypeRef, data: D): CompositeTransformResult<AstTypeRef> {
-        return transformElement(userTypeRef, data)
-    }
-
-    open fun transformDynamicTypeRef(dynamicTypeRef: AstDynamicTypeRef, data: D): CompositeTransformResult<AstTypeRef> {
-        return transformElement(dynamicTypeRef, data)
-    }
-
-    open fun transformFunctionTypeRef(functionTypeRef: AstFunctionTypeRef, data: D): CompositeTransformResult<AstTypeRef> {
-        return transformElement(functionTypeRef, data)
-    }
-
-    open fun transformResolvedFunctionTypeRef(resolvedFunctionTypeRef: AstResolvedFunctionTypeRef, data: D): CompositeTransformResult<AstTypeRef> {
-        return transformElement(resolvedFunctionTypeRef, data)
-    }
-
-    open fun transformImplicitTypeRef(implicitTypeRef: AstImplicitTypeRef, data: D): CompositeTransformResult<AstTypeRef> {
-        return transformElement(implicitTypeRef, data)
-    }
-
-    open fun transformComposedSuperTypeRef(composedSuperTypeRef: AstComposedSuperTypeRef, data: D): CompositeTransformResult<AstTypeRef> {
-        return transformElement(composedSuperTypeRef, data)
+    open fun transformSimpleType(simpleType: AstSimpleType, data: D): CompositeTransformResult<AstType> {
+        return transformElement(simpleType, data)
     }
 
     final override fun visitElement(element: AstElement, data: D): CompositeTransformResult<AstElement> {
@@ -540,8 +500,8 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformAnnotationContainer(annotationContainer, data)
     }
 
-    final override fun visitTypeRef(typeRef: AstTypeRef, data: D): CompositeTransformResult<AstTypeRef> {
-        return transformTypeRef(typeRef, data)
+    final override fun visitType(type: AstType, data: D): CompositeTransformResult<AstType> {
+        return transformType(type, data)
     }
 
     final override fun visitReference(reference: AstReference, data: D): CompositeTransformResult<AstReference> {
@@ -566,10 +526,6 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     final override fun visitDeclarationStatus(declarationStatus: AstDeclarationStatus, data: D): CompositeTransformResult<AstDeclarationStatus> {
         return transformDeclarationStatus(declarationStatus, data)
-    }
-
-    final override fun visitResolvedDeclarationStatus(resolvedDeclarationStatus: AstResolvedDeclarationStatus, data: D): CompositeTransformResult<AstDeclarationStatus> {
-        return transformResolvedDeclarationStatus(resolvedDeclarationStatus, data)
     }
 
     final override fun visitStatement(statement: AstStatement, data: D): CompositeTransformResult<AstStatement> {
@@ -920,36 +876,8 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformResolvedCallableReference(resolvedCallableReference, data)
     }
 
-    final override fun visitResolvedTypeRef(resolvedTypeRef: AstResolvedTypeRef, data: D): CompositeTransformResult<AstTypeRef> {
-        return transformResolvedTypeRef(resolvedTypeRef, data)
-    }
-
-    final override fun visitTypeRefWithNullability(typeRefWithNullability: AstTypeRefWithNullability, data: D): CompositeTransformResult<AstTypeRef> {
-        return transformTypeRefWithNullability(typeRefWithNullability, data)
-    }
-
-    final override fun visitUserTypeRef(userTypeRef: AstUserTypeRef, data: D): CompositeTransformResult<AstTypeRef> {
-        return transformUserTypeRef(userTypeRef, data)
-    }
-
-    final override fun visitDynamicTypeRef(dynamicTypeRef: AstDynamicTypeRef, data: D): CompositeTransformResult<AstTypeRef> {
-        return transformDynamicTypeRef(dynamicTypeRef, data)
-    }
-
-    final override fun visitFunctionTypeRef(functionTypeRef: AstFunctionTypeRef, data: D): CompositeTransformResult<AstTypeRef> {
-        return transformFunctionTypeRef(functionTypeRef, data)
-    }
-
-    final override fun visitResolvedFunctionTypeRef(resolvedFunctionTypeRef: AstResolvedFunctionTypeRef, data: D): CompositeTransformResult<AstTypeRef> {
-        return transformResolvedFunctionTypeRef(resolvedFunctionTypeRef, data)
-    }
-
-    final override fun visitImplicitTypeRef(implicitTypeRef: AstImplicitTypeRef, data: D): CompositeTransformResult<AstTypeRef> {
-        return transformImplicitTypeRef(implicitTypeRef, data)
-    }
-
-    final override fun visitComposedSuperTypeRef(composedSuperTypeRef: AstComposedSuperTypeRef, data: D): CompositeTransformResult<AstTypeRef> {
-        return transformComposedSuperTypeRef(composedSuperTypeRef, data)
+    final override fun visitSimpleType(simpleType: AstSimpleType, data: D): CompositeTransformResult<AstType> {
+        return transformSimpleType(simpleType, data)
     }
 
 }

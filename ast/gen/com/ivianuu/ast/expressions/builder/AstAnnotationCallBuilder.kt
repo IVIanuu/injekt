@@ -3,14 +3,15 @@ package com.ivianuu.ast.expressions.builder
 import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstAnnotationCall
-import com.ivianuu.ast.expressions.AstAnnotationResolveStatus
 import com.ivianuu.ast.expressions.AstArgumentList
 import com.ivianuu.ast.expressions.AstEmptyArgumentList
+import com.ivianuu.ast.expressions.builder.AstCallBuilder
+import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.impl.AstAnnotationCallImpl
 import com.ivianuu.ast.references.AstReference
-import com.ivianuu.ast.types.AstTypeRef
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget
-import kotlin.contracts.ExperimentalContracts
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 
 /*
  * This file was generated automatically
@@ -22,24 +23,19 @@ class AstAnnotationCallBuilder : AstCallBuilder, AstAnnotationContainerBuilder, 
     override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
     override var argumentList: AstArgumentList = AstEmptyArgumentList
     lateinit var calleeReference: AstReference
-    var useSiteTarget: AnnotationUseSiteTarget? = null
-    lateinit var annotationTypeRef: AstTypeRef
-    var resolveStatus: AstAnnotationResolveStatus = AstAnnotationResolveStatus.Unresolved
+    lateinit var annotationType: AstType
 
     override fun build(): AstAnnotationCall {
         return AstAnnotationCallImpl(
             annotations,
             argumentList,
             calleeReference,
-            useSiteTarget,
-            annotationTypeRef,
-            resolveStatus,
+            annotationType,
         )
     }
 
-
-    @Deprecated("Modification of 'typeRef' has no impact for AstAnnotationCallBuilder", level = DeprecationLevel.HIDDEN)
-    override var typeRef: AstTypeRef
+    @Deprecated("Modification of 'type' has no impact for AstAnnotationCallBuilder", level = DeprecationLevel.HIDDEN)
+    override var type: AstType
         get() = throw IllegalStateException()
         set(value) {
             throw IllegalStateException()

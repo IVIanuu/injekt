@@ -10,22 +10,17 @@ import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstExpressionWithSmartcast
 import com.ivianuu.ast.expressions.AstQualifiedAccessExpression
 import com.ivianuu.ast.references.AstReference
-import com.ivianuu.ast.types.AstResolvedTypeRef
 import com.ivianuu.ast.types.AstTypeProjection
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.types.ConeKotlinType
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.AstTransformer
 import com.ivianuu.ast.visitors.AstVisitor
 import com.ivianuu.ast.visitors.transformSingle
 
 internal class AstExpressionWithSmartcastImpl(
     override var originalExpression: AstQualifiedAccessExpression,
-    override val typeRef: AstTypeRef,
-    override val typesFromSmartCast: Collection<ConeKotlinType>
+    override val Type: AstType,
+    override val typesFromSmartCast: Collection<AstType>
 ) : AstExpressionWithSmartcast() {
-    init {
-        assert(originalExpression.typeRef is AstResolvedTypeRef)
-    }
 
     override val annotations: List<AstAnnotationCall> get() = originalExpression.annotations
     override val typeArguments: List<AstTypeProjection> get() = originalExpression.typeArguments
@@ -33,7 +28,7 @@ internal class AstExpressionWithSmartcastImpl(
     override val dispatchReceiver: AstExpression get() = originalExpression.dispatchReceiver
     override val extensionReceiver: AstExpression get() = originalExpression.extensionReceiver
     override val calleeReference: AstReference get() = originalExpression.calleeReference
-    override val originalType: AstTypeRef get() = originalExpression.typeRef
+    override val originalType: AstType get() = originalExpression.Type
 
     override fun <D> transformChildren(
         transformer: AstTransformer<D>,
@@ -101,5 +96,5 @@ internal class AstExpressionWithSmartcastImpl(
         throw IllegalStateException()
     }
 
-    override fun replaceTypeRef(newTypeRef: AstTypeRef) {}
+    override fun replaceType(newType: AstType) {}
 }

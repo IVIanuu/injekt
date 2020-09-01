@@ -2,9 +2,7 @@ package com.ivianuu.ast.expressions.impl
 
 import com.ivianuu.ast.expressions.AstArgumentList
 import com.ivianuu.ast.expressions.AstExpression
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically

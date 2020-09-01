@@ -8,14 +8,16 @@ import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.AstValueParameter
+import com.ivianuu.ast.declarations.builder.AstFunctionBuilder
 import com.ivianuu.ast.declarations.impl.AstAnonymousFunctionImpl
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.symbols.impl.AstAnonymousFunctionSymbol
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.types.impl.AstImplicitTypeRefImpl
-import kotlin.contracts.ExperimentalContracts
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.types.impl.AstImplicitTypeImpl
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 
 /*
  * This file was generated automatically
@@ -26,11 +28,11 @@ import kotlin.contracts.ExperimentalContracts
 class AstAnonymousFunctionBuilder : AstFunctionBuilder, AstAnnotationContainerBuilder, AstExpressionBuilder {
     override lateinit var origin: AstDeclarationOrigin
     override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
-    override lateinit var returnTypeRef: AstTypeRef
-    var receiverTypeRef: AstTypeRef? = null
+    override lateinit var returnType: AstType
+    var receiverType: AstType? = null
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
     override var body: AstBlock? = null
-    override var typeRef: AstTypeRef = AstImplicitTypeRefImpl()
+    override var type: AstType = AstImplicitTypeImpl()
     lateinit var symbol: AstAnonymousFunctionSymbol
     var label: AstLabel? = null
     var isLambda: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
@@ -40,11 +42,11 @@ class AstAnonymousFunctionBuilder : AstFunctionBuilder, AstAnnotationContainerBu
         return AstAnonymousFunctionImpl(
             origin,
             annotations,
-            returnTypeRef,
-            receiverTypeRef,
+            returnType,
+            receiverType,
             valueParameters,
             body,
-            typeRef,
+            type,
             symbol,
             label,
             isLambda,

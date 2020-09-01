@@ -5,6 +5,7 @@ import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstQualifiedAccess
 import com.ivianuu.ast.types.AstTypeProjection
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically

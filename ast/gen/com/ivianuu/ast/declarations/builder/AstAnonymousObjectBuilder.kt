@@ -7,14 +7,16 @@ import com.ivianuu.ast.declarations.AstDeclaration
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstTypeParameterRef
+import com.ivianuu.ast.declarations.builder.AstClassBuilder
 import com.ivianuu.ast.declarations.impl.AstAnonymousObjectImpl
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.symbols.impl.AstAnonymousObjectSymbol
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.types.impl.AstImplicitTypeRefImpl
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.types.impl.AstImplicitTypeImpl
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 import org.jetbrains.kotlin.descriptors.ClassKind
-import kotlin.contracts.ExperimentalContracts
 
 /*
  * This file was generated automatically
@@ -26,10 +28,10 @@ class AstAnonymousObjectBuilder : AstClassBuilder, AstAnnotationContainerBuilder
     override lateinit var origin: AstDeclarationOrigin
     override val typeParameters: MutableList<AstTypeParameterRef> = mutableListOf()
     override lateinit var classKind: ClassKind
-    override val superTypeRefs: MutableList<AstTypeRef> = mutableListOf()
+    override val superTypes: MutableList<AstType> = mutableListOf()
     override val declarations: MutableList<AstDeclaration> = mutableListOf()
     override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
-    override var typeRef: AstTypeRef = AstImplicitTypeRefImpl()
+    override var type: AstType = AstImplicitTypeImpl()
     lateinit var symbol: AstAnonymousObjectSymbol
 
     override fun build(): AstAnonymousObject {
@@ -37,10 +39,10 @@ class AstAnonymousObjectBuilder : AstClassBuilder, AstAnnotationContainerBuilder
             origin,
             typeParameters,
             classKind,
-            superTypeRefs,
+            superTypes,
             declarations,
             annotations,
-            typeRef,
+            type,
             symbol,
         )
     }

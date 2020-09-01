@@ -2,14 +2,13 @@ package com.ivianuu.ast.visitors
 
 import com.ivianuu.ast.AstElement
 import com.ivianuu.ast.AstAnnotationContainer
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.expressions.AstResolvable
 import com.ivianuu.ast.AstTargetElement
 import com.ivianuu.ast.declarations.AstDeclarationStatus
-import com.ivianuu.ast.declarations.AstResolvedDeclarationStatus
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.declarations.AstDeclaration
@@ -97,14 +96,7 @@ import com.ivianuu.ast.references.AstResolvedNamedReference
 import com.ivianuu.ast.references.AstDelegateFieldReference
 import com.ivianuu.ast.references.AstBackingFieldReference
 import com.ivianuu.ast.references.AstResolvedCallableReference
-import com.ivianuu.ast.types.AstResolvedTypeRef
-import com.ivianuu.ast.types.AstTypeRefWithNullability
-import com.ivianuu.ast.types.AstUserTypeRef
-import com.ivianuu.ast.types.AstDynamicTypeRef
-import com.ivianuu.ast.types.AstFunctionTypeRef
-import com.ivianuu.ast.types.AstResolvedFunctionTypeRef
-import com.ivianuu.ast.types.AstImplicitTypeRef
-import com.ivianuu.ast.types.AstComposedSuperTypeRef
+import com.ivianuu.ast.types.AstSimpleType
 
 /*
  * This file was generated automatically
@@ -118,8 +110,8 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(annotationContainer)
     }
 
-    open fun visitTypeRef(typeRef: AstTypeRef) {
-        visitElement(typeRef)
+    open fun visitType(type: AstType) {
+        visitElement(type)
     }
 
     open fun visitReference(reference: AstReference) {
@@ -144,10 +136,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     open fun visitDeclarationStatus(declarationStatus: AstDeclarationStatus) {
         visitElement(declarationStatus)
-    }
-
-    open fun visitResolvedDeclarationStatus(resolvedDeclarationStatus: AstResolvedDeclarationStatus) {
-        visitElement(resolvedDeclarationStatus)
     }
 
     open fun visitStatement(statement: AstStatement) {
@@ -498,36 +486,8 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(resolvedCallableReference)
     }
 
-    open fun visitResolvedTypeRef(resolvedTypeRef: AstResolvedTypeRef) {
-        visitElement(resolvedTypeRef)
-    }
-
-    open fun visitTypeRefWithNullability(typeRefWithNullability: AstTypeRefWithNullability) {
-        visitElement(typeRefWithNullability)
-    }
-
-    open fun visitUserTypeRef(userTypeRef: AstUserTypeRef) {
-        visitElement(userTypeRef)
-    }
-
-    open fun visitDynamicTypeRef(dynamicTypeRef: AstDynamicTypeRef) {
-        visitElement(dynamicTypeRef)
-    }
-
-    open fun visitFunctionTypeRef(functionTypeRef: AstFunctionTypeRef) {
-        visitElement(functionTypeRef)
-    }
-
-    open fun visitResolvedFunctionTypeRef(resolvedFunctionTypeRef: AstResolvedFunctionTypeRef) {
-        visitElement(resolvedFunctionTypeRef)
-    }
-
-    open fun visitImplicitTypeRef(implicitTypeRef: AstImplicitTypeRef) {
-        visitElement(implicitTypeRef)
-    }
-
-    open fun visitComposedSuperTypeRef(composedSuperTypeRef: AstComposedSuperTypeRef) {
-        visitElement(composedSuperTypeRef)
+    open fun visitSimpleType(simpleType: AstSimpleType) {
+        visitElement(simpleType)
     }
 
     final override fun visitElement(element: AstElement, data: Nothing?) {
@@ -538,8 +498,8 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitAnnotationContainer(annotationContainer)
     }
 
-    final override fun visitTypeRef(typeRef: AstTypeRef, data: Nothing?) {
-        visitTypeRef(typeRef)
+    final override fun visitType(type: AstType, data: Nothing?) {
+        visitType(type)
     }
 
     final override fun visitReference(reference: AstReference, data: Nothing?) {
@@ -564,10 +524,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     final override fun visitDeclarationStatus(declarationStatus: AstDeclarationStatus, data: Nothing?) {
         visitDeclarationStatus(declarationStatus)
-    }
-
-    final override fun visitResolvedDeclarationStatus(resolvedDeclarationStatus: AstResolvedDeclarationStatus, data: Nothing?) {
-        visitResolvedDeclarationStatus(resolvedDeclarationStatus)
     }
 
     final override fun visitStatement(statement: AstStatement, data: Nothing?) {
@@ -918,36 +874,8 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitResolvedCallableReference(resolvedCallableReference)
     }
 
-    final override fun visitResolvedTypeRef(resolvedTypeRef: AstResolvedTypeRef, data: Nothing?) {
-        visitResolvedTypeRef(resolvedTypeRef)
-    }
-
-    final override fun visitTypeRefWithNullability(typeRefWithNullability: AstTypeRefWithNullability, data: Nothing?) {
-        visitTypeRefWithNullability(typeRefWithNullability)
-    }
-
-    final override fun visitUserTypeRef(userTypeRef: AstUserTypeRef, data: Nothing?) {
-        visitUserTypeRef(userTypeRef)
-    }
-
-    final override fun visitDynamicTypeRef(dynamicTypeRef: AstDynamicTypeRef, data: Nothing?) {
-        visitDynamicTypeRef(dynamicTypeRef)
-    }
-
-    final override fun visitFunctionTypeRef(functionTypeRef: AstFunctionTypeRef, data: Nothing?) {
-        visitFunctionTypeRef(functionTypeRef)
-    }
-
-    final override fun visitResolvedFunctionTypeRef(resolvedFunctionTypeRef: AstResolvedFunctionTypeRef, data: Nothing?) {
-        visitResolvedFunctionTypeRef(resolvedFunctionTypeRef)
-    }
-
-    final override fun visitImplicitTypeRef(implicitTypeRef: AstImplicitTypeRef, data: Nothing?) {
-        visitImplicitTypeRef(implicitTypeRef)
-    }
-
-    final override fun visitComposedSuperTypeRef(composedSuperTypeRef: AstComposedSuperTypeRef, data: Nothing?) {
-        visitComposedSuperTypeRef(composedSuperTypeRef)
+    final override fun visitSimpleType(simpleType: AstSimpleType, data: Nothing?) {
+        visitSimpleType(simpleType)
     }
 
 }

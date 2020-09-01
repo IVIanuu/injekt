@@ -3,7 +3,7 @@ package com.ivianuu.ast.expressions.impl
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstWrappedDelegateExpression
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -16,7 +16,7 @@ internal class AstWrappedDelegateExpressionImpl(
     override var expression: AstExpression,
     override var delegateProvider: AstExpression,
 ) : AstWrappedDelegateExpression() {
-    override val typeRef: AstTypeRef get() = expression.typeRef
+    override val type: AstType get() = expression.type
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
@@ -36,5 +36,5 @@ internal class AstWrappedDelegateExpressionImpl(
         return this
     }
 
-    override fun replaceTypeRef(newTypeRef: AstTypeRef) {}
+    override fun replaceType(newType: AstType) {}
 }

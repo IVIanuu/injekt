@@ -5,12 +5,9 @@ import com.ivianuu.ast.expressions.AstCallableReferenceAccess
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.references.AstNamedReference
 import com.ivianuu.ast.references.AstReference
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -18,7 +15,7 @@ import com.ivianuu.ast.visitors.transformSingle
  */
 
 internal class AstCallableReferenceAccessImpl(
-    override var typeRef: AstTypeRef,
+    override var type: AstType,
     override val annotations: MutableList<AstAnnotationCall>,
     override val typeArguments: MutableList<AstTypeProjection>,
     override var explicitReceiver: AstExpression?,
@@ -28,7 +25,7 @@ internal class AstCallableReferenceAccessImpl(
     override var hasQuestionMarkAtLHS: Boolean,
 ) : AstCallableReferenceAccess() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        typeRef.accept(visitor, data)
+        type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
         typeArguments.forEach { it.accept(visitor, data) }
         explicitReceiver?.accept(visitor, data)
@@ -42,7 +39,7 @@ internal class AstCallableReferenceAccessImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstCallableReferenceAccessImpl {
-        typeRef = typeRef.transformSingle(transformer, data)
+        type = type.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         transformTypeArguments(transformer, data)
         explicitReceiver = explicitReceiver?.transformSingle(transformer, data)
@@ -86,8 +83,8 @@ internal class AstCallableReferenceAccessImpl(
         return this
     }
 
-    override fun replaceTypeRef(newTypeRef: AstTypeRef) {
-        typeRef = newTypeRef
+    override fun replaceType(newType: AstType) {
+        type = newType
     }
 
     override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>) {

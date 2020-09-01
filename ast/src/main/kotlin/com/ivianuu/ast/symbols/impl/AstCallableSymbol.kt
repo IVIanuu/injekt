@@ -7,10 +7,10 @@ package com.ivianuu.ast.symbols.impl
 
 import com.ivianuu.ast.declarations.AstCallableDeclaration
 import com.ivianuu.ast.declarations.AstMemberDeclaration
-import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
+import com.ivianuu.ast.symbols.AbstractAstSymbol
 import com.ivianuu.ast.symbols.CallableId
 
-abstract class AstCallableSymbol<D : AstCallableDeclaration<D>> : AbstractAstBasedSymbol<D>() {
+abstract class AstCallableSymbol<D : AstCallableDeclaration<D>> : AbstractAstSymbol<D>() {
     abstract val callableId: CallableId
 
     open val overriddenSymbol: AstCallableSymbol<D>?

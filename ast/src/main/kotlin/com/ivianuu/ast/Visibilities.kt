@@ -17,8 +17,6 @@ object Visibilities {
     object Internal : Visibility("internal", isPublicAPI = false)
     object Public : Visibility("public", isPublicAPI = true)
     object Local : Visibility("local", isPublicAPI = false)
-    object InvisibleFake : Visibility("invisible_fake", isPublicAPI = false)
-    object Unknown : Visibility("unknown", isPublicAPI = false)
 
     @OptIn(ExperimentalStdlibApi::class)
     private val ORDERED_VISIBILITIES: Map<Visibility, Int> = buildMap {

@@ -1,9 +1,8 @@
 package com.ivianuu.ast.expressions
 
 import com.ivianuu.ast.references.AstReference
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
-import com.ivianuu.ast.types.AstTypeRef
-import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -12,7 +11,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstExpressionWithSmartcast : AstQualifiedAccessExpression() {
-    abstract override val typeRef: AstTypeRef
+    abstract override val type: AstType
     abstract override val annotations: List<AstAnnotationCall>
     abstract override val calleeReference: AstReference
     abstract override val typeArguments: List<AstTypeProjection>
@@ -20,12 +19,12 @@ abstract class AstExpressionWithSmartcast : AstQualifiedAccessExpression() {
     abstract override val dispatchReceiver: AstExpression
     abstract override val extensionReceiver: AstExpression
     abstract val originalExpression: AstQualifiedAccessExpression
-    abstract val typesFromSmartCast: Collection<ConeKotlinType>
-    abstract val originalType: AstTypeRef
+    abstract val typesFromSmartCast: Collection<AstType>
+    abstract val originalType: AstType
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitExpressionWithSmartcast(this, data)
 
-    abstract override fun replaceTypeRef(newTypeRef: AstTypeRef)
+    abstract override fun replaceType(newType: AstType)
 
     abstract override fun replaceCalleeReference(newCalleeReference: AstReference)
 

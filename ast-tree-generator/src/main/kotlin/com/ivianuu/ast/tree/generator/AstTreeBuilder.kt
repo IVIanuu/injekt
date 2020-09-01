@@ -10,12 +10,12 @@ import com.ivianuu.ast.tree.generator.model.Element.Kind.Declaration
 import com.ivianuu.ast.tree.generator.model.Element.Kind.Expression
 import com.ivianuu.ast.tree.generator.model.Element.Kind.Other
 import com.ivianuu.ast.tree.generator.model.Element.Kind.Reference
-import com.ivianuu.ast.tree.generator.model.Element.Kind.TypeRef
+import com.ivianuu.ast.tree.generator.model.Element.Kind.Type
 
 @Suppress("unused", "MemberVisibilityCanBePrivate")
 object AstTreeBuilder : AbstractAstTreeBuilder() {
     val annotationContainer = element("AnnotationContainer", Other)
-    val typeRef = element("TypeRef", TypeRef, annotationContainer)
+    val type = element("Type", Type, annotationContainer)
     val reference = element("Reference", Reference)
     val label = element("Label", Other)
     val symbolOwner = element("SymbolOwner", Other)
@@ -24,8 +24,6 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val targetElement = element("TargetElement", Other)
 
     val declarationStatus = element("DeclarationStatus", Declaration)
-    val resolvedDeclarationStatus =
-        element("ResolvedDeclarationStatus", Declaration, declarationStatus)
 
     val statement = element("Statement", Expression, annotationContainer)
     val expression = element("Expression", Expression, statement)
@@ -128,9 +126,9 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val catchClause = element("Catch", Expression)
     val tryExpression = element("TryExpression", Expression, expression, resolvable)
     val constExpression = element("ConstExpression", Expression, expression)
-    val typeProjection = element("TypeProjection", TypeRef)
-    val starProjection = element("StarProjection", TypeRef, typeProjection)
-    val typeProjectionWithVariance = element("TypeProjectionWithVariance", TypeRef, typeProjection)
+    val typeProjection = element("TypeProjection", Type)
+    val starProjection = element("StarProjection", Type, typeProjection)
+    val typeProjectionWithVariance = element("TypeProjectionWithVariance", Type, typeProjection)
     val argumentList = element("ArgumentList", Expression)
     val call = element(
         "Call",
@@ -197,13 +195,6 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val resolvedCallableReference =
         element("ResolvedCallableReference", Reference, resolvedNamedReference)
 
-    val resolvedTypeRef = element("ResolvedTypeRef", TypeRef, typeRef)
-    val typeRefWithNullability = element("TypeRefWithNullability", TypeRef, typeRef)
-    val userTypeRef = element("UserTypeRef", TypeRef, typeRefWithNullability)
-    val dynamicTypeRef = element("DynamicTypeRef", TypeRef, typeRefWithNullability)
-    val functionTypeRef = element("FunctionTypeRef", TypeRef, typeRefWithNullability)
-    val resolvedFunctionTypeRef =
-        element("ResolvedFunctionTypeRef", TypeRef, resolvedTypeRef, functionTypeRef)
-    val implicitTypeRef = element("ImplicitTypeRef", TypeRef, typeRef)
-    val composedSuperTypeRef = element("ComposedSuperTypeRef", TypeRef, typeRef)
+    val simpleType =
+        element("SimpleType", Type, type)
 }

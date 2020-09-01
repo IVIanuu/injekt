@@ -5,7 +5,7 @@ import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstCatch
 import com.ivianuu.ast.expressions.AstTryExpression
 import com.ivianuu.ast.references.AstReference
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -14,7 +14,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstTryExpressionImpl(
-    override var typeRef: AstTypeRef,
+    override var type: AstType,
     override val annotations: MutableList<AstAnnotationCall>,
     override var calleeReference: AstReference,
     override var tryBlock: AstBlock,
@@ -22,7 +22,7 @@ internal class AstTryExpressionImpl(
     override var finallyBlock: AstBlock?,
 ) : AstTryExpression() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        typeRef.accept(visitor, data)
+        type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
         calleeReference.accept(visitor, data)
         tryBlock.accept(visitor, data)
@@ -65,13 +65,13 @@ internal class AstTryExpressionImpl(
     }
 
     override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstTryExpressionImpl {
-        typeRef = typeRef.transformSingle(transformer, data)
+        type = type.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         return this
     }
 
-    override fun replaceTypeRef(newTypeRef: AstTypeRef) {
-        typeRef = newTypeRef
+    override fun replaceType(newType: AstType) {
+        type = newType
     }
 
     override fun replaceCalleeReference(newCalleeReference: AstReference) {

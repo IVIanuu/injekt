@@ -15,15 +15,15 @@ import com.ivianuu.ast.tree.generator.FieldSets.initializer
 import com.ivianuu.ast.tree.generator.FieldSets.modality
 import com.ivianuu.ast.tree.generator.FieldSets.name
 import com.ivianuu.ast.tree.generator.FieldSets.receivers
-import com.ivianuu.ast.tree.generator.FieldSets.returnTypeRef
+import com.ivianuu.ast.tree.generator.FieldSets.returnType
 import com.ivianuu.ast.tree.generator.FieldSets.status
-import com.ivianuu.ast.tree.generator.FieldSets.superTypeRefs
+import com.ivianuu.ast.tree.generator.FieldSets.superTypes
 import com.ivianuu.ast.tree.generator.FieldSets.symbol
 import com.ivianuu.ast.tree.generator.FieldSets.symbolWithPackage
 import com.ivianuu.ast.tree.generator.FieldSets.typeArguments
 import com.ivianuu.ast.tree.generator.FieldSets.typeParameterRefs
 import com.ivianuu.ast.tree.generator.FieldSets.typeParameters
-import com.ivianuu.ast.tree.generator.FieldSets.typeRefField
+import com.ivianuu.ast.tree.generator.FieldSets.typeField
 import com.ivianuu.ast.tree.generator.FieldSets.valueParameters
 import com.ivianuu.ast.tree.generator.FieldSets.visibility
 import com.ivianuu.ast.tree.generator.context.AbstractFieldConfigurator
@@ -37,6 +37,9 @@ import com.ivianuu.ast.tree.generator.model.fieldList
 import com.ivianuu.ast.tree.generator.model.intField
 import com.ivianuu.ast.tree.generator.model.stringField
 import com.ivianuu.ast.tree.generator.model.withTransform
+import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
+import org.jetbrains.kotlin.ir.types.IrTypeAbbreviation
+import org.jetbrains.kotlin.ir.types.IrTypeArgument
 
 object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuilder) {
     fun configureFields() = configure {
@@ -71,13 +74,13 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         typedDeclaration.configure {
-            +field("returnTypeRef", typeRef, withReplace = true).withTransform()
+            +field("returnType", type, withReplace = true).withTransform()
         }
 
         callableDeclaration.configure {
             withArg("F", "AstCallableDeclaration<F>")
             parentArg(symbolOwner, "E", "F")
-            +field("receiverTypeRef", typeRef, nullable = true, withReplace = true).withTransform()
+            +field("receiverType", type, nullable = true, withReplace = true).withTransform()
             +symbol("AstCallableSymbol", "F")
         }
 
@@ -100,7 +103,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         expression.configure {
-            +typeRefField
+            +typeField
             +annotations
         }
 
@@ -114,7 +117,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         block.configure {
             +fieldList(statement).withTransform()
-            +typeRefField
+            +typeField
             needTransformOtherChildren()
         }
 
@@ -196,7 +199,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         typeOperatorCall.configure {
             +field("operation", operationType)
-            +field("conversionTypeRef", typeRef).withTransform()
+            +field("conversionType", type).withTransform()
             needTransformOtherChildren()
         }
 
@@ -227,7 +230,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             parentArg(classLikeDeclaration, "F", "F")
             +symbol("AstClassSymbol", "F")
             +classKind
-            +superTypeRefs(withReplace = true).withTransform()
+            +superTypes(withReplace = true).withTransform()
             +declarations.withTransform()
             +annotations
         }
@@ -238,7 +241,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +symbol("AstRegularClassSymbol")
             +field("companionObject", regularClass, nullable = true).withTransform()
             +booleanField("hasLazyNestedClassifiers")
-            +superTypeRefs(withReplace = true)
+            +superTypes(withReplace = true)
         }
 
         anonymousObject.configure {
@@ -251,7 +254,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             parentArg(classLikeDeclaration, "F", typeAlias)
             +name
             +symbol("AstTypeAliasSymbol")
-            +field("expandedTypeRef", typeRef, withReplace = true)
+            +field("expandedType", type, withReplace = true)
             +annotations
         }
 
@@ -269,7 +272,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +symbol("AstTypeParameterSymbol")
             +field(varianceType)
             +booleanField("isReified")
-            +fieldList("bounds", typeRef, withReplace = true)
+            +fieldList("bounds", type, withReplace = true)
             +annotations
         }
 
@@ -311,10 +314,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             )
         }
 
-        resolvedDeclarationStatus.configure {
-            shouldBeAnInterface()
-        }
-
         constructor.configure {
             parentArg(function, "F", constructor)
             parentArg(callableMemberDeclaration, "F", constructor)
@@ -330,7 +329,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         delegatedConstructorCall.configure {
-            +field("constructedTypeRef", typeRef, withReplace = true)
+            +field("constructedType", type, withReplace = true)
             +field("dispatchReceiver", expression).withTransform()
             +field("calleeReference", reference, withReplace = true)
             generateBooleanFields("this", "super")
@@ -380,13 +379,11 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         annotationCall.configure {
-            +field("useSiteTarget", annotationUseSiteTargetType, nullable = true)
-            +field("annotationTypeRef", typeRef).withTransform()
-            +field("resolveStatus", annotationResolveStatusType, withReplace = true)
+            +field("annotationType", type).withTransform()
         }
 
         classReferenceExpression.configure {
-            +field("classTypeRef", typeRef)
+            +field("classType", type)
         }
 
         componentCall.configure {
@@ -398,11 +395,11 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +field("originalExpression", qualifiedAccessExpression)
             +field(
                 "typesFromSmartCast",
-                "Collection<ConeKotlinType>",
+                "Collection<AstType>",
                 null,
-                customType = coneKotlinTypeType
+                customType = type
             )
-            +field("originalType", typeRef)
+            +field("originalType", type)
         }
 
         safeCallExpression.configure {
@@ -436,7 +433,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         varargArgumentsExpression.configure {
             +fieldList("arguments", expression)
-            +field("varargElementType", typeRef)
+            +field("varargElementType", type)
         }
 
         resolvedQualifier.configure {
@@ -486,7 +483,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         resolvedCallableReference.configure {
-            +fieldList("inferredTypeArguments", coneKotlinTypeType)
+            +fieldList("inferredTypeArguments", type)
         }
 
         delegateFieldReference.configure {
@@ -499,7 +496,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         superReference.configure {
             +stringField("labelName", nullable = true)
-            +field("superTypeRef", typeRef, withReplace = true)
+            +field("superType", type, withReplace = true)
         }
 
         thisReference.configure {
@@ -513,33 +510,14 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             )
         }
 
-        typeRef.configure {
+        type.configure {
             +annotations
-        }
-
-        resolvedTypeRef.configure {
-            +field("type", coneKotlinTypeType)
-            +field("delegatedTypeRef", typeRef, nullable = true)
-            +booleanField("isSuspend")
-        }
-
-        typeRefWithNullability.configure {
             +booleanField("isMarkedNullable")
         }
 
-        userTypeRef.configure {
-            +fieldList("qualifier", astQualifierPartType)
-        }
-
-        functionTypeRef.configure {
-            +field("receiverTypeRef", typeRef, nullable = true)
-            +valueParameters
-            +returnTypeRef
-            +booleanField("isSuspend")
-        }
-
-        composedSuperTypeRef.configure {
-            +fieldList("superTypeRefs", resolvedTypeRef)
+        simpleType.configure {
+            +field("classifier", classifierSymbolType)
+            +fieldList("arguments", typeProjection)
         }
 
         thisReceiverExpression.configure {
@@ -555,7 +533,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         typeProjectionWithVariance.configure {
-            +field(typeRef)
+            +field(type)
             +field(varianceType)
         }
     }

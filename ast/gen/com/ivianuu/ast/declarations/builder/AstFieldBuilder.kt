@@ -2,16 +2,21 @@ package com.ivianuu.ast.declarations.builder
 
 import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
+import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstField
+import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.impl.AstFieldImpl
 import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 import org.jetbrains.kotlin.name.Name
-import kotlin.contracts.ExperimentalContracts
 
 /*
  * This file was generated automatically
@@ -21,7 +26,7 @@ import kotlin.contracts.ExperimentalContracts
 @AstBuilderDsl
 open class AstFieldBuilder : AstAnnotationContainerBuilder {
     open lateinit var origin: AstDeclarationOrigin
-    open lateinit var returnTypeRef: AstTypeRef
+    open lateinit var returnType: AstType
     open lateinit var name: Name
     open lateinit var symbol: AstVariableSymbol<AstField>
     open var isVar: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
@@ -32,7 +37,7 @@ open class AstFieldBuilder : AstAnnotationContainerBuilder {
     override fun build(): AstField {
         return AstFieldImpl(
             origin,
-            returnTypeRef,
+            returnType,
             name,
             symbol,
             isVar,

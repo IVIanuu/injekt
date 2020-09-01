@@ -7,10 +7,7 @@ package com.ivianuu.ast.symbols.impl
 
 import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.declarations.AstDeclaration
-import com.ivianuu.ast.symbols.AbstractAstBasedSymbol
-import com.ivianuu.ast.symbols.ConeClassifierLookupTag
+import com.ivianuu.ast.symbols.AbstractAstSymbol
 
-abstract class AstClassifierSymbol<E> : AbstractAstBasedSymbol<E>()
-        where E : AstSymbolOwner<E>, E : AstDeclaration {
-    abstract fun toLookupTag(): ConeClassifierLookupTag
-}
+abstract class AstClassifierSymbol<E> : AbstractAstSymbol<E>()
+        where E : AstSymbolOwner<E>, E : AstDeclaration

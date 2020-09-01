@@ -2,8 +2,8 @@ package com.ivianuu.ast.expressions
 
 import com.ivianuu.ast.references.AstNamedReference
 import com.ivianuu.ast.references.AstReference
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
-import com.ivianuu.ast.types.AstTypeRef
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -12,7 +12,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstFunctionCall : AstQualifiedAccessExpression(), AstCall {
-    abstract override val typeRef: AstTypeRef
+    abstract override val type: AstType
     abstract override val annotations: List<AstAnnotationCall>
     abstract override val typeArguments: List<AstTypeProjection>
     abstract override val explicitReceiver: AstExpression?
@@ -23,7 +23,7 @@ abstract class AstFunctionCall : AstQualifiedAccessExpression(), AstCall {
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitFunctionCall(this, data)
 
-    abstract override fun replaceTypeRef(newTypeRef: AstTypeRef)
+    abstract override fun replaceType(newType: AstType)
 
     abstract override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>)
 

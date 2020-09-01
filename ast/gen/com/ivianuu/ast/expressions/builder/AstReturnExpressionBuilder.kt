@@ -7,9 +7,12 @@ import com.ivianuu.ast.declarations.AstFunction
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstReturnExpression
+import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.impl.AstReturnExpressionImpl
-import com.ivianuu.ast.types.AstTypeRef
-import kotlin.contracts.ExperimentalContracts
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.types.impl.AstImplicitNothingType
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 
 /*
  * This file was generated automatically
@@ -30,8 +33,8 @@ class AstReturnExpressionBuilder : AstAnnotationContainerBuilder, AstExpressionB
         )
     }
 
-    @Deprecated("Modification of 'typeRef' has no impact for AstReturnExpressionBuilder", level = DeprecationLevel.HIDDEN)
-    override var typeRef: AstTypeRef
+    @Deprecated("Modification of 'type' has no impact for AstReturnExpressionBuilder", level = DeprecationLevel.HIDDEN)
+    override var type: AstType
         get() = throw IllegalStateException()
         set(value) {
             throw IllegalStateException()

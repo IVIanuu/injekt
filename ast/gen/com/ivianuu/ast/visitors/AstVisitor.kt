@@ -2,14 +2,13 @@ package com.ivianuu.ast.visitors
 
 import com.ivianuu.ast.AstElement
 import com.ivianuu.ast.AstAnnotationContainer
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.expressions.AstResolvable
 import com.ivianuu.ast.AstTargetElement
 import com.ivianuu.ast.declarations.AstDeclarationStatus
-import com.ivianuu.ast.declarations.AstResolvedDeclarationStatus
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.declarations.AstDeclaration
@@ -97,14 +96,7 @@ import com.ivianuu.ast.references.AstResolvedNamedReference
 import com.ivianuu.ast.references.AstDelegateFieldReference
 import com.ivianuu.ast.references.AstBackingFieldReference
 import com.ivianuu.ast.references.AstResolvedCallableReference
-import com.ivianuu.ast.types.AstResolvedTypeRef
-import com.ivianuu.ast.types.AstTypeRefWithNullability
-import com.ivianuu.ast.types.AstUserTypeRef
-import com.ivianuu.ast.types.AstDynamicTypeRef
-import com.ivianuu.ast.types.AstFunctionTypeRef
-import com.ivianuu.ast.types.AstResolvedFunctionTypeRef
-import com.ivianuu.ast.types.AstImplicitTypeRef
-import com.ivianuu.ast.types.AstComposedSuperTypeRef
+import com.ivianuu.ast.types.AstSimpleType
 
 /*
  * This file was generated automatically
@@ -116,7 +108,7 @@ abstract class AstVisitor<out R, in D> {
 
     open fun visitAnnotationContainer(annotationContainer: AstAnnotationContainer, data: D): R  = visitElement(annotationContainer, data)
 
-    open fun visitTypeRef(typeRef: AstTypeRef, data: D): R  = visitElement(typeRef, data)
+    open fun visitType(type: AstType, data: D): R  = visitElement(type, data)
 
     open fun visitReference(reference: AstReference, data: D): R  = visitElement(reference, data)
 
@@ -129,8 +121,6 @@ abstract class AstVisitor<out R, in D> {
     open fun visitTargetElement(targetElement: AstTargetElement, data: D): R  = visitElement(targetElement, data)
 
     open fun visitDeclarationStatus(declarationStatus: AstDeclarationStatus, data: D): R  = visitElement(declarationStatus, data)
-
-    open fun visitResolvedDeclarationStatus(resolvedDeclarationStatus: AstResolvedDeclarationStatus, data: D): R  = visitElement(resolvedDeclarationStatus, data)
 
     open fun visitStatement(statement: AstStatement, data: D): R  = visitElement(statement, data)
 
@@ -306,20 +296,6 @@ abstract class AstVisitor<out R, in D> {
 
     open fun visitResolvedCallableReference(resolvedCallableReference: AstResolvedCallableReference, data: D): R  = visitElement(resolvedCallableReference, data)
 
-    open fun visitResolvedTypeRef(resolvedTypeRef: AstResolvedTypeRef, data: D): R  = visitElement(resolvedTypeRef, data)
-
-    open fun visitTypeRefWithNullability(typeRefWithNullability: AstTypeRefWithNullability, data: D): R  = visitElement(typeRefWithNullability, data)
-
-    open fun visitUserTypeRef(userTypeRef: AstUserTypeRef, data: D): R  = visitElement(userTypeRef, data)
-
-    open fun visitDynamicTypeRef(dynamicTypeRef: AstDynamicTypeRef, data: D): R  = visitElement(dynamicTypeRef, data)
-
-    open fun visitFunctionTypeRef(functionTypeRef: AstFunctionTypeRef, data: D): R  = visitElement(functionTypeRef, data)
-
-    open fun visitResolvedFunctionTypeRef(resolvedFunctionTypeRef: AstResolvedFunctionTypeRef, data: D): R  = visitElement(resolvedFunctionTypeRef, data)
-
-    open fun visitImplicitTypeRef(implicitTypeRef: AstImplicitTypeRef, data: D): R  = visitElement(implicitTypeRef, data)
-
-    open fun visitComposedSuperTypeRef(composedSuperTypeRef: AstComposedSuperTypeRef, data: D): R  = visitElement(composedSuperTypeRef, data)
+    open fun visitSimpleType(simpleType: AstSimpleType, data: D): R  = visitElement(simpleType, data)
 
 }

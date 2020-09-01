@@ -1,5 +1,6 @@
 package com.ivianuu.ast.expressions.builder
 
+import com.ivianuu.ast.AstImplementationDetail
 import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstAnnotationCall
@@ -7,11 +8,19 @@ import com.ivianuu.ast.expressions.AstArgumentList
 import com.ivianuu.ast.expressions.AstComponentCall
 import com.ivianuu.ast.expressions.AstEmptyArgumentList
 import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.expressions.builder.AstCallBuilder
+import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.impl.AstComponentCallImpl
 import com.ivianuu.ast.expressions.impl.AstNoReceiverExpression
+import com.ivianuu.ast.references.AstNamedReference
+import com.ivianuu.ast.references.AstReference
+import com.ivianuu.ast.references.impl.AstSimpleNamedReference
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
-import com.ivianuu.ast.types.AstTypeRef
-import kotlin.contracts.ExperimentalContracts
+import com.ivianuu.ast.types.impl.AstImplicitTypeImpl
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
+import org.jetbrains.kotlin.name.Name
 
 /*
  * This file was generated automatically
@@ -40,8 +49,8 @@ class AstComponentCallBuilder : AstCallBuilder, AstAnnotationContainerBuilder, A
         )
     }
 
-    @Deprecated("Modification of 'typeRef' has no impact for AstComponentCallBuilder", level = DeprecationLevel.HIDDEN)
-    override var typeRef: AstTypeRef
+    @Deprecated("Modification of 'type' has no impact for AstComponentCallBuilder", level = DeprecationLevel.HIDDEN)
+    override var type: AstType
         get() = throw IllegalStateException()
         set(value) {
             throw IllegalStateException()

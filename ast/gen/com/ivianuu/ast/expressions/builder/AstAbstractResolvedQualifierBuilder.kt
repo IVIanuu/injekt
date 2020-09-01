@@ -4,8 +4,9 @@ import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstResolvedQualifier
 import com.ivianuu.ast.symbols.impl.AstClassLikeSymbol
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.visitors.*
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 
@@ -16,7 +17,7 @@ import org.jetbrains.kotlin.name.FqName
 
 @AstBuilderDsl
 interface AstAbstractResolvedQualifierBuilder {
-    abstract var typeRef: AstTypeRef
+    abstract var type: AstType
     abstract val annotations: MutableList<AstAnnotationCall>
     abstract var packageFqName: FqName
     abstract var relativeClassFqName: FqName?

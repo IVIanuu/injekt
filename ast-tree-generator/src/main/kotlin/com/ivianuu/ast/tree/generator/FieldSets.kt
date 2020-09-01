@@ -14,7 +14,7 @@ import com.ivianuu.ast.tree.generator.AstTreeBuilder.reference
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.typeParameter
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.typeParameterRef
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.typeProjection
-import com.ivianuu.ast.tree.generator.AstTreeBuilder.typeRef
+import com.ivianuu.ast.tree.generator.AstTreeBuilder.type
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.valueParameter
 import com.ivianuu.ast.tree.generator.context.type
 import com.ivianuu.ast.tree.generator.model.Field
@@ -57,13 +57,13 @@ object FieldSets {
     fun body(nullable: Boolean = false) =
         field("body", block, nullable)
 
-    val returnTypeRef =
-        field("returnTypeRef", typeRef)
+    val returnType =
+        field("returnType", type)
 
-    val typeRefField =
-        field(typeRef, withReplace = true)
+    val typeField =
+        field(type, withReplace = true)
 
-    fun receiverTypeRef(nullable: Boolean = false) = field("receiverTypeRef", typeRef, nullable)
+    fun receiverType(nullable: Boolean = false) = field("receiverType", type, nullable)
 
     val valueParameters = fieldList(valueParameter)
 
@@ -75,8 +75,8 @@ object FieldSets {
 
     val initializer = field("initializer", expression, nullable = true)
 
-    fun superTypeRefs(withReplace: Boolean = false) =
-        fieldList("superTypeRefs", typeRef, withReplace)
+    fun superTypes(withReplace: Boolean = false) =
+        fieldList("superTypes", type, withReplace)
 
     val classKind = field(classKindType)
 
@@ -84,5 +84,5 @@ object FieldSets {
 
     val visibility = field(visibilityType)
 
-    val modality = field(modalityType, nullable = true)
+    val modality = field(modalityType)
 }

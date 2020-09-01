@@ -14,63 +14,63 @@ import com.ivianuu.ast.expressions.AstNamedArgumentExpression
 import com.ivianuu.ast.expressions.AstReturnExpression
 import com.ivianuu.ast.expressions.AstSpreadArgumentExpression
 import com.ivianuu.ast.expressions.AstStatement
-import com.ivianuu.ast.types.AstDynamicTypeRef
-import com.ivianuu.ast.types.AstFunctionTypeRef
-import com.ivianuu.ast.types.AstImplicitTypeRef
-import com.ivianuu.ast.types.AstResolvedFunctionTypeRef
-import com.ivianuu.ast.types.AstResolvedTypeRef
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.types.AstTypeRefWithNullability
-import com.ivianuu.ast.types.AstUserTypeRef
+import com.ivianuu.ast.types.AstDynamicType
+import com.ivianuu.ast.types.AstFunctionType
+import com.ivianuu.ast.types.AstImplicitType
+import com.ivianuu.ast.types.AstResolvedFunctionType
+import com.ivianuu.ast.types.AstResolvedType
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.types.AstTypeWithNullability
+import com.ivianuu.ast.types.AstUserType
 
 abstract class AstDefaultTransformer<D> : AstTransformer<D>() {
-    override fun transformImplicitTypeRef(
-        implicitTypeRef: AstImplicitTypeRef,
+    override fun transformImplicitType(
+        implicitType: AstImplicitType,
         data: D
-    ): CompositeTransformResult<AstTypeRef> {
-        return transformTypeRef(implicitTypeRef, data)
+    ): CompositeTransformResult<AstType> {
+        return transformType(implicitType, data)
     }
 
-    override fun transformResolvedTypeRef(
-        resolvedTypeRef: AstResolvedTypeRef,
+    override fun transformResolvedType(
+        resolvedType: AstResolvedType,
         data: D
-    ): CompositeTransformResult<AstTypeRef> {
-        return transformTypeRef(resolvedTypeRef, data)
+    ): CompositeTransformResult<AstType> {
+        return transformType(resolvedType, data)
     }
 
-    override fun transformResolvedFunctionTypeRef(
-        resolvedFunctionTypeRef: AstResolvedFunctionTypeRef,
+    override fun transformResolvedFunctionType(
+        resolvedFunctionType: AstResolvedFunctionType,
         data: D
-    ): CompositeTransformResult<AstTypeRef> {
-        return transformResolvedTypeRef(resolvedFunctionTypeRef, data)
+    ): CompositeTransformResult<AstType> {
+        return transformResolvedType(resolvedFunctionType, data)
     }
 
-    override fun transformTypeRefWithNullability(
-        typeRefWithNullability: AstTypeRefWithNullability,
+    override fun transformTypeWithNullability(
+        TypeWithNullability: AstTypeWithNullability,
         data: D
-    ): CompositeTransformResult<AstTypeRef> {
-        return transformTypeRef(typeRefWithNullability, data)
+    ): CompositeTransformResult<AstType> {
+        return transformType(TypeWithNullability, data)
     }
 
-    override fun transformDynamicTypeRef(
-        dynamicTypeRef: AstDynamicTypeRef,
+    override fun transformDynamicType(
+        dynamicType: AstDynamicType,
         data: D
-    ): CompositeTransformResult<AstTypeRef> {
-        return transformTypeRefWithNullability(dynamicTypeRef, data)
+    ): CompositeTransformResult<AstType> {
+        return transformTypeWithNullability(dynamicType, data)
     }
 
-    override fun transformFunctionTypeRef(
-        functionTypeRef: AstFunctionTypeRef,
+    override fun transformFunctionType(
+        functionType: AstFunctionType,
         data: D
-    ): CompositeTransformResult<AstTypeRef> {
-        return transformTypeRefWithNullability(functionTypeRef, data)
+    ): CompositeTransformResult<AstType> {
+        return transformTypeWithNullability(functionType, data)
     }
 
-    override fun transformUserTypeRef(
-        userTypeRef: AstUserTypeRef,
+    override fun transformUserType(
+        userType: AstUserType,
         data: D
-    ): CompositeTransformResult<AstTypeRef> {
-        return transformTypeRefWithNullability(userTypeRef, data)
+    ): CompositeTransformResult<AstType> {
+        return transformTypeWithNullability(userType, data)
     }
 
     override fun transformCallableReferenceAccess(

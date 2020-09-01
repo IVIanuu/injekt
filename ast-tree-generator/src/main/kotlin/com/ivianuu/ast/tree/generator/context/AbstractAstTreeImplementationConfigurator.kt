@@ -127,10 +127,10 @@ abstract class AbstractAstTreeImplementationConfigurator {
             }
         }
 
-        fun defaultTypeRefWithSource(typeRefClass: String) {
+        fun defaultType(typeClass: String) {
             default(
-                "typeRef",
-                "$typeRefClass()"
+                "type",
+                "$typeClass()"
             )
         }
 

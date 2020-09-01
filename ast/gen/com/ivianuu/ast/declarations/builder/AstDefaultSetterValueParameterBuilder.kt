@@ -2,6 +2,7 @@ package com.ivianuu.ast.declarations.builder
 
 import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
+import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstValueParameter
@@ -10,8 +11,10 @@ import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
-import com.ivianuu.ast.types.AstTypeRef
-import kotlin.contracts.ExperimentalContracts
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
+import org.jetbrains.kotlin.name.Name
 
 /*
  * This file was generated automatically
@@ -21,8 +24,8 @@ import kotlin.contracts.ExperimentalContracts
 @AstBuilderDsl
 class AstDefaultSetterValueParameterBuilder : AstAnnotationContainerBuilder {
     lateinit var origin: AstDeclarationOrigin
-    lateinit var returnTypeRef: AstTypeRef
-    var receiverTypeRef: AstTypeRef? = null
+    lateinit var returnType: AstType
+    var receiverType: AstType? = null
     lateinit var symbol: AstVariableSymbol<AstValueParameter>
     var initializer: AstExpression? = null
     var delegate: AstExpression? = null
@@ -40,8 +43,8 @@ class AstDefaultSetterValueParameterBuilder : AstAnnotationContainerBuilder {
     override fun build(): AstValueParameter {
         return AstDefaultSetterValueParameter(
             origin,
-            returnTypeRef,
-            receiverTypeRef,
+            returnType,
+            receiverType,
             symbol,
             initializer,
             delegate,

@@ -5,12 +5,10 @@ import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.symbols.impl.AstTypeParameterSymbol
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
+import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.Variance
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -23,7 +21,7 @@ internal class AstTypeParameterImpl(
     override val symbol: AstTypeParameterSymbol,
     override val variance: Variance,
     override val isReified: Boolean,
-    override val bounds: MutableList<AstTypeRef>,
+    override val bounds: MutableList<AstType>,
     override val annotations: MutableList<AstAnnotationCall>,
 ) : AstTypeParameter() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
@@ -44,7 +42,7 @@ internal class AstTypeParameterImpl(
         return this
     }
 
-    override fun replaceBounds(newBounds: List<AstTypeRef>) {
+    override fun replaceBounds(newBounds: List<AstType>) {
         bounds.clear()
         bounds.addAll(newBounds)
     }

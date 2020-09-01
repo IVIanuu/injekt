@@ -13,47 +13,47 @@ import com.ivianuu.ast.expressions.AstLambdaArgumentExpression
 import com.ivianuu.ast.expressions.AstNamedArgumentExpression
 import com.ivianuu.ast.expressions.AstReturnExpression
 import com.ivianuu.ast.expressions.AstSpreadArgumentExpression
-import com.ivianuu.ast.types.AstDynamicTypeRef
-import com.ivianuu.ast.types.AstFunctionTypeRef
-import com.ivianuu.ast.types.AstImplicitTypeRef
-import com.ivianuu.ast.types.AstResolvedFunctionTypeRef
-import com.ivianuu.ast.types.AstResolvedTypeRef
-import com.ivianuu.ast.types.AstTypeRefWithNullability
-import com.ivianuu.ast.types.AstUserTypeRef
+import com.ivianuu.ast.types.AstDynamicType
+import com.ivianuu.ast.types.AstFunctionType
+import com.ivianuu.ast.types.AstImplicitType
+import com.ivianuu.ast.types.AstResolvedFunctionType
+import com.ivianuu.ast.types.AstResolvedType
+import com.ivianuu.ast.types.AstTypeWithNullability
+import com.ivianuu.ast.types.AstUserType
 
 abstract class AstDefaultVisitor<R, D> : AstVisitor<R, D>() {
-    override fun visitImplicitTypeRef(implicitTypeRef: AstImplicitTypeRef, data: D): R {
-        return visitTypeRef(implicitTypeRef, data)
+    override fun visitImplicitType(implicitType: AstImplicitType, data: D): R {
+        return visitType(implicitType, data)
     }
 
-    override fun visitResolvedTypeRef(resolvedTypeRef: AstResolvedTypeRef, data: D): R {
-        return visitTypeRef(resolvedTypeRef, data)
+    override fun visitResolvedType(resolvedType: AstResolvedType, data: D): R {
+        return visitType(resolvedType, data)
     }
 
-    override fun visitResolvedFunctionTypeRef(
-        resolvedFunctionTypeRef: AstResolvedFunctionTypeRef,
+    override fun visitResolvedFunctionType(
+        resolvedFunctionType: AstResolvedFunctionType,
         data: D
     ): R {
-        return visitResolvedTypeRef(resolvedFunctionTypeRef, data)
+        return visitResolvedType(resolvedFunctionType, data)
     }
 
-    override fun visitTypeRefWithNullability(
-        typeRefWithNullability: AstTypeRefWithNullability,
+    override fun visitTypeWithNullability(
+        TypeWithNullability: AstTypeWithNullability,
         data: D
     ): R {
-        return visitTypeRef(typeRefWithNullability, data)
+        return visitType(TypeWithNullability, data)
     }
 
-    override fun visitDynamicTypeRef(dynamicTypeRef: AstDynamicTypeRef, data: D): R {
-        return visitTypeRefWithNullability(dynamicTypeRef, data)
+    override fun visitDynamicType(dynamicType: AstDynamicType, data: D): R {
+        return visitTypeWithNullability(dynamicType, data)
     }
 
-    override fun visitFunctionTypeRef(functionTypeRef: AstFunctionTypeRef, data: D): R {
-        return visitTypeRefWithNullability(functionTypeRef, data)
+    override fun visitFunctionType(functionType: AstFunctionType, data: D): R {
+        return visitTypeWithNullability(functionType, data)
     }
 
-    override fun visitUserTypeRef(userTypeRef: AstUserTypeRef, data: D): R {
-        return visitTypeRefWithNullability(userTypeRef, data)
+    override fun visitUserType(userType: AstUserType, data: D): R {
+        return visitTypeWithNullability(userType, data)
     }
 
     override fun visitCallableReferenceAccess(

@@ -6,7 +6,7 @@ import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstWhenBranch
 import com.ivianuu.ast.expressions.AstWhenExpression
 import com.ivianuu.ast.references.AstReference
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -15,7 +15,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstWhenExpressionImpl(
-    override var typeRef: AstTypeRef,
+    override var type: AstType,
     override val annotations: MutableList<AstAnnotationCall>,
     override var calleeReference: AstReference,
     override var subject: AstExpression?,
@@ -24,7 +24,7 @@ internal class AstWhenExpressionImpl(
     override var isExhaustive: Boolean,
 ) : AstWhenExpression() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        typeRef.accept(visitor, data)
+        type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
         calleeReference.accept(visitor, data)
         val subjectVariable_ = subjectVariable
@@ -70,13 +70,13 @@ internal class AstWhenExpressionImpl(
     }
 
     override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstWhenExpressionImpl {
-        typeRef = typeRef.transformSingle(transformer, data)
+        type = type.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         return this
     }
 
-    override fun replaceTypeRef(newTypeRef: AstTypeRef) {
-        typeRef = newTypeRef
+    override fun replaceType(newType: AstType) {
+        type = newType
     }
 
     override fun replaceCalleeReference(newCalleeReference: AstReference) {

@@ -1,7 +1,7 @@
 package com.ivianuu.ast.references.impl
 
 import com.ivianuu.ast.references.AstSuperReference
-import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -11,18 +11,18 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstExplicitSuperReference(
     override val labelName: String?,
-    override var superTypeRef: AstTypeRef,
+    override var superType: AstType,
 ) : AstSuperReference() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        superTypeRef.accept(visitor, data)
+        superType.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstExplicitSuperReference {
-        superTypeRef = superTypeRef.transformSingle(transformer, data)
+        superType = superType.transformSingle(transformer, data)
         return this
     }
 
-    override fun replaceSuperTypeRef(newSuperTypeRef: AstTypeRef) {
-        superTypeRef = newSuperTypeRef
+    override fun replaceSuperType(newSuperType: AstType) {
+        superType = newSuperType
     }
 }

@@ -7,12 +7,9 @@ import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstTypeParameterRef
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.symbols.impl.AstAnonymousObjectSymbol
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.descriptors.ClassKind
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -23,28 +20,28 @@ internal class AstAnonymousObjectImpl(
     override val origin: AstDeclarationOrigin,
     override val typeParameters: MutableList<AstTypeParameterRef>,
     override val classKind: ClassKind,
-    override val superTypeRefs: MutableList<AstTypeRef>,
+    override val superTypes: MutableList<AstType>,
     override val declarations: MutableList<AstDeclaration>,
     override val annotations: MutableList<AstAnnotationCall>,
-    override var typeRef: AstTypeRef,
+    override var type: AstType,
     override val symbol: AstAnonymousObjectSymbol,
 ) : AstAnonymousObject() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         typeParameters.forEach { it.accept(visitor, data) }
-        superTypeRefs.forEach { it.accept(visitor, data) }
+        superTypes.forEach { it.accept(visitor, data) }
         declarations.forEach { it.accept(visitor, data) }
         annotations.forEach { it.accept(visitor, data) }
-        typeRef.accept(visitor, data)
+        type.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstAnonymousObjectImpl {
         transformTypeParameters(transformer, data)
-        transformSuperTypeRefs(transformer, data)
+        transformSuperTypes(transformer, data)
         transformDeclarations(transformer, data)
         transformAnnotations(transformer, data)
-        typeRef = typeRef.transformSingle(transformer, data)
+        type = type.transformSingle(transformer, data)
         return this
     }
 
@@ -53,8 +50,8 @@ internal class AstAnonymousObjectImpl(
         return this
     }
 
-    override fun <D> transformSuperTypeRefs(transformer: AstTransformer<D>, data: D): AstAnonymousObjectImpl {
-        superTypeRefs.transformInplace(transformer, data)
+    override fun <D> transformSuperTypes(transformer: AstTransformer<D>, data: D): AstAnonymousObjectImpl {
+        superTypes.transformInplace(transformer, data)
         return this
     }
 
@@ -68,12 +65,12 @@ internal class AstAnonymousObjectImpl(
         return this
     }
 
-    override fun replaceSuperTypeRefs(newSuperTypeRefs: List<AstTypeRef>) {
-        superTypeRefs.clear()
-        superTypeRefs.addAll(newSuperTypeRefs)
+    override fun replaceSuperTypes(newSuperTypes: List<AstType>) {
+        superTypes.clear()
+        superTypes.addAll(newSuperTypes)
     }
 
-    override fun replaceTypeRef(newTypeRef: AstTypeRef) {
-        typeRef = newTypeRef
+    override fun replaceType(newType: AstType) {
+        type = newType
     }
 }

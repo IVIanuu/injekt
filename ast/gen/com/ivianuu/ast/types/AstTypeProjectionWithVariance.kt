@@ -9,7 +9,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstTypeProjectionWithVariance : AstTypeProjection() {
-    abstract val typeRef: AstTypeRef
+    abstract val type: AstType
     abstract val variance: Variance
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitTypeProjectionWithVariance(this, data)

@@ -7,10 +7,15 @@ import com.ivianuu.ast.expressions.AstArgumentList
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
 import com.ivianuu.ast.expressions.AstEmptyArgumentList
 import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.expressions.builder.AstCallBuilder
 import com.ivianuu.ast.expressions.impl.AstDelegatedConstructorCallImpl
 import com.ivianuu.ast.expressions.impl.AstNoReceiverExpression
-import com.ivianuu.ast.types.AstTypeRef
-import kotlin.contracts.ExperimentalContracts
+import com.ivianuu.ast.references.AstReference
+import com.ivianuu.ast.references.impl.AstExplicitSuperReference
+import com.ivianuu.ast.references.impl.AstExplicitThisReference
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 
 /*
  * This file was generated automatically
@@ -21,7 +26,7 @@ import kotlin.contracts.ExperimentalContracts
 class AstDelegatedConstructorCallBuilder : AstCallBuilder, AstAnnotationContainerBuilder {
     override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
     override var argumentList: AstArgumentList = AstEmptyArgumentList
-    lateinit var constructedTypeRef: AstTypeRef
+    lateinit var constructedType: AstType
     var dispatchReceiver: AstExpression = AstNoReceiverExpression
     var isThis: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
 
@@ -29,7 +34,7 @@ class AstDelegatedConstructorCallBuilder : AstCallBuilder, AstAnnotationContaine
         return AstDelegatedConstructorCallImpl(
             annotations,
             argumentList,
-            constructedTypeRef,
+            constructedType,
             dispatchReceiver,
             isThis,
         )

@@ -140,7 +140,7 @@ class Element(val name: String, kind: Kind) : AbstractElement {
         Expression("expressions"),
         Declaration("declarations"),
         Reference("references"),
-        TypeRef("types"),
+        Type("types"),
         Other("")
     }
 }

@@ -8,13 +8,15 @@ import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstTypeParameterRef
 import com.ivianuu.ast.declarations.AstValueParameter
+import com.ivianuu.ast.declarations.builder.AstAbstractConstructorBuilder
 import com.ivianuu.ast.declarations.impl.AstConstructorImpl
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
 import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
-import com.ivianuu.ast.types.AstTypeRef
-import kotlin.contracts.ExperimentalContracts
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 
 /*
  * This file was generated automatically
@@ -24,8 +26,8 @@ import kotlin.contracts.ExperimentalContracts
 @AstBuilderDsl
 open class AstConstructorBuilder : AstAbstractConstructorBuilder, AstAnnotationContainerBuilder {
     override lateinit var origin: AstDeclarationOrigin
-    override lateinit var returnTypeRef: AstTypeRef
-    override var receiverTypeRef: AstTypeRef? = null
+    override lateinit var returnType: AstType
+    override var receiverType: AstType? = null
     override val typeParameters: MutableList<AstTypeParameterRef> = mutableListOf()
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
     override lateinit var status: AstDeclarationStatus
@@ -37,8 +39,8 @@ open class AstConstructorBuilder : AstAbstractConstructorBuilder, AstAnnotationC
     override fun build(): AstConstructor {
         return AstConstructorImpl(
             origin,
-            returnTypeRef,
-            receiverTypeRef,
+            returnType,
+            receiverType,
             typeParameters,
             valueParameters,
             status,

@@ -1,15 +1,10 @@
 package com.ivianuu.ast.expressions.impl
 
 import com.ivianuu.ast.expressions.AstAnnotationCall
-import com.ivianuu.ast.expressions.AstAnnotationResolveStatus
 import com.ivianuu.ast.expressions.AstArgumentList
 import com.ivianuu.ast.references.AstReference
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -20,24 +15,22 @@ internal class AstAnnotationCallImpl(
     override val annotations: MutableList<AstAnnotationCall>,
     override var argumentList: AstArgumentList,
     override var calleeReference: AstReference,
-    override val useSiteTarget: AnnotationUseSiteTarget?,
-    override var annotationTypeRef: AstTypeRef,
-    override var resolveStatus: AstAnnotationResolveStatus,
+    override var annotationType: AstType,
 ) : AstAnnotationCall() {
-    override val typeRef: AstTypeRef get() = annotationTypeRef
+    override val type: AstType get() = annotationType
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
         argumentList.accept(visitor, data)
         calleeReference.accept(visitor, data)
-        annotationTypeRef.accept(visitor, data)
+        annotationType.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstAnnotationCallImpl {
         transformAnnotations(transformer, data)
         argumentList = argumentList.transformSingle(transformer, data)
         transformCalleeReference(transformer, data)
-        transformAnnotationTypeRef(transformer, data)
+        transformAnnotationType(transformer, data)
         return this
     }
 
@@ -51,12 +44,12 @@ internal class AstAnnotationCallImpl(
         return this
     }
 
-    override fun <D> transformAnnotationTypeRef(transformer: AstTransformer<D>, data: D): AstAnnotationCallImpl {
-        annotationTypeRef = annotationTypeRef.transformSingle(transformer, data)
+    override fun <D> transformAnnotationType(transformer: AstTransformer<D>, data: D): AstAnnotationCallImpl {
+        annotationType = annotationType.transformSingle(transformer, data)
         return this
     }
 
-    override fun replaceTypeRef(newTypeRef: AstTypeRef) {}
+    override fun replaceType(newType: AstType) {}
 
     override fun replaceArgumentList(newArgumentList: AstArgumentList) {
         argumentList = newArgumentList
@@ -64,9 +57,5 @@ internal class AstAnnotationCallImpl(
 
     override fun replaceCalleeReference(newCalleeReference: AstReference) {
         calleeReference = newCalleeReference
-    }
-
-    override fun replaceResolveStatus(newResolveStatus: AstAnnotationResolveStatus) {
-        resolveStatus = newResolveStatus
     }
 }

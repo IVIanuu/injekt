@@ -9,11 +9,8 @@ import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.symbols.impl.AstAnonymousFunctionSymbol
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformInplace
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -23,11 +20,11 @@ import com.ivianuu.ast.visitors.transformSingle
 internal class AstAnonymousFunctionImpl(
     override val origin: AstDeclarationOrigin,
     override val annotations: MutableList<AstAnnotationCall>,
-    override var returnTypeRef: AstTypeRef,
-    override var receiverTypeRef: AstTypeRef?,
+    override var returnType: AstType,
+    override var receiverType: AstType?,
     override val valueParameters: MutableList<AstValueParameter>,
     override var body: AstBlock?,
-    override var typeRef: AstTypeRef,
+    override var type: AstType,
     override val symbol: AstAnonymousFunctionSymbol,
     override var label: AstLabel?,
     override val isLambda: Boolean,
@@ -37,22 +34,22 @@ internal class AstAnonymousFunctionImpl(
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
-        returnTypeRef.accept(visitor, data)
-        receiverTypeRef?.accept(visitor, data)
+        returnType.accept(visitor, data)
+        receiverType?.accept(visitor, data)
         valueParameters.forEach { it.accept(visitor, data) }
         body?.accept(visitor, data)
-        typeRef.accept(visitor, data)
+        type.accept(visitor, data)
         label?.accept(visitor, data)
         typeParameters.forEach { it.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
         transformAnnotations(transformer, data)
-        transformReturnTypeRef(transformer, data)
-        transformReceiverTypeRef(transformer, data)
+        transformReturnType(transformer, data)
+        transformReceiverType(transformer, data)
         transformValueParameters(transformer, data)
         transformBody(transformer, data)
-        typeRef = typeRef.transformSingle(transformer, data)
+        type = type.transformSingle(transformer, data)
         label = label?.transformSingle(transformer, data)
         transformTypeParameters(transformer, data)
         return this
@@ -63,13 +60,13 @@ internal class AstAnonymousFunctionImpl(
         return this
     }
 
-    override fun <D> transformReturnTypeRef(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
-        returnTypeRef = returnTypeRef.transformSingle(transformer, data)
+    override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
+        returnType = returnType.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformReceiverTypeRef(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
-        receiverTypeRef = receiverTypeRef?.transformSingle(transformer, data)
+    override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
+        receiverType = receiverType?.transformSingle(transformer, data)
         return this
     }
 
@@ -88,12 +85,12 @@ internal class AstAnonymousFunctionImpl(
         return this
     }
 
-    override fun replaceReturnTypeRef(newReturnTypeRef: AstTypeRef) {
-        returnTypeRef = newReturnTypeRef
+    override fun replaceReturnType(newReturnType: AstType) {
+        returnType = newReturnType
     }
 
-    override fun replaceReceiverTypeRef(newReceiverTypeRef: AstTypeRef?) {
-        receiverTypeRef = newReceiverTypeRef
+    override fun replaceReceiverType(newReceiverType: AstType?) {
+        receiverType = newReceiverType
     }
 
     override fun replaceValueParameters(newValueParameters: List<AstValueParameter>) {
@@ -101,7 +98,7 @@ internal class AstAnonymousFunctionImpl(
         valueParameters.addAll(newValueParameters)
     }
 
-    override fun replaceTypeRef(newTypeRef: AstTypeRef) {
-        typeRef = newTypeRef
+    override fun replaceType(newType: AstType) {
+        type = newType
     }
 }

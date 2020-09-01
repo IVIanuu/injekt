@@ -3,10 +3,9 @@ package com.ivianuu.ast.declarations
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.symbols.impl.AstClassSymbol
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.descriptors.ClassKind
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -19,17 +18,17 @@ interface AstClass<F : AstClass<F>> : AstClassLikeDeclaration<F>, AstStatement, 
     override val typeParameters: List<AstTypeParameterRef>
     override val symbol: AstClassSymbol<F>
     val classKind: ClassKind
-    val superTypeRefs: List<AstTypeRef>
+    val superTypes: List<AstType>
     val declarations: List<AstDeclaration>
     override val annotations: List<AstAnnotationCall>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitClass(this, data)
 
-    fun replaceSuperTypeRefs(newSuperTypeRefs: List<AstTypeRef>)
+    fun replaceSuperTypes(newSuperTypes: List<AstType>)
 
     override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstClass<F>
 
-    fun <D> transformSuperTypeRefs(transformer: AstTransformer<D>, data: D): AstClass<F>
+    fun <D> transformSuperTypes(transformer: AstTransformer<D>, data: D): AstClass<F>
 
     fun <D> transformDeclarations(transformer: AstTransformer<D>, data: D): AstClass<F>
 

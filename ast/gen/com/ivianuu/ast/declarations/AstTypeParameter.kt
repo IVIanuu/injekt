@@ -4,11 +4,10 @@ import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.symbols.impl.AstTypeParameterSymbol
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.Variance
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -22,12 +21,12 @@ abstract class AstTypeParameter : AstPureAbstractElement(), AstTypeParameterRef,
     abstract override val symbol: AstTypeParameterSymbol
     abstract val variance: Variance
     abstract val isReified: Boolean
-    abstract val bounds: List<AstTypeRef>
+    abstract val bounds: List<AstType>
     abstract override val annotations: List<AstAnnotationCall>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitTypeParameter(this, data)
 
-    abstract fun replaceBounds(newBounds: List<AstTypeRef>)
+    abstract fun replaceBounds(newBounds: List<AstType>)
 
     abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstTypeParameter
 }

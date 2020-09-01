@@ -1,13 +1,12 @@
 package com.ivianuu.ast.expressions.impl
 
+import com.ivianuu.ast.AstImplementationDetail
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstStatement
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.types.impl.AstImplicitTypeRefImpl
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
-import com.ivianuu.ast.visitors.transformSingle
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.types.impl.AstImplicitTypeImpl
+import com.ivianuu.ast.visitors.*
 
 /*
  * This file was generated automatically
@@ -17,10 +16,10 @@ import com.ivianuu.ast.visitors.transformSingle
 class AstEmptyExpressionBlock : AstBlock() {
     override val annotations: List<AstAnnotationCall> get() = emptyList()
     override val statements: List<AstStatement> get() = emptyList()
-    override var typeRef: AstTypeRef = AstImplicitTypeRefImpl()
+    override var type: AstType = AstImplicitTypeImpl()
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        typeRef.accept(visitor, data)
+        type.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstEmptyExpressionBlock {
@@ -37,11 +36,11 @@ class AstEmptyExpressionBlock : AstBlock() {
     }
 
     override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstEmptyExpressionBlock {
-        typeRef = typeRef.transformSingle(transformer, data)
+        type = type.transformSingle(transformer, data)
         return this
     }
 
-    override fun replaceTypeRef(newTypeRef: AstTypeRef) {
-        typeRef = newTypeRef
+    override fun replaceType(newType: AstType) {
+        type = newType
     }
 }

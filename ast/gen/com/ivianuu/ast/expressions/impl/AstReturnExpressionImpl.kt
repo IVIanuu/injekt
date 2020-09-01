@@ -5,8 +5,8 @@ import com.ivianuu.ast.declarations.AstFunction
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstReturnExpression
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.types.impl.AstImplicitNothingTypeRef
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.types.impl.AstImplicitNothingType
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -19,10 +19,10 @@ internal class AstReturnExpressionImpl(
     override val target: AstTarget<AstFunction<*>>,
     override var result: AstExpression,
 ) : AstReturnExpression() {
-    override var typeRef: AstTypeRef = AstImplicitNothingTypeRef()
+    override var type: AstType = AstImplicitNothingType()
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        typeRef.accept(visitor, data)
+        type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
         result.accept(visitor, data)
     }
@@ -44,12 +44,12 @@ internal class AstReturnExpressionImpl(
     }
 
     override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstReturnExpressionImpl {
-        typeRef = typeRef.transformSingle(transformer, data)
+        type = type.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         return this
     }
 
-    override fun replaceTypeRef(newTypeRef: AstTypeRef) {
-        typeRef = newTypeRef
+    override fun replaceType(newType: AstType) {
+        type = newType
     }
 }

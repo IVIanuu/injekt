@@ -5,10 +5,12 @@ import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstVarargArgumentsExpression
+import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.impl.AstVarargArgumentsExpressionImpl
-import com.ivianuu.ast.types.AstTypeRef
-import com.ivianuu.ast.types.impl.AstImplicitTypeRefImpl
-import kotlin.contracts.ExperimentalContracts
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.types.impl.AstImplicitTypeImpl
+import com.ivianuu.ast.visitors.*
+import kotlin.contracts.*
 
 /*
  * This file was generated automatically
@@ -17,14 +19,14 @@ import kotlin.contracts.ExperimentalContracts
 
 @AstBuilderDsl
 class AstVarargArgumentsExpressionBuilder : AstAnnotationContainerBuilder, AstExpressionBuilder {
-    override var typeRef: AstTypeRef = AstImplicitTypeRefImpl()
+    override var type: AstType = AstImplicitTypeImpl()
     override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
     val arguments: MutableList<AstExpression> = mutableListOf()
-    lateinit var varargElementType: AstTypeRef
+    lateinit var varargElementType: AstType
 
     override fun build(): AstVarargArgumentsExpression {
         return AstVarargArgumentsExpressionImpl(
-            typeRef,
+            type,
             annotations,
             arguments,
             varargElementType,
