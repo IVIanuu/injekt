@@ -127,9 +127,13 @@ class AstTest {
                             }
                         }
                         
-                        /*fun withVararg(vararg params: String) {
-                            withVararg(*params)
-                        }*/
+                        fun withVararg(vararg params: String) {
+                        }
+                        
+                        fun callWithVararg() {
+                            withVararg("a", "b", "c")
+                            withVararg(*arrayOf("a", "b"), "c")
+                        }
                         
                         fun whileLoop() {
                             while (true) {

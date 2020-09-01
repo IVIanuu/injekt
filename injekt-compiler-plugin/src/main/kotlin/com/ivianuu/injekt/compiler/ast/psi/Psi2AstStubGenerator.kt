@@ -136,7 +136,7 @@ class Psi2AstStubGenerator(
         return AstValueParameter(
             name = descriptor.name,
             type = typeMapper.translate(descriptor.type),
-            isVarArg = descriptor.isVararg,
+            isVararg = descriptor.isVararg,
             inlineHint = when {
                 descriptor.isCrossinline -> AstValueParameter.InlineHint.CROSSINLINE
                 descriptor.isNoinline -> AstValueParameter.InlineHint.NOINLINE

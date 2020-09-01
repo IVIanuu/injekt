@@ -27,9 +27,11 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstForLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstSpreadElement
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstStatement
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThrow
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstTry
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstVararg
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstWhen
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstWhileLoop
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
@@ -67,6 +69,10 @@ interface AstVisitor<R, D> {
 
     fun visitExpression(expression: AstExpression, data: D) = visitStatement(expression, data)
     fun <T> visitConst(const: AstConst<T>, data: D) = visitExpression(const, data)
+    fun visitVararg(vararg: AstVararg, data: D) = visitExpression(vararg, data)
+    fun visitSpreadElement(spreadElement: AstSpreadElement, data: D) =
+        visitElement(spreadElement, data)
+
     fun visitBlock(block: AstBlock, data: D) = visitExpression(block, data)
 
     fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess, data: D) =

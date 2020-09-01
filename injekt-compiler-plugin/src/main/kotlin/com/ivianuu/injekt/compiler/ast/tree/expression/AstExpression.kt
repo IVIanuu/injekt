@@ -2,7 +2,7 @@ package com.ivianuu.injekt.compiler.ast.tree.expression
 
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 
-interface AstExpression : AstStatement {
+interface AstExpression : AstStatement, AstVarargElement {
     var type: AstType
 }
 

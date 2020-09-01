@@ -25,15 +25,18 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstElseBranch
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstForLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstSpreadElement
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThis
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThrow
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstTry
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstVararg
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstWhen
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstWhileLoop
 import com.ivianuu.injekt.compiler.ast.tree.type.AstStarProjection
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeArgument
 import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
+import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjectionImpl
 import com.ivianuu.injekt.compiler.ast.tree.type.classOrFail
 import com.ivianuu.injekt.compiler.ast.tree.type.classOrNull
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
@@ -416,14 +419,21 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
 
     override fun visitValueParameter(valueParameter: AstValueParameter, data: Nothing?) {
         valueParameter.emitAnnotations()
-        if (valueParameter.isVarArg) {
+        if (valueParameter.isVararg) {
             emit("vararg ")
         }
         valueParameter.inlineHint?.let {
             emit("${it.name.toLowerCase()} ")
         }
         emit("${valueParameter.name}: ")
-        valueParameter.type.emit()
+        if (valueParameter.isVararg) {
+            valueParameter.type.arguments.single()
+                .let { it as AstTypeProjectionImpl }
+                .type
+                .emit()
+        } else {
+            valueParameter.type.emit()
+        }
         if (valueParameter.defaultValue != null) {
             emit(" = ")
             valueParameter.defaultValue!!.emit()
@@ -437,38 +447,6 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
         typeAlias.typeParameters.emitList()
         emit(" = ")
         typeAlias.type.emit()
-    }
-
-    private fun AstDeclarationWithVisibility.emitVisibility(emitSpace: Boolean = true) {
-        emit(visibility.name.toLowerCase())
-        if (emitSpace) emitSpace()
-    }
-
-    private fun AstDeclarationWithExpectActual.emitExpectActual(emitSpace: Boolean = true) {
-        if (expectActual != null) {
-            emit(expectActual!!.name.toLowerCase())
-            if (emitSpace) emitSpace()
-        }
-    }
-
-    private fun AstDeclarationWithModality.emitModality(emitSpace: Boolean = true) {
-        emit(modality.name.toLowerCase())
-        if (emitSpace) emitSpace()
-    }
-
-    private fun AstDeclarationContainer.emitDeclarations() {
-        declarations.forEachIndexed { index, declaration ->
-            declaration.emit()
-            if (index != declarations.lastIndex) emitLine()
-        }
-    }
-
-    private fun AstAnnotationContainer.emitAnnotations() {
-        annotations.forEach { annotation ->
-            emit("@")
-            annotation.emit()
-            emitLine()
-        }
     }
 
     override fun <T> visitConst(const: AstConst<T>, data: Nothing?) {
@@ -486,6 +464,18 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
                 AstConst.Kind.Double -> const.value.toString()
             }
         )
+    }
+
+    override fun visitVararg(vararg: AstVararg, data: Nothing?) {
+        vararg.elements.forEachIndexed { index, element ->
+            element.emit()
+            if (index != vararg.elements.lastIndex) emit(", ")
+        }
+    }
+
+    override fun visitSpreadElement(spreadElement: AstSpreadElement, data: Nothing?) {
+        emit("*")
+        spreadElement.expression.emit()
     }
 
     override fun visitBlock(block: AstBlock, data: Nothing?) {
@@ -650,6 +640,38 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
     override fun visitThrow(astThrow: AstThrow, data: Nothing?) {
         emit("throw ")
         astThrow.expression.emit()
+    }
+
+    private fun AstDeclarationWithVisibility.emitVisibility(emitSpace: Boolean = true) {
+        emit(visibility.name.toLowerCase())
+        if (emitSpace) emitSpace()
+    }
+
+    private fun AstDeclarationWithExpectActual.emitExpectActual(emitSpace: Boolean = true) {
+        if (expectActual != null) {
+            emit(expectActual!!.name.toLowerCase())
+            if (emitSpace) emitSpace()
+        }
+    }
+
+    private fun AstDeclarationWithModality.emitModality(emitSpace: Boolean = true) {
+        emit(modality.name.toLowerCase())
+        if (emitSpace) emitSpace()
+    }
+
+    private fun AstDeclarationContainer.emitDeclarations() {
+        declarations.forEachIndexed { index, declaration ->
+            declaration.emit()
+            if (index != declarations.lastIndex) emitLine()
+        }
+    }
+
+    private fun AstAnnotationContainer.emitAnnotations() {
+        annotations.forEach { annotation ->
+            emit("@")
+            annotation.emit()
+            emitLine()
+        }
     }
 
     private fun AstType.emit() {

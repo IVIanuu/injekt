@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.name.Name
 class AstValueParameter(
     override var name: Name,
     var type: AstType,
-    var isVarArg: Boolean = false,
+    var isVararg: Boolean = false,
     var inlineHint: InlineHint? = null,
     var defaultValue: AstExpression? = null
 ) : AstDeclarationBase(), AstDeclarationWithName {

@@ -30,9 +30,11 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstForLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstSpreadElement
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThis
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThrow
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstTry
+import com.ivianuu.injekt.compiler.ast.tree.expression.AstVararg
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstWhen
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstWhileLoop
 import org.jetbrains.kotlin.backend.common.pop
@@ -50,7 +52,6 @@ import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
-import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.js.translate.callTranslator.getReturnType
 import org.jetbrains.kotlin.name.Name
@@ -93,11 +94,6 @@ import org.jetbrains.kotlin.psi.KtTryExpression
 import org.jetbrains.kotlin.psi.KtTypeAlias
 import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.KtVisitor
-import org.jetbrains.kotlin.psi.KtWhenCondition
-import org.jetbrains.kotlin.psi.KtWhenConditionInRange
-import org.jetbrains.kotlin.psi.KtWhenConditionIsPattern
-import org.jetbrains.kotlin.psi.KtWhenConditionWithExpression
-import org.jetbrains.kotlin.psi.KtWhenExpression
 import org.jetbrains.kotlin.psi.KtWhileExpression
 import org.jetbrains.kotlin.psi.KtWhileExpressionBase
 import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
@@ -135,9 +131,7 @@ import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
 import org.jetbrains.kotlin.resolve.scopes.receivers.SuperCallReceiverValue
 import org.jetbrains.kotlin.resolve.scopes.receivers.ThisClassReceiver
-import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.expressions.ExpressionTypingUtils
-import org.jetbrains.kotlin.types.typeUtil.builtIns
 
 class Psi2AstVisitor(
     override val context: GeneratorContext
@@ -241,6 +235,8 @@ class Psi2AstVisitor(
                         .valueParameters
                         .mapNotNull { get(BindingContext.PRIMARY_CONSTRUCTOR_PARAMETER, it) }
                         .map { property ->
+                            property.findPsi()!!
+                                .accept<AstProperty>(mode)
                             property.toAstProperty(
                                 astPrimaryConstructor.valueParameters
                                     .single { it.name == property.name }
@@ -419,7 +415,7 @@ class Psi2AstVisitor(
                 AstValueParameter(
                     name = descriptor.name,
                     type = UninitializedType,
-                    isVarArg = if (descriptor is ValueParameterDescriptor) descriptor.isVararg else false,
+                    isVararg = if (descriptor is ValueParameterDescriptor) descriptor.isVararg else false,
                     inlineHint = when {
                         descriptor is ValueParameterDescriptor && descriptor.isCrossinline -> AstValueParameter.InlineHint.CROSSINLINE
                         descriptor is ValueParameterDescriptor && descriptor.isNoinline -> AstValueParameter.InlineHint.NOINLINE
@@ -577,7 +573,7 @@ class Psi2AstVisitor(
                 .toList()
                 .sortedBy { it.first.index }
 
-            valueArguments += sortedValueArguments.map { (_, valueArgument) ->
+            valueArguments += sortedValueArguments.map { (valueParameter, valueArgument) ->
                 when (valueArgument) {
                     is DefaultValueArgument -> null
                     is ExpressionValueArgument -> {
@@ -587,8 +583,24 @@ class Psi2AstVisitor(
                             ?: throw AssertionError("No argument expression: $valueArgument1")
                         argumentExpression.accept<AstExpression>(mode)
                     }
-                    // todo
-                    is VarargValueArgument -> null
+                    is VarargValueArgument -> {
+                        if (valueArgument.arguments.isEmpty()) {
+                            null
+                        } else {
+                            AstVararg(valueParameter.type.toAstType()).apply {
+                                elements += valueArgument.arguments.map { varargArgument ->
+                                    val ktArgumentExpression =
+                                        varargArgument.getArgumentExpression()!!
+                                    val astArgumentExpression =
+                                        ktArgumentExpression.accept<AstExpression>(mode)
+                                    if (varargArgument.getSpreadElement() != null || varargArgument.isNamed())
+                                        AstSpreadElement(astArgumentExpression)
+                                    else astArgumentExpression
+                                }
+
+                            }
+                        }
+                    }
                     else -> TODO("Unexpected valueArgument: ${valueArgument::class.java.simpleName}")
                 }
             }
@@ -688,7 +700,7 @@ class Psi2AstVisitor(
         }
     }
 
-    override fun visitWhenExpression(expression: KtWhenExpression, mode: Mode): AstElement {
+    /*override fun visitWhenExpression(expression: KtWhenExpression, mode: Mode): AstElement {
         val subjectVariable = expression.subjectVariable
         val subjectExpression = expression.subjectExpression
 
@@ -865,7 +877,7 @@ class Psi2AstVisitor(
             irSubject.loadAt(startOffset, startOffset), irExpression,
             context.bindingContext[BindingContext.PRIMITIVE_NUMERIC_COMPARISON_INFO, ktExpression]
         )
-    }
+    }*/
 
     override fun visitWhileExpression(expression: KtWhileExpression, mode: Mode) =
         visitWhile(expression, mode)
@@ -1071,15 +1083,13 @@ class Psi2AstVisitor(
     }
 
     private fun generateConstantValueAsExpression(
-        constantValue: ConstantValue<*>,
-        varargElementType: KotlinType? = null
+        constantValue: ConstantValue<*>
     ): AstExpression =
         // Assertion is safe here because annotation calls and class literals are not allowed in constant initializers
-        generateConstantOrAnnotationValueAsExpression(constantValue, varargElementType)!!
+        generateConstantOrAnnotationValueAsExpression(constantValue)!!
 
     private fun generateConstantOrAnnotationValueAsExpression(
-        constantValue: ConstantValue<*>,
-        varargElementType: KotlinType? = null
+        constantValue: ConstantValue<*>
     ): AstExpression? {
         val constantKtType = constantValue.getType(context.module)
         val constantType = constantKtType.toAstType()
@@ -1100,16 +1110,11 @@ class Psi2AstVisitor(
             is ShortValue -> AstConst.short(constantType, constantValue.value)
             is UShortValue -> AstConst.short(constantType, constantValue.value)
             is ArrayValue -> {
-                /*val arrayElementType = varargElementType ?: constantKtType.getArrayElementType()
-                IrVarargImpl(
-                    startOffset, endOffset,
-                    constantType,
-                    arrayElementType.toAstType(),
-                    constantValue.value.mapNotNull {
-                        generateConstantOrAnnotationValueAsExpression(it, null)
+                AstVararg(constantType).apply {
+                    elements += constantValue.value.mapNotNull {
+                        generateConstantOrAnnotationValueAsExpression(it)
                     }
-                )*/
-                TODO()
+                }
             }
             is EnumValue -> {
                 val enumEntryDescriptor =
@@ -1161,16 +1166,10 @@ class Psi2AstVisitor(
         ).apply {
             valueArguments += primaryConstructorDescriptor.valueParameters
                 .map { valueParameter ->
-                    val argumentValue = annotationDescriptor.allValueArguments[valueParameter.name]
-                        ?: return null
-                    generateConstantOrAnnotationValueAsExpression(
-                        argumentValue,
-                        valueParameter.varargElementType
-                    )
+                    annotationDescriptor.allValueArguments[valueParameter.name]
+                        ?.let { generateConstantOrAnnotationValueAsExpression(it) }
                 }
         }
     }
-
-    private fun KotlinType.getArrayElementType() = builtIns.getArrayElementType(this)
 
 }
