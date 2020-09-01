@@ -1,15 +1,15 @@
 package com.ivianuu.injekt.integrationtests.ast
 
+import com.ivianuu.ast.AstGeneratorContext
+import com.ivianuu.ast.extension.AstGenerationExtension
+import com.ivianuu.ast.tree.AstElement
+import com.ivianuu.ast.tree.declaration.AstClass
+import com.ivianuu.ast.tree.declaration.AstFile
+import com.ivianuu.ast.tree.declaration.AstModuleFragment
+import com.ivianuu.ast.tree.declaration.addChild
+import com.ivianuu.ast.tree.visitor.AstTransformResult
+import com.ivianuu.ast.tree.visitor.AstTransformerVoid
 import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.ast.AstGeneratorContext
-import com.ivianuu.injekt.compiler.ast.extension.AstGenerationExtension
-import com.ivianuu.injekt.compiler.ast.tree.AstElement
-import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
-import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFile
-import com.ivianuu.injekt.compiler.ast.tree.declaration.AstModuleFragment
-import com.ivianuu.injekt.compiler.ast.tree.declaration.addChild
-import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
-import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformerVoid
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.source
@@ -52,6 +52,24 @@ class AstTest {
                             fun anonymous() {
                                 java.lang.System.out.println(object {
                                 })
+                            }
+                            
+                            fun lambda(block: (String, String) -> Unit) {
+                            }
+                            
+                            fun suspendLambda(block: suspend () -> Unit) {
+                            }
+                            
+                            suspend fun suspendFun() {
+                            }
+                            
+                            fun lambdaCaller() {
+                                lambda { a, b ->
+                                }
+                                lambda(fun (a: String, b: String) {
+                                
+                                })
+                                suspendLambda {  }
                             }
                             
                             fun localFun() {

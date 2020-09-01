@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/android-integration-tests/android-integration-tests.iml" filepath="$PROJECT_DIR$/.idea/modules/android-integration-tests/android-integration-tests.iml" group="injekt/android-integration-tests" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ast/ast.iml" filepath="$PROJECT_DIR$/.idea/modules/ast/ast.iml" group="injekt/ast" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/benchmark/benchmark.iml" filepath="$PROJECT_DIR$/.idea/modules/benchmark/benchmark.iml" group="injekt/benchmark" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/comparison/comparison.iml" filepath="$PROJECT_DIR$/.idea/modules/comparison/comparison.iml" group="injekt/comparison" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/essentials-android-testing/essentials-android-testing.iml" filepath="$PROJECT_DIR$/.idea/modules/essentials-android-testing/essentials-android-testing.iml" group="injekt/essentials-android-testing" />

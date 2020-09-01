@@ -27,6 +27,7 @@ dependencies {
     api(Deps.processingX)
     kapt(Deps.processingX)
 
+    api(project(":ast"))
     api(project(":injekt-compiler-plugin"))
     api(project(":injekt-core"))
 

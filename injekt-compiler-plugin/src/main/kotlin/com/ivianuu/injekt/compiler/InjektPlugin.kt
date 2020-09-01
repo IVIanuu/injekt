@@ -17,10 +17,10 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
+import com.ivianuu.ast.AstAnalysisHandlerExtension
 import com.ivianuu.injekt.compiler.analysis.InjektStorageContainerContributor
 import com.ivianuu.injekt.compiler.analysis.ReaderChecker
 import com.ivianuu.injekt.compiler.analysis.ReaderTypeInterceptor
-import com.ivianuu.injekt.compiler.ast.AstAnalysisHandlerExtension
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject

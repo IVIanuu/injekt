@@ -1,5 +1,6 @@
 include(
     ":android-integration-tests",
+    ":ast",
     ":benchmark",
     ":comparison",
     ":essentials-android-testing",
