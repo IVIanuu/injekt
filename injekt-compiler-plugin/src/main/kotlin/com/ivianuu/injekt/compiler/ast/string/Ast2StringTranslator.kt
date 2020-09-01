@@ -97,6 +97,26 @@ private class Ast2StringWriter(out: Appendable) : AstVisitorVoid {
 
     private var currentFile: AstFile? = null
 
+    private val uniqueNameByElement =
+        mutableMapOf<AstElement, String>()
+    private val existingNames = mutableSetOf<String>()
+    private fun AstElement.uniqueName(): String {
+        return uniqueNameByElement.getOrPut(this) {
+            if (this is AstDeclarationWithName &&
+                !name.isSpecial
+            ) return@getOrPut name.asString()
+            val finalBase = "uniqueName"
+            var name = finalBase
+            var differentiator = 2
+            while (name in existingNames) {
+                name = finalBase + differentiator
+                differentiator++
+            }
+            existingNames += name
+            return@getOrPut name
+        }
+    }
+
     override fun visitElement(element: AstElement) {
         error("Unhandled $element")
     }
@@ -283,6 +303,7 @@ private class Ast2StringWriter(out: Appendable) : AstVisitorVoid {
     override fun visitProperty(property: AstProperty) {
         property.emitAnnotations()
         if (property.visibility != AstVisibility.LOCAL) property.emitVisibility()
+        property.emitExpectActual()
         if (property.parent is AstClass) property.emitModality()
         if (property.overriddenDeclarations.isNotEmpty()) {
             emit("override ")
@@ -296,7 +317,7 @@ private class Ast2StringWriter(out: Appendable) : AstVisitorVoid {
             property.typeParameters.emitList()
             emitSpace()
         }
-        emit("${property.name}")
+        emit(property.uniqueName())
         emit(": ")
         property.type.emit()
         if (property.typeParameters.isNotEmpty()) {
@@ -473,7 +494,7 @@ private class Ast2StringWriter(out: Appendable) : AstVisitorVoid {
         val explicitReceiver = if (qualifiedAccess.extensionReceiver != null)
             qualifiedAccess.extensionReceiver
         else qualifiedAccess.dispatchReceiver
-            ?.takeIf { it !is AstThis }
+            ?.takeIf { it !is AstThis } // todo
 
         if (explicitReceiver != null) {
             explicitReceiver.emit()
@@ -483,7 +504,7 @@ private class Ast2StringWriter(out: Appendable) : AstVisitorVoid {
         if (callee is AstFunction && callee.kind == AstFunction.Kind.CONSTRUCTOR) {
             emit(callee.returnType.classOrFail.name)
         } else if (callee is AstDeclarationWithName) {
-            emit("${callee.name}")
+            emit(callee.uniqueName())
         }
         if (qualifiedAccess.typeArguments.isNotEmpty()) {
             emit("<")

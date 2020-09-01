@@ -2,6 +2,8 @@ package com.ivianuu.injekt.compiler.ast.psi
 
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
+import com.ivianuu.injekt.compiler.ast.tree.AstModality
+import com.ivianuu.injekt.compiler.ast.tree.AstVisibility
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstAnonymousInitializer
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstDeclaration
@@ -47,6 +49,7 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.js.translate.callTranslator.getReturnType
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtAnonymousInitializer
 import org.jetbrains.kotlin.psi.KtBlockExpression
@@ -54,6 +57,7 @@ import org.jetbrains.kotlin.psi.KtBreakExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstantExpression
 import org.jetbrains.kotlin.psi.KtContinueExpression
+import org.jetbrains.kotlin.psi.KtDestructuringDeclaration
 import org.jetbrains.kotlin.psi.KtDoWhileExpression
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtElement
@@ -259,7 +263,6 @@ class Psi2AstVisitor(
         mode: Mode
     ): AstFunction {
         val descriptor = function.descriptor<FunctionDescriptor>()
-        println("visit $descriptor $mode")
         return descriptor.cached(
             context.storage.functions,
             {
@@ -308,7 +311,7 @@ class Psi2AstVisitor(
     }
 
     override fun visitProperty(property: KtProperty, mode: Mode): AstElement {
-        val descriptor = property.descriptor<PropertyDescriptor>()
+        val descriptor = property.descriptor<VariableDescriptor>()
         return descriptor.cached(
             context.storage.properties,
             {
@@ -321,10 +324,15 @@ class Psi2AstVisitor(
                         descriptor.isVar -> AstProperty.Kind.VAR
                         else -> AstProperty.Kind.VAl
                     },
-                    modality = descriptor.modality.toAstModality(),
+                    modality = if (descriptor is PropertyDescriptor) descriptor.modality.toAstModality()
+                    else AstModality.FINAL,
                     visibility = descriptor.visibility.toAstVisibility(),
-                    expectActual = expectActualOf(descriptor.isActual, descriptor.isExpect),
-                    isExternal = descriptor.isExternal
+                    expectActual = if (descriptor is PropertyDescriptor) expectActualOf(
+                        descriptor.isActual,
+                        descriptor.isExpect
+                    )
+                    else null,
+                    isExternal = if (descriptor is PropertyDescriptor) descriptor.isExternal else false
                 ).applyParentFromStack()
             }
         ) {
@@ -392,7 +400,6 @@ class Psi2AstVisitor(
 
     override fun visitParameter(parameter: KtParameter, mode: Mode): AstValueParameter {
         val descriptor = parameter.descriptor<VariableDescriptor>()
-        println("visit param ${descriptor.name} $mode")
         return descriptor.cached(
             context.storage.valueParameters,
             {
@@ -554,7 +561,53 @@ class Psi2AstVisitor(
         }
     }
 
-    override fun visitThisExpression(expression: KtThisExpression, mode: Mode): AstElement {
+    override fun visitDestructuringDeclaration(
+        multiDeclaration: KtDestructuringDeclaration,
+        mode: Mode
+    ): AstExpression {
+        return AstBlock(context.builtIns.unitType).apply {
+            val ktInitializer = multiDeclaration.initializer!!
+            val containerProperty = AstProperty(
+                name = Name.special("<destructuring container>"),
+                type = ktInitializer.getTypeInferredByFrontendOrFail().toAstType(),
+                visibility = AstVisibility.LOCAL
+            ).apply {
+                applyParentFromStack()
+                initializer = ktInitializer.accept(mode)
+            }
+
+            statements += containerProperty
+
+            statements += multiDeclaration.entries
+                .mapNotNull { ktEntry ->
+                    val componentVariable = getOrFail(BindingContext.VARIABLE, ktEntry)
+                    // componentN for '_' SHOULD NOT be evaluated
+                    if (componentVariable.name.isSpecial) return@mapNotNull null
+                    val componentResolvedCall =
+                        getOrFail(BindingContext.COMPONENT_RESOLVED_CALL, ktEntry)
+                    componentResolvedCall.getReturnType()
+
+                    AstProperty(
+                        name = componentVariable.name,
+                        type = componentVariable.type.toAstType(),
+                        visibility = AstVisibility.LOCAL
+                    ).apply {
+                        applyParentFromStack()
+                        initializer = AstQualifiedAccess(
+                            callee = context.astProvider.get(componentResolvedCall.resultingDescriptor),
+                            type = componentVariable.type.toAstType()
+                        ).apply {
+                            dispatchReceiver = AstQualifiedAccess(
+                                callee = containerProperty,
+                                type = containerProperty.type
+                            )
+                        }
+                    }
+                }
+        }
+    }
+
+    override fun visitThisExpression(expression: KtThisExpression, mode: Mode): AstExpression {
         val referenceTarget =
             getOrFail(BindingContext.REFERENCE_TARGET, expression.instanceReference)
         TODO("What $referenceTarget")
@@ -565,30 +618,12 @@ class Psi2AstVisitor(
         mode: Mode
     ) = visitExpressionForConstant(expression)
 
-    private fun visitExpressionForConstant(expression: KtExpression): AstConst<*> {
-        // todo check KtEscapeStringTemplateEntry
+    private fun visitExpressionForConstant(expression: KtExpression): AstExpression {
         val constantValue =
             ConstantExpressionEvaluator.getConstant(expression, context.bindingContext)
                 ?.toConstantValue(expression.getTypeInferredByFrontendOrFail())
                 ?: error("KtConstantExpression was not evaluated: ${expression.text}")
-        val constantType = constantValue.getType(context.module).toAstType()
-        return when (constantValue) {
-            is StringValue -> AstConst.string(constantType, constantValue.value)
-            is IntValue -> AstConst.int(constantType, constantValue.value)
-            is UIntValue -> AstConst.int(constantType, constantValue.value)
-            is NullValue -> AstConst.constNull(constantType)
-            is BooleanValue -> AstConst.boolean(constantType, constantValue.value)
-            is LongValue -> AstConst.long(constantType, constantValue.value)
-            is ULongValue -> AstConst.long(constantType, constantValue.value)
-            is DoubleValue -> AstConst.double(constantType, constantValue.value)
-            is FloatValue -> AstConst.float(constantType, constantValue.value)
-            is CharValue -> AstConst.char(constantType, constantValue.value)
-            is ByteValue -> AstConst.byte(constantType, constantValue.value)
-            is UByteValue -> AstConst.byte(constantType, constantValue.value)
-            is ShortValue -> AstConst.short(constantType, constantValue.value)
-            is UShortValue -> AstConst.short(constantType, constantValue.value)
-            else -> error("Unexpected constant value: ${constantValue.javaClass.simpleName} $constantValue")
-        }
+        return generateConstantValueAsExpression(constantValue)
     }
 
     override fun visitWhileExpression(expression: KtWhileExpression, mode: Mode): AstElement {

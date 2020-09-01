@@ -10,6 +10,7 @@ import com.ivianuu.injekt.compiler.ast.tree.AstVariance
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstAnnotationContainer
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeAlias
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstTypeParameter
 import com.ivianuu.injekt.compiler.ast.tree.declaration.fqName
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
@@ -150,6 +151,26 @@ fun AstType.copy(
     this.hasQuestionMark = hasQuestionMark
     this.arguments += arguments
     this.abbreviation = abbreviation
+}
+
+fun AstType.substitute(substitutionMap: Map<AstTypeParameter, AstType>): AstType {
+    substitutionMap[classifier]?.let { return it }
+
+    val newArguments = arguments.map {
+        if (it is AstTypeProjection) {
+            AstTypeProjectionImpl(it.variance, it.type.substitute(substitutionMap))
+        } else {
+            it
+        }
+    }
+
+    return AstType().apply {
+        classifier = this@substitute.classifier
+        hasQuestionMark = this@substitute.hasQuestionMark
+        arguments += newArguments
+        annotations += this@substitute.annotations
+        abbreviation = this@substitute.abbreviation
+    }
 }
 
 fun AstType.isClassType(fqName: FqName) =

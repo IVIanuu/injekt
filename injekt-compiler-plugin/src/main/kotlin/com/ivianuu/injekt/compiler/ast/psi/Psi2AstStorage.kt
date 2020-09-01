@@ -16,7 +16,6 @@ import com.ivianuu.injekt.compiler.ast.tree.type.AstTypeProjection
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
@@ -35,7 +34,7 @@ class Psi2AstStorage {
     val files = mutableMapOf<KtFile, AstFile>()
     val classes = mutableMapOf<ClassDescriptor, AstClass>()
     val functions = mutableMapOf<FunctionDescriptor, AstFunction>()
-    val properties = mutableMapOf<PropertyDescriptor, AstProperty>()
+    val properties = mutableMapOf<VariableDescriptor, AstProperty>()
     val anonymousInitializers = mutableMapOf<KtAnonymousInitializer, AstAnonymousInitializer>()
     val typeParameters = mutableMapOf<TypeParameterDescriptor, AstTypeParameter>()
     val valueParameters = mutableMapOf<VariableDescriptor, AstValueParameter>()

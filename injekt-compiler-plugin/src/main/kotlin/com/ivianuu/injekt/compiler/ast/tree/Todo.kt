@@ -4,7 +4,6 @@ package com.ivianuu.injekt.compiler.ast.tree
 // todo loop
 // todo references function property class
 // todo lambda
-// todo destructuring
 // todo when/if
 // todo variable/assignment
 // todo vararg

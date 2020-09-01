@@ -45,7 +45,8 @@ class AstTest {
                             }
                             
                             fun member() {
-                                
+                                var lol = ""
+                                val (a, _, c) = Triple("a", "b", "c")
                             }
                             
                             fun anonymous() {

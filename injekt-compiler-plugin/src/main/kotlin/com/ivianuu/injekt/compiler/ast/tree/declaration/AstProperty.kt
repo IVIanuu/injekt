@@ -18,7 +18,10 @@ class AstProperty(
     override var modality: AstModality = AstModality.FINAL,
     override var visibility: AstVisibility = AstVisibility.PUBLIC,
     override var expectActual: AstExpectActual? = null,
-    var isExternal: Boolean = false
+    var isInline: Boolean = false,
+    var isExternal: Boolean = false,
+    var dispatchReceiverType: AstType? = null,
+    var extensionReceiverType: AstType? = null
 ) : AstDeclarationBase(), AstAnnotationContainer,
     AstDeclarationParent,
     AstDeclarationWithName,
@@ -31,9 +34,6 @@ class AstProperty(
     override val overriddenDeclarations: MutableList<AstProperty> = mutableListOf()
 
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
-
-    var dispatchReceiverType: AstType? = null
-    var extensionReceiverType: AstType? = null
 
     var initializer: AstExpression? = null
     var delegate: AstExpression? = null
