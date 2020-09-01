@@ -60,5 +60,8 @@ abstract class AstDeclarationBase : AstDeclaration {
 }
 
 val AstDeclarationWithName.fqName: FqName
-    get() = getPackageFragment()!!.packageFqName
-        .child(name)
+    get() = when (val parent = parent) {
+        is AstDeclarationWithName -> parent.fqName.child(name)
+        is AstPackageFragment -> parent.packageFqName.child(name)
+        else -> error("Couldn't get fq name for $this")
+    }

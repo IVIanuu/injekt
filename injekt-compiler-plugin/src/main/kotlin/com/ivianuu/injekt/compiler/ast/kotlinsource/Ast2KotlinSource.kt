@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.compiler.ast.string
+package com.ivianuu.injekt.compiler.ast.kotlinsource
 
 import com.ivianuu.injekt.compiler.ast.tree.AstElement
 import com.ivianuu.injekt.compiler.ast.tree.AstVisibility
@@ -41,8 +41,8 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.utils.Printer
 
-fun AstElement.toAstString(): String {
-    return buildString { accept(Ast2StringWriter(this)) }
+fun AstElement.toKotlinSource(): String {
+    return buildString { accept(Ast2KotlinSourceWriter(this)) }
         // replace tabs at beginning of line with white space
         .replace(Regex("\\n(%tab%)+", RegexOption.MULTILINE)) {
             val size = it.range.last - it.range.first - 1
@@ -56,7 +56,7 @@ fun AstElement.toAstString(): String {
         .replace(Regex("}\\n(\\s)*,", RegexOption.MULTILINE), "},")
 }
 
-private class Ast2StringWriter(out: Appendable) : AstVisitorVoid {
+private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
 
     private val printer = Printer(out, "%tab%")
     private fun emit(value: Any?) {
@@ -76,7 +76,7 @@ private class Ast2StringWriter(out: Appendable) : AstVisitorVoid {
     }
 
     private fun AstElement.emit() {
-        accept(this@Ast2StringWriter)
+        accept(this@Ast2KotlinSourceWriter)
     }
 
     private inline fun indented(body: () -> Unit) {
@@ -131,7 +131,11 @@ private class Ast2StringWriter(out: Appendable) : AstVisitorVoid {
         file.transform(
             object : AstTransformerVoid {
                 override fun visitType(type: AstType): AstTransformResult<AstType> {
-                    type.classOrNull?.fqName?.let { imports += it }
+                    type.classOrNull?.let {
+                        if (!it.name.isSpecial) {
+                            imports += it.fqName
+                        }
+                    }
                     return super.visitType(type)
                 }
             }
@@ -500,11 +504,20 @@ private class Ast2StringWriter(out: Appendable) : AstVisitorVoid {
             explicitReceiver.emit()
             emit(".")
         }
+
         val callee = qualifiedAccess.callee
         if (callee is AstFunction && callee.kind == AstFunction.Kind.CONSTRUCTOR) {
             emit(callee.returnType.classOrFail.name)
         } else if (callee is AstDeclarationWithName) {
-            emit(callee.uniqueName())
+            if (callee is AstProperty && callee.visibility == AstVisibility.LOCAL) {
+                emit(callee.uniqueName())
+            } else if ((callee is AstProperty || callee is AstFunction)
+                && explicitReceiver == null
+            ) {
+                emit(callee.fqName)
+            } else {
+                emit(callee.name)
+            }
         }
         if (qualifiedAccess.typeArguments.isNotEmpty()) {
             emit("<")
@@ -516,9 +529,13 @@ private class Ast2StringWriter(out: Appendable) : AstVisitorVoid {
         }
         if (callee is AstFunction) {
             emit("(")
+            val hasAllValueArguments = callee.valueParameters.size ==
+                    qualifiedAccess.valueArguments.size &&
+                    qualifiedAccess.valueArguments.none { it == null }
             qualifiedAccess.valueArguments.forEachIndexed { index, valueArgument ->
                 if (valueArgument != null) {
-                    emit("${callee.valueParameters[index].name} = ")
+                    if (!hasAllValueArguments)
+                        emit("${callee.valueParameters[index].name} = ")
                     valueArgument.emit()
                     if (index != qualifiedAccess.valueArguments.lastIndex &&
                         qualifiedAccess.valueArguments[index + 1] != null

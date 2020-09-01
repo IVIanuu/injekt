@@ -1,11 +1,11 @@
 package com.ivianuu.injekt.compiler.ast.extension
 
+import com.ivianuu.injekt.compiler.ast.kotlinsource.toKotlinSource
 import com.ivianuu.injekt.compiler.ast.psi.AstProvider
 import com.ivianuu.injekt.compiler.ast.psi.Psi2AstStorage
 import com.ivianuu.injekt.compiler.ast.psi.Psi2AstStubGenerator
 import com.ivianuu.injekt.compiler.ast.psi.Psi2AstTranslator
 import com.ivianuu.injekt.compiler.ast.psi.TypeMapper
-import com.ivianuu.injekt.compiler.ast.string.toAstString
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.editor.Document
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
@@ -106,7 +106,7 @@ class AstAnalysisHandlerExtension(
 
         return moduleFragment.files
             .map { file ->
-                val src = file.toAstString()
+                val src = file.toKotlinSource()
                 val dir = file.packageFqName.pathSegments().fold(File(outputDir)) { dir, segment ->
                     dir.resolve(segment.asString())
                 }.also { it.mkdirs() }
@@ -122,7 +122,7 @@ class AstAnalysisHandlerExtension(
                         virtualFile
                     ) {
                         it?.also {
-                            it.setText(file.toAstString())
+                            it.setText(file.toKotlinSource())
                         }
                     },
                     isCompiled = false

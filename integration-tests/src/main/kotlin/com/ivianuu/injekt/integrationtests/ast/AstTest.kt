@@ -50,7 +50,7 @@ class AstTest {
                             }
                             
                             fun anonymous() {
-                                println(object {
+                                java.lang.System.out.println(object {
                                 })
                             }
                             
