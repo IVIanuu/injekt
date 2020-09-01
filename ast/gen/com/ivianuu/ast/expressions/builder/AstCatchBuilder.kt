@@ -1,0 +1,31 @@
+package com.ivianuu.ast.expressions.builder
+
+import com.ivianuu.ast.builder.AstBuilderDsl
+import com.ivianuu.ast.declarations.AstValueParameter
+import com.ivianuu.ast.expressions.AstBlock
+import com.ivianuu.ast.expressions.AstCatch
+import com.ivianuu.ast.expressions.impl.AstCatchImpl
+import kotlin.contracts.ExperimentalContracts
+
+/*
+ * This file was generated automatically
+ * DO NOT MODIFY IT MANUALLY
+ */
+
+@AstBuilderDsl
+class AstCatchBuilder {
+    lateinit var parameter: AstValueParameter
+    lateinit var block: AstBlock
+
+    fun build(): AstCatch {
+        return AstCatchImpl(
+            parameter,
+            block,
+        )
+    }
+}
+
+@OptIn(ExperimentalContracts::class)
+inline fun buildCatch(init: AstCatchBuilder.() -> Unit): AstCatch {
+    return AstCatchBuilder().apply(init).build()
+}

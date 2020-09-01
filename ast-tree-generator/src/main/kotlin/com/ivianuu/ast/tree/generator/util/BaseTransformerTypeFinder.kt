@@ -1,22 +1,17 @@
-/*
- * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.
- * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
- */
-
 package com.ivianuu.ast.tree.generator.util
 
-import com.ivianuu.ast.tree.generator.context.AbstractFirTreeBuilder
+import com.ivianuu.ast.tree.generator.context.AbstractAstTreeBuilder
 import com.ivianuu.ast.tree.generator.model.AbstractElement
+import com.ivianuu.ast.tree.generator.model.AstField
 import com.ivianuu.ast.tree.generator.model.Element
 import com.ivianuu.ast.tree.generator.model.FieldList
-import com.ivianuu.ast.tree.generator.model.FirField
 
-fun detectBaseTransformerTypes(builder: AbstractFirTreeBuilder) {
+fun detectBaseTransformerTypes(builder: AbstractAstTreeBuilder) {
     val usedAsFieldType = mutableMapOf<AbstractElement, Boolean>().withDefault { false }
     for (element in builder.elements) {
-        for (field in element.allFirFields) {
+        for (field in element.allAstFields) {
             val fieldElement = when (field) {
-                is FirField -> field.element
+                is AstField -> field.element
                 is FieldList -> field.baseType as Element
                 else -> throw IllegalArgumentException()
             }

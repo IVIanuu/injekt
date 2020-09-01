@@ -12,7 +12,7 @@ sealed class Field : Importable {
     open val arguments = mutableListOf<Importable>()
     abstract val nullable: Boolean
     open var withReplace: Boolean = false
-    abstract val isFirType: Boolean
+    abstract val isAstType: Boolean
 
     var fromParent: Boolean = false
     open var needsSeparateTransform: Boolean = false
@@ -74,7 +74,7 @@ class FieldWithDefault(val origin: Field) : Field() {
         get() = origin.withReplace
         set(_) {}
     override val packageName: String? get() = origin.packageName
-    override val isFirType: Boolean get() = origin.isFirType
+    override val isAstType: Boolean get() = origin.isAstType
     override var needsSeparateTransform: Boolean
         get() = origin.needsSeparateTransform
         set(_) {}
@@ -123,7 +123,7 @@ class SimpleField(
     override val nullable: Boolean,
     override var withReplace: Boolean
 ) : Field() {
-    override val isFirType: Boolean = false
+    override val isAstType: Boolean = false
     override val fullQualifiedName: String?
         get() = customType?.fullQualifiedName ?: super.fullQualifiedName
 
@@ -152,7 +152,7 @@ class SimpleField(
     }
 }
 
-class FirField(
+class AstField(
     override val name: String,
     val element: AbstractElement,
     override val nullable: Boolean,
@@ -166,12 +166,12 @@ class FirField(
 
     override val type: String get() = element.type
     override val packageName: String? get() = element.packageName
-    override val isFirType: Boolean = true
+    override val isAstType: Boolean = true
 
     override var isMutable: Boolean = true
 
     override fun internalCopy(): Field {
-        return FirField(
+        return AstField(
             name,
             element,
             nullable,
@@ -205,5 +205,5 @@ class FieldList(
         )
     }
 
-    override val isFirType: Boolean = baseType is Element
+    override val isAstType: Boolean = baseType is Element
 }

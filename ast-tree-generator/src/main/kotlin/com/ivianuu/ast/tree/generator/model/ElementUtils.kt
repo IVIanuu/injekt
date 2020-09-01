@@ -5,7 +5,7 @@
 
 package com.ivianuu.ast.tree.generator.model
 
-import com.ivianuu.ast.tree.generator.context.AbstractFirTreeBuilder
+import com.ivianuu.ast.tree.generator.context.AbstractAstTreeBuilder
 import com.ivianuu.ast.tree.generator.context.type
 import com.ivianuu.ast.tree.generator.printer.typeWithArguments
 
@@ -62,18 +62,18 @@ fun field(type: Type, nullable: Boolean = false, withReplace: Boolean = false): 
 }
 
 fun booleanField(name: String, withReplace: Boolean = false): Field {
-    return field(name, AbstractFirTreeBuilder.boolean, null, withReplace = withReplace)
+    return field(name, AbstractAstTreeBuilder.boolean, null, withReplace = withReplace)
 }
 
 fun stringField(name: String, nullable: Boolean = false): Field {
-    return field(name, AbstractFirTreeBuilder.string, null, null, nullable)
+    return field(name, AbstractAstTreeBuilder.string, null, null, nullable)
 }
 
 fun intField(name: String): Field {
-    return field(name, AbstractFirTreeBuilder.int, null)
+    return field(name, AbstractAstTreeBuilder.int, null)
 }
 
-// ----------- Fir field -----------
+// ----------- Ast field -----------
 
 fun field(
     name: String,
@@ -95,11 +95,11 @@ fun field(
     nullable: Boolean = false,
     withReplace: Boolean = false
 ): Field {
-    return FirField(name, element, nullable, withReplace)
+    return AstField(name, element, nullable, withReplace)
 }
 
 fun field(element: Element, nullable: Boolean = false, withReplace: Boolean = false): Field {
-    return FirField(element.name.decapitalize(), element, nullable, withReplace)
+    return AstField(element.name.decapitalize(), element, nullable, withReplace)
 }
 
 // ----------- Field list -----------

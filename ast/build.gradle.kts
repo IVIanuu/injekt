@@ -25,8 +25,13 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt-lint.gradle")
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mvn-publish.gradle")
 
+sourceSets {
+    getByName("main") {
+        java.srcDir("gen")
+    }
+}
+
 dependencies {
-    api(project(":ast-tree-generated"))
     implementation(Deps.processingX)
     kapt(Deps.processingX)
     compileOnly(Deps.Kotlin.compilerEmbeddable)

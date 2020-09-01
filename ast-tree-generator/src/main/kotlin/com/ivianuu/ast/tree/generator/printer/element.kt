@@ -1,11 +1,6 @@
-/*
- * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.
- * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
- */
-
 package com.ivianuu.ast.tree.generator.printer
 
-import com.ivianuu.ast.tree.generator.context.AbstractFirTreeBuilder
+import com.ivianuu.ast.tree.generator.context.AbstractAstTreeBuilder
 import com.ivianuu.ast.tree.generator.model.Element
 import com.ivianuu.ast.tree.generator.model.Field
 import com.ivianuu.ast.tree.generator.model.Implementation
@@ -42,7 +37,7 @@ fun SmartPrinter.printElement(element: Element) {
         }
 
         fun override() {
-            if (this != AbstractFirTreeBuilder.baseFirElement) {
+            if (this != AbstractAstTreeBuilder.baseAstElement) {
                 print("override ")
             }
         }
@@ -88,7 +83,7 @@ fun SmartPrinter.printElement(element: Element) {
             }
 
             override()
-            println("fun <R, D> accept(visitor: FirVisitor<R, D>, data: D): R = visitor.visit$name(this, data)")
+            println("fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visit$name(this, data)")
 
             fun Field.replaceDeclaration(
                 override: Boolean,
@@ -129,22 +124,22 @@ fun SmartPrinter.printElement(element: Element) {
                 println(transformFunctionDeclaration("OtherChildren", typeWithArguments))
             }
 
-            if (element == AbstractFirTreeBuilder.baseFirElement) {
+            if (element == AbstractAstTreeBuilder.baseAstElement) {
                 require(isInterface)
                 println()
-                println("fun accept(visitor: FirVisitorVoid) = accept(visitor, null)")
+                println("fun accept(visitor: AstVisitorVoid) = accept(visitor, null)")
                 println()
-                println("fun <R, D> acceptChildren(visitor: FirVisitor<R, D>, data: D)")
+                println("fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D)")
                 println()
-                println("fun acceptChildren(visitor: FirVisitorVoid) = acceptChildren(visitor, null)")
+                println("fun acceptChildren(visitor: AstVisitorVoid) = acceptChildren(visitor, null)")
                 println()
                 println("@Suppress(\"UNCHECKED_CAST\")")
-                println("fun <E : FirElement, D> transform(visitor: FirTransformer<D>, data: D): CompositeTransformResult<E> =")
+                println("fun <E : AstElement, D> transform(visitor: AstTransformer<D>, data: D): CompositeTransformResult<E> =")
                 withIndent {
                     println("accept(visitor, data) as CompositeTransformResult<E>")
                 }
                 println()
-                println("fun <D> transformChildren(transformer: FirTransformer<D>, data: D): FirElement")
+                println("fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstElement")
             }
         }
         println("}")

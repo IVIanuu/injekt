@@ -5,18 +5,17 @@
 
 package com.ivianuu.ast.tree.generator
 
-import com.ivianuu.ast.tree.generator.FirTreeBuilder.annotationCall
-import com.ivianuu.ast.tree.generator.FirTreeBuilder.block
-import com.ivianuu.ast.tree.generator.FirTreeBuilder.controlFlowGraphReference
-import com.ivianuu.ast.tree.generator.FirTreeBuilder.declaration
-import com.ivianuu.ast.tree.generator.FirTreeBuilder.declarationStatus
-import com.ivianuu.ast.tree.generator.FirTreeBuilder.expression
-import com.ivianuu.ast.tree.generator.FirTreeBuilder.reference
-import com.ivianuu.ast.tree.generator.FirTreeBuilder.typeParameter
-import com.ivianuu.ast.tree.generator.FirTreeBuilder.typeParameterRef
-import com.ivianuu.ast.tree.generator.FirTreeBuilder.typeProjection
-import com.ivianuu.ast.tree.generator.FirTreeBuilder.typeRef
-import com.ivianuu.ast.tree.generator.FirTreeBuilder.valueParameter
+import com.ivianuu.ast.tree.generator.AstTreeBuilder.annotationCall
+import com.ivianuu.ast.tree.generator.AstTreeBuilder.block
+import com.ivianuu.ast.tree.generator.AstTreeBuilder.declaration
+import com.ivianuu.ast.tree.generator.AstTreeBuilder.declarationStatus
+import com.ivianuu.ast.tree.generator.AstTreeBuilder.expression
+import com.ivianuu.ast.tree.generator.AstTreeBuilder.reference
+import com.ivianuu.ast.tree.generator.AstTreeBuilder.typeParameter
+import com.ivianuu.ast.tree.generator.AstTreeBuilder.typeParameterRef
+import com.ivianuu.ast.tree.generator.AstTreeBuilder.typeProjection
+import com.ivianuu.ast.tree.generator.AstTreeBuilder.typeRef
+import com.ivianuu.ast.tree.generator.AstTreeBuilder.valueParameter
 import com.ivianuu.ast.tree.generator.context.type
 import com.ivianuu.ast.tree.generator.model.Field
 import com.ivianuu.ast.tree.generator.model.field
@@ -53,7 +52,7 @@ object FieldSets {
     }
 
     fun symbol(symbolClassName: String, argument: String? = null): Field =
-        symbolWithPackage("fir.symbols.impl", symbolClassName, argument)
+        symbolWithPackage("ast.symbols.impl", symbolClassName, argument)
 
     fun body(nullable: Boolean = false) =
         field("body", block, nullable)
@@ -83,18 +82,7 @@ object FieldSets {
 
     val status = field("status", declarationStatus)
 
-    val controlFlowGraphReferenceField = field(
-        "controlFlowGraphReference",
-        controlFlowGraphReference,
-        withReplace = true,
-        nullable = true
-    )
-
     val visibility = field(visibilityType)
 
-    val effectiveVisibility = field("effectiveVisibility", effectiveVisibilityType)
-
     val modality = field(modalityType, nullable = true)
-
-    val scopeProvider = field("scopeProvider", firScopeProviderType)
 }

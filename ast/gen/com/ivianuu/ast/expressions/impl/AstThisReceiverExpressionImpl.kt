@@ -1,0 +1,131 @@
+package com.ivianuu.ast.expressions.impl
+
+import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.expressions.AstThisReceiverExpression
+import com.ivianuu.ast.references.AstReference
+import com.ivianuu.ast.references.AstThisReference
+import com.ivianuu.ast.types.AstTypeProjection
+import com.ivianuu.ast.types.AstTypeRef
+import com.ivianuu.ast.visitors.AstTransformer
+import com.ivianuu.ast.visitors.AstVisitor
+import com.ivianuu.ast.visitors.transformInplace
+import com.ivianuu.ast.visitors.transformSingle
+
+/*
+ * This file was generated automatically
+ * DO NOT MODIFY IT MANUALLY
+ */
+
+internal class AstThisReceiverExpressionImpl(
+    override var typeRef: AstTypeRef,
+    override val annotations: MutableList<AstAnnotationCall>,
+    override val typeArguments: MutableList<AstTypeProjection>,
+    override var calleeReference: AstThisReference,
+) : AstThisReceiverExpression() {
+    override var explicitReceiver: AstExpression? = null
+    override var dispatchReceiver: AstExpression = AstNoReceiverExpression
+    override var extensionReceiver: AstExpression = AstNoReceiverExpression
+
+    override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+        typeRef.accept(visitor, data)
+        annotations.forEach { it.accept(visitor, data) }
+        typeArguments.forEach { it.accept(visitor, data) }
+        explicitReceiver?.accept(visitor, data)
+        if (dispatchReceiver !== explicitReceiver) {
+            dispatchReceiver.accept(visitor, data)
+        }
+        if (extensionReceiver !== explicitReceiver && extensionReceiver !== dispatchReceiver) {
+            extensionReceiver.accept(visitor, data)
+        }
+        calleeReference.accept(visitor, data)
+    }
+
+    override fun <D> transformChildren(
+        transformer: AstTransformer<D>,
+        data: D
+    ): AstThisReceiverExpressionImpl {
+        typeRef = typeRef.transformSingle(transformer, data)
+        transformAnnotations(transformer, data)
+        transformTypeArguments(transformer, data)
+        explicitReceiver = explicitReceiver?.transformSingle(transformer, data)
+        if (dispatchReceiver !== explicitReceiver) {
+            dispatchReceiver = dispatchReceiver.transformSingle(transformer, data)
+        }
+        if (extensionReceiver !== explicitReceiver && extensionReceiver !== dispatchReceiver) {
+            extensionReceiver = extensionReceiver.transformSingle(transformer, data)
+        }
+        transformCalleeReference(transformer, data)
+        return this
+    }
+
+    override fun <D> transformAnnotations(
+        transformer: AstTransformer<D>,
+        data: D
+    ): AstThisReceiverExpressionImpl {
+        annotations.transformInplace(transformer, data)
+        return this
+    }
+
+    override fun <D> transformTypeArguments(
+        transformer: AstTransformer<D>,
+        data: D
+    ): AstThisReceiverExpressionImpl {
+        typeArguments.transformInplace(transformer, data)
+        return this
+    }
+
+    override fun <D> transformExplicitReceiver(
+        transformer: AstTransformer<D>,
+        data: D
+    ): AstThisReceiverExpressionImpl {
+        explicitReceiver = explicitReceiver?.transformSingle(transformer, data)
+        return this
+    }
+
+    override fun <D> transformDispatchReceiver(
+        transformer: AstTransformer<D>,
+        data: D
+    ): AstThisReceiverExpressionImpl {
+        dispatchReceiver = dispatchReceiver.transformSingle(transformer, data)
+        return this
+    }
+
+    override fun <D> transformExtensionReceiver(
+        transformer: AstTransformer<D>,
+        data: D
+    ): AstThisReceiverExpressionImpl {
+        extensionReceiver = extensionReceiver.transformSingle(transformer, data)
+        return this
+    }
+
+    override fun <D> transformCalleeReference(
+        transformer: AstTransformer<D>,
+        data: D
+    ): AstThisReceiverExpressionImpl {
+        calleeReference = calleeReference.transformSingle(transformer, data)
+        return this
+    }
+
+    override fun replaceTypeRef(newTypeRef: AstTypeRef) {
+        typeRef = newTypeRef
+    }
+
+    override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>) {
+        typeArguments.clear()
+        typeArguments.addAll(newTypeArguments)
+    }
+
+    override fun replaceExplicitReceiver(newExplicitReceiver: AstExpression?) {
+        explicitReceiver = newExplicitReceiver
+    }
+
+    override fun replaceCalleeReference(newCalleeReference: AstThisReference) {
+        calleeReference = newCalleeReference
+    }
+
+    override fun replaceCalleeReference(newCalleeReference: AstReference) {
+        require(newCalleeReference is AstThisReference)
+        replaceCalleeReference(newCalleeReference)
+    }
+}

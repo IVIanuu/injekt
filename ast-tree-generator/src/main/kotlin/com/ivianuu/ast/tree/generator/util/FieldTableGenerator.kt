@@ -1,16 +1,11 @@
-/*
- * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.
- * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
- */
-
 package com.ivianuu.ast.tree.generator.util
 
-import com.ivianuu.ast.tree.generator.context.AbstractFirTreeBuilder
+import com.ivianuu.ast.tree.generator.context.AbstractAstTreeBuilder
 import com.ivianuu.ast.tree.generator.model.Element
 import com.ivianuu.ast.tree.generator.model.Field
 import java.io.File
 
-fun printFieldUsageTable(builder: AbstractFirTreeBuilder) {
+fun printFieldUsageTable(builder: AbstractAstTreeBuilder) {
     val elements = builder.elements.filter { it.allImplementations.isNotEmpty() }
     val fields = elements.flatMapTo(mutableSetOf()) { it.allFields }
 
@@ -28,7 +23,7 @@ fun printFieldUsageTable(builder: AbstractFirTreeBuilder) {
     }
 
     val sortedFields = fields.sortedByDescending { fieldsCount[it] }
-    File("compiler/fir/tree/table.csv").printWriter().use { printer ->
+    File("compiler/ast/tree/table.csv").printWriter().use { printer ->
         with(printer) {
             val delim = ","
             print(delim)

@@ -1,11 +1,6 @@
-/*
- * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.
- * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
- */
-
 package com.ivianuu.ast.tree.generator.model
 
-private const val DEFAULT_BUILDER_PACKAGE = "org.jetbrains.kotlin.fir.tree.builder"
+private const val DEFAULT_BUILDER_PACKAGE = "com.ivianuu.ast.tree.builder"
 
 sealed class Builder : FieldContainer, Importable {
     val parents: MutableList<IntermediateBuilder> = mutableListOf()

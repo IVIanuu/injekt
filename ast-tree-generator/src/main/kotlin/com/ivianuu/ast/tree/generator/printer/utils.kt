@@ -1,20 +1,15 @@
-/*
- * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.
- * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
- */
-
 package com.ivianuu.ast.tree.generator.printer
 
+import com.ivianuu.ast.tree.generator.astImplementationDetailType
 import com.ivianuu.ast.tree.generator.compositeTransformResultType
-import com.ivianuu.ast.tree.generator.context.AbstractFirTreeBuilder
-import com.ivianuu.ast.tree.generator.firImplementationDetailType
+import com.ivianuu.ast.tree.generator.context.AbstractAstTreeBuilder
 import com.ivianuu.ast.tree.generator.model.AbstractElement
+import com.ivianuu.ast.tree.generator.model.AstField
 import com.ivianuu.ast.tree.generator.model.Builder
 import com.ivianuu.ast.tree.generator.model.Element
 import com.ivianuu.ast.tree.generator.model.Field
 import com.ivianuu.ast.tree.generator.model.FieldList
 import com.ivianuu.ast.tree.generator.model.FieldWithDefault
-import com.ivianuu.ast.tree.generator.model.FirField
 import com.ivianuu.ast.tree.generator.model.Implementation
 import com.ivianuu.ast.tree.generator.model.ImplementationWithArg
 import com.ivianuu.ast.tree.generator.model.Importable
@@ -31,7 +26,7 @@ enum class ImportKind(val postfix: String) {
 
 fun Builder.collectImports(): List<String> {
     val parents = parents.mapNotNull { it.fullQualifiedName }
-    val builderDsl = "org.jetbrains.kotlin.fir.builder.FirBuilderDsl"
+    val builderDsl = "com.ivianuu.ast.builder.AstBuilderDsl"
     return when (this) {
         is LeafBuilder -> implementation.collectImports(
             parents,
@@ -58,7 +53,7 @@ fun Implementation.collectImports(
                 + parents.mapNotNull { it.fullQualifiedName }
                 + listOfNotNull(
             pureAbstractElementType.fullQualifiedName?.takeIf { needPureAbstractElement },
-            firImplementationDetailType.fullQualifiedName?.takeIf { isPublic || requiresOptIn },
+            astImplementationDetailType.fullQualifiedName?.takeIf { isPublic || requiresOptIn },
         ),
         kind,
     )
@@ -67,8 +62,8 @@ fun Implementation.collectImports(
 fun Element.collectImports(): List<String> {
     val baseTypes = parents.mapTo(mutableListOf()) { it.fullQualifiedName }
     baseTypes += parentsArguments.values.flatMap { it.values }.mapNotNull { it.fullQualifiedName }
-    val isBaseFirElement = this == AbstractFirTreeBuilder.baseFirElement
-    if (isBaseFirElement) {
+    val isBaseAstElement = this == AbstractAstTreeBuilder.baseAstElement
+    if (isBaseAstElement) {
         baseTypes += compositeTransformResultType.fullQualifiedName!!
     }
     if (needPureAbstractElement) {
@@ -111,7 +106,7 @@ fun Field.transformFunctionDeclaration(returnType: String): String {
 }
 
 fun transformFunctionDeclaration(transformName: String, returnType: String): String {
-    return "fun <D> transform$transformName(transformer: FirTransformer<D>, data: D): $returnType"
+    return "fun <D> transform$transformName(transformer: AstTransformer<D>, data: D): $returnType"
 }
 
 fun Field.replaceFunctionDeclaration(
@@ -157,7 +152,7 @@ val Importable.typeWithArguments: String
     get() = when (this) {
         is AbstractElement -> type + generics
         is Implementation -> type + element.generics
-        is FirField -> element.typeWithArguments + if (nullable) "?" else ""
+        is AstField -> element.typeWithArguments + if (nullable) "?" else ""
         is Field -> type + generics + if (nullable) "?" else ""
         is Type -> type + generics
         is ImplementationWithArg -> type + generics

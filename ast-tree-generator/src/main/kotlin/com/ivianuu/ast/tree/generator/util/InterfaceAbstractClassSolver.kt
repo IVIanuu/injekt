@@ -5,13 +5,13 @@
 
 package com.ivianuu.ast.tree.generator.util
 
-import com.ivianuu.ast.tree.generator.context.AbstractFirTreeBuilder
+import com.ivianuu.ast.tree.generator.context.AbstractAstTreeBuilder
 import com.ivianuu.ast.tree.generator.model.Element
 import com.ivianuu.ast.tree.generator.model.Implementation
 import com.ivianuu.ast.tree.generator.model.ImplementationWithArg
 import com.ivianuu.ast.tree.generator.model.KindOwner
 
-fun configureInterfacesAndAbstractClasses(builder: AbstractFirTreeBuilder) {
+fun configureInterfacesAndAbstractClasses(builder: AbstractAstTreeBuilder) {
     val elements = collectElements(builder)
     val elementMapping = ElementMapping(elements)
 
@@ -44,7 +44,7 @@ private class ElementMapping(elements: Collection<KindOwner>) {
     val size: Int = elements.size
 }
 
-private fun collectElements(builder: AbstractFirTreeBuilder): List<KindOwner> {
+private fun collectElements(builder: AbstractAstTreeBuilder): List<KindOwner> {
     return (builder.elements + builder.elements.flatMap { it.allImplementations }).map { it.origin }
 }
 

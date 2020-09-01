@@ -1,8 +1,3 @@
-/*
- * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.
- * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
- */
-
 package com.ivianuu.ast.tree.generator.printer
 
 import com.ivianuu.ast.tree.generator.model.Builder
@@ -36,7 +31,7 @@ private fun SmartPrinter.printBuilder(builder: Builder) {
         return
     }
 
-    println("@FirBuilderDsl")
+    println("@AstBuilderDsl")
     when (builder) {
         is IntermediateBuilder -> print("interface ")
         is LeafBuilder -> {
@@ -76,7 +71,7 @@ private fun SmartPrinter.printBuilder(builder: Builder) {
             )
         }
         if (builder is LeafBuilder && builder.implementation.isPublic) {
-            println("@OptIn(FirImplementationDetail::class)")
+            println("@OptIn(AstImplementationDetail::class)")
         }
         if (builder.parents.isNotEmpty()) {
             print("override ")
@@ -263,7 +258,7 @@ private fun SmartPrinter.printDslBuildFunction(
         println("@OptIn(ExperimentalContracts::class)")
         print("inline ")
     } else if (builder.implementation.isPublic) {
-        println("@OptIn(FirImplementationDetail::class)")
+        println("@OptIn(AstImplementationDetail::class)")
     }
     print("fun ")
     builder.implementation.element.typeArguments.takeIf { it.isNotEmpty() }?.let {
@@ -271,7 +266,7 @@ private fun SmartPrinter.printDslBuildFunction(
     }
     val builderType = builder.typeWithArguments
     val name =
-        builder.implementation.name?.replaceFirst("Fir", "") ?: builder.implementation.element.name
+        builder.implementation.name?.replaceFirst("Ast", "") ?: builder.implementation.element.name
     print("build${name}(")
     if (!isEmpty) {
         print("init: $builderType.() -> Unit")
@@ -303,7 +298,7 @@ private fun SmartPrinter.printDslBuildCopyFunction(
     }
     val builderType = builder.typeWithArguments
     val name =
-        builder.implementation.name?.replaceFirst("Fir", "") ?: builder.implementation.element.name
+        builder.implementation.name?.replaceFirst("Ast", "") ?: builder.implementation.element.name
     print("build${name}Copy(")
     print("original: ${builder.implementation.element.typeWithArguments}, init: $builderType.() -> Unit")
     if (!hasRequiredFields) {

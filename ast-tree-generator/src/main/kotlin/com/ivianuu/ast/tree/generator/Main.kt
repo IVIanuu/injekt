@@ -13,13 +13,13 @@ import java.io.File
 
 fun main(args: Array<String>) {
     val generationPath = args.firstOrNull()?.let { File(it) }
-        ?: File("ast-tree-generated/src/main/kotlin").absoluteFile
+        ?: File("ast/gen").absoluteFile
 
     NodeConfigurator.configureFields()
-    detectBaseTransformerTypes(FirTreeBuilder)
+    detectBaseTransformerTypes(AstTreeBuilder)
     ImplementationConfigurator.configureImplementations()
-    configureInterfacesAndAbstractClasses(FirTreeBuilder)
+    configureInterfacesAndAbstractClasses(AstTreeBuilder)
     BuilderConfigurator.configureBuilders()
     removePreviousGeneratedFiles(generationPath)
-    printElements(FirTreeBuilder, generationPath)
+    printElements(AstTreeBuilder, generationPath)
 }

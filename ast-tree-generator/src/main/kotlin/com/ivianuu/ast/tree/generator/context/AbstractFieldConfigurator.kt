@@ -15,7 +15,7 @@ import com.ivianuu.ast.tree.generator.model.Type
 import com.ivianuu.ast.tree.generator.model.TypeArgumentWithMultipleUpperBounds
 import com.ivianuu.ast.tree.generator.model.booleanField
 
-abstract class AbstractFieldConfigurator<T : AbstractFirTreeBuilder>(private val builder: T) {
+abstract class AbstractFieldConfigurator<T : AbstractAstTreeBuilder>(private val builder: T) {
     inner class ConfigureContext(val element: Element) {
         operator fun FieldSet.unaryPlus() {
             element.fields.addAll(this.map { it.copy() })

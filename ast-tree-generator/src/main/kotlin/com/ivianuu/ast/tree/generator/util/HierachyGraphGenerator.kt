@@ -1,15 +1,10 @@
-/*
- * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.
- * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
- */
-
 package com.ivianuu.ast.tree.generator.util
 
-import com.ivianuu.ast.tree.generator.context.AbstractFirTreeBuilder
+import com.ivianuu.ast.tree.generator.context.AbstractAstTreeBuilder
 import com.ivianuu.ast.tree.generator.model.Implementation
 import java.io.File
 
-fun printHierarchyGraph(builder: AbstractFirTreeBuilder) {
+fun printHierarchyGraph(builder: AbstractAstTreeBuilder) {
     fun Implementation.Kind.toColor(): String = when (this) {
         Implementation.Kind.Interface -> "green"
         else -> "red"
@@ -27,9 +22,9 @@ fun printHierarchyGraph(builder: AbstractFirTreeBuilder) {
     println("Interfaces: ${interfaces.size}")
     println("Classes: ${classes.size}")
 
-    File("FirTree.dot").printWriter().use { printer ->
+    File("AstTree.dot").printWriter().use { printer ->
         with(printer) {
-            println("digraph FirTree {")
+            println("digraph AstTree {")
             elements.forEach {
                 println("    ${it.type} [color=${it.kind!!.toColor()}]")
             }

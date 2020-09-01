@@ -1,12 +1,7 @@
-/*
- * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.
- * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
- */
-
 package com.ivianuu.ast.tree.generator.printer
 
 import com.ivianuu.ast.tree.generator.compositeTransformResultType
-import com.ivianuu.ast.tree.generator.context.AbstractFirTreeBuilder
+import com.ivianuu.ast.tree.generator.context.AbstractAstTreeBuilder
 import com.ivianuu.ast.tree.generator.model.Element
 
 import java.io.File
@@ -14,7 +9,7 @@ import java.io.File
 fun printTransformer(elements: List<Element>, generationPath: File) {
     val dir = File(generationPath, VISITOR_PACKAGE.replace(".", "/"))
     dir.mkdirs()
-    File(dir, "FirTransformer.kt").useSmartPrinter {
+    File(dir, "AstTransformer.kt").useSmartPrinter {
         println("package $VISITOR_PACKAGE")
         println()
         elements.forEach { println("import ${it.fullQualifiedName}") }
@@ -22,13 +17,13 @@ fun printTransformer(elements: List<Element>, generationPath: File) {
         println()
         printGeneratedMessage()
 
-        println("abstract class FirTransformer<in D> : FirVisitor<CompositeTransformResult<FirElement>, D>() {")
+        println("abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstElement>, D>() {")
         println()
         withIndent {
-            println("abstract fun <E : FirElement> transformElement(element: E, data: D): CompositeTransformResult<E>")
+            println("abstract fun <E : AstElement> transformElement(element: E, data: D): CompositeTransformResult<E>")
             println()
             for (element in elements) {
-                if (element == AbstractFirTreeBuilder.baseFirElement) continue
+                if (element == AbstractAstTreeBuilder.baseAstElement) continue
                 val varName = element.safeDecapitalizedName
                 print("open fun ")
                 element.typeParameters.takeIf { it.isNotBlank() }?.let { print(it) }

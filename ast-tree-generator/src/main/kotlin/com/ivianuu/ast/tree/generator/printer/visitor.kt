@@ -1,11 +1,6 @@
-/*
- * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.
- * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
- */
-
 package com.ivianuu.ast.tree.generator.printer
 
-import com.ivianuu.ast.tree.generator.context.AbstractFirTreeBuilder
+import com.ivianuu.ast.tree.generator.context.AbstractAstTreeBuilder
 import com.ivianuu.ast.tree.generator.model.Element
 
 import java.io.File
@@ -13,19 +8,19 @@ import java.io.File
 fun printVisitor(elements: List<Element>, generationPath: File) {
     val dir = File(generationPath, VISITOR_PACKAGE.replace(".", "/"))
     dir.mkdirs()
-    File(dir, "FirVisitor.kt").useSmartPrinter {
+    File(dir, "AstVisitor.kt").useSmartPrinter {
         println("package $VISITOR_PACKAGE")
         println()
         elements.forEach { println("import ${it.fullQualifiedName}") }
         println()
         printGeneratedMessage()
 
-        println("abstract class FirVisitor<out R, in D> {")
+        println("abstract class AstVisitor<out R, in D> {")
 
         pushIndent()
-        println("abstract fun visitElement(element: FirElement, data: D): R\n")
+        println("abstract fun visitElement(element: AstElement, data: D): R\n")
         for (element in elements) {
-            if (element == AbstractFirTreeBuilder.baseFirElement) continue
+            if (element == AbstractAstTreeBuilder.baseAstElement) continue
             with(element) {
                 val varName = safeDecapitalizedName
                 println("open fun ${typeParameters}visit$name($varName: $typeWithArguments, data: D): R${multipleUpperBoundsList()} = visitElement($varName, data)")
@@ -41,20 +36,20 @@ fun printVisitor(elements: List<Element>, generationPath: File) {
 fun printVisitorVoid(elements: List<Element>, generationPath: File) {
     val dir = File(generationPath, VISITOR_PACKAGE.replace(".", "/"))
     dir.mkdirs()
-    File(dir, "FirVisitorVoid.kt").useSmartPrinter {
+    File(dir, "AstVisitorVoid.kt").useSmartPrinter {
         println("package $VISITOR_PACKAGE")
         println()
         elements.forEach { println("import ${it.fullQualifiedName}") }
         println()
         printGeneratedMessage()
 
-        println("abstract class FirVisitorVoid : FirVisitor<Unit, Nothing?>() {")
+        println("abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {")
 
         withIndent {
-            println("abstract fun visitElement(element: FirElement)")
+            println("abstract fun visitElement(element: AstElement)")
             println()
             for (element in elements) {
-                if (element == AbstractFirTreeBuilder.baseFirElement) continue
+                if (element == AbstractAstTreeBuilder.baseAstElement) continue
                 with(element) {
                     val varName = safeDecapitalizedName
                     println("open fun ${typeParameters}visit$name($varName: $typeWithArguments)${multipleUpperBoundsList()}{")

@@ -1,14 +1,9 @@
-/*
- * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.
- * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
- */
-
 package com.ivianuu.ast.tree.generator.printer
 
+import com.ivianuu.ast.tree.generator.model.AstField
 import com.ivianuu.ast.tree.generator.model.Field
 import com.ivianuu.ast.tree.generator.model.FieldList
 import com.ivianuu.ast.tree.generator.model.FieldWithDefault
-import com.ivianuu.ast.tree.generator.model.FirField
 import com.ivianuu.ast.tree.generator.model.Implementation
 import com.ivianuu.ast.tree.generator.model.Importable
 import com.ivianuu.ast.tree.generator.pureAbstractElementType
@@ -36,7 +31,7 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
         when (this) {
             is FieldWithDefault -> origin.transform()
 
-            is FirField ->
+            is AstField ->
                 println("$name = ${name}${call()}transformSingle(transformer, data)")
 
             is FieldList -> {
@@ -49,7 +44,7 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
 
     with(implementation) {
         if (requiresOptIn) {
-            println("@OptIn(FirImplementationDetail::class)")
+            println("@OptIn(AstImplementationDetail::class)")
         }
         if (!isPublic) {
             print("internal ")
@@ -68,7 +63,7 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
 
         if (!isInterface && !isAbstract && fieldsWithoutDefault.isNotEmpty()) {
             if (isPublic) {
-                print(" @FirImplementationDetail constructor")
+                print(" @AstImplementationDetail constructor")
             }
             println("(")
             withIndent {
@@ -100,33 +95,14 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
                 }
             }
 
-
-            element.allFields.filter { it.type.contains("Symbol") && it !is FieldList }
-                .takeIf {
-                    it.isNotEmpty() && !isInterface && !isAbstract &&
-                            !element.type.contains("Reference")
-                            && !element.type.contains("ResolvedQualifier")
-                            && !element.type.endsWith("Ref")
-                }
-                ?.let { symbolFields ->
-                    println("init {")
-                    for (symbolField in symbolFields) {
-                        withIndent {
-                            println("${symbolField.name}${symbolField.call()}bind(this)")
-                        }
-                    }
-                    println("}")
-                    println()
-                }
-
             fun Field.acceptString(): String = "${name}${call()}accept(visitor, data)"
             if (!isInterface && !isAbstract) {
-                print("override fun <R, D> acceptChildren(visitor: FirVisitor<R, D>, data: D) {")
+                print("override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {")
 
-                if (element.allFirFields.isNotEmpty()) {
+                if (element.allAstFields.isNotEmpty()) {
                     println()
                     withIndent {
-                        for (field in allFields.filter { it.isFirType }) {
+                        for (field in allFields.filter { it.isAstType }) {
                             if (field.withGetter || !field.needAcceptAndTransform) continue
                             when (field.name) {
                                 "explicitReceiver" -> {
@@ -150,7 +126,7 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
                                 }
 
                                 else -> {
-                                    if (type == "FirWhenExpressionImpl" && field.name == "subject") {
+                                    if (type == "AstWhenExpressionImpl" && field.name == "subject") {
                                         println(
                                             """
                                         |val subjectVariable_ = subjectVariable
@@ -163,7 +139,7 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
                                         )
                                     } else {
                                         when (field.origin) {
-                                            is FirField -> {
+                                            is AstField -> {
                                                 println(field.acceptString())
                                             }
 
@@ -185,13 +161,13 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
             }
 
             abstract()
-            print("override fun <D> transformChildren(transformer: FirTransformer<D>, data: D): $typeWithArguments")
+            print("override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): $typeWithArguments")
             if (!isInterface && !isAbstract) {
                 println(" {")
                 withIndent {
                     for (field in allFields) {
                         when {
-                            !field.isMutable || !field.isFirType || field.withGetter || !field.needAcceptAndTransform -> {
+                            !field.isMutable || !field.isAstType || field.withGetter || !field.needAcceptAndTransform -> {
                             }
 
                             field.name == "explicitReceiver" -> {
@@ -225,7 +201,7 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
                             }
 
                             field.name == "companionObject" -> {
-                                println("companionObject = declarations.asSequence().filterIsInstance<FirRegularClass>().firstOrNull { it.status.isCompanion }")
+                                println("companionObject = declarations.asSequence().filterIsInstance<AstRegularClass>().firstOrNull { it.status.isCompanion }")
                             }
 
                             field.needsSeparateTransform -> {
@@ -263,9 +239,9 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
                 }
                 println(" {")
                 withIndent {
-                    if (field.isMutable && field.isFirType) {
+                    if (field.isMutable && field.isAstType) {
                         // TODO: replace with smth normal
-                        if (type == "FirWhenExpressionImpl" && field.name == "subject") {
+                        if (type == "AstWhenExpressionImpl" && field.name == "subject") {
                             println(
                                 """
                                 |if (subjectVariable != null) {
@@ -288,14 +264,14 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
             if (element.needTransformOtherChildren) {
                 println()
                 abstract()
-                print("override fun <D> transformOtherChildren(transformer: FirTransformer<D>, data: D): $typeWithArguments")
+                print("override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): $typeWithArguments")
                 if (isInterface || isAbstract) {
                     println()
                 } else {
                     println(" {")
                     withIndent {
                         for (field in allFields) {
-                            if (!field.isMutable || !field.isFirType || field.name == "subjectVariable") continue
+                            if (!field.isMutable || !field.isAstType || field.name == "subjectVariable") continue
                             if (!field.needsSeparateTransform) {
                                 field.transform()
                             }

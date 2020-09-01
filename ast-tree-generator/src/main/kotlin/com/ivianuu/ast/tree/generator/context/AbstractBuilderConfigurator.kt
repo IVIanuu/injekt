@@ -1,8 +1,3 @@
-/*
- * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.
- * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
- */
-
 package com.ivianuu.ast.tree.generator.context
 
 import com.ivianuu.ast.tree.generator.model.Builder
@@ -16,7 +11,7 @@ import com.ivianuu.ast.tree.generator.noReceiverExpressionType
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
-abstract class AbstractBuilderConfigurator<T : AbstractFirTreeBuilder>(val firTreeBuilder: T) {
+abstract class AbstractBuilderConfigurator<T : AbstractAstTreeBuilder>(val astTreeBuilder: T) {
     abstract class BuilderConfigurationContext {
         abstract val builder: Builder
 
@@ -32,8 +27,8 @@ abstract class AbstractBuilderConfigurator<T : AbstractFirTreeBuilder>(val firTr
             if (!notNullExplicitReceiver) {
                 defaultNull("explicitReceiver")
             }
-            default("dispatchReceiver", "FirNoReceiverExpression")
-            default("extensionReceiver", "FirNoReceiverExpression")
+            default("dispatchReceiver", "AstNoReceiverExpression")
+            default("extensionReceiver", "AstNoReceiverExpression")
             useTypes(noReceiverExpressionType)
         }
 
@@ -138,9 +133,9 @@ abstract class AbstractBuilderConfigurator<T : AbstractFirTreeBuilder>(val firTr
             thisRef: Nothing?,
             prop: KProperty<*>
         ): ReadOnlyProperty<Nothing?, IntermediateBuilder> {
-            val name = name ?: "Fir${prop.name.capitalize()}"
+            val name = name ?: "Ast${prop.name.capitalize()}"
             builder = IntermediateBuilder(name).apply {
-                firTreeBuilder.intermediateBuilders += this
+                astTreeBuilder.intermediateBuilders += this
                 IntermediateBuilderConfigurationContext(this).block()
             }
             return DummyDelegate(builder)

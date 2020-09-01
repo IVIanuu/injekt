@@ -17,11 +17,11 @@
 package com.ivianuu.injekt.compiler
 
 import com.google.auto.service.AutoService
-import com.ivianuu.ast.AstAnalysisHandlerExtension
 import com.ivianuu.injekt.compiler.analysis.InjektStorageContainerContributor
 import com.ivianuu.injekt.compiler.analysis.ReaderChecker
 import com.ivianuu.injekt.compiler.analysis.ReaderTypeInterceptor
 import com.ivianuu.injekt.compiler.transform.InjektIrGenerationExtension
+import old.com.ivianuu.ast.AstAnalysisHandlerExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
@@ -70,7 +70,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
         )
         AnalysisHandlerExtension.registerExtension(
             project,
-            AstAnalysisHandlerExtension(
+            _root_ide_package_.old.com.ivianuu.ast.AstAnalysisHandlerExtension(
                 Files.createTempDirectory("tmp").toFile()
                     .also { it.mkdirs() }
                     .absolutePath

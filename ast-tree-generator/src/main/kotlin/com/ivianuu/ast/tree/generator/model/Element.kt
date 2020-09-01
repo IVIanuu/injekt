@@ -1,8 +1,3 @@
-/*
- * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.
- * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
- */
-
 package com.ivianuu.ast.tree.generator.model
 
 import com.ivianuu.ast.tree.generator.printer.BASE_PACKAGE
@@ -29,7 +24,7 @@ interface AbstractElement : FieldContainer, KindOwner {
     val doesNotNeedImplementation: Boolean
     val needTransformOtherChildren: Boolean
     val allImplementations: List<Implementation>
-    val allFirFields: List<Field>
+    val allAstFields: List<Field>
     val defaultImplementation: Implementation?
     val customImplementations: List<Implementation>
     val overridenFields: Map<Field, Map<Importable, Boolean>>
@@ -40,7 +35,7 @@ interface AbstractElement : FieldContainer, KindOwner {
 
 class Element(val name: String, kind: Kind) : AbstractElement {
     override val fields = mutableSetOf<Field>()
-    override val type: String = "Fir$name"
+    override val type: String = "Ast$name"
     override val packageName: String =
         BASE_PACKAGE + kind.packageName.let { if (it.isBlank()) it else "." + it }
     override val fullQualifiedName: String get() = super.fullQualifiedName!!
@@ -129,8 +124,8 @@ class Element(val name: String, kind: Kind) : AbstractElement {
         result.toList()
     }
 
-    override val allFirFields: List<Field> by lazy {
-        allFields.filter { it.isFirType }
+    override val allAstFields: List<Field> by lazy {
+        allFields.filter { it.isAstType }
     }
 
     override fun toString(): String {
@@ -146,7 +141,6 @@ class Element(val name: String, kind: Kind) : AbstractElement {
         Declaration("declarations"),
         Reference("references"),
         TypeRef("types"),
-        Diagnostics("diagnostics"),
         Other("")
     }
 }

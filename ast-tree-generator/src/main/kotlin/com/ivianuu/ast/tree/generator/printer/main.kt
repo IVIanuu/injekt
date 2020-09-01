@@ -1,15 +1,10 @@
-/*
- * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.
- * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
- */
-
 package com.ivianuu.ast.tree.generator.printer
 
-import com.ivianuu.ast.tree.generator.context.AbstractFirTreeBuilder
+import com.ivianuu.ast.tree.generator.context.AbstractAstTreeBuilder
 import java.io.File
 
-const val VISITOR_PACKAGE = "com.ivianuu.ast.tree.visitors"
-const val BASE_PACKAGE = "com.ivianuu.ast.tree"
+const val VISITOR_PACKAGE = "com.ivianuu.ast.visitors"
+const val BASE_PACKAGE = "com.ivianuu.ast"
 val GENERATED_MESSAGE = """
     /*
      * This file was generated automatically
@@ -17,7 +12,7 @@ val GENERATED_MESSAGE = """
      */
      """.trimIndent()
 
-fun printElements(builder: AbstractFirTreeBuilder, generationPath: File) {
+fun printElements(builder: AbstractAstTreeBuilder, generationPath: File) {
     builder.elements.forEach { it.generateCode(generationPath) }
     builder.elements.flatMap { it.allImplementations }.forEach { it.generateCode(generationPath) }
     builder.elements.flatMap { it.allImplementations }.mapNotNull { it.builder }
