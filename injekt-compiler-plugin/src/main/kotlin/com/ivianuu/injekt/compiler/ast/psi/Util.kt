@@ -7,6 +7,7 @@ import com.ivianuu.injekt.compiler.ast.tree.AstVariance
 import com.ivianuu.injekt.compiler.ast.tree.AstVisibility
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstClass
 import com.ivianuu.injekt.compiler.ast.tree.declaration.AstFunction
+import com.ivianuu.injekt.compiler.ast.tree.declaration.AstProperty
 import com.ivianuu.injekt.compiler.ast.tree.type.AstType
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
@@ -22,12 +23,15 @@ import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.bindingContextUtil.isUsedAsExpression
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.util.slicedMap.ReadOnlySlice
@@ -77,8 +81,67 @@ class GeneratorContext(
     val kotlinBuiltIns: KotlinBuiltIns,
     val storage: Psi2AstStorage,
     val typeMapper: TypeMapper,
-    val astProvider: AstProvider
-)
+    val astProvider: AstProvider,
+    val stubGenerator: Psi2AstStubGenerator
+) {
+
+    private val classes = mutableMapOf<FqName, AstClass?>()
+    private val functions = mutableMapOf<FqName, List<AstFunction>>()
+    private val constructors = mutableMapOf<FqName, List<AstFunction>>()
+    private val properties = mutableMapOf<FqName, List<AstProperty>>()
+
+    fun referenceClass(fqName: FqName): AstClass? = classes.getOrPut(fqName) {
+        val scope = resolveMemberScope(fqName.parent())
+        scope
+            ?.getContributedClassifier(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
+            ?.let { it as ClassDescriptor }
+            ?.let { storage.classes[it] ?: stubGenerator.get(it) as? AstClass }
+    }
+
+    fun referenceFunctions(fqName: FqName): List<AstFunction> =
+        functions.getOrPut(fqName) {
+            val scope = resolveMemberScope(fqName.parent())
+            scope?.getContributedFunctions(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
+                ?.mapNotNull {
+                    storage.functions[it] ?: stubGenerator.get(it) as? AstFunction
+                }
+                ?: emptyList()
+        }
+
+    fun referenceConstructors(classFqName: FqName): List<AstFunction> =
+        constructors.getOrPut(classFqName) {
+            val kclass = referenceClass(classFqName)
+            kclass
+                ?.declarations
+                ?.filterIsInstance<AstFunction>()
+                ?: emptyList()
+        }
+
+    fun referenceProperties(fqName: FqName): List<AstProperty>? = properties.getOrPut(fqName) {
+        val scope = resolveMemberScope(fqName.parent())
+        scope?.getContributedVariables(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
+            ?.mapNotNull { storage.properties[it] ?: stubGenerator.get(it) as? AstProperty }
+            ?: emptyList()
+    }
+
+    private fun resolveMemberScope(fqName: FqName): MemberScope? {
+        val pkg = module.getPackage(fqName)
+
+        if (fqName.isRoot || pkg.fragments.isNotEmpty()) return pkg.memberScope
+
+        val parentMemberScope = resolveMemberScope(fqName.parent()) ?: return null
+
+        val classDescriptor =
+            parentMemberScope.getContributedClassifier(
+                fqName.shortName(),
+                NoLookupLocation.FROM_BACKEND
+            ) as? ClassDescriptor
+                ?: return null
+
+        return classDescriptor.unsubstitutedMemberScope
+    }
+
+}
 
 fun FunctionDescriptor.toAstFunctionKind() = when (this) {
     is ConstructorDescriptor -> AstFunction.Kind.CONSTRUCTOR

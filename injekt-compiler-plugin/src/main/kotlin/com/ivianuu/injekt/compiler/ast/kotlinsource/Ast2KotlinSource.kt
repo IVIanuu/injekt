@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstBlock
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstConst
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
-import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThis
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThrow
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstTry
@@ -36,7 +35,6 @@ import com.ivianuu.injekt.compiler.ast.tree.type.classOrNull
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformResult
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstTransformerVoid
 import com.ivianuu.injekt.compiler.ast.tree.visitor.AstVisitorVoid
-import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.utils.Printer
 
@@ -490,19 +488,6 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid {
         block.statements.forEach { statement ->
             statement.emit()
             emitLine()
-        }
-    }
-
-    override fun visitStringConcatenation(
-        stringConcatenation: AstStringConcatenation,
-        data: Nothing?
-    ) {
-        stringConcatenation.arguments.forEachIndexed { index, expression ->
-            expression.emit()
-            if (expression.type.classOrNull?.fqName != KotlinBuiltIns.FQ_NAMES.string.toSafe())
-                emit(".toString()")
-            if (index != stringConcatenation.arguments.lastIndex)
-                emit(" + ")
         }
     }
 

@@ -92,7 +92,7 @@ class AstAnalysisHandlerExtension(
         astProvider.storage = storage
         val generator = Psi2AstTranslator(
             astProvider, bindingTrace.bindingContext,
-            module, storage, typeMapper
+            module, storage, stubGenerator, typeMapper
         )
         val builtIns = AstBuiltIns(module.builtIns, astProvider, typeMapper)
         generator.builtIns = builtIns

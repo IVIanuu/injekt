@@ -15,6 +15,7 @@ class Psi2AstTranslator(
     private val bindingContext: BindingContext,
     private val module: ModuleDescriptor,
     private val storage: Psi2AstStorage,
+    private val stubGenerator: Psi2AstStubGenerator,
     private val typeMapper: TypeMapper
 ) {
 
@@ -28,7 +29,8 @@ class Psi2AstTranslator(
             module.builtIns,
             storage,
             typeMapper,
-            astProvider
+            astProvider,
+            stubGenerator
         )
         val visitor = Psi2AstVisitor(context)
 

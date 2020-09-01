@@ -26,7 +26,6 @@ import com.ivianuu.injekt.compiler.ast.tree.expression.AstExpression
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstLoop
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstQualifiedAccess
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstReturn
-import com.ivianuu.injekt.compiler.ast.tree.expression.AstStringConcatenation
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThis
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstThrow
 import com.ivianuu.injekt.compiler.ast.tree.expression.AstTry
@@ -497,15 +496,36 @@ class Psi2AstVisitor(
             0 -> AstConst.string(resultType, "")
             1 -> {
                 val entry = entries.single()
-                if (entry is AstConst<*> && entry.kind == AstConst.Kind.String)
+                if (entry is AstConst<*> && entry.kind == AstConst.Kind.String) {
                     entry
-                else
-                    AstStringConcatenation(resultType).apply {
-                        arguments += entry
+                } else {
+                    val toString = context.builtIns.anyClass
+                        .declarations
+                        .filterIsInstance<AstFunction>()
+                        .first { it.name.asString() == "toString" }
+
+                    AstQualifiedAccess(
+                        callee = toString,
+                        type = context.builtIns.stringType
+                    ).apply {
+                        dispatchReceiver = entry
                     }
+                }
             }
-            else -> AstStringConcatenation(resultType).apply {
-                arguments += entries
+            else -> {
+                val stringPlus = context.builtIns.stringClass
+                    .declarations
+                    .filterIsInstance<AstFunction>()
+                    .first { it.name.asString() == "plus" }
+                entries.reduce { acc, entry ->
+                    AstQualifiedAccess(
+                        callee = stringPlus,
+                        type = context.builtIns.stringType
+                    ).apply {
+                        dispatchReceiver = acc
+                        valueArguments += entry
+                    }
+                }
             }
         }
     }
