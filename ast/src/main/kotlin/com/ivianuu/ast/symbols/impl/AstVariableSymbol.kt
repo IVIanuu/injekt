@@ -15,5 +15,3 @@ open class AstValueParameterSymbol(callableId: CallableId) : AstVariableSymbol<A
 open class AstPropertySymbol(
     callableId: CallableId
 ) : AstVariableSymbol<AstProperty>(callableId)
-
-class AstBackingFieldSymbol(callableId: CallableId) : AstVariableSymbol<AstProperty>(callableId)

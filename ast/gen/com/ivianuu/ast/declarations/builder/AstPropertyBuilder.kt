@@ -5,7 +5,6 @@ import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
-import com.ivianuu.ast.declarations.AstField
 import com.ivianuu.ast.declarations.AstProperty
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstTypeParameter
@@ -13,7 +12,6 @@ import com.ivianuu.ast.declarations.builder.AstTypeParametersOwnerBuilder
 import com.ivianuu.ast.declarations.impl.AstPropertyImpl
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
-import com.ivianuu.ast.symbols.impl.AstBackingFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstPropertySymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -40,6 +38,7 @@ class AstPropertyBuilder : AstTypeParametersOwnerBuilder {
     val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
     lateinit var symbol: AstPropertySymbol
+    var hasBackingField: Boolean = false
     var isLocal: Boolean = false
     var visibility: Visibility = Visibilities.Public
     var isExpect: Boolean = false
@@ -63,6 +62,7 @@ class AstPropertyBuilder : AstTypeParametersOwnerBuilder {
             annotations,
             typeParameters,
             symbol,
+            hasBackingField,
             isLocal,
             visibility,
             isExpect,

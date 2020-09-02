@@ -3,13 +3,11 @@ package com.ivianuu.ast.declarations.impl
 import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
-import com.ivianuu.ast.declarations.AstField
 import com.ivianuu.ast.declarations.AstProperty
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
-import com.ivianuu.ast.symbols.impl.AstBackingFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstPropertySymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.descriptors.Modality
@@ -34,6 +32,7 @@ internal class AstPropertyImpl(
     override val annotations: MutableList<AstFunctionCall>,
     override val typeParameters: MutableList<AstTypeParameter>,
     override val symbol: AstPropertySymbol,
+    override val hasBackingField: Boolean,
     override val isLocal: Boolean,
     override val visibility: Visibility,
     override val isExpect: Boolean,
@@ -45,7 +44,6 @@ internal class AstPropertyImpl(
 ) : AstProperty() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override val isVal: Boolean get() = !isVar
-    override val backingFieldSymbol: AstBackingFieldSymbol = AstBackingFieldSymbol(symbol.callableId)
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         receiverType?.accept(visitor, data)

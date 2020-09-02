@@ -16,7 +16,6 @@ import com.ivianuu.ast.declarations.AstTypeParametersOwner
 import com.ivianuu.ast.declarations.AstVariable
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.declarations.AstProperty
-import com.ivianuu.ast.declarations.AstField
 import com.ivianuu.ast.declarations.AstEnumEntry
 import com.ivianuu.ast.declarations.AstClassLikeDeclaration
 import com.ivianuu.ast.declarations.AstClass
@@ -58,7 +57,7 @@ import com.ivianuu.ast.expressions.AstThrow
 import com.ivianuu.ast.expressions.AstVariableAssignment
 import com.ivianuu.ast.expressions.AstSuperReference
 import com.ivianuu.ast.expressions.AstThisReference
-import com.ivianuu.ast.expressions.AstBackingFieldReference
+import com.ivianuu.ast.expressions.AstPropertyBackingFieldReference
 import com.ivianuu.ast.types.AstSimpleType
 import com.ivianuu.ast.types.AstDelegatedType
 
@@ -128,10 +127,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     open fun visitProperty(property: AstProperty) {
         visitElement(property)
-    }
-
-    open fun visitField(field: AstField) {
-        visitElement(field)
     }
 
     open fun visitEnumEntry(enumEntry: AstEnumEntry) {
@@ -298,8 +293,8 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(thisReference)
     }
 
-    open fun visitBackingFieldReference(backingFieldReference: AstBackingFieldReference) {
-        visitElement(backingFieldReference)
+    open fun visitPropertyBackingFieldReference(propertyBackingFieldReference: AstPropertyBackingFieldReference) {
+        visitElement(propertyBackingFieldReference)
     }
 
     open fun visitSimpleType(simpleType: AstSimpleType) {
@@ -372,10 +367,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     final override fun visitProperty(property: AstProperty, data: Nothing?) {
         visitProperty(property)
-    }
-
-    final override fun visitField(field: AstField, data: Nothing?) {
-        visitField(field)
     }
 
     final override fun visitEnumEntry(enumEntry: AstEnumEntry, data: Nothing?) {
@@ -542,8 +533,8 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitThisReference(thisReference)
     }
 
-    final override fun visitBackingFieldReference(backingFieldReference: AstBackingFieldReference, data: Nothing?) {
-        visitBackingFieldReference(backingFieldReference)
+    final override fun visitPropertyBackingFieldReference(propertyBackingFieldReference: AstPropertyBackingFieldReference, data: Nothing?) {
+        visitPropertyBackingFieldReference(propertyBackingFieldReference)
     }
 
     final override fun visitSimpleType(simpleType: AstSimpleType, data: Nothing?) {

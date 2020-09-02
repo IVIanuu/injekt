@@ -91,11 +91,6 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         visitorSuperType = variable
         transformerType = statement
     }
-    val field =
-        element("Field", Declaration, variable, typeParametersOwner, callableDeclaration) {
-            visitorSuperType = variable
-            transformerType = statement
-        }
     val enumEntry = element("EnumEntry", Declaration, variable, callableDeclaration) {
         visitorSuperType = variable
         transformerType = statement
@@ -306,7 +301,7 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         visitorSuperType = expression
         transformerType = statement
     }
-    val backingFieldReference = element("BackingFieldReference", Expression, expression) {
+    val propertyBackingFieldReference = element("PropertyBackingFieldReference", Expression, expression) {
         visitorSuperType = expression
         transformerType = statement
     }

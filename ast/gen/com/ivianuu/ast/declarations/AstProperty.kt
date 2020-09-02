@@ -3,7 +3,6 @@ package com.ivianuu.ast.declarations
 import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
-import com.ivianuu.ast.symbols.impl.AstBackingFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstPropertySymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.descriptors.Modality
@@ -30,7 +29,7 @@ abstract class AstProperty : AstVariable<AstProperty>(), AstTypeParametersOwner,
     abstract override val annotations: List<AstFunctionCall>
     abstract override val typeParameters: List<AstTypeParameter>
     abstract override val symbol: AstPropertySymbol
-    abstract val backingFieldSymbol: AstBackingFieldSymbol
+    abstract val hasBackingField: Boolean
     abstract val isLocal: Boolean
     abstract val visibility: Visibility
     abstract val isExpect: Boolean

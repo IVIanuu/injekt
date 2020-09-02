@@ -26,8 +26,3 @@ object AstIntrinsics {
     val SafeAs = CallableId(Package, "safeAs".nameAsSafeName())
 }
 
-class AstBuiltIns {
-
-
-
-}

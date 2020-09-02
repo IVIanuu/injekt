@@ -16,7 +16,6 @@ import com.ivianuu.ast.declarations.AstTypeParametersOwner
 import com.ivianuu.ast.declarations.AstVariable
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.declarations.AstProperty
-import com.ivianuu.ast.declarations.AstField
 import com.ivianuu.ast.declarations.AstEnumEntry
 import com.ivianuu.ast.declarations.AstClassLikeDeclaration
 import com.ivianuu.ast.declarations.AstClass
@@ -58,7 +57,7 @@ import com.ivianuu.ast.expressions.AstThrow
 import com.ivianuu.ast.expressions.AstVariableAssignment
 import com.ivianuu.ast.expressions.AstSuperReference
 import com.ivianuu.ast.expressions.AstThisReference
-import com.ivianuu.ast.expressions.AstBackingFieldReference
+import com.ivianuu.ast.expressions.AstPropertyBackingFieldReference
 import com.ivianuu.ast.types.AstSimpleType
 import com.ivianuu.ast.types.AstDelegatedType
 import com.ivianuu.ast.visitors.CompositeTransformResult
@@ -130,10 +129,6 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     open fun transformProperty(property: AstProperty, data: D): CompositeTransformResult<AstStatement> {
         return transformVariable(property, data)
-    }
-
-    open fun transformField(field: AstField, data: D): CompositeTransformResult<AstStatement> {
-        return transformVariable(field, data)
     }
 
     open fun transformEnumEntry(enumEntry: AstEnumEntry, data: D): CompositeTransformResult<AstStatement> {
@@ -300,8 +295,8 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformExpression(thisReference, data)
     }
 
-    open fun transformBackingFieldReference(backingFieldReference: AstBackingFieldReference, data: D): CompositeTransformResult<AstStatement> {
-        return transformExpression(backingFieldReference, data)
+    open fun transformPropertyBackingFieldReference(propertyBackingFieldReference: AstPropertyBackingFieldReference, data: D): CompositeTransformResult<AstStatement> {
+        return transformExpression(propertyBackingFieldReference, data)
     }
 
     open fun transformSimpleType(simpleType: AstSimpleType, data: D): CompositeTransformResult<AstType> {
@@ -374,10 +369,6 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     final override fun visitProperty(property: AstProperty, data: D): CompositeTransformResult<AstStatement> {
         return transformProperty(property, data)
-    }
-
-    final override fun visitField(field: AstField, data: D): CompositeTransformResult<AstStatement> {
-        return transformField(field, data)
     }
 
     final override fun visitEnumEntry(enumEntry: AstEnumEntry, data: D): CompositeTransformResult<AstStatement> {
@@ -544,8 +535,8 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformThisReference(thisReference, data)
     }
 
-    final override fun visitBackingFieldReference(backingFieldReference: AstBackingFieldReference, data: D): CompositeTransformResult<AstStatement> {
-        return transformBackingFieldReference(backingFieldReference, data)
+    final override fun visitPropertyBackingFieldReference(propertyBackingFieldReference: AstPropertyBackingFieldReference, data: D): CompositeTransformResult<AstStatement> {
+        return transformPropertyBackingFieldReference(propertyBackingFieldReference, data)
     }
 
     final override fun visitSimpleType(simpleType: AstSimpleType, data: D): CompositeTransformResult<AstType> {

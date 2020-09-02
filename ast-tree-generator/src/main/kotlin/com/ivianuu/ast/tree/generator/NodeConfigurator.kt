@@ -39,13 +39,11 @@ import com.ivianuu.ast.tree.generator.context.AbstractFieldConfigurator
 import com.ivianuu.ast.tree.generator.model.AbstractElement
 import com.ivianuu.ast.tree.generator.model.Element
 import com.ivianuu.ast.tree.generator.model.ElementWithArguments
-import com.ivianuu.ast.tree.generator.model.Implementation
 import com.ivianuu.ast.tree.generator.model.SimpleTypeArgument
 import com.ivianuu.ast.tree.generator.model.booleanField
 import com.ivianuu.ast.tree.generator.model.field
 import com.ivianuu.ast.tree.generator.model.fieldList
 import com.ivianuu.ast.tree.generator.model.stringField
-import org.jetbrains.kotlin.ir.expressions.IrExpression
 
 object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuilder) {
     fun configureFields() = configure {
@@ -244,7 +242,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             parentArg(variable, "F", property)
             parentArg(callableDeclaration, "F", property)
             +symbol("AstPropertySymbol")
-            +field("backingFieldSymbol", backingFieldSymbolType)
+            +booleanField("hasBackingField")
             +booleanField("isLocal")
             +visibility
             +expectActual
@@ -306,11 +304,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             parentArg(callableDeclaration, "F", enumEntry)
         }
 
-        field.configure {
-            parentArg(variable, "F", field)
-            parentArg(callableDeclaration, "F", field)
-        }
-
         anonymousInitializer.configure {
             parentArg(symbolOwner, "E", anonymousInitializer)
             +body(nullable = true)
@@ -354,7 +347,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +field("expression", expression)
         }
 
-        backingFieldReference.configure {
+        propertyBackingFieldReference.configure {
             +field("resolvedSymbol", backingFieldSymbolType)
         }
 

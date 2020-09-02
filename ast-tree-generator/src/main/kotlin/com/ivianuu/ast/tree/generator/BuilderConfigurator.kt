@@ -75,11 +75,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             defaultNull("body")
         }
 
-        builder(field) {
-            openBuilder()
-            defaultFalse("isVar")
-        }
-
         builder(anonymousObject) {
             parents += classBuilder
             default("classKind", "ClassKind.CLASS")
@@ -126,6 +121,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             parents += typeParametersOwnerBuilder
             defaultNull("getter", "setter")
             defaultFalse("isVar")
+            defaultFalse("hasBackingField")
             defaultFalse("isLocal")
             defaultFalse("isConst")
             defaultFalse("isLateinit")

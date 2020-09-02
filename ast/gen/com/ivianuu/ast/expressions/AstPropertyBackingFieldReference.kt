@@ -10,10 +10,10 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstBackingFieldReference : AstPureAbstractElement(), AstExpression {
+abstract class AstPropertyBackingFieldReference : AstPureAbstractElement(), AstExpression {
     abstract override val type: AstType
     abstract override val annotations: List<AstFunctionCall>
     abstract val resolvedSymbol: AstBackingFieldSymbol
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitBackingFieldReference(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitPropertyBackingFieldReference(this, data)
 }

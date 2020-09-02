@@ -44,24 +44,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
                 value = "!isVar"
                 withGetter = true
             }
-            default("backingFieldSymbol", "AstBackingFieldSymbol(symbol.callableId)")
-            useTypes(field)
-        }
-
-        impl(field) {
-            default("isVal") {
-                value = "!isVar"
-                withGetter = true
-            }
-
-            defaultNull(
-                "receiverType",
-                "initializer",
-                "delegate",
-                "getter",
-                "setter",
-                withGetter = true
-            )
         }
 
         impl(enumEntry) {
