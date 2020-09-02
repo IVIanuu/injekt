@@ -11,11 +11,11 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstFile : AstPureAbstractElement(), AstPackageFragment, AstAnnotationContainer {
+abstract class AstFile : AstPureAbstractElement(), AstAnnotationContainer {
     abstract override val annotations: List<AstAnnotationCall>
     abstract val declarations: List<AstDeclaration>
     abstract val name: String
-    abstract override val packageFqName: FqName
+    abstract val packageFqName: FqName
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitFile(this, data)
 

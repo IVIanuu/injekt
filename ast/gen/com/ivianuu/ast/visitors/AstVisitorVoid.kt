@@ -36,7 +36,6 @@ import com.ivianuu.ast.declarations.AstSimpleFunction
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstModuleFragment
-import com.ivianuu.ast.declarations.AstPackageFragment
 import com.ivianuu.ast.declarations.AstFile
 import com.ivianuu.ast.declarations.AstAnonymousFunction
 import com.ivianuu.ast.declarations.AstAnonymousObject
@@ -245,10 +244,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     open fun visitModuleFragment(moduleFragment: AstModuleFragment) {
         visitElement(moduleFragment)
-    }
-
-    open fun visitPackageFragment(packageFragment: AstPackageFragment) {
-        visitElement(packageFragment)
     }
 
     open fun visitFile(file: AstFile) {
@@ -637,10 +632,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     final override fun visitModuleFragment(moduleFragment: AstModuleFragment, data: Nothing?) {
         visitModuleFragment(moduleFragment)
-    }
-
-    final override fun visitPackageFragment(packageFragment: AstPackageFragment, data: Nothing?) {
-        visitPackageFragment(packageFragment)
     }
 
     final override fun visitFile(file: AstFile, data: Nothing?) {

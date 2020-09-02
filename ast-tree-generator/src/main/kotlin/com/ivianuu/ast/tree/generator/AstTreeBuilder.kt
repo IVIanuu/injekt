@@ -108,8 +108,7 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     )
 
     val moduleFragment = element("ModuleFragment", Declaration)
-    val packageFragment = element("PackageFragment", Declaration)
-    val file = element("File", Declaration, packageFragment, annotationContainer)
+    val file = element("File", Declaration, annotationContainer)
 
     val anonymousFunction =
         element("AnonymousFunction", Declaration, function, expression, typeParametersOwner)

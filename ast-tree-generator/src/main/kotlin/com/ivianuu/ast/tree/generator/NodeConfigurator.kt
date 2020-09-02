@@ -369,11 +369,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         moduleFragment.configure {
             +stringField("name")
-            +files//.withTransform()
-        }
-
-        packageFragment.configure {
-            +field("packageFqName", fqNameType)
+            +files.withTransform()
         }
 
         file.configure {
