@@ -1,6 +1,5 @@
 package com.ivianuu.ast.declarations
 
-import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
@@ -23,7 +22,7 @@ abstract class AstAnonymousFunction : AstFunction<AstAnonymousFunction>, AstExpr
     abstract override val body: AstBlock?
     abstract override val type: AstType
     abstract override val symbol: AstAnonymousFunctionSymbol
-    abstract val label: AstLabel?
+    abstract val label: String?
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitAnonymousFunction(this, data)
 }

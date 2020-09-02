@@ -1,5 +1,6 @@
 package com.ivianuu.ast
 
+import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -8,5 +9,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstSpreadElement : AstPureAbstractElement(), AstVarargElement {
+    abstract val expression: AstExpression
+
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitSpreadElement(this, data)
 }

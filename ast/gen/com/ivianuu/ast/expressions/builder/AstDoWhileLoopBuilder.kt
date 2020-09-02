@@ -1,6 +1,5 @@
 package com.ivianuu.ast.expressions.builder
 
-import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstDoWhileLoop
 import com.ivianuu.ast.expressions.AstExpression
@@ -20,7 +19,7 @@ class AstDoWhileLoopBuilder : AstLoopBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var body: AstExpression
     override lateinit var condition: AstExpression
-    override var label: AstLabel? = null
+    override var label: String? = null
 
     override fun build(): AstDoWhileLoop {
         return AstDoWhileLoopImpl(

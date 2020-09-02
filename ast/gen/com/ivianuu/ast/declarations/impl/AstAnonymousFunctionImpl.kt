@@ -1,6 +1,5 @@
 package com.ivianuu.ast.declarations.impl
 
-import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.declarations.AstAnonymousFunction
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
@@ -25,7 +24,7 @@ internal class AstAnonymousFunctionImpl(
     override var body: AstBlock?,
     override var type: AstType,
     override val symbol: AstAnonymousFunctionSymbol,
-    override var label: AstLabel?,
+    override val label: String?,
 ) : AstAnonymousFunction() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
 
@@ -36,7 +35,6 @@ internal class AstAnonymousFunctionImpl(
         valueParameters.forEach { it.accept(visitor, data) }
         body?.accept(visitor, data)
         type.accept(visitor, data)
-        label?.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
@@ -46,7 +44,6 @@ internal class AstAnonymousFunctionImpl(
         valueParameters.transformInplace(transformer, data)
         body = body?.transformSingle(transformer, data)
         type = type.transformSingle(transformer, data)
-        label = label?.transformSingle(transformer, data)
         return this
     }
 }

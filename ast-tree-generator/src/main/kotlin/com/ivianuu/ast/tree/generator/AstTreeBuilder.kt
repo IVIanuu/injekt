@@ -15,7 +15,6 @@ import com.ivianuu.ast.tree.generator.model.Element.Kind.Type
 object AstTreeBuilder : AbstractAstTreeBuilder() {
     val annotationContainer = element("AnnotationContainer", Other)
     val type = element("Type", Type, annotationContainer)
-    val label = element("Label", Other)
     val symbolOwner = element("SymbolOwner", Other)
     val varargElement = element("VarargElement", Other)
 

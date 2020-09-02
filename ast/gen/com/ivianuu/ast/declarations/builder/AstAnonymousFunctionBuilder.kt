@@ -1,6 +1,5 @@
 package com.ivianuu.ast.declarations.builder
 
-import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstAnonymousFunction
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
@@ -31,7 +30,7 @@ class AstAnonymousFunctionBuilder : AstFunctionBuilder, AstExpressionBuilder {
     override var body: AstBlock? = null
     override lateinit var type: AstType
     lateinit var symbol: AstAnonymousFunctionSymbol
-    var label: AstLabel? = null
+    var label: String? = null
 
     override fun build(): AstAnonymousFunction {
         return AstAnonymousFunctionImpl(

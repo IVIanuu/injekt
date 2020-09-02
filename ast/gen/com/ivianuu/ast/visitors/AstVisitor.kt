@@ -3,7 +3,6 @@ package com.ivianuu.ast.visitors
 import com.ivianuu.ast.AstElement
 import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.AstVarargElement
 import com.ivianuu.ast.AstTargetElement
@@ -79,8 +78,6 @@ abstract class AstVisitor<out R, in D> {
     open fun visitAnnotationContainer(annotationContainer: AstAnnotationContainer, data: D): R  = visitElement(annotationContainer, data)
 
     open fun visitType(type: AstType, data: D): R  = visitElement(type, data)
-
-    open fun visitLabel(label: AstLabel, data: D): R  = visitElement(label, data)
 
     open fun <E> visitSymbolOwner(symbolOwner: AstSymbolOwner<E>, data: D): R where E : AstSymbolOwner<E>, E : AstDeclaration  = visitElement(symbolOwner, data)
 

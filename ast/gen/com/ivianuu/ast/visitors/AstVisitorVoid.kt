@@ -3,7 +3,6 @@ package com.ivianuu.ast.visitors
 import com.ivianuu.ast.AstElement
 import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.AstVarargElement
 import com.ivianuu.ast.AstTargetElement
@@ -82,10 +81,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     open fun visitType(type: AstType) {
         visitElement(type)
-    }
-
-    open fun visitLabel(label: AstLabel) {
-        visitElement(label)
     }
 
     open fun <E> visitSymbolOwner(symbolOwner: AstSymbolOwner<E>) where E : AstSymbolOwner<E>, E : AstDeclaration {
@@ -350,10 +345,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     final override fun visitType(type: AstType, data: Nothing?) {
         visitType(type)
-    }
-
-    final override fun visitLabel(label: AstLabel, data: Nothing?) {
-        visitLabel(label)
     }
 
     final override fun <E> visitSymbolOwner(symbolOwner: AstSymbolOwner<E>, data: Nothing?) where E : AstSymbolOwner<E>, E : AstDeclaration {

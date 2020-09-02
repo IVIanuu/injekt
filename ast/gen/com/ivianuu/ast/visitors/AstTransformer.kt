@@ -3,7 +3,6 @@ package com.ivianuu.ast.visitors
 import com.ivianuu.ast.AstElement
 import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.AstVarargElement
 import com.ivianuu.ast.AstTargetElement
@@ -84,10 +83,6 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     open fun transformType(type: AstType, data: D): CompositeTransformResult<AstType> {
         return transformElement(type, data)
-    }
-
-    open fun transformLabel(label: AstLabel, data: D): CompositeTransformResult<AstLabel> {
-        return transformElement(label, data)
     }
 
     open fun <E> transformSymbolOwner(symbolOwner: AstSymbolOwner<E>, data: D): CompositeTransformResult<AstSymbolOwner<E>> where E : AstSymbolOwner<E>, E : AstDeclaration {
@@ -352,10 +347,6 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     final override fun visitType(type: AstType, data: D): CompositeTransformResult<AstType> {
         return transformType(type, data)
-    }
-
-    final override fun visitLabel(label: AstLabel, data: D): CompositeTransformResult<AstLabel> {
-        return transformLabel(label, data)
     }
 
     final override fun <E> visitSymbolOwner(symbolOwner: AstSymbolOwner<E>, data: D): CompositeTransformResult<AstSymbolOwner<E>> where E : AstSymbolOwner<E>, E : AstDeclaration {

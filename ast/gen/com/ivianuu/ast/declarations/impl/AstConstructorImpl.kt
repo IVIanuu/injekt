@@ -25,9 +25,9 @@ internal class AstConstructorImpl(
     override val symbol: AstConstructorSymbol,
     override var delegatedConstructor: AstDelegatedConstructorCall?,
     override var body: AstBlock?,
+    override val isPrimary: Boolean,
 ) : AstConstructor() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
-    override val isPrimary: Boolean get() = false
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         receiverType?.accept(visitor, data)

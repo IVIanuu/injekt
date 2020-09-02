@@ -132,9 +132,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             defaultFalse("isInline")
         }
 
-        builder(typeOperation) {
-        }
-
         builder(variableAssignment) {
             parents += qualifiedAccessBuilder
             defaultNoReceivers()
@@ -150,9 +147,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             defaultNull("body")
         }
 
-        builder(whenExpression) {
-        }
-
         builder(breakExpression) {
             parents += loopJumpBuilder
         }
@@ -161,23 +155,10 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             parents += loopJumpBuilder
         }
 
-        builder(valueParameter, type = "AstValueParameterImpl") {
+        builder(valueParameter) {
             openBuilder()
             defaultFalse("isCrossinline", "isNoinline", "isVararg")
             withCopy()
-        }
-
-        builder(valueParameter, type = "AstDefaultSetterValueParameter") {
-            defaultNull(
-                "defaultValue",
-                "initializer",
-                "delegate",
-                "receiverType",
-                "getter",
-                "setter"
-            )
-            defaultFalse("isCrossinline", "isNoinline", "isVararg", "isVar")
-            defaultTrue("isVal")
         }
 
         builder(namedFunction) {

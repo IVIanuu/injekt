@@ -30,6 +30,7 @@ class AstConstructorBuilder : AstAbstractConstructorBuilder {
     override lateinit var symbol: AstConstructorSymbol
     override var delegatedConstructor: AstDelegatedConstructorCall? = null
     override var body: AstBlock? = null
+    var isPrimary: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
 
     override fun build(): AstConstructor {
         return AstConstructorImpl(
@@ -41,6 +42,7 @@ class AstConstructorBuilder : AstAbstractConstructorBuilder {
             symbol,
             delegatedConstructor,
             body,
+            isPrimary,
         )
     }
 

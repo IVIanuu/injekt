@@ -2,6 +2,7 @@ package com.ivianuu.ast.builder
 
 import com.ivianuu.ast.AstSpreadElement
 import com.ivianuu.ast.builder.AstBuilderDsl
+import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.impl.AstSpreadElementImpl
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
@@ -11,6 +12,18 @@ import kotlin.contracts.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-fun buildSpreadElement(): AstSpreadElement {
-    return AstSpreadElementImpl()
+@AstBuilderDsl
+class AstSpreadElementBuilder {
+    lateinit var expression: AstExpression
+
+    fun build(): AstSpreadElement {
+        return AstSpreadElementImpl(
+            expression,
+        )
+    }
+}
+
+@OptIn(ExperimentalContracts::class)
+inline fun buildSpreadElement(init: AstSpreadElementBuilder.() -> Unit): AstSpreadElement {
+    return AstSpreadElementBuilder().apply(init).build()
 }

@@ -1,6 +1,5 @@
 package com.ivianuu.ast.expressions
 
-import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -10,7 +9,7 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstWhileLoop : AstLoop() {
     abstract override val annotations: List<AstFunctionCall>
-    abstract override val label: AstLabel?
+    abstract override val label: String?
     abstract override val condition: AstExpression
     abstract override val body: AstExpression
 

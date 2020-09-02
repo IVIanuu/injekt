@@ -44,6 +44,7 @@ import com.ivianuu.ast.tree.generator.model.booleanField
 import com.ivianuu.ast.tree.generator.model.field
 import com.ivianuu.ast.tree.generator.model.fieldList
 import com.ivianuu.ast.tree.generator.model.stringField
+import org.jetbrains.kotlin.ir.expressions.IrExpression
 
 object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuilder) {
     fun configureFields() = configure {
@@ -119,14 +120,10 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +field("result", expression)
         }
 
-        label.configure {
-            +stringField("name")
-        }
-
         loop.configure {
             +field("body", expression)
             +field("condition", expression)
-            +field(label, nullable = true)
+            +stringField("label", nullable = true)
         }
 
         whileLoop.configure {
@@ -241,7 +238,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         anonymousFunction.configure {
             parentArg(function, "F", anonymousFunction)
             +symbol("AstAnonymousFunctionSymbol")
-            +field(label, nullable = true)
+            +stringField("label", nullable = true)
         }
 
         typeParameter.configure {
@@ -380,6 +377,10 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         vararg.configure {
             +fieldList("elements", varargElement)
+        }
+
+        spreadElement.configure {
+            +field("expression", expression)
         }
 
         backingFieldReference.configure {

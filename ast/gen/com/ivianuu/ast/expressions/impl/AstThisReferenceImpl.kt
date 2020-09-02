@@ -11,19 +11,19 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-internal class AstImplicitThisReference(
+internal class AstThisReferenceImpl(
     override var type: AstType,
     override val annotations: MutableList<AstFunctionCall>,
-    override val boundSymbol: AstSymbol<*>?,
+    override val labelName: String?,
 ) : AstThisReference() {
-    override val labelName: String? get() = null
+    override var boundSymbol: AstSymbol<*>? = null
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
     }
 
-    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstImplicitThisReference {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstThisReferenceImpl {
         type = type.transformSingle(transformer, data)
         annotations.transformInplace(transformer, data)
         return this

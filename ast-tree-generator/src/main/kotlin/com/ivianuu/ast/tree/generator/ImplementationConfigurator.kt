@@ -12,10 +12,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
     }
 
     private fun configure() = with(AstTreeBuilder) {
-        impl(constructor) {
-            defaultFalse("isPrimary", withGetter = true)
-        }
-
         impl(regularClass)
 
         impl(anonymousObject)
@@ -34,8 +30,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
                 withGetter = true
             }
         }
-
-        impl(block)
 
         impl(functionCall) {
             kind = OpenClass
@@ -80,12 +74,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             )
         }
 
-        impl(typeOperation)
-
-        impl(assignmentOperatorStatement)
-
-        impl(anonymousFunction)
-
         impl(propertyAccessor) {
             default("receiverType") {
                 value = "null"
@@ -99,29 +87,11 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             kind = OpenClass
         }
 
-        impl(backingFieldReference)
-
-        impl(thisReference, "AstExplicitThisReference") {
+        impl(thisReference) {
             default("boundSymbol") {
                 value = "null"
                 isMutable = true
             }
-        }
-
-        impl(thisReference, "AstImplicitThisReference") {
-            default("labelName") {
-                value = "null"
-                withGetter = true
-            }
-            default("boundSymbol") {
-                isMutable = false
-            }
-        }
-
-        impl(superReference, "AstExplicitSuperReference")
-
-        impl(typeProjection, "AstTypePlaceholderProjection") {
-            kind = Object
         }
 
         impl(valueParameter) {
@@ -136,10 +106,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
                 "receiverType",
                 withGetter = true
             )
-        }
-
-        impl(valueParameter, "AstDefaultSetterValueParameter") {
-            default("name", "Name.identifier(\"value\")")
         }
 
         impl(namedFunction) {
