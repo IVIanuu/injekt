@@ -256,11 +256,11 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +annotations
         }
 
-        simpleFunction.configure {
-            parentArg(function, "F", simpleFunction)
-            parentArg(callableMemberDeclaration, "F", simpleFunction)
+        namedFunction.configure {
+            parentArg(function, "F", namedFunction)
+            parentArg(callableMemberDeclaration, "F", namedFunction)
             +name
-            +symbol("AstFunctionSymbol<AstSimpleFunction>")
+            +symbol("AstFunctionSymbol<AstNamedFunction>")
             +annotations
             +typeParameters
         }
@@ -361,12 +361,12 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +field("packageFqName", fqNameType)
         }
 
-        classReferenceExpression.configure {
+        classReference.configure {
             +field("classType", type)
         }
 
         expressionWithSmartcast.configure {
-            +field("originalExpression", qualifiedAccessExpression)
+            +field("originalExpression", qualifiedAccess)
             +field(
                 "typesFromSmartCast",
                 "Collection<AstType>",
@@ -410,22 +410,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +field("varargElementType", type)
         }
 
-        resolvedQualifier.configure {
-            +field("packageFqName", fqNameType)
-            +field("relativeClassFqName", fqNameType, nullable = true)
-            +field("classId", classIdType, nullable = true)
-            +field("symbol", classLikeSymbolType, nullable = true)
-            +booleanField("isNullableLHSForCallableReference", withReplace = true)
-            +typeArguments.withTransform()
-        }
-
-        resolvedReifiedParameterReference.configure {
-            +field("symbol", typeParameterSymbolType)
-        }
-
-        stringConcatenationCall.configure {
-        }
-
         throwExpression.configure {
             +field("exception", expression)
         }
@@ -447,16 +431,16 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +field("delegateProvider", expression)
         }
 
-        backingFieldRefExpression.configure {
+        backingFieldReference.configure {
             +field("resolvedSymbol", backingFieldSymbolType)
         }
 
-        superRefExpression.configure {
+        superReference.configure {
             +stringField("labelName", nullable = true)
             +field("superType", type, withReplace = true)
         }
 
-        thisRefExpression.configure {
+        thisReference.configure {
             +stringField("labelName", nullable = true)
             +field(
                 "boundSymbol",
@@ -478,7 +462,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         thisReceiverExpression.configure {
-            +field("calleeReference", thisRefExpression)
+            +field("calleeReference", thisReference)
         }
 
         whenExpression.configure {

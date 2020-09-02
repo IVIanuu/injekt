@@ -3,6 +3,7 @@ package com.ivianuu.ast.expressions.impl
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstVariableAssignment
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.visitors.*
 
@@ -12,6 +13,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstVariableAssignmentImpl(
+    override var type: AstType,
     override val annotations: MutableList<AstFunctionCall>,
     override val typeArguments: MutableList<AstTypeProjection>,
     override var dispatchReceiver: AstExpression?,
@@ -20,6 +22,7 @@ internal class AstVariableAssignmentImpl(
     override var right: AstExpression,
 ) : AstVariableAssignment() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+        type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
         typeArguments.forEach { it.accept(visitor, data) }
         left.accept(visitor, data)
@@ -27,6 +30,7 @@ internal class AstVariableAssignmentImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstVariableAssignmentImpl {
+        type = type.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         transformTypeArguments(transformer, data)
         left = left.transformSingle(transformer, data)
@@ -57,6 +61,10 @@ internal class AstVariableAssignmentImpl(
     override fun <D> transformRight(transformer: AstTransformer<D>, data: D): AstVariableAssignmentImpl {
         right = right.transformSingle(transformer, data)
         return this
+    }
+
+    override fun replaceType(newType: AstType) {
+        type = newType
     }
 
     override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>) {

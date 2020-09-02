@@ -85,8 +85,8 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         statement
     )
 
-    val simpleFunction = element(
-        "SimpleFunction",
+    val namedFunction = element(
+        "NamedFunction",
         Declaration,
         function,
         callableMemberDeclaration,
@@ -135,20 +135,18 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val equalityOperatorCall = element("EqualityOperatorCall", Expression, expression, call)
     val whenExpression = element("WhenExpression", Expression, expression)
     val whenBranch = element("WhenBranch", Expression)
-    val qualifiedAccess = element("QualifiedAccess", Expression, statement)
     val elvisExpression = element("ElvisExpression", Expression, expression)
 
-    val classReferenceExpression = element("ClassReferenceExpression", Expression, expression)
-    val qualifiedAccessExpression =
-        element("QualifiedAccessExpression", Expression, expression, qualifiedAccess)
-    val functionCall = element("FunctionCall", Expression, qualifiedAccessExpression, call)
+    val classReference = element("ClassReference", Expression, expression)
+    val qualifiedAccess = element("QualifiedAccess", Expression, expression)
+    val functionCall = element("FunctionCall", Expression, qualifiedAccess, call)
     val delegatedConstructorCall = element("DelegatedConstructorCall", Expression, call)
     val callableReferenceAccess =
-        element("CallableReferenceAccess", Expression, qualifiedAccessExpression)
+        element("CallableReferenceAccess", Expression, qualifiedAccess)
     val thisReceiverExpression =
-        element("ThisReceiverExpression", Expression, qualifiedAccessExpression)
+        element("ThisReceiverExpression", Expression, qualifiedAccess)
     val expressionWithSmartcast =
-        element("ExpressionWithSmartcast", Expression, qualifiedAccessExpression)
+        element("ExpressionWithSmartcast", Expression, qualifiedAccess)
     val safeCallExpression = element("SafeCallExpression", Expression, expression)
     val checkedSafeCallSubject = element("CheckedSafeCallSubject", Expression, expression)
     val getClassCall = element("GetClassCall", Expression, expression, call)
@@ -163,9 +161,6 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         element("NamedArgumentExpression", Expression, wrappedArgumentExpression)
     val varargArgumentsExpression = element("VarargArgumentsExpression", Expression, expression)
 
-    val resolvedQualifier = element("ResolvedQualifier", Expression, expression)
-    val resolvedReifiedParameterReference =
-        element("ResolvedReifiedParameterReference", Expression, expression)
     val returnExpression = element("ReturnExpression", Expression, jump)
     val stringConcatenationCall = element("StringConcatenationCall", Expression, call, expression)
     val throwExpression = element("ThrowExpression", Expression, expression)
@@ -175,9 +170,9 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val wrappedDelegateExpression =
         element("WrappedDelegateExpression", Expression, wrappedExpression)
 
-    val superRefExpression = element("SuperRefExpression", Expression, expression)
-    val thisRefExpression = element("ThisRefExpression", Expression, expression)
-    val backingFieldRefExpression = element("BackingFieldRefExpression", Expression, expression)
+    val superReference = element("SuperReference", Expression, expression)
+    val thisReference = element("ThisReference", Expression, expression)
+    val backingFieldReference = element("BackingFieldReference", Expression, expression)
 
     val simpleType =
         element("SimpleType", Type, type)

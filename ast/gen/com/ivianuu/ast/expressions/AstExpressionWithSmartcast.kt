@@ -9,13 +9,13 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstExpressionWithSmartcast : AstQualifiedAccessExpression() {
+abstract class AstExpressionWithSmartcast : AstQualifiedAccess() {
     abstract override val type: AstType
     abstract override val annotations: List<AstFunctionCall>
     abstract override val typeArguments: List<AstTypeProjection>
     abstract override val dispatchReceiver: AstExpression?
     abstract override val extensionReceiver: AstExpression?
-    abstract val originalExpression: AstQualifiedAccessExpression
+    abstract val originalExpression: AstQualifiedAccess
     abstract val typesFromSmartCast: Collection<AstType>
     abstract val originalType: AstType
 

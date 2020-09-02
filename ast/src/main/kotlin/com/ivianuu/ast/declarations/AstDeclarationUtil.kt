@@ -43,7 +43,7 @@ inline val AstPropertyAccessor.isInline get() = status.isInline
 inline val AstPropertyAccessor.isExternal get() = status.isExternal
 
 inline val AstRegularClass.isLocal get() = symbol.classId.isLocal
-inline val AstSimpleFunction.isLocal get() = status.visibility == Visibilities.Local
+inline val AstNamedFunction.isLocal get() = status.visibility == Visibilities.Local
 
 fun AstRegularClassBuilder.addDeclaration(declaration: AstDeclaration) {
     declarations += declaration

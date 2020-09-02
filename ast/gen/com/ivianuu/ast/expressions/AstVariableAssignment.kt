@@ -1,6 +1,6 @@
 package com.ivianuu.ast.expressions
 
-import com.ivianuu.ast.AstPureAbstractElement
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.visitors.*
 
@@ -9,7 +9,8 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstVariableAssignment : AstPureAbstractElement(), AstQualifiedAccess {
+abstract class AstVariableAssignment : AstQualifiedAccess() {
+    abstract override val type: AstType
     abstract override val annotations: List<AstFunctionCall>
     abstract override val typeArguments: List<AstTypeProjection>
     abstract override val dispatchReceiver: AstExpression?
@@ -18,6 +19,8 @@ abstract class AstVariableAssignment : AstPureAbstractElement(), AstQualifiedAcc
     abstract val right: AstExpression
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitVariableAssignment(this, data)
+
+    abstract override fun replaceType(newType: AstType)
 
     abstract override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>)
 

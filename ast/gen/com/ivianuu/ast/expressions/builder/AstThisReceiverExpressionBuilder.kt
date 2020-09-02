@@ -5,7 +5,7 @@ import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstThisReceiverExpression
-import com.ivianuu.ast.expressions.AstThisRefExpression
+import com.ivianuu.ast.expressions.AstThisReference
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.builder.AstQualifiedAccessBuilder
 import com.ivianuu.ast.expressions.impl.AstThisReceiverExpressionImpl
@@ -24,7 +24,7 @@ class AstThisReceiverExpressionBuilder : AstQualifiedAccessBuilder, AstAnnotatio
     override lateinit var type: AstType
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override val typeArguments: MutableList<AstTypeProjection> = mutableListOf()
-    lateinit var calleeReference: AstThisRefExpression
+    lateinit var calleeReference: AstThisReference
 
     override fun build(): AstThisReceiverExpression {
         return AstThisReceiverExpressionImpl(

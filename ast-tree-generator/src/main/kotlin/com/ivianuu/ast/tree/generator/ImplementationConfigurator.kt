@@ -43,27 +43,13 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             }
         }
 
-        impl(expression, "AstElseIfTrueCondition") {
-            publicImplementation()
-        }
-
         impl(block)
-
-        val emptyExpressionBlock = impl(block, "AstEmptyExpressionBlock") {
-            defaultEmptyList("statements")
-            defaultEmptyList("annotations")
-            publicImplementation()
-        }
-
-        impl(expression, "AstExpressionStub") {
-            publicImplementation()
-        }
 
         impl(functionCall) {
             kind = OpenClass
         }
 
-        impl(qualifiedAccessExpression)
+        impl(qualifiedAccess)
 
         noImpl(expressionWithSmartcast)
 
@@ -142,18 +128,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
 
         impl(assignmentOperatorStatement)
 
-        impl(resolvedQualifier) {
-            isMutable("packageFqName", "relativeClassFqName", "isNullableLHSForCallableReference")
-            default("classId") {
-                value = """
-                    |relativeClassFqName?.let {
-                    |    ClassId(packageFqName, it, false)
-                    |}
-                """.trimMargin()
-                withGetter = true
-            }
-        }
-
         impl(thisReceiverExpression) {
             defaultNoReceivers()
         }
@@ -185,16 +159,16 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             }
         }
 
-        impl(backingFieldRefExpression)
+        impl(backingFieldReference)
 
-        impl(thisRefExpression, "AstExplicitThisReference") {
+        impl(thisReference, "AstExplicitThisReference") {
             default("boundSymbol") {
                 value = "null"
                 isMutable = true
             }
         }
 
-        impl(thisRefExpression, "AstImplicitThisReference") {
+        impl(thisReference, "AstImplicitThisReference") {
             default("labelName") {
                 value = "null"
                 withGetter = true
@@ -204,7 +178,7 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             }
         }
 
-        impl(superRefExpression, "AstExplicitSuperReference")
+        impl(superReference, "AstExplicitSuperReference")
 
         impl(typeProjection, "AstTypePlaceholderProjection") {
             kind = Object
@@ -228,7 +202,7 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             default("name", "Name.identifier(\"value\")")
         }
 
-        impl(simpleFunction) {
+        impl(namedFunction) {
             kind = OpenClass
         }
 

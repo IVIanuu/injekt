@@ -1,5 +1,6 @@
 package com.ivianuu.ast.expressions
 
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.visitors.*
 
@@ -8,21 +9,24 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-interface AstQualifiedAccess : AstStatement {
-    override val annotations: List<AstFunctionCall>
-    val typeArguments: List<AstTypeProjection>
-    val dispatchReceiver: AstExpression?
-    val extensionReceiver: AstExpression?
+abstract class AstQualifiedAccess : AstExpression() {
+    abstract override val type: AstType
+    abstract override val annotations: List<AstFunctionCall>
+    abstract val typeArguments: List<AstTypeProjection>
+    abstract val dispatchReceiver: AstExpression?
+    abstract val extensionReceiver: AstExpression?
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitQualifiedAccess(this, data)
 
-    fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>)
+    abstract override fun replaceType(newType: AstType)
 
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstQualifiedAccess
+    abstract fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>)
 
-    fun <D> transformTypeArguments(transformer: AstTransformer<D>, data: D): AstQualifiedAccess
+    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstQualifiedAccess
 
-    fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstQualifiedAccess
+    abstract fun <D> transformTypeArguments(transformer: AstTransformer<D>, data: D): AstQualifiedAccess
 
-    fun <D> transformExtensionReceiver(transformer: AstTransformer<D>, data: D): AstQualifiedAccess
+    abstract fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstQualifiedAccess
+
+    abstract fun <D> transformExtensionReceiver(transformer: AstTransformer<D>, data: D): AstQualifiedAccess
 }

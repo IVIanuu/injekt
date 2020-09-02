@@ -9,13 +9,13 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstThisReceiverExpression : AstQualifiedAccessExpression() {
+abstract class AstThisReceiverExpression : AstQualifiedAccess() {
     abstract override val type: AstType
     abstract override val annotations: List<AstFunctionCall>
     abstract override val typeArguments: List<AstTypeProjection>
     abstract override val dispatchReceiver: AstExpression?
     abstract override val extensionReceiver: AstExpression?
-    abstract val calleeReference: AstThisRefExpression
+    abstract val calleeReference: AstThisReference
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitThisReceiverExpression(this, data)
 

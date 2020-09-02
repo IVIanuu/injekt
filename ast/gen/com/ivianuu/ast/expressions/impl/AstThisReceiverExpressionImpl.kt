@@ -3,7 +3,7 @@ package com.ivianuu.ast.expressions.impl
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstThisReceiverExpression
-import com.ivianuu.ast.expressions.AstThisRefExpression
+import com.ivianuu.ast.expressions.AstThisReference
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.visitors.*
@@ -17,7 +17,7 @@ internal class AstThisReceiverExpressionImpl(
     override var type: AstType,
     override val annotations: MutableList<AstFunctionCall>,
     override val typeArguments: MutableList<AstTypeProjection>,
-    override var calleeReference: AstThisRefExpression,
+    override var calleeReference: AstThisReference,
 ) : AstThisReceiverExpression() {
     override var dispatchReceiver: AstExpression? = null
     override var extensionReceiver: AstExpression? = null

@@ -5,8 +5,10 @@ import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstVariableAssignment
+import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.builder.AstQualifiedAccessBuilder
 import com.ivianuu.ast.expressions.impl.AstVariableAssignmentImpl
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
@@ -17,7 +19,8 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstVariableAssignmentBuilder : AstQualifiedAccessBuilder, AstAnnotationContainerBuilder {
+class AstVariableAssignmentBuilder : AstQualifiedAccessBuilder, AstAnnotationContainerBuilder, AstExpressionBuilder {
+    override lateinit var type: AstType
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override val typeArguments: MutableList<AstTypeProjection> = mutableListOf()
     override var dispatchReceiver: AstExpression? = null
@@ -27,6 +30,7 @@ class AstVariableAssignmentBuilder : AstQualifiedAccessBuilder, AstAnnotationCon
 
     override fun build(): AstVariableAssignment {
         return AstVariableAssignmentImpl(
+            type,
             annotations,
             typeArguments,
             dispatchReceiver,

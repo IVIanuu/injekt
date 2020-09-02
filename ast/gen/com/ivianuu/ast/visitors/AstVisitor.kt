@@ -28,7 +28,7 @@ import com.ivianuu.ast.declarations.AstClass
 import com.ivianuu.ast.declarations.AstRegularClass
 import com.ivianuu.ast.declarations.AstTypeAlias
 import com.ivianuu.ast.declarations.AstFunction
-import com.ivianuu.ast.declarations.AstSimpleFunction
+import com.ivianuu.ast.declarations.AstNamedFunction
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstModuleFragment
@@ -57,10 +57,9 @@ import com.ivianuu.ast.expressions.AstAssignmentOperatorStatement
 import com.ivianuu.ast.expressions.AstEqualityOperatorCall
 import com.ivianuu.ast.expressions.AstWhenExpression
 import com.ivianuu.ast.expressions.AstWhenBranch
-import com.ivianuu.ast.expressions.AstQualifiedAccess
 import com.ivianuu.ast.expressions.AstElvisExpression
-import com.ivianuu.ast.expressions.AstClassReferenceExpression
-import com.ivianuu.ast.expressions.AstQualifiedAccessExpression
+import com.ivianuu.ast.expressions.AstClassReference
+import com.ivianuu.ast.expressions.AstQualifiedAccess
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
 import com.ivianuu.ast.expressions.AstCallableReferenceAccess
@@ -75,17 +74,15 @@ import com.ivianuu.ast.expressions.AstLambdaArgumentExpression
 import com.ivianuu.ast.expressions.AstSpreadArgumentExpression
 import com.ivianuu.ast.expressions.AstNamedArgumentExpression
 import com.ivianuu.ast.expressions.AstVarargArgumentsExpression
-import com.ivianuu.ast.expressions.AstResolvedQualifier
-import com.ivianuu.ast.expressions.AstResolvedReifiedParameterReference
 import com.ivianuu.ast.expressions.AstReturnExpression
 import com.ivianuu.ast.expressions.AstStringConcatenationCall
 import com.ivianuu.ast.expressions.AstThrowExpression
 import com.ivianuu.ast.expressions.AstVariableAssignment
 import com.ivianuu.ast.expressions.AstWhenSubjectExpression
 import com.ivianuu.ast.expressions.AstWrappedDelegateExpression
-import com.ivianuu.ast.expressions.AstSuperRefExpression
-import com.ivianuu.ast.expressions.AstThisRefExpression
-import com.ivianuu.ast.expressions.AstBackingFieldRefExpression
+import com.ivianuu.ast.expressions.AstSuperReference
+import com.ivianuu.ast.expressions.AstThisReference
+import com.ivianuu.ast.expressions.AstBackingFieldReference
 import com.ivianuu.ast.types.AstSimpleType
 
 /*
@@ -150,7 +147,7 @@ abstract class AstVisitor<out R, in D> {
 
     open fun <F : AstFunction<F>> visitFunction(function: AstFunction<F>, data: D): R  = visitElement(function, data)
 
-    open fun visitSimpleFunction(simpleFunction: AstSimpleFunction, data: D): R  = visitElement(simpleFunction, data)
+    open fun visitNamedFunction(namedFunction: AstNamedFunction, data: D): R  = visitElement(namedFunction, data)
 
     open fun visitPropertyAccessor(propertyAccessor: AstPropertyAccessor, data: D): R  = visitElement(propertyAccessor, data)
 
@@ -208,13 +205,11 @@ abstract class AstVisitor<out R, in D> {
 
     open fun visitWhenBranch(whenBranch: AstWhenBranch, data: D): R  = visitElement(whenBranch, data)
 
-    open fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess, data: D): R  = visitElement(qualifiedAccess, data)
-
     open fun visitElvisExpression(elvisExpression: AstElvisExpression, data: D): R  = visitElement(elvisExpression, data)
 
-    open fun visitClassReferenceExpression(classReferenceExpression: AstClassReferenceExpression, data: D): R  = visitElement(classReferenceExpression, data)
+    open fun visitClassReference(classReference: AstClassReference, data: D): R  = visitElement(classReference, data)
 
-    open fun visitQualifiedAccessExpression(qualifiedAccessExpression: AstQualifiedAccessExpression, data: D): R  = visitElement(qualifiedAccessExpression, data)
+    open fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess, data: D): R  = visitElement(qualifiedAccess, data)
 
     open fun visitFunctionCall(functionCall: AstFunctionCall, data: D): R  = visitElement(functionCall, data)
 
@@ -244,10 +239,6 @@ abstract class AstVisitor<out R, in D> {
 
     open fun visitVarargArgumentsExpression(varargArgumentsExpression: AstVarargArgumentsExpression, data: D): R  = visitElement(varargArgumentsExpression, data)
 
-    open fun visitResolvedQualifier(resolvedQualifier: AstResolvedQualifier, data: D): R  = visitElement(resolvedQualifier, data)
-
-    open fun visitResolvedReifiedParameterReference(resolvedReifiedParameterReference: AstResolvedReifiedParameterReference, data: D): R  = visitElement(resolvedReifiedParameterReference, data)
-
     open fun visitReturnExpression(returnExpression: AstReturnExpression, data: D): R  = visitElement(returnExpression, data)
 
     open fun visitStringConcatenationCall(stringConcatenationCall: AstStringConcatenationCall, data: D): R  = visitElement(stringConcatenationCall, data)
@@ -260,11 +251,11 @@ abstract class AstVisitor<out R, in D> {
 
     open fun visitWrappedDelegateExpression(wrappedDelegateExpression: AstWrappedDelegateExpression, data: D): R  = visitElement(wrappedDelegateExpression, data)
 
-    open fun visitSuperRefExpression(superRefExpression: AstSuperRefExpression, data: D): R  = visitElement(superRefExpression, data)
+    open fun visitSuperReference(superReference: AstSuperReference, data: D): R  = visitElement(superReference, data)
 
-    open fun visitThisRefExpression(thisRefExpression: AstThisRefExpression, data: D): R  = visitElement(thisRefExpression, data)
+    open fun visitThisReference(thisReference: AstThisReference, data: D): R  = visitElement(thisReference, data)
 
-    open fun visitBackingFieldRefExpression(backingFieldRefExpression: AstBackingFieldRefExpression, data: D): R  = visitElement(backingFieldRefExpression, data)
+    open fun visitBackingFieldReference(backingFieldReference: AstBackingFieldReference, data: D): R  = visitElement(backingFieldReference, data)
 
     open fun visitSimpleType(simpleType: AstSimpleType, data: D): R  = visitElement(simpleType, data)
 

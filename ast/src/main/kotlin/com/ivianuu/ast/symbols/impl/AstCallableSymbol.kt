@@ -12,8 +12,4 @@ import com.ivianuu.ast.symbols.CallableId
 
 abstract class AstCallableSymbol<D : AstCallableDeclaration<D>> : AbstractAstSymbol<D>() {
     abstract val callableId: CallableId
-
-    open val overriddenSymbol: AstCallableSymbol<D>?
-        get() = null
-
 }

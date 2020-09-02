@@ -28,7 +28,7 @@ import com.ivianuu.ast.declarations.AstClass
 import com.ivianuu.ast.declarations.AstRegularClass
 import com.ivianuu.ast.declarations.AstTypeAlias
 import com.ivianuu.ast.declarations.AstFunction
-import com.ivianuu.ast.declarations.AstSimpleFunction
+import com.ivianuu.ast.declarations.AstNamedFunction
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstModuleFragment
@@ -57,10 +57,9 @@ import com.ivianuu.ast.expressions.AstAssignmentOperatorStatement
 import com.ivianuu.ast.expressions.AstEqualityOperatorCall
 import com.ivianuu.ast.expressions.AstWhenExpression
 import com.ivianuu.ast.expressions.AstWhenBranch
-import com.ivianuu.ast.expressions.AstQualifiedAccess
 import com.ivianuu.ast.expressions.AstElvisExpression
-import com.ivianuu.ast.expressions.AstClassReferenceExpression
-import com.ivianuu.ast.expressions.AstQualifiedAccessExpression
+import com.ivianuu.ast.expressions.AstClassReference
+import com.ivianuu.ast.expressions.AstQualifiedAccess
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
 import com.ivianuu.ast.expressions.AstCallableReferenceAccess
@@ -75,17 +74,15 @@ import com.ivianuu.ast.expressions.AstLambdaArgumentExpression
 import com.ivianuu.ast.expressions.AstSpreadArgumentExpression
 import com.ivianuu.ast.expressions.AstNamedArgumentExpression
 import com.ivianuu.ast.expressions.AstVarargArgumentsExpression
-import com.ivianuu.ast.expressions.AstResolvedQualifier
-import com.ivianuu.ast.expressions.AstResolvedReifiedParameterReference
 import com.ivianuu.ast.expressions.AstReturnExpression
 import com.ivianuu.ast.expressions.AstStringConcatenationCall
 import com.ivianuu.ast.expressions.AstThrowExpression
 import com.ivianuu.ast.expressions.AstVariableAssignment
 import com.ivianuu.ast.expressions.AstWhenSubjectExpression
 import com.ivianuu.ast.expressions.AstWrappedDelegateExpression
-import com.ivianuu.ast.expressions.AstSuperRefExpression
-import com.ivianuu.ast.expressions.AstThisRefExpression
-import com.ivianuu.ast.expressions.AstBackingFieldRefExpression
+import com.ivianuu.ast.expressions.AstSuperReference
+import com.ivianuu.ast.expressions.AstThisReference
+import com.ivianuu.ast.expressions.AstBackingFieldReference
 import com.ivianuu.ast.types.AstSimpleType
 
 /*
@@ -204,8 +201,8 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(function)
     }
 
-    open fun visitSimpleFunction(simpleFunction: AstSimpleFunction) {
-        visitElement(simpleFunction)
+    open fun visitNamedFunction(namedFunction: AstNamedFunction) {
+        visitElement(namedFunction)
     }
 
     open fun visitPropertyAccessor(propertyAccessor: AstPropertyAccessor) {
@@ -320,20 +317,16 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(whenBranch)
     }
 
-    open fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess) {
-        visitElement(qualifiedAccess)
-    }
-
     open fun visitElvisExpression(elvisExpression: AstElvisExpression) {
         visitElement(elvisExpression)
     }
 
-    open fun visitClassReferenceExpression(classReferenceExpression: AstClassReferenceExpression) {
-        visitElement(classReferenceExpression)
+    open fun visitClassReference(classReference: AstClassReference) {
+        visitElement(classReference)
     }
 
-    open fun visitQualifiedAccessExpression(qualifiedAccessExpression: AstQualifiedAccessExpression) {
-        visitElement(qualifiedAccessExpression)
+    open fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess) {
+        visitElement(qualifiedAccess)
     }
 
     open fun visitFunctionCall(functionCall: AstFunctionCall) {
@@ -392,14 +385,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(varargArgumentsExpression)
     }
 
-    open fun visitResolvedQualifier(resolvedQualifier: AstResolvedQualifier) {
-        visitElement(resolvedQualifier)
-    }
-
-    open fun visitResolvedReifiedParameterReference(resolvedReifiedParameterReference: AstResolvedReifiedParameterReference) {
-        visitElement(resolvedReifiedParameterReference)
-    }
-
     open fun visitReturnExpression(returnExpression: AstReturnExpression) {
         visitElement(returnExpression)
     }
@@ -424,16 +409,16 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(wrappedDelegateExpression)
     }
 
-    open fun visitSuperRefExpression(superRefExpression: AstSuperRefExpression) {
-        visitElement(superRefExpression)
+    open fun visitSuperReference(superReference: AstSuperReference) {
+        visitElement(superReference)
     }
 
-    open fun visitThisRefExpression(thisRefExpression: AstThisRefExpression) {
-        visitElement(thisRefExpression)
+    open fun visitThisReference(thisReference: AstThisReference) {
+        visitElement(thisReference)
     }
 
-    open fun visitBackingFieldRefExpression(backingFieldRefExpression: AstBackingFieldRefExpression) {
-        visitElement(backingFieldRefExpression)
+    open fun visitBackingFieldReference(backingFieldReference: AstBackingFieldReference) {
+        visitElement(backingFieldReference)
     }
 
     open fun visitSimpleType(simpleType: AstSimpleType) {
@@ -552,8 +537,8 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitFunction(function)
     }
 
-    final override fun visitSimpleFunction(simpleFunction: AstSimpleFunction, data: Nothing?) {
-        visitSimpleFunction(simpleFunction)
+    final override fun visitNamedFunction(namedFunction: AstNamedFunction, data: Nothing?) {
+        visitNamedFunction(namedFunction)
     }
 
     final override fun visitPropertyAccessor(propertyAccessor: AstPropertyAccessor, data: Nothing?) {
@@ -668,20 +653,16 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitWhenBranch(whenBranch)
     }
 
-    final override fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess, data: Nothing?) {
-        visitQualifiedAccess(qualifiedAccess)
-    }
-
     final override fun visitElvisExpression(elvisExpression: AstElvisExpression, data: Nothing?) {
         visitElvisExpression(elvisExpression)
     }
 
-    final override fun visitClassReferenceExpression(classReferenceExpression: AstClassReferenceExpression, data: Nothing?) {
-        visitClassReferenceExpression(classReferenceExpression)
+    final override fun visitClassReference(classReference: AstClassReference, data: Nothing?) {
+        visitClassReference(classReference)
     }
 
-    final override fun visitQualifiedAccessExpression(qualifiedAccessExpression: AstQualifiedAccessExpression, data: Nothing?) {
-        visitQualifiedAccessExpression(qualifiedAccessExpression)
+    final override fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess, data: Nothing?) {
+        visitQualifiedAccess(qualifiedAccess)
     }
 
     final override fun visitFunctionCall(functionCall: AstFunctionCall, data: Nothing?) {
@@ -740,14 +721,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitVarargArgumentsExpression(varargArgumentsExpression)
     }
 
-    final override fun visitResolvedQualifier(resolvedQualifier: AstResolvedQualifier, data: Nothing?) {
-        visitResolvedQualifier(resolvedQualifier)
-    }
-
-    final override fun visitResolvedReifiedParameterReference(resolvedReifiedParameterReference: AstResolvedReifiedParameterReference, data: Nothing?) {
-        visitResolvedReifiedParameterReference(resolvedReifiedParameterReference)
-    }
-
     final override fun visitReturnExpression(returnExpression: AstReturnExpression, data: Nothing?) {
         visitReturnExpression(returnExpression)
     }
@@ -772,16 +745,16 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitWrappedDelegateExpression(wrappedDelegateExpression)
     }
 
-    final override fun visitSuperRefExpression(superRefExpression: AstSuperRefExpression, data: Nothing?) {
-        visitSuperRefExpression(superRefExpression)
+    final override fun visitSuperReference(superReference: AstSuperReference, data: Nothing?) {
+        visitSuperReference(superReference)
     }
 
-    final override fun visitThisRefExpression(thisRefExpression: AstThisRefExpression, data: Nothing?) {
-        visitThisRefExpression(thisRefExpression)
+    final override fun visitThisReference(thisReference: AstThisReference, data: Nothing?) {
+        visitThisReference(thisReference)
     }
 
-    final override fun visitBackingFieldRefExpression(backingFieldRefExpression: AstBackingFieldRefExpression, data: Nothing?) {
-        visitBackingFieldRefExpression(backingFieldRefExpression)
+    final override fun visitBackingFieldReference(backingFieldReference: AstBackingFieldReference, data: Nothing?) {
+        visitBackingFieldReference(backingFieldReference)
     }
 
     final override fun visitSimpleType(simpleType: AstSimpleType, data: Nothing?) {

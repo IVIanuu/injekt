@@ -116,7 +116,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             openBuilder()
         }
 
-        builder(qualifiedAccessExpression) {
+        builder(qualifiedAccess) {
             parents += qualifiedAccessBuilder
             defaultNoReceivers()
         }
@@ -191,48 +191,12 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             defaultTrue("isVal")
         }
 
-        builder(simpleFunction) {
+        builder(namedFunction) {
             parents += functionBuilder
             parents += typeParametersOwnerBuilder
             defaultNull("body")
             openBuilder()
             withCopy()
-        }
-
-        val abstractResolvedQualifierBuilder by builder {
-            fields from resolvedQualifier
-        }
-
-        builder(resolvedQualifier) {
-            parents += abstractResolvedQualifierBuilder
-            defaultFalse("isNullableLHSForCallableReference")
-        }
-
-        val elementsWithDefaultType = listOf(
-            thisReceiverExpression,
-            callableReferenceAccess,
-            anonymousObject,
-            qualifiedAccessExpression,
-            functionCall,
-            anonymousFunction,
-            whenExpression,
-            tryExpression,
-            resolvedQualifier,
-            resolvedReifiedParameterReference,
-            expression to "AstExpressionStub",
-            varargArgumentsExpression,
-            checkedSafeCallSubject,
-            safeCallExpression
-        )
-        elementsWithDefaultType.forEach {
-            val (element, name) = when (it) {
-                is Pair<*, *> -> it.first as Element to it.second as String
-                is Element -> it to null
-                else -> throw IllegalArgumentException()
-            }
-            builder(element, name) {
-               // default("type")
-            }
         }
 
         noBuilder(constExpression)

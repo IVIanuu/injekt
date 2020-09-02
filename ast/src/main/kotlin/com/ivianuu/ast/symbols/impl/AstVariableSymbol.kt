@@ -8,8 +8,7 @@ open class AstVariableSymbol<D : AstVariable<D>>(override val callableId: Callab
     AstCallableSymbol<D>()
 
 open class AstPropertySymbol(
-    callableId: CallableId,
-    override val overriddenSymbol: AstPropertySymbol? = null
+    callableId: CallableId
 ) : AstVariableSymbol<AstProperty>(callableId)
 
 class AstBackingFieldSymbol(callableId: CallableId) : AstVariableSymbol<AstProperty>(callableId)
