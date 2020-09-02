@@ -1,8 +1,8 @@
 package com.ivianuu.ast.declarations.impl
 
+import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
-import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstField
 import com.ivianuu.ast.declarations.AstProperty
 import com.ivianuu.ast.declarations.AstPropertyAccessor
@@ -12,6 +12,7 @@ import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstBackingFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstPropertySymbol
 import com.ivianuu.ast.types.AstType
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.name.Name
 import com.ivianuu.ast.visitors.*
 
@@ -34,7 +35,13 @@ internal class AstPropertyImpl(
     override val typeParameters: MutableList<AstTypeParameter>,
     override val symbol: AstPropertySymbol,
     override val isLocal: Boolean,
-    override var status: AstDeclarationStatus,
+    override val visibility: Visibility,
+    override val isExpect: Boolean,
+    override val isActual: Boolean,
+    override val modality: Modality,
+    override val isInline: Boolean,
+    override val isConst: Boolean,
+    override val isLateinit: Boolean,
 ) : AstProperty() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override val isVal: Boolean get() = !isVar
@@ -49,7 +56,6 @@ internal class AstPropertyImpl(
         setter?.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
         typeParameters.forEach { it.accept(visitor, data) }
-        status.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstPropertyImpl {
@@ -60,7 +66,6 @@ internal class AstPropertyImpl(
         transformGetter(transformer, data)
         transformSetter(transformer, data)
         transformTypeParameters(transformer, data)
-        transformStatus(transformer, data)
         transformOtherChildren(transformer, data)
         return this
     }
@@ -102,11 +107,6 @@ internal class AstPropertyImpl(
 
     override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstPropertyImpl {
         typeParameters.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstPropertyImpl {
-        status = status.transformSingle(transformer, data)
         return this
     }
 

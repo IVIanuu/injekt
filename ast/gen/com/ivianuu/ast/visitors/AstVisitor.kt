@@ -6,7 +6,6 @@ import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.AstTargetElement
-import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.declarations.AstDeclaration
@@ -102,8 +101,6 @@ abstract class AstVisitor<out R, in D> {
     open fun <E> visitSymbolOwner(symbolOwner: AstSymbolOwner<E>, data: D): R where E : AstSymbolOwner<E>, E : AstDeclaration  = visitElement(symbolOwner, data)
 
     open fun visitTargetElement(targetElement: AstTargetElement, data: D): R  = visitElement(targetElement, data)
-
-    open fun visitDeclarationStatus(declarationStatus: AstDeclarationStatus, data: D): R  = visitElement(declarationStatus, data)
 
     open fun visitStatement(statement: AstStatement, data: D): R  = visitElement(statement, data)
 

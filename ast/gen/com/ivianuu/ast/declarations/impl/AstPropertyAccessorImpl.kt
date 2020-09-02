@@ -3,7 +3,6 @@ package com.ivianuu.ast.declarations.impl
 import com.ivianuu.ast.AstImplementationDetail
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
-import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.AstValueParameter
@@ -21,35 +20,37 @@ import com.ivianuu.ast.visitors.*
 
 open class AstPropertyAccessorImpl @AstImplementationDetail constructor(
     override val origin: AstDeclarationOrigin,
+    override val annotations: MutableList<AstFunctionCall>,
     override var returnType: AstType,
     override val valueParameters: MutableList<AstValueParameter>,
     override var body: AstBlock?,
+    override val typeParameters: MutableList<AstTypeParameter>,
     override val symbol: AstPropertyAccessorSymbol,
     override val isGetter: Boolean,
-    override var status: AstDeclarationStatus,
-    override val annotations: MutableList<AstFunctionCall>,
-    override val typeParameters: MutableList<AstTypeParameter>,
 ) : AstPropertyAccessor() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override val receiverType: AstType? get() = null
     override val isSetter: Boolean get() = !isGetter
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+        annotations.forEach { it.accept(visitor, data) }
         returnType.accept(visitor, data)
         valueParameters.forEach { it.accept(visitor, data) }
         body?.accept(visitor, data)
-        status.accept(visitor, data)
-        annotations.forEach { it.accept(visitor, data) }
         typeParameters.forEach { it.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
+        transformAnnotations(transformer, data)
         transformReturnType(transformer, data)
         transformValueParameters(transformer, data)
         transformBody(transformer, data)
-        transformStatus(transformer, data)
-        transformAnnotations(transformer, data)
         transformTypeParameters(transformer, data)
+        return this
+    }
+
+    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
+        annotations.transformInplace(transformer, data)
         return this
     }
 
@@ -69,16 +70,6 @@ open class AstPropertyAccessorImpl @AstImplementationDetail constructor(
 
     override fun <D> transformBody(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
         body = body?.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
-        status = status.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
-        annotations.transformInplace(transformer, data)
         return this
     }
 

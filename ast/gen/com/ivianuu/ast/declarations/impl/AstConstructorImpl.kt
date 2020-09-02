@@ -3,7 +3,6 @@ package com.ivianuu.ast.declarations.impl
 import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
-import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
@@ -22,7 +21,6 @@ internal class AstConstructorImpl(
     override var returnType: AstType,
     override var receiverType: AstType?,
     override val valueParameters: MutableList<AstValueParameter>,
-    override var status: AstDeclarationStatus,
     override val annotations: MutableList<AstFunctionCall>,
     override val symbol: AstConstructorSymbol,
     override var delegatedConstructor: AstDelegatedConstructorCall?,
@@ -35,7 +33,6 @@ internal class AstConstructorImpl(
         returnType.accept(visitor, data)
         receiverType?.accept(visitor, data)
         valueParameters.forEach { it.accept(visitor, data) }
-        status.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
         delegatedConstructor?.accept(visitor, data)
         body?.accept(visitor, data)
@@ -45,7 +42,6 @@ internal class AstConstructorImpl(
         transformReturnType(transformer, data)
         transformReceiverType(transformer, data)
         transformValueParameters(transformer, data)
-        transformStatus(transformer, data)
         transformAnnotations(transformer, data)
         transformDelegatedConstructor(transformer, data)
         transformBody(transformer, data)
@@ -64,11 +60,6 @@ internal class AstConstructorImpl(
 
     override fun <D> transformValueParameters(transformer: AstTransformer<D>, data: D): AstConstructorImpl {
         valueParameters.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstConstructorImpl {
-        status = status.transformSingle(transformer, data)
         return this
     }
 

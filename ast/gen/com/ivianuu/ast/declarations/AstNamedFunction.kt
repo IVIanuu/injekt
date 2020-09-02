@@ -1,10 +1,12 @@
 package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstPureAbstractElement
+import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.types.AstType
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.name.Name
 import com.ivianuu.ast.visitors.*
 
@@ -20,8 +22,17 @@ abstract class AstNamedFunction : AstPureAbstractElement(), AstFunction<AstNamed
     abstract override val receiverType: AstType?
     abstract override val valueParameters: List<AstValueParameter>
     abstract override val body: AstBlock?
-    abstract override val status: AstDeclarationStatus
     abstract val name: Name
+    abstract val visibility: Visibility
+    abstract val isExpect: Boolean
+    abstract val isActual: Boolean
+    abstract val modality: Modality
+    abstract val isExternal: Boolean
+    abstract val isSuspend: Boolean
+    abstract val isOperator: Boolean
+    abstract val isInfix: Boolean
+    abstract val isInline: Boolean
+    abstract val isTailrec: Boolean
     abstract override val symbol: AstFunctionSymbol<AstNamedFunction>
     abstract override val annotations: List<AstFunctionCall>
     abstract override val typeParameters: List<AstTypeParameter>
@@ -41,8 +52,6 @@ abstract class AstNamedFunction : AstPureAbstractElement(), AstFunction<AstNamed
     abstract override fun <D> transformValueParameters(transformer: AstTransformer<D>, data: D): AstNamedFunction
 
     abstract override fun <D> transformBody(transformer: AstTransformer<D>, data: D): AstNamedFunction
-
-    abstract override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstNamedFunction
 
     abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstNamedFunction
 

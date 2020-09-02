@@ -1,5 +1,6 @@
 package com.ivianuu.ast.tree.generator
 
+import com.ivianuu.ast.tree.generator.FieldSets.expectActual
 import com.ivianuu.ast.tree.generator.context.AbstractAstTreeImplementationConfigurator
 import com.ivianuu.ast.tree.generator.model.Implementation.Kind.Object
 import com.ivianuu.ast.tree.generator.model.Implementation.Kind.OpenClass
@@ -15,12 +16,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         impl(constructor) {
             defaultFalse("isPrimary", withGetter = true)
         }
-
-        impl(constructor, "AstPrimaryConstructor") {
-            defaultTrue("isPrimary", withGetter = true)
-        }
-
-        noImpl(declarationStatus)
 
         impl(regularClass)
 
@@ -63,7 +58,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
                 value = "!isVar"
                 withGetter = true
             }
-
             default("backingFieldSymbol", "AstBackingFieldSymbol(symbol.callableId)")
             useTypes(field)
         }
@@ -129,6 +123,8 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         impl(thisReceiverExpression) {
             defaultNoReceivers()
         }
+
+        impl(anonymousFunction)
 
         impl(propertyAccessor) {
             default("receiverType") {
@@ -214,13 +210,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
     }
 
     private fun configureAllImplementations() {
-        configureFieldInAllImplementations(
-            field = "controlFlowGraphReference",
-            implementationPredicate = { it.type != "AstAnonymousFunctionImpl" }
-        ) {
-            defaultNull(it)
-        }
-
         configureFieldInAllImplementations(
             field = "attributes",
             fieldPredicate = { it.type == declarationAttributesType.type }

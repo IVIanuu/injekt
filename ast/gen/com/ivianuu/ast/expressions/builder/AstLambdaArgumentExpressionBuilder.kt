@@ -1,6 +1,5 @@
 package com.ivianuu.ast.expressions.builder
 
-import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
@@ -17,7 +16,7 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstLambdaArgumentExpressionBuilder : AstAnnotationContainerBuilder, AstExpressionBuilder {
+class AstLambdaArgumentExpressionBuilder : AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     lateinit var expression: AstExpression
 

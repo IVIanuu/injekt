@@ -2,7 +2,6 @@ package com.ivianuu.ast.declarations.impl
 
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
-import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstField
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstTypeParameter
@@ -26,7 +25,6 @@ internal class AstFieldImpl(
     override val isVar: Boolean,
     override val annotations: MutableList<AstFunctionCall>,
     override val typeParameters: MutableList<AstTypeParameter>,
-    override var status: AstDeclarationStatus,
 ) : AstField() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override val receiverType: AstType? get() = null
@@ -40,13 +38,11 @@ internal class AstFieldImpl(
         returnType.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
         typeParameters.forEach { it.accept(visitor, data) }
-        status.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstFieldImpl {
         transformReturnType(transformer, data)
         transformTypeParameters(transformer, data)
-        transformStatus(transformer, data)
         transformOtherChildren(transformer, data)
         return this
     }
@@ -83,11 +79,6 @@ internal class AstFieldImpl(
 
     override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstFieldImpl {
         typeParameters.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstFieldImpl {
-        status = status.transformSingle(transformer, data)
         return this
     }
 

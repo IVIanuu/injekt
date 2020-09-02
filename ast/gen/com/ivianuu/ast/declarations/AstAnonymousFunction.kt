@@ -13,7 +13,7 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstAnonymousFunction : AstFunction<AstAnonymousFunction>, AstExpression(), AstTypeParametersOwner {
+abstract class AstAnonymousFunction : AstFunction<AstAnonymousFunction>, AstExpression() {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
     abstract override val annotations: List<AstFunctionCall>
@@ -24,8 +24,6 @@ abstract class AstAnonymousFunction : AstFunction<AstAnonymousFunction>, AstExpr
     abstract override val type: AstType
     abstract override val symbol: AstAnonymousFunctionSymbol
     abstract val label: AstLabel?
-    abstract val isLambda: Boolean
-    abstract override val typeParameters: List<AstTypeParameter>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitAnonymousFunction(this, data)
 
@@ -46,6 +44,4 @@ abstract class AstAnonymousFunction : AstFunction<AstAnonymousFunction>, AstExpr
     abstract override fun <D> transformValueParameters(transformer: AstTransformer<D>, data: D): AstAnonymousFunction
 
     abstract override fun <D> transformBody(transformer: AstTransformer<D>, data: D): AstAnonymousFunction
-
-    abstract override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstAnonymousFunction
 }

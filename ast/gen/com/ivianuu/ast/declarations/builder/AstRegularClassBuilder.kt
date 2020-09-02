@@ -1,11 +1,11 @@
 package com.ivianuu.ast.declarations.builder
 
-import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
+import com.ivianuu.ast.Visibilities
+import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclaration
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
-import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstRegularClass
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.builder.AstClassBuilder
@@ -17,6 +17,7 @@ import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.name.Name
 
 /*
@@ -25,33 +26,48 @@ import org.jetbrains.kotlin.name.Name
  */
 
 @AstBuilderDsl
-open class AstRegularClassBuilder : AstClassBuilder, AstTypeParametersOwnerBuilder, AstAnnotationContainerBuilder {
+open class AstRegularClassBuilder : AstClassBuilder, AstTypeParametersOwnerBuilder {
     override lateinit var origin: AstDeclarationOrigin
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
-    open lateinit var status: AstDeclarationStatus
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
-    override lateinit var classKind: ClassKind
+    override var classKind: ClassKind = ClassKind.CLASS
     override val declarations: MutableList<AstDeclaration> = mutableListOf()
     open lateinit var name: Name
+    open var visibility: Visibility = Visibilities.Public
+    open var isExpect: Boolean = false
+    open var isActual: Boolean = false
+    open var modality: Modality = Modality.FINAL
     open lateinit var symbol: AstRegularClassSymbol
-    open var companionObject: AstRegularClass? = null
     override val superTypes: MutableList<AstType> = mutableListOf()
+    open var isInline: Boolean = false
+    open var isCompanion: Boolean = false
+    open var isFun: Boolean = false
+    open var isData: Boolean = false
+    open var isInner: Boolean = false
+    open var isExternal: Boolean = false
 
     override fun build(): AstRegularClass {
         return AstRegularClassImpl(
             origin,
             annotations,
-            status,
             typeParameters,
             classKind,
             declarations,
             name,
+            visibility,
+            isExpect,
+            isActual,
+            modality,
             symbol,
-            companionObject,
             superTypes,
+            isInline,
+            isCompanion,
+            isFun,
+            isData,
+            isInner,
+            isExternal,
         )
     }
-
 
     @Deprecated("Modification of 'attributes' has no impact for AstRegularClassBuilder", level = DeprecationLevel.HIDDEN)
     override var attributes: AstDeclarationAttributes

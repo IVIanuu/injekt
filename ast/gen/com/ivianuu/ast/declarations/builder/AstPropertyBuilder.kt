@@ -1,10 +1,10 @@
 package com.ivianuu.ast.declarations.builder
 
-import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
+import com.ivianuu.ast.Visibilities
+import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
-import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstField
 import com.ivianuu.ast.declarations.AstProperty
 import com.ivianuu.ast.declarations.AstPropertyAccessor
@@ -18,6 +18,7 @@ import com.ivianuu.ast.symbols.impl.AstPropertySymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.name.Name
 
 /*
@@ -26,21 +27,27 @@ import org.jetbrains.kotlin.name.Name
  */
 
 @AstBuilderDsl
-class AstPropertyBuilder : AstTypeParametersOwnerBuilder, AstAnnotationContainerBuilder {
+class AstPropertyBuilder : AstTypeParametersOwnerBuilder {
     lateinit var origin: AstDeclarationOrigin
     lateinit var returnType: AstType
     var receiverType: AstType? = null
     lateinit var name: Name
     var initializer: AstExpression? = null
     var delegate: AstExpression? = null
-    var isVar: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
+    var isVar: Boolean = false
     var getter: AstPropertyAccessor? = null
     var setter: AstPropertyAccessor? = null
-    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+    val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
     lateinit var symbol: AstPropertySymbol
-    var isLocal: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
-    lateinit var status: AstDeclarationStatus
+    var isLocal: Boolean = false
+    var visibility: Visibility = Visibilities.Public
+    var isExpect: Boolean = false
+    var isActual: Boolean = false
+    var modality: Modality = Modality.FINAL
+    var isInline: Boolean = false
+    var isConst: Boolean = false
+    var isLateinit: Boolean = false
 
     override fun build(): AstProperty {
         return AstPropertyImpl(
@@ -57,7 +64,13 @@ class AstPropertyBuilder : AstTypeParametersOwnerBuilder, AstAnnotationContainer
             typeParameters,
             symbol,
             isLocal,
-            status,
+            visibility,
+            isExpect,
+            isActual,
+            modality,
+            isInline,
+            isConst,
+            isLateinit,
         )
     }
 

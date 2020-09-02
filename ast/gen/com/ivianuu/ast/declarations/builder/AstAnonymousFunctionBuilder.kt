@@ -1,12 +1,10 @@
 package com.ivianuu.ast.declarations.builder
 
 import com.ivianuu.ast.AstLabel
-import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstAnonymousFunction
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
-import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.declarations.builder.AstFunctionBuilder
 import com.ivianuu.ast.declarations.impl.AstAnonymousFunctionImpl
@@ -24,7 +22,7 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstAnonymousFunctionBuilder : AstFunctionBuilder, AstAnnotationContainerBuilder, AstExpressionBuilder {
+class AstAnonymousFunctionBuilder : AstFunctionBuilder, AstExpressionBuilder {
     override lateinit var origin: AstDeclarationOrigin
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var returnType: AstType
@@ -34,8 +32,6 @@ class AstAnonymousFunctionBuilder : AstFunctionBuilder, AstAnnotationContainerBu
     override lateinit var type: AstType
     lateinit var symbol: AstAnonymousFunctionSymbol
     var label: AstLabel? = null
-    var isLambda: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
-    val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
 
     override fun build(): AstAnonymousFunction {
         return AstAnonymousFunctionImpl(
@@ -48,8 +44,6 @@ class AstAnonymousFunctionBuilder : AstFunctionBuilder, AstAnnotationContainerBu
             type,
             symbol,
             label,
-            isLambda,
-            typeParameters,
         )
     }
 

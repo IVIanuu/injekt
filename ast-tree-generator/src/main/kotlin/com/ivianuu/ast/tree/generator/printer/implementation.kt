@@ -201,7 +201,7 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
                             }
 
                             field.name == "companionObject" -> {
-                                println("companionObject = declarations.asSequence().filterIsInstance<AstRegularClass>().firstOrNull { it.status.isCompanion }")
+                                println("companionObject = declarations.asSequence().filterIsInstance<AstRegularClass>().firstOrNull { it.isCompanion }")
                             }
 
                             field.needsSeparateTransform -> {

@@ -2,7 +2,6 @@ package com.ivianuu.ast.declarations.impl
 
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
-import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstEnumEntry
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.expressions.AstExpression
@@ -24,7 +23,6 @@ internal class AstEnumEntryImpl(
     override val symbol: AstVariableSymbol<AstEnumEntry>,
     override var initializer: AstExpression?,
     override val annotations: MutableList<AstFunctionCall>,
-    override var status: AstDeclarationStatus,
 ) : AstEnumEntry() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override val receiverType: AstType? get() = null
@@ -38,13 +36,11 @@ internal class AstEnumEntryImpl(
         returnType.accept(visitor, data)
         initializer?.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
-        status.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
         transformReturnType(transformer, data)
         transformInitializer(transformer, data)
-        transformStatus(transformer, data)
         transformOtherChildren(transformer, data)
         return this
     }
@@ -77,11 +73,6 @@ internal class AstEnumEntryImpl(
 
     override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
         annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
-        status = status.transformSingle(transformer, data)
         return this
     }
 

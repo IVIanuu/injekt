@@ -1,0 +1,202 @@
+digraph AstTree {
+    AstElement [color=green]
+    AstAnnotationContainer [color=green]
+    AstType [color=red]
+    AstLabel [color=red]
+    AstSymbolOwner [color=green]
+    AstTargetElement [color=green]
+    AstStatement [color=green]
+    AstExpression [color=red]
+    AstDeclaration [color=green]
+    AstAnnotatedDeclaration [color=green]
+    AstAnonymousInitializer [color=red]
+    AstTypedDeclaration [color=green]
+    AstCallableDeclaration [color=green]
+    AstTypeParameter [color=red]
+    AstTypeParametersOwner [color=green]
+    AstMemberDeclaration [color=green]
+    AstCallableMemberDeclaration [color=green]
+    AstVariable [color=red]
+    AstValueParameter [color=red]
+    AstProperty [color=red]
+    AstField [color=red]
+    AstEnumEntry [color=red]
+    AstClassLikeDeclaration [color=green]
+    AstClass [color=green]
+    AstRegularClass [color=red]
+    AstTypeAlias [color=red]
+    AstFunction [color=green]
+    AstNamedFunction [color=red]
+    AstPropertyAccessor [color=red]
+    AstConstructor [color=red]
+    AstModuleFragment [color=red]
+    AstFile [color=red]
+    AstAnonymousFunction [color=red]
+    AstAnonymousObject [color=red]
+    AstLoop [color=red]
+    AstDoWhileLoop [color=red]
+    AstWhileLoop [color=red]
+    AstBlock [color=red]
+    AstBinaryLogicExpression [color=red]
+    AstJump [color=red]
+    AstLoopJump [color=red]
+    AstBreakExpression [color=red]
+    AstContinueExpression [color=red]
+    AstCatch [color=red]
+    AstTryExpression [color=red]
+    AstConstExpression [color=red]
+    AstTypeProjection [color=red]
+    AstStarProjection [color=red]
+    AstTypeProjectionWithVariance [color=red]
+    AstCall [color=green]
+    AstComparisonExpression [color=red]
+    AstTypeOperatorCall [color=red]
+    AstAssignmentOperatorStatement [color=red]
+    AstEqualityOperatorCall [color=red]
+    AstWhenExpression [color=red]
+    AstWhenBranch [color=red]
+    AstElvisExpression [color=red]
+    AstClassReference [color=red]
+    AstQualifiedAccess [color=red]
+    AstFunctionCall [color=red]
+    AstDelegatedConstructorCall [color=red]
+    AstCallableReferenceAccess [color=red]
+    AstThisReceiverExpression [color=red]
+    AstExpressionWithSmartcast [color=red]
+    AstSafeCallExpression [color=red]
+    AstCheckedSafeCallSubject [color=red]
+    AstGetClassCall [color=red]
+    AstWrappedExpression [color=red]
+    AstWrappedArgumentExpression [color=red]
+    AstLambdaArgumentExpression [color=red]
+    AstSpreadArgumentExpression [color=red]
+    AstNamedArgumentExpression [color=red]
+    AstVarargArgumentsExpression [color=red]
+    AstReturnExpression [color=red]
+    AstStringConcatenationCall [color=red]
+    AstThrowExpression [color=red]
+    AstVariableAssignment [color=red]
+    AstWhenSubjectExpression [color=red]
+    AstWrappedDelegateExpression [color=red]
+    AstSuperReference [color=red]
+    AstThisReference [color=red]
+    AstBackingFieldReference [color=red]
+    AstSimpleType [color=red]
+
+    AstElement -> AstAnnotationContainer
+    AstAnnotationContainer -> AstType
+    AstElement -> AstLabel
+    AstElement -> AstSymbolOwner
+    AstElement -> AstTargetElement
+    AstAnnotationContainer -> AstStatement
+    AstStatement -> AstExpression
+    AstElement -> AstDeclaration
+    AstDeclaration -> AstAnnotatedDeclaration
+    AstAnnotationContainer -> AstAnnotatedDeclaration
+    AstDeclaration -> AstAnonymousInitializer
+    AstSymbolOwner -> AstAnonymousInitializer
+    AstAnnotatedDeclaration -> AstTypedDeclaration
+    AstTypedDeclaration -> AstCallableDeclaration
+    AstSymbolOwner -> AstCallableDeclaration
+    AstAnnotatedDeclaration -> AstTypeParameter
+    AstSymbolOwner -> AstTypeParameter
+    AstElement -> AstTypeParametersOwner
+    AstAnnotatedDeclaration -> AstMemberDeclaration
+    AstCallableDeclaration -> AstCallableMemberDeclaration
+    AstMemberDeclaration -> AstCallableMemberDeclaration
+    AstCallableDeclaration -> AstVariable
+    AstAnnotatedDeclaration -> AstVariable
+    AstStatement -> AstVariable
+    AstVariable -> AstValueParameter
+    AstVariable -> AstProperty
+    AstTypeParametersOwner -> AstProperty
+    AstCallableMemberDeclaration -> AstProperty
+    AstVariable -> AstField
+    AstTypeParametersOwner -> AstField
+    AstCallableMemberDeclaration -> AstField
+    AstVariable -> AstEnumEntry
+    AstCallableMemberDeclaration -> AstEnumEntry
+    AstAnnotatedDeclaration -> AstClassLikeDeclaration
+    AstStatement -> AstClassLikeDeclaration
+    AstSymbolOwner -> AstClassLikeDeclaration
+    AstClassLikeDeclaration -> AstClass
+    AstStatement -> AstClass
+    AstMemberDeclaration -> AstRegularClass
+    AstTypeParametersOwner -> AstRegularClass
+    AstClass -> AstRegularClass
+    AstClassLikeDeclaration -> AstTypeAlias
+    AstMemberDeclaration -> AstTypeAlias
+    AstTypeParametersOwner -> AstTypeAlias
+    AstCallableDeclaration -> AstFunction
+    AstTargetElement -> AstFunction
+    AstStatement -> AstFunction
+    AstFunction -> AstNamedFunction
+    AstCallableMemberDeclaration -> AstNamedFunction
+    AstTypeParametersOwner -> AstNamedFunction
+    AstFunction -> AstPropertyAccessor
+    AstTypeParametersOwner -> AstPropertyAccessor
+    AstFunction -> AstConstructor
+    AstCallableMemberDeclaration -> AstConstructor
+    AstElement -> AstModuleFragment
+    AstAnnotationContainer -> AstFile
+    AstFunction -> AstAnonymousFunction
+    AstExpression -> AstAnonymousFunction
+    AstTypeParametersOwner -> AstAnonymousFunction
+    AstClass -> AstAnonymousObject
+    AstExpression -> AstAnonymousObject
+    AstStatement -> AstLoop
+    AstTargetElement -> AstLoop
+    AstLoop -> AstDoWhileLoop
+    AstLoop -> AstWhileLoop
+    AstExpression -> AstBlock
+    AstExpression -> AstBinaryLogicExpression
+    AstExpression -> AstJump
+    AstJump -> AstLoopJump
+    AstLoopJump -> AstBreakExpression
+    AstLoopJump -> AstContinueExpression
+    AstElement -> AstCatch
+    AstExpression -> AstTryExpression
+    AstExpression -> AstConstExpression
+    AstElement -> AstTypeProjection
+    AstTypeProjection -> AstStarProjection
+    AstTypeProjection -> AstTypeProjectionWithVariance
+    AstStatement -> AstCall
+    AstExpression -> AstComparisonExpression
+    AstExpression -> AstTypeOperatorCall
+    AstCall -> AstTypeOperatorCall
+    AstStatement -> AstAssignmentOperatorStatement
+    AstExpression -> AstEqualityOperatorCall
+    AstCall -> AstEqualityOperatorCall
+    AstExpression -> AstWhenExpression
+    AstElement -> AstWhenBranch
+    AstExpression -> AstElvisExpression
+    AstExpression -> AstClassReference
+    AstExpression -> AstQualifiedAccess
+    AstQualifiedAccess -> AstFunctionCall
+    AstCall -> AstFunctionCall
+    AstCall -> AstDelegatedConstructorCall
+    AstQualifiedAccess -> AstCallableReferenceAccess
+    AstQualifiedAccess -> AstThisReceiverExpression
+    AstQualifiedAccess -> AstExpressionWithSmartcast
+    AstExpression -> AstSafeCallExpression
+    AstExpression -> AstCheckedSafeCallSubject
+    AstExpression -> AstGetClassCall
+    AstCall -> AstGetClassCall
+    AstExpression -> AstWrappedExpression
+    AstWrappedExpression -> AstWrappedArgumentExpression
+    AstWrappedArgumentExpression -> AstLambdaArgumentExpression
+    AstWrappedArgumentExpression -> AstSpreadArgumentExpression
+    AstWrappedArgumentExpression -> AstNamedArgumentExpression
+    AstExpression -> AstVarargArgumentsExpression
+    AstJump -> AstReturnExpression
+    AstCall -> AstStringConcatenationCall
+    AstExpression -> AstStringConcatenationCall
+    AstExpression -> AstThrowExpression
+    AstQualifiedAccess -> AstVariableAssignment
+    AstExpression -> AstWhenSubjectExpression
+    AstWrappedExpression -> AstWrappedDelegateExpression
+    AstExpression -> AstSuperReference
+    AstExpression -> AstThisReference
+    AstExpression -> AstBackingFieldReference
+    AstType -> AstSimpleType
+}

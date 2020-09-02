@@ -19,7 +19,6 @@ abstract class AstConstructor : AstPureAbstractElement(), AstFunction<AstConstru
     abstract override val returnType: AstType
     abstract override val receiverType: AstType?
     abstract override val valueParameters: List<AstValueParameter>
-    abstract override val status: AstDeclarationStatus
     abstract override val annotations: List<AstFunctionCall>
     abstract override val symbol: AstConstructorSymbol
     abstract val delegatedConstructor: AstDelegatedConstructorCall?
@@ -39,8 +38,6 @@ abstract class AstConstructor : AstPureAbstractElement(), AstFunction<AstConstru
     abstract override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstConstructor
 
     abstract override fun <D> transformValueParameters(transformer: AstTransformer<D>, data: D): AstConstructor
-
-    abstract override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstConstructor
 
     abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstConstructor
 

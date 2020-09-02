@@ -20,8 +20,6 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
 
     val targetElement = element("TargetElement", Other)
 
-    val declarationStatus = element("DeclarationStatus", Declaration)
-
     val statement = element("Statement", Expression, annotationContainer)
     val expression = element("Expression", Expression, statement)
     val declaration = element("Declaration", Declaration)
@@ -104,7 +102,7 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val file = element("File", Declaration, annotationContainer)
 
     val anonymousFunction =
-        element("AnonymousFunction", Declaration, function, expression, typeParametersOwner)
+        element("AnonymousFunction", Declaration, function, expression)
     val anonymousObject =
         element("AnonymousObject", Declaration, klass, expression)
 

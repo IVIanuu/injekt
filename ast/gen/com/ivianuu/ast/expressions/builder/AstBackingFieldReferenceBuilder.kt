@@ -1,6 +1,5 @@
 package com.ivianuu.ast.expressions.builder
 
-import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstBackingFieldReference
 import com.ivianuu.ast.expressions.AstFunctionCall
@@ -17,7 +16,7 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstBackingFieldReferenceBuilder : AstAnnotationContainerBuilder, AstExpressionBuilder {
+class AstBackingFieldReferenceBuilder : AstExpressionBuilder {
     override lateinit var type: AstType
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     lateinit var resolvedSymbol: AstBackingFieldSymbol

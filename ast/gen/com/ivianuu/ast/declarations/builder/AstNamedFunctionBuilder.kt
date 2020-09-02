@@ -1,11 +1,11 @@
 package com.ivianuu.ast.declarations.builder
 
 import com.ivianuu.ast.AstImplementationDetail
-import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
+import com.ivianuu.ast.Visibilities
+import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
-import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstNamedFunction
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.AstValueParameter
@@ -18,6 +18,7 @@ import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.name.Name
 
 /*
@@ -26,14 +27,23 @@ import org.jetbrains.kotlin.name.Name
  */
 
 @AstBuilderDsl
-open class AstNamedFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwnerBuilder, AstAnnotationContainerBuilder {
+open class AstNamedFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwnerBuilder {
     override lateinit var origin: AstDeclarationOrigin
     override lateinit var returnType: AstType
     open var receiverType: AstType? = null
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
     override var body: AstBlock? = null
-    open lateinit var status: AstDeclarationStatus
     open lateinit var name: Name
+    open var visibility: Visibility = Visibilities.Public
+    open var isExpect: Boolean = false
+    open var isActual: Boolean = false
+    open var modality: Modality = Modality.FINAL
+    open var isExternal: Boolean = false
+    open var isSuspend: Boolean = false
+    open var isOperator: Boolean = false
+    open var isInfix: Boolean = false
+    open var isInline: Boolean = false
+    open var isTailrec: Boolean = false
     open lateinit var symbol: AstFunctionSymbol<AstNamedFunction>
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
@@ -46,8 +56,17 @@ open class AstNamedFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwnerB
             receiverType,
             valueParameters,
             body,
-            status,
             name,
+            visibility,
+            isExpect,
+            isActual,
+            modality,
+            isExternal,
+            isSuspend,
+            isOperator,
+            isInfix,
+            isInline,
+            isTailrec,
             symbol,
             annotations,
             typeParameters,
@@ -76,8 +95,17 @@ inline fun buildNamedFunctionCopy(original: AstNamedFunction, init: AstNamedFunc
     copyBuilder.receiverType = original.receiverType
     copyBuilder.valueParameters.addAll(original.valueParameters)
     copyBuilder.body = original.body
-    copyBuilder.status = original.status
     copyBuilder.name = original.name
+    copyBuilder.visibility = original.visibility
+    copyBuilder.isExpect = original.isExpect
+    copyBuilder.isActual = original.isActual
+    copyBuilder.modality = original.modality
+    copyBuilder.isExternal = original.isExternal
+    copyBuilder.isSuspend = original.isSuspend
+    copyBuilder.isOperator = original.isOperator
+    copyBuilder.isInfix = original.isInfix
+    copyBuilder.isInline = original.isInline
+    copyBuilder.isTailrec = original.isTailrec
     copyBuilder.symbol = original.symbol
     copyBuilder.annotations.addAll(original.annotations)
     copyBuilder.typeParameters.addAll(original.typeParameters)

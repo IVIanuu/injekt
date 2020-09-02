@@ -1,6 +1,5 @@
 package com.ivianuu.ast.expressions.builder
 
-import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstAssignmentOperatorStatement
 import com.ivianuu.ast.expressions.AstExpression
@@ -16,13 +15,13 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstAssignmentOperatorStatementBuilder : AstAnnotationContainerBuilder {
-    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+class AstAssignmentOperatorStatementBuilder {
+    val annotations: MutableList<AstFunctionCall> = mutableListOf()
     lateinit var operation: AstOperation
     lateinit var leftArgument: AstExpression
     lateinit var rightArgument: AstExpression
 
-    override fun build(): AstAssignmentOperatorStatement {
+    fun build(): AstAssignmentOperatorStatement {
         return AstAssignmentOperatorStatementImpl(
             annotations,
             operation,

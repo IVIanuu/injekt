@@ -1,7 +1,6 @@
 package com.ivianuu.ast.expressions.builder
 
 import com.ivianuu.ast.AstLabel
-import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstDoWhileLoop
@@ -18,7 +17,7 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstDoWhileLoopBuilder : AstLoopBuilder, AstAnnotationContainerBuilder {
+class AstDoWhileLoopBuilder : AstLoopBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var block: AstBlock
     override lateinit var condition: AstExpression

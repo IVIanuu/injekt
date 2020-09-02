@@ -1,6 +1,5 @@
 package com.ivianuu.ast.types.builder
 
-import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstClassifierSymbol
@@ -16,13 +15,13 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstSimpleTypeBuilder : AstAnnotationContainerBuilder {
-    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+class AstSimpleTypeBuilder {
+    val annotations: MutableList<AstFunctionCall> = mutableListOf()
     var isMarkedNullable: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
     lateinit var classifier: AstClassifierSymbol<*>
     val arguments: MutableList<AstTypeProjection> = mutableListOf()
 
-    override fun build(): AstSimpleType {
+    fun build(): AstSimpleType {
         return AstSimpleTypeImpl(
             annotations,
             isMarkedNullable,

@@ -1,7 +1,6 @@
 package com.ivianuu.ast.expressions.builder
 
 import com.ivianuu.ast.AstExpressionRef
-import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstWhenExpression
@@ -18,7 +17,7 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstWhenSubjectExpressionBuilder : AstAnnotationContainerBuilder, AstExpressionBuilder {
+class AstWhenSubjectExpressionBuilder : AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     lateinit var whenRef: AstExpressionRef<AstWhenExpression>
 

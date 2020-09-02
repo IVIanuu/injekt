@@ -6,7 +6,6 @@ import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.AstTargetElement
-import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.declarations.AstDeclaration
@@ -111,10 +110,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     open fun visitTargetElement(targetElement: AstTargetElement) {
         visitElement(targetElement)
-    }
-
-    open fun visitDeclarationStatus(declarationStatus: AstDeclarationStatus) {
-        visitElement(declarationStatus)
     }
 
     open fun visitStatement(statement: AstStatement) {
@@ -447,10 +442,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     final override fun visitTargetElement(targetElement: AstTargetElement, data: Nothing?) {
         visitTargetElement(targetElement)
-    }
-
-    final override fun visitDeclarationStatus(declarationStatus: AstDeclarationStatus, data: Nothing?) {
-        visitDeclarationStatus(declarationStatus)
     }
 
     final override fun visitStatement(statement: AstStatement, data: Nothing?) {

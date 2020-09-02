@@ -1,10 +1,8 @@
 package com.ivianuu.ast.declarations.builder
 
-import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
-import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstField
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstTypeParameter
@@ -23,17 +21,16 @@ import org.jetbrains.kotlin.name.Name
  */
 
 @AstBuilderDsl
-open class AstFieldBuilder : AstAnnotationContainerBuilder {
+open class AstFieldBuilder {
     open lateinit var origin: AstDeclarationOrigin
     open lateinit var returnType: AstType
     open lateinit var name: Name
     open lateinit var symbol: AstVariableSymbol<AstField>
-    open var isVar: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
-    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+    open var isVar: Boolean = false
+    open val annotations: MutableList<AstFunctionCall> = mutableListOf()
     open val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
-    open lateinit var status: AstDeclarationStatus
 
-    override fun build(): AstField {
+    fun build(): AstField {
         return AstFieldImpl(
             origin,
             returnType,
@@ -42,7 +39,6 @@ open class AstFieldBuilder : AstAnnotationContainerBuilder {
             isVar,
             annotations,
             typeParameters,
-            status,
         )
     }
 }

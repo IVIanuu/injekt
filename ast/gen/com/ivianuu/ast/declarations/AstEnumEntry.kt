@@ -26,7 +26,6 @@ abstract class AstEnumEntry : AstVariable<AstEnumEntry>(), AstCallableMemberDecl
     abstract override val getter: AstPropertyAccessor?
     abstract override val setter: AstPropertyAccessor?
     abstract override val annotations: List<AstFunctionCall>
-    abstract override val status: AstDeclarationStatus
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitEnumEntry(this, data)
 
@@ -47,8 +46,6 @@ abstract class AstEnumEntry : AstVariable<AstEnumEntry>(), AstCallableMemberDecl
     abstract override fun <D> transformSetter(transformer: AstTransformer<D>, data: D): AstEnumEntry
 
     abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstEnumEntry
-
-    abstract override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstEnumEntry
 
     abstract override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstEnumEntry
 }

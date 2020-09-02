@@ -6,9 +6,7 @@
 package com.ivianuu.ast.tree.generator
 
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.block
-import com.ivianuu.ast.tree.generator.AstTreeBuilder.call
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.declaration
-import com.ivianuu.ast.tree.generator.AstTreeBuilder.declarationStatus
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.expression
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.file
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.functionCall
@@ -18,6 +16,7 @@ import com.ivianuu.ast.tree.generator.AstTreeBuilder.type
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.valueParameter
 import com.ivianuu.ast.tree.generator.context.type
 import com.ivianuu.ast.tree.generator.model.Field
+import com.ivianuu.ast.tree.generator.model.booleanField
 import com.ivianuu.ast.tree.generator.model.field
 import com.ivianuu.ast.tree.generator.model.fieldList
 import com.ivianuu.ast.tree.generator.model.fieldSet
@@ -78,9 +77,23 @@ object FieldSets {
 
     val classKind = field(classKindType)
 
-    val status = field("status", declarationStatus)
-
     val visibility = field(visibilityType)
-
     val modality = field(modalityType)
+    val expectActual = fieldSet(
+        booleanField("isExpect"),
+        booleanField("isActual")
+    )
+    val isOperator = booleanField("isOperator")
+    val isInfix = booleanField("isInfix")
+    val isInline = booleanField("isInline")
+    val isTailrec = booleanField("isTailrec")
+    val isExternal = booleanField("isExternal")
+    val isConst = booleanField("isConst")
+    val isLateinit = booleanField("isLateinit")
+    val isInner = booleanField("isInner")
+    val isCompanion = booleanField("isCompanion")
+    val isData = booleanField("isData")
+    val isSuspend = booleanField("isSuspend")
+    val isFun = booleanField("isFun")
+
 }

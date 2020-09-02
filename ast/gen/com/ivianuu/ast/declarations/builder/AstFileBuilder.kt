@@ -1,6 +1,5 @@
 package com.ivianuu.ast.declarations.builder
 
-import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclaration
 import com.ivianuu.ast.declarations.AstFile
@@ -16,13 +15,13 @@ import org.jetbrains.kotlin.name.FqName
  */
 
 @AstBuilderDsl
-class AstFileBuilder : AstAnnotationContainerBuilder {
-    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+class AstFileBuilder {
+    val annotations: MutableList<AstFunctionCall> = mutableListOf()
     val declarations: MutableList<AstDeclaration> = mutableListOf()
     lateinit var name: String
     lateinit var packageFqName: FqName
 
-    override fun build(): AstFile {
+    fun build(): AstFile {
         return AstFileImpl(
             annotations,
             declarations,

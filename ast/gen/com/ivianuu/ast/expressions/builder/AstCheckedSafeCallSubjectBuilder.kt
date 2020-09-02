@@ -1,7 +1,6 @@
 package com.ivianuu.ast.expressions.builder
 
 import com.ivianuu.ast.AstExpressionRef
-import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstCheckedSafeCallSubject
 import com.ivianuu.ast.expressions.AstExpression
@@ -18,7 +17,7 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstCheckedSafeCallSubjectBuilder : AstAnnotationContainerBuilder, AstExpressionBuilder {
+class AstCheckedSafeCallSubjectBuilder : AstExpressionBuilder {
     override lateinit var type: AstType
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     lateinit var originalReceiverRef: AstExpressionRef<AstExpression>

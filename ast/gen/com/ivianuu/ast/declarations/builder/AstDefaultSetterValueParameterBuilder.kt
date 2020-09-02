@@ -1,6 +1,5 @@
 package com.ivianuu.ast.declarations.builder
 
-import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
@@ -9,7 +8,7 @@ import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.declarations.impl.AstDefaultSetterValueParameter
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
-import com.ivianuu.ast.symbols.impl.AstVariableSymbol
+import com.ivianuu.ast.symbols.impl.AstValueParameterSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
@@ -21,29 +20,28 @@ import org.jetbrains.kotlin.name.Name
  */
 
 @AstBuilderDsl
-class AstDefaultSetterValueParameterBuilder : AstAnnotationContainerBuilder {
+class AstDefaultSetterValueParameterBuilder {
     lateinit var origin: AstDeclarationOrigin
     lateinit var returnType: AstType
     var receiverType: AstType? = null
-    lateinit var symbol: AstVariableSymbol<AstValueParameter>
     var initializer: AstExpression? = null
     var delegate: AstExpression? = null
     var isVar: Boolean = false
     var isVal: Boolean = true
     var getter: AstPropertyAccessor? = null
     var setter: AstPropertyAccessor? = null
-    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+    val annotations: MutableList<AstFunctionCall> = mutableListOf()
+    lateinit var symbol: AstValueParameterSymbol
     var defaultValue: AstExpression? = null
     var isCrossinline: Boolean = false
     var isNoinline: Boolean = false
     var isVararg: Boolean = false
 
-    override fun build(): AstValueParameter {
+    fun build(): AstValueParameter {
         return AstDefaultSetterValueParameter(
             origin,
             returnType,
             receiverType,
-            symbol,
             initializer,
             delegate,
             isVar,
@@ -51,6 +49,7 @@ class AstDefaultSetterValueParameterBuilder : AstAnnotationContainerBuilder {
             getter,
             setter,
             annotations,
+            symbol,
             defaultValue,
             isCrossinline,
             isNoinline,

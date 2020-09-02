@@ -1,6 +1,5 @@
 package com.ivianuu.ast.expressions.builder
 
-import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstSuperReference
@@ -16,7 +15,7 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstExplicitSuperReferenceBuilder : AstAnnotationContainerBuilder, AstExpressionBuilder {
+class AstExplicitSuperReferenceBuilder : AstExpressionBuilder {
     override lateinit var type: AstType
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     var labelName: String? = null

@@ -4,7 +4,6 @@ import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
-import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.declarations.builder.AstFunctionBuilder
 import com.ivianuu.ast.expressions.AstBlock
@@ -28,7 +27,6 @@ interface AstAbstractConstructorBuilder : AstFunctionBuilder {
     abstract override val valueParameters: MutableList<AstValueParameter>
     abstract override var body: AstBlock?
     abstract var receiverType: AstType?
-    abstract var status: AstDeclarationStatus
     abstract var symbol: AstConstructorSymbol
     abstract var delegatedConstructor: AstDelegatedConstructorCall?
     override fun build(): AstConstructor

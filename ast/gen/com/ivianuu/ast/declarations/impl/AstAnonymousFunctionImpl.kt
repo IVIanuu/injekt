@@ -4,7 +4,6 @@ import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.declarations.AstAnonymousFunction
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
-import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstFunctionCall
@@ -27,8 +26,6 @@ internal class AstAnonymousFunctionImpl(
     override var type: AstType,
     override val symbol: AstAnonymousFunctionSymbol,
     override var label: AstLabel?,
-    override val isLambda: Boolean,
-    override val typeParameters: MutableList<AstTypeParameter>,
 ) : AstAnonymousFunction() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
 
@@ -40,7 +37,6 @@ internal class AstAnonymousFunctionImpl(
         body?.accept(visitor, data)
         type.accept(visitor, data)
         label?.accept(visitor, data)
-        typeParameters.forEach { it.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
@@ -51,7 +47,6 @@ internal class AstAnonymousFunctionImpl(
         transformBody(transformer, data)
         type = type.transformSingle(transformer, data)
         label = label?.transformSingle(transformer, data)
-        transformTypeParameters(transformer, data)
         return this
     }
 
@@ -77,11 +72,6 @@ internal class AstAnonymousFunctionImpl(
 
     override fun <D> transformBody(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
         body = body?.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
-        typeParameters.transformInplace(transformer, data)
         return this
     }
 

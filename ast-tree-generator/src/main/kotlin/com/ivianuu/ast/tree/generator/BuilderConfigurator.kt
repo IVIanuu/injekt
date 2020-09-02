@@ -30,7 +30,18 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         builder(regularClass) {
             parents += classBuilder
             parents += typeParametersOwnerBuilder
-            defaultNull("companionObject")
+            default("classKind", "ClassKind.CLASS")
+            default("visibility", "Visibilities.Public")
+            useTypes(visibilitiesType)
+            defaultFalse("isExpect")
+            defaultFalse("isActual")
+            default("modality", "Modality.FINAL")
+            defaultFalse("isInline")
+            defaultFalse("isCompanion")
+            defaultFalse("isFun")
+            defaultFalse("isData")
+            defaultFalse("isInner")
+            defaultFalse("isExternal")
             openBuilder()
         }
 
@@ -64,28 +75,29 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             fields from constructor without listOf("isPrimary", "attributes")
         }
 
-        for (constructorType in listOf("AstPrimaryConstructor", "AstConstructorImpl")) {
-            builder(constructor, constructorType) {
-                parents += abstractConstructorBuilder
-                defaultNull("delegatedConstructor")
-                defaultNull("body")
-            }
-        }
-
-        builder(constructor, "AstConstructorImpl") {
-            openBuilder()
+        builder(constructor) {
+            parents += abstractConstructorBuilder
+            defaultNull("delegatedConstructor")
+            defaultNull("body")
         }
 
         builder(field) {
             openBuilder()
+            defaultFalse("isVar")
         }
 
         builder(anonymousObject) {
             parents += classBuilder
+            default("classKind", "ClassKind.CLASS")
         }
 
         builder(typeAlias) {
             parents += typeParametersOwnerBuilder
+            default("visibility", "Visibilities.Public")
+            useTypes(visibilitiesType)
+            defaultFalse("isExpect")
+            defaultFalse("isActual")
+            default("modality", "Modality.FINAL")
         }
 
         builder(callableReferenceAccess) {
@@ -128,6 +140,16 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         builder(property) {
             parents += typeParametersOwnerBuilder
             defaultNull("getter", "setter")
+            defaultFalse("isVar")
+            defaultFalse("isLocal")
+            default("visibility", "Visibilities.Public")
+            useTypes(visibilitiesType)
+            defaultFalse("isExpect")
+            defaultFalse("isActual")
+            default("modality", "Modality.FINAL")
+            defaultFalse("isConst")
+            defaultFalse("isLateinit")
+            defaultFalse("isInline")
         }
 
         builder(typeOperatorCall) {
@@ -175,6 +197,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
 
         builder(valueParameter, type = "AstValueParameterImpl") {
             openBuilder()
+            defaultFalse("isCrossinline", "isNoinline", "isVararg")
             withCopy()
         }
 
@@ -195,19 +218,27 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             parents += functionBuilder
             parents += typeParametersOwnerBuilder
             defaultNull("body")
+            default("visibility", "Visibilities.Public")
+            useTypes(visibilitiesType)
+            defaultFalse("isExpect")
+            defaultFalse("isActual")
+            default("modality", "Modality.FINAL")
+            defaultFalse("isExternal")
+            defaultFalse("isSuspend")
+            defaultFalse("isOperator")
+            defaultFalse("isInfix")
+            defaultFalse("isInline")
+            defaultFalse("isTailrec")
             openBuilder()
             withCopy()
         }
 
-        noBuilder(constExpression)
-
-        // -----------------------------------------------------------------------
-
-        findImplementationsWithElementInParents(annotationContainer) {
-            it.type !in setOf("AstImplicitTypeImpl")
-        }.forEach {
-            it.builder?.parents?.add(annotationContainerBuilder)
+        builder(typeParameter) {
+            defaultFalse("isReified")
+            default("variance", "Variance.INVARIANT")
         }
+
+        noBuilder(constExpression)
 
         findImplementationsWithElementInParents(expression).forEach {
             it.builder?.parents?.add(expressionBuilder)

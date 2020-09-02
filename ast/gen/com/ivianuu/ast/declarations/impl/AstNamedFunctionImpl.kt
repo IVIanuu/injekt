@@ -1,9 +1,9 @@
 package com.ivianuu.ast.declarations.impl
 
 import com.ivianuu.ast.AstImplementationDetail
+import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
-import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstNamedFunction
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.AstValueParameter
@@ -11,6 +11,7 @@ import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.types.AstType
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.name.Name
 import com.ivianuu.ast.visitors.*
 
@@ -25,8 +26,17 @@ open class AstNamedFunctionImpl @AstImplementationDetail constructor(
     override var receiverType: AstType?,
     override val valueParameters: MutableList<AstValueParameter>,
     override var body: AstBlock?,
-    override var status: AstDeclarationStatus,
     override val name: Name,
+    override val visibility: Visibility,
+    override val isExpect: Boolean,
+    override val isActual: Boolean,
+    override val modality: Modality,
+    override val isExternal: Boolean,
+    override val isSuspend: Boolean,
+    override val isOperator: Boolean,
+    override val isInfix: Boolean,
+    override val isInline: Boolean,
+    override val isTailrec: Boolean,
     override val symbol: AstFunctionSymbol<AstNamedFunction>,
     override val annotations: MutableList<AstFunctionCall>,
     override val typeParameters: MutableList<AstTypeParameter>,
@@ -38,7 +48,6 @@ open class AstNamedFunctionImpl @AstImplementationDetail constructor(
         receiverType?.accept(visitor, data)
         valueParameters.forEach { it.accept(visitor, data) }
         body?.accept(visitor, data)
-        status.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
         typeParameters.forEach { it.accept(visitor, data) }
     }
@@ -48,7 +57,6 @@ open class AstNamedFunctionImpl @AstImplementationDetail constructor(
         transformReceiverType(transformer, data)
         transformValueParameters(transformer, data)
         transformBody(transformer, data)
-        transformStatus(transformer, data)
         transformAnnotations(transformer, data)
         transformTypeParameters(transformer, data)
         return this
@@ -71,11 +79,6 @@ open class AstNamedFunctionImpl @AstImplementationDetail constructor(
 
     override fun <D> transformBody(transformer: AstTransformer<D>, data: D): AstNamedFunctionImpl {
         body = body?.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstNamedFunctionImpl {
-        status = status.transformSingle(transformer, data)
         return this
     }
 

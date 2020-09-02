@@ -1,10 +1,10 @@
 package com.ivianuu.ast.declarations.builder
 
-import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
+import com.ivianuu.ast.Visibilities
+import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
-import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstTypeAlias
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.builder.AstTypeParametersOwnerBuilder
@@ -14,6 +14,7 @@ import com.ivianuu.ast.symbols.impl.AstTypeAliasSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.name.Name
 
 /*
@@ -22,21 +23,27 @@ import org.jetbrains.kotlin.name.Name
  */
 
 @AstBuilderDsl
-class AstTypeAliasBuilder : AstTypeParametersOwnerBuilder, AstAnnotationContainerBuilder {
+class AstTypeAliasBuilder : AstTypeParametersOwnerBuilder {
     lateinit var origin: AstDeclarationOrigin
-    lateinit var status: AstDeclarationStatus
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
     lateinit var name: Name
+    var visibility: Visibility = Visibilities.Public
+    var isExpect: Boolean = false
+    var isActual: Boolean = false
+    var modality: Modality = Modality.FINAL
     lateinit var symbol: AstTypeAliasSymbol
     lateinit var expandedType: AstType
-    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+    val annotations: MutableList<AstFunctionCall> = mutableListOf()
 
     override fun build(): AstTypeAlias {
         return AstTypeAliasImpl(
             origin,
-            status,
             typeParameters,
             name,
+            visibility,
+            isExpect,
+            isActual,
+            modality,
             symbol,
             expandedType,
             annotations,

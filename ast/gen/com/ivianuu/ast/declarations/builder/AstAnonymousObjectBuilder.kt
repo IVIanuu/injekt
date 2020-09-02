@@ -1,6 +1,5 @@
 package com.ivianuu.ast.declarations.builder
 
-import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstAnonymousObject
 import com.ivianuu.ast.declarations.AstDeclaration
@@ -22,9 +21,9 @@ import org.jetbrains.kotlin.descriptors.ClassKind
  */
 
 @AstBuilderDsl
-class AstAnonymousObjectBuilder : AstClassBuilder, AstAnnotationContainerBuilder, AstExpressionBuilder {
+class AstAnonymousObjectBuilder : AstClassBuilder, AstExpressionBuilder {
     override lateinit var origin: AstDeclarationOrigin
-    override lateinit var classKind: ClassKind
+    override var classKind: ClassKind = ClassKind.CLASS
     override val superTypes: MutableList<AstType> = mutableListOf()
     override val declarations: MutableList<AstDeclaration> = mutableListOf()
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()

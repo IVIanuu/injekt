@@ -6,7 +6,6 @@ import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.AstTargetElement
-import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.declarations.AstDeclaration
@@ -113,10 +112,6 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     open fun transformTargetElement(targetElement: AstTargetElement, data: D): CompositeTransformResult<AstTargetElement> {
         return transformElement(targetElement, data)
-    }
-
-    open fun transformDeclarationStatus(declarationStatus: AstDeclarationStatus, data: D): CompositeTransformResult<AstDeclarationStatus> {
-        return transformElement(declarationStatus, data)
     }
 
     open fun transformStatement(statement: AstStatement, data: D): CompositeTransformResult<AstStatement> {
@@ -449,10 +444,6 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     final override fun visitTargetElement(targetElement: AstTargetElement, data: D): CompositeTransformResult<AstTargetElement> {
         return transformTargetElement(targetElement, data)
-    }
-
-    final override fun visitDeclarationStatus(declarationStatus: AstDeclarationStatus, data: D): CompositeTransformResult<AstDeclarationStatus> {
-        return transformDeclarationStatus(declarationStatus, data)
     }
 
     final override fun visitStatement(statement: AstStatement, data: D): CompositeTransformResult<AstStatement> {

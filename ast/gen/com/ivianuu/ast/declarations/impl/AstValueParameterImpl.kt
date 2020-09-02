@@ -7,7 +7,7 @@ import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
-import com.ivianuu.ast.symbols.impl.AstVariableSymbol
+import com.ivianuu.ast.symbols.impl.AstValueParameterSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
 import com.ivianuu.ast.visitors.*
@@ -21,8 +21,8 @@ open class AstValueParameterImpl @AstImplementationDetail constructor(
     override val origin: AstDeclarationOrigin,
     override var returnType: AstType,
     override val name: Name,
-    override val symbol: AstVariableSymbol<AstValueParameter>,
     override val annotations: MutableList<AstFunctionCall>,
+    override val symbol: AstValueParameterSymbol,
     override var defaultValue: AstExpression?,
     override val isCrossinline: Boolean,
     override val isNoinline: Boolean,

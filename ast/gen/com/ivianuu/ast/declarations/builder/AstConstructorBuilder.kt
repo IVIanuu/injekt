@@ -1,11 +1,9 @@
 package com.ivianuu.ast.declarations.builder
 
-import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
-import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.declarations.builder.AstAbstractConstructorBuilder
 import com.ivianuu.ast.declarations.impl.AstConstructorImpl
@@ -23,12 +21,11 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-open class AstConstructorBuilder : AstAbstractConstructorBuilder, AstAnnotationContainerBuilder {
+class AstConstructorBuilder : AstAbstractConstructorBuilder {
     override lateinit var origin: AstDeclarationOrigin
     override lateinit var returnType: AstType
     override var receiverType: AstType? = null
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
-    override lateinit var status: AstDeclarationStatus
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var symbol: AstConstructorSymbol
     override var delegatedConstructor: AstDelegatedConstructorCall? = null
@@ -40,7 +37,6 @@ open class AstConstructorBuilder : AstAbstractConstructorBuilder, AstAnnotationC
             returnType,
             receiverType,
             valueParameters,
-            status,
             annotations,
             symbol,
             delegatedConstructor,

@@ -1,6 +1,5 @@
 package com.ivianuu.ast.declarations.builder
 
-import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
@@ -20,16 +19,16 @@ import org.jetbrains.kotlin.types.Variance
  */
 
 @AstBuilderDsl
-class AstTypeParameterBuilder : AstAnnotationContainerBuilder {
+class AstTypeParameterBuilder {
     lateinit var origin: AstDeclarationOrigin
     lateinit var name: Name
     lateinit var symbol: AstTypeParameterSymbol
-    lateinit var variance: Variance
-    var isReified: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
+    var variance: Variance = Variance.INVARIANT
+    var isReified: Boolean = false
     val bounds: MutableList<AstType> = mutableListOf()
-    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+    val annotations: MutableList<AstFunctionCall> = mutableListOf()
 
-    override fun build(): AstTypeParameter {
+    fun build(): AstTypeParameter {
         return AstTypeParameterImpl(
             origin,
             name,

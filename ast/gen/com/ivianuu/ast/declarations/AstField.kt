@@ -27,7 +27,6 @@ abstract class AstField : AstVariable<AstField>(), AstTypeParametersOwner, AstCa
     abstract override val setter: AstPropertyAccessor?
     abstract override val annotations: List<AstFunctionCall>
     abstract override val typeParameters: List<AstTypeParameter>
-    abstract override val status: AstDeclarationStatus
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitField(this, data)
 
@@ -50,8 +49,6 @@ abstract class AstField : AstVariable<AstField>(), AstTypeParametersOwner, AstCa
     abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstField
 
     abstract override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstField
-
-    abstract override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstField
 
     abstract override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstField
 }

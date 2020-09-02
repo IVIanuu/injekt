@@ -1,10 +1,12 @@
 package com.ivianuu.ast.declarations
 
+import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstBackingFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstPropertySymbol
 import com.ivianuu.ast.types.AstType
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.name.Name
 import com.ivianuu.ast.visitors.*
 
@@ -30,7 +32,13 @@ abstract class AstProperty : AstVariable<AstProperty>(), AstTypeParametersOwner,
     abstract override val symbol: AstPropertySymbol
     abstract val backingFieldSymbol: AstBackingFieldSymbol
     abstract val isLocal: Boolean
-    abstract override val status: AstDeclarationStatus
+    abstract val visibility: Visibility
+    abstract val isExpect: Boolean
+    abstract val isActual: Boolean
+    abstract val modality: Modality
+    abstract val isInline: Boolean
+    abstract val isConst: Boolean
+    abstract val isLateinit: Boolean
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitProperty(this, data)
 
@@ -53,8 +61,6 @@ abstract class AstProperty : AstVariable<AstProperty>(), AstTypeParametersOwner,
     abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstProperty
 
     abstract override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstProperty
-
-    abstract override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstProperty
 
     abstract override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstProperty
 }
