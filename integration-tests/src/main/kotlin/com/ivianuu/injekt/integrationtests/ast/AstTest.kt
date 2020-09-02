@@ -1,14 +1,16 @@
 package com.ivianuu.injekt.integrationtests.ast
 
-import com.ivianuu.ast.AstGeneratorContext
+import com.ivianuu.ast.AstElement
+import com.ivianuu.ast.declarations.AstClass
+import com.ivianuu.ast.declarations.AstModuleFragment
+import com.ivianuu.ast.declarations.AstRegularClass
+import com.ivianuu.ast.declarations.builder.buildFile
+import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.extension.AstGenerationExtension
-import com.ivianuu.ast.tree.AstElement
-import com.ivianuu.ast.tree.declaration.AstClass
-import com.ivianuu.ast.tree.declaration.AstFile
-import com.ivianuu.ast.tree.declaration.AstModuleFragment
-import com.ivianuu.ast.tree.declaration.addChild
-import com.ivianuu.ast.tree.visitor.AstTransformResult
-import com.ivianuu.ast.tree.visitor.AstTransformerVoid
+import com.ivianuu.ast.visitors.AstDefaultTransformer
+import com.ivianuu.ast.visitors.AstDefaultVisitorVoid
+import com.ivianuu.ast.visitors.CompositeTransformResult
+import com.ivianuu.ast.visitors.compose
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.test.codegen
@@ -251,24 +253,22 @@ class AstTest {
                                 ) {
                                     moduleFragment.files.toList().forEach { file ->
                                         file.transformChildren(
-                                            object : AstTransformerVoid {
-                                                override fun visitClass(
-                                                    klass: AstClass,
-                                                    data: Nothing?
-                                                ): AstTransformResult<AstElement> {
-                                                    moduleFragment.files += AstFile(
-                                                        packageFqName = file.packageFqName,
-                                                        name = (klass.name.asString()
+                                            object : AstDefaultTransformer<Nothing?> {
+                                                override fun visitElement(element: AstElement) {
+                                                    element.accept(this)
+                                                }
+
+                                                override fun visitRegularClass(regularClass: AstRegularClass) {
+                                                    super.visitRegularClass(regularClass)
+                                                    moduleFragment.files += buildFile {
+                                                        packageFqName = file.packageFqName
+                                                        name = (regularClass.name.asString()
                                                             .removeIllegalChars() + "Context.kt").asNameId()
-                                                    ).apply {
-                                                        addChild(
-                                                            AstClass(
-                                                                name = (klass.name.asString()
-                                                                    .removeIllegalChars() + "Context").asNameId()
-                                                            )
+                                                        declarations += AstClass(
+                                                            name = (regularClass.name.asString()
+                                                                .removeIllegalChars() + "Context").asNameId()
                                                         )
                                                     }
-                                                    return super.visitClass(klass, null)
                                                 }
                                             },
                                             null

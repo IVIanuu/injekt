@@ -106,7 +106,10 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         callableMemberDeclaration,
         typeParameterRefsOwner
     )
-    val file = element("File", Declaration, annotatedDeclaration)
+
+    val moduleFragment = element("ModuleFragment", Declaration)
+    val packageFragment = element("PackageFragment", Declaration)
+    val file = element("File", Declaration, packageFragment, annotationContainer)
 
     val anonymousFunction =
         element("AnonymousFunction", Declaration, function, expression, typeParametersOwner)

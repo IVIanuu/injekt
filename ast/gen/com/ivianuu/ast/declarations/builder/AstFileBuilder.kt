@@ -3,8 +3,6 @@ package com.ivianuu.ast.declarations.builder
 import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclaration
-import com.ivianuu.ast.declarations.AstDeclarationAttributes
-import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstFile
 import com.ivianuu.ast.declarations.impl.AstFileImpl
 import com.ivianuu.ast.expressions.AstAnnotationCall
@@ -19,7 +17,6 @@ import org.jetbrains.kotlin.name.FqName
 
 @AstBuilderDsl
 class AstFileBuilder : AstAnnotationContainerBuilder {
-    lateinit var origin: AstDeclarationOrigin
     override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
     val declarations: MutableList<AstDeclaration> = mutableListOf()
     lateinit var name: String
@@ -27,7 +24,6 @@ class AstFileBuilder : AstAnnotationContainerBuilder {
 
     override fun build(): AstFile {
         return AstFileImpl(
-            origin,
             annotations,
             declarations,
             name,

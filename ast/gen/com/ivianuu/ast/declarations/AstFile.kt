@@ -1,5 +1,6 @@
 package com.ivianuu.ast.declarations
 
+import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.expressions.AstAnnotationCall
 import org.jetbrains.kotlin.name.FqName
@@ -10,13 +11,11 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstFile : AstPureAbstractElement(), AstAnnotatedDeclaration {
-    abstract override val origin: AstDeclarationOrigin
-    abstract override val attributes: AstDeclarationAttributes
+abstract class AstFile : AstPureAbstractElement(), AstPackageFragment, AstAnnotationContainer {
     abstract override val annotations: List<AstAnnotationCall>
     abstract val declarations: List<AstDeclaration>
     abstract val name: String
-    abstract val packageFqName: FqName
+    abstract override val packageFqName: FqName
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitFile(this, data)
 

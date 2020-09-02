@@ -35,6 +35,8 @@ import com.ivianuu.ast.declarations.AstFunction
 import com.ivianuu.ast.declarations.AstSimpleFunction
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstConstructor
+import com.ivianuu.ast.declarations.AstModuleFragment
+import com.ivianuu.ast.declarations.AstPackageFragment
 import com.ivianuu.ast.declarations.AstFile
 import com.ivianuu.ast.declarations.AstAnonymousFunction
 import com.ivianuu.ast.declarations.AstAnonymousObject
@@ -172,6 +174,10 @@ abstract class AstVisitor<out R, in D> {
     open fun visitPropertyAccessor(propertyAccessor: AstPropertyAccessor, data: D): R  = visitElement(propertyAccessor, data)
 
     open fun visitConstructor(constructor: AstConstructor, data: D): R  = visitElement(constructor, data)
+
+    open fun visitModuleFragment(moduleFragment: AstModuleFragment, data: D): R  = visitElement(moduleFragment, data)
+
+    open fun visitPackageFragment(packageFragment: AstPackageFragment, data: D): R  = visitElement(packageFragment, data)
 
     open fun visitFile(file: AstFile, data: D): R  = visitElement(file, data)
 

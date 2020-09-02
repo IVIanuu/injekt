@@ -10,6 +10,7 @@ import com.ivianuu.ast.tree.generator.AstTreeBuilder.block
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.declaration
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.declarationStatus
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.expression
+import com.ivianuu.ast.tree.generator.AstTreeBuilder.file
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.reference
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.typeParameter
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.typeParameterRef
@@ -39,6 +40,7 @@ object FieldSets {
         fieldList("arguments", expression)
 
     val declarations = fieldList(declaration)
+    val files = fieldList(file)
 
     val annotations =
         fieldList("annotations", annotationCall).withTransform(needTransformInOtherChildren = true)

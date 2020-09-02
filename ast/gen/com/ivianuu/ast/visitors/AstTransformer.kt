@@ -35,6 +35,8 @@ import com.ivianuu.ast.declarations.AstFunction
 import com.ivianuu.ast.declarations.AstSimpleFunction
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstConstructor
+import com.ivianuu.ast.declarations.AstModuleFragment
+import com.ivianuu.ast.declarations.AstPackageFragment
 import com.ivianuu.ast.declarations.AstFile
 import com.ivianuu.ast.declarations.AstAnonymousFunction
 import com.ivianuu.ast.declarations.AstAnonymousObject
@@ -243,7 +245,15 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformElement(constructor, data)
     }
 
-    open fun transformFile(file: AstFile, data: D): CompositeTransformResult<AstDeclaration> {
+    open fun transformModuleFragment(moduleFragment: AstModuleFragment, data: D): CompositeTransformResult<AstModuleFragment> {
+        return transformElement(moduleFragment, data)
+    }
+
+    open fun transformPackageFragment(packageFragment: AstPackageFragment, data: D): CompositeTransformResult<AstPackageFragment> {
+        return transformElement(packageFragment, data)
+    }
+
+    open fun transformFile(file: AstFile, data: D): CompositeTransformResult<AstFile> {
         return transformElement(file, data)
     }
 
@@ -627,7 +637,15 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformConstructor(constructor, data)
     }
 
-    final override fun visitFile(file: AstFile, data: D): CompositeTransformResult<AstDeclaration> {
+    final override fun visitModuleFragment(moduleFragment: AstModuleFragment, data: D): CompositeTransformResult<AstModuleFragment> {
+        return transformModuleFragment(moduleFragment, data)
+    }
+
+    final override fun visitPackageFragment(packageFragment: AstPackageFragment, data: D): CompositeTransformResult<AstPackageFragment> {
+        return transformPackageFragment(packageFragment, data)
+    }
+
+    final override fun visitFile(file: AstFile, data: D): CompositeTransformResult<AstFile> {
         return transformFile(file, data)
     }
 

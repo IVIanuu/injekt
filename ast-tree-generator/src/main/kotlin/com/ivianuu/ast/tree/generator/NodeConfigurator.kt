@@ -11,6 +11,7 @@ import com.ivianuu.ast.tree.generator.FieldSets.body
 import com.ivianuu.ast.tree.generator.FieldSets.calleeReference
 import com.ivianuu.ast.tree.generator.FieldSets.classKind
 import com.ivianuu.ast.tree.generator.FieldSets.declarations
+import com.ivianuu.ast.tree.generator.FieldSets.files
 import com.ivianuu.ast.tree.generator.FieldSets.initializer
 import com.ivianuu.ast.tree.generator.FieldSets.modality
 import com.ivianuu.ast.tree.generator.FieldSets.name
@@ -364,6 +365,15 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             parentArg(symbolOwner, "E", anonymousInitializer)
             +body(nullable = true)
             +symbol(anonymousInitializerSymbolType.type)
+        }
+
+        moduleFragment.configure {
+            +stringField("name")
+            +files//.withTransform()
+        }
+
+        packageFragment.configure {
+            +field("packageFqName", fqNameType)
         }
 
         file.configure {

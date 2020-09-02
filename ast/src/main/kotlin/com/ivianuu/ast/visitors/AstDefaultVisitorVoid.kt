@@ -31,7 +31,6 @@ abstract class AstDefaultVisitorVoid : AstVisitorVoid() {
         return visitJump(breakExpression)
     }
 
-
     override fun visitLambdaArgumentExpression(lambdaArgumentExpression: AstLambdaArgumentExpression) {
         return visitWrappedArgumentExpression(lambdaArgumentExpression)
     }
