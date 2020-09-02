@@ -1,7 +1,7 @@
 package com.ivianuu.ast.expressions.impl
 
-import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstBlock
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstCatch
 import com.ivianuu.ast.expressions.AstTryExpression
 import com.ivianuu.ast.references.AstReference
@@ -15,7 +15,7 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstTryExpressionImpl(
     override var type: AstType,
-    override val annotations: MutableList<AstAnnotationCall>,
+    override val annotations: MutableList<AstCall>,
     override var calleeReference: AstReference,
     override var tryBlock: AstBlock,
     override val catches: MutableList<AstCatch>,

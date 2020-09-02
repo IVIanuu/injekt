@@ -1,8 +1,8 @@
 package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstPureAbstractElement
-import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstBlock
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.symbols.impl.AstPropertyAccessorSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -23,7 +23,7 @@ abstract class AstPropertyAccessor : AstPureAbstractElement(), AstFunction<AstPr
     abstract val isGetter: Boolean
     abstract val isSetter: Boolean
     abstract val status: AstDeclarationStatus
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract override val typeParameters: List<AstTypeParameter>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitPropertyAccessor(this, data)

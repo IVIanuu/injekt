@@ -11,3 +11,5 @@ interface AstGenerationExtension {
 
     fun generate(moduleFragment: AstModuleFragment, context: AstGeneratorContext)
 }
+
+interface AstGeneratorContext

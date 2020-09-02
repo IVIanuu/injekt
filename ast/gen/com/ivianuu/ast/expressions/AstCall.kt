@@ -8,12 +8,10 @@ import com.ivianuu.ast.visitors.*
  */
 
 interface AstCall : AstStatement {
-    override val annotations: List<AstAnnotationCall>
-    val argumentList: AstArgumentList
+    override val annotations: List<AstCall>
+    val arguments: List<AstExpression>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitCall(this, data)
-
-    fun replaceArgumentList(newArgumentList: AstArgumentList)
 
     override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstCall
 }

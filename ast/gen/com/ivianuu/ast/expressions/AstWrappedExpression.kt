@@ -10,7 +10,7 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstWrappedExpression : AstExpression() {
     abstract override val type: AstType
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract val expression: AstExpression
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitWrappedExpression(this, data)

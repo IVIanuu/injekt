@@ -54,9 +54,7 @@ import com.ivianuu.ast.expressions.AstConstExpression
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstStarProjection
 import com.ivianuu.ast.types.AstTypeProjectionWithVariance
-import com.ivianuu.ast.expressions.AstArgumentList
 import com.ivianuu.ast.expressions.AstCall
-import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstComparisonExpression
 import com.ivianuu.ast.expressions.AstTypeOperatorCall
 import com.ivianuu.ast.expressions.AstAssignmentOperatorStatement
@@ -318,16 +316,8 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(typeProjectionWithVariance)
     }
 
-    open fun visitArgumentList(argumentList: AstArgumentList) {
-        visitElement(argumentList)
-    }
-
     open fun visitCall(call: AstCall) {
         visitElement(call)
-    }
-
-    open fun visitAnnotationCall(annotationCall: AstAnnotationCall) {
-        visitElement(annotationCall)
     }
 
     open fun visitComparisonExpression(comparisonExpression: AstComparisonExpression) {
@@ -706,16 +696,8 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitTypeProjectionWithVariance(typeProjectionWithVariance)
     }
 
-    final override fun visitArgumentList(argumentList: AstArgumentList, data: Nothing?) {
-        visitArgumentList(argumentList)
-    }
-
     final override fun visitCall(call: AstCall, data: Nothing?) {
         visitCall(call)
-    }
-
-    final override fun visitAnnotationCall(annotationCall: AstAnnotationCall, data: Nothing?) {
-        visitAnnotationCall(annotationCall)
     }
 
     final override fun visitComparisonExpression(comparisonExpression: AstComparisonExpression, data: Nothing?) {

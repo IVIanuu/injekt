@@ -8,7 +8,7 @@ import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.declarations.impl.AstValueParameterImpl
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
@@ -28,7 +28,7 @@ open class AstValueParameterBuilder : AstAnnotationContainerBuilder {
     open lateinit var returnType: AstType
     open lateinit var name: Name
     open lateinit var symbol: AstVariableSymbol<AstValueParameter>
-    override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
+    override val annotations: MutableList<AstCall> = mutableListOf()
     open var defaultValue: AstExpression? = null
     open var isCrossinline: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
     open var isNoinline: Boolean by kotlin.properties.Delegates.notNull<Boolean>()

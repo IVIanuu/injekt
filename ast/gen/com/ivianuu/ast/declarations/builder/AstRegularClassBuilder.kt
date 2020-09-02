@@ -11,7 +11,7 @@ import com.ivianuu.ast.declarations.AstTypeParameterRef
 import com.ivianuu.ast.declarations.builder.AstClassBuilder
 import com.ivianuu.ast.declarations.builder.AstTypeParameterRefsOwnerBuilder
 import com.ivianuu.ast.declarations.impl.AstRegularClassImpl
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -27,7 +27,7 @@ import org.jetbrains.kotlin.name.Name
 @AstBuilderDsl
 open class AstRegularClassBuilder : AstClassBuilder, AstTypeParameterRefsOwnerBuilder, AstAnnotationContainerBuilder {
     override lateinit var origin: AstDeclarationOrigin
-    override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
+    override val annotations: MutableList<AstCall> = mutableListOf()
     override val typeParameters: MutableList<AstTypeParameterRef> = mutableListOf()
     open lateinit var status: AstDeclarationStatus
     override lateinit var classKind: ClassKind

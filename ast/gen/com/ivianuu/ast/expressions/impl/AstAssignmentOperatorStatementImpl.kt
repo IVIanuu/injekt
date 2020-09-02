@@ -1,7 +1,7 @@
 package com.ivianuu.ast.expressions.impl
 
-import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstAssignmentOperatorStatement
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstOperation
 import com.ivianuu.ast.visitors.*
@@ -12,7 +12,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstAssignmentOperatorStatementImpl(
-    override val annotations: MutableList<AstAnnotationCall>,
+    override val annotations: MutableList<AstCall>,
     override val operation: AstOperation,
     override var leftArgument: AstExpression,
     override var rightArgument: AstExpression,

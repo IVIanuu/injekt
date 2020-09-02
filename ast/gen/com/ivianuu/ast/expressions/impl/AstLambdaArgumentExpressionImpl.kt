@@ -1,6 +1,6 @@
 package com.ivianuu.ast.expressions.impl
 
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstLambdaArgumentExpression
 import com.ivianuu.ast.types.AstType
@@ -12,7 +12,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstLambdaArgumentExpressionImpl(
-    override val annotations: MutableList<AstAnnotationCall>,
+    override val annotations: MutableList<AstCall>,
     override var expression: AstExpression,
 ) : AstLambdaArgumentExpression() {
     override val type: AstType get() = expression.type

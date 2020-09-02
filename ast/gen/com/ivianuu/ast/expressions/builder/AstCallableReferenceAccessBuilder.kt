@@ -2,18 +2,16 @@ package com.ivianuu.ast.expressions.builder
 
 import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstCallableReferenceAccess
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.builder.AstQualifiedAccessBuilder
 import com.ivianuu.ast.expressions.impl.AstCallableReferenceAccessImpl
-import com.ivianuu.ast.expressions.impl.AstNoReceiverExpression
 import com.ivianuu.ast.references.AstNamedReference
 import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
-import com.ivianuu.ast.types.impl.AstImplicitTypeImpl
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 
@@ -24,12 +22,11 @@ import kotlin.contracts.*
 
 @AstBuilderDsl
 class AstCallableReferenceAccessBuilder : AstQualifiedAccessBuilder, AstAnnotationContainerBuilder, AstExpressionBuilder {
-    override var type: AstType = AstImplicitTypeImpl()
-    override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
+    override lateinit var type: AstType
+    override val annotations: MutableList<AstCall> = mutableListOf()
     override val typeArguments: MutableList<AstTypeProjection> = mutableListOf()
-    override var explicitReceiver: AstExpression? = null
-    override var dispatchReceiver: AstExpression = AstNoReceiverExpression
-    override var extensionReceiver: AstExpression = AstNoReceiverExpression
+    override var dispatchReceiver: AstExpression? = null
+    override var extensionReceiver: AstExpression? = null
     lateinit var calleeReference: AstNamedReference
     var hasQuestionMarkAtLHS: Boolean = false
 
@@ -38,7 +35,6 @@ class AstCallableReferenceAccessBuilder : AstQualifiedAccessBuilder, AstAnnotati
             type,
             annotations,
             typeArguments,
-            explicitReceiver,
             dispatchReceiver,
             extensionReceiver,
             calleeReference,

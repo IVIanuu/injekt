@@ -7,8 +7,8 @@ import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstSimpleFunction
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.AstValueParameter
-import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstBlock
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
@@ -28,7 +28,7 @@ open class AstSimpleFunctionImpl @AstImplementationDetail constructor(
     override var status: AstDeclarationStatus,
     override val name: Name,
     override val symbol: AstFunctionSymbol<AstSimpleFunction>,
-    override val annotations: MutableList<AstAnnotationCall>,
+    override val annotations: MutableList<AstCall>,
     override val typeParameters: MutableList<AstTypeParameter>,
 ) : AstSimpleFunction() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()

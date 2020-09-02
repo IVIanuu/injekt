@@ -1,6 +1,6 @@
 package com.ivianuu.ast.declarations
 
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.symbols.impl.AstAnonymousObjectSymbol
 import com.ivianuu.ast.types.AstType
@@ -19,7 +19,7 @@ abstract class AstAnonymousObject : AstClass<AstAnonymousObject>, AstExpression(
     abstract override val classKind: ClassKind
     abstract override val superTypes: List<AstType>
     abstract override val declarations: List<AstDeclaration>
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract override val type: AstType
     abstract override val symbol: AstAnonymousObjectSymbol
 

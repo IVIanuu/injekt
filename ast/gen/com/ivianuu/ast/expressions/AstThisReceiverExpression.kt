@@ -13,11 +13,10 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstThisReceiverExpression : AstQualifiedAccessExpression() {
     abstract override val type: AstType
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract override val typeArguments: List<AstTypeProjection>
-    abstract override val explicitReceiver: AstExpression?
-    abstract override val dispatchReceiver: AstExpression
-    abstract override val extensionReceiver: AstExpression
+    abstract override val dispatchReceiver: AstExpression?
+    abstract override val extensionReceiver: AstExpression?
     abstract override val calleeReference: AstThisReference
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitThisReceiverExpression(this, data)
@@ -26,8 +25,6 @@ abstract class AstThisReceiverExpression : AstQualifiedAccessExpression() {
 
     abstract override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>)
 
-    abstract override fun replaceExplicitReceiver(newExplicitReceiver: AstExpression?)
-
     abstract fun replaceCalleeReference(newCalleeReference: AstThisReference)
 
     abstract override fun replaceCalleeReference(newCalleeReference: AstReference)
@@ -35,8 +32,6 @@ abstract class AstThisReceiverExpression : AstQualifiedAccessExpression() {
     abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstThisReceiverExpression
 
     abstract override fun <D> transformTypeArguments(transformer: AstTransformer<D>, data: D): AstThisReceiverExpression
-
-    abstract override fun <D> transformExplicitReceiver(transformer: AstTransformer<D>, data: D): AstThisReceiverExpression
 
     abstract override fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstThisReceiverExpression
 

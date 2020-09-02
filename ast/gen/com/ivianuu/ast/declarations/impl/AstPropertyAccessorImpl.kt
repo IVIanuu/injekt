@@ -7,8 +7,8 @@ import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.AstValueParameter
-import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstBlock
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.symbols.impl.AstPropertyAccessorSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.descriptors.Modality
@@ -27,7 +27,7 @@ open class AstPropertyAccessorImpl @AstImplementationDetail constructor(
     override val symbol: AstPropertyAccessorSymbol,
     override val isGetter: Boolean,
     override var status: AstDeclarationStatus,
-    override val annotations: MutableList<AstAnnotationCall>,
+    override val annotations: MutableList<AstCall>,
     override val typeParameters: MutableList<AstTypeParameter>,
 ) : AstPropertyAccessor() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()

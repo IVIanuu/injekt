@@ -1,7 +1,7 @@
 package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstPureAbstractElement
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
@@ -29,7 +29,7 @@ abstract class AstVariable<F : AstVariable<F>> : AstPureAbstractElement(), AstCa
     abstract val isVal: Boolean
     abstract val getter: AstPropertyAccessor?
     abstract val setter: AstPropertyAccessor?
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitVariable(this, data)
 

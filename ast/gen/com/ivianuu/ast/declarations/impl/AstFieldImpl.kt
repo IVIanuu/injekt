@@ -6,7 +6,7 @@ import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstField
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstTypeParameter
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
@@ -25,7 +25,7 @@ internal class AstFieldImpl(
     override val name: Name,
     override val symbol: AstVariableSymbol<AstField>,
     override val isVar: Boolean,
-    override val annotations: MutableList<AstAnnotationCall>,
+    override val annotations: MutableList<AstCall>,
     override val typeParameters: MutableList<AstTypeParameter>,
     override var status: AstDeclarationStatus,
 ) : AstField() {

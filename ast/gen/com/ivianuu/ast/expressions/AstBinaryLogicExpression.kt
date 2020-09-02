@@ -10,7 +10,7 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstBinaryLogicExpression : AstExpression() {
     abstract override val type: AstType
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract val leftOperand: AstExpression
     abstract val rightOperand: AstExpression
     abstract val kind: LogicOperationKind

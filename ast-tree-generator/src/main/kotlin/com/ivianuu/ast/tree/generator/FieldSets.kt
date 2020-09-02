@@ -5,11 +5,12 @@
 
 package com.ivianuu.ast.tree.generator
 
-import com.ivianuu.ast.tree.generator.AstTreeBuilder.annotationCall
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.block
+import com.ivianuu.ast.tree.generator.AstTreeBuilder.call
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.declaration
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.declarationStatus
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.expression
+import com.ivianuu.ast.tree.generator.AstTreeBuilder.field
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.file
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.reference
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.typeParameter
@@ -28,9 +29,8 @@ object FieldSets {
     val calleeReference = field("calleeReference", reference, withReplace = true)
 
     val receivers = fieldSet(
-        field("explicitReceiver", expression, nullable = true, withReplace = true).withTransform(),
-        field("dispatchReceiver", expression).withTransform(),
-        field("extensionReceiver", expression).withTransform()
+        field("dispatchReceiver", expression, nullable = true).withTransform(),
+        field("extensionReceiver", expression, nullable = true).withTransform()
     )
 
     val typeArguments =
@@ -43,7 +43,7 @@ object FieldSets {
     val files = fieldList(file)
 
     val annotations =
-        fieldList("annotations", annotationCall).withTransform(needTransformInOtherChildren = true)
+        fieldList("annotations", call).withTransform(needTransformInOtherChildren = true)
 
     fun symbolWithPackage(
         packageName: String?,

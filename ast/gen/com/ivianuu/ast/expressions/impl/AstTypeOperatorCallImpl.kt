@@ -1,11 +1,10 @@
 package com.ivianuu.ast.expressions.impl
 
-import com.ivianuu.ast.expressions.AstAnnotationCall
-import com.ivianuu.ast.expressions.AstArgumentList
+import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstOperation
 import com.ivianuu.ast.expressions.AstTypeOperatorCall
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.types.impl.AstImplicitTypeImpl
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -14,17 +13,16 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstTypeOperatorCallImpl(
-    override val annotations: MutableList<AstAnnotationCall>,
-    override var argumentList: AstArgumentList,
+    override var type: AstType,
+    override val annotations: MutableList<AstCall>,
+    override val arguments: MutableList<AstExpression>,
     override val operation: AstOperation,
     override var conversionType: AstType,
 ) : AstTypeOperatorCall() {
-    override var type: AstType = AstImplicitTypeImpl()
-
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
-        argumentList.accept(visitor, data)
+        arguments.forEach { it.accept(visitor, data) }
         conversionType.accept(visitor, data)
     }
 
@@ -47,15 +45,11 @@ internal class AstTypeOperatorCallImpl(
     override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstTypeOperatorCallImpl {
         type = type.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
-        argumentList = argumentList.transformSingle(transformer, data)
+        arguments.transformInplace(transformer, data)
         return this
     }
 
     override fun replaceType(newType: AstType) {
         type = newType
-    }
-
-    override fun replaceArgumentList(newArgumentList: AstArgumentList) {
-        argumentList = newArgumentList
     }
 }

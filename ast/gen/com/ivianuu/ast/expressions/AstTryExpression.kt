@@ -11,7 +11,7 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstTryExpression : AstExpression(), AstResolvable {
     abstract override val type: AstType
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract override val calleeReference: AstReference
     abstract val tryBlock: AstBlock
     abstract val catches: List<AstCatch>

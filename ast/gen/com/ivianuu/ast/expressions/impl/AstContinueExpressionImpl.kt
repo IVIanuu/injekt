@@ -1,11 +1,10 @@
 package com.ivianuu.ast.expressions.impl
 
 import com.ivianuu.ast.AstTarget
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstContinueExpression
 import com.ivianuu.ast.expressions.AstLoop
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.types.impl.AstImplicitNothingType
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -14,11 +13,10 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstContinueExpressionImpl(
-    override val annotations: MutableList<AstAnnotationCall>,
+    override var type: AstType,
+    override val annotations: MutableList<AstCall>,
     override val target: AstTarget<AstLoop>,
 ) : AstContinueExpression() {
-    override var type: AstType = AstImplicitNothingType()
-
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }

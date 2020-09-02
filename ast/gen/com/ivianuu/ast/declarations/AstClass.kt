@@ -1,6 +1,6 @@
 package com.ivianuu.ast.declarations
 
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.symbols.impl.AstClassSymbol
 import com.ivianuu.ast.types.AstType
@@ -20,7 +20,7 @@ interface AstClass<F : AstClass<F>> : AstClassLikeDeclaration<F>, AstStatement, 
     val classKind: ClassKind
     val superTypes: List<AstType>
     val declarations: List<AstDeclaration>
-    override val annotations: List<AstAnnotationCall>
+    override val annotations: List<AstCall>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitClass(this, data)
 

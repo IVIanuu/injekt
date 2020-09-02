@@ -1,7 +1,7 @@
 package com.ivianuu.ast.expressions.impl
 
 import com.ivianuu.ast.declarations.AstVariable
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstWhenBranch
 import com.ivianuu.ast.expressions.AstWhenExpression
@@ -16,7 +16,7 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstWhenExpressionImpl(
     override var type: AstType,
-    override val annotations: MutableList<AstAnnotationCall>,
+    override val annotations: MutableList<AstCall>,
     override var calleeReference: AstReference,
     override var subject: AstExpression?,
     override var subjectVariable: AstVariable<*>?,

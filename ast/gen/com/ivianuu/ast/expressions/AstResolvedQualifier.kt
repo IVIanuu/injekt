@@ -14,7 +14,7 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstResolvedQualifier : AstExpression() {
     abstract override val type: AstType
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract val packageFqName: FqName
     abstract val relativeClassFqName: FqName?
     abstract val classId: ClassId?

@@ -12,7 +12,7 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstWhenExpression : AstExpression(), AstResolvable {
     abstract override val type: AstType
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract override val calleeReference: AstReference
     abstract val subject: AstExpression?
     abstract val subjectVariable: AstVariable<*>?

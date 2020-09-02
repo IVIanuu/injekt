@@ -4,7 +4,7 @@ import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstValueParameter
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
@@ -29,7 +29,7 @@ internal class AstDefaultSetterValueParameter(
     override val isVal: Boolean,
     override var getter: AstPropertyAccessor?,
     override var setter: AstPropertyAccessor?,
-    override val annotations: MutableList<AstAnnotationCall>,
+    override val annotations: MutableList<AstCall>,
     override var defaultValue: AstExpression?,
     override val isCrossinline: Boolean,
     override val isNoinline: Boolean,

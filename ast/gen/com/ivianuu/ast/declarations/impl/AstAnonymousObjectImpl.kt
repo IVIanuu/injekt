@@ -5,7 +5,7 @@ import com.ivianuu.ast.declarations.AstDeclaration
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstTypeParameterRef
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.symbols.impl.AstAnonymousObjectSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -22,7 +22,7 @@ internal class AstAnonymousObjectImpl(
     override val classKind: ClassKind,
     override val superTypes: MutableList<AstType>,
     override val declarations: MutableList<AstDeclaration>,
-    override val annotations: MutableList<AstAnnotationCall>,
+    override val annotations: MutableList<AstCall>,
     override var type: AstType,
     override val symbol: AstAnonymousObjectSymbol,
 ) : AstAnonymousObject() {

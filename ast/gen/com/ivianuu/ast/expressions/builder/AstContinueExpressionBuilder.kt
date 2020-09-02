@@ -3,14 +3,13 @@ package com.ivianuu.ast.expressions.builder
 import com.ivianuu.ast.AstTarget
 import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstContinueExpression
 import com.ivianuu.ast.expressions.AstLoop
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.builder.AstLoopJumpBuilder
 import com.ivianuu.ast.expressions.impl.AstContinueExpressionImpl
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.types.impl.AstImplicitNothingType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 
@@ -21,22 +20,17 @@ import kotlin.contracts.*
 
 @AstBuilderDsl
 class AstContinueExpressionBuilder : AstLoopJumpBuilder, AstAnnotationContainerBuilder, AstExpressionBuilder {
-    override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
+    override lateinit var type: AstType
+    override val annotations: MutableList<AstCall> = mutableListOf()
     override lateinit var target: AstTarget<AstLoop>
 
     override fun build(): AstContinueExpression {
         return AstContinueExpressionImpl(
+            type,
             annotations,
             target,
         )
     }
-
-    @Deprecated("Modification of 'type' has no impact for AstContinueExpressionBuilder", level = DeprecationLevel.HIDDEN)
-    override var type: AstType
-        get() = throw IllegalStateException()
-        set(value) {
-            throw IllegalStateException()
-        }
 }
 
 @OptIn(ExperimentalContracts::class)

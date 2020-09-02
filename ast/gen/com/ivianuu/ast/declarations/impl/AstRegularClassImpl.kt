@@ -6,7 +6,7 @@ import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstRegularClass
 import com.ivianuu.ast.declarations.AstTypeParameterRef
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -20,7 +20,7 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstRegularClassImpl(
     override val origin: AstDeclarationOrigin,
-    override val annotations: MutableList<AstAnnotationCall>,
+    override val annotations: MutableList<AstCall>,
     override val typeParameters: MutableList<AstTypeParameterRef>,
     override var status: AstDeclarationStatus,
     override val classKind: ClassKind,

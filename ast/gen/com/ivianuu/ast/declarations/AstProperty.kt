@@ -1,6 +1,6 @@
 package com.ivianuu.ast.declarations
 
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.symbols.impl.AstBackingFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
@@ -27,7 +27,7 @@ abstract class AstProperty : AstVariable<AstProperty>(), AstTypeParametersOwner,
     abstract override val isVal: Boolean
     abstract override val getter: AstPropertyAccessor?
     abstract override val setter: AstPropertyAccessor?
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract override val typeParameters: List<AstTypeParameter>
     abstract override val symbol: AstPropertySymbol
     abstract val backingFieldSymbol: AstBackingFieldSymbol

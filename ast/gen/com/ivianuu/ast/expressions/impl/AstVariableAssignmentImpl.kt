@@ -1,6 +1,6 @@
 package com.ivianuu.ast.expressions.impl
 
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstVariableAssignment
 import com.ivianuu.ast.references.AstReference
@@ -14,11 +14,10 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstVariableAssignmentImpl(
     override var calleeReference: AstReference,
-    override val annotations: MutableList<AstAnnotationCall>,
+    override val annotations: MutableList<AstCall>,
     override val typeArguments: MutableList<AstTypeProjection>,
-    override var explicitReceiver: AstExpression?,
-    override var dispatchReceiver: AstExpression,
-    override var extensionReceiver: AstExpression,
+    override var dispatchReceiver: AstExpression?,
+    override var extensionReceiver: AstExpression?,
     override var rValue: AstExpression,
 ) : AstVariableAssignment() {
     override var lValue: AstReference 
@@ -31,13 +30,6 @@ internal class AstVariableAssignmentImpl(
         calleeReference.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
         typeArguments.forEach { it.accept(visitor, data) }
-        explicitReceiver?.accept(visitor, data)
-        if (dispatchReceiver !== explicitReceiver) {
-            dispatchReceiver.accept(visitor, data)
-        }
-        if (extensionReceiver !== explicitReceiver && extensionReceiver !== dispatchReceiver) {
-            extensionReceiver.accept(visitor, data)
-        }
         rValue.accept(visitor, data)
     }
 
@@ -45,13 +37,6 @@ internal class AstVariableAssignmentImpl(
         transformCalleeReference(transformer, data)
         transformAnnotations(transformer, data)
         transformTypeArguments(transformer, data)
-        explicitReceiver = explicitReceiver?.transformSingle(transformer, data)
-        if (dispatchReceiver !== explicitReceiver) {
-            dispatchReceiver = dispatchReceiver.transformSingle(transformer, data)
-        }
-        if (extensionReceiver !== explicitReceiver && extensionReceiver !== dispatchReceiver) {
-            extensionReceiver = extensionReceiver.transformSingle(transformer, data)
-        }
         transformRValue(transformer, data)
         return this
     }
@@ -71,18 +56,13 @@ internal class AstVariableAssignmentImpl(
         return this
     }
 
-    override fun <D> transformExplicitReceiver(transformer: AstTransformer<D>, data: D): AstVariableAssignmentImpl {
-        explicitReceiver = explicitReceiver?.transformSingle(transformer, data)
-        return this
-    }
-
     override fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstVariableAssignmentImpl {
-        dispatchReceiver = dispatchReceiver.transformSingle(transformer, data)
+        dispatchReceiver = dispatchReceiver?.transformSingle(transformer, data)
         return this
     }
 
     override fun <D> transformExtensionReceiver(transformer: AstTransformer<D>, data: D): AstVariableAssignmentImpl {
-        extensionReceiver = extensionReceiver.transformSingle(transformer, data)
+        extensionReceiver = extensionReceiver?.transformSingle(transformer, data)
         return this
     }
 
@@ -98,9 +78,5 @@ internal class AstVariableAssignmentImpl(
     override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>) {
         typeArguments.clear()
         typeArguments.addAll(newTypeArguments)
-    }
-
-    override fun replaceExplicitReceiver(newExplicitReceiver: AstExpression?) {
-        explicitReceiver = newExplicitReceiver
     }
 }

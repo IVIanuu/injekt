@@ -7,7 +7,6 @@ import com.ivianuu.ast.tree.generator.model.Implementation
 import com.ivianuu.ast.tree.generator.model.Importable
 import com.ivianuu.ast.tree.generator.model.IntermediateBuilder
 import com.ivianuu.ast.tree.generator.model.LeafBuilder
-import com.ivianuu.ast.tree.generator.noReceiverExpressionType
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
@@ -23,13 +22,9 @@ abstract class AbstractBuilderConfigurator<T : AbstractAstTreeBuilder>(val astTr
             types.forEach { builder.usedTypes += it }
         }
 
-        fun defaultNoReceivers(notNullExplicitReceiver: Boolean = false) {
-            if (!notNullExplicitReceiver) {
-                defaultNull("explicitReceiver")
-            }
-            default("dispatchReceiver", "AstNoReceiverExpression")
-            default("extensionReceiver", "AstNoReceiverExpression")
-            useTypes(noReceiverExpressionType)
+        fun defaultNoReceivers() {
+            defaultNull("dispatchReceiver")
+            defaultNull("extensionReceiver")
         }
 
         fun default(field: String, value: String) {

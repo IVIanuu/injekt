@@ -1,11 +1,10 @@
 package com.ivianuu.ast.expressions.impl
 
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstComparisonExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstOperation
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.types.impl.AstImplicitBooleanType
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -14,12 +13,11 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstComparisonExpressionImpl(
-    override val annotations: MutableList<AstAnnotationCall>,
+    override var type: AstType,
+    override val annotations: MutableList<AstCall>,
     override val operation: AstOperation,
     override var compareToCall: AstFunctionCall,
 ) : AstComparisonExpression() {
-    override var type: AstType = AstImplicitBooleanType()
-
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }

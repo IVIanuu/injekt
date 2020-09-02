@@ -11,7 +11,7 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstExpression : AstPureAbstractElement(), AstStatement {
     abstract val type: AstType
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitExpression(this, data)
 

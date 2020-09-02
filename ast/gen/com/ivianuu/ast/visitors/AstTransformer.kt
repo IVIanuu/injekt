@@ -54,9 +54,7 @@ import com.ivianuu.ast.expressions.AstConstExpression
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstStarProjection
 import com.ivianuu.ast.types.AstTypeProjectionWithVariance
-import com.ivianuu.ast.expressions.AstArgumentList
 import com.ivianuu.ast.expressions.AstCall
-import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstComparisonExpression
 import com.ivianuu.ast.expressions.AstTypeOperatorCall
 import com.ivianuu.ast.expressions.AstAssignmentOperatorStatement
@@ -320,16 +318,8 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformElement(typeProjectionWithVariance, data)
     }
 
-    open fun transformArgumentList(argumentList: AstArgumentList, data: D): CompositeTransformResult<AstArgumentList> {
-        return transformElement(argumentList, data)
-    }
-
     open fun transformCall(call: AstCall, data: D): CompositeTransformResult<AstStatement> {
         return transformElement(call, data)
-    }
-
-    open fun transformAnnotationCall(annotationCall: AstAnnotationCall, data: D): CompositeTransformResult<AstStatement> {
-        return transformElement(annotationCall, data)
     }
 
     open fun transformComparisonExpression(comparisonExpression: AstComparisonExpression, data: D): CompositeTransformResult<AstStatement> {
@@ -708,16 +698,8 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformTypeProjectionWithVariance(typeProjectionWithVariance, data)
     }
 
-    final override fun visitArgumentList(argumentList: AstArgumentList, data: D): CompositeTransformResult<AstArgumentList> {
-        return transformArgumentList(argumentList, data)
-    }
-
     final override fun visitCall(call: AstCall, data: D): CompositeTransformResult<AstStatement> {
         return transformCall(call, data)
-    }
-
-    final override fun visitAnnotationCall(annotationCall: AstAnnotationCall, data: D): CompositeTransformResult<AstStatement> {
-        return transformAnnotationCall(annotationCall, data)
     }
 
     final override fun visitComparisonExpression(comparisonExpression: AstComparisonExpression, data: D): CompositeTransformResult<AstStatement> {

@@ -1,8 +1,8 @@
 package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstPureAbstractElement
-import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstBlock
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
 import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
 import com.ivianuu.ast.types.AstType
@@ -21,7 +21,7 @@ abstract class AstConstructor : AstPureAbstractElement(), AstFunction<AstConstru
     abstract override val typeParameters: List<AstTypeParameterRef>
     abstract override val valueParameters: List<AstValueParameter>
     abstract override val status: AstDeclarationStatus
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract override val symbol: AstConstructorSymbol
     abstract val delegatedConstructor: AstDelegatedConstructorCall?
     abstract override val body: AstBlock?

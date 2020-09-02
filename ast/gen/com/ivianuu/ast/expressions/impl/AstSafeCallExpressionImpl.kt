@@ -1,7 +1,7 @@
 package com.ivianuu.ast.expressions.impl
 
 import com.ivianuu.ast.AstExpressionRef
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstCheckedSafeCallSubject
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstQualifiedAccess
@@ -16,7 +16,7 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstSafeCallExpressionImpl(
     override var type: AstType,
-    override val annotations: MutableList<AstAnnotationCall>,
+    override val annotations: MutableList<AstCall>,
     override var receiver: AstExpression,
     override val checkedSubjectRef: AstExpressionRef<AstCheckedSafeCallSubject>,
     override var regularQualifiedAccess: AstQualifiedAccess,

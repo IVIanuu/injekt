@@ -3,7 +3,7 @@ package com.ivianuu.ast.declarations.impl
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstTypeParameter
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.symbols.impl.AstTypeParameterSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
@@ -22,7 +22,7 @@ internal class AstTypeParameterImpl(
     override val variance: Variance,
     override val isReified: Boolean,
     override val bounds: MutableList<AstType>,
-    override val annotations: MutableList<AstAnnotationCall>,
+    override val annotations: MutableList<AstCall>,
 ) : AstTypeParameter() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
 

@@ -1,6 +1,6 @@
 package com.ivianuu.ast.declarations
 
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.symbols.impl.AstCallableSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -13,7 +13,7 @@ import com.ivianuu.ast.visitors.*
 interface AstCallableMemberDeclaration<F : AstCallableMemberDeclaration<F>> : AstCallableDeclaration<F>, AstMemberDeclaration {
     override val origin: AstDeclarationOrigin
     override val attributes: AstDeclarationAttributes
-    override val annotations: List<AstAnnotationCall>
+    override val annotations: List<AstCall>
     override val returnType: AstType
     override val receiverType: AstType?
     override val symbol: AstCallableSymbol<F>

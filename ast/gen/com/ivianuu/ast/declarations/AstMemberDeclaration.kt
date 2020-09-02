@@ -1,6 +1,6 @@
 package com.ivianuu.ast.declarations
 
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -11,7 +11,7 @@ import com.ivianuu.ast.visitors.*
 interface AstMemberDeclaration : AstAnnotatedDeclaration, AstTypeParameterRefsOwner {
     override val origin: AstDeclarationOrigin
     override val attributes: AstDeclarationAttributes
-    override val annotations: List<AstAnnotationCall>
+    override val annotations: List<AstCall>
     override val typeParameters: List<AstTypeParameterRef>
     val status: AstDeclarationStatus
 

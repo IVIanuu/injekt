@@ -11,7 +11,7 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstResolvedReifiedParameterReference : AstExpression() {
     abstract override val type: AstType
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract val symbol: AstTypeParameterSymbol
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitResolvedReifiedParameterReference(this, data)

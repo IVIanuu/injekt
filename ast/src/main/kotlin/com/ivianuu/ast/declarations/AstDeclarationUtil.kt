@@ -71,8 +71,6 @@ fun AstRegularClass.addDeclaration(declaration: AstDeclaration) {
     }
 }
 
-private object IsFromVarargKey : AstDeclarationDataKey()
-
 val AstType.classOrFail: AstClassSymbol<*>
     get() = classOrNull ?: error("Could not get type for $this")
 

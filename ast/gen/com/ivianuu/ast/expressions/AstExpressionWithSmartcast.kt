@@ -12,12 +12,11 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstExpressionWithSmartcast : AstQualifiedAccessExpression() {
     abstract override val type: AstType
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract override val calleeReference: AstReference
     abstract override val typeArguments: List<AstTypeProjection>
-    abstract override val explicitReceiver: AstExpression?
-    abstract override val dispatchReceiver: AstExpression
-    abstract override val extensionReceiver: AstExpression
+    abstract override val dispatchReceiver: AstExpression?
+    abstract override val extensionReceiver: AstExpression?
     abstract val originalExpression: AstQualifiedAccessExpression
     abstract val typesFromSmartCast: Collection<AstType>
     abstract val originalType: AstType
@@ -30,15 +29,11 @@ abstract class AstExpressionWithSmartcast : AstQualifiedAccessExpression() {
 
     abstract override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>)
 
-    abstract override fun replaceExplicitReceiver(newExplicitReceiver: AstExpression?)
-
     abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstExpressionWithSmartcast
 
     abstract override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstExpressionWithSmartcast
 
     abstract override fun <D> transformTypeArguments(transformer: AstTransformer<D>, data: D): AstExpressionWithSmartcast
-
-    abstract override fun <D> transformExplicitReceiver(transformer: AstTransformer<D>, data: D): AstExpressionWithSmartcast
 
     abstract override fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstExpressionWithSmartcast
 

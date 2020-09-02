@@ -3,13 +3,12 @@ package com.ivianuu.ast.expressions.builder
 import com.ivianuu.ast.AstImplementationDetail
 import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
-import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstBlock
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.impl.AstEmptyExpressionBlock
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.types.impl.AstImplicitTypeImpl
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 
@@ -18,7 +17,22 @@ import kotlin.contracts.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-@OptIn(AstImplementationDetail::class)
-fun buildEmptyExpressionBlock(): AstBlock {
-    return AstEmptyExpressionBlock()
+@AstBuilderDsl
+class AstEmptyExpressionBlockBuilder : AstAnnotationContainerBuilder, AstExpressionBuilder {
+    override lateinit var type: AstType
+
+    @OptIn(AstImplementationDetail::class)
+    override fun build(): AstBlock {
+        return AstEmptyExpressionBlock(
+            type,
+        )
+    }
+
+    @Deprecated("Modification of 'annotations' has no impact for AstEmptyExpressionBlockBuilder", level = DeprecationLevel.HIDDEN)
+    override val annotations: MutableList<AstCall> = mutableListOf()
+}
+
+@OptIn(ExperimentalContracts::class)
+inline fun buildEmptyExpressionBlock(init: AstEmptyExpressionBlockBuilder.() -> Unit): AstBlock {
+    return AstEmptyExpressionBlockBuilder().apply(init).build()
 }

@@ -6,8 +6,8 @@ import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstTypeParameterRef
 import com.ivianuu.ast.declarations.AstValueParameter
-import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstBlock
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
 import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
 import com.ivianuu.ast.types.AstType
@@ -25,7 +25,7 @@ internal class AstConstructorImpl(
     override val typeParameters: MutableList<AstTypeParameterRef>,
     override val valueParameters: MutableList<AstValueParameter>,
     override var status: AstDeclarationStatus,
-    override val annotations: MutableList<AstAnnotationCall>,
+    override val annotations: MutableList<AstCall>,
     override val symbol: AstConstructorSymbol,
     override var delegatedConstructor: AstDelegatedConstructorCall?,
     override var body: AstBlock?,

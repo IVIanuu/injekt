@@ -10,7 +10,7 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstConstExpression<T> : AstExpression() {
     abstract override val type: AstType
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract val kind: AstConstKind<T>
     abstract val value: T
 

@@ -1,7 +1,7 @@
 package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstPureAbstractElement
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -16,7 +16,7 @@ import com.ivianuu.ast.visitors.*
 abstract class AstRegularClass : AstPureAbstractElement(), AstMemberDeclaration, AstTypeParameterRefsOwner, AstClass<AstRegularClass> {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract override val typeParameters: List<AstTypeParameterRef>
     abstract override val status: AstDeclarationStatus
     abstract override val classKind: ClassKind

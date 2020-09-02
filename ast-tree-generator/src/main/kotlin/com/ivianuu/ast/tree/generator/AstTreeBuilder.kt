@@ -131,13 +131,11 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val typeProjection = element("TypeProjection", Type)
     val starProjection = element("StarProjection", Type, typeProjection)
     val typeProjectionWithVariance = element("TypeProjectionWithVariance", Type, typeProjection)
-    val argumentList = element("ArgumentList", Expression)
     val call = element(
         "Call",
         Expression,
         statement
-    ) // TODO: may smth like `CallWithArguments` or `ElementWithArguments`?
-    val annotationCall = element("AnnotationCall", Expression, expression, call, resolvable)
+    )
     val comparisonExpression = element("ComparisonExpression", Expression, expression)
     val typeOperatorCall = element("TypeOperatorCall", Expression, expression, call)
     val assignmentOperatorStatement = element("AssignmentOperatorStatement", Expression, statement)

@@ -11,7 +11,7 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstNamedArgumentExpression : AstWrappedArgumentExpression() {
     abstract override val type: AstType
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract override val expression: AstExpression
     abstract override val isSpread: Boolean
     abstract val name: Name

@@ -11,7 +11,7 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstSafeCallExpression : AstExpression() {
     abstract override val type: AstType
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract val receiver: AstExpression
     abstract val checkedSubjectRef: AstExpressionRef<AstCheckedSafeCallSubject>
     abstract val regularQualifiedAccess: AstQualifiedAccess

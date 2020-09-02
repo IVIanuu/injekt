@@ -92,17 +92,8 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             parents += typeParametersOwnerBuilder
         }
 
-        builder(annotationCall) {
-            parents += callBuilder
-            default("argumentList") {
-                value = "AstEmptyArgumentList"
-            }
-            useTypes(emptyArgumentListType)
-        }
-
         builder(callableReferenceAccess) {
             parents += qualifiedAccessBuilder
-            defaultNull("explicitReceiver")
             defaultNoReceivers()
             defaultFalse("hasQuestionMarkAtLHS")
         }
@@ -119,12 +110,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
 
         builder(delegatedConstructorCall) {
             parents += callBuilder
-            default("argumentList") {
-                value = "AstEmptyArgumentList"
-            }
-            default("dispatchReceiver", "AstNoReceiverExpression")
-            useTypes(noReceiverExpressionType)
-            useTypes(emptyArgumentListType)
+            defaultNull("dispatchReceiver")
         }
 
         builder(functionCall) {
@@ -132,10 +118,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             parents += callBuilder
             defaultNoReceivers()
             openBuilder()
-            default("argumentList") {
-                value = "AstEmptyArgumentList"
-            }
-            useTypes(emptyArgumentListType)
         }
 
         builder(qualifiedAccessExpression) {
@@ -154,10 +136,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
 
         builder(typeOperatorCall) {
             parents += callBuilder
-            default("argumentList") {
-                value = "AstEmptyArgumentList"
-            }
-            useTypes(emptyArgumentListType)
         }
 
         builder(stringConcatenationCall) {
@@ -270,8 +248,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
                 else -> throw IllegalArgumentException()
             }
             builder(element, name) {
-                default("type", "AstImplicitTypeImpl()")
-                useTypes(implicitTypeType)
+               // default("type")
             }
         }
 

@@ -3,11 +3,10 @@ package com.ivianuu.ast.expressions.builder
 import com.ivianuu.ast.AstImplementationDetail
 import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.impl.AstElseIfTrueCondition
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.types.impl.AstImplicitBooleanType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 
@@ -18,17 +17,19 @@ import kotlin.contracts.*
 
 @AstBuilderDsl
 class AstElseIfTrueConditionBuilder : AstAnnotationContainerBuilder {
-    override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
+    lateinit var type: AstType
+    override val annotations: MutableList<AstCall> = mutableListOf()
 
     @OptIn(AstImplementationDetail::class)
     override fun build(): AstExpression {
         return AstElseIfTrueCondition(
+            type,
             annotations,
         )
     }
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildElseIfTrueCondition(init: AstElseIfTrueConditionBuilder.() -> Unit = {}): AstExpression {
+inline fun buildElseIfTrueCondition(init: AstElseIfTrueConditionBuilder.() -> Unit): AstExpression {
     return AstElseIfTrueConditionBuilder().apply(init).build()
 }

@@ -1,7 +1,7 @@
 package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstSymbolOwner
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.symbols.impl.AstClassLikeSymbol
 import com.ivianuu.ast.visitors.*
@@ -14,7 +14,7 @@ import com.ivianuu.ast.visitors.*
 interface AstClassLikeDeclaration<F : AstClassLikeDeclaration<F>> : AstAnnotatedDeclaration, AstStatement, AstSymbolOwner<F> {
     override val origin: AstDeclarationOrigin
     override val attributes: AstDeclarationAttributes
-    override val annotations: List<AstAnnotationCall>
+    override val annotations: List<AstCall>
     override val symbol: AstClassLikeSymbol<F>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitClassLikeDeclaration(this, data)

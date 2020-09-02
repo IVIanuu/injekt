@@ -10,12 +10,11 @@ import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.declarations.builder.AstFunctionBuilder
 import com.ivianuu.ast.declarations.impl.AstAnonymousFunctionImpl
-import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstBlock
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.symbols.impl.AstAnonymousFunctionSymbol
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.types.impl.AstImplicitTypeImpl
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 
@@ -27,12 +26,12 @@ import kotlin.contracts.*
 @AstBuilderDsl
 class AstAnonymousFunctionBuilder : AstFunctionBuilder, AstAnnotationContainerBuilder, AstExpressionBuilder {
     override lateinit var origin: AstDeclarationOrigin
-    override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
+    override val annotations: MutableList<AstCall> = mutableListOf()
     override lateinit var returnType: AstType
     var receiverType: AstType? = null
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
     override var body: AstBlock? = null
-    override var type: AstType = AstImplicitTypeImpl()
+    override lateinit var type: AstType
     lateinit var symbol: AstAnonymousFunctionSymbol
     var label: AstLabel? = null
     var isLambda: Boolean by kotlin.properties.Delegates.notNull<Boolean>()

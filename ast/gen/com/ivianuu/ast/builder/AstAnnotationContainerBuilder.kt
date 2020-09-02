@@ -2,7 +2,7 @@ package com.ivianuu.ast.builder
 
 import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.builder.AstBuilderDsl
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -12,7 +12,7 @@ import com.ivianuu.ast.visitors.*
 
 @AstBuilderDsl
 interface AstAnnotationContainerBuilder {
-    abstract val annotations: MutableList<AstAnnotationCall>
+    abstract val annotations: MutableList<AstCall>
 
     fun build(): AstAnnotationContainer
 }

@@ -2,7 +2,7 @@ package com.ivianuu.ast.types
 
 import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.AstPureAbstractElement
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -11,7 +11,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstType : AstPureAbstractElement(), AstAnnotationContainer {
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract val isMarkedNullable: Boolean
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitType(this, data)

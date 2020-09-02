@@ -10,7 +10,7 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstVarargArgumentsExpression : AstExpression() {
     abstract override val type: AstType
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract val arguments: List<AstExpression>
     abstract val varargElementType: AstType
 

@@ -7,7 +7,7 @@ import com.ivianuu.ast.declarations.AstField
 import com.ivianuu.ast.declarations.AstProperty
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstTypeParameter
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.references.AstDelegateFieldReference
 import com.ivianuu.ast.symbols.impl.AstBackingFieldSymbol
@@ -33,7 +33,7 @@ internal class AstPropertyImpl(
     override val isVar: Boolean,
     override var getter: AstPropertyAccessor?,
     override var setter: AstPropertyAccessor?,
-    override val annotations: MutableList<AstAnnotationCall>,
+    override val annotations: MutableList<AstCall>,
     override val typeParameters: MutableList<AstTypeParameter>,
     override val symbol: AstPropertySymbol,
     override val isLocal: Boolean,

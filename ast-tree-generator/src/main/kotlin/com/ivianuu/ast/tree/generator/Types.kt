@@ -9,8 +9,6 @@ import com.ivianuu.ast.tree.generator.context.generatedType
 import com.ivianuu.ast.tree.generator.context.type
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget
-import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -26,7 +24,6 @@ val visibilityType = type("ast", "Visibility")
 val modalityType = type(Modality::class)
 val fqNameType = type(FqName::class)
 val classIdType = type(ClassId::class)
-val annotationUseSiteTargetType = type(AnnotationUseSiteTarget::class)
 val operationKindType = type("ast.expressions", "LogicOperationKind")
 
 val whenExpressionType = generatedType("expressions", "AstWhenExpression")
@@ -38,16 +35,6 @@ val safeCallOriginalReceiverReferenceType = generatedType("", "AstExpressionRef<
 val safeCallCheckedSubjectReferenceType =
     generatedType("", "AstExpressionRef<AstCheckedSafeCallSubject>")
 
-val noReceiverExpressionType = generatedType("expressions.impl", "AstNoReceiverExpression")
-val implicitTypeType = generatedType("types.impl", "AstImplicitTypeImpl")
-val astQualifierPartType = type("ast.types", "AstQualifierPart")
-val simpleNamedReferenceType = generatedType("references.impl", "AstSimpleNamedReference")
-val explicitThisReferenceType = generatedType("references.impl", "AstExplicitThisReference")
-val explicitSuperReferenceType = generatedType("references.impl", "AstExplicitSuperReference")
-val implicitBooleanTypeType = generatedType("types.impl", "AstImplicitBooleanType")
-val implicitNothingTypeType = generatedType("types.impl", "AstImplicitNothingType")
-val implicitStringTypeType = generatedType("types.impl", "AstImplicitStringType")
-val implicitUnitTypeType = generatedType("types.impl", "AstImplicitUnitType")
 val stubReferenceType = generatedType("references.impl", "AstStubReference")
 val compositeTransformResultType = type("ast.visitors", "CompositeTransformResult")
 
@@ -59,8 +46,6 @@ val classLikeSymbolType = type("ast.symbols.impl", "AstClassLikeSymbol<*>")
 val classifierSymbolType = type("ast.symbols.impl", "AstClassifierSymbol<*>")
 val typeParameterSymbolType = type("ast.symbols.impl", "AstTypeParameterSymbol")
 val anonymousInitializerSymbolType = type("ast.symbols.impl", "AstAnonymousInitializerSymbol")
-
-val emptyArgumentListType = type("ast.expressions", "AstEmptyArgumentList")
 
 val pureAbstractElementType = generatedType("AstPureAbstractElement")
 

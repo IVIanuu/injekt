@@ -11,7 +11,7 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstLoopJump : AstJump<AstLoop>() {
     abstract override val type: AstType
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract override val target: AstTarget<AstLoop>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitLoopJump(this, data)

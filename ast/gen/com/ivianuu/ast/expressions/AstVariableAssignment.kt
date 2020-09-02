@@ -12,11 +12,10 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstVariableAssignment : AstPureAbstractElement(), AstQualifiedAccess {
     abstract override val calleeReference: AstReference
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract override val typeArguments: List<AstTypeProjection>
-    abstract override val explicitReceiver: AstExpression?
-    abstract override val dispatchReceiver: AstExpression
-    abstract override val extensionReceiver: AstExpression
+    abstract override val dispatchReceiver: AstExpression?
+    abstract override val extensionReceiver: AstExpression?
     abstract val lValue: AstReference
     abstract val rValue: AstExpression
 
@@ -26,15 +25,11 @@ abstract class AstVariableAssignment : AstPureAbstractElement(), AstQualifiedAcc
 
     abstract override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>)
 
-    abstract override fun replaceExplicitReceiver(newExplicitReceiver: AstExpression?)
-
     abstract override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstVariableAssignment
 
     abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstVariableAssignment
 
     abstract override fun <D> transformTypeArguments(transformer: AstTransformer<D>, data: D): AstVariableAssignment
-
-    abstract override fun <D> transformExplicitReceiver(transformer: AstTransformer<D>, data: D): AstVariableAssignment
 
     abstract override fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstVariableAssignment
 

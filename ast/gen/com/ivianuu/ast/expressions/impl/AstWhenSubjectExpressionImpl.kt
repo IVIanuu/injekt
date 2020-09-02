@@ -1,7 +1,7 @@
 package com.ivianuu.ast.expressions.impl
 
 import com.ivianuu.ast.AstExpressionRef
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstWhenExpression
 import com.ivianuu.ast.expressions.AstWhenSubjectExpression
 import com.ivianuu.ast.types.AstType
@@ -13,7 +13,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstWhenSubjectExpressionImpl(
-    override val annotations: MutableList<AstAnnotationCall>,
+    override val annotations: MutableList<AstCall>,
     override val whenRef: AstExpressionRef<AstWhenExpression>,
 ) : AstWhenSubjectExpression() {
     override val type: AstType get() = whenRef.value.subject!!.type

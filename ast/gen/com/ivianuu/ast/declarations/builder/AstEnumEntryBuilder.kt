@@ -9,7 +9,7 @@ import com.ivianuu.ast.declarations.AstEnumEntry
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstTypeParameterRef
 import com.ivianuu.ast.declarations.impl.AstEnumEntryImpl
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
@@ -30,7 +30,7 @@ class AstEnumEntryBuilder : AstAnnotationContainerBuilder {
     lateinit var name: Name
     lateinit var symbol: AstVariableSymbol<AstEnumEntry>
     var initializer: AstExpression? = null
-    override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
+    override val annotations: MutableList<AstCall> = mutableListOf()
     val typeParameters: MutableList<AstTypeParameterRef> = mutableListOf()
     lateinit var status: AstDeclarationStatus
 

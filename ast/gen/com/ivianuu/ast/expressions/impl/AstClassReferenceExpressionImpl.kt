@@ -1,9 +1,8 @@
 package com.ivianuu.ast.expressions.impl
 
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstClassReferenceExpression
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.types.impl.AstImplicitTypeImpl
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -12,11 +11,10 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstClassReferenceExpressionImpl(
-    override val annotations: MutableList<AstAnnotationCall>,
+    override var type: AstType,
+    override val annotations: MutableList<AstCall>,
     override var classType: AstType,
 ) : AstClassReferenceExpression() {
-    override var type: AstType = AstImplicitTypeImpl()
-
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }

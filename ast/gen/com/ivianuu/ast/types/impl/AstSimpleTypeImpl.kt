@@ -1,6 +1,6 @@
 package com.ivianuu.ast.types.impl
 
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.symbols.impl.AstClassifierSymbol
 import com.ivianuu.ast.types.AstSimpleType
 import com.ivianuu.ast.types.AstTypeProjection
@@ -12,7 +12,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstSimpleTypeImpl(
-    override val annotations: MutableList<AstAnnotationCall>,
+    override val annotations: MutableList<AstCall>,
     override val isMarkedNullable: Boolean,
     override val classifier: AstClassifierSymbol<*>,
     override val arguments: MutableList<AstTypeProjection>,

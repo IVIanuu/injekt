@@ -102,12 +102,8 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +annotations
         }
 
-        argumentList.configure {
-            +arguments.withTransform()
-        }
-
         call.configure {
-            +field(argumentList, withReplace = true)
+            +arguments
         }
 
         block.configure {
@@ -325,7 +321,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         delegatedConstructorCall.configure {
             +field("constructedType", type, withReplace = true)
-            +field("dispatchReceiver", expression).withTransform()
+            +field("dispatchReceiver", expression, nullable = true).withTransform()
             +field("calleeReference", reference, withReplace = true)
             generateBooleanFields("this", "super")
         }
@@ -376,10 +372,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +declarations.withTransform()
             +stringField("name")
             +field("packageFqName", fqNameType)
-        }
-
-        annotationCall.configure {
-            +field("annotationType", type).withTransform()
         }
 
         classReferenceExpression.configure {

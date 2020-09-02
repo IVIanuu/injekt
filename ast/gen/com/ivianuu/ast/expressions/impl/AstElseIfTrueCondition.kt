@@ -1,10 +1,9 @@
 package com.ivianuu.ast.expressions.impl
 
 import com.ivianuu.ast.AstImplementationDetail
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.types.impl.AstImplicitBooleanType
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -13,10 +12,9 @@ import com.ivianuu.ast.visitors.*
  */
 
 class AstElseIfTrueCondition @AstImplementationDetail constructor(
-    override val annotations: MutableList<AstAnnotationCall>,
+    override var type: AstType,
+    override val annotations: MutableList<AstCall>,
 ) : AstExpression() {
-    override var type: AstType = AstImplicitBooleanType()
-
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }

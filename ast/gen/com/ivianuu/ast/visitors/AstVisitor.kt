@@ -54,9 +54,7 @@ import com.ivianuu.ast.expressions.AstConstExpression
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstStarProjection
 import com.ivianuu.ast.types.AstTypeProjectionWithVariance
-import com.ivianuu.ast.expressions.AstArgumentList
 import com.ivianuu.ast.expressions.AstCall
-import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstComparisonExpression
 import com.ivianuu.ast.expressions.AstTypeOperatorCall
 import com.ivianuu.ast.expressions.AstAssignmentOperatorStatement
@@ -212,11 +210,7 @@ abstract class AstVisitor<out R, in D> {
 
     open fun visitTypeProjectionWithVariance(typeProjectionWithVariance: AstTypeProjectionWithVariance, data: D): R  = visitElement(typeProjectionWithVariance, data)
 
-    open fun visitArgumentList(argumentList: AstArgumentList, data: D): R  = visitElement(argumentList, data)
-
     open fun visitCall(call: AstCall, data: D): R  = visitElement(call, data)
-
-    open fun visitAnnotationCall(annotationCall: AstAnnotationCall, data: D): R  = visitElement(annotationCall, data)
 
     open fun visitComparisonExpression(comparisonExpression: AstComparisonExpression, data: D): R  = visitElement(comparisonExpression, data)
 

@@ -3,21 +3,17 @@ package com.ivianuu.ast.expressions.builder
 import com.ivianuu.ast.AstImplementationDetail
 import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
-import com.ivianuu.ast.expressions.AstAnnotationCall
-import com.ivianuu.ast.expressions.AstArgumentList
-import com.ivianuu.ast.expressions.AstEmptyArgumentList
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.builder.AstCallBuilder
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.builder.AstQualifiedAccessBuilder
 import com.ivianuu.ast.expressions.impl.AstFunctionCallImpl
-import com.ivianuu.ast.expressions.impl.AstNoReceiverExpression
 import com.ivianuu.ast.references.AstNamedReference
 import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
-import com.ivianuu.ast.types.impl.AstImplicitTypeImpl
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 
@@ -28,13 +24,12 @@ import kotlin.contracts.*
 
 @AstBuilderDsl
 open class AstFunctionCallBuilder : AstQualifiedAccessBuilder, AstCallBuilder, AstAnnotationContainerBuilder, AstExpressionBuilder {
-    override var type: AstType = AstImplicitTypeImpl()
-    override val annotations: MutableList<AstAnnotationCall> = mutableListOf()
+    override lateinit var type: AstType
+    override val annotations: MutableList<AstCall> = mutableListOf()
     override val typeArguments: MutableList<AstTypeProjection> = mutableListOf()
-    override var explicitReceiver: AstExpression? = null
-    override var dispatchReceiver: AstExpression = AstNoReceiverExpression
-    override var extensionReceiver: AstExpression = AstNoReceiverExpression
-    override var argumentList: AstArgumentList = AstEmptyArgumentList
+    override var dispatchReceiver: AstExpression? = null
+    override var extensionReceiver: AstExpression? = null
+    override val arguments: MutableList<AstExpression> = mutableListOf()
     open lateinit var calleeReference: AstNamedReference
 
     @OptIn(AstImplementationDetail::class)
@@ -43,10 +38,9 @@ open class AstFunctionCallBuilder : AstQualifiedAccessBuilder, AstCallBuilder, A
             type,
             annotations,
             typeArguments,
-            explicitReceiver,
             dispatchReceiver,
             extensionReceiver,
-            argumentList,
+            arguments,
             calleeReference,
         )
     }

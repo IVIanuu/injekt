@@ -1,6 +1,6 @@
 package com.ivianuu.ast.expressions.impl
 
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstVarargArgumentsExpression
 import com.ivianuu.ast.types.AstType
@@ -13,7 +13,7 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstVarargArgumentsExpressionImpl(
     override var type: AstType,
-    override val annotations: MutableList<AstAnnotationCall>,
+    override val annotations: MutableList<AstCall>,
     override val arguments: MutableList<AstExpression>,
     override var varargElementType: AstType,
 ) : AstVarargArgumentsExpression() {

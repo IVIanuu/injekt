@@ -2,11 +2,10 @@ package com.ivianuu.ast.expressions.impl
 
 import com.ivianuu.ast.AstTarget
 import com.ivianuu.ast.declarations.AstFunction
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstReturnExpression
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.types.impl.AstImplicitNothingType
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -15,12 +14,11 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstReturnExpressionImpl(
-    override val annotations: MutableList<AstAnnotationCall>,
+    override var type: AstType,
+    override val annotations: MutableList<AstCall>,
     override val target: AstTarget<AstFunction<*>>,
     override var result: AstExpression,
 ) : AstReturnExpression() {
-    override var type: AstType = AstImplicitNothingType()
-
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }

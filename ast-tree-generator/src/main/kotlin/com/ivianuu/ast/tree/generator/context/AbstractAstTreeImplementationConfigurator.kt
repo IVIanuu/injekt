@@ -7,7 +7,6 @@ import com.ivianuu.ast.tree.generator.model.FieldWithDefault
 import com.ivianuu.ast.tree.generator.model.Implementation
 import com.ivianuu.ast.tree.generator.model.ImplementationWithArg
 import com.ivianuu.ast.tree.generator.model.Importable
-import com.ivianuu.ast.tree.generator.noReceiverExpressionType
 import com.ivianuu.ast.tree.generator.printer.call
 
 abstract class AbstractAstTreeImplementationConfigurator {
@@ -115,10 +114,8 @@ abstract class AbstractAstTreeImplementationConfigurator {
         }
 
         fun defaultNoReceivers() {
-            defaultNull("explicitReceiver")
-            default("dispatchReceiver", "AstNoReceiverExpression")
-            default("extensionReceiver", "AstNoReceiverExpression")
-            useTypes(noReceiverExpressionType)
+            defaultNull("dispatchReceiver")
+            defaultNull("extensionReceiver")
         }
 
         fun default(field: String, value: String) {

@@ -33,13 +33,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
 
         impl(typeAlias)
 
-        impl(annotationCall) {
-            default("type") {
-                value = "annotationType"
-                withGetter = true
-            }
-        }
-
         impl(callableReferenceAccess)
 
         impl(whileLoop)
@@ -47,20 +40,13 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         impl(doWhileLoop)
 
         impl(delegatedConstructorCall) {
-            default(
-                "calleeReference",
-                "if (isThis) AstExplicitThisReference(null) else AstExplicitSuperReference(null, constructedType)"
-            )
             default("isSuper") {
                 value = "!isThis"
                 withGetter = true
             }
-            useTypes(explicitThisReferenceType, explicitSuperReferenceType)
         }
 
         impl(expression, "AstElseIfTrueCondition") {
-            defaultType("AstImplicitBooleanType")
-            useTypes(implicitBooleanTypeType)
             publicImplementation()
         }
 
@@ -157,19 +143,9 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             }
         }
 
-        impl(comparisonExpression) {
-            default("type", "AstImplicitBooleanType()")
-            useTypes(implicitBooleanTypeType)
-        }
-
         impl(typeOperatorCall)
 
         impl(assignmentOperatorStatement)
-
-        impl(equalityOperatorCall) {
-            default("type", "AstImplicitBooleanType()")
-            useTypes(implicitBooleanTypeType)
-        }
 
         impl(resolvedQualifier) {
             isMutable("packageFqName", "relativeClassFqName", "isNullableLHSForCallableReference")
@@ -185,29 +161,8 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
 
         impl(resolvedReifiedParameterReference)
 
-        impl(returnExpression) {
-            defaultType("AstImplicitNothingType")
-            useTypes(implicitNothingTypeType)
-        }
-
-        impl(stringConcatenationCall) {
-            defaultType("AstImplicitStringType")
-            useTypes(implicitStringTypeType)
-        }
-
-        impl(throwExpression) {
-            defaultType("AstImplicitNothingType")
-            useTypes(implicitNothingTypeType)
-        }
-
         impl(thisReceiverExpression) {
             defaultNoReceivers()
-        }
-
-        impl(expression, "AstUnitExpression") {
-            defaultType("AstImplicitUnitType")
-            useTypes(implicitUnitTypeType)
-            publicImplementation()
         }
 
         impl(variableAssignment) {
@@ -302,16 +257,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             kind = Object
         }
 
-        impl(breakExpression) {
-            defaultType("AstImplicitNothingType")
-            useTypes(implicitNothingTypeType)
-        }
-
-        impl(continueExpression) {
-            defaultType("AstImplicitNothingType")
-            useTypes(implicitNothingTypeType)
-        }
-
         impl(valueParameter) {
             kind = OpenClass
             defaultTrue("isVal", withGetter = true)
@@ -350,33 +295,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             implementationPredicate = { it.type != "AstAnonymousFunctionImpl" }
         ) {
             defaultNull(it)
-        }
-
-        val implementationWithConfigurableType = listOf(
-            "AstTypeProjectionWithVarianceImpl",
-            "AstCallableReferenceAccessImpl",
-            "AstThisReceiverExpressionImpl",
-            "AstAnonymousObjectImpl",
-            "AstQualifiedAccessExpressionImpl",
-            "AstFunctionCallImpl",
-            "AstAnonymousFunctionImpl",
-            "AstWhenExpressionImpl",
-            "AstTryExpressionImpl",
-            "AstCheckNotNullCallImpl",
-            "AstResolvedQualifierImpl",
-            "AstResolvedReifiedParameterReferenceImpl",
-            "AstExpressionStub",
-            "AstVarargArgumentsExpressionImpl",
-            "AstSafeCallExpressionImpl",
-            "AstCheckedSafeCallSubjectImpl",
-        )
-        configureFieldInAllImplementations(
-            field = "type",
-            implementationPredicate = { it.type !in implementationWithConfigurableType },
-            fieldPredicate = { it.defaultValueInImplementation == null }
-        ) {
-            default(it, "AstImplicitTypeImpl()")
-            useTypes(implicitTypeType)
         }
 
         configureFieldInAllImplementations(

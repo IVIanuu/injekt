@@ -7,7 +7,7 @@ import com.ivianuu.ast.declarations.AstDeclaration
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstTypeParameterRef
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -19,7 +19,7 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 
 @AstBuilderDsl
 interface AstClassBuilder : AstAnnotationContainerBuilder {
-    abstract override val annotations: MutableList<AstAnnotationCall>
+    abstract override val annotations: MutableList<AstCall>
     abstract var origin: AstDeclarationOrigin
     abstract var attributes: AstDeclarationAttributes
     abstract val typeParameters: MutableList<AstTypeParameterRef>

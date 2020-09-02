@@ -1,8 +1,8 @@
 package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstLabel
-import com.ivianuu.ast.expressions.AstAnnotationCall
 import com.ivianuu.ast.expressions.AstBlock
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.symbols.impl.AstAnonymousFunctionSymbol
 import com.ivianuu.ast.types.AstType
@@ -16,7 +16,7 @@ import com.ivianuu.ast.visitors.*
 abstract class AstAnonymousFunction : AstFunction<AstAnonymousFunction>, AstExpression(), AstTypeParametersOwner {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
-    abstract override val annotations: List<AstAnnotationCall>
+    abstract override val annotations: List<AstCall>
     abstract override val returnType: AstType
     abstract override val receiverType: AstType?
     abstract override val valueParameters: List<AstValueParameter>

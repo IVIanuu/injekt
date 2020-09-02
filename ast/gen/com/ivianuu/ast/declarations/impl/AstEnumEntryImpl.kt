@@ -6,7 +6,7 @@ import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstEnumEntry
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstTypeParameterRef
-import com.ivianuu.ast.expressions.AstAnnotationCall
+import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
@@ -25,7 +25,7 @@ internal class AstEnumEntryImpl(
     override val name: Name,
     override val symbol: AstVariableSymbol<AstEnumEntry>,
     override var initializer: AstExpression?,
-    override val annotations: MutableList<AstAnnotationCall>,
+    override val annotations: MutableList<AstCall>,
     override val typeParameters: MutableList<AstTypeParameterRef>,
     override var status: AstDeclarationStatus,
 ) : AstEnumEntry() {
