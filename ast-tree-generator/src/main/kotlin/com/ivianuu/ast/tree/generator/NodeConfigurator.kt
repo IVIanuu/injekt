@@ -101,12 +101,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +typeField
         }
 
-        binaryLogicOperation.configure {
-            +field("leftOperand", expression)
-            +field("rightOperand", expression)
-            +field("kind", operationKindType)
-        }
-
         loopJump.configure {
             +field("target", loop)
         }
@@ -156,25 +150,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         functionCall.configure {
             +field("callee", functionSymbolType, "*")
-        }
-
-        comparisonOperation.configure {
-            +field("operation", operationType)
-            +field("compareToCall", functionCall)
-        }
-
-        typeOperation.configure {
-            +field("operation", operationType)
-        }
-
-        assignmentOperatorStatement.configure {
-            +field("operation", operationType)
-            +field("leftArgument", expression)
-            +field("rightArgument", expression)
-        }
-
-        equalityOperation.configure {
-            +field("operation", operationType)
         }
 
         whenBranch.configure {

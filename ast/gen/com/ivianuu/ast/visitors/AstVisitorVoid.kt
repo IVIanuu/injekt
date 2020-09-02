@@ -34,7 +34,6 @@ import com.ivianuu.ast.expressions.AstLoop
 import com.ivianuu.ast.expressions.AstDoWhileLoop
 import com.ivianuu.ast.expressions.AstWhileLoop
 import com.ivianuu.ast.expressions.AstBlock
-import com.ivianuu.ast.expressions.AstBinaryLogicOperation
 import com.ivianuu.ast.expressions.AstLoopJump
 import com.ivianuu.ast.expressions.AstBreak
 import com.ivianuu.ast.expressions.AstContinue
@@ -45,10 +44,6 @@ import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstStarProjection
 import com.ivianuu.ast.types.AstTypeProjectionWithVariance
 import com.ivianuu.ast.expressions.AstCall
-import com.ivianuu.ast.expressions.AstComparisonOperation
-import com.ivianuu.ast.expressions.AstTypeOperation
-import com.ivianuu.ast.expressions.AstAssignmentOperatorStatement
-import com.ivianuu.ast.expressions.AstEqualityOperation
 import com.ivianuu.ast.expressions.AstWhen
 import com.ivianuu.ast.expressions.AstWhenBranch
 import com.ivianuu.ast.expressions.AstClassReference
@@ -206,10 +201,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(block)
     }
 
-    open fun visitBinaryLogicOperation(binaryLogicOperation: AstBinaryLogicOperation) {
-        visitElement(binaryLogicOperation)
-    }
-
     open fun visitLoopJump(loopJump: AstLoopJump) {
         visitElement(loopJump)
     }
@@ -248,22 +239,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     open fun visitCall(call: AstCall) {
         visitElement(call)
-    }
-
-    open fun visitComparisonOperation(comparisonOperation: AstComparisonOperation) {
-        visitElement(comparisonOperation)
-    }
-
-    open fun visitTypeOperation(typeOperation: AstTypeOperation) {
-        visitElement(typeOperation)
-    }
-
-    open fun visitAssignmentOperatorStatement(assignmentOperatorStatement: AstAssignmentOperatorStatement) {
-        visitElement(assignmentOperatorStatement)
-    }
-
-    open fun visitEqualityOperation(equalityOperation: AstEqualityOperation) {
-        visitElement(equalityOperation)
     }
 
     open fun visitWhen(whenExpression: AstWhen) {
@@ -466,10 +441,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitBlock(block)
     }
 
-    final override fun visitBinaryLogicOperation(binaryLogicOperation: AstBinaryLogicOperation, data: Nothing?) {
-        visitBinaryLogicOperation(binaryLogicOperation)
-    }
-
     final override fun visitLoopJump(loopJump: AstLoopJump, data: Nothing?) {
         visitLoopJump(loopJump)
     }
@@ -508,22 +479,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     final override fun visitCall(call: AstCall, data: Nothing?) {
         visitCall(call)
-    }
-
-    final override fun visitComparisonOperation(comparisonOperation: AstComparisonOperation, data: Nothing?) {
-        visitComparisonOperation(comparisonOperation)
-    }
-
-    final override fun visitTypeOperation(typeOperation: AstTypeOperation, data: Nothing?) {
-        visitTypeOperation(typeOperation)
-    }
-
-    final override fun visitAssignmentOperatorStatement(assignmentOperatorStatement: AstAssignmentOperatorStatement, data: Nothing?) {
-        visitAssignmentOperatorStatement(assignmentOperatorStatement)
-    }
-
-    final override fun visitEqualityOperation(equalityOperation: AstEqualityOperation, data: Nothing?) {
-        visitEqualityOperation(equalityOperation)
     }
 
     final override fun visitWhen(whenExpression: AstWhen, data: Nothing?) {

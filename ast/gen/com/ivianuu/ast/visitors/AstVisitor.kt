@@ -34,7 +34,6 @@ import com.ivianuu.ast.expressions.AstLoop
 import com.ivianuu.ast.expressions.AstDoWhileLoop
 import com.ivianuu.ast.expressions.AstWhileLoop
 import com.ivianuu.ast.expressions.AstBlock
-import com.ivianuu.ast.expressions.AstBinaryLogicOperation
 import com.ivianuu.ast.expressions.AstLoopJump
 import com.ivianuu.ast.expressions.AstBreak
 import com.ivianuu.ast.expressions.AstContinue
@@ -45,10 +44,6 @@ import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstStarProjection
 import com.ivianuu.ast.types.AstTypeProjectionWithVariance
 import com.ivianuu.ast.expressions.AstCall
-import com.ivianuu.ast.expressions.AstComparisonOperation
-import com.ivianuu.ast.expressions.AstTypeOperation
-import com.ivianuu.ast.expressions.AstAssignmentOperatorStatement
-import com.ivianuu.ast.expressions.AstEqualityOperation
 import com.ivianuu.ast.expressions.AstWhen
 import com.ivianuu.ast.expressions.AstWhenBranch
 import com.ivianuu.ast.expressions.AstClassReference
@@ -140,8 +135,6 @@ abstract class AstVisitor<out R, in D> {
 
     open fun visitBlock(block: AstBlock, data: D): R  = visitExpression(block, data)
 
-    open fun visitBinaryLogicOperation(binaryLogicOperation: AstBinaryLogicOperation, data: D): R  = visitExpression(binaryLogicOperation, data)
-
     open fun visitLoopJump(loopJump: AstLoopJump, data: D): R  = visitExpression(loopJump, data)
 
     open fun visitBreak(breakExpression: AstBreak, data: D): R  = visitLoopJump(breakExpression, data)
@@ -161,14 +154,6 @@ abstract class AstVisitor<out R, in D> {
     open fun visitTypeProjectionWithVariance(typeProjectionWithVariance: AstTypeProjectionWithVariance, data: D): R  = visitTypeProjection(typeProjectionWithVariance, data)
 
     open fun visitCall(call: AstCall, data: D): R  = visitExpression(call, data)
-
-    open fun visitComparisonOperation(comparisonOperation: AstComparisonOperation, data: D): R  = visitExpression(comparisonOperation, data)
-
-    open fun visitTypeOperation(typeOperation: AstTypeOperation, data: D): R  = visitExpression(typeOperation, data)
-
-    open fun visitAssignmentOperatorStatement(assignmentOperatorStatement: AstAssignmentOperatorStatement, data: D): R  = visitStatement(assignmentOperatorStatement, data)
-
-    open fun visitEqualityOperation(equalityOperation: AstEqualityOperation, data: D): R  = visitExpression(equalityOperation, data)
 
     open fun visitWhen(whenExpression: AstWhen, data: D): R  = visitExpression(whenExpression, data)
 

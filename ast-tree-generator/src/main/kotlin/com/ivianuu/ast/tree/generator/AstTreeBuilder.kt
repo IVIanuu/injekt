@@ -202,10 +202,6 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         visitorSuperType = expression
         transformerType = statement
     }
-    val binaryLogicOperation = element("BinaryLogicOperation", Expression, expression) {
-        visitorSuperType = expression
-        transformerType = statement
-    }
     val loopJump = element("LoopJump", Expression, expression) {
         visitorSuperType = expression
         transformerType = statement
@@ -247,22 +243,6 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         Expression,
         expression
     ) {
-        visitorSuperType = expression
-        transformerType = statement
-    }
-    val comparisonOperation = element("ComparisonOperation", Expression, expression) {
-        visitorSuperType = expression
-        transformerType = statement
-    }
-    val typeOperation = element("TypeOperation", Expression, expression) {
-        visitorSuperType = expression
-        transformerType = statement
-    }
-    val assignmentOperatorStatement = element("AssignmentOperatorStatement", Expression, statement) {
-        visitorSuperType = statement
-        transformerType = statement
-    }
-    val equalityOperation = element("EqualityOperation", Expression, expression) {
         visitorSuperType = expression
         transformerType = statement
     }

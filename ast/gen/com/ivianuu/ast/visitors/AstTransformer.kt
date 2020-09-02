@@ -34,7 +34,6 @@ import com.ivianuu.ast.expressions.AstLoop
 import com.ivianuu.ast.expressions.AstDoWhileLoop
 import com.ivianuu.ast.expressions.AstWhileLoop
 import com.ivianuu.ast.expressions.AstBlock
-import com.ivianuu.ast.expressions.AstBinaryLogicOperation
 import com.ivianuu.ast.expressions.AstLoopJump
 import com.ivianuu.ast.expressions.AstBreak
 import com.ivianuu.ast.expressions.AstContinue
@@ -45,10 +44,6 @@ import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstStarProjection
 import com.ivianuu.ast.types.AstTypeProjectionWithVariance
 import com.ivianuu.ast.expressions.AstCall
-import com.ivianuu.ast.expressions.AstComparisonOperation
-import com.ivianuu.ast.expressions.AstTypeOperation
-import com.ivianuu.ast.expressions.AstAssignmentOperatorStatement
-import com.ivianuu.ast.expressions.AstEqualityOperation
 import com.ivianuu.ast.expressions.AstWhen
 import com.ivianuu.ast.expressions.AstWhenBranch
 import com.ivianuu.ast.expressions.AstClassReference
@@ -208,10 +203,6 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformExpression(block, data)
     }
 
-    open fun transformBinaryLogicOperation(binaryLogicOperation: AstBinaryLogicOperation, data: D): CompositeTransformResult<AstStatement> {
-        return transformExpression(binaryLogicOperation, data)
-    }
-
     open fun transformLoopJump(loopJump: AstLoopJump, data: D): CompositeTransformResult<AstStatement> {
         return transformExpression(loopJump, data)
     }
@@ -250,22 +241,6 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     open fun transformCall(call: AstCall, data: D): CompositeTransformResult<AstStatement> {
         return transformExpression(call, data)
-    }
-
-    open fun transformComparisonOperation(comparisonOperation: AstComparisonOperation, data: D): CompositeTransformResult<AstStatement> {
-        return transformExpression(comparisonOperation, data)
-    }
-
-    open fun transformTypeOperation(typeOperation: AstTypeOperation, data: D): CompositeTransformResult<AstStatement> {
-        return transformExpression(typeOperation, data)
-    }
-
-    open fun transformAssignmentOperatorStatement(assignmentOperatorStatement: AstAssignmentOperatorStatement, data: D): CompositeTransformResult<AstStatement> {
-        return transformStatement(assignmentOperatorStatement, data)
-    }
-
-    open fun transformEqualityOperation(equalityOperation: AstEqualityOperation, data: D): CompositeTransformResult<AstStatement> {
-        return transformExpression(equalityOperation, data)
     }
 
     open fun transformWhen(whenExpression: AstWhen, data: D): CompositeTransformResult<AstStatement> {
@@ -468,10 +443,6 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformBlock(block, data)
     }
 
-    final override fun visitBinaryLogicOperation(binaryLogicOperation: AstBinaryLogicOperation, data: D): CompositeTransformResult<AstStatement> {
-        return transformBinaryLogicOperation(binaryLogicOperation, data)
-    }
-
     final override fun visitLoopJump(loopJump: AstLoopJump, data: D): CompositeTransformResult<AstStatement> {
         return transformLoopJump(loopJump, data)
     }
@@ -510,22 +481,6 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     final override fun visitCall(call: AstCall, data: D): CompositeTransformResult<AstStatement> {
         return transformCall(call, data)
-    }
-
-    final override fun visitComparisonOperation(comparisonOperation: AstComparisonOperation, data: D): CompositeTransformResult<AstStatement> {
-        return transformComparisonOperation(comparisonOperation, data)
-    }
-
-    final override fun visitTypeOperation(typeOperation: AstTypeOperation, data: D): CompositeTransformResult<AstStatement> {
-        return transformTypeOperation(typeOperation, data)
-    }
-
-    final override fun visitAssignmentOperatorStatement(assignmentOperatorStatement: AstAssignmentOperatorStatement, data: D): CompositeTransformResult<AstStatement> {
-        return transformAssignmentOperatorStatement(assignmentOperatorStatement, data)
-    }
-
-    final override fun visitEqualityOperation(equalityOperation: AstEqualityOperation, data: D): CompositeTransformResult<AstStatement> {
-        return transformEqualityOperation(equalityOperation, data)
     }
 
     final override fun visitWhen(whenExpression: AstWhen, data: D): CompositeTransformResult<AstStatement> {
