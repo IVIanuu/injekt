@@ -20,7 +20,7 @@ import org.jetbrains.kotlin.types.Variance
 
 @AstBuilderDsl
 class AstTypeParameterBuilder {
-    lateinit var origin: AstDeclarationOrigin
+    var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     lateinit var name: Name
     lateinit var symbol: AstTypeParameterSymbol
     var variance: Variance = Variance.INVARIANT

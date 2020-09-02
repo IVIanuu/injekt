@@ -27,7 +27,7 @@ import org.jetbrains.kotlin.name.Name
 
 @AstBuilderDsl
 open class AstRegularClassBuilder : AstClassBuilder, AstTypeParametersOwnerBuilder {
-    override lateinit var origin: AstDeclarationOrigin
+    override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
     override var classKind: ClassKind = ClassKind.CLASS

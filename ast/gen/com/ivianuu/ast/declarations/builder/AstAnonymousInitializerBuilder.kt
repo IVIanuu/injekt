@@ -17,7 +17,7 @@ import kotlin.contracts.*
 
 @AstBuilderDsl
 class AstAnonymousInitializerBuilder {
-    lateinit var origin: AstDeclarationOrigin
+    var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     var body: AstBlock? = null
     lateinit var symbol: AstAnonymousInitializerSymbol
 

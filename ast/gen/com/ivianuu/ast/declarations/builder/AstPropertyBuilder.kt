@@ -28,7 +28,7 @@ import org.jetbrains.kotlin.name.Name
 
 @AstBuilderDsl
 class AstPropertyBuilder : AstTypeParametersOwnerBuilder {
-    lateinit var origin: AstDeclarationOrigin
+    var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     lateinit var returnType: AstType
     var receiverType: AstType? = null
     lateinit var name: Name

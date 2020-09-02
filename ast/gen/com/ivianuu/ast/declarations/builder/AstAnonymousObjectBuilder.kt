@@ -22,7 +22,7 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 
 @AstBuilderDsl
 class AstAnonymousObjectBuilder : AstClassBuilder, AstExpressionBuilder {
-    override lateinit var origin: AstDeclarationOrigin
+    override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     override var classKind: ClassKind = ClassKind.CLASS
     override val superTypes: MutableList<AstType> = mutableListOf()
     override val declarations: MutableList<AstDeclaration> = mutableListOf()

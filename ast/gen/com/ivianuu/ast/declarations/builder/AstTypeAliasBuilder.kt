@@ -24,7 +24,7 @@ import org.jetbrains.kotlin.name.Name
 
 @AstBuilderDsl
 class AstTypeAliasBuilder : AstTypeParametersOwnerBuilder {
-    lateinit var origin: AstDeclarationOrigin
+    var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
     lateinit var name: Name
     var visibility: Visibility = Visibilities.Public

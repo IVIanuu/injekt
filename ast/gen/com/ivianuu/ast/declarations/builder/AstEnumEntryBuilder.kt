@@ -21,7 +21,7 @@ import org.jetbrains.kotlin.name.Name
 
 @AstBuilderDsl
 class AstEnumEntryBuilder {
-    lateinit var origin: AstDeclarationOrigin
+    var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     lateinit var returnType: AstType
     lateinit var name: Name
     lateinit var symbol: AstVariableSymbol<AstEnumEntry>

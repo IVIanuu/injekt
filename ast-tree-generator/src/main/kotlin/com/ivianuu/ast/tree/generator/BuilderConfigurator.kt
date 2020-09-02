@@ -31,11 +31,8 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             parents += classBuilder
             parents += typeParametersOwnerBuilder
             default("classKind", "ClassKind.CLASS")
-            default("visibility", "Visibilities.Public")
-            useTypes(visibilitiesType)
             defaultFalse("isExpect")
             defaultFalse("isActual")
-            default("modality", "Modality.FINAL")
             defaultFalse("isInline")
             defaultFalse("isCompanion")
             defaultFalse("isFun")
@@ -93,11 +90,8 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
 
         builder(typeAlias) {
             parents += typeParametersOwnerBuilder
-            default("visibility", "Visibilities.Public")
-            useTypes(visibilitiesType)
             defaultFalse("isExpect")
             defaultFalse("isActual")
-            default("modality", "Modality.FINAL")
         }
 
         builder(callableReferenceAccess) {
@@ -142,11 +136,8 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             defaultNull("getter", "setter")
             defaultFalse("isVar")
             defaultFalse("isLocal")
-            default("visibility", "Visibilities.Public")
-            useTypes(visibilitiesType)
             defaultFalse("isExpect")
             defaultFalse("isActual")
-            default("modality", "Modality.FINAL")
             defaultFalse("isConst")
             defaultFalse("isLateinit")
             defaultFalse("isInline")
@@ -218,11 +209,8 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             parents += functionBuilder
             parents += typeParametersOwnerBuilder
             defaultNull("body")
-            default("visibility", "Visibilities.Public")
-            useTypes(visibilitiesType)
             defaultFalse("isExpect")
             defaultFalse("isActual")
-            default("modality", "Modality.FINAL")
             defaultFalse("isExternal")
             defaultFalse("isSuspend")
             defaultFalse("isOperator")
@@ -244,6 +232,17 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             it.builder?.parents?.add(expressionBuilder)
         }
 
+        configureFieldInAllLeafBuilders(field = "origin") {
+            default(it, "AstDeclarationOrigin.Source")
+        }
+
+        configureFieldInAllLeafBuilders(field = "visibility") {
+            default(it, "Visibilities.Public")
+            useTypes(visibilitiesType)
+        }
+        configureFieldInAllLeafBuilders(field = "modality") {
+            default("modality", "Modality.FINAL")
+        }
     }
 
     private inline fun findImplementationsWithElementInParents(

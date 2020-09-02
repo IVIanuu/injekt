@@ -22,7 +22,7 @@ import org.jetbrains.kotlin.name.Name
 
 @AstBuilderDsl
 open class AstFieldBuilder {
-    open lateinit var origin: AstDeclarationOrigin
+    open var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     open lateinit var returnType: AstType
     open lateinit var name: Name
     open lateinit var symbol: AstVariableSymbol<AstField>

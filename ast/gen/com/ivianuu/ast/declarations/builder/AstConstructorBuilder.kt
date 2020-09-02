@@ -22,7 +22,7 @@ import kotlin.contracts.*
 
 @AstBuilderDsl
 class AstConstructorBuilder : AstAbstractConstructorBuilder {
-    override lateinit var origin: AstDeclarationOrigin
+    override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     override lateinit var returnType: AstType
     override var receiverType: AstType? = null
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()

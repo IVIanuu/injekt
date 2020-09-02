@@ -28,7 +28,7 @@ import org.jetbrains.kotlin.name.Name
 
 @AstBuilderDsl
 open class AstNamedFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwnerBuilder {
-    override lateinit var origin: AstDeclarationOrigin
+    override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     override lateinit var returnType: AstType
     open var receiverType: AstType? = null
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()

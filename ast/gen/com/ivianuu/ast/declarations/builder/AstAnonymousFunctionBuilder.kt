@@ -23,7 +23,7 @@ import kotlin.contracts.*
 
 @AstBuilderDsl
 class AstAnonymousFunctionBuilder : AstFunctionBuilder, AstExpressionBuilder {
-    override lateinit var origin: AstDeclarationOrigin
+    override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var returnType: AstType
     var receiverType: AstType? = null

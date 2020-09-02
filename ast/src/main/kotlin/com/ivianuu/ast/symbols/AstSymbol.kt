@@ -9,7 +9,7 @@ import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.declarations.AstDeclaration
 
 interface AstSymbol<E> where E : AstSymbolOwner<E>, E : AstDeclaration {
-    val ast: E
+    val owner: E
 
     fun bind(e: E)
 }

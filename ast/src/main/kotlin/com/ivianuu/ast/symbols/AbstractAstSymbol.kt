@@ -11,9 +11,9 @@ import com.ivianuu.ast.declarations.AstDeclaration
 abstract class AbstractAstSymbol<E> :
     AstSymbol<E> where E : AstSymbolOwner<E>, E : AstDeclaration {
 
-    override lateinit var ast: E
+    override lateinit var owner: E
 
     override fun bind(e: E) {
-        ast = e
+        owner = e
     }
 }
