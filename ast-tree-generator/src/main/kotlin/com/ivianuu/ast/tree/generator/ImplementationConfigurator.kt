@@ -117,6 +117,17 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         impl(starProjection) {
             kind = Object
         }
+
+        impl(delegatedType) {
+            default("isMarkedNullable") {
+                value = "type.isMarkedNullable"
+                withGetter = true
+            }
+            default("annotations") {
+                value = "type.annotations"
+                withGetter = true
+            }
+        }
     }
 
     private fun configureAllImplementations() {

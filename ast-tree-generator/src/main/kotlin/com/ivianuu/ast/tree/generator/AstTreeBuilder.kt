@@ -315,4 +315,11 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         visitorSuperType = this@AstTreeBuilder.type
         transformerType = this@AstTreeBuilder.type
     }
+
+    val delegatedType = element("DelegatedType", Type, type) {
+        visitorSuperType = this@AstTreeBuilder.type
+        transformerType = this@AstTreeBuilder.type
+    }
+
 }
+
