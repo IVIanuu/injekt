@@ -18,6 +18,4 @@ interface AstClassLikeDeclaration<F : AstClassLikeDeclaration<F>> : AstAnnotated
     override val symbol: AstClassLikeSymbol<F>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitClassLikeDeclaration(this, data)
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstClassLikeDeclaration<F>
 }

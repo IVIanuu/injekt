@@ -15,8 +15,4 @@ abstract class AstWhenSubjectExpression : AstExpression() {
     abstract val whenRef: AstExpressionRef<AstWhenExpression>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitWhenSubjectExpression(this, data)
-
-    abstract override fun replaceType(newType: AstType)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstWhenSubjectExpression
 }

@@ -15,9 +15,5 @@ abstract class AstWhenBranch : AstPureAbstractElement(), AstElement {
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitWhenBranch(this, data)
 
-    abstract fun <D> transformCondition(transformer: AstTransformer<D>, data: D): AstWhenBranch
-
-    abstract fun <D> transformResult(transformer: AstTransformer<D>, data: D): AstWhenBranch
-
     abstract fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstWhenBranch
 }

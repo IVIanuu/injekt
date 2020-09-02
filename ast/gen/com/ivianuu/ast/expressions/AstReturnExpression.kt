@@ -18,11 +18,5 @@ abstract class AstReturnExpression : AstJump<AstFunction<*>>() {
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitReturnExpression(this, data)
 
-    abstract override fun replaceType(newType: AstType)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstReturnExpression
-
-    abstract fun <D> transformResult(transformer: AstTransformer<D>, data: D): AstReturnExpression
-
     abstract fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstReturnExpression
 }

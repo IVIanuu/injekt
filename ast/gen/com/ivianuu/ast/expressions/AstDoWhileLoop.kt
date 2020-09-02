@@ -16,11 +16,5 @@ abstract class AstDoWhileLoop : AstLoop() {
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitDoWhileLoop(this, data)
 
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstDoWhileLoop
-
-    abstract override fun <D> transformBlock(transformer: AstTransformer<D>, data: D): AstDoWhileLoop
-
-    abstract override fun <D> transformCondition(transformer: AstTransformer<D>, data: D): AstDoWhileLoop
-
     abstract override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstDoWhileLoop
 }

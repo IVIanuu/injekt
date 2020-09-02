@@ -30,32 +30,9 @@ internal class AstSafeCallExpressionImpl(
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstSafeCallExpressionImpl {
         type = type.transformSingle(transformer, data)
-        transformAnnotations(transformer, data)
-        transformReceiver(transformer, data)
-        transformRegularQualifiedAccess(transformer, data)
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstSafeCallExpressionImpl {
         annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformReceiver(transformer: AstTransformer<D>, data: D): AstSafeCallExpressionImpl {
         receiver = receiver.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformRegularQualifiedAccess(transformer: AstTransformer<D>, data: D): AstSafeCallExpressionImpl {
         regularQualifiedAccess = regularQualifiedAccess.transformSingle(transformer, data)
         return this
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
-    }
-
-    override fun replaceRegularQualifiedAccess(newRegularQualifiedAccess: AstQualifiedAccess) {
-        regularQualifiedAccess = newRegularQualifiedAccess
     }
 }

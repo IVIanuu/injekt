@@ -20,23 +20,7 @@ internal class AstCatchImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstCatchImpl {
-        transformParameter(transformer, data)
-        transformBlock(transformer, data)
         transformOtherChildren(transformer, data)
-        return this
-    }
-
-    override fun <D> transformParameter(transformer: AstTransformer<D>, data: D): AstCatchImpl {
-        parameter = parameter.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformBlock(transformer: AstTransformer<D>, data: D): AstCatchImpl {
-        block = block.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstCatchImpl {
         return this
     }
 }

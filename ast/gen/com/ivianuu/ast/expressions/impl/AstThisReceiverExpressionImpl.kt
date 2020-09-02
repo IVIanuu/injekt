@@ -31,38 +31,9 @@ internal class AstThisReceiverExpressionImpl(
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstThisReceiverExpressionImpl {
         type = type.transformSingle(transformer, data)
-        transformAnnotations(transformer, data)
-        transformTypeArguments(transformer, data)
+        annotations.transformInplace(transformer, data)
+        typeArguments.transformInplace(transformer, data)
         calleeReference = calleeReference.transformSingle(transformer, data)
         return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstThisReceiverExpressionImpl {
-        annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformTypeArguments(transformer: AstTransformer<D>, data: D): AstThisReceiverExpressionImpl {
-        typeArguments.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstThisReceiverExpressionImpl {
-        dispatchReceiver = dispatchReceiver?.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformExtensionReceiver(transformer: AstTransformer<D>, data: D): AstThisReceiverExpressionImpl {
-        extensionReceiver = extensionReceiver?.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
-    }
-
-    override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>) {
-        typeArguments.clear()
-        typeArguments.addAll(newTypeArguments)
     }
 }

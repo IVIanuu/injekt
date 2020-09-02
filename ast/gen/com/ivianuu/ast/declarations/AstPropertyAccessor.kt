@@ -26,22 +26,4 @@ abstract class AstPropertyAccessor : AstPureAbstractElement(), AstFunction<AstPr
     abstract val isSetter: Boolean
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitPropertyAccessor(this, data)
-
-    abstract override fun replaceReturnType(newReturnType: AstType)
-
-    abstract override fun replaceReceiverType(newReceiverType: AstType?)
-
-    abstract override fun replaceValueParameters(newValueParameters: List<AstValueParameter>)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstPropertyAccessor
-
-    abstract override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstPropertyAccessor
-
-    abstract override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstPropertyAccessor
-
-    abstract override fun <D> transformValueParameters(transformer: AstTransformer<D>, data: D): AstPropertyAccessor
-
-    abstract override fun <D> transformBody(transformer: AstTransformer<D>, data: D): AstPropertyAccessor
-
-    abstract override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstPropertyAccessor
 }

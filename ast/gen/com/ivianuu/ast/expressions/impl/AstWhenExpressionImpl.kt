@@ -19,7 +19,7 @@ internal class AstWhenExpressionImpl(
     override var subject: AstExpression?,
     override var subjectVariable: AstVariable<*>?,
     override val branches: MutableList<AstWhenBranch>,
-    override var isExhaustive: Boolean,
+    override val isExhaustive: Boolean,
 ) : AstWhenExpression() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         type.accept(visitor, data)
@@ -34,43 +34,7 @@ internal class AstWhenExpressionImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstWhenExpressionImpl {
-        transformSubject(transformer, data)
-        transformBranches(transformer, data)
         transformOtherChildren(transformer, data)
         return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstWhenExpressionImpl {
-        annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformSubject(transformer: AstTransformer<D>, data: D): AstWhenExpressionImpl {
-        if (subjectVariable != null) {
-            subjectVariable = subjectVariable?.transformSingle(transformer, data)
-            subject = subjectVariable?.initializer
-        } else {
-            subject = subject?.transformSingle(transformer, data)
-        }
-        return this
-    }
-
-    override fun <D> transformBranches(transformer: AstTransformer<D>, data: D): AstWhenExpressionImpl {
-        branches.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstWhenExpressionImpl {
-        type = type.transformSingle(transformer, data)
-        transformAnnotations(transformer, data)
-        return this
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
-    }
-
-    override fun replaceIsExhaustive(newIsExhaustive: Boolean) {
-        isExhaustive = newIsExhaustive
     }
 }

@@ -18,11 +18,6 @@ internal class AstModuleFragmentImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstModuleFragmentImpl {
-        transformFiles(transformer, data)
-        return this
-    }
-
-    override fun <D> transformFiles(transformer: AstTransformer<D>, data: D): AstModuleFragmentImpl {
         files.transformInplace(transformer, data)
         return this
     }

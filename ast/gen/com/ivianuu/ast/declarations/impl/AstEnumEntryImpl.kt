@@ -39,51 +39,7 @@ internal class AstEnumEntryImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
-        transformReturnType(transformer, data)
-        transformInitializer(transformer, data)
         transformOtherChildren(transformer, data)
         return this
     }
-
-    override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
-        returnType = returnType.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
-        return this
-    }
-
-    override fun <D> transformInitializer(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
-        initializer = initializer?.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformDelegate(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
-        return this
-    }
-
-    override fun <D> transformGetter(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
-        return this
-    }
-
-    override fun <D> transformSetter(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
-        annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
-        transformAnnotations(transformer, data)
-        return this
-    }
-
-    override fun replaceReturnType(newReturnType: AstType) {
-        returnType = newReturnType
-    }
-
-    override fun replaceReceiverType(newReceiverType: AstType?) {}
 }

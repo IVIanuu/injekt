@@ -16,9 +16,5 @@ abstract class AstCatch : AstPureAbstractElement(), AstElement {
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitCatch(this, data)
 
-    abstract fun <D> transformParameter(transformer: AstTransformer<D>, data: D): AstCatch
-
-    abstract fun <D> transformBlock(transformer: AstTransformer<D>, data: D): AstCatch
-
     abstract fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstCatch
 }

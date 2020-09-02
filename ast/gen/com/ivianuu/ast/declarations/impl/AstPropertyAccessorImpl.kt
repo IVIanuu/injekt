@@ -41,51 +41,11 @@ open class AstPropertyAccessorImpl @AstImplementationDetail constructor(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
-        transformAnnotations(transformer, data)
-        transformReturnType(transformer, data)
-        transformValueParameters(transformer, data)
-        transformBody(transformer, data)
-        transformTypeParameters(transformer, data)
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
         annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
         returnType = returnType.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
-        return this
-    }
-
-    override fun <D> transformValueParameters(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
         valueParameters.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformBody(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
         body = body?.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
         typeParameters.transformInplace(transformer, data)
         return this
-    }
-
-    override fun replaceReturnType(newReturnType: AstType) {
-        returnType = newReturnType
-    }
-
-    override fun replaceReceiverType(newReceiverType: AstType?) {}
-
-    override fun replaceValueParameters(newValueParameters: List<AstValueParameter>) {
-        valueParameters.clear()
-        valueParameters.addAll(newValueParameters)
     }
 }

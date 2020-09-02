@@ -33,17 +33,7 @@ internal class AstTypeParameterImpl(
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstTypeParameterImpl {
         bounds.transformInplace(transformer, data)
-        transformAnnotations(transformer, data)
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstTypeParameterImpl {
         annotations.transformInplace(transformer, data)
         return this
-    }
-
-    override fun replaceBounds(newBounds: List<AstType>) {
-        bounds.clear()
-        bounds.addAll(newBounds)
     }
 }

@@ -31,44 +31,10 @@ internal class AstVariableAssignmentImpl(
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstVariableAssignmentImpl {
         type = type.transformSingle(transformer, data)
-        transformAnnotations(transformer, data)
-        transformTypeArguments(transformer, data)
-        left = left.transformSingle(transformer, data)
-        transformRight(transformer, data)
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstVariableAssignmentImpl {
         annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformTypeArguments(transformer: AstTransformer<D>, data: D): AstVariableAssignmentImpl {
         typeArguments.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstVariableAssignmentImpl {
-        dispatchReceiver = dispatchReceiver?.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformExtensionReceiver(transformer: AstTransformer<D>, data: D): AstVariableAssignmentImpl {
-        extensionReceiver = extensionReceiver?.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformRight(transformer: AstTransformer<D>, data: D): AstVariableAssignmentImpl {
+        left = left.transformSingle(transformer, data)
         right = right.transformSingle(transformer, data)
         return this
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
-    }
-
-    override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>) {
-        typeArguments.clear()
-        typeArguments.addAll(newTypeArguments)
     }
 }

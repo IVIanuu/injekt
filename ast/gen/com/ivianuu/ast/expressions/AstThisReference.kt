@@ -16,10 +16,4 @@ abstract class AstThisReference : AstExpression() {
     abstract val boundSymbol: AbstractAstSymbol<*>?
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitThisReference(this, data)
-
-    abstract override fun replaceType(newType: AstType)
-
-    abstract fun replaceBoundSymbol(newBoundSymbol: AbstractAstSymbol<*>?)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstThisReference
 }

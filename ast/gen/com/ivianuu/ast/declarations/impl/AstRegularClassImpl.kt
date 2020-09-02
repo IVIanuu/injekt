@@ -49,35 +49,10 @@ internal class AstRegularClassImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
-        transformAnnotations(transformer, data)
-        transformTypeParameters(transformer, data)
-        transformDeclarations(transformer, data)
-        transformSuperTypes(transformer, data)
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
         annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
         typeParameters.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformDeclarations(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
         declarations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformSuperTypes(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
         superTypes.transformInplace(transformer, data)
         return this
-    }
-
-    override fun replaceSuperTypes(newSuperTypes: List<AstType>) {
-        superTypes.clear()
-        superTypes.addAll(newSuperTypes)
     }
 }

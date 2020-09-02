@@ -25,8 +25,4 @@ abstract class AstTypeParameter : AstPureAbstractElement(), AstAnnotatedDeclarat
     abstract override val annotations: List<AstFunctionCall>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitTypeParameter(this, data)
-
-    abstract fun replaceBounds(newBounds: List<AstType>)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstTypeParameter
 }

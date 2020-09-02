@@ -40,55 +40,13 @@ internal class AstAnonymousFunctionImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
-        transformAnnotations(transformer, data)
-        transformReturnType(transformer, data)
-        transformReceiverType(transformer, data)
-        transformValueParameters(transformer, data)
-        transformBody(transformer, data)
+        annotations.transformInplace(transformer, data)
+        returnType = returnType.transformSingle(transformer, data)
+        receiverType = receiverType?.transformSingle(transformer, data)
+        valueParameters.transformInplace(transformer, data)
+        body = body?.transformSingle(transformer, data)
         type = type.transformSingle(transformer, data)
         label = label?.transformSingle(transformer, data)
         return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
-        annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
-        returnType = returnType.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
-        receiverType = receiverType?.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformValueParameters(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
-        valueParameters.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformBody(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
-        body = body?.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun replaceReturnType(newReturnType: AstType) {
-        returnType = newReturnType
-    }
-
-    override fun replaceReceiverType(newReceiverType: AstType?) {
-        receiverType = newReceiverType
-    }
-
-    override fun replaceValueParameters(newValueParameters: List<AstValueParameter>) {
-        valueParameters.clear()
-        valueParameters.addAll(newValueParameters)
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
     }
 }

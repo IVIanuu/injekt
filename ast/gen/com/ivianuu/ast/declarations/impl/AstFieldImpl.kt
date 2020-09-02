@@ -41,55 +41,7 @@ internal class AstFieldImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstFieldImpl {
-        transformReturnType(transformer, data)
-        transformTypeParameters(transformer, data)
         transformOtherChildren(transformer, data)
         return this
     }
-
-    override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstFieldImpl {
-        returnType = returnType.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstFieldImpl {
-        return this
-    }
-
-    override fun <D> transformInitializer(transformer: AstTransformer<D>, data: D): AstFieldImpl {
-        return this
-    }
-
-    override fun <D> transformDelegate(transformer: AstTransformer<D>, data: D): AstFieldImpl {
-        return this
-    }
-
-    override fun <D> transformGetter(transformer: AstTransformer<D>, data: D): AstFieldImpl {
-        return this
-    }
-
-    override fun <D> transformSetter(transformer: AstTransformer<D>, data: D): AstFieldImpl {
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstFieldImpl {
-        annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstFieldImpl {
-        typeParameters.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstFieldImpl {
-        transformAnnotations(transformer, data)
-        return this
-    }
-
-    override fun replaceReturnType(newReturnType: AstType) {
-        returnType = newReturnType
-    }
-
-    override fun replaceReceiverType(newReceiverType: AstType?) {}
 }

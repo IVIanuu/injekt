@@ -44,7 +44,6 @@ import com.ivianuu.ast.tree.generator.model.booleanField
 import com.ivianuu.ast.tree.generator.model.field
 import com.ivianuu.ast.tree.generator.model.fieldList
 import com.ivianuu.ast.tree.generator.model.stringField
-import com.ivianuu.ast.tree.generator.model.withTransform
 
 object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuilder) {
     fun configureFields() = configure {
@@ -62,7 +61,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         typeParametersOwner.configure {
-            +typeParameters.withTransform()
+            +typeParameters
         }
 
         declaration.configure {
@@ -71,13 +70,13 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         typedDeclaration.configure {
-            +field("returnType", type, withReplace = true).withTransform()
+            +field("returnType", type)
         }
 
         callableDeclaration.configure {
             withArg("F", "AstCallableDeclaration<F>")
             parentArg(symbolOwner, "E", "F")
-            +field("receiverType", type, nullable = true, withReplace = true).withTransform()
+            +field("receiverType", type, nullable = true)
             +symbol("AstCallableSymbol", "F")
         }
 
@@ -90,8 +89,8 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             withArg("F", "AstFunction<F>")
             parentArg(callableDeclaration, "F", "F")
             +symbol("AstFunctionSymbol", "F")
-            +fieldList(valueParameter, withReplace = true).withTransform()
-            +body(nullable = true).withTransform()
+            +fieldList(valueParameter)
+            +body(nullable = true)
         }
 
         expression.configure {
@@ -104,14 +103,14 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         block.configure {
-            +fieldList(statement).withTransform()
+            +fieldList(statement)
             +typeField
             needTransformOtherChildren()
         }
 
         binaryLogicExpression.configure {
-            +field("leftOperand", expression).withTransform()
-            +field("rightOperand", expression).withTransform()
+            +field("leftOperand", expression)
+            +field("rightOperand", expression)
             +field("kind", operationKindType)
             needTransformOtherChildren()
         }
@@ -127,7 +126,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         returnExpression.configure {
             parentArg(jump, "E", function.withArgs("F" to "*"))
-            +field("result", expression).withTransform()
+            +field("result", expression)
             needTransformOtherChildren()
         }
 
@@ -136,43 +135,43 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         loop.configure {
-            +field(block).withTransform()
-            +field("condition", expression).withTransform()
+            +field(block)
+            +field("condition", expression)
             +field(label, nullable = true)
             needTransformOtherChildren()
         }
 
         whileLoop.configure {
-            +field("condition", expression).withTransform()
-            +field(block).withTransform()
+            +field("condition", expression)
+            +field(block)
         }
 
         catchClause.configure {
-            +field("parameter", valueParameter).withTransform()
-            +field(block).withTransform()
+            +field("parameter", valueParameter)
+            +field(block)
             needTransformOtherChildren()
         }
 
         tryExpression.configure {
-            +field("tryBlock", block).withTransform()
-            +fieldList("catches", catchClause).withTransform()
-            +field("finallyBlock", block, nullable = true).withTransform()
+            +field("tryBlock", block)
+            +fieldList("catches", catchClause)
+            +field("finallyBlock", block, nullable = true)
             needTransformOtherChildren()
         }
 
         elvisExpression.configure {
-            +field("lhs", expression).withTransform()
-            +field("rhs", expression).withTransform()
+            +field("lhs", expression)
+            +field("rhs", expression)
         }
 
         qualifiedAccess.configure {
-            +typeArguments.withTransform()
+            +typeArguments
             +receivers
         }
 
         constExpression.configure {
             withArg("T")
-            +field("kind", constKindType.withArgs("T"), withReplace = true)
+            +field("kind", constKindType.withArgs("T"))
             +field("value", "T", null)
         }
 
@@ -187,14 +186,14 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         typeOperatorCall.configure {
             +field("operation", operationType)
-            +field("conversionType", type).withTransform()
+            +field("conversionType", type)
             needTransformOtherChildren()
         }
 
         assignmentOperatorStatement.configure {
             +field("operation", operationType)
-            +field("leftArgument", expression).withTransform()
-            +field("rightArgument", expression).withTransform()
+            +field("leftArgument", expression)
+            +field("rightArgument", expression)
         }
 
         equalityOperatorCall.configure {
@@ -202,8 +201,8 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         whenBranch.configure {
-            +field("condition", expression).withTransform()
-            +field("result", block).withTransform()
+            +field("condition", expression)
+            +field("result", block)
             needTransformOtherChildren()
         }
 
@@ -218,8 +217,8 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             parentArg(classLikeDeclaration, "F", "F")
             +symbol("AstClassSymbol", "F")
             +classKind
-            +superTypes(withReplace = true).withTransform()
-            +declarations.withTransform()
+            +superTypes()
+            +declarations
             +annotations
         }
 
@@ -230,7 +229,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +expectActual
             +modality
             +symbol("AstRegularClassSymbol")
-            +superTypes(withReplace = true)
+            +superTypes()
             +isInline
             +isCompanion
             +isFun
@@ -252,7 +251,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +expectActual
             +modality
             +symbol("AstTypeAliasSymbol")
-            +field("expandedType", type, withReplace = true)
+            +field("expandedType", type)
             +annotations
         }
 
@@ -268,7 +267,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +symbol("AstTypeParameterSymbol")
             +field(varianceType)
             +booleanField("isReified")
-            +fieldList("bounds", type, withReplace = true)
+            +fieldList("bounds", type)
             +annotations
         }
 
@@ -320,14 +319,14 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
                 "delegatedConstructor",
                 delegatedConstructorCall,
                 nullable = true
-            ).withTransform()
+            )
             +body(nullable = true)
             +booleanField("isPrimary")
         }
 
         delegatedConstructorCall.configure {
-            +field("constructedType", type, withReplace = true)
-            +field("dispatchReceiver", expression, nullable = true).withTransform()
+            +field("constructedType", type)
+            +field("dispatchReceiver", expression, nullable = true)
             generateBooleanFields("this", "super")
         }
 
@@ -343,11 +342,11 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             parentArg(callableDeclaration, "F", "F")
             +name
             +symbol("AstVariableSymbol", "F")
-            +initializer.withTransform()
-            +field("delegate", expression, nullable = true).withTransform()
+            +initializer
+            +field("delegate", expression, nullable = true)
             generateBooleanFields("var", "val")
-            +field("getter", propertyAccessor, nullable = true).withTransform()
-            +field("setter", propertyAccessor, nullable = true).withTransform()
+            +field("getter", propertyAccessor, nullable = true)
+            +field("setter", propertyAccessor, nullable = true)
             +annotations
             needTransformOtherChildren()
         }
@@ -370,11 +369,11 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         moduleFragment.configure {
             +stringField("name")
-            +files.withTransform()
+            +files
         }
 
         file.configure {
-            +declarations.withTransform()
+            +declarations
             +stringField("name")
             +field("packageFqName", fqNameType)
         }
@@ -395,11 +394,11 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         safeCallExpression.configure {
-            +field("receiver", expression).withTransform()
+            +field("receiver", expression)
             // Special node that might be used as a reference to receiver of a safe call after null check
             +field("checkedSubjectRef", safeCallCheckedSubjectReferenceType)
             // One that uses checkedReceiver as a receiver
-            +field("regularQualifiedAccess", qualifiedAccess, withReplace = true).withTransform()
+            +field("regularQualifiedAccess", qualifiedAccess)
         }
 
         checkedSafeCallSubject.configure {
@@ -407,8 +406,8 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         callableReferenceAccess.configure {
-            +field("callee", callableSymbolType, withReplace = true).withTransform()
-            +booleanField("hasQuestionMarkAtLHS", withReplace = true)
+            +field("callee", callableSymbolType)
+            +booleanField("hasQuestionMarkAtLHS")
         }
 
         getClassCall.configure {
@@ -421,7 +420,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         variableAssignment.configure {
             +field("left", expression)
-            +field("right", expression).withTransform()
+            +field("right", expression)
         }
 
         whenSubjectExpression.configure {
@@ -438,7 +437,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         superReference.configure {
             +stringField("labelName", nullable = true)
-            +field("superType", type, withReplace = true)
+            +field("superType", type)
         }
 
         thisReference.configure {
@@ -447,8 +446,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
                 "boundSymbol",
                 abstractAstSymbolType,
                 "*",
-                nullable = true,
-                withReplace = true
+                nullable = true
             )
         }
 
@@ -467,10 +465,10 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         whenExpression.configure {
-            +field("subject", expression, nullable = true).withTransform()
+            +field("subject", expression, nullable = true)
             +field("subjectVariable", variable.withArgs("F" to "*"), nullable = true)
-            +fieldList("branches", whenBranch).withTransform()
-            +booleanField("isExhaustive", withReplace = true)
+            +fieldList("branches", whenBranch)
+            +booleanField("isExhaustive")
             needTransformOtherChildren()
         }
 

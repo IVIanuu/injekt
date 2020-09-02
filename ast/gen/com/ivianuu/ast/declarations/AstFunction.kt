@@ -24,20 +24,4 @@ interface AstFunction<F : AstFunction<F>> : AstCallableDeclaration<F>, AstTarget
     val body: AstBlock?
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitFunction(this, data)
-
-    override fun replaceReturnType(newReturnType: AstType)
-
-    override fun replaceReceiverType(newReceiverType: AstType?)
-
-    fun replaceValueParameters(newValueParameters: List<AstValueParameter>)
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstFunction<F>
-
-    override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstFunction<F>
-
-    override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstFunction<F>
-
-    fun <D> transformValueParameters(transformer: AstTransformer<D>, data: D): AstFunction<F>
-
-    fun <D> transformBody(transformer: AstTransformer<D>, data: D): AstFunction<F>
 }

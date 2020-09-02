@@ -25,20 +25,7 @@ internal class AstExplicitThisReference(
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstExplicitThisReference {
         type = type.transformSingle(transformer, data)
-        transformAnnotations(transformer, data)
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstExplicitThisReference {
         annotations.transformInplace(transformer, data)
         return this
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
-    }
-
-    override fun replaceBoundSymbol(newBoundSymbol: AbstractAstSymbol<*>?) {
-        boundSymbol = newBoundSymbol
     }
 }

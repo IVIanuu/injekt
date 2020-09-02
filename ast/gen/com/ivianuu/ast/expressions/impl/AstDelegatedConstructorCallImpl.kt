@@ -27,23 +27,9 @@ internal class AstDelegatedConstructorCallImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstDelegatedConstructorCallImpl {
-        transformAnnotations(transformer, data)
+        annotations.transformInplace(transformer, data)
         valueArguments.transformInplace(transformer, data)
         constructedType = constructedType.transformSingle(transformer, data)
         return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstDelegatedConstructorCallImpl {
-        annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstDelegatedConstructorCallImpl {
-        dispatchReceiver = dispatchReceiver?.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun replaceConstructedType(newConstructedType: AstType) {
-        constructedType = newConstructedType
     }
 }

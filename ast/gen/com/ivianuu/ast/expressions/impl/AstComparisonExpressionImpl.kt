@@ -25,17 +25,8 @@ internal class AstComparisonExpressionImpl(
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstComparisonExpressionImpl {
         type = type.transformSingle(transformer, data)
-        transformAnnotations(transformer, data)
+        annotations.transformInplace(transformer, data)
         compareToCall = compareToCall.transformSingle(transformer, data)
         return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstComparisonExpressionImpl {
-        annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
     }
 }

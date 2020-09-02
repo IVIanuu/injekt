@@ -31,23 +31,5 @@ abstract class AstVariable<F : AstVariable<F>> : AstPureAbstractElement(), AstCa
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitVariable(this, data)
 
-    abstract override fun replaceReturnType(newReturnType: AstType)
-
-    abstract override fun replaceReceiverType(newReceiverType: AstType?)
-
-    abstract override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstVariable<F>
-
-    abstract override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstVariable<F>
-
-    abstract fun <D> transformInitializer(transformer: AstTransformer<D>, data: D): AstVariable<F>
-
-    abstract fun <D> transformDelegate(transformer: AstTransformer<D>, data: D): AstVariable<F>
-
-    abstract fun <D> transformGetter(transformer: AstTransformer<D>, data: D): AstVariable<F>
-
-    abstract fun <D> transformSetter(transformer: AstTransformer<D>, data: D): AstVariable<F>
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstVariable<F>
-
     abstract fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstVariable<F>
 }

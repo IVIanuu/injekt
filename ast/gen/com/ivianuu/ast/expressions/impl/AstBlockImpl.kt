@@ -23,28 +23,7 @@ internal class AstBlockImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstBlockImpl {
-        transformStatements(transformer, data)
         transformOtherChildren(transformer, data)
         return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstBlockImpl {
-        annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformStatements(transformer: AstTransformer<D>, data: D): AstBlockImpl {
-        statements.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstBlockImpl {
-        transformAnnotations(transformer, data)
-        type = type.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
     }
 }

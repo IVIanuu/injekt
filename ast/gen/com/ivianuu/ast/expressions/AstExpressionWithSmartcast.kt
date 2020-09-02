@@ -20,16 +20,4 @@ abstract class AstExpressionWithSmartcast : AstQualifiedAccess() {
     abstract val originalType: AstType
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitExpressionWithSmartcast(this, data)
-
-    abstract override fun replaceType(newType: AstType)
-
-    abstract override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstExpressionWithSmartcast
-
-    abstract override fun <D> transformTypeArguments(transformer: AstTransformer<D>, data: D): AstExpressionWithSmartcast
-
-    abstract override fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstExpressionWithSmartcast
-
-    abstract override fun <D> transformExtensionReceiver(transformer: AstTransformer<D>, data: D): AstExpressionWithSmartcast
 }

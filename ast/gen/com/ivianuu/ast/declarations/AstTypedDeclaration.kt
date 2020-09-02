@@ -16,10 +16,4 @@ interface AstTypedDeclaration : AstAnnotatedDeclaration {
     val returnType: AstType
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitTypedDeclaration(this, data)
-
-    fun replaceReturnType(newReturnType: AstType)
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstTypedDeclaration
-
-    fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstTypedDeclaration
 }

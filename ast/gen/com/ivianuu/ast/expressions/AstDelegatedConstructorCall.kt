@@ -18,10 +18,4 @@ abstract class AstDelegatedConstructorCall : AstPureAbstractElement(), AstCall {
     abstract val isSuper: Boolean
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitDelegatedConstructorCall(this, data)
-
-    abstract fun replaceConstructedType(newConstructedType: AstType)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstDelegatedConstructorCall
-
-    abstract fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstDelegatedConstructorCall
 }

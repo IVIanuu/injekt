@@ -17,13 +17,5 @@ abstract class AstBinaryLogicExpression : AstExpression() {
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitBinaryLogicExpression(this, data)
 
-    abstract override fun replaceType(newType: AstType)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstBinaryLogicExpression
-
-    abstract fun <D> transformLeftOperand(transformer: AstTransformer<D>, data: D): AstBinaryLogicExpression
-
-    abstract fun <D> transformRightOperand(transformer: AstTransformer<D>, data: D): AstBinaryLogicExpression
-
     abstract fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstBinaryLogicExpression
 }

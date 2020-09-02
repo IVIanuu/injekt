@@ -14,6 +14,4 @@ interface AstMemberDeclaration : AstAnnotatedDeclaration {
     override val annotations: List<AstFunctionCall>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitMemberDeclaration(this, data)
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstMemberDeclaration
 }

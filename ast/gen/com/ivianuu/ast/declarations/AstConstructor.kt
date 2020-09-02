@@ -26,22 +26,4 @@ abstract class AstConstructor : AstPureAbstractElement(), AstFunction<AstConstru
     abstract val isPrimary: Boolean
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitConstructor(this, data)
-
-    abstract override fun replaceReturnType(newReturnType: AstType)
-
-    abstract override fun replaceReceiverType(newReceiverType: AstType?)
-
-    abstract override fun replaceValueParameters(newValueParameters: List<AstValueParameter>)
-
-    abstract override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstConstructor
-
-    abstract override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstConstructor
-
-    abstract override fun <D> transformValueParameters(transformer: AstTransformer<D>, data: D): AstConstructor
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstConstructor
-
-    abstract fun <D> transformDelegatedConstructor(transformer: AstTransformer<D>, data: D): AstConstructor
-
-    abstract override fun <D> transformBody(transformer: AstTransformer<D>, data: D): AstConstructor
 }

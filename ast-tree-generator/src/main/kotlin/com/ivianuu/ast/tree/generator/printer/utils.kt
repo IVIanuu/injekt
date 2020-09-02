@@ -77,7 +77,7 @@ fun Element.collectImports(): List<String> {
 
 private fun Element.collectImportsInternal(base: List<String>, kind: ImportKind): List<String> {
     val fqns = base + allFields.mapNotNull { it.fullQualifiedName } +
-            allFields.flatMap { it.overridenTypes.mapNotNull { it.fullQualifiedName } } +
+            allFields.flatMap { it.overriddenTypes.mapNotNull { it.fullQualifiedName } } +
             allFields.flatMap { it.arguments.mapNotNull { it.fullQualifiedName } } +
             typeArguments.flatMap { it.upperBounds.mapNotNull { it.fullQualifiedName } }
     return fqns.filterRedundantImports(packageName, kind)
@@ -98,7 +98,7 @@ val KindOwner.needPureAbstractElement: Boolean
     get() = (kind != Implementation.Kind.Interface) && !allParents.any { it.kind == Implementation.Kind.AbstractClass }
 
 
-val Field.isVal: Boolean get() = this is FieldList || (this is FieldWithDefault && origin is FieldList) || !isMutable
+val Field.isVal: Boolean get() = this is FieldList || (this is FieldWithDefault && origin is FieldList) || !mutable
 
 
 fun Field.transformFunctionDeclaration(returnType: String): String {
@@ -110,11 +110,11 @@ fun transformFunctionDeclaration(transformName: String, returnType: String): Str
 }
 
 fun Field.replaceFunctionDeclaration(
-    overridenType: Importable? = null,
+    overriddenType: Importable? = null,
     forceNullable: Boolean = false
 ): String {
     val capName = name.capitalize()
-    val type = overridenType?.typeWithArguments ?: typeWithArguments
+    val type = overriddenType?.typeWithArguments ?: typeWithArguments
 
     val typeWithNullable = if (forceNullable && !type.endsWith("?")) "$type?" else type
 
@@ -123,8 +123,8 @@ fun Field.replaceFunctionDeclaration(
 
 val Field.mutableType: String
     get() = when (this) {
-        is FieldList -> if (isMutable) "Mutable$typeWithArguments" else typeWithArguments
-        is FieldWithDefault -> if (isMutable) origin.mutableType else typeWithArguments
+        is FieldList -> if (mutable) "Mutable$typeWithArguments" else typeWithArguments
+        is FieldWithDefault -> if (mutable) origin.mutableType else typeWithArguments
         else -> typeWithArguments
     }
 

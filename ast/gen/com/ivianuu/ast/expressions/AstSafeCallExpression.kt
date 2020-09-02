@@ -17,14 +17,4 @@ abstract class AstSafeCallExpression : AstExpression() {
     abstract val regularQualifiedAccess: AstQualifiedAccess
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitSafeCallExpression(this, data)
-
-    abstract override fun replaceType(newType: AstType)
-
-    abstract fun replaceRegularQualifiedAccess(newRegularQualifiedAccess: AstQualifiedAccess)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstSafeCallExpression
-
-    abstract fun <D> transformReceiver(transformer: AstTransformer<D>, data: D): AstSafeCallExpression
-
-    abstract fun <D> transformRegularQualifiedAccess(transformer: AstTransformer<D>, data: D): AstSafeCallExpression
 }

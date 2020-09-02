@@ -26,28 +26,7 @@ internal class AstReturnExpressionImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstReturnExpressionImpl {
-        transformResult(transformer, data)
         transformOtherChildren(transformer, data)
         return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstReturnExpressionImpl {
-        annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformResult(transformer: AstTransformer<D>, data: D): AstReturnExpressionImpl {
-        result = result.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstReturnExpressionImpl {
-        type = type.transformSingle(transformer, data)
-        transformAnnotations(transformer, data)
-        return this
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
     }
 }

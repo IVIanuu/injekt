@@ -37,14 +37,4 @@ abstract class AstRegularClass : AstPureAbstractElement(), AstMemberDeclaration,
     abstract val isExternal: Boolean
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitRegularClass(this, data)
-
-    abstract override fun replaceSuperTypes(newSuperTypes: List<AstType>)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstRegularClass
-
-    abstract override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstRegularClass
-
-    abstract override fun <D> transformDeclarations(transformer: AstTransformer<D>, data: D): AstRegularClass
-
-    abstract override fun <D> transformSuperTypes(transformer: AstTransformer<D>, data: D): AstRegularClass
 }

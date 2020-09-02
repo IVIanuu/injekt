@@ -18,8 +18,4 @@ abstract class AstFile : AstPureAbstractElement(), AstAnnotationContainer {
     abstract val packageFqName: FqName
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitFile(this, data)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstFile
-
-    abstract fun <D> transformDeclarations(transformer: AstTransformer<D>, data: D): AstFile
 }

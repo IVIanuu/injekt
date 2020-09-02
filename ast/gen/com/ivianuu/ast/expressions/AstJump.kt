@@ -16,8 +16,4 @@ abstract class AstJump<E : AstTargetElement> : AstExpression() {
     abstract val target: AstTarget<E>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitJump(this, data)
-
-    abstract override fun replaceType(newType: AstType)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstJump<E>
 }

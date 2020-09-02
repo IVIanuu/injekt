@@ -20,22 +20,4 @@ abstract class AstCallableReferenceAccess : AstQualifiedAccess() {
     abstract val hasQuestionMarkAtLHS: Boolean
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitCallableReferenceAccess(this, data)
-
-    abstract override fun replaceType(newType: AstType)
-
-    abstract override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>)
-
-    abstract fun replaceCallee(newCallee: AstCallableSymbol<*>)
-
-    abstract fun replaceHasQuestionMarkAtLHS(newHasQuestionMarkAtLHS: Boolean)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstCallableReferenceAccess
-
-    abstract override fun <D> transformTypeArguments(transformer: AstTransformer<D>, data: D): AstCallableReferenceAccess
-
-    abstract override fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstCallableReferenceAccess
-
-    abstract override fun <D> transformExtensionReceiver(transformer: AstTransformer<D>, data: D): AstCallableReferenceAccess
-
-    abstract fun <D> transformCallee(transformer: AstTransformer<D>, data: D): AstCallableReferenceAccess
 }

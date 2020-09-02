@@ -15,8 +15,4 @@ abstract class AstLoopJump : AstJump<AstLoop>() {
     abstract override val target: AstTarget<AstLoop>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitLoopJump(this, data)
-
-    abstract override fun replaceType(newType: AstType)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstLoopJump
 }

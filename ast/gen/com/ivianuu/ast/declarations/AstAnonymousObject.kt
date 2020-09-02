@@ -23,14 +23,4 @@ abstract class AstAnonymousObject : AstClass<AstAnonymousObject>, AstExpression(
     abstract override val symbol: AstAnonymousObjectSymbol
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitAnonymousObject(this, data)
-
-    abstract override fun replaceSuperTypes(newSuperTypes: List<AstType>)
-
-    abstract override fun replaceType(newType: AstType)
-
-    abstract override fun <D> transformSuperTypes(transformer: AstTransformer<D>, data: D): AstAnonymousObject
-
-    abstract override fun <D> transformDeclarations(transformer: AstTransformer<D>, data: D): AstAnonymousObject
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstAnonymousObject
 }

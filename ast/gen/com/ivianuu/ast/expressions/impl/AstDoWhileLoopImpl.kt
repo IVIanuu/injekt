@@ -26,30 +26,7 @@ internal class AstDoWhileLoopImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstDoWhileLoopImpl {
-        transformBlock(transformer, data)
-        transformCondition(transformer, data)
         transformOtherChildren(transformer, data)
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstDoWhileLoopImpl {
-        annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformBlock(transformer: AstTransformer<D>, data: D): AstDoWhileLoopImpl {
-        block = block.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformCondition(transformer: AstTransformer<D>, data: D): AstDoWhileLoopImpl {
-        condition = condition.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstDoWhileLoopImpl {
-        transformAnnotations(transformer, data)
-        label = label?.transformSingle(transformer, data)
         return this
     }
 }

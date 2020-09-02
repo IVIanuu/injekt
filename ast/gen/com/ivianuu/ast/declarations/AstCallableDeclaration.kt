@@ -20,14 +20,4 @@ interface AstCallableDeclaration<F : AstCallableDeclaration<F>> : AstTypedDeclar
     override val symbol: AstCallableSymbol<F>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitCallableDeclaration(this, data)
-
-    override fun replaceReturnType(newReturnType: AstType)
-
-    fun replaceReceiverType(newReceiverType: AstType?)
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstCallableDeclaration<F>
-
-    override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstCallableDeclaration<F>
-
-    fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstCallableDeclaration<F>
 }

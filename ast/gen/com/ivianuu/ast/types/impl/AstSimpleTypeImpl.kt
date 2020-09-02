@@ -23,13 +23,8 @@ internal class AstSimpleTypeImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstSimpleTypeImpl {
-        transformAnnotations(transformer, data)
-        arguments.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstSimpleTypeImpl {
         annotations.transformInplace(transformer, data)
+        arguments.transformInplace(transformer, data)
         return this
     }
 }

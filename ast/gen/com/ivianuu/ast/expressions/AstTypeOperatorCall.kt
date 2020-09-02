@@ -17,11 +17,5 @@ abstract class AstTypeOperatorCall : AstExpression(), AstCall {
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitTypeOperatorCall(this, data)
 
-    abstract override fun replaceType(newType: AstType)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstTypeOperatorCall
-
-    abstract fun <D> transformConversionType(transformer: AstTransformer<D>, data: D): AstTypeOperatorCall
-
     abstract fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstTypeOperatorCall
 }

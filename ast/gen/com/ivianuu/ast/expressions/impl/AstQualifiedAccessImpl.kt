@@ -27,37 +27,8 @@ internal class AstQualifiedAccessImpl(
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstQualifiedAccessImpl {
         type = type.transformSingle(transformer, data)
-        transformAnnotations(transformer, data)
-        transformTypeArguments(transformer, data)
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstQualifiedAccessImpl {
         annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformTypeArguments(transformer: AstTransformer<D>, data: D): AstQualifiedAccessImpl {
         typeArguments.transformInplace(transformer, data)
         return this
-    }
-
-    override fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstQualifiedAccessImpl {
-        dispatchReceiver = dispatchReceiver?.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformExtensionReceiver(transformer: AstTransformer<D>, data: D): AstQualifiedAccessImpl {
-        extensionReceiver = extensionReceiver?.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
-    }
-
-    override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>) {
-        typeArguments.clear()
-        typeArguments.addAll(newTypeArguments)
     }
 }

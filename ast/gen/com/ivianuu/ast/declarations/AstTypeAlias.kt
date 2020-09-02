@@ -28,10 +28,4 @@ abstract class AstTypeAlias : AstPureAbstractElement(), AstClassLikeDeclaration<
     abstract override val annotations: List<AstFunctionCall>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitTypeAlias(this, data)
-
-    abstract fun replaceExpandedType(newExpandedType: AstType)
-
-    abstract override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstTypeAlias
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstTypeAlias
 }

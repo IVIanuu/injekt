@@ -23,14 +23,7 @@ internal class AstWhenSubjectExpressionImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstWhenSubjectExpressionImpl {
-        transformAnnotations(transformer, data)
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstWhenSubjectExpressionImpl {
         annotations.transformInplace(transformer, data)
         return this
     }
-
-    override fun replaceType(newType: AstType) {}
 }

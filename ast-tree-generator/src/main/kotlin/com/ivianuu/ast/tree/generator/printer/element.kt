@@ -87,34 +87,15 @@ fun SmartPrinter.printElement(element: Element) {
 
             fun Field.replaceDeclaration(
                 override: Boolean,
-                overridenType: Importable? = null,
+                overriddenType: Importable? = null,
                 forceNullable: Boolean = false
             ) {
                 println()
                 abstract()
                 if (override) print("override ")
-                println(replaceFunctionDeclaration(overridenType, forceNullable))
+                println(replaceFunctionDeclaration(overriddenType, forceNullable))
             }
 
-            allFields.filter { it.withReplace }.forEach {
-                it.replaceDeclaration(
-                    overridenFields[it, it],
-                    forceNullable = it.useNullableForReplace
-                )
-                for (overridenType in it.overridenTypes) {
-                    it.replaceDeclaration(true, overridenType)
-                }
-            }
-
-            for (field in allFields) {
-                if (!field.needsSeparateTransform) continue
-                println()
-                abstract()
-                if (field.fromParent) {
-                    print("override ")
-                }
-                println(field.transformFunctionDeclaration(typeWithArguments))
-            }
             if (needTransformOtherChildren) {
                 println()
                 abstract()

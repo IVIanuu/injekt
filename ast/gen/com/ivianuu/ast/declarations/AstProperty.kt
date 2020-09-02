@@ -42,25 +42,5 @@ abstract class AstProperty : AstVariable<AstProperty>(), AstTypeParametersOwner,
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitProperty(this, data)
 
-    abstract override fun replaceReturnType(newReturnType: AstType)
-
-    abstract override fun replaceReceiverType(newReceiverType: AstType?)
-
-    abstract override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstProperty
-
-    abstract override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstProperty
-
-    abstract override fun <D> transformInitializer(transformer: AstTransformer<D>, data: D): AstProperty
-
-    abstract override fun <D> transformDelegate(transformer: AstTransformer<D>, data: D): AstProperty
-
-    abstract override fun <D> transformGetter(transformer: AstTransformer<D>, data: D): AstProperty
-
-    abstract override fun <D> transformSetter(transformer: AstTransformer<D>, data: D): AstProperty
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstProperty
-
-    abstract override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstProperty
-
     abstract override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstProperty
 }

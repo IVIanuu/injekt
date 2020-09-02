@@ -44,50 +44,7 @@ open class AstValueParameterImpl @AstImplementationDetail constructor(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstValueParameterImpl {
-        transformReturnType(transformer, data)
         transformOtherChildren(transformer, data)
         return this
     }
-
-    override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstValueParameterImpl {
-        returnType = returnType.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstValueParameterImpl {
-        return this
-    }
-
-    override fun <D> transformInitializer(transformer: AstTransformer<D>, data: D): AstValueParameterImpl {
-        return this
-    }
-
-    override fun <D> transformDelegate(transformer: AstTransformer<D>, data: D): AstValueParameterImpl {
-        return this
-    }
-
-    override fun <D> transformGetter(transformer: AstTransformer<D>, data: D): AstValueParameterImpl {
-        return this
-    }
-
-    override fun <D> transformSetter(transformer: AstTransformer<D>, data: D): AstValueParameterImpl {
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstValueParameterImpl {
-        annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstValueParameterImpl {
-        transformAnnotations(transformer, data)
-        defaultValue = defaultValue?.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun replaceReturnType(newReturnType: AstType) {
-        returnType = newReturnType
-    }
-
-    override fun replaceReceiverType(newReceiverType: AstType?) {}
 }

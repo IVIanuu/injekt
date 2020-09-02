@@ -22,12 +22,4 @@ interface AstClass<F : AstClass<F>> : AstClassLikeDeclaration<F>, AstStatement {
     override val annotations: List<AstFunctionCall>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitClass(this, data)
-
-    fun replaceSuperTypes(newSuperTypes: List<AstType>)
-
-    fun <D> transformSuperTypes(transformer: AstTransformer<D>, data: D): AstClass<F>
-
-    fun <D> transformDeclarations(transformer: AstTransformer<D>, data: D): AstClass<F>
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstClass<F>
 }

@@ -53,55 +53,12 @@ open class AstNamedFunctionImpl @AstImplementationDetail constructor(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstNamedFunctionImpl {
-        transformReturnType(transformer, data)
-        transformReceiverType(transformer, data)
-        transformValueParameters(transformer, data)
-        transformBody(transformer, data)
-        transformAnnotations(transformer, data)
-        transformTypeParameters(transformer, data)
-        return this
-    }
-
-    override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstNamedFunctionImpl {
         returnType = returnType.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstNamedFunctionImpl {
         receiverType = receiverType?.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformValueParameters(transformer: AstTransformer<D>, data: D): AstNamedFunctionImpl {
         valueParameters.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformBody(transformer: AstTransformer<D>, data: D): AstNamedFunctionImpl {
         body = body?.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstNamedFunctionImpl {
         annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstNamedFunctionImpl {
         typeParameters.transformInplace(transformer, data)
         return this
-    }
-
-    override fun replaceReturnType(newReturnType: AstType) {
-        returnType = newReturnType
-    }
-
-    override fun replaceReceiverType(newReceiverType: AstType?) {
-        receiverType = newReceiverType
-    }
-
-    override fun replaceValueParameters(newValueParameters: List<AstValueParameter>) {
-        valueParameters.clear()
-        valueParameters.addAll(newValueParameters)
     }
 }

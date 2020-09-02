@@ -18,11 +18,5 @@ abstract class AstLoop : AstPureAbstractElement(), AstStatement, AstTargetElemen
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitLoop(this, data)
 
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstLoop
-
-    abstract fun <D> transformBlock(transformer: AstTransformer<D>, data: D): AstLoop
-
-    abstract fun <D> transformCondition(transformer: AstTransformer<D>, data: D): AstLoop
-
     abstract fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstLoop
 }

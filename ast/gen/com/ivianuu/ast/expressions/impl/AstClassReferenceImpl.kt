@@ -23,17 +23,8 @@ internal class AstClassReferenceImpl(
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstClassReferenceImpl {
         type = type.transformSingle(transformer, data)
-        transformAnnotations(transformer, data)
+        annotations.transformInplace(transformer, data)
         classType = classType.transformSingle(transformer, data)
         return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstClassReferenceImpl {
-        annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
     }
 }

@@ -11,21 +11,18 @@ sealed class Field : Importable {
     abstract val name: String
     open val arguments = mutableListOf<Importable>()
     abstract val nullable: Boolean
-    open var withReplace: Boolean = false
     abstract val isAstType: Boolean
 
     var fromParent: Boolean = false
-    open var needsSeparateTransform: Boolean = false
-    open var needTransformInOtherChildren: Boolean = false
 
     open val defaultValueInImplementation: String? get() = null
-    abstract var isMutable: Boolean
+    abstract var mutable: Boolean
     open var isMutableInInterface: Boolean = false
     open val withGetter: Boolean get() = false
     open val customSetter: String? get() = null
     open val fromDelegate: Boolean get() = false
 
-    open val overridenTypes: MutableSet<Importable> = mutableSetOf()
+    open val overriddenTypes: MutableSet<Importable> = mutableSetOf()
     open var useNullableForReplace: Boolean = false
 
     fun copy(): Field = internalCopy().also {
@@ -36,10 +33,8 @@ sealed class Field : Importable {
         if (copy !is FieldWithDefault) {
             copy.arguments.clear()
             copy.arguments.addAll(arguments)
-            copy.needsSeparateTransform = needsSeparateTransform
-            copy.needTransformInOtherChildren = needTransformInOtherChildren
-            copy.isMutable = isMutable
-            copy.overridenTypes += overridenTypes
+            copy.mutable = mutable
+            copy.overriddenTypes += overriddenTypes
             copy.useNullableForReplace = useNullableForReplace
         }
         copy.fromParent = fromParent
@@ -70,18 +65,8 @@ class FieldWithDefault(val origin: Field) : Field() {
     override val name: String get() = origin.name
     override val type: String get() = origin.type
     override val nullable: Boolean get() = origin.nullable
-    override var withReplace: Boolean
-        get() = origin.withReplace
-        set(_) {}
     override val packageName: String? get() = origin.packageName
     override val isAstType: Boolean get() = origin.isAstType
-    override var needsSeparateTransform: Boolean
-        get() = origin.needsSeparateTransform
-        set(_) {}
-
-    override var needTransformInOtherChildren: Boolean
-        get() = origin.needTransformInOtherChildren
-        set(_) {}
 
     override val arguments: MutableList<Importable>
         get() = origin.arguments
@@ -91,14 +76,14 @@ class FieldWithDefault(val origin: Field) : Field() {
 
     override var defaultValueInImplementation: String? = origin.defaultValueInImplementation
     var defaultValueInBuilder: String? = null
-    override var isMutable: Boolean = origin.isMutable
+    override var mutable: Boolean = origin.mutable
     override var isMutableInInterface: Boolean = origin.isMutableInInterface
     override var withGetter: Boolean = false
     override var customSetter: String? = null
     override var fromDelegate: Boolean = false
     var needAcceptAndTransform: Boolean = true
-    override val overridenTypes: MutableSet<Importable>
-        get() = origin.overridenTypes
+    override val overriddenTypes: MutableSet<Importable>
+        get() = origin.overriddenTypes
 
     override var useNullableForReplace: Boolean
         get() = origin.useNullableForReplace
@@ -107,7 +92,7 @@ class FieldWithDefault(val origin: Field) : Field() {
     override fun internalCopy(): Field {
         return FieldWithDefault(origin).also {
             it.defaultValueInImplementation = defaultValueInImplementation
-            it.isMutable = isMutable
+            it.mutable = mutable
             it.withGetter = withGetter
             it.fromDelegate = fromDelegate
             it.needAcceptAndTransform = needAcceptAndTransform
@@ -121,13 +106,11 @@ class SimpleField(
     override val packageName: String?,
     val customType: Importable? = null,
     override val nullable: Boolean,
-    override var withReplace: Boolean
+    override var mutable: Boolean = false
 ) : Field() {
     override val isAstType: Boolean = false
     override val fullQualifiedName: String?
         get() = customType?.fullQualifiedName ?: super.fullQualifiedName
-
-    override var isMutable: Boolean = withReplace
 
     override fun internalCopy(): Field {
         return SimpleField(
@@ -135,8 +118,7 @@ class SimpleField(
             type,
             packageName,
             customType,
-            nullable,
-            withReplace
+            nullable
         )
     }
 
@@ -145,8 +127,7 @@ class SimpleField(
         newType.type,
         newType.packageName,
         customType,
-        nullable,
-        withReplace
+        nullable
     ).also {
         updateFieldsInCopy(it)
     }
@@ -155,8 +136,7 @@ class SimpleField(
 class AstField(
     override val name: String,
     val element: AbstractElement,
-    override val nullable: Boolean,
-    override var withReplace: Boolean
+    override val nullable: Boolean
 ) : Field() {
     init {
         if (element is ElementWithArguments) {
@@ -168,14 +148,13 @@ class AstField(
     override val packageName: String? get() = element.packageName
     override val isAstType: Boolean = true
 
-    override var isMutable: Boolean = true
+    override var mutable: Boolean = true
 
     override fun internalCopy(): Field {
         return AstField(
             name,
             element,
-            nullable,
-            withReplace
+            nullable
         )
     }
 }
@@ -184,8 +163,7 @@ class AstField(
 
 class FieldList(
     override val name: String,
-    val baseType: Importable,
-    override var withReplace: Boolean
+    val baseType: Importable
 ) : Field() {
     override var defaultValueInImplementation: String? = null
     override val packageName: String? get() = baseType.packageName
@@ -195,13 +173,12 @@ class FieldList(
     override val nullable: Boolean
         get() = false
 
-    override var isMutable: Boolean = true
+    override var mutable: Boolean = true
 
     override fun internalCopy(): Field {
         return FieldList(
             name,
-            baseType,
-            withReplace
+            baseType
         )
     }
 

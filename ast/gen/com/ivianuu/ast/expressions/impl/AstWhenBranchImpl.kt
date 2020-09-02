@@ -20,23 +20,7 @@ internal class AstWhenBranchImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstWhenBranchImpl {
-        transformCondition(transformer, data)
-        transformResult(transformer, data)
         transformOtherChildren(transformer, data)
-        return this
-    }
-
-    override fun <D> transformCondition(transformer: AstTransformer<D>, data: D): AstWhenBranchImpl {
-        condition = condition.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformResult(transformer: AstTransformer<D>, data: D): AstWhenBranchImpl {
-        result = result.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstWhenBranchImpl {
         return this
     }
 }

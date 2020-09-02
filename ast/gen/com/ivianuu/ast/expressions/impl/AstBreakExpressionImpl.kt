@@ -24,16 +24,7 @@ internal class AstBreakExpressionImpl(
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstBreakExpressionImpl {
         type = type.transformSingle(transformer, data)
-        transformAnnotations(transformer, data)
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstBreakExpressionImpl {
         annotations.transformInplace(transformer, data)
         return this
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
     }
 }

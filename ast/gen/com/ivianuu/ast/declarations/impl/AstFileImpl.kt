@@ -23,17 +23,7 @@ internal class AstFileImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstFileImpl {
-        transformAnnotations(transformer, data)
-        transformDeclarations(transformer, data)
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstFileImpl {
         annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformDeclarations(transformer: AstTransformer<D>, data: D): AstFileImpl {
         declarations.transformInplace(transformer, data)
         return this
     }

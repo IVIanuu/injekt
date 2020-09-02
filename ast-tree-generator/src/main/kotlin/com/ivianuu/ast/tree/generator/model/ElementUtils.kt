@@ -16,26 +16,23 @@ fun field(
     type: String,
     packageName: String?,
     customType: Importable? = null,
-    nullable: Boolean = false,
-    withReplace: Boolean = false
+    nullable: Boolean = false
 ): Field {
-    return SimpleField(name, type, packageName, customType, nullable, withReplace)
+    return SimpleField(name, type, packageName, customType, nullable)
 }
 
 fun field(
     name: String,
     type: Type,
-    nullable: Boolean = false,
-    withReplace: Boolean = false
+    nullable: Boolean = false
 ): Field {
-    return SimpleField(name, type.typeWithArguments, type.packageName, null, nullable, withReplace)
+    return SimpleField(name, type.typeWithArguments, type.packageName, null, nullable)
 }
 
 fun field(
     name: String,
     typeWithArgs: Pair<Type, List<Importable>>,
-    nullable: Boolean = false,
-    withReplace: Boolean = false
+    nullable: Boolean = false
 ): Field {
     val (type, args) = typeWithArgs
     return SimpleField(
@@ -43,26 +40,24 @@ fun field(
         type.typeWithArguments,
         type.packageName,
         null,
-        nullable,
-        withReplace
+        nullable
     ).apply {
         arguments += args
     }
 }
 
-fun field(type: Type, nullable: Boolean = false, withReplace: Boolean = false): Field {
+fun field(type: Type, nullable: Boolean = false): Field {
     return SimpleField(
         type.type.decapitalize(),
         type.typeWithArguments,
         type.packageName,
         null,
-        nullable,
-        withReplace
+        nullable
     )
 }
 
-fun booleanField(name: String, withReplace: Boolean = false): Field {
-    return field(name, AbstractAstTreeBuilder.boolean, null, withReplace = withReplace)
+fun booleanField(name: String): Field {
+    return field(name, AbstractAstTreeBuilder.boolean, null)
 }
 
 fun stringField(name: String, nullable: Boolean = false): Field {
@@ -79,37 +74,35 @@ fun field(
     name: String,
     type: Type,
     argument: String? = null,
-    nullable: Boolean = false,
-    withReplace: Boolean = false
+    nullable: Boolean = false
 ): Field {
     return if (argument == null) {
-        field(name, type, nullable, withReplace)
+        field(name, type, nullable)
     } else {
-        field(name, type to listOf(type(argument)), nullable, withReplace)
+        field(name, type to listOf(type(argument)), nullable)
     }
 }
 
 fun field(
     name: String,
     element: AbstractElement,
-    nullable: Boolean = false,
-    withReplace: Boolean = false
+    nullable: Boolean = false
 ): Field {
-    return AstField(name, element, nullable, withReplace)
+    return AstField(name, element, nullable)
 }
 
-fun field(element: Element, nullable: Boolean = false, withReplace: Boolean = false): Field {
-    return AstField(element.name.decapitalize(), element, nullable, withReplace)
+fun field(element: Element, nullable: Boolean = false): Field {
+    return AstField(element.name.decapitalize(), element, nullable)
 }
 
 // ----------- Field list -----------
 
-fun fieldList(name: String, type: Importable, withReplace: Boolean = false): Field {
-    return FieldList(name, type, withReplace)
+fun fieldList(name: String, type: Importable): Field {
+    return FieldList(name, type)
 }
 
-fun fieldList(element: Element, withReplace: Boolean = false): Field {
-    return FieldList(element.name.decapitalize() + "s", element, withReplace)
+fun fieldList(element: Element): Field {
+    return FieldList(element.name.decapitalize() + "s", element)
 }
 
 // ----------- Field set -----------
@@ -128,10 +121,3 @@ infix fun FieldSet.with(sets: List<FieldSet>): FieldSet {
 infix fun FieldSet.with(set: FieldSet): FieldSet {
     return this + set
 }
-
-fun Field.withTransform(needTransformInOtherChildren: Boolean = false): Field = copy().apply {
-    needsSeparateTransform = true
-    this.needTransformInOtherChildren = needTransformInOtherChildren
-}
-
-fun FieldSet.withTransform(): FieldSet = this.map { it.withTransform() }

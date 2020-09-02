@@ -24,21 +24,8 @@ internal class AstExplicitSuperReference(
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstExplicitSuperReference {
         type = type.transformSingle(transformer, data)
-        transformAnnotations(transformer, data)
+        annotations.transformInplace(transformer, data)
         superType = superType.transformSingle(transformer, data)
         return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstExplicitSuperReference {
-        annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
-    }
-
-    override fun replaceSuperType(newSuperType: AstType) {
-        superType = newSuperType
     }
 }

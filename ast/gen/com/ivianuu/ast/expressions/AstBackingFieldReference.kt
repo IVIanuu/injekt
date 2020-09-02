@@ -15,8 +15,4 @@ abstract class AstBackingFieldReference : AstExpression() {
     abstract val resolvedSymbol: AstBackingFieldSymbol
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitBackingFieldReference(this, data)
-
-    abstract override fun replaceType(newType: AstType)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstBackingFieldReference
 }

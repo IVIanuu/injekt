@@ -26,17 +26,8 @@ internal class AstEqualityOperatorCallImpl(
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstEqualityOperatorCallImpl {
         type = type.transformSingle(transformer, data)
-        transformAnnotations(transformer, data)
+        annotations.transformInplace(transformer, data)
         valueArguments.transformInplace(transformer, data)
         return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstEqualityOperatorCallImpl {
-        annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
     }
 }

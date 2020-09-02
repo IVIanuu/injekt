@@ -24,17 +24,8 @@ internal class AstThrowExpressionImpl(
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstThrowExpressionImpl {
         type = type.transformSingle(transformer, data)
-        transformAnnotations(transformer, data)
+        annotations.transformInplace(transformer, data)
         exception = exception.transformSingle(transformer, data)
         return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstThrowExpressionImpl {
-        annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
     }
 }

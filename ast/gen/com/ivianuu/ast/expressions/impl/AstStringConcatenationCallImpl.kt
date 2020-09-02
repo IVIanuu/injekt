@@ -23,18 +23,9 @@ internal class AstStringConcatenationCallImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstStringConcatenationCallImpl {
-        transformAnnotations(transformer, data)
+        annotations.transformInplace(transformer, data)
         valueArguments.transformInplace(transformer, data)
         type = type.transformSingle(transformer, data)
         return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstStringConcatenationCallImpl {
-        annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
     }
 }

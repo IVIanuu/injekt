@@ -20,18 +20,16 @@ import com.ivianuu.ast.tree.generator.model.booleanField
 import com.ivianuu.ast.tree.generator.model.field
 import com.ivianuu.ast.tree.generator.model.fieldList
 import com.ivianuu.ast.tree.generator.model.fieldSet
-import com.ivianuu.ast.tree.generator.model.withTransform
 
 object FieldSets {
-    val callee = field("callee", astSymbolType, withReplace = true)
+    val callee = field("callee", astSymbolType)
 
     val receivers = fieldSet(
-        field("dispatchReceiver", expression, nullable = true).withTransform(),
-        field("extensionReceiver", expression, nullable = true).withTransform()
+        field("dispatchReceiver", expression, nullable = true),
+        field("extensionReceiver", expression, nullable = true)
     )
 
-    val typeArguments =
-        fieldList("typeArguments", typeProjection, withReplace = true)
+    val typeArguments = fieldList("typeArguments", typeProjection)
 
     val valueArguments =
         fieldList("valueArguments", expression)
@@ -39,8 +37,7 @@ object FieldSets {
     val declarations = fieldList(declaration)
     val files = fieldList(file)
 
-    val annotations =
-        fieldList("annotations", functionCall).withTransform(needTransformInOtherChildren = true)
+    val annotations = fieldList("annotations", functionCall)
 
     fun symbolWithPackage(
         packageName: String?,
@@ -59,8 +56,7 @@ object FieldSets {
     val returnType =
         field("returnType", type)
 
-    val typeField =
-        field(type, withReplace = true)
+    val typeField = field(type)
 
     fun receiverType(nullable: Boolean = false) = field("receiverType", type, nullable)
 
@@ -72,8 +68,7 @@ object FieldSets {
 
     val initializer = field("initializer", expression, nullable = true)
 
-    fun superTypes(withReplace: Boolean = false) =
-        fieldList("superTypes", type, withReplace)
+    fun superTypes() = fieldList("superTypes", type)
 
     val classKind = field(classKindType)
 

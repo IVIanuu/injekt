@@ -15,8 +15,4 @@ abstract class AstExpression : AstPureAbstractElement(), AstStatement, AstVararg
     abstract override val annotations: List<AstFunctionCall>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitExpression(this, data)
-
-    abstract fun replaceType(newType: AstType)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstExpression
 }

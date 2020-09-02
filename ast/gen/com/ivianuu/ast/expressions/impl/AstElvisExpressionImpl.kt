@@ -26,28 +26,9 @@ internal class AstElvisExpressionImpl(
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstElvisExpressionImpl {
         type = type.transformSingle(transformer, data)
-        transformAnnotations(transformer, data)
-        transformLhs(transformer, data)
-        transformRhs(transformer, data)
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstElvisExpressionImpl {
         annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformLhs(transformer: AstTransformer<D>, data: D): AstElvisExpressionImpl {
         lhs = lhs.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformRhs(transformer: AstTransformer<D>, data: D): AstElvisExpressionImpl {
         rhs = rhs.transformSingle(transformer, data)
         return this
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
     }
 }

@@ -28,40 +28,7 @@ internal class AstTryExpressionImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstTryExpressionImpl {
-        transformTryBlock(transformer, data)
-        transformCatches(transformer, data)
-        transformFinallyBlock(transformer, data)
         transformOtherChildren(transformer, data)
         return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstTryExpressionImpl {
-        annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformTryBlock(transformer: AstTransformer<D>, data: D): AstTryExpressionImpl {
-        tryBlock = tryBlock.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformCatches(transformer: AstTransformer<D>, data: D): AstTryExpressionImpl {
-        catches.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformFinallyBlock(transformer: AstTransformer<D>, data: D): AstTryExpressionImpl {
-        finallyBlock = finallyBlock?.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstTryExpressionImpl {
-        type = type.transformSingle(transformer, data)
-        transformAnnotations(transformer, data)
-        return this
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
     }
 }

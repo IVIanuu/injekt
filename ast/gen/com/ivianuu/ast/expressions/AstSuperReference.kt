@@ -15,10 +15,4 @@ abstract class AstSuperReference : AstExpression() {
     abstract val superType: AstType
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitSuperReference(this, data)
-
-    abstract override fun replaceType(newType: AstType)
-
-    abstract fun replaceSuperType(newSuperType: AstType)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstSuperReference
 }

@@ -167,17 +167,17 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
                 withIndent {
                     for (field in allFields) {
                         when {
-                            !field.isMutable || !field.isAstType || field.withGetter || !field.needAcceptAndTransform -> {
+                            !field.mutable || !field.isAstType || field.withGetter || !field.needAcceptAndTransform -> {
                             }
 
                             field.name == "explicitReceiver" -> {
                                 val explicitReceiver = implementation["explicitReceiver"]!!
                                 val dispatchReceiver = implementation["dispatchReceiver"]!!
                                 val extensionReceiver = implementation["extensionReceiver"]!!
-                                if (explicitReceiver.isMutable) {
+                                if (explicitReceiver.mutable) {
                                     println("explicitReceiver = explicitReceiver${explicitReceiver.call()}transformSingle(transformer, data)")
                                 }
-                                if (dispatchReceiver.isMutable) {
+                                if (dispatchReceiver.mutable) {
                                     println(
                                         """
                                     |if (dispatchReceiver !== explicitReceiver) {
@@ -186,7 +186,7 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
                                 """.trimMargin(),
                                     )
                                 }
-                                if (extensionReceiver.isMutable) {
+                                if (extensionReceiver.mutable) {
                                     println(
                                         """
                                     |if (extensionReceiver !== explicitReceiver && extensionReceiver !== dispatchReceiver) {
@@ -202,12 +202,6 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
 
                             field.name == "companionObject" -> {
                                 println("companionObject = declarations.asSequence().filterIsInstance<AstRegularClass>().firstOrNull { it.isCompanion }")
-                            }
-
-                            field.needsSeparateTransform -> {
-                                if (!(element.needTransformOtherChildren && field.needTransformInOtherChildren)) {
-                                    println("transform${field.name.capitalize()}(transformer, data)")
-                                }
                             }
 
                             !element.needTransformOtherChildren -> {
@@ -228,78 +222,21 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
                 println()
             }
 
-            for (field in allFields) {
-                if (!field.needsSeparateTransform) continue
-                println()
-                abstract()
-                print("override ${field.transformFunctionDeclaration(typeWithArguments)}")
-                if (isInterface || isAbstract) {
-                    println()
-                    continue
-                }
-                println(" {")
-                withIndent {
-                    if (field.isMutable && field.isAstType) {
-                        // TODO: replace with smth normal
-                        if (type == "AstWhenExpressionImpl" && field.name == "subject") {
-                            println(
-                                """
-                                |if (subjectVariable != null) {
-                                |            subjectVariable = subjectVariable?.transformSingle(transformer, data)
-                                |            subject = subjectVariable?.initializer
-                                |        } else {
-                                |            subject = subject?.transformSingle(transformer, data)
-                                |        }
-                                    """.trimMargin(),
-                            )
-                        } else {
-                            field.transform()
-                        }
-                    }
-                    println("return this")
-                }
-                println("}")
-            }
-
-            if (element.needTransformOtherChildren) {
-                println()
-                abstract()
-                print("override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): $typeWithArguments")
-                if (isInterface || isAbstract) {
-                    println()
-                } else {
-                    println(" {")
-                    withIndent {
-                        for (field in allFields) {
-                            if (!field.isMutable || !field.isAstType || field.name == "subjectVariable") continue
-                            if (!field.needsSeparateTransform) {
-                                field.transform()
-                            }
-                            if (field.needTransformInOtherChildren) {
-                                println("transform${field.name.capitalize()}(transformer, data)")
-                            }
-                        }
-                        println("return this")
-                    }
-                    println("}")
-                }
-            }
-
             fun generateReplace(
                 field: Field,
-                overridenType: Importable? = null,
+                overriddenType: Importable? = null,
                 forceNullable: Boolean = false,
                 body: () -> Unit,
             ) {
                 println()
                 abstract()
-                print("override ${field.replaceFunctionDeclaration(overridenType, forceNullable)}")
+                print("override ${field.replaceFunctionDeclaration(overriddenType, forceNullable)}")
                 if (isInterface || isAbstract) {
                     println()
                     return
                 }
                 print(" {")
-                if (!field.isMutable) {
+                if (!field.mutable) {
                     println("}")
                     return
                 }
@@ -308,36 +245,6 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
                     body()
                 }
                 println("}")
-            }
-
-            for (field in allFields.filter { it.withReplace }) {
-                val capitalizedFieldName = field.name.capitalize()
-                val newValue = "new$capitalizedFieldName"
-                generateReplace(field, forceNullable = field.useNullableForReplace) {
-                    when {
-                        field.withGetter -> {
-                        }
-
-                        field.origin is FieldList -> {
-                            println("${field.name}.clear()")
-                            println("${field.name}.addAll($newValue)")
-                        }
-
-                        else -> {
-                            if (field.useNullableForReplace) {
-                                println("require($newValue != null)")
-                            }
-                            println("${field.name} = $newValue")
-                        }
-                    }
-                }
-
-                for (overridenType in field.overridenTypes) {
-                    generateReplace(field, overridenType) {
-                        println("require($newValue is ${field.typeWithArguments})")
-                        println("replace$capitalizedFieldName($newValue)")
-                    }
-                }
             }
         }
         println("}")

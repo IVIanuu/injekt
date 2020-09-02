@@ -16,6 +16,4 @@ abstract class AstSimpleType : AstType() {
     abstract val arguments: List<AstTypeProjection>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitSimpleType(this, data)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstSimpleType
 }

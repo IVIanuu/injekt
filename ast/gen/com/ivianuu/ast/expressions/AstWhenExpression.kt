@@ -19,15 +19,5 @@ abstract class AstWhenExpression : AstExpression() {
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitWhenExpression(this, data)
 
-    abstract override fun replaceType(newType: AstType)
-
-    abstract fun replaceIsExhaustive(newIsExhaustive: Boolean)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstWhenExpression
-
-    abstract fun <D> transformSubject(transformer: AstTransformer<D>, data: D): AstWhenExpression
-
-    abstract fun <D> transformBranches(transformer: AstTransformer<D>, data: D): AstWhenExpression
-
     abstract fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstWhenExpression
 }

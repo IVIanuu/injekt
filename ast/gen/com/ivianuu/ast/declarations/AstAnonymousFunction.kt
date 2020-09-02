@@ -26,22 +26,4 @@ abstract class AstAnonymousFunction : AstFunction<AstAnonymousFunction>, AstExpr
     abstract val label: AstLabel?
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitAnonymousFunction(this, data)
-
-    abstract override fun replaceReturnType(newReturnType: AstType)
-
-    abstract override fun replaceReceiverType(newReceiverType: AstType?)
-
-    abstract override fun replaceValueParameters(newValueParameters: List<AstValueParameter>)
-
-    abstract override fun replaceType(newType: AstType)
-
-    abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstAnonymousFunction
-
-    abstract override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstAnonymousFunction
-
-    abstract override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstAnonymousFunction
-
-    abstract override fun <D> transformValueParameters(transformer: AstTransformer<D>, data: D): AstAnonymousFunction
-
-    abstract override fun <D> transformBody(transformer: AstTransformer<D>, data: D): AstAnonymousFunction
 }

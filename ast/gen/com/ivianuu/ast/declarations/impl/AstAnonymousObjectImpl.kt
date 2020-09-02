@@ -34,34 +34,10 @@ internal class AstAnonymousObjectImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstAnonymousObjectImpl {
-        transformSuperTypes(transformer, data)
-        transformDeclarations(transformer, data)
-        transformAnnotations(transformer, data)
+        superTypes.transformInplace(transformer, data)
+        declarations.transformInplace(transformer, data)
+        annotations.transformInplace(transformer, data)
         type = type.transformSingle(transformer, data)
         return this
-    }
-
-    override fun <D> transformSuperTypes(transformer: AstTransformer<D>, data: D): AstAnonymousObjectImpl {
-        superTypes.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformDeclarations(transformer: AstTransformer<D>, data: D): AstAnonymousObjectImpl {
-        declarations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstAnonymousObjectImpl {
-        annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun replaceSuperTypes(newSuperTypes: List<AstType>) {
-        superTypes.clear()
-        superTypes.addAll(newSuperTypes)
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
     }
 }

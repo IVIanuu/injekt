@@ -38,23 +38,9 @@ internal class AstTypeAliasImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstTypeAliasImpl {
-        transformTypeParameters(transformer, data)
-        expandedType = expandedType.transformSingle(transformer, data)
-        transformAnnotations(transformer, data)
-        return this
-    }
-
-    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstTypeAliasImpl {
         typeParameters.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstTypeAliasImpl {
+        expandedType = expandedType.transformSingle(transformer, data)
         annotations.transformInplace(transformer, data)
         return this
-    }
-
-    override fun replaceExpandedType(newExpandedType: AstType) {
-        expandedType = newExpandedType
     }
 }

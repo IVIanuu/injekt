@@ -24,16 +24,7 @@ internal class AstContinueExpressionImpl(
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstContinueExpressionImpl {
         type = type.transformSingle(transformer, data)
-        transformAnnotations(transformer, data)
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstContinueExpressionImpl {
         annotations.transformInplace(transformer, data)
         return this
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
     }
 }

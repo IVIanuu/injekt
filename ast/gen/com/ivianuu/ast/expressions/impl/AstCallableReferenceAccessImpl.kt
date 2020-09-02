@@ -19,8 +19,8 @@ internal class AstCallableReferenceAccessImpl(
     override val typeArguments: MutableList<AstTypeProjection>,
     override var dispatchReceiver: AstExpression?,
     override var extensionReceiver: AstExpression?,
-    override var callee: AstCallableSymbol<*>,
-    override var hasQuestionMarkAtLHS: Boolean,
+    override val callee: AstCallableSymbol<*>,
+    override val hasQuestionMarkAtLHS: Boolean,
 ) : AstCallableReferenceAccess() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         type.accept(visitor, data)
@@ -30,49 +30,8 @@ internal class AstCallableReferenceAccessImpl(
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstCallableReferenceAccessImpl {
         type = type.transformSingle(transformer, data)
-        transformAnnotations(transformer, data)
-        transformTypeArguments(transformer, data)
-        return this
-    }
-
-    override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstCallableReferenceAccessImpl {
         annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformTypeArguments(transformer: AstTransformer<D>, data: D): AstCallableReferenceAccessImpl {
         typeArguments.transformInplace(transformer, data)
         return this
-    }
-
-    override fun <D> transformDispatchReceiver(transformer: AstTransformer<D>, data: D): AstCallableReferenceAccessImpl {
-        dispatchReceiver = dispatchReceiver?.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformExtensionReceiver(transformer: AstTransformer<D>, data: D): AstCallableReferenceAccessImpl {
-        extensionReceiver = extensionReceiver?.transformSingle(transformer, data)
-        return this
-    }
-
-    override fun <D> transformCallee(transformer: AstTransformer<D>, data: D): AstCallableReferenceAccessImpl {
-        return this
-    }
-
-    override fun replaceType(newType: AstType) {
-        type = newType
-    }
-
-    override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>) {
-        typeArguments.clear()
-        typeArguments.addAll(newTypeArguments)
-    }
-
-    override fun replaceCallee(newCallee: AstCallableSymbol<*>) {
-        callee = newCallee
-    }
-
-    override fun replaceHasQuestionMarkAtLHS(newHasQuestionMarkAtLHS: Boolean) {
-        hasQuestionMarkAtLHS = newHasQuestionMarkAtLHS
     }
 }
