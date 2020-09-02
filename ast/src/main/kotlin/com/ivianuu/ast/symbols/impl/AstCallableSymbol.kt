@@ -16,16 +16,4 @@ abstract class AstCallableSymbol<D : AstCallableDeclaration<D>> : AbstractAstSym
     open val overriddenSymbol: AstCallableSymbol<D>?
         get() = null
 
-    open val isIntersectionOverride: Boolean get() = false
-}
-
-val AstCallableSymbol<*>.isStatic: Boolean get() = (ast as? AstMemberDeclaration)?.status?.isStatic == true
-
-inline fun <reified E : AstCallableSymbol<*>> E.unwrapSubstitutionOverrides(): E {
-    var current = this
-    while (current.overriddenSymbol != null) {
-        current = current.overriddenSymbol as E
-    }
-
-    return current
 }

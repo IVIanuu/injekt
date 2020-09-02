@@ -18,13 +18,9 @@ sealed class AstFunctionSymbol<D : AstFunction<D>>(
         get() = emptyList()
 }
 
-// ------------------------ named ------------------------
-
 open class AstNamedFunctionSymbol(
     callableId: CallableId,
-    // Actual for fake override only
-    override val overriddenSymbol: AstNamedFunctionSymbol? = null,
-    override val isIntersectionOverride: Boolean = false,
+    override val overriddenSymbol: AstNamedFunctionSymbol? = null
 ) : AstFunctionSymbol<AstSimpleFunction>(callableId)
 
 class AstConstructorSymbol(
@@ -36,8 +32,6 @@ open class AstAccessorSymbol(
     callableId: CallableId,
     override val accessorId: CallableId
 ) : AstPropertySymbol(callableId), AccessorSymbol
-
-// ------------------------ unnamed ------------------------
 
 sealed class AstFunctionWithoutNameSymbol<F : AstFunction<F>>(
     stubName: Name

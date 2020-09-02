@@ -5,10 +5,10 @@ import com.ivianuu.ast.declarations.AstClass
 import com.ivianuu.ast.declarations.AstModuleFragment
 import com.ivianuu.ast.declarations.AstRegularClass
 import com.ivianuu.ast.declarations.builder.buildFile
-import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.extension.AstGenerationExtension
-import com.ivianuu.ast.visitors.AstDefaultTransformer
-import com.ivianuu.ast.visitors.AstDefaultVisitorVoid
+import com.ivianuu.ast.visitors.AstTransformer
+import com.ivianuu.ast.visitors.AstTransformerVoid
+import com.ivianuu.ast.visitors.AstVisitorVoid
 import com.ivianuu.ast.visitors.CompositeTransformResult
 import com.ivianuu.ast.visitors.compose
 import com.ivianuu.injekt.compiler.asNameId
@@ -253,9 +253,9 @@ class AstTest {
                                 ) {
                                     moduleFragment.files.toList().forEach { file ->
                                         file.transformChildren(
-                                            object : AstDefaultTransformer<Nothing?> {
+                                            object : AstVisitorVoid() {
                                                 override fun visitElement(element: AstElement) {
-                                                    element.accept(this)
+                                                    element.acceptChildren(this)
                                                 }
 
                                                 override fun visitRegularClass(regularClass: AstRegularClass) {
