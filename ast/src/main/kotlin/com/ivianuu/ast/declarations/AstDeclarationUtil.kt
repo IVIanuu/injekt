@@ -5,11 +5,9 @@
 
 package com.ivianuu.ast.declarations
 
-import com.ivianuu.ast.Visibilities
-import com.ivianuu.ast.declarations.builder.AstRegularClassBuilder
 import com.ivianuu.ast.declarations.impl.AstFileImpl
+import com.ivianuu.ast.declarations.impl.AstModuleFragmentImpl
 import com.ivianuu.ast.declarations.impl.AstRegularClassImpl
-import com.ivianuu.ast.symbols.impl.AstClassSymbol
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.types.AstSimpleType
 import com.ivianuu.ast.types.AstType
@@ -26,6 +24,14 @@ fun AstRegularClass.addDeclaration(declaration: AstDeclaration) {
     @Suppress("LiftReturnOrAssignment")
     when (this) {
         is AstRegularClassImpl -> declarations += declaration
+        else -> throw IllegalStateException()
+    }
+}
+
+fun AstModuleFragment.addFile(file: AstFile) {
+    @Suppress("LiftReturnOrAssignment")
+    when (this) {
+        is AstModuleFragmentImpl -> files += file
         else -> throw IllegalStateException()
     }
 }

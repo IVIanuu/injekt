@@ -31,14 +31,11 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             parents += classBuilder
             parents += typeParametersOwnerBuilder
             default("classKind", "ClassKind.CLASS")
-            defaultFalse("isExpect")
-            defaultFalse("isActual")
             defaultFalse("isInline")
             defaultFalse("isCompanion")
             defaultFalse("isFun")
             defaultFalse("isData")
             defaultFalse("isInner")
-            defaultFalse("isExternal")
             openBuilder()
         }
 
@@ -90,8 +87,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
 
         builder(typeAlias) {
             parents += typeParametersOwnerBuilder
-            defaultFalse("isExpect")
-            defaultFalse("isActual")
         }
 
         builder(callableReferenceAccess) {
@@ -136,8 +131,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             defaultNull("getter", "setter")
             defaultFalse("isVar")
             defaultFalse("isLocal")
-            defaultFalse("isExpect")
-            defaultFalse("isActual")
             defaultFalse("isConst")
             defaultFalse("isLateinit")
             defaultFalse("isInline")
@@ -209,9 +202,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             parents += functionBuilder
             parents += typeParametersOwnerBuilder
             defaultNull("body")
-            defaultFalse("isExpect")
-            defaultFalse("isActual")
-            defaultFalse("isExternal")
             defaultFalse("isSuspend")
             defaultFalse("isOperator")
             defaultFalse("isInfix")
@@ -242,6 +232,15 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         }
         configureFieldInAllLeafBuilders(field = "modality") {
             default("modality", "Modality.FINAL")
+        }
+        configureFieldInAllLeafBuilders(field = "isExpect") {
+            defaultFalse(it)
+        }
+        configureFieldInAllLeafBuilders(field = "isActual") {
+            defaultFalse(it)
+        }
+        configureFieldInAllLeafBuilders(field = "isExternal") {
+            defaultFalse(it)
         }
     }
 

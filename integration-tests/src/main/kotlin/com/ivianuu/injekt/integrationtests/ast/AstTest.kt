@@ -4,10 +4,14 @@ import com.ivianuu.ast.AstElement
 import com.ivianuu.ast.declarations.AstClass
 import com.ivianuu.ast.declarations.AstModuleFragment
 import com.ivianuu.ast.declarations.AstRegularClass
+import com.ivianuu.ast.declarations.addFile
 import com.ivianuu.ast.declarations.builder.buildFile
+import com.ivianuu.ast.declarations.builder.buildRegularClass
+import com.ivianuu.ast.declarations.classId
 import com.ivianuu.ast.extension.AstGenerationExtension
+import com.ivianuu.ast.extension.AstGeneratorContext
+import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstTransformerVoid
 import com.ivianuu.ast.visitors.AstVisitorVoid
 import com.ivianuu.ast.visitors.CompositeTransformResult
 import com.ivianuu.ast.visitors.compose
@@ -19,6 +23,7 @@ import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.ExtensionPoint
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.name.ClassId
 import org.junit.Test
 
 class AstTest {
@@ -252,7 +257,7 @@ class AstTest {
                                     context: AstGeneratorContext
                                 ) {
                                     moduleFragment.files.toList().forEach { file ->
-                                        file.transformChildren(
+                                        file.accept(
                                             object : AstVisitorVoid() {
                                                 override fun visitElement(element: AstElement) {
                                                     element.acceptChildren(this)
@@ -260,15 +265,25 @@ class AstTest {
 
                                                 override fun visitRegularClass(regularClass: AstRegularClass) {
                                                     super.visitRegularClass(regularClass)
-                                                    moduleFragment.files += buildFile {
-                                                        packageFqName = file.packageFqName
-                                                        name = (regularClass.name.asString()
-                                                            .removeIllegalChars() + "Context.kt").asNameId()
-                                                        declarations += AstClass(
+                                                    moduleFragment.addFile(
+                                                        buildFile {
+                                                            packageFqName = file.packageFqName
                                                             name = (regularClass.name.asString()
-                                                                .removeIllegalChars() + "Context").asNameId()
-                                                        )
-                                                    }
+                                                                .removeIllegalChars() + "Context.kt")
+                                                            declarations += buildRegularClass {
+                                                                symbol = AstRegularClassSymbol(
+                                                                    ClassId.topLevel(
+                                                                        regularClass
+                                                                            .classId
+                                                                            .asSingleFqName()
+                                                                            .parent()
+                                                                            .child("${regularClass.name}Context".asNameId())
+                                                                    )
+                                                                )
+                                                                name = symbol.classId.shortClassName
+                                                            }
+                                                        }
+                                                    )
                                                 }
                                             },
                                             null
