@@ -1,7 +1,7 @@
 package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstPureAbstractElement
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -13,12 +13,12 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstRegularClass : AstPureAbstractElement(), AstMemberDeclaration, AstTypeParameterRefsOwner, AstClass<AstRegularClass> {
+abstract class AstRegularClass : AstPureAbstractElement(), AstMemberDeclaration, AstTypeParametersOwner, AstClass<AstRegularClass> {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
-    abstract override val annotations: List<AstCall>
-    abstract override val typeParameters: List<AstTypeParameterRef>
+    abstract override val annotations: List<AstFunctionCall>
     abstract override val status: AstDeclarationStatus
+    abstract override val typeParameters: List<AstTypeParameter>
     abstract override val classKind: ClassKind
     abstract override val declarations: List<AstDeclaration>
     abstract val name: Name
@@ -33,9 +33,9 @@ abstract class AstRegularClass : AstPureAbstractElement(), AstMemberDeclaration,
 
     abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstRegularClass
 
-    abstract override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstRegularClass
-
     abstract override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstRegularClass
+
+    abstract override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstRegularClass
 
     abstract override fun <D> transformDeclarations(transformer: AstTransformer<D>, data: D): AstRegularClass
 

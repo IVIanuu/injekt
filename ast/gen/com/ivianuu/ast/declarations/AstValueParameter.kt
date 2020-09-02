@@ -1,8 +1,7 @@
 package com.ivianuu.ast.declarations
 
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
-import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
@@ -22,12 +21,11 @@ abstract class AstValueParameter : AstVariable<AstValueParameter>() {
     abstract override val symbol: AstVariableSymbol<AstValueParameter>
     abstract override val initializer: AstExpression?
     abstract override val delegate: AstExpression?
-    abstract override val delegateFieldSymbol: AstDelegateFieldSymbol<AstValueParameter>?
     abstract override val isVar: Boolean
     abstract override val isVal: Boolean
     abstract override val getter: AstPropertyAccessor?
     abstract override val setter: AstPropertyAccessor?
-    abstract override val annotations: List<AstCall>
+    abstract override val annotations: List<AstFunctionCall>
     abstract val defaultValue: AstExpression?
     abstract val isCrossinline: Boolean
     abstract val isNoinline: Boolean

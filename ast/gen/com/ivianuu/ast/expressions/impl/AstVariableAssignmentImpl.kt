@@ -1,9 +1,8 @@
 package com.ivianuu.ast.expressions.impl
 
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstVariableAssignment
-import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.visitors.*
 
@@ -13,36 +12,25 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstVariableAssignmentImpl(
-    override var calleeReference: AstReference,
-    override val annotations: MutableList<AstCall>,
+    override val annotations: MutableList<AstFunctionCall>,
     override val typeArguments: MutableList<AstTypeProjection>,
     override var dispatchReceiver: AstExpression?,
     override var extensionReceiver: AstExpression?,
-    override var rValue: AstExpression,
+    override var left: AstExpression,
+    override var right: AstExpression,
 ) : AstVariableAssignment() {
-    override var lValue: AstReference 
-        get() = calleeReference
-        set(value) {
-            calleeReference = value
-        }
-
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        calleeReference.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
         typeArguments.forEach { it.accept(visitor, data) }
-        rValue.accept(visitor, data)
+        left.accept(visitor, data)
+        right.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstVariableAssignmentImpl {
-        transformCalleeReference(transformer, data)
         transformAnnotations(transformer, data)
         transformTypeArguments(transformer, data)
-        transformRValue(transformer, data)
-        return this
-    }
-
-    override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstVariableAssignmentImpl {
-        calleeReference = calleeReference.transformSingle(transformer, data)
+        left = left.transformSingle(transformer, data)
+        transformRight(transformer, data)
         return this
     }
 
@@ -66,13 +54,9 @@ internal class AstVariableAssignmentImpl(
         return this
     }
 
-    override fun <D> transformRValue(transformer: AstTransformer<D>, data: D): AstVariableAssignmentImpl {
-        rValue = rValue.transformSingle(transformer, data)
+    override fun <D> transformRight(transformer: AstTransformer<D>, data: D): AstVariableAssignmentImpl {
+        right = right.transformSingle(transformer, data)
         return this
-    }
-
-    override fun replaceCalleeReference(newCalleeReference: AstReference) {
-        calleeReference = newCalleeReference
     }
 
     override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>) {

@@ -9,7 +9,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstAssignmentOperatorStatement : AstPureAbstractElement(), AstStatement {
-    abstract override val annotations: List<AstCall>
+    abstract override val annotations: List<AstFunctionCall>
     abstract val operation: AstOperation
     abstract val leftArgument: AstExpression
     abstract val rightArgument: AstExpression

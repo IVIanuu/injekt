@@ -10,11 +10,9 @@ import com.ivianuu.ast.tree.generator.AstTreeBuilder.call
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.declaration
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.declarationStatus
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.expression
-import com.ivianuu.ast.tree.generator.AstTreeBuilder.field
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.file
-import com.ivianuu.ast.tree.generator.AstTreeBuilder.reference
+import com.ivianuu.ast.tree.generator.AstTreeBuilder.functionCall
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.typeParameter
-import com.ivianuu.ast.tree.generator.AstTreeBuilder.typeParameterRef
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.typeProjection
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.type
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.valueParameter
@@ -26,7 +24,7 @@ import com.ivianuu.ast.tree.generator.model.fieldSet
 import com.ivianuu.ast.tree.generator.model.withTransform
 
 object FieldSets {
-    val calleeReference = field("calleeReference", reference, withReplace = true)
+    val callee = field("callee", astSymbolType, withReplace = true)
 
     val receivers = fieldSet(
         field("dispatchReceiver", expression, nullable = true).withTransform(),
@@ -36,14 +34,14 @@ object FieldSets {
     val typeArguments =
         fieldList("typeArguments", typeProjection, withReplace = true)
 
-    val arguments =
-        fieldList("arguments", expression)
+    val valueArguments =
+        fieldList("valueArguments", expression)
 
     val declarations = fieldList(declaration)
     val files = fieldList(file)
 
     val annotations =
-        fieldList("annotations", call).withTransform(needTransformInOtherChildren = true)
+        fieldList("annotations", functionCall).withTransform(needTransformInOtherChildren = true)
 
     fun symbolWithPackage(
         packageName: String?,
@@ -70,8 +68,6 @@ object FieldSets {
     val valueParameters = fieldList(valueParameter)
 
     val typeParameters = fieldList("typeParameters", typeParameter)
-
-    val typeParameterRefs = fieldList("typeParameters", typeParameterRef)
 
     val name = field(nameType)
 

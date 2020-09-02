@@ -1,7 +1,7 @@
 package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstPureAbstractElement
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstTypeAliasSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
@@ -20,7 +20,7 @@ abstract class AstTypeAlias : AstPureAbstractElement(), AstClassLikeDeclaration<
     abstract val name: Name
     abstract override val symbol: AstTypeAliasSymbol
     abstract val expandedType: AstType
-    abstract override val annotations: List<AstCall>
+    abstract override val annotations: List<AstFunctionCall>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitTypeAlias(this, data)
 

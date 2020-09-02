@@ -13,7 +13,7 @@ import com.ivianuu.ast.declarations.builder.AstFunctionBuilder
 import com.ivianuu.ast.declarations.builder.AstTypeParametersOwnerBuilder
 import com.ivianuu.ast.declarations.impl.AstSimpleFunctionImpl
 import com.ivianuu.ast.expressions.AstBlock
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -35,7 +35,7 @@ open class AstSimpleFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwner
     open lateinit var status: AstDeclarationStatus
     open lateinit var name: Name
     open lateinit var symbol: AstFunctionSymbol<AstSimpleFunction>
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
 
     @OptIn(AstImplementationDetail::class)

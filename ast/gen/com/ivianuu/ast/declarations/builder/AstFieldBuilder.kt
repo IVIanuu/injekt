@@ -9,9 +9,8 @@ import com.ivianuu.ast.declarations.AstField
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.impl.AstFieldImpl
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
-import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -30,7 +29,7 @@ open class AstFieldBuilder : AstAnnotationContainerBuilder {
     open lateinit var name: Name
     open lateinit var symbol: AstVariableSymbol<AstField>
     open var isVar: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     open val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
     open lateinit var status: AstDeclarationStatus
 

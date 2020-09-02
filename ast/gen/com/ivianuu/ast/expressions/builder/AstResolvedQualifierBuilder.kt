@@ -2,7 +2,7 @@ package com.ivianuu.ast.expressions.builder
 
 import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstResolvedQualifier
 import com.ivianuu.ast.expressions.builder.AstAbstractResolvedQualifierBuilder
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
@@ -23,7 +23,7 @@ import org.jetbrains.kotlin.name.FqName
 @AstBuilderDsl
 class AstResolvedQualifierBuilder : AstAbstractResolvedQualifierBuilder, AstAnnotationContainerBuilder, AstExpressionBuilder {
     override lateinit var type: AstType
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var packageFqName: FqName
     override var relativeClassFqName: FqName? = null
     override var symbol: AstClassLikeSymbol<*>? = null

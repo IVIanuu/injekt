@@ -1,6 +1,6 @@
 package com.ivianuu.ast.expressions.impl
 
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstResolvedQualifier
 import com.ivianuu.ast.symbols.impl.AstClassLikeSymbol
 import com.ivianuu.ast.types.AstType
@@ -16,7 +16,7 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstResolvedQualifierImpl(
     override var type: AstType,
-    override val annotations: MutableList<AstCall>,
+    override val annotations: MutableList<AstFunctionCall>,
     override var packageFqName: FqName,
     override var relativeClassFqName: FqName?,
     override val symbol: AstClassLikeSymbol<*>?,

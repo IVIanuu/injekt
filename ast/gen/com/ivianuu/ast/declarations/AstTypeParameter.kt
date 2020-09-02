@@ -2,7 +2,7 @@ package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.AstSymbolOwner
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstTypeParameterSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
@@ -14,7 +14,7 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstTypeParameter : AstPureAbstractElement(), AstTypeParameterRef, AstAnnotatedDeclaration, AstSymbolOwner<AstTypeParameter> {
+abstract class AstTypeParameter : AstPureAbstractElement(), AstAnnotatedDeclaration, AstSymbolOwner<AstTypeParameter> {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
     abstract val name: Name
@@ -22,7 +22,7 @@ abstract class AstTypeParameter : AstPureAbstractElement(), AstTypeParameterRef,
     abstract val variance: Variance
     abstract val isReified: Boolean
     abstract val bounds: List<AstType>
-    abstract override val annotations: List<AstCall>
+    abstract override val annotations: List<AstFunctionCall>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitTypeParameter(this, data)
 

@@ -1,9 +1,8 @@
 package com.ivianuu.ast.expressions.impl
 
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstElvisExpression
 import com.ivianuu.ast.expressions.AstExpression
-import com.ivianuu.ast.references.AstReference
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -14,15 +13,13 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstElvisExpressionImpl(
     override var type: AstType,
-    override val annotations: MutableList<AstCall>,
-    override var calleeReference: AstReference,
+    override val annotations: MutableList<AstFunctionCall>,
     override var lhs: AstExpression,
     override var rhs: AstExpression,
 ) : AstElvisExpression() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
-        calleeReference.accept(visitor, data)
         lhs.accept(visitor, data)
         rhs.accept(visitor, data)
     }
@@ -30,7 +27,6 @@ internal class AstElvisExpressionImpl(
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstElvisExpressionImpl {
         type = type.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
-        transformCalleeReference(transformer, data)
         transformLhs(transformer, data)
         transformRhs(transformer, data)
         return this
@@ -38,11 +34,6 @@ internal class AstElvisExpressionImpl(
 
     override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstElvisExpressionImpl {
         annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstElvisExpressionImpl {
-        calleeReference = calleeReference.transformSingle(transformer, data)
         return this
     }
 
@@ -58,9 +49,5 @@ internal class AstElvisExpressionImpl(
 
     override fun replaceType(newType: AstType) {
         type = newType
-    }
-
-    override fun replaceCalleeReference(newCalleeReference: AstReference) {
-        calleeReference = newCalleeReference
     }
 }

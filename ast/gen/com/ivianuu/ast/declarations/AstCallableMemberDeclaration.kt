@@ -1,6 +1,6 @@
 package com.ivianuu.ast.declarations
 
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstCallableSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -13,11 +13,10 @@ import com.ivianuu.ast.visitors.*
 interface AstCallableMemberDeclaration<F : AstCallableMemberDeclaration<F>> : AstCallableDeclaration<F>, AstMemberDeclaration {
     override val origin: AstDeclarationOrigin
     override val attributes: AstDeclarationAttributes
-    override val annotations: List<AstCall>
+    override val annotations: List<AstFunctionCall>
     override val returnType: AstType
     override val receiverType: AstType?
     override val symbol: AstCallableSymbol<F>
-    override val typeParameters: List<AstTypeParameterRef>
     override val status: AstDeclarationStatus
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitCallableMemberDeclaration(this, data)
@@ -31,8 +30,6 @@ interface AstCallableMemberDeclaration<F : AstCallableMemberDeclaration<F>> : As
     override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstCallableMemberDeclaration<F>
 
     override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstCallableMemberDeclaration<F>
-
-    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstCallableMemberDeclaration<F>
 
     override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstCallableMemberDeclaration<F>
 }

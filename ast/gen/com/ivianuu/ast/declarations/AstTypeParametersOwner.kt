@@ -1,5 +1,6 @@
 package com.ivianuu.ast.declarations
 
+import com.ivianuu.ast.AstElement
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -7,10 +8,10 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-interface AstTypeParametersOwner : AstTypeParameterRefsOwner {
-    override val typeParameters: List<AstTypeParameter>
+interface AstTypeParametersOwner : AstElement {
+    val typeParameters: List<AstTypeParameter>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitTypeParametersOwner(this, data)
 
-    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstTypeParametersOwner
+    fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstTypeParametersOwner
 }

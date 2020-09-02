@@ -1,7 +1,7 @@
 package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstAnnotationContainer
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -12,7 +12,7 @@ import com.ivianuu.ast.visitors.*
 interface AstAnnotatedDeclaration : AstDeclaration, AstAnnotationContainer {
     override val origin: AstDeclarationOrigin
     override val attributes: AstDeclarationAttributes
-    override val annotations: List<AstCall>
+    override val annotations: List<AstFunctionCall>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitAnnotatedDeclaration(this, data)
 

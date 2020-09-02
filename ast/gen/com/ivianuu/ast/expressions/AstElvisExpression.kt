@@ -1,6 +1,5 @@
 package com.ivianuu.ast.expressions
 
-import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -9,10 +8,9 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstElvisExpression : AstExpression(), AstResolvable {
+abstract class AstElvisExpression : AstExpression() {
     abstract override val type: AstType
-    abstract override val annotations: List<AstCall>
-    abstract override val calleeReference: AstReference
+    abstract override val annotations: List<AstFunctionCall>
     abstract val lhs: AstExpression
     abstract val rhs: AstExpression
 
@@ -20,11 +18,7 @@ abstract class AstElvisExpression : AstExpression(), AstResolvable {
 
     abstract override fun replaceType(newType: AstType)
 
-    abstract override fun replaceCalleeReference(newCalleeReference: AstReference)
-
     abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstElvisExpression
-
-    abstract override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstElvisExpression
 
     abstract fun <D> transformLhs(transformer: AstTransformer<D>, data: D): AstElvisExpression
 

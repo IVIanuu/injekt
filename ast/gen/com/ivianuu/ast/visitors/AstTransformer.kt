@@ -3,10 +3,8 @@ package com.ivianuu.ast.visitors
 import com.ivianuu.ast.AstElement
 import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.AstSymbolOwner
-import com.ivianuu.ast.expressions.AstResolvable
 import com.ivianuu.ast.AstTargetElement
 import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.expressions.AstStatement
@@ -16,9 +14,7 @@ import com.ivianuu.ast.declarations.AstAnnotatedDeclaration
 import com.ivianuu.ast.declarations.AstAnonymousInitializer
 import com.ivianuu.ast.declarations.AstTypedDeclaration
 import com.ivianuu.ast.declarations.AstCallableDeclaration
-import com.ivianuu.ast.declarations.AstTypeParameterRef
 import com.ivianuu.ast.declarations.AstTypeParameter
-import com.ivianuu.ast.declarations.AstTypeParameterRefsOwner
 import com.ivianuu.ast.declarations.AstTypeParametersOwner
 import com.ivianuu.ast.declarations.AstMemberDeclaration
 import com.ivianuu.ast.declarations.AstCallableMemberDeclaration
@@ -87,13 +83,9 @@ import com.ivianuu.ast.expressions.AstThrowExpression
 import com.ivianuu.ast.expressions.AstVariableAssignment
 import com.ivianuu.ast.expressions.AstWhenSubjectExpression
 import com.ivianuu.ast.expressions.AstWrappedDelegateExpression
-import com.ivianuu.ast.references.AstNamedReference
-import com.ivianuu.ast.references.AstSuperReference
-import com.ivianuu.ast.references.AstThisReference
-import com.ivianuu.ast.references.AstResolvedNamedReference
-import com.ivianuu.ast.references.AstDelegateFieldReference
-import com.ivianuu.ast.references.AstBackingFieldReference
-import com.ivianuu.ast.references.AstResolvedCallableReference
+import com.ivianuu.ast.expressions.AstSuperRefExpression
+import com.ivianuu.ast.expressions.AstThisRefExpression
+import com.ivianuu.ast.expressions.AstBackingFieldRefExpression
 import com.ivianuu.ast.types.AstSimpleType
 import com.ivianuu.ast.visitors.CompositeTransformResult
 
@@ -114,20 +106,12 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformElement(type, data)
     }
 
-    open fun transformReference(reference: AstReference, data: D): CompositeTransformResult<AstReference> {
-        return transformElement(reference, data)
-    }
-
     open fun transformLabel(label: AstLabel, data: D): CompositeTransformResult<AstLabel> {
         return transformElement(label, data)
     }
 
     open fun <E> transformSymbolOwner(symbolOwner: AstSymbolOwner<E>, data: D): CompositeTransformResult<AstSymbolOwner<E>> where E : AstSymbolOwner<E>, E : AstDeclaration {
         return transformElement(symbolOwner, data)
-    }
-
-    open fun transformResolvable(resolvable: AstResolvable, data: D): CompositeTransformResult<AstResolvable> {
-        return transformElement(resolvable, data)
     }
 
     open fun transformTargetElement(targetElement: AstTargetElement, data: D): CompositeTransformResult<AstTargetElement> {
@@ -166,16 +150,8 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformElement(callableDeclaration, data)
     }
 
-    open fun transformTypeParameterRef(typeParameterRef: AstTypeParameterRef, data: D): CompositeTransformResult<AstTypeParameterRef> {
-        return transformElement(typeParameterRef, data)
-    }
-
     open fun transformTypeParameter(typeParameter: AstTypeParameter, data: D): CompositeTransformResult<AstDeclaration> {
         return transformElement(typeParameter, data)
-    }
-
-    open fun transformTypeParameterRefsOwner(typeParameterRefsOwner: AstTypeParameterRefsOwner, data: D): CompositeTransformResult<AstTypeParameterRefsOwner> {
-        return transformElement(typeParameterRefsOwner, data)
     }
 
     open fun transformTypeParametersOwner(typeParametersOwner: AstTypeParametersOwner, data: D): CompositeTransformResult<AstTypeParametersOwner> {
@@ -450,32 +426,16 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformElement(wrappedDelegateExpression, data)
     }
 
-    open fun transformNamedReference(namedReference: AstNamedReference, data: D): CompositeTransformResult<AstReference> {
-        return transformElement(namedReference, data)
+    open fun transformSuperRefExpression(superRefExpression: AstSuperRefExpression, data: D): CompositeTransformResult<AstStatement> {
+        return transformElement(superRefExpression, data)
     }
 
-    open fun transformSuperReference(superReference: AstSuperReference, data: D): CompositeTransformResult<AstReference> {
-        return transformElement(superReference, data)
+    open fun transformThisRefExpression(thisRefExpression: AstThisRefExpression, data: D): CompositeTransformResult<AstStatement> {
+        return transformElement(thisRefExpression, data)
     }
 
-    open fun transformThisReference(thisReference: AstThisReference, data: D): CompositeTransformResult<AstReference> {
-        return transformElement(thisReference, data)
-    }
-
-    open fun transformResolvedNamedReference(resolvedNamedReference: AstResolvedNamedReference, data: D): CompositeTransformResult<AstReference> {
-        return transformElement(resolvedNamedReference, data)
-    }
-
-    open fun transformDelegateFieldReference(delegateFieldReference: AstDelegateFieldReference, data: D): CompositeTransformResult<AstReference> {
-        return transformElement(delegateFieldReference, data)
-    }
-
-    open fun transformBackingFieldReference(backingFieldReference: AstBackingFieldReference, data: D): CompositeTransformResult<AstReference> {
-        return transformElement(backingFieldReference, data)
-    }
-
-    open fun transformResolvedCallableReference(resolvedCallableReference: AstResolvedCallableReference, data: D): CompositeTransformResult<AstReference> {
-        return transformElement(resolvedCallableReference, data)
+    open fun transformBackingFieldRefExpression(backingFieldRefExpression: AstBackingFieldRefExpression, data: D): CompositeTransformResult<AstStatement> {
+        return transformElement(backingFieldRefExpression, data)
     }
 
     open fun transformSimpleType(simpleType: AstSimpleType, data: D): CompositeTransformResult<AstType> {
@@ -494,20 +454,12 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformType(type, data)
     }
 
-    final override fun visitReference(reference: AstReference, data: D): CompositeTransformResult<AstReference> {
-        return transformReference(reference, data)
-    }
-
     final override fun visitLabel(label: AstLabel, data: D): CompositeTransformResult<AstLabel> {
         return transformLabel(label, data)
     }
 
     final override fun <E> visitSymbolOwner(symbolOwner: AstSymbolOwner<E>, data: D): CompositeTransformResult<AstSymbolOwner<E>> where E : AstSymbolOwner<E>, E : AstDeclaration {
         return transformSymbolOwner(symbolOwner, data)
-    }
-
-    final override fun visitResolvable(resolvable: AstResolvable, data: D): CompositeTransformResult<AstResolvable> {
-        return transformResolvable(resolvable, data)
     }
 
     final override fun visitTargetElement(targetElement: AstTargetElement, data: D): CompositeTransformResult<AstTargetElement> {
@@ -546,16 +498,8 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformCallableDeclaration(callableDeclaration, data)
     }
 
-    final override fun visitTypeParameterRef(typeParameterRef: AstTypeParameterRef, data: D): CompositeTransformResult<AstTypeParameterRef> {
-        return transformTypeParameterRef(typeParameterRef, data)
-    }
-
     final override fun visitTypeParameter(typeParameter: AstTypeParameter, data: D): CompositeTransformResult<AstDeclaration> {
         return transformTypeParameter(typeParameter, data)
-    }
-
-    final override fun visitTypeParameterRefsOwner(typeParameterRefsOwner: AstTypeParameterRefsOwner, data: D): CompositeTransformResult<AstTypeParameterRefsOwner> {
-        return transformTypeParameterRefsOwner(typeParameterRefsOwner, data)
     }
 
     final override fun visitTypeParametersOwner(typeParametersOwner: AstTypeParametersOwner, data: D): CompositeTransformResult<AstTypeParametersOwner> {
@@ -830,32 +774,16 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformWrappedDelegateExpression(wrappedDelegateExpression, data)
     }
 
-    final override fun visitNamedReference(namedReference: AstNamedReference, data: D): CompositeTransformResult<AstReference> {
-        return transformNamedReference(namedReference, data)
+    final override fun visitSuperRefExpression(superRefExpression: AstSuperRefExpression, data: D): CompositeTransformResult<AstStatement> {
+        return transformSuperRefExpression(superRefExpression, data)
     }
 
-    final override fun visitSuperReference(superReference: AstSuperReference, data: D): CompositeTransformResult<AstReference> {
-        return transformSuperReference(superReference, data)
+    final override fun visitThisRefExpression(thisRefExpression: AstThisRefExpression, data: D): CompositeTransformResult<AstStatement> {
+        return transformThisRefExpression(thisRefExpression, data)
     }
 
-    final override fun visitThisReference(thisReference: AstThisReference, data: D): CompositeTransformResult<AstReference> {
-        return transformThisReference(thisReference, data)
-    }
-
-    final override fun visitResolvedNamedReference(resolvedNamedReference: AstResolvedNamedReference, data: D): CompositeTransformResult<AstReference> {
-        return transformResolvedNamedReference(resolvedNamedReference, data)
-    }
-
-    final override fun visitDelegateFieldReference(delegateFieldReference: AstDelegateFieldReference, data: D): CompositeTransformResult<AstReference> {
-        return transformDelegateFieldReference(delegateFieldReference, data)
-    }
-
-    final override fun visitBackingFieldReference(backingFieldReference: AstBackingFieldReference, data: D): CompositeTransformResult<AstReference> {
-        return transformBackingFieldReference(backingFieldReference, data)
-    }
-
-    final override fun visitResolvedCallableReference(resolvedCallableReference: AstResolvedCallableReference, data: D): CompositeTransformResult<AstReference> {
-        return transformResolvedCallableReference(resolvedCallableReference, data)
+    final override fun visitBackingFieldRefExpression(backingFieldRefExpression: AstBackingFieldRefExpression, data: D): CompositeTransformResult<AstStatement> {
+        return transformBackingFieldRefExpression(backingFieldRefExpression, data)
     }
 
     final override fun visitSimpleType(simpleType: AstSimpleType, data: D): CompositeTransformResult<AstType> {

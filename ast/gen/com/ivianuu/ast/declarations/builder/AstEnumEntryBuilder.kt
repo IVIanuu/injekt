@@ -7,11 +7,9 @@ import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstEnumEntry
 import com.ivianuu.ast.declarations.AstPropertyAccessor
-import com.ivianuu.ast.declarations.AstTypeParameterRef
 import com.ivianuu.ast.declarations.impl.AstEnumEntryImpl
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
-import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -30,8 +28,7 @@ class AstEnumEntryBuilder : AstAnnotationContainerBuilder {
     lateinit var name: Name
     lateinit var symbol: AstVariableSymbol<AstEnumEntry>
     var initializer: AstExpression? = null
-    override val annotations: MutableList<AstCall> = mutableListOf()
-    val typeParameters: MutableList<AstTypeParameterRef> = mutableListOf()
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     lateinit var status: AstDeclarationStatus
 
     override fun build(): AstEnumEntry {
@@ -42,7 +39,6 @@ class AstEnumEntryBuilder : AstAnnotationContainerBuilder {
             symbol,
             initializer,
             annotations,
-            typeParameters,
             status,
         )
     }

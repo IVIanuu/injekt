@@ -12,7 +12,7 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstReturnExpression : AstJump<AstFunction<*>>() {
     abstract override val type: AstType
-    abstract override val annotations: List<AstCall>
+    abstract override val annotations: List<AstFunctionCall>
     abstract override val target: AstTarget<AstFunction<*>>
     abstract val result: AstExpression
 

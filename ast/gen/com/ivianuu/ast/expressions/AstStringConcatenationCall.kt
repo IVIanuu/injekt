@@ -9,8 +9,8 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstStringConcatenationCall : AstCall, AstExpression() {
-    abstract override val annotations: List<AstCall>
-    abstract override val arguments: List<AstExpression>
+    abstract override val annotations: List<AstFunctionCall>
+    abstract override val valueArguments: List<AstExpression>
     abstract override val type: AstType
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitStringConcatenationCall(this, data)

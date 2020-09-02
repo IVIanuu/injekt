@@ -35,15 +35,16 @@ val safeCallOriginalReceiverReferenceType = generatedType("", "AstExpressionRef<
 val safeCallCheckedSubjectReferenceType =
     generatedType("", "AstExpressionRef<AstCheckedSafeCallSubject>")
 
-val stubReferenceType = generatedType("references.impl", "AstStubReference")
 val compositeTransformResultType = type("ast.visitors", "CompositeTransformResult")
 
+val astSymbolType = type("ast.symbols", "AstSymbol")
 val abstractAstSymbolType = type("ast.symbols", "AbstractAstSymbol")
 val backingFieldSymbolType = type("ast.symbols.impl", "AstBackingFieldSymbol")
-val delegateFieldSymbolType = type("ast.symbols.impl", "AstDelegateFieldSymbol")
+val callableSymbolType = type("ast.symbols.impl", "AstCallableSymbol<*>")
 val classSymbolType = type("ast.symbols.impl", "AstClassSymbol")
 val classLikeSymbolType = type("ast.symbols.impl", "AstClassLikeSymbol<*>")
 val classifierSymbolType = type("ast.symbols.impl", "AstClassifierSymbol<*>")
+val functionSymbolType = type("ast.symbols.impl", "AstFunctionSymbol<*>")
 val typeParameterSymbolType = type("ast.symbols.impl", "AstTypeParameterSymbol")
 val anonymousInitializerSymbolType = type("ast.symbols.impl", "AstAnonymousInitializerSymbol")
 

@@ -2,7 +2,7 @@ package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.expressions.AstBlock
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
@@ -23,7 +23,7 @@ abstract class AstSimpleFunction : AstPureAbstractElement(), AstFunction<AstSimp
     abstract override val status: AstDeclarationStatus
     abstract val name: Name
     abstract override val symbol: AstFunctionSymbol<AstSimpleFunction>
-    abstract override val annotations: List<AstCall>
+    abstract override val annotations: List<AstFunctionCall>
     abstract override val typeParameters: List<AstTypeParameter>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitSimpleFunction(this, data)

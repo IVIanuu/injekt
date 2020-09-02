@@ -2,14 +2,13 @@ package com.ivianuu.ast.expressions.builder
 
 import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstThisReceiverExpression
+import com.ivianuu.ast.expressions.AstThisRefExpression
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.builder.AstQualifiedAccessBuilder
 import com.ivianuu.ast.expressions.impl.AstThisReceiverExpressionImpl
-import com.ivianuu.ast.references.AstReference
-import com.ivianuu.ast.references.AstThisReference
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.visitors.*
@@ -23,9 +22,9 @@ import kotlin.contracts.*
 @AstBuilderDsl
 class AstThisReceiverExpressionBuilder : AstQualifiedAccessBuilder, AstAnnotationContainerBuilder, AstExpressionBuilder {
     override lateinit var type: AstType
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override val typeArguments: MutableList<AstTypeProjection> = mutableListOf()
-    lateinit var calleeReference: AstThisReference
+    lateinit var calleeReference: AstThisRefExpression
 
     override fun build(): AstThisReceiverExpression {
         return AstThisReceiverExpressionImpl(

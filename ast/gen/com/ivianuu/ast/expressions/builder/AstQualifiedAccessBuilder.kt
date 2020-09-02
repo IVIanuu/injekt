@@ -1,8 +1,8 @@
 package com.ivianuu.ast.expressions.builder
 
 import com.ivianuu.ast.builder.AstBuilderDsl
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstQualifiedAccess
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.visitors.*
@@ -14,7 +14,7 @@ import com.ivianuu.ast.visitors.*
 
 @AstBuilderDsl
 interface AstQualifiedAccessBuilder {
-    abstract val annotations: MutableList<AstCall>
+    abstract val annotations: MutableList<AstFunctionCall>
     abstract val typeArguments: MutableList<AstTypeProjection>
     abstract var dispatchReceiver: AstExpression?
     abstract var extensionReceiver: AstExpression?

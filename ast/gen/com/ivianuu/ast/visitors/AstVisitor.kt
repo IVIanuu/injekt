@@ -3,10 +3,8 @@ package com.ivianuu.ast.visitors
 import com.ivianuu.ast.AstElement
 import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.AstSymbolOwner
-import com.ivianuu.ast.expressions.AstResolvable
 import com.ivianuu.ast.AstTargetElement
 import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.expressions.AstStatement
@@ -16,9 +14,7 @@ import com.ivianuu.ast.declarations.AstAnnotatedDeclaration
 import com.ivianuu.ast.declarations.AstAnonymousInitializer
 import com.ivianuu.ast.declarations.AstTypedDeclaration
 import com.ivianuu.ast.declarations.AstCallableDeclaration
-import com.ivianuu.ast.declarations.AstTypeParameterRef
 import com.ivianuu.ast.declarations.AstTypeParameter
-import com.ivianuu.ast.declarations.AstTypeParameterRefsOwner
 import com.ivianuu.ast.declarations.AstTypeParametersOwner
 import com.ivianuu.ast.declarations.AstMemberDeclaration
 import com.ivianuu.ast.declarations.AstCallableMemberDeclaration
@@ -87,13 +83,9 @@ import com.ivianuu.ast.expressions.AstThrowExpression
 import com.ivianuu.ast.expressions.AstVariableAssignment
 import com.ivianuu.ast.expressions.AstWhenSubjectExpression
 import com.ivianuu.ast.expressions.AstWrappedDelegateExpression
-import com.ivianuu.ast.references.AstNamedReference
-import com.ivianuu.ast.references.AstSuperReference
-import com.ivianuu.ast.references.AstThisReference
-import com.ivianuu.ast.references.AstResolvedNamedReference
-import com.ivianuu.ast.references.AstDelegateFieldReference
-import com.ivianuu.ast.references.AstBackingFieldReference
-import com.ivianuu.ast.references.AstResolvedCallableReference
+import com.ivianuu.ast.expressions.AstSuperRefExpression
+import com.ivianuu.ast.expressions.AstThisRefExpression
+import com.ivianuu.ast.expressions.AstBackingFieldRefExpression
 import com.ivianuu.ast.types.AstSimpleType
 
 /*
@@ -108,13 +100,9 @@ abstract class AstVisitor<out R, in D> {
 
     open fun visitType(type: AstType, data: D): R  = visitElement(type, data)
 
-    open fun visitReference(reference: AstReference, data: D): R  = visitElement(reference, data)
-
     open fun visitLabel(label: AstLabel, data: D): R  = visitElement(label, data)
 
     open fun <E> visitSymbolOwner(symbolOwner: AstSymbolOwner<E>, data: D): R where E : AstSymbolOwner<E>, E : AstDeclaration  = visitElement(symbolOwner, data)
-
-    open fun visitResolvable(resolvable: AstResolvable, data: D): R  = visitElement(resolvable, data)
 
     open fun visitTargetElement(targetElement: AstTargetElement, data: D): R  = visitElement(targetElement, data)
 
@@ -134,11 +122,7 @@ abstract class AstVisitor<out R, in D> {
 
     open fun <F : AstCallableDeclaration<F>> visitCallableDeclaration(callableDeclaration: AstCallableDeclaration<F>, data: D): R  = visitElement(callableDeclaration, data)
 
-    open fun visitTypeParameterRef(typeParameterRef: AstTypeParameterRef, data: D): R  = visitElement(typeParameterRef, data)
-
     open fun visitTypeParameter(typeParameter: AstTypeParameter, data: D): R  = visitElement(typeParameter, data)
-
-    open fun visitTypeParameterRefsOwner(typeParameterRefsOwner: AstTypeParameterRefsOwner, data: D): R  = visitElement(typeParameterRefsOwner, data)
 
     open fun visitTypeParametersOwner(typeParametersOwner: AstTypeParametersOwner, data: D): R  = visitElement(typeParametersOwner, data)
 
@@ -276,19 +260,11 @@ abstract class AstVisitor<out R, in D> {
 
     open fun visitWrappedDelegateExpression(wrappedDelegateExpression: AstWrappedDelegateExpression, data: D): R  = visitElement(wrappedDelegateExpression, data)
 
-    open fun visitNamedReference(namedReference: AstNamedReference, data: D): R  = visitElement(namedReference, data)
+    open fun visitSuperRefExpression(superRefExpression: AstSuperRefExpression, data: D): R  = visitElement(superRefExpression, data)
 
-    open fun visitSuperReference(superReference: AstSuperReference, data: D): R  = visitElement(superReference, data)
+    open fun visitThisRefExpression(thisRefExpression: AstThisRefExpression, data: D): R  = visitElement(thisRefExpression, data)
 
-    open fun visitThisReference(thisReference: AstThisReference, data: D): R  = visitElement(thisReference, data)
-
-    open fun visitResolvedNamedReference(resolvedNamedReference: AstResolvedNamedReference, data: D): R  = visitElement(resolvedNamedReference, data)
-
-    open fun visitDelegateFieldReference(delegateFieldReference: AstDelegateFieldReference, data: D): R  = visitElement(delegateFieldReference, data)
-
-    open fun visitBackingFieldReference(backingFieldReference: AstBackingFieldReference, data: D): R  = visitElement(backingFieldReference, data)
-
-    open fun visitResolvedCallableReference(resolvedCallableReference: AstResolvedCallableReference, data: D): R  = visitElement(resolvedCallableReference, data)
+    open fun visitBackingFieldRefExpression(backingFieldRefExpression: AstBackingFieldRefExpression, data: D): R  = visitElement(backingFieldRefExpression, data)
 
     open fun visitSimpleType(simpleType: AstSimpleType, data: D): R  = visitElement(simpleType, data)
 

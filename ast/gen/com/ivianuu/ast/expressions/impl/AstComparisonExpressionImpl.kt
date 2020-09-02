@@ -1,6 +1,5 @@
 package com.ivianuu.ast.expressions.impl
 
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstComparisonExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstOperation
@@ -14,7 +13,7 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstComparisonExpressionImpl(
     override var type: AstType,
-    override val annotations: MutableList<AstCall>,
+    override val annotations: MutableList<AstFunctionCall>,
     override val operation: AstOperation,
     override var compareToCall: AstFunctionCall,
 ) : AstComparisonExpression() {

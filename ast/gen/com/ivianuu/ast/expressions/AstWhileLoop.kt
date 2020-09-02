@@ -9,7 +9,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstWhileLoop : AstLoop() {
-    abstract override val annotations: List<AstCall>
+    abstract override val annotations: List<AstFunctionCall>
     abstract override val label: AstLabel?
     abstract override val condition: AstExpression
     abstract override val block: AstBlock

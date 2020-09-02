@@ -2,8 +2,8 @@ package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.expressions.AstBlock
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -13,15 +13,14 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstConstructor : AstPureAbstractElement(), AstFunction<AstConstructor>, AstCallableMemberDeclaration<AstConstructor>, AstTypeParameterRefsOwner {
+abstract class AstConstructor : AstPureAbstractElement(), AstFunction<AstConstructor>, AstCallableMemberDeclaration<AstConstructor> {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
     abstract override val returnType: AstType
     abstract override val receiverType: AstType?
-    abstract override val typeParameters: List<AstTypeParameterRef>
     abstract override val valueParameters: List<AstValueParameter>
     abstract override val status: AstDeclarationStatus
-    abstract override val annotations: List<AstCall>
+    abstract override val annotations: List<AstFunctionCall>
     abstract override val symbol: AstConstructorSymbol
     abstract val delegatedConstructor: AstDelegatedConstructorCall?
     abstract override val body: AstBlock?
@@ -38,8 +37,6 @@ abstract class AstConstructor : AstPureAbstractElement(), AstFunction<AstConstru
     abstract override fun <D> transformReturnType(transformer: AstTransformer<D>, data: D): AstConstructor
 
     abstract override fun <D> transformReceiverType(transformer: AstTransformer<D>, data: D): AstConstructor
-
-    abstract override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstConstructor
 
     abstract override fun <D> transformValueParameters(transformer: AstTransformer<D>, data: D): AstConstructor
 

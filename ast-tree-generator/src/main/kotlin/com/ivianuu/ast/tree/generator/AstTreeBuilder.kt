@@ -9,17 +9,14 @@ import com.ivianuu.ast.tree.generator.context.AbstractAstTreeBuilder
 import com.ivianuu.ast.tree.generator.model.Element.Kind.Declaration
 import com.ivianuu.ast.tree.generator.model.Element.Kind.Expression
 import com.ivianuu.ast.tree.generator.model.Element.Kind.Other
-import com.ivianuu.ast.tree.generator.model.Element.Kind.Reference
 import com.ivianuu.ast.tree.generator.model.Element.Kind.Type
 
 @Suppress("unused", "MemberVisibilityCanBePrivate")
 object AstTreeBuilder : AbstractAstTreeBuilder() {
     val annotationContainer = element("AnnotationContainer", Other)
     val type = element("Type", Type, annotationContainer)
-    val reference = element("Reference", Reference)
     val label = element("Label", Other)
     val symbolOwner = element("SymbolOwner", Other)
-    val resolvable = element("Resolvable", Expression)
 
     val targetElement = element("TargetElement", Other)
 
@@ -39,13 +36,11 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val typedDeclaration = element("TypedDeclaration", Declaration, annotatedDeclaration)
     val callableDeclaration =
         element("CallableDeclaration", Declaration, typedDeclaration, symbolOwner)
-    val typeParameterRef = element("TypeParameterRef", Declaration)
     val typeParameter =
-        element("TypeParameter", Declaration, typeParameterRef, annotatedDeclaration, symbolOwner)
-    val typeParameterRefsOwner = element("TypeParameterRefsOwner", Declaration)
-    val typeParametersOwner = element("TypeParametersOwner", Declaration, typeParameterRefsOwner)
+        element("TypeParameter", Declaration, annotatedDeclaration, symbolOwner)
+    val typeParametersOwner = element("TypeParametersOwner", Declaration)
     val memberDeclaration =
-        element("MemberDeclaration", Declaration, annotatedDeclaration, typeParameterRefsOwner)
+        element("MemberDeclaration", Declaration, annotatedDeclaration)
     val callableMemberDeclaration =
         element("CallableMemberDeclaration", Declaration, callableDeclaration, memberDeclaration)
 
@@ -66,12 +61,12 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val classLikeDeclaration =
         element("ClassLikeDeclaration", Declaration, annotatedDeclaration, statement, symbolOwner)
     val klass =
-        element("Class", Declaration, classLikeDeclaration, statement, typeParameterRefsOwner)
+        element("Class", Declaration, classLikeDeclaration, statement)
     val regularClass = element(
         "RegularClass",
         Declaration,
         memberDeclaration,
-        typeParameterRefsOwner,
+        typeParametersOwner,
         klass
     )
     val typeAlias = element(
@@ -87,7 +82,6 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         Declaration,
         callableDeclaration,
         targetElement,
-        typeParameterRefsOwner,
         statement
     )
 
@@ -103,8 +97,7 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         "Constructor",
         Declaration,
         function,
-        callableMemberDeclaration,
-        typeParameterRefsOwner
+        callableMemberDeclaration
     )
 
     val moduleFragment = element("ModuleFragment", Declaration)
@@ -126,7 +119,7 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val breakExpression = element("BreakExpression", Expression, loopJump)
     val continueExpression = element("ContinueExpression", Expression, loopJump)
     val catchClause = element("Catch", Expression)
-    val tryExpression = element("TryExpression", Expression, expression, resolvable)
+    val tryExpression = element("TryExpression", Expression, expression)
     val constExpression = element("ConstExpression", Expression, expression)
     val typeProjection = element("TypeProjection", Type)
     val starProjection = element("StarProjection", Type, typeProjection)
@@ -140,16 +133,16 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val typeOperatorCall = element("TypeOperatorCall", Expression, expression, call)
     val assignmentOperatorStatement = element("AssignmentOperatorStatement", Expression, statement)
     val equalityOperatorCall = element("EqualityOperatorCall", Expression, expression, call)
-    val whenExpression = element("WhenExpression", Expression, expression, resolvable)
+    val whenExpression = element("WhenExpression", Expression, expression)
     val whenBranch = element("WhenBranch", Expression)
-    val qualifiedAccess = element("QualifiedAccess", Expression, resolvable, statement)
-    val elvisExpression = element("ElvisExpression", Expression, expression, resolvable)
+    val qualifiedAccess = element("QualifiedAccess", Expression, statement)
+    val elvisExpression = element("ElvisExpression", Expression, expression)
 
     val classReferenceExpression = element("ClassReferenceExpression", Expression, expression)
     val qualifiedAccessExpression =
         element("QualifiedAccessExpression", Expression, expression, qualifiedAccess)
     val functionCall = element("FunctionCall", Expression, qualifiedAccessExpression, call)
-    val delegatedConstructorCall = element("DelegatedConstructorCall", Expression, resolvable, call)
+    val delegatedConstructorCall = element("DelegatedConstructorCall", Expression, call)
     val callableReferenceAccess =
         element("CallableReferenceAccess", Expression, qualifiedAccessExpression)
     val thisReceiverExpression =
@@ -182,17 +175,9 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val wrappedDelegateExpression =
         element("WrappedDelegateExpression", Expression, wrappedExpression)
 
-    val namedReference = element("NamedReference", Reference, reference)
-    val superReference = element("SuperReference", Reference, reference)
-    val thisReference = element("ThisReference", Reference, reference)
-
-    val resolvedNamedReference = element("ResolvedNamedReference", Reference, namedReference)
-    val delegateFieldReference =
-        element("DelegateFieldReference", Reference, resolvedNamedReference)
-    val backingFieldReference = element("BackingFieldReference", Reference, resolvedNamedReference)
-
-    val resolvedCallableReference =
-        element("ResolvedCallableReference", Reference, resolvedNamedReference)
+    val superRefExpression = element("SuperRefExpression", Expression, expression)
+    val thisRefExpression = element("ThisRefExpression", Expression, expression)
+    val backingFieldRefExpression = element("BackingFieldRefExpression", Expression, expression)
 
     val simpleType =
         element("SimpleType", Type, type)

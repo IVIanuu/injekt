@@ -1,8 +1,8 @@
 package com.ivianuu.ast.expressions.impl
 
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstConstExpression
 import com.ivianuu.ast.expressions.AstConstKind
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -13,7 +13,7 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstConstExpressionImpl<T> (
     override var type: AstType,
-    override val annotations: MutableList<AstCall>,
+    override val annotations: MutableList<AstFunctionCall>,
     override var kind: AstConstKind<T>,
     override val value: T,
 ) : AstConstExpression<T>() {

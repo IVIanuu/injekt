@@ -7,11 +7,11 @@ import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstRegularClass
-import com.ivianuu.ast.declarations.AstTypeParameterRef
+import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.builder.AstClassBuilder
-import com.ivianuu.ast.declarations.builder.AstTypeParameterRefsOwnerBuilder
+import com.ivianuu.ast.declarations.builder.AstTypeParametersOwnerBuilder
 import com.ivianuu.ast.declarations.impl.AstRegularClassImpl
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -25,11 +25,11 @@ import org.jetbrains.kotlin.name.Name
  */
 
 @AstBuilderDsl
-open class AstRegularClassBuilder : AstClassBuilder, AstTypeParameterRefsOwnerBuilder, AstAnnotationContainerBuilder {
+open class AstRegularClassBuilder : AstClassBuilder, AstTypeParametersOwnerBuilder, AstAnnotationContainerBuilder {
     override lateinit var origin: AstDeclarationOrigin
-    override val annotations: MutableList<AstCall> = mutableListOf()
-    override val typeParameters: MutableList<AstTypeParameterRef> = mutableListOf()
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     open lateinit var status: AstDeclarationStatus
+    override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
     override lateinit var classKind: ClassKind
     override val declarations: MutableList<AstDeclaration> = mutableListOf()
     open lateinit var name: Name
@@ -41,8 +41,8 @@ open class AstRegularClassBuilder : AstClassBuilder, AstTypeParameterRefsOwnerBu
         return AstRegularClassImpl(
             origin,
             annotations,
-            typeParameters,
             status,
+            typeParameters,
             classKind,
             declarations,
             name,

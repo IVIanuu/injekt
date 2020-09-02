@@ -1,10 +1,9 @@
 package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstPureAbstractElement
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstStatement
-import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
@@ -24,12 +23,11 @@ abstract class AstVariable<F : AstVariable<F>> : AstPureAbstractElement(), AstCa
     abstract override val symbol: AstVariableSymbol<F>
     abstract val initializer: AstExpression?
     abstract val delegate: AstExpression?
-    abstract val delegateFieldSymbol: AstDelegateFieldSymbol<F>?
     abstract val isVar: Boolean
     abstract val isVal: Boolean
     abstract val getter: AstPropertyAccessor?
     abstract val setter: AstPropertyAccessor?
-    abstract override val annotations: List<AstCall>
+    abstract override val annotations: List<AstFunctionCall>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitVariable(this, data)
 

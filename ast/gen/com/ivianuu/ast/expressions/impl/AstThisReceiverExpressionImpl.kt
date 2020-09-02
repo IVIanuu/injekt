@@ -1,10 +1,9 @@
 package com.ivianuu.ast.expressions.impl
 
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstThisReceiverExpression
-import com.ivianuu.ast.references.AstReference
-import com.ivianuu.ast.references.AstThisReference
+import com.ivianuu.ast.expressions.AstThisRefExpression
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.visitors.*
@@ -16,9 +15,9 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstThisReceiverExpressionImpl(
     override var type: AstType,
-    override val annotations: MutableList<AstCall>,
+    override val annotations: MutableList<AstFunctionCall>,
     override val typeArguments: MutableList<AstTypeProjection>,
-    override var calleeReference: AstThisReference,
+    override var calleeReference: AstThisRefExpression,
 ) : AstThisReceiverExpression() {
     override var dispatchReceiver: AstExpression? = null
     override var extensionReceiver: AstExpression? = null
@@ -34,7 +33,7 @@ internal class AstThisReceiverExpressionImpl(
         type = type.transformSingle(transformer, data)
         transformAnnotations(transformer, data)
         transformTypeArguments(transformer, data)
-        transformCalleeReference(transformer, data)
+        calleeReference = calleeReference.transformSingle(transformer, data)
         return this
     }
 
@@ -58,11 +57,6 @@ internal class AstThisReceiverExpressionImpl(
         return this
     }
 
-    override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstThisReceiverExpressionImpl {
-        calleeReference = calleeReference.transformSingle(transformer, data)
-        return this
-    }
-
     override fun replaceType(newType: AstType) {
         type = newType
     }
@@ -70,14 +64,5 @@ internal class AstThisReceiverExpressionImpl(
     override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>) {
         typeArguments.clear()
         typeArguments.addAll(newTypeArguments)
-    }
-
-    override fun replaceCalleeReference(newCalleeReference: AstThisReference) {
-        calleeReference = newCalleeReference
-    }
-
-    override fun replaceCalleeReference(newCalleeReference: AstReference) {
-        require(newCalleeReference is AstThisReference)
-        replaceCalleeReference(newCalleeReference)
     }
 }

@@ -22,10 +22,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             fields from typeParametersOwner
         }
 
-        val typeParameterRefsOwnerBuilder by builder {
-            fields from typeParameterRefsOwner
-        }
-
         val classBuilder by builder {
             parents += annotationContainerBuilder
             fields from klass without listOf("symbol")
@@ -33,13 +29,13 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
 
         builder(regularClass) {
             parents += classBuilder
-            parents += typeParameterRefsOwnerBuilder
+            parents += typeParametersOwnerBuilder
             defaultNull("companionObject")
             openBuilder()
         }
 
         val qualifiedAccessBuilder by builder {
-            fields from qualifiedAccess without "calleeReference"
+            fields from qualifiedAccess
         }
 
         val callBuilder by builder {
@@ -131,7 +127,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
 
         builder(property) {
             parents += typeParametersOwnerBuilder
-            defaultNull("getter", "setter", "delegateFieldSymbol")
+            defaultNull("getter", "setter")
         }
 
         builder(typeOperatorCall) {
@@ -163,8 +159,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
 
         builder(whenExpression) {
             defaultFalse("isExhaustive")
-            default("calleeReference", "AstStubReference")
-            useTypes(stubReferenceType)
         }
 
         builder("isMarkedNullable") {
@@ -190,7 +184,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
                 "initializer",
                 "delegate",
                 "receiverType",
-                "delegateFieldSymbol",
                 "getter",
                 "setter"
             )
@@ -204,16 +197,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             defaultNull("body")
             openBuilder()
             withCopy()
-        }
-
-        builder(tryExpression) {
-            default("calleeReference", "AstStubReference")
-            useTypes(stubReferenceType)
-        }
-
-        builder(elvisExpression) {
-            default("calleeReference", "AstStubReference")
-            useTypes(stubReferenceType)
         }
 
         val abstractResolvedQualifierBuilder by builder {

@@ -10,9 +10,9 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstGetClassCall : AstExpression(), AstCall {
     abstract override val type: AstType
-    abstract override val annotations: List<AstCall>
-    abstract override val arguments: List<AstExpression>
-    abstract val argument: AstExpression
+    abstract override val annotations: List<AstFunctionCall>
+    abstract override val valueArguments: List<AstExpression>
+    abstract val valueArgument: AstExpression
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitGetClassCall(this, data)
 

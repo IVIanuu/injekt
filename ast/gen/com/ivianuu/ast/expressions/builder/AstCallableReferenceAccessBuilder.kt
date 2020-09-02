@@ -2,14 +2,13 @@ package com.ivianuu.ast.expressions.builder
 
 import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstCallableReferenceAccess
 import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.builder.AstQualifiedAccessBuilder
 import com.ivianuu.ast.expressions.impl.AstCallableReferenceAccessImpl
-import com.ivianuu.ast.references.AstNamedReference
-import com.ivianuu.ast.references.AstReference
+import com.ivianuu.ast.symbols.impl.AstCallableSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.visitors.*
@@ -23,11 +22,11 @@ import kotlin.contracts.*
 @AstBuilderDsl
 class AstCallableReferenceAccessBuilder : AstQualifiedAccessBuilder, AstAnnotationContainerBuilder, AstExpressionBuilder {
     override lateinit var type: AstType
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override val typeArguments: MutableList<AstTypeProjection> = mutableListOf()
     override var dispatchReceiver: AstExpression? = null
     override var extensionReceiver: AstExpression? = null
-    lateinit var calleeReference: AstNamedReference
+    lateinit var callee: AstCallableSymbol<*>
     var hasQuestionMarkAtLHS: Boolean = false
 
     override fun build(): AstCallableReferenceAccess {
@@ -37,7 +36,7 @@ class AstCallableReferenceAccessBuilder : AstQualifiedAccessBuilder, AstAnnotati
             typeArguments,
             dispatchReceiver,
             extensionReceiver,
-            calleeReference,
+            callee,
             hasQuestionMarkAtLHS,
         )
     }

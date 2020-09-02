@@ -1,7 +1,6 @@
 package com.ivianuu.ast.expressions
 
 import com.ivianuu.ast.declarations.AstVariable
-import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -10,10 +9,9 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstWhenExpression : AstExpression(), AstResolvable {
+abstract class AstWhenExpression : AstExpression() {
     abstract override val type: AstType
-    abstract override val annotations: List<AstCall>
-    abstract override val calleeReference: AstReference
+    abstract override val annotations: List<AstFunctionCall>
     abstract val subject: AstExpression?
     abstract val subjectVariable: AstVariable<*>?
     abstract val branches: List<AstWhenBranch>
@@ -23,13 +21,9 @@ abstract class AstWhenExpression : AstExpression(), AstResolvable {
 
     abstract override fun replaceType(newType: AstType)
 
-    abstract override fun replaceCalleeReference(newCalleeReference: AstReference)
-
     abstract fun replaceIsExhaustive(newIsExhaustive: Boolean)
 
     abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstWhenExpression
-
-    abstract override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstWhenExpression
 
     abstract fun <D> transformSubject(transformer: AstTransformer<D>, data: D): AstWhenExpression
 

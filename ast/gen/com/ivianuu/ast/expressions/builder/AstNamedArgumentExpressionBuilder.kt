@@ -2,8 +2,8 @@ package com.ivianuu.ast.expressions.builder
 
 import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstNamedArgumentExpression
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.impl.AstNamedArgumentExpressionImpl
@@ -19,7 +19,7 @@ import org.jetbrains.kotlin.name.Name
 
 @AstBuilderDsl
 class AstNamedArgumentExpressionBuilder : AstAnnotationContainerBuilder, AstExpressionBuilder {
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     lateinit var expression: AstExpression
     var isSpread: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
     lateinit var name: Name

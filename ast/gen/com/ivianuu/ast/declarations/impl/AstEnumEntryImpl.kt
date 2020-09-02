@@ -5,10 +5,8 @@ import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstEnumEntry
 import com.ivianuu.ast.declarations.AstPropertyAccessor
-import com.ivianuu.ast.declarations.AstTypeParameterRef
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
-import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
@@ -25,14 +23,12 @@ internal class AstEnumEntryImpl(
     override val name: Name,
     override val symbol: AstVariableSymbol<AstEnumEntry>,
     override var initializer: AstExpression?,
-    override val annotations: MutableList<AstCall>,
-    override val typeParameters: MutableList<AstTypeParameterRef>,
+    override val annotations: MutableList<AstFunctionCall>,
     override var status: AstDeclarationStatus,
 ) : AstEnumEntry() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override val receiverType: AstType? get() = null
     override val delegate: AstExpression? get() = null
-    override val delegateFieldSymbol: AstDelegateFieldSymbol<AstEnumEntry>? get() = null
     override val isVar: Boolean get() = false
     override val isVal: Boolean get() = true
     override val getter: AstPropertyAccessor? get() = null
@@ -42,14 +38,12 @@ internal class AstEnumEntryImpl(
         returnType.accept(visitor, data)
         initializer?.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
-        typeParameters.forEach { it.accept(visitor, data) }
         status.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
         transformReturnType(transformer, data)
         transformInitializer(transformer, data)
-        transformTypeParameters(transformer, data)
         transformStatus(transformer, data)
         transformOtherChildren(transformer, data)
         return this
@@ -83,11 +77,6 @@ internal class AstEnumEntryImpl(
 
     override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
         annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
-        typeParameters.transformInplace(transformer, data)
         return this
     }
 

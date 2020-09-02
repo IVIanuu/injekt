@@ -2,7 +2,7 @@ package com.ivianuu.ast.declarations.impl
 
 import com.ivianuu.ast.declarations.AstDeclaration
 import com.ivianuu.ast.declarations.AstFile
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import org.jetbrains.kotlin.name.FqName
 import com.ivianuu.ast.visitors.*
 
@@ -12,7 +12,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstFileImpl(
-    override val annotations: MutableList<AstCall>,
+    override val annotations: MutableList<AstFunctionCall>,
     override val declarations: MutableList<AstDeclaration>,
     override val name: String,
     override val packageFqName: FqName,

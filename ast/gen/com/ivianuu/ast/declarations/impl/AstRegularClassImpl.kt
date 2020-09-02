@@ -5,8 +5,8 @@ import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstRegularClass
-import com.ivianuu.ast.declarations.AstTypeParameterRef
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.declarations.AstTypeParameter
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -20,9 +20,9 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstRegularClassImpl(
     override val origin: AstDeclarationOrigin,
-    override val annotations: MutableList<AstCall>,
-    override val typeParameters: MutableList<AstTypeParameterRef>,
+    override val annotations: MutableList<AstFunctionCall>,
     override var status: AstDeclarationStatus,
+    override val typeParameters: MutableList<AstTypeParameter>,
     override val classKind: ClassKind,
     override val declarations: MutableList<AstDeclaration>,
     override val name: Name,
@@ -35,16 +35,16 @@ internal class AstRegularClassImpl(
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
-        typeParameters.forEach { it.accept(visitor, data) }
         status.accept(visitor, data)
+        typeParameters.forEach { it.accept(visitor, data) }
         declarations.forEach { it.accept(visitor, data) }
         superTypes.forEach { it.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
         transformAnnotations(transformer, data)
-        transformTypeParameters(transformer, data)
         transformStatus(transformer, data)
+        transformTypeParameters(transformer, data)
         transformDeclarations(transformer, data)
         companionObject = declarations.asSequence().filterIsInstance<AstRegularClass>().firstOrNull { it.status.isCompanion }
         transformSuperTypes(transformer, data)
@@ -56,13 +56,13 @@ internal class AstRegularClassImpl(
         return this
     }
 
-    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
-        typeParameters.transformInplace(transformer, data)
+    override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
+        status = status.transformSingle(transformer, data)
         return this
     }
 
-    override fun <D> transformStatus(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
-        status = status.transformSingle(transformer, data)
+    override fun <D> transformTypeParameters(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
+        typeParameters.transformInplace(transformer, data)
         return this
     }
 

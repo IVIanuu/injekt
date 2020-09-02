@@ -1,6 +1,5 @@
 package com.ivianuu.ast.expressions
 
-import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -9,10 +8,9 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstTryExpression : AstExpression(), AstResolvable {
+abstract class AstTryExpression : AstExpression() {
     abstract override val type: AstType
-    abstract override val annotations: List<AstCall>
-    abstract override val calleeReference: AstReference
+    abstract override val annotations: List<AstFunctionCall>
     abstract val tryBlock: AstBlock
     abstract val catches: List<AstCatch>
     abstract val finallyBlock: AstBlock?
@@ -21,11 +19,7 @@ abstract class AstTryExpression : AstExpression(), AstResolvable {
 
     abstract override fun replaceType(newType: AstType)
 
-    abstract override fun replaceCalleeReference(newCalleeReference: AstReference)
-
     abstract override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstTryExpression
-
-    abstract override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstTryExpression
 
     abstract fun <D> transformTryBlock(transformer: AstTransformer<D>, data: D): AstTryExpression
 

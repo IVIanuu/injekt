@@ -78,5 +78,5 @@ val AstType.classOrNull: AstClassSymbol<*>?
     get() = (this as? AstSimpleType)?.classifier as? AstClassSymbol<*>
 
 fun AstAnnotatedDeclaration.hasAnnotation(classId: ClassId): Boolean {
-    return annotations.any { it.annotationType.classOrFail.classId == classId }
+    return annotations.any { it.callee.callableId.classId == classId }
 }

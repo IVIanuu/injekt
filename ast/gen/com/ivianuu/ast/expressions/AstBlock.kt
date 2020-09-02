@@ -9,7 +9,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstBlock : AstExpression() {
-    abstract override val annotations: List<AstCall>
+    abstract override val annotations: List<AstFunctionCall>
     abstract val statements: List<AstStatement>
     abstract override val type: AstType
 

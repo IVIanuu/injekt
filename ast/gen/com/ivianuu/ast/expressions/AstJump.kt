@@ -12,7 +12,7 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstJump<E : AstTargetElement> : AstExpression() {
     abstract override val type: AstType
-    abstract override val annotations: List<AstCall>
+    abstract override val annotations: List<AstFunctionCall>
     abstract val target: AstTarget<E>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitJump(this, data)

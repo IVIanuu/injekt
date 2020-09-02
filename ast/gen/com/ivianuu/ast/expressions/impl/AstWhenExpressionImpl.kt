@@ -1,11 +1,10 @@
 package com.ivianuu.ast.expressions.impl
 
 import com.ivianuu.ast.declarations.AstVariable
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstWhenBranch
 import com.ivianuu.ast.expressions.AstWhenExpression
-import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -16,8 +15,7 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstWhenExpressionImpl(
     override var type: AstType,
-    override val annotations: MutableList<AstCall>,
-    override var calleeReference: AstReference,
+    override val annotations: MutableList<AstFunctionCall>,
     override var subject: AstExpression?,
     override var subjectVariable: AstVariable<*>?,
     override val branches: MutableList<AstWhenBranch>,
@@ -26,7 +24,6 @@ internal class AstWhenExpressionImpl(
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
-        calleeReference.accept(visitor, data)
         val subjectVariable_ = subjectVariable
         if (subjectVariable_ != null) {
             subjectVariable_.accept(visitor, data)
@@ -37,7 +34,6 @@ internal class AstWhenExpressionImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstWhenExpressionImpl {
-        transformCalleeReference(transformer, data)
         transformSubject(transformer, data)
         transformBranches(transformer, data)
         transformOtherChildren(transformer, data)
@@ -46,11 +42,6 @@ internal class AstWhenExpressionImpl(
 
     override fun <D> transformAnnotations(transformer: AstTransformer<D>, data: D): AstWhenExpressionImpl {
         annotations.transformInplace(transformer, data)
-        return this
-    }
-
-    override fun <D> transformCalleeReference(transformer: AstTransformer<D>, data: D): AstWhenExpressionImpl {
-        calleeReference = calleeReference.transformSingle(transformer, data)
         return this
     }
 
@@ -77,10 +68,6 @@ internal class AstWhenExpressionImpl(
 
     override fun replaceType(newType: AstType) {
         type = newType
-    }
-
-    override fun replaceCalleeReference(newCalleeReference: AstReference) {
-        calleeReference = newCalleeReference
     }
 
     override fun replaceIsExhaustive(newIsExhaustive: Boolean) {

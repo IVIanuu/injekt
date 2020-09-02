@@ -4,9 +4,8 @@ import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstValueParameter
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
-import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
@@ -24,12 +23,11 @@ internal class AstDefaultSetterValueParameter(
     override val symbol: AstVariableSymbol<AstValueParameter>,
     override var initializer: AstExpression?,
     override var delegate: AstExpression?,
-    override val delegateFieldSymbol: AstDelegateFieldSymbol<AstValueParameter>?,
     override val isVar: Boolean,
     override val isVal: Boolean,
     override var getter: AstPropertyAccessor?,
     override var setter: AstPropertyAccessor?,
-    override val annotations: MutableList<AstCall>,
+    override val annotations: MutableList<AstFunctionCall>,
     override var defaultValue: AstExpression?,
     override val isCrossinline: Boolean,
     override val isNoinline: Boolean,

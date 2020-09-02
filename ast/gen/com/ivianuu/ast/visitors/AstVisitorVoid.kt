@@ -3,10 +3,8 @@ package com.ivianuu.ast.visitors
 import com.ivianuu.ast.AstElement
 import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.references.AstReference
 import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.AstSymbolOwner
-import com.ivianuu.ast.expressions.AstResolvable
 import com.ivianuu.ast.AstTargetElement
 import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.expressions.AstStatement
@@ -16,9 +14,7 @@ import com.ivianuu.ast.declarations.AstAnnotatedDeclaration
 import com.ivianuu.ast.declarations.AstAnonymousInitializer
 import com.ivianuu.ast.declarations.AstTypedDeclaration
 import com.ivianuu.ast.declarations.AstCallableDeclaration
-import com.ivianuu.ast.declarations.AstTypeParameterRef
 import com.ivianuu.ast.declarations.AstTypeParameter
-import com.ivianuu.ast.declarations.AstTypeParameterRefsOwner
 import com.ivianuu.ast.declarations.AstTypeParametersOwner
 import com.ivianuu.ast.declarations.AstMemberDeclaration
 import com.ivianuu.ast.declarations.AstCallableMemberDeclaration
@@ -87,13 +83,9 @@ import com.ivianuu.ast.expressions.AstThrowExpression
 import com.ivianuu.ast.expressions.AstVariableAssignment
 import com.ivianuu.ast.expressions.AstWhenSubjectExpression
 import com.ivianuu.ast.expressions.AstWrappedDelegateExpression
-import com.ivianuu.ast.references.AstNamedReference
-import com.ivianuu.ast.references.AstSuperReference
-import com.ivianuu.ast.references.AstThisReference
-import com.ivianuu.ast.references.AstResolvedNamedReference
-import com.ivianuu.ast.references.AstDelegateFieldReference
-import com.ivianuu.ast.references.AstBackingFieldReference
-import com.ivianuu.ast.references.AstResolvedCallableReference
+import com.ivianuu.ast.expressions.AstSuperRefExpression
+import com.ivianuu.ast.expressions.AstThisRefExpression
+import com.ivianuu.ast.expressions.AstBackingFieldRefExpression
 import com.ivianuu.ast.types.AstSimpleType
 
 /*
@@ -112,20 +104,12 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(type)
     }
 
-    open fun visitReference(reference: AstReference) {
-        visitElement(reference)
-    }
-
     open fun visitLabel(label: AstLabel) {
         visitElement(label)
     }
 
     open fun <E> visitSymbolOwner(symbolOwner: AstSymbolOwner<E>) where E : AstSymbolOwner<E>, E : AstDeclaration {
         visitElement(symbolOwner)
-    }
-
-    open fun visitResolvable(resolvable: AstResolvable) {
-        visitElement(resolvable)
     }
 
     open fun visitTargetElement(targetElement: AstTargetElement) {
@@ -164,16 +148,8 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(callableDeclaration)
     }
 
-    open fun visitTypeParameterRef(typeParameterRef: AstTypeParameterRef) {
-        visitElement(typeParameterRef)
-    }
-
     open fun visitTypeParameter(typeParameter: AstTypeParameter) {
         visitElement(typeParameter)
-    }
-
-    open fun visitTypeParameterRefsOwner(typeParameterRefsOwner: AstTypeParameterRefsOwner) {
-        visitElement(typeParameterRefsOwner)
     }
 
     open fun visitTypeParametersOwner(typeParametersOwner: AstTypeParametersOwner) {
@@ -448,32 +424,16 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(wrappedDelegateExpression)
     }
 
-    open fun visitNamedReference(namedReference: AstNamedReference) {
-        visitElement(namedReference)
+    open fun visitSuperRefExpression(superRefExpression: AstSuperRefExpression) {
+        visitElement(superRefExpression)
     }
 
-    open fun visitSuperReference(superReference: AstSuperReference) {
-        visitElement(superReference)
+    open fun visitThisRefExpression(thisRefExpression: AstThisRefExpression) {
+        visitElement(thisRefExpression)
     }
 
-    open fun visitThisReference(thisReference: AstThisReference) {
-        visitElement(thisReference)
-    }
-
-    open fun visitResolvedNamedReference(resolvedNamedReference: AstResolvedNamedReference) {
-        visitElement(resolvedNamedReference)
-    }
-
-    open fun visitDelegateFieldReference(delegateFieldReference: AstDelegateFieldReference) {
-        visitElement(delegateFieldReference)
-    }
-
-    open fun visitBackingFieldReference(backingFieldReference: AstBackingFieldReference) {
-        visitElement(backingFieldReference)
-    }
-
-    open fun visitResolvedCallableReference(resolvedCallableReference: AstResolvedCallableReference) {
-        visitElement(resolvedCallableReference)
+    open fun visitBackingFieldRefExpression(backingFieldRefExpression: AstBackingFieldRefExpression) {
+        visitElement(backingFieldRefExpression)
     }
 
     open fun visitSimpleType(simpleType: AstSimpleType) {
@@ -492,20 +452,12 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitType(type)
     }
 
-    final override fun visitReference(reference: AstReference, data: Nothing?) {
-        visitReference(reference)
-    }
-
     final override fun visitLabel(label: AstLabel, data: Nothing?) {
         visitLabel(label)
     }
 
     final override fun <E> visitSymbolOwner(symbolOwner: AstSymbolOwner<E>, data: Nothing?) where E : AstSymbolOwner<E>, E : AstDeclaration {
         visitSymbolOwner(symbolOwner)
-    }
-
-    final override fun visitResolvable(resolvable: AstResolvable, data: Nothing?) {
-        visitResolvable(resolvable)
     }
 
     final override fun visitTargetElement(targetElement: AstTargetElement, data: Nothing?) {
@@ -544,16 +496,8 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitCallableDeclaration(callableDeclaration)
     }
 
-    final override fun visitTypeParameterRef(typeParameterRef: AstTypeParameterRef, data: Nothing?) {
-        visitTypeParameterRef(typeParameterRef)
-    }
-
     final override fun visitTypeParameter(typeParameter: AstTypeParameter, data: Nothing?) {
         visitTypeParameter(typeParameter)
-    }
-
-    final override fun visitTypeParameterRefsOwner(typeParameterRefsOwner: AstTypeParameterRefsOwner, data: Nothing?) {
-        visitTypeParameterRefsOwner(typeParameterRefsOwner)
     }
 
     final override fun visitTypeParametersOwner(typeParametersOwner: AstTypeParametersOwner, data: Nothing?) {
@@ -828,32 +772,16 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitWrappedDelegateExpression(wrappedDelegateExpression)
     }
 
-    final override fun visitNamedReference(namedReference: AstNamedReference, data: Nothing?) {
-        visitNamedReference(namedReference)
+    final override fun visitSuperRefExpression(superRefExpression: AstSuperRefExpression, data: Nothing?) {
+        visitSuperRefExpression(superRefExpression)
     }
 
-    final override fun visitSuperReference(superReference: AstSuperReference, data: Nothing?) {
-        visitSuperReference(superReference)
+    final override fun visitThisRefExpression(thisRefExpression: AstThisRefExpression, data: Nothing?) {
+        visitThisRefExpression(thisRefExpression)
     }
 
-    final override fun visitThisReference(thisReference: AstThisReference, data: Nothing?) {
-        visitThisReference(thisReference)
-    }
-
-    final override fun visitResolvedNamedReference(resolvedNamedReference: AstResolvedNamedReference, data: Nothing?) {
-        visitResolvedNamedReference(resolvedNamedReference)
-    }
-
-    final override fun visitDelegateFieldReference(delegateFieldReference: AstDelegateFieldReference, data: Nothing?) {
-        visitDelegateFieldReference(delegateFieldReference)
-    }
-
-    final override fun visitBackingFieldReference(backingFieldReference: AstBackingFieldReference, data: Nothing?) {
-        visitBackingFieldReference(backingFieldReference)
-    }
-
-    final override fun visitResolvedCallableReference(resolvedCallableReference: AstResolvedCallableReference, data: Nothing?) {
-        visitResolvedCallableReference(resolvedCallableReference)
+    final override fun visitBackingFieldRefExpression(backingFieldRefExpression: AstBackingFieldRefExpression, data: Nothing?) {
+        visitBackingFieldRefExpression(backingFieldRefExpression)
     }
 
     final override fun visitSimpleType(simpleType: AstSimpleType, data: Nothing?) {

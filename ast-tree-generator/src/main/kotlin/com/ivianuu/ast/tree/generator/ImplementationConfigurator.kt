@@ -20,9 +20,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             defaultTrue("isPrimary", withGetter = true)
         }
 
-        impl(typeParameterRef, "AstOuterClassTypeParameterRef")
-        impl(typeParameterRef, "AstConstructedClassTypeParameterRef")
-
         noImpl(declarationStatus)
 
         impl(regularClass) {
@@ -71,8 +68,8 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         noImpl(expressionWithSmartcast)
 
         impl(getClassCall) {
-            default("argument") {
-                value = "argumentList.arguments.first()"
+            default("valueArgument") {
+                value = "valueArguments.first()"
                 withGetter = true
             }
         }
@@ -84,7 +81,7 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             }
 
             default("backingFieldSymbol", "AstBackingFieldSymbol(symbol.callableId)")
-            useTypes(field, delegateFieldReference)
+            useTypes(field)
         }
 
         impl(field) {
@@ -94,7 +91,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             }
 
             defaultNull(
-                "delegateFieldSymbol",
                 "receiverType",
                 "initializer",
                 "delegate",
@@ -108,7 +104,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             defaultTrue("isVal", withGetter = true)
             defaultFalse("isVar", withGetter = true)
             defaultNull(
-                "delegateFieldSymbol",
                 "receiverType",
                 "delegate",
                 "getter",
@@ -159,17 +154,8 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             }
         }
 
-        impl(resolvedReifiedParameterReference)
-
         impl(thisReceiverExpression) {
             defaultNoReceivers()
-        }
-
-        impl(variableAssignment) {
-            default("lValue") {
-                value = "calleeReference"
-                customSetter = "calleeReference = value"
-            }
         }
 
         impl(propertyAccessor) {
@@ -199,45 +185,16 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             }
         }
 
-        impl(resolvedNamedReference) {
-            defaultNull("candidateSymbol", withGetter = true)
-        }
+        impl(backingFieldRefExpression)
 
-        impl(resolvedNamedReference, "AstPropertyFromParameterResolvedNamedReference") {
-            defaultNull("candidateSymbol", withGetter = true)
-            publicImplementation()
-        }
-
-        impl(resolvedCallableReference) {
-            defaultNull("candidateSymbol", withGetter = true)
-        }
-
-        impl(namedReference, "AstSimpleNamedReference") {
-            kind = OpenClass
-        }
-
-        impl(delegateFieldReference) {
-            default("name") {
-                value = "Name.identifier(\"\\\$delegate\")"
-                withGetter = true
-            }
-        }
-
-        impl(backingFieldReference) {
-            default("name") {
-                value = "Name.identifier(\"\\\$field\")"
-                withGetter = true
-            }
-        }
-
-        impl(thisReference, "AstExplicitThisReference") {
+        impl(thisRefExpression, "AstExplicitThisReference") {
             default("boundSymbol") {
                 value = "null"
                 isMutable = true
             }
         }
 
-        impl(thisReference, "AstImplicitThisReference") {
+        impl(thisRefExpression, "AstImplicitThisReference") {
             default("labelName") {
                 value = "null"
                 withGetter = true
@@ -247,11 +204,7 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             }
         }
 
-        impl(superReference, "AstExplicitSuperReference")
-
-        impl(reference, "AstStubReference") {
-            kind = Object
-        }
+        impl(superRefExpression, "AstExplicitSuperReference")
 
         impl(typeProjection, "AstTypePlaceholderProjection") {
             kind = Object
@@ -267,7 +220,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
                 "initializer",
                 "delegate",
                 "receiverType",
-                "delegateFieldSymbol",
                 withGetter = true
             )
         }

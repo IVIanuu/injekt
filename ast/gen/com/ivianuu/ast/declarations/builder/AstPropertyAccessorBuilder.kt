@@ -12,7 +12,7 @@ import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.declarations.builder.AstFunctionBuilder
 import com.ivianuu.ast.declarations.impl.AstPropertyAccessorImpl
 import com.ivianuu.ast.expressions.AstBlock
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstPropertyAccessorSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -33,7 +33,7 @@ class AstPropertyAccessorBuilder : AstFunctionBuilder, AstAnnotationContainerBui
     lateinit var symbol: AstPropertyAccessorSymbol
     var isGetter: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
     lateinit var status: AstDeclarationStatus
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
 
     @OptIn(AstImplementationDetail::class)

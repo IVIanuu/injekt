@@ -11,11 +11,9 @@ import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.builder.AstTypeParametersOwnerBuilder
 import com.ivianuu.ast.declarations.impl.AstPropertyImpl
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
-import com.ivianuu.ast.references.AstDelegateFieldReference
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstBackingFieldSymbol
-import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
 import com.ivianuu.ast.symbols.impl.AstPropertySymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -35,11 +33,10 @@ class AstPropertyBuilder : AstTypeParametersOwnerBuilder, AstAnnotationContainer
     lateinit var name: Name
     var initializer: AstExpression? = null
     var delegate: AstExpression? = null
-    var delegateFieldSymbol: AstDelegateFieldSymbol<AstProperty>? = null
     var isVar: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
     var getter: AstPropertyAccessor? = null
     var setter: AstPropertyAccessor? = null
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
     lateinit var symbol: AstPropertySymbol
     var isLocal: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
@@ -53,7 +50,6 @@ class AstPropertyBuilder : AstTypeParametersOwnerBuilder, AstAnnotationContainer
             name,
             initializer,
             delegate,
-            delegateFieldSymbol,
             isVar,
             getter,
             setter,

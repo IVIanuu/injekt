@@ -2,8 +2,8 @@ package com.ivianuu.ast.expressions.impl
 
 import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.expressions.AstBlock
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstWhileLoop
 import com.ivianuu.ast.visitors.*
 
@@ -13,7 +13,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstWhileLoopImpl(
-    override val annotations: MutableList<AstCall>,
+    override val annotations: MutableList<AstFunctionCall>,
     override var label: AstLabel?,
     override var condition: AstExpression,
     override var block: AstBlock,

@@ -7,7 +7,7 @@ import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstFunction
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.expressions.AstBlock
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -18,7 +18,7 @@ import com.ivianuu.ast.visitors.*
 
 @AstBuilderDsl
 interface AstFunctionBuilder : AstAnnotationContainerBuilder {
-    abstract override val annotations: MutableList<AstCall>
+    abstract override val annotations: MutableList<AstFunctionCall>
     abstract var origin: AstDeclarationOrigin
     abstract var attributes: AstDeclarationAttributes
     abstract var returnType: AstType

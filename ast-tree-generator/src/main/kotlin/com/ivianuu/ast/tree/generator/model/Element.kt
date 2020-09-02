@@ -139,7 +139,6 @@ class Element(val name: String, kind: Kind) : AbstractElement {
     enum class Kind(val packageName: String) {
         Expression("expressions"),
         Declaration("declarations"),
-        Reference("references"),
         Type("types"),
         Other("")
     }

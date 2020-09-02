@@ -7,9 +7,8 @@ import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.declarations.impl.AstDefaultSetterValueParameter
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
-import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -29,12 +28,11 @@ class AstDefaultSetterValueParameterBuilder : AstAnnotationContainerBuilder {
     lateinit var symbol: AstVariableSymbol<AstValueParameter>
     var initializer: AstExpression? = null
     var delegate: AstExpression? = null
-    var delegateFieldSymbol: AstDelegateFieldSymbol<AstValueParameter>? = null
     var isVar: Boolean = false
     var isVal: Boolean = true
     var getter: AstPropertyAccessor? = null
     var setter: AstPropertyAccessor? = null
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     var defaultValue: AstExpression? = null
     var isCrossinline: Boolean = false
     var isNoinline: Boolean = false
@@ -48,7 +46,6 @@ class AstDefaultSetterValueParameterBuilder : AstAnnotationContainerBuilder {
             symbol,
             initializer,
             delegate,
-            delegateFieldSymbol,
             isVar,
             isVal,
             getter,

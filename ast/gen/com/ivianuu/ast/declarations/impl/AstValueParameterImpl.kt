@@ -5,9 +5,8 @@ import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstValueParameter
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
-import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
@@ -23,7 +22,7 @@ open class AstValueParameterImpl @AstImplementationDetail constructor(
     override var returnType: AstType,
     override val name: Name,
     override val symbol: AstVariableSymbol<AstValueParameter>,
-    override val annotations: MutableList<AstCall>,
+    override val annotations: MutableList<AstFunctionCall>,
     override var defaultValue: AstExpression?,
     override val isCrossinline: Boolean,
     override val isNoinline: Boolean,
@@ -33,7 +32,6 @@ open class AstValueParameterImpl @AstImplementationDetail constructor(
     override val receiverType: AstType? get() = null
     override val initializer: AstExpression? get() = null
     override val delegate: AstExpression? get() = null
-    override val delegateFieldSymbol: AstDelegateFieldSymbol<AstValueParameter>? get() = null
     override val isVar: Boolean get() = false
     override val isVal: Boolean get() = true
     override val getter: AstPropertyAccessor? get() = null

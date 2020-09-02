@@ -6,9 +6,8 @@ import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstField
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstTypeParameter
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
-import com.ivianuu.ast.symbols.impl.AstDelegateFieldSymbol
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
@@ -25,7 +24,7 @@ internal class AstFieldImpl(
     override val name: Name,
     override val symbol: AstVariableSymbol<AstField>,
     override val isVar: Boolean,
-    override val annotations: MutableList<AstCall>,
+    override val annotations: MutableList<AstFunctionCall>,
     override val typeParameters: MutableList<AstTypeParameter>,
     override var status: AstDeclarationStatus,
 ) : AstField() {
@@ -33,7 +32,6 @@ internal class AstFieldImpl(
     override val receiverType: AstType? get() = null
     override val initializer: AstExpression? get() = null
     override val delegate: AstExpression? get() = null
-    override val delegateFieldSymbol: AstDelegateFieldSymbol<AstField>? get() = null
     override val isVal: Boolean get() = !isVar
     override val getter: AstPropertyAccessor? get() = null
     override val setter: AstPropertyAccessor? get() = null

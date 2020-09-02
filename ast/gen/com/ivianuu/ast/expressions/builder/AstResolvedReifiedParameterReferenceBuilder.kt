@@ -2,7 +2,7 @@ package com.ivianuu.ast.expressions.builder
 
 import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstResolvedReifiedParameterReference
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.impl.AstResolvedReifiedParameterReferenceImpl
@@ -19,7 +19,7 @@ import kotlin.contracts.*
 @AstBuilderDsl
 class AstResolvedReifiedParameterReferenceBuilder : AstAnnotationContainerBuilder, AstExpressionBuilder {
     override lateinit var type: AstType
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     lateinit var symbol: AstTypeParameterSymbol
 
     override fun build(): AstResolvedReifiedParameterReference {

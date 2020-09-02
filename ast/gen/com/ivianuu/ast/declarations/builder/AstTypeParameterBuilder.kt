@@ -6,7 +6,7 @@ import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.impl.AstTypeParameterImpl
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstTypeParameterSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -27,7 +27,7 @@ class AstTypeParameterBuilder : AstAnnotationContainerBuilder {
     lateinit var variance: Variance
     var isReified: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
     val bounds: MutableList<AstType> = mutableListOf()
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
 
     override fun build(): AstTypeParameter {
         return AstTypeParameterImpl(

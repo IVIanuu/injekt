@@ -1,7 +1,7 @@
 package com.ivianuu.ast.expressions.builder
 
 import com.ivianuu.ast.builder.AstBuilderDsl
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstResolvedQualifier
 import com.ivianuu.ast.symbols.impl.AstClassLikeSymbol
 import com.ivianuu.ast.types.AstType
@@ -18,7 +18,7 @@ import org.jetbrains.kotlin.name.FqName
 @AstBuilderDsl
 interface AstAbstractResolvedQualifierBuilder {
     abstract var type: AstType
-    abstract val annotations: MutableList<AstCall>
+    abstract val annotations: MutableList<AstFunctionCall>
     abstract var packageFqName: FqName
     abstract var relativeClassFqName: FqName?
     abstract var classId: ClassId?

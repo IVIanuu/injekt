@@ -6,13 +6,12 @@ import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstDeclarationStatus
-import com.ivianuu.ast.declarations.AstTypeParameterRef
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.declarations.builder.AstAbstractConstructorBuilder
 import com.ivianuu.ast.declarations.impl.AstConstructorImpl
 import com.ivianuu.ast.expressions.AstBlock
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -28,10 +27,9 @@ open class AstConstructorBuilder : AstAbstractConstructorBuilder, AstAnnotationC
     override lateinit var origin: AstDeclarationOrigin
     override lateinit var returnType: AstType
     override var receiverType: AstType? = null
-    override val typeParameters: MutableList<AstTypeParameterRef> = mutableListOf()
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
     override lateinit var status: AstDeclarationStatus
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var symbol: AstConstructorSymbol
     override var delegatedConstructor: AstDelegatedConstructorCall? = null
     override var body: AstBlock? = null
@@ -41,7 +39,6 @@ open class AstConstructorBuilder : AstAbstractConstructorBuilder, AstAnnotationC
             origin,
             returnType,
             receiverType,
-            typeParameters,
             valueParameters,
             status,
             annotations,

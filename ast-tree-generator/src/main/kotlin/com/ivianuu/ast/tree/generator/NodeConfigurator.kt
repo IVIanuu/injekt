@@ -6,9 +6,8 @@
 package com.ivianuu.ast.tree.generator
 
 import com.ivianuu.ast.tree.generator.FieldSets.annotations
-import com.ivianuu.ast.tree.generator.FieldSets.arguments
+import com.ivianuu.ast.tree.generator.FieldSets.valueArguments
 import com.ivianuu.ast.tree.generator.FieldSets.body
-import com.ivianuu.ast.tree.generator.FieldSets.calleeReference
 import com.ivianuu.ast.tree.generator.FieldSets.classKind
 import com.ivianuu.ast.tree.generator.FieldSets.declarations
 import com.ivianuu.ast.tree.generator.FieldSets.files
@@ -21,7 +20,6 @@ import com.ivianuu.ast.tree.generator.FieldSets.superTypes
 import com.ivianuu.ast.tree.generator.FieldSets.symbol
 import com.ivianuu.ast.tree.generator.FieldSets.symbolWithPackage
 import com.ivianuu.ast.tree.generator.FieldSets.typeArguments
-import com.ivianuu.ast.tree.generator.FieldSets.typeParameterRefs
 import com.ivianuu.ast.tree.generator.FieldSets.typeParameters
 import com.ivianuu.ast.tree.generator.FieldSets.typeField
 import com.ivianuu.ast.tree.generator.FieldSets.visibility
@@ -47,20 +45,12 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +symbolWithPackage("ast.symbols", "AbstractAstSymbol", "E")
         }
 
-        typeParameterRef.configure {
+        typeParameter.configure {
             +symbol(typeParameterSymbolType.type)
         }
 
         typeParametersOwner.configure {
             +typeParameters.withTransform()
-        }
-
-        typeParameterRefsOwner.configure {
-            +typeParameterRefs.withTransform()
-        }
-
-        resolvable.configure {
-            +calleeReference.withTransform()
         }
 
         declaration.configure {
@@ -93,7 +83,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         memberDeclaration.configure {
-            +typeParameterRefs
             +status.withTransform()
         }
 
@@ -103,7 +92,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         call.configure {
-            +arguments
+            +valueArguments
         }
 
         block.configure {
@@ -180,7 +169,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         functionCall.configure {
-            +field("calleeReference", namedReference)
+            +field("callee", functionSymbolType)
         }
 
         comparisonExpression.configure {
@@ -322,7 +311,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         delegatedConstructorCall.configure {
             +field("constructedType", type, withReplace = true)
             +field("dispatchReceiver", expression, nullable = true).withTransform()
-            +field("calleeReference", reference, withReplace = true)
             generateBooleanFields("this", "super")
         }
 
@@ -339,7 +327,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +symbol("AstVariableSymbol", "F")
             +initializer.withTransform()
             +field("delegate", expression, nullable = true).withTransform()
-            +field("delegateFieldSymbol", delegateFieldSymbolType, "F", nullable = true)
             generateBooleanFields("var", "val")
             +field("getter", propertyAccessor, nullable = true).withTransform()
             +field("setter", propertyAccessor, nullable = true).withTransform()
@@ -402,12 +389,12 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         callableReferenceAccess.configure {
-            +field("calleeReference", namedReference, withReplace = true).withTransform()
+            +field("callee", callableSymbolType, withReplace = true).withTransform()
             +booleanField("hasQuestionMarkAtLHS", withReplace = true)
         }
 
         getClassCall.configure {
-            +field("argument", expression)
+            +field("valueArgument", expression)
         }
 
         wrappedArgumentExpression.configure {
@@ -444,8 +431,8 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         variableAssignment.configure {
-            +field("lValue", reference)
-            +field("rValue", expression).withTransform()
+            +field("left", expression)
+            +field("right", expression).withTransform()
         }
 
         whenSubjectExpression.configure {
@@ -460,33 +447,16 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +field("delegateProvider", expression)
         }
 
-        namedReference.configure {
-            +name
-            +field("candidateSymbol", abstractAstSymbolType, "*", nullable = true)
-        }
-
-        resolvedNamedReference.configure {
-            +field("resolvedSymbol", abstractAstSymbolType, "*")
-        }
-
-        resolvedCallableReference.configure {
-            +fieldList("inferredTypeArguments", type)
-        }
-
-        delegateFieldReference.configure {
-            +field("resolvedSymbol", delegateFieldSymbolType.withArgs("*"))
-        }
-
-        backingFieldReference.configure {
+        backingFieldRefExpression.configure {
             +field("resolvedSymbol", backingFieldSymbolType)
         }
 
-        superReference.configure {
+        superRefExpression.configure {
             +stringField("labelName", nullable = true)
             +field("superType", type, withReplace = true)
         }
 
-        thisReference.configure {
+        thisRefExpression.configure {
             +stringField("labelName", nullable = true)
             +field(
                 "boundSymbol",
@@ -508,7 +478,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         thisReceiverExpression.configure {
-            +field("calleeReference", thisReference)
+            +field("calleeReference", thisRefExpression)
         }
 
         whenExpression.configure {

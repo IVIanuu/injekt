@@ -10,7 +10,7 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstWrappedArgumentExpression : AstWrappedExpression() {
     abstract override val type: AstType
-    abstract override val annotations: List<AstCall>
+    abstract override val annotations: List<AstFunctionCall>
     abstract override val expression: AstExpression
     abstract val isSpread: Boolean
 

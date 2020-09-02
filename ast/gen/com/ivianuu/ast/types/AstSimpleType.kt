@@ -1,6 +1,6 @@
 package com.ivianuu.ast.types
 
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstClassifierSymbol
 import com.ivianuu.ast.visitors.*
 
@@ -10,7 +10,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstSimpleType : AstType() {
-    abstract override val annotations: List<AstCall>
+    abstract override val annotations: List<AstFunctionCall>
     abstract override val isMarkedNullable: Boolean
     abstract val classifier: AstClassifierSymbol<*>
     abstract val arguments: List<AstTypeProjection>

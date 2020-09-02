@@ -1,6 +1,6 @@
 package com.ivianuu.ast
 
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -9,7 +9,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 interface AstAnnotationContainer : AstElement {
-    val annotations: List<AstCall>
+    val annotations: List<AstFunctionCall>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitAnnotationContainer(this, data)
 

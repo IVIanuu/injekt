@@ -5,7 +5,7 @@ import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstDeclarationStatus
 import com.ivianuu.ast.declarations.AstTypeAlias
 import com.ivianuu.ast.declarations.AstTypeParameter
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstTypeAliasSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
@@ -23,7 +23,7 @@ internal class AstTypeAliasImpl(
     override val name: Name,
     override val symbol: AstTypeAliasSymbol,
     override var expandedType: AstType,
-    override val annotations: MutableList<AstCall>,
+    override val annotations: MutableList<AstFunctionCall>,
 ) : AstTypeAlias() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
 

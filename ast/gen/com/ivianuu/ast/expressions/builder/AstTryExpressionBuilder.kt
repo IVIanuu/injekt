@@ -3,13 +3,11 @@ package com.ivianuu.ast.expressions.builder
 import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstBlock
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstCatch
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstTryExpression
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.impl.AstTryExpressionImpl
-import com.ivianuu.ast.references.AstReference
-import com.ivianuu.ast.references.impl.AstStubReference
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
@@ -22,8 +20,7 @@ import kotlin.contracts.*
 @AstBuilderDsl
 class AstTryExpressionBuilder : AstAnnotationContainerBuilder, AstExpressionBuilder {
     override lateinit var type: AstType
-    override val annotations: MutableList<AstCall> = mutableListOf()
-    var calleeReference: AstReference = AstStubReference
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     lateinit var tryBlock: AstBlock
     val catches: MutableList<AstCatch> = mutableListOf()
     var finallyBlock: AstBlock? = null
@@ -32,7 +29,6 @@ class AstTryExpressionBuilder : AstAnnotationContainerBuilder, AstExpressionBuil
         return AstTryExpressionImpl(
             type,
             annotations,
-            calleeReference,
             tryBlock,
             catches,
             finallyBlock,

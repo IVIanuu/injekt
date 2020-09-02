@@ -2,7 +2,7 @@ package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.AstPureAbstractElement
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import org.jetbrains.kotlin.name.FqName
 import com.ivianuu.ast.visitors.*
 
@@ -12,7 +12,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstFile : AstPureAbstractElement(), AstAnnotationContainer {
-    abstract override val annotations: List<AstCall>
+    abstract override val annotations: List<AstFunctionCall>
     abstract val declarations: List<AstDeclaration>
     abstract val name: String
     abstract val packageFqName: FqName

@@ -11,7 +11,7 @@ import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.declarations.builder.AstFunctionBuilder
 import com.ivianuu.ast.declarations.impl.AstAnonymousFunctionImpl
 import com.ivianuu.ast.expressions.AstBlock
-import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.symbols.impl.AstAnonymousFunctionSymbol
 import com.ivianuu.ast.types.AstType
@@ -26,7 +26,7 @@ import kotlin.contracts.*
 @AstBuilderDsl
 class AstAnonymousFunctionBuilder : AstFunctionBuilder, AstAnnotationContainerBuilder, AstExpressionBuilder {
     override lateinit var origin: AstDeclarationOrigin
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var returnType: AstType
     var receiverType: AstType? = null
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()

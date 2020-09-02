@@ -11,7 +11,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstLoop : AstPureAbstractElement(), AstStatement, AstTargetElement {
-    abstract override val annotations: List<AstCall>
+    abstract override val annotations: List<AstFunctionCall>
     abstract val block: AstBlock
     abstract val condition: AstExpression
     abstract val label: AstLabel?

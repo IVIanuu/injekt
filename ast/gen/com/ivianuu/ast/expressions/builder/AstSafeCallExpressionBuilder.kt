@@ -3,9 +3,9 @@ package com.ivianuu.ast.expressions.builder
 import com.ivianuu.ast.AstExpressionRef
 import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
-import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstCheckedSafeCallSubject
 import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstQualifiedAccess
 import com.ivianuu.ast.expressions.AstSafeCallExpression
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
@@ -22,7 +22,7 @@ import kotlin.contracts.*
 @AstBuilderDsl
 class AstSafeCallExpressionBuilder : AstAnnotationContainerBuilder, AstExpressionBuilder {
     override lateinit var type: AstType
-    override val annotations: MutableList<AstCall> = mutableListOf()
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     lateinit var receiver: AstExpression
     lateinit var checkedSubjectRef: AstExpressionRef<AstCheckedSafeCallSubject>
     lateinit var regularQualifiedAccess: AstQualifiedAccess
