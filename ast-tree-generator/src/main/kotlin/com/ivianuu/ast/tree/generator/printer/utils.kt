@@ -146,7 +146,17 @@ fun Implementation.Kind?.braces(): String = when (this) {
     else -> throw IllegalStateException(this.toString())
 }
 
-val Element.safeDecapitalizedName: String get() = if (name == "Class") "klass" else name.decapitalize()
+val Element.safeDecapitalizedName: String get() =
+    when (name) {
+        "Class" -> "klass"
+        "Break" -> "breakExpression"
+        "Continue" -> "continueExpression"
+        "Return" -> "returnExpression"
+        "Try" -> "tryExpression"
+        "Throw" -> "throwExpression"
+        "When" -> "whenExpression"
+        else -> name.decapitalize()
+    }
 
 val Importable.typeWithArguments: String
     get() = when (this) {

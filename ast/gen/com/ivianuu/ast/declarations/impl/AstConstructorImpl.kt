@@ -18,8 +18,8 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstConstructorImpl(
     override val origin: AstDeclarationOrigin,
-    override var returnType: AstType,
     override var receiverType: AstType?,
+    override var returnType: AstType,
     override val valueParameters: MutableList<AstValueParameter>,
     override val annotations: MutableList<AstFunctionCall>,
     override val symbol: AstConstructorSymbol,
@@ -30,8 +30,8 @@ internal class AstConstructorImpl(
     override val isPrimary: Boolean get() = false
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        returnType.accept(visitor, data)
         receiverType?.accept(visitor, data)
+        returnType.accept(visitor, data)
         valueParameters.forEach { it.accept(visitor, data) }
         annotations.forEach { it.accept(visitor, data) }
         delegatedConstructor?.accept(visitor, data)
@@ -39,8 +39,8 @@ internal class AstConstructorImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstConstructorImpl {
-        returnType = returnType.transformSingle(transformer, data)
         receiverType = receiverType?.transformSingle(transformer, data)
+        returnType = returnType.transformSingle(transformer, data)
         valueParameters.transformInplace(transformer, data)
         annotations.transformInplace(transformer, data)
         delegatedConstructor = delegatedConstructor?.transformSingle(transformer, data)

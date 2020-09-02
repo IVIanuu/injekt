@@ -18,8 +18,8 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstDefaultSetterValueParameter(
     override val origin: AstDeclarationOrigin,
-    override var returnType: AstType,
     override var receiverType: AstType?,
+    override var returnType: AstType,
     override var initializer: AstExpression?,
     override var delegate: AstExpression?,
     override val isVar: Boolean,
@@ -37,8 +37,8 @@ internal class AstDefaultSetterValueParameter(
     override val name: Name = Name.identifier("value")
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        returnType.accept(visitor, data)
         receiverType?.accept(visitor, data)
+        returnType.accept(visitor, data)
         initializer?.accept(visitor, data)
         delegate?.accept(visitor, data)
         getter?.accept(visitor, data)
@@ -48,7 +48,14 @@ internal class AstDefaultSetterValueParameter(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstDefaultSetterValueParameter {
-        transformOtherChildren(transformer, data)
+        receiverType = receiverType?.transformSingle(transformer, data)
+        returnType = returnType.transformSingle(transformer, data)
+        initializer = initializer?.transformSingle(transformer, data)
+        delegate = delegate?.transformSingle(transformer, data)
+        getter = getter?.transformSingle(transformer, data)
+        setter = setter?.transformSingle(transformer, data)
+        annotations.transformInplace(transformer, data)
+        defaultValue = defaultValue?.transformSingle(transformer, data)
         return this
     }
 }

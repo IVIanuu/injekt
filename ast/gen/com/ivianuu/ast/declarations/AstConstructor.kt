@@ -13,11 +13,11 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstConstructor : AstPureAbstractElement(), AstFunction<AstConstructor>, AstCallableMemberDeclaration<AstConstructor> {
+abstract class AstConstructor : AstPureAbstractElement(), AstFunction<AstConstructor>, AstCallableDeclaration<AstConstructor> {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
-    abstract override val returnType: AstType
     abstract override val receiverType: AstType?
+    abstract override val returnType: AstType
     abstract override val valueParameters: List<AstValueParameter>
     abstract override val annotations: List<AstFunctionCall>
     abstract override val symbol: AstConstructorSymbol

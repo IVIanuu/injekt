@@ -5,7 +5,7 @@ import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstThisReference
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.impl.AstExplicitThisReference
-import com.ivianuu.ast.symbols.AbstractAstSymbol
+import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*

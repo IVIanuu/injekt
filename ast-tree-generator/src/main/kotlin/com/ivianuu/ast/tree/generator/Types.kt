@@ -27,28 +27,20 @@ val fqNameType = type(FqName::class)
 val classIdType = type(ClassId::class)
 val operationKindType = type("ast.expressions", "LogicOperationKind")
 
-val whenExpressionType = generatedType("expressions", "AstWhenExpression")
-val expressionType = generatedType("expressions", "AstExpression")
-val safeCallCheckedSubjectType = generatedType("expressions", "AstCheckedSafeCallSubject")
-
-val whenRefType = generatedType("", "AstExpressionRef<AstWhenExpression>")
-val safeCallOriginalReceiverReferenceType = generatedType("", "AstExpressionRef<AstExpression>")
-val safeCallCheckedSubjectReferenceType =
-    generatedType("", "AstExpressionRef<AstCheckedSafeCallSubject>")
-
 val compositeTransformResultType = type("ast.visitors", "CompositeTransformResult")
 
 val astSymbolType = type("ast.symbols", "AstSymbol")
 val abstractAstSymbolType = type("ast.symbols", "AbstractAstSymbol")
 val backingFieldSymbolType = type("ast.symbols.impl", "AstBackingFieldSymbol")
-val callableSymbolType = type("ast.symbols.impl", "AstCallableSymbol<*>")
+val callableSymbolType = type("ast.symbols.impl", "AstCallableSymbol")
 val classSymbolType = type("ast.symbols.impl", "AstClassSymbol")
-val classLikeSymbolType = type("ast.symbols.impl", "AstClassLikeSymbol<*>")
-val classifierSymbolType = type("ast.symbols.impl", "AstClassifierSymbol<*>")
-val functionSymbolType = type("ast.symbols.impl", "AstFunctionSymbol<*>")
+val classLikeSymbolType = type("ast.symbols.impl", "AstClassLikeSymbol")
+val classifierSymbolType = type("ast.symbols.impl", "AstClassifierSymbol")
+val functionSymbolType = type("ast.symbols.impl", "AstFunctionSymbol")
 val typeParameterSymbolType = type("ast.symbols.impl", "AstTypeParameterSymbol")
 val anonymousInitializerSymbolType = type("ast.symbols.impl", "AstAnonymousInitializerSymbol")
 val valueParameterSymbol = type("ast.symbols.impl", "AstValueParameterSymbol")
+val variableSymbol = type("ast.symbols.impl", "AstVariableSymbol")
 
 val pureAbstractElementType = generatedType("AstPureAbstractElement")
 

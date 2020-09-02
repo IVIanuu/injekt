@@ -15,11 +15,11 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstProperty : AstVariable<AstProperty>(), AstTypeParametersOwner, AstCallableMemberDeclaration<AstProperty> {
+abstract class AstProperty : AstVariable<AstProperty>(), AstTypeParametersOwner, AstCallableDeclaration<AstProperty> {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
-    abstract override val returnType: AstType
     abstract override val receiverType: AstType?
+    abstract override val returnType: AstType
     abstract override val name: Name
     abstract override val initializer: AstExpression?
     abstract override val delegate: AstExpression?
@@ -41,6 +41,4 @@ abstract class AstProperty : AstVariable<AstProperty>(), AstTypeParametersOwner,
     abstract val isLateinit: Boolean
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitProperty(this, data)
-
-    abstract override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstProperty
 }

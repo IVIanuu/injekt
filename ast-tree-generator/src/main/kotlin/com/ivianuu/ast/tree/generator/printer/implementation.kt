@@ -204,16 +204,10 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
                                 println("companionObject = declarations.asSequence().filterIsInstance<AstRegularClass>().firstOrNull { it.isCompanion }")
                             }
 
-                            !element.needTransformOtherChildren -> {
+                            else -> {
                                 field.transform()
                             }
-
-                            else -> {
-                            }
                         }
-                    }
-                    if (element.needTransformOtherChildren) {
-                        println("transformOtherChildren(transformer, data)")
                     }
                     println("return this")
                 }

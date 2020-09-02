@@ -23,7 +23,9 @@ internal class AstBlockImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstBlockImpl {
-        transformOtherChildren(transformer, data)
+        annotations.transformInplace(transformer, data)
+        statements.transformInplace(transformer, data)
+        type = type.transformSingle(transformer, data)
         return this
     }
 }

@@ -15,8 +15,8 @@ import com.ivianuu.ast.visitors.*
 abstract class AstValueParameter : AstVariable<AstValueParameter>() {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
-    abstract override val returnType: AstType
     abstract override val receiverType: AstType?
+    abstract override val returnType: AstType
     abstract override val name: Name
     abstract override val initializer: AstExpression?
     abstract override val delegate: AstExpression?
@@ -32,6 +32,4 @@ abstract class AstValueParameter : AstVariable<AstValueParameter>() {
     abstract val isVararg: Boolean
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitValueParameter(this, data)
-
-    abstract override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstValueParameter
 }

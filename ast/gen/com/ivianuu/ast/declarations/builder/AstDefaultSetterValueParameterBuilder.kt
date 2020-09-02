@@ -22,8 +22,8 @@ import org.jetbrains.kotlin.name.Name
 @AstBuilderDsl
 class AstDefaultSetterValueParameterBuilder {
     var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
-    lateinit var returnType: AstType
     var receiverType: AstType? = null
+    lateinit var returnType: AstType
     var initializer: AstExpression? = null
     var delegate: AstExpression? = null
     var isVar: Boolean = false
@@ -40,8 +40,8 @@ class AstDefaultSetterValueParameterBuilder {
     fun build(): AstValueParameter {
         return AstDefaultSetterValueParameter(
             origin,
-            returnType,
             receiverType,
+            returnType,
             initializer,
             delegate,
             isVar,

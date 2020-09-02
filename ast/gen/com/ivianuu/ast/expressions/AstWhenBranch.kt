@@ -11,9 +11,7 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstWhenBranch : AstPureAbstractElement(), AstElement {
     abstract val condition: AstExpression
-    abstract val result: AstBlock
+    abstract val result: AstExpression
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitWhenBranch(this, data)
-
-    abstract fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstWhenBranch
 }

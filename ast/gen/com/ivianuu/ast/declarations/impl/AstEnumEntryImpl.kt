@@ -39,7 +39,9 @@ internal class AstEnumEntryImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
-        transformOtherChildren(transformer, data)
+        returnType = returnType.transformSingle(transformer, data)
+        initializer = initializer?.transformSingle(transformer, data)
+        annotations.transformInplace(transformer, data)
         return this
     }
 }

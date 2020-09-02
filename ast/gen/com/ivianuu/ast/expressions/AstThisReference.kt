@@ -1,6 +1,6 @@
 package com.ivianuu.ast.expressions
 
-import com.ivianuu.ast.symbols.AbstractAstSymbol
+import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -13,7 +13,7 @@ abstract class AstThisReference : AstExpression() {
     abstract override val type: AstType
     abstract override val annotations: List<AstFunctionCall>
     abstract val labelName: String?
-    abstract val boundSymbol: AbstractAstSymbol<*>?
+    abstract val boundSymbol: AstSymbol<*>?
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitThisReference(this, data)
 }

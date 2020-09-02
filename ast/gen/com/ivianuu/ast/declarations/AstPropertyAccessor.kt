@@ -15,9 +15,9 @@ import com.ivianuu.ast.visitors.*
 abstract class AstPropertyAccessor : AstPureAbstractElement(), AstFunction<AstPropertyAccessor>, AstTypeParametersOwner {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
-    abstract override val annotations: List<AstFunctionCall>
-    abstract override val returnType: AstType
     abstract override val receiverType: AstType?
+    abstract override val returnType: AstType
+    abstract override val annotations: List<AstFunctionCall>
     abstract override val valueParameters: List<AstValueParameter>
     abstract override val body: AstBlock?
     abstract override val typeParameters: List<AstTypeParameter>

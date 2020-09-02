@@ -2,7 +2,7 @@ package com.ivianuu.ast.expressions.impl
 
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstThisReference
-import com.ivianuu.ast.symbols.AbstractAstSymbol
+import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -14,7 +14,7 @@ import com.ivianuu.ast.visitors.*
 internal class AstImplicitThisReference(
     override var type: AstType,
     override val annotations: MutableList<AstFunctionCall>,
-    override val boundSymbol: AbstractAstSymbol<*>?,
+    override val boundSymbol: AstSymbol<*>?,
 ) : AstThisReference() {
     override val labelName: String? get() = null
 

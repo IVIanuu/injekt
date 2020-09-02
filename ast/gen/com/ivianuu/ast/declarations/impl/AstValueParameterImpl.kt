@@ -44,7 +44,9 @@ open class AstValueParameterImpl @AstImplementationDetail constructor(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstValueParameterImpl {
-        transformOtherChildren(transformer, data)
+        returnType = returnType.transformSingle(transformer, data)
+        annotations.transformInplace(transformer, data)
+        defaultValue = defaultValue?.transformSingle(transformer, data)
         return this
     }
 }

@@ -40,7 +40,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         }
 
         val qualifiedAccessBuilder by builder {
-            fields from qualifiedAccess
+            fields from qualifiedAccess without listOf("callee")
         }
 
         val callBuilder by builder {
@@ -89,7 +89,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             parents += typeParametersOwnerBuilder
         }
 
-        builder(callableReferenceAccess) {
+        builder(callableReference) {
             parents += qualifiedAccessBuilder
             defaultNoReceivers()
             defaultFalse("hasQuestionMarkAtLHS")
@@ -122,10 +122,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             defaultNoReceivers()
         }
 
-        builder(getClassCall) {
-            parents += callBuilder
-        }
-
         builder(property) {
             parents += typeParametersOwnerBuilder
             defaultNull("getter", "setter")
@@ -136,16 +132,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             defaultFalse("isInline")
         }
 
-        builder(typeOperatorCall) {
-            parents += callBuilder
-        }
-
-        builder(stringConcatenationCall) {
-            parents += callBuilder
-        }
-
-        builder(thisReceiverExpression) {
-            parents += qualifiedAccessBuilder
+        builder(typeOperation) {
         }
 
         builder(variableAssignment) {
@@ -164,11 +151,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         }
 
         builder(whenExpression) {
-            defaultFalse("isExhaustive")
-        }
-
-        builder("isMarkedNullable") {
-            defaultFalse("isMarkedNullable")
         }
 
         builder(breakExpression) {
@@ -220,6 +202,10 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
 
         findImplementationsWithElementInParents(expression).forEach {
             it.builder?.parents?.add(expressionBuilder)
+        }
+
+        configureFieldInAllLeafBuilders(field = "isMarkedNullable") {
+            defaultFalse(it)
         }
 
         configureFieldInAllLeafBuilders(field = "origin") {

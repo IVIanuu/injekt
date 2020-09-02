@@ -41,7 +41,9 @@ internal class AstFieldImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstFieldImpl {
-        transformOtherChildren(transformer, data)
+        returnType = returnType.transformSingle(transformer, data)
+        annotations.transformInplace(transformer, data)
+        typeParameters.transformInplace(transformer, data)
         return this
     }
 }

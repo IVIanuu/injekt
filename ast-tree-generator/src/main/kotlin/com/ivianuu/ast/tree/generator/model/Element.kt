@@ -22,13 +22,11 @@ interface AbstractElement : FieldContainer, KindOwner {
     val baseTransformerType: AbstractElement?
     val transformerType: AbstractElement
     val doesNotNeedImplementation: Boolean
-    val needTransformOtherChildren: Boolean
     val allImplementations: List<Implementation>
     val allAstFields: List<Field>
     val defaultImplementation: Implementation?
     val customImplementations: List<Implementation>
     val overriddenFields: Map<Field, Map<Importable, Boolean>>
-    val useNullableForReplace: Set<Field>
 
     override val allParents: List<KindOwner> get() = parents
 }
@@ -52,17 +50,14 @@ class Element(val name: String, kind: Kind) : AbstractElement {
             }
             field = value
         }
-    var _needTransformOtherChildren: Boolean = false
 
     override var baseTransformerType: Element? = null
     override val transformerType: Element get() = baseTransformerType ?: this
 
     override var doesNotNeedImplementation: Boolean = false
 
-    override val needTransformOtherChildren: Boolean get() = _needTransformOtherChildren || parents.any { it.needTransformOtherChildren }
     override val overriddenFields: MutableMap<Field, MutableMap<Importable, Boolean>> =
         mutableMapOf()
-    override val useNullableForReplace: MutableSet<Field> = mutableSetOf()
     override val allImplementations: List<Implementation> by lazy {
         if (doesNotNeedImplementation) {
             emptyList()

@@ -21,10 +21,12 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstRegularClassImpl(
     override val origin: AstDeclarationOrigin,
-    override val annotations: MutableList<AstFunctionCall>,
+    override var receiverType: AstType?,
+    override var returnType: AstType,
     override val typeParameters: MutableList<AstTypeParameter>,
     override val classKind: ClassKind,
     override val declarations: MutableList<AstDeclaration>,
+    override val annotations: MutableList<AstFunctionCall>,
     override val name: Name,
     override val visibility: Visibility,
     override val isExpect: Boolean,
@@ -42,16 +44,20 @@ internal class AstRegularClassImpl(
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        annotations.forEach { it.accept(visitor, data) }
+        receiverType?.accept(visitor, data)
+        returnType.accept(visitor, data)
         typeParameters.forEach { it.accept(visitor, data) }
         declarations.forEach { it.accept(visitor, data) }
+        annotations.forEach { it.accept(visitor, data) }
         superTypes.forEach { it.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
-        annotations.transformInplace(transformer, data)
+        receiverType = receiverType?.transformSingle(transformer, data)
+        returnType = returnType.transformSingle(transformer, data)
         typeParameters.transformInplace(transformer, data)
         declarations.transformInplace(transformer, data)
+        annotations.transformInplace(transformer, data)
         superTypes.transformInplace(transformer, data)
         return this
     }

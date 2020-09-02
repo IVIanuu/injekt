@@ -24,47 +24,41 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val statement = element("Statement", Expression, annotationContainer)
     val expression = element("Expression", Expression, statement, varargElement)
     val declaration = element("Declaration", Declaration)
-    val annotatedDeclaration =
-        element("AnnotatedDeclaration", Declaration, declaration, annotationContainer)
     val anonymousInitializer = element(
         "AnonymousInitializer",
         Declaration,
         declaration,
         symbolOwner
     )
-    val typedDeclaration = element("TypedDeclaration", Declaration, annotatedDeclaration)
+    // todo remove?
     val callableDeclaration =
-        element("CallableDeclaration", Declaration, typedDeclaration, symbolOwner)
+        element("CallableDeclaration", Declaration, declaration, symbolOwner)
     val typeParameter =
-        element("TypeParameter", Declaration, annotatedDeclaration, symbolOwner)
+        element("TypeParameter", Declaration, declaration, annotationContainer, symbolOwner)
     val typeParametersOwner = element("TypeParametersOwner", Declaration)
-    val memberDeclaration =
-        element("MemberDeclaration", Declaration, annotatedDeclaration)
-    val callableMemberDeclaration =
-        element("CallableMemberDeclaration", Declaration, callableDeclaration, memberDeclaration)
 
     val variable =
-        element("Variable", Declaration, callableDeclaration, annotatedDeclaration, statement)
+        element("Variable", Declaration, callableDeclaration, declaration, annotationContainer, statement)
     val valueParameter = element("ValueParameter", Declaration, variable)
     val property = element(
         "Property",
         Declaration,
         variable,
         typeParametersOwner,
-        callableMemberDeclaration
+        callableDeclaration
     )
     val field =
-        element("Field", Declaration, variable, typeParametersOwner, callableMemberDeclaration)
-    val enumEntry = element("EnumEntry", Declaration, variable, callableMemberDeclaration)
+        element("Field", Declaration, variable, typeParametersOwner, callableDeclaration)
+    val enumEntry = element("EnumEntry", Declaration, variable, callableDeclaration)
 
     val classLikeDeclaration =
-        element("ClassLikeDeclaration", Declaration, annotatedDeclaration, statement, symbolOwner)
+        element("ClassLikeDeclaration", Declaration, declaration, annotationContainer, statement, symbolOwner)
     val klass =
         element("Class", Declaration, classLikeDeclaration, statement)
     val regularClass = element(
         "RegularClass",
         Declaration,
-        memberDeclaration,
+        callableDeclaration,
         typeParametersOwner,
         klass
     )
@@ -72,7 +66,7 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         "TypeAlias",
         Declaration,
         classLikeDeclaration,
-        memberDeclaration,
+        callableDeclaration,
         typeParametersOwner
     )
 
@@ -88,7 +82,7 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         "NamedFunction",
         Declaration,
         function,
-        callableMemberDeclaration,
+        callableDeclaration,
         typeParametersOwner
     )
     val propertyAccessor = element("PropertyAccessor", Declaration, function, typeParametersOwner)
@@ -96,7 +90,7 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         "Constructor",
         Declaration,
         function,
-        callableMemberDeclaration
+        callableDeclaration
     )
 
     val moduleFragment = element("ModuleFragment", Declaration)
@@ -112,14 +106,14 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val whileLoop = element("WhileLoop", Expression, loop)
 
     val block = element("Block", Expression, expression)
-    val binaryLogicExpression = element("BinaryLogicExpression", Expression, expression)
+    val binaryLogicOperation = element("BinaryLogicOperation", Expression, expression)
     val jump = element("Jump", Expression, expression)
     val loopJump = element("LoopJump", Expression, jump)
-    val breakExpression = element("BreakExpression", Expression, loopJump)
-    val continueExpression = element("ContinueExpression", Expression, loopJump)
+    val breakExpression = element("Break", Expression, loopJump)
+    val continueExpression = element("Continue", Expression, loopJump)
     val catchClause = element("Catch", Expression)
-    val tryExpression = element("TryExpression", Expression, expression)
-    val constExpression = element("ConstExpression", Expression, expression)
+    val tryExpression = element("Try", Expression, expression)
+    val constExpression = element("Const", Expression, expression)
     val typeProjection = element("TypeProjection", Type)
     val starProjection = element("StarProjection", Type, typeProjection)
     val typeProjectionWithVariance = element("TypeProjectionWithVariance", Type, typeProjection)
@@ -128,41 +122,29 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         Expression,
         statement
     )
-    val comparisonExpression = element("ComparisonExpression", Expression, expression)
-    val typeOperatorCall = element("TypeOperatorCall", Expression, expression, call)
+    val comparisonOperation = element("ComparisonOperation", Expression, expression)
+    val typeOperation = element("TypeOperation", Expression, expression)
     val assignmentOperatorStatement = element("AssignmentOperatorStatement", Expression, statement)
-    val equalityOperatorCall = element("EqualityOperatorCall", Expression, expression, call)
-    val whenExpression = element("WhenExpression", Expression, expression)
+    val equalityOperation = element("EqualityOperation", Expression, expression)
+    val whenExpression = element("When", Expression, expression)
     val whenBranch = element("WhenBranch", Expression)
-    val elvisExpression = element("ElvisExpression", Expression, expression)
 
     val classReference = element("ClassReference", Expression, expression)
     val qualifiedAccess = element("QualifiedAccess", Expression, expression)
     val functionCall = element("FunctionCall", Expression, qualifiedAccess, call)
     val delegatedConstructorCall = element("DelegatedConstructorCall", Expression, call)
-    val callableReferenceAccess =
-        element("CallableReferenceAccess", Expression, qualifiedAccess)
-    val thisReceiverExpression =
-        element("ThisReceiverExpression", Expression, qualifiedAccess)
-    val expressionWithSmartcast =
-        element("ExpressionWithSmartcast", Expression, qualifiedAccess)
-    val safeCallExpression = element("SafeCallExpression", Expression, expression)
-    val checkedSafeCallSubject = element("CheckedSafeCallSubject", Expression, expression)
-    val getClassCall = element("GetClassCall", Expression, expression, call)
+    val callableReference = element("CallableReference", Expression, qualifiedAccess)
 
     val vararg = element("Vararg", Expression, expression)
     val spreadElement = element("SpreadElement", Other, varargElement)
 
-    val returnExpression = element("ReturnExpression", Expression, jump)
-    val stringConcatenationCall = element("StringConcatenationCall", Expression, call, expression)
-    val throwExpression = element("ThrowExpression", Expression, expression)
+    val returnExpression = element("Return", Expression, jump)
+    val throwExpression = element("Throw", Expression, expression)
     val variableAssignment = element("VariableAssignment", Expression, qualifiedAccess)
-    val whenSubjectExpression = element("WhenSubjectExpression", Expression, expression)
 
     val superReference = element("SuperReference", Expression, expression)
     val thisReference = element("ThisReference", Expression, expression)
     val backingFieldReference = element("BackingFieldReference", Expression, expression)
 
-    val simpleType =
-        element("SimpleType", Type, type)
+    val simpleType = element("SimpleType", Type, type)
 }

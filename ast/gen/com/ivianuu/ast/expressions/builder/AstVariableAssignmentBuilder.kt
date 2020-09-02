@@ -7,6 +7,7 @@ import com.ivianuu.ast.expressions.AstVariableAssignment
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.builder.AstQualifiedAccessBuilder
 import com.ivianuu.ast.expressions.impl.AstVariableAssignmentImpl
+import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.visitors.*
@@ -24,8 +25,8 @@ class AstVariableAssignmentBuilder : AstQualifiedAccessBuilder, AstExpressionBui
     override val typeArguments: MutableList<AstTypeProjection> = mutableListOf()
     override var dispatchReceiver: AstExpression? = null
     override var extensionReceiver: AstExpression? = null
-    lateinit var left: AstExpression
-    lateinit var right: AstExpression
+    lateinit var callee: AstVariableSymbol<*>
+    lateinit var value: AstExpression
 
     override fun build(): AstVariableAssignment {
         return AstVariableAssignmentImpl(
@@ -34,8 +35,8 @@ class AstVariableAssignmentBuilder : AstQualifiedAccessBuilder, AstExpressionBui
             typeArguments,
             dispatchReceiver,
             extensionReceiver,
-            left,
-            right,
+            callee,
+            value,
         )
     }
 

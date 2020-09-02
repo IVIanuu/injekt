@@ -10,14 +10,10 @@ import com.ivianuu.ast.AstTargetElement
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.declarations.AstDeclaration
-import com.ivianuu.ast.declarations.AstAnnotatedDeclaration
 import com.ivianuu.ast.declarations.AstAnonymousInitializer
-import com.ivianuu.ast.declarations.AstTypedDeclaration
 import com.ivianuu.ast.declarations.AstCallableDeclaration
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.AstTypeParametersOwner
-import com.ivianuu.ast.declarations.AstMemberDeclaration
-import com.ivianuu.ast.declarations.AstCallableMemberDeclaration
 import com.ivianuu.ast.declarations.AstVariable
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.declarations.AstProperty
@@ -39,42 +35,34 @@ import com.ivianuu.ast.expressions.AstLoop
 import com.ivianuu.ast.expressions.AstDoWhileLoop
 import com.ivianuu.ast.expressions.AstWhileLoop
 import com.ivianuu.ast.expressions.AstBlock
-import com.ivianuu.ast.expressions.AstBinaryLogicExpression
+import com.ivianuu.ast.expressions.AstBinaryLogicOperation
 import com.ivianuu.ast.expressions.AstJump
 import com.ivianuu.ast.expressions.AstLoopJump
-import com.ivianuu.ast.expressions.AstBreakExpression
-import com.ivianuu.ast.expressions.AstContinueExpression
+import com.ivianuu.ast.expressions.AstBreak
+import com.ivianuu.ast.expressions.AstContinue
 import com.ivianuu.ast.expressions.AstCatch
-import com.ivianuu.ast.expressions.AstTryExpression
-import com.ivianuu.ast.expressions.AstConstExpression
+import com.ivianuu.ast.expressions.AstTry
+import com.ivianuu.ast.expressions.AstConst
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstStarProjection
 import com.ivianuu.ast.types.AstTypeProjectionWithVariance
 import com.ivianuu.ast.expressions.AstCall
-import com.ivianuu.ast.expressions.AstComparisonExpression
-import com.ivianuu.ast.expressions.AstTypeOperatorCall
+import com.ivianuu.ast.expressions.AstComparisonOperation
+import com.ivianuu.ast.expressions.AstTypeOperation
 import com.ivianuu.ast.expressions.AstAssignmentOperatorStatement
-import com.ivianuu.ast.expressions.AstEqualityOperatorCall
-import com.ivianuu.ast.expressions.AstWhenExpression
+import com.ivianuu.ast.expressions.AstEqualityOperation
+import com.ivianuu.ast.expressions.AstWhen
 import com.ivianuu.ast.expressions.AstWhenBranch
-import com.ivianuu.ast.expressions.AstElvisExpression
 import com.ivianuu.ast.expressions.AstClassReference
 import com.ivianuu.ast.expressions.AstQualifiedAccess
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
-import com.ivianuu.ast.expressions.AstCallableReferenceAccess
-import com.ivianuu.ast.expressions.AstThisReceiverExpression
-import com.ivianuu.ast.expressions.AstExpressionWithSmartcast
-import com.ivianuu.ast.expressions.AstSafeCallExpression
-import com.ivianuu.ast.expressions.AstCheckedSafeCallSubject
-import com.ivianuu.ast.expressions.AstGetClassCall
+import com.ivianuu.ast.expressions.AstCallableReference
 import com.ivianuu.ast.expressions.AstVararg
 import com.ivianuu.ast.AstSpreadElement
-import com.ivianuu.ast.expressions.AstReturnExpression
-import com.ivianuu.ast.expressions.AstStringConcatenationCall
-import com.ivianuu.ast.expressions.AstThrowExpression
+import com.ivianuu.ast.expressions.AstReturn
+import com.ivianuu.ast.expressions.AstThrow
 import com.ivianuu.ast.expressions.AstVariableAssignment
-import com.ivianuu.ast.expressions.AstWhenSubjectExpression
 import com.ivianuu.ast.expressions.AstSuperReference
 import com.ivianuu.ast.expressions.AstThisReference
 import com.ivianuu.ast.expressions.AstBackingFieldReference
@@ -126,16 +114,8 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformElement(declaration, data)
     }
 
-    open fun transformAnnotatedDeclaration(annotatedDeclaration: AstAnnotatedDeclaration, data: D): CompositeTransformResult<AstDeclaration> {
-        return transformElement(annotatedDeclaration, data)
-    }
-
     open fun transformAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer, data: D): CompositeTransformResult<AstDeclaration> {
         return transformElement(anonymousInitializer, data)
-    }
-
-    open fun transformTypedDeclaration(typedDeclaration: AstTypedDeclaration, data: D): CompositeTransformResult<AstDeclaration> {
-        return transformElement(typedDeclaration, data)
     }
 
     open fun <F : AstCallableDeclaration<F>> transformCallableDeclaration(callableDeclaration: AstCallableDeclaration<F>, data: D): CompositeTransformResult<AstDeclaration> {
@@ -148,14 +128,6 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     open fun transformTypeParametersOwner(typeParametersOwner: AstTypeParametersOwner, data: D): CompositeTransformResult<AstTypeParametersOwner> {
         return transformElement(typeParametersOwner, data)
-    }
-
-    open fun transformMemberDeclaration(memberDeclaration: AstMemberDeclaration, data: D): CompositeTransformResult<AstDeclaration> {
-        return transformElement(memberDeclaration, data)
-    }
-
-    open fun <F : AstCallableMemberDeclaration<F>> transformCallableMemberDeclaration(callableMemberDeclaration: AstCallableMemberDeclaration<F>, data: D): CompositeTransformResult<AstDeclaration> {
-        return transformElement(callableMemberDeclaration, data)
     }
 
     open fun <F : AstVariable<F>> transformVariable(variable: AstVariable<F>, data: D): CompositeTransformResult<AstStatement> {
@@ -242,8 +214,8 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformElement(block, data)
     }
 
-    open fun transformBinaryLogicExpression(binaryLogicExpression: AstBinaryLogicExpression, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformElement(binaryLogicExpression, data)
+    open fun transformBinaryLogicOperation(binaryLogicOperation: AstBinaryLogicOperation, data: D): CompositeTransformResult<AstVarargElement> {
+        return transformElement(binaryLogicOperation, data)
     }
 
     open fun <E : AstTargetElement> transformJump(jump: AstJump<E>, data: D): CompositeTransformResult<AstVarargElement> {
@@ -254,11 +226,11 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformElement(loopJump, data)
     }
 
-    open fun transformBreakExpression(breakExpression: AstBreakExpression, data: D): CompositeTransformResult<AstVarargElement> {
+    open fun transformBreak(breakExpression: AstBreak, data: D): CompositeTransformResult<AstVarargElement> {
         return transformElement(breakExpression, data)
     }
 
-    open fun transformContinueExpression(continueExpression: AstContinueExpression, data: D): CompositeTransformResult<AstVarargElement> {
+    open fun transformContinue(continueExpression: AstContinue, data: D): CompositeTransformResult<AstVarargElement> {
         return transformElement(continueExpression, data)
     }
 
@@ -266,12 +238,12 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformElement(catch, data)
     }
 
-    open fun transformTryExpression(tryExpression: AstTryExpression, data: D): CompositeTransformResult<AstVarargElement> {
+    open fun transformTry(tryExpression: AstTry, data: D): CompositeTransformResult<AstVarargElement> {
         return transformElement(tryExpression, data)
     }
 
-    open fun <T> transformConstExpression(constExpression: AstConstExpression<T>, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformElement(constExpression, data)
+    open fun <T> transformConst(const: AstConst<T>, data: D): CompositeTransformResult<AstVarargElement> {
+        return transformElement(const, data)
     }
 
     open fun transformTypeProjection(typeProjection: AstTypeProjection, data: D): CompositeTransformResult<AstTypeProjection> {
@@ -290,32 +262,28 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformElement(call, data)
     }
 
-    open fun transformComparisonExpression(comparisonExpression: AstComparisonExpression, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformElement(comparisonExpression, data)
+    open fun transformComparisonOperation(comparisonOperation: AstComparisonOperation, data: D): CompositeTransformResult<AstVarargElement> {
+        return transformElement(comparisonOperation, data)
     }
 
-    open fun transformTypeOperatorCall(typeOperatorCall: AstTypeOperatorCall, data: D): CompositeTransformResult<AstStatement> {
-        return transformElement(typeOperatorCall, data)
+    open fun transformTypeOperation(typeOperation: AstTypeOperation, data: D): CompositeTransformResult<AstVarargElement> {
+        return transformElement(typeOperation, data)
     }
 
     open fun transformAssignmentOperatorStatement(assignmentOperatorStatement: AstAssignmentOperatorStatement, data: D): CompositeTransformResult<AstStatement> {
         return transformElement(assignmentOperatorStatement, data)
     }
 
-    open fun transformEqualityOperatorCall(equalityOperatorCall: AstEqualityOperatorCall, data: D): CompositeTransformResult<AstStatement> {
-        return transformElement(equalityOperatorCall, data)
+    open fun transformEqualityOperation(equalityOperation: AstEqualityOperation, data: D): CompositeTransformResult<AstVarargElement> {
+        return transformElement(equalityOperation, data)
     }
 
-    open fun transformWhenExpression(whenExpression: AstWhenExpression, data: D): CompositeTransformResult<AstVarargElement> {
+    open fun transformWhen(whenExpression: AstWhen, data: D): CompositeTransformResult<AstVarargElement> {
         return transformElement(whenExpression, data)
     }
 
     open fun transformWhenBranch(whenBranch: AstWhenBranch, data: D): CompositeTransformResult<AstWhenBranch> {
         return transformElement(whenBranch, data)
-    }
-
-    open fun transformElvisExpression(elvisExpression: AstElvisExpression, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformElement(elvisExpression, data)
     }
 
     open fun transformClassReference(classReference: AstClassReference, data: D): CompositeTransformResult<AstVarargElement> {
@@ -334,28 +302,8 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformElement(delegatedConstructorCall, data)
     }
 
-    open fun transformCallableReferenceAccess(callableReferenceAccess: AstCallableReferenceAccess, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformElement(callableReferenceAccess, data)
-    }
-
-    open fun transformThisReceiverExpression(thisReceiverExpression: AstThisReceiverExpression, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformElement(thisReceiverExpression, data)
-    }
-
-    open fun transformExpressionWithSmartcast(expressionWithSmartcast: AstExpressionWithSmartcast, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformElement(expressionWithSmartcast, data)
-    }
-
-    open fun transformSafeCallExpression(safeCallExpression: AstSafeCallExpression, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformElement(safeCallExpression, data)
-    }
-
-    open fun transformCheckedSafeCallSubject(checkedSafeCallSubject: AstCheckedSafeCallSubject, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformElement(checkedSafeCallSubject, data)
-    }
-
-    open fun transformGetClassCall(getClassCall: AstGetClassCall, data: D): CompositeTransformResult<AstStatement> {
-        return transformElement(getClassCall, data)
+    open fun transformCallableReference(callableReference: AstCallableReference, data: D): CompositeTransformResult<AstVarargElement> {
+        return transformElement(callableReference, data)
     }
 
     open fun transformVararg(vararg: AstVararg, data: D): CompositeTransformResult<AstVarargElement> {
@@ -366,24 +314,16 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformElement(spreadElement, data)
     }
 
-    open fun transformReturnExpression(returnExpression: AstReturnExpression, data: D): CompositeTransformResult<AstVarargElement> {
+    open fun transformReturn(returnExpression: AstReturn, data: D): CompositeTransformResult<AstVarargElement> {
         return transformElement(returnExpression, data)
     }
 
-    open fun transformStringConcatenationCall(stringConcatenationCall: AstStringConcatenationCall, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformElement(stringConcatenationCall, data)
-    }
-
-    open fun transformThrowExpression(throwExpression: AstThrowExpression, data: D): CompositeTransformResult<AstVarargElement> {
+    open fun transformThrow(throwExpression: AstThrow, data: D): CompositeTransformResult<AstVarargElement> {
         return transformElement(throwExpression, data)
     }
 
     open fun transformVariableAssignment(variableAssignment: AstVariableAssignment, data: D): CompositeTransformResult<AstVarargElement> {
         return transformElement(variableAssignment, data)
-    }
-
-    open fun transformWhenSubjectExpression(whenSubjectExpression: AstWhenSubjectExpression, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformElement(whenSubjectExpression, data)
     }
 
     open fun transformSuperReference(superReference: AstSuperReference, data: D): CompositeTransformResult<AstVarargElement> {
@@ -442,16 +382,8 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformDeclaration(declaration, data)
     }
 
-    final override fun visitAnnotatedDeclaration(annotatedDeclaration: AstAnnotatedDeclaration, data: D): CompositeTransformResult<AstDeclaration> {
-        return transformAnnotatedDeclaration(annotatedDeclaration, data)
-    }
-
     final override fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer, data: D): CompositeTransformResult<AstDeclaration> {
         return transformAnonymousInitializer(anonymousInitializer, data)
-    }
-
-    final override fun visitTypedDeclaration(typedDeclaration: AstTypedDeclaration, data: D): CompositeTransformResult<AstDeclaration> {
-        return transformTypedDeclaration(typedDeclaration, data)
     }
 
     final override fun <F : AstCallableDeclaration<F>> visitCallableDeclaration(callableDeclaration: AstCallableDeclaration<F>, data: D): CompositeTransformResult<AstDeclaration> {
@@ -464,14 +396,6 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     final override fun visitTypeParametersOwner(typeParametersOwner: AstTypeParametersOwner, data: D): CompositeTransformResult<AstTypeParametersOwner> {
         return transformTypeParametersOwner(typeParametersOwner, data)
-    }
-
-    final override fun visitMemberDeclaration(memberDeclaration: AstMemberDeclaration, data: D): CompositeTransformResult<AstDeclaration> {
-        return transformMemberDeclaration(memberDeclaration, data)
-    }
-
-    final override fun <F : AstCallableMemberDeclaration<F>> visitCallableMemberDeclaration(callableMemberDeclaration: AstCallableMemberDeclaration<F>, data: D): CompositeTransformResult<AstDeclaration> {
-        return transformCallableMemberDeclaration(callableMemberDeclaration, data)
     }
 
     final override fun <F : AstVariable<F>> visitVariable(variable: AstVariable<F>, data: D): CompositeTransformResult<AstStatement> {
@@ -558,8 +482,8 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformBlock(block, data)
     }
 
-    final override fun visitBinaryLogicExpression(binaryLogicExpression: AstBinaryLogicExpression, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformBinaryLogicExpression(binaryLogicExpression, data)
+    final override fun visitBinaryLogicOperation(binaryLogicOperation: AstBinaryLogicOperation, data: D): CompositeTransformResult<AstVarargElement> {
+        return transformBinaryLogicOperation(binaryLogicOperation, data)
     }
 
     final override fun <E : AstTargetElement> visitJump(jump: AstJump<E>, data: D): CompositeTransformResult<AstVarargElement> {
@@ -570,24 +494,24 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformLoopJump(loopJump, data)
     }
 
-    final override fun visitBreakExpression(breakExpression: AstBreakExpression, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformBreakExpression(breakExpression, data)
+    final override fun visitBreak(breakExpression: AstBreak, data: D): CompositeTransformResult<AstVarargElement> {
+        return transformBreak(breakExpression, data)
     }
 
-    final override fun visitContinueExpression(continueExpression: AstContinueExpression, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformContinueExpression(continueExpression, data)
+    final override fun visitContinue(continueExpression: AstContinue, data: D): CompositeTransformResult<AstVarargElement> {
+        return transformContinue(continueExpression, data)
     }
 
     final override fun visitCatch(catch: AstCatch, data: D): CompositeTransformResult<AstCatch> {
         return transformCatch(catch, data)
     }
 
-    final override fun visitTryExpression(tryExpression: AstTryExpression, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformTryExpression(tryExpression, data)
+    final override fun visitTry(tryExpression: AstTry, data: D): CompositeTransformResult<AstVarargElement> {
+        return transformTry(tryExpression, data)
     }
 
-    final override fun <T> visitConstExpression(constExpression: AstConstExpression<T>, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformConstExpression(constExpression, data)
+    final override fun <T> visitConst(const: AstConst<T>, data: D): CompositeTransformResult<AstVarargElement> {
+        return transformConst(const, data)
     }
 
     final override fun visitTypeProjection(typeProjection: AstTypeProjection, data: D): CompositeTransformResult<AstTypeProjection> {
@@ -606,32 +530,28 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformCall(call, data)
     }
 
-    final override fun visitComparisonExpression(comparisonExpression: AstComparisonExpression, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformComparisonExpression(comparisonExpression, data)
+    final override fun visitComparisonOperation(comparisonOperation: AstComparisonOperation, data: D): CompositeTransformResult<AstVarargElement> {
+        return transformComparisonOperation(comparisonOperation, data)
     }
 
-    final override fun visitTypeOperatorCall(typeOperatorCall: AstTypeOperatorCall, data: D): CompositeTransformResult<AstStatement> {
-        return transformTypeOperatorCall(typeOperatorCall, data)
+    final override fun visitTypeOperation(typeOperation: AstTypeOperation, data: D): CompositeTransformResult<AstVarargElement> {
+        return transformTypeOperation(typeOperation, data)
     }
 
     final override fun visitAssignmentOperatorStatement(assignmentOperatorStatement: AstAssignmentOperatorStatement, data: D): CompositeTransformResult<AstStatement> {
         return transformAssignmentOperatorStatement(assignmentOperatorStatement, data)
     }
 
-    final override fun visitEqualityOperatorCall(equalityOperatorCall: AstEqualityOperatorCall, data: D): CompositeTransformResult<AstStatement> {
-        return transformEqualityOperatorCall(equalityOperatorCall, data)
+    final override fun visitEqualityOperation(equalityOperation: AstEqualityOperation, data: D): CompositeTransformResult<AstVarargElement> {
+        return transformEqualityOperation(equalityOperation, data)
     }
 
-    final override fun visitWhenExpression(whenExpression: AstWhenExpression, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformWhenExpression(whenExpression, data)
+    final override fun visitWhen(whenExpression: AstWhen, data: D): CompositeTransformResult<AstVarargElement> {
+        return transformWhen(whenExpression, data)
     }
 
     final override fun visitWhenBranch(whenBranch: AstWhenBranch, data: D): CompositeTransformResult<AstWhenBranch> {
         return transformWhenBranch(whenBranch, data)
-    }
-
-    final override fun visitElvisExpression(elvisExpression: AstElvisExpression, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformElvisExpression(elvisExpression, data)
     }
 
     final override fun visitClassReference(classReference: AstClassReference, data: D): CompositeTransformResult<AstVarargElement> {
@@ -650,28 +570,8 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformDelegatedConstructorCall(delegatedConstructorCall, data)
     }
 
-    final override fun visitCallableReferenceAccess(callableReferenceAccess: AstCallableReferenceAccess, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformCallableReferenceAccess(callableReferenceAccess, data)
-    }
-
-    final override fun visitThisReceiverExpression(thisReceiverExpression: AstThisReceiverExpression, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformThisReceiverExpression(thisReceiverExpression, data)
-    }
-
-    final override fun visitExpressionWithSmartcast(expressionWithSmartcast: AstExpressionWithSmartcast, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformExpressionWithSmartcast(expressionWithSmartcast, data)
-    }
-
-    final override fun visitSafeCallExpression(safeCallExpression: AstSafeCallExpression, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformSafeCallExpression(safeCallExpression, data)
-    }
-
-    final override fun visitCheckedSafeCallSubject(checkedSafeCallSubject: AstCheckedSafeCallSubject, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformCheckedSafeCallSubject(checkedSafeCallSubject, data)
-    }
-
-    final override fun visitGetClassCall(getClassCall: AstGetClassCall, data: D): CompositeTransformResult<AstStatement> {
-        return transformGetClassCall(getClassCall, data)
+    final override fun visitCallableReference(callableReference: AstCallableReference, data: D): CompositeTransformResult<AstVarargElement> {
+        return transformCallableReference(callableReference, data)
     }
 
     final override fun visitVararg(vararg: AstVararg, data: D): CompositeTransformResult<AstVarargElement> {
@@ -682,24 +582,16 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformSpreadElement(spreadElement, data)
     }
 
-    final override fun visitReturnExpression(returnExpression: AstReturnExpression, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformReturnExpression(returnExpression, data)
+    final override fun visitReturn(returnExpression: AstReturn, data: D): CompositeTransformResult<AstVarargElement> {
+        return transformReturn(returnExpression, data)
     }
 
-    final override fun visitStringConcatenationCall(stringConcatenationCall: AstStringConcatenationCall, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformStringConcatenationCall(stringConcatenationCall, data)
-    }
-
-    final override fun visitThrowExpression(throwExpression: AstThrowExpression, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformThrowExpression(throwExpression, data)
+    final override fun visitThrow(throwExpression: AstThrow, data: D): CompositeTransformResult<AstVarargElement> {
+        return transformThrow(throwExpression, data)
     }
 
     final override fun visitVariableAssignment(variableAssignment: AstVariableAssignment, data: D): CompositeTransformResult<AstVarargElement> {
         return transformVariableAssignment(variableAssignment, data)
-    }
-
-    final override fun visitWhenSubjectExpression(whenSubjectExpression: AstWhenSubjectExpression, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformWhenSubjectExpression(whenSubjectExpression, data)
     }
 
     final override fun visitSuperReference(superReference: AstSuperReference, data: D): CompositeTransformResult<AstVarargElement> {

@@ -1,6 +1,5 @@
 package com.ivianuu.ast.tree.generator
 
-import com.ivianuu.ast.tree.generator.FieldSets.expectActual
 import com.ivianuu.ast.tree.generator.context.AbstractAstTreeImplementationConfigurator
 import com.ivianuu.ast.tree.generator.model.Implementation.Kind.Object
 import com.ivianuu.ast.tree.generator.model.Implementation.Kind.OpenClass
@@ -23,7 +22,7 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
 
         impl(typeAlias)
 
-        impl(callableReferenceAccess)
+        impl(callableReference)
 
         impl(whileLoop)
 
@@ -43,15 +42,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         }
 
         impl(qualifiedAccess)
-
-        noImpl(expressionWithSmartcast)
-
-        impl(getClassCall) {
-            default("valueArgument") {
-                value = "valueArguments.first()"
-                withGetter = true
-            }
-        }
 
         impl(property) {
             default("isVal") {
@@ -90,13 +80,9 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             )
         }
 
-        impl(typeOperatorCall)
+        impl(typeOperation)
 
         impl(assignmentOperatorStatement)
-
-        impl(thisReceiverExpression) {
-            defaultNoReceivers()
-        }
 
         impl(anonymousFunction)
 
@@ -111,14 +97,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             }
             useTypes(modalityType)
             kind = OpenClass
-        }
-
-        impl(whenSubjectExpression) {
-            default("type") {
-                value = "whenRef.value.subject!!.type"
-                withGetter = true
-            }
-            useTypes(whenExpressionType)
         }
 
         impl(backingFieldReference)
@@ -166,14 +144,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
 
         impl(namedFunction) {
             kind = OpenClass
-        }
-
-        impl(safeCallExpression) {
-            useTypes(safeCallCheckedSubjectType)
-        }
-
-        impl(checkedSafeCallSubject) {
-            useTypes(expressionType)
         }
     }
 

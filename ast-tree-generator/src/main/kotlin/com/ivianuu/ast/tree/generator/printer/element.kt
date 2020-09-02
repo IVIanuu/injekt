@@ -96,15 +96,6 @@ fun SmartPrinter.printElement(element: Element) {
                 println(replaceFunctionDeclaration(overriddenType, forceNullable))
             }
 
-            if (needTransformOtherChildren) {
-                println()
-                abstract()
-                if (element.parents.any { it.needTransformOtherChildren }) {
-                    print("override ")
-                }
-                println(transformFunctionDeclaration("OtherChildren", typeWithArguments))
-            }
-
             if (element == AbstractAstTreeBuilder.baseAstElement) {
                 require(isInterface)
                 println()

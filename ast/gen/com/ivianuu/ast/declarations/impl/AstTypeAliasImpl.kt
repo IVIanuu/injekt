@@ -19,6 +19,8 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstTypeAliasImpl(
     override val origin: AstDeclarationOrigin,
+    override var receiverType: AstType?,
+    override var returnType: AstType,
     override val typeParameters: MutableList<AstTypeParameter>,
     override val name: Name,
     override val visibility: Visibility,
@@ -32,12 +34,16 @@ internal class AstTypeAliasImpl(
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+        receiverType?.accept(visitor, data)
+        returnType.accept(visitor, data)
         typeParameters.forEach { it.accept(visitor, data) }
         expandedType.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstTypeAliasImpl {
+        receiverType = receiverType?.transformSingle(transformer, data)
+        returnType = returnType.transformSingle(transformer, data)
         typeParameters.transformInplace(transformer, data)
         expandedType = expandedType.transformSingle(transformer, data)
         annotations.transformInplace(transformer, data)

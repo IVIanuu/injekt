@@ -1,5 +1,6 @@
 package com.ivianuu.ast.declarations
 
+import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.expressions.AstFunctionCall
@@ -14,7 +15,7 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstTypeParameter : AstPureAbstractElement(), AstAnnotatedDeclaration, AstSymbolOwner<AstTypeParameter> {
+abstract class AstTypeParameter : AstPureAbstractElement(), AstDeclaration, AstAnnotationContainer, AstSymbolOwner<AstTypeParameter> {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
     abstract val name: Name

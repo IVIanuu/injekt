@@ -1,6 +1,5 @@
 package com.ivianuu.ast.expressions.impl
 
-import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstWhenBranch
 import com.ivianuu.ast.visitors.*
@@ -12,7 +11,7 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstWhenBranchImpl(
     override var condition: AstExpression,
-    override var result: AstBlock,
+    override var result: AstExpression,
 ) : AstWhenBranch() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         condition.accept(visitor, data)
@@ -20,7 +19,8 @@ internal class AstWhenBranchImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstWhenBranchImpl {
-        transformOtherChildren(transformer, data)
+        condition = condition.transformSingle(transformer, data)
+        result = result.transformSingle(transformer, data)
         return this
     }
 }

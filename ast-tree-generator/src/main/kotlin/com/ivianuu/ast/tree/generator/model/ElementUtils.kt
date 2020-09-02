@@ -9,8 +9,6 @@ import com.ivianuu.ast.tree.generator.context.AbstractAstTreeBuilder
 import com.ivianuu.ast.tree.generator.context.type
 import com.ivianuu.ast.tree.generator.printer.typeWithArguments
 
-// ----------- Simple field -----------
-
 fun field(
     name: String,
     type: String,
@@ -68,8 +66,6 @@ fun intField(name: String): Field {
     return field(name, AbstractAstTreeBuilder.int, null)
 }
 
-// ----------- Ast field -----------
-
 fun field(
     name: String,
     type: Type,
@@ -95,8 +91,6 @@ fun field(element: Element, nullable: Boolean = false): Field {
     return AstField(element.name.decapitalize(), element, nullable)
 }
 
-// ----------- Field list -----------
-
 fun fieldList(name: String, type: Importable): Field {
     return FieldList(name, type)
 }
@@ -104,8 +98,6 @@ fun fieldList(name: String, type: Importable): Field {
 fun fieldList(element: Element): Field {
     return FieldList(element.name.decapitalize() + "s", element)
 }
-
-// ----------- Field set -----------
 
 typealias FieldSet = List<Field>
 

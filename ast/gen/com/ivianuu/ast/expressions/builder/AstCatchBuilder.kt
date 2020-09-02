@@ -2,8 +2,8 @@ package com.ivianuu.ast.expressions.builder
 
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstValueParameter
-import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstCatch
+import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.impl.AstCatchImpl
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
@@ -16,12 +16,12 @@ import kotlin.contracts.*
 @AstBuilderDsl
 class AstCatchBuilder {
     lateinit var parameter: AstValueParameter
-    lateinit var block: AstBlock
+    lateinit var body: AstExpression
 
     fun build(): AstCatch {
         return AstCatchImpl(
             parameter,
-            block,
+            body,
         )
     }
 }

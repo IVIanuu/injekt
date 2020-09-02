@@ -16,9 +16,9 @@ import com.ivianuu.ast.visitors.*
 interface AstFunction<F : AstFunction<F>> : AstCallableDeclaration<F>, AstTargetElement, AstStatement {
     override val origin: AstDeclarationOrigin
     override val attributes: AstDeclarationAttributes
-    override val annotations: List<AstFunctionCall>
-    override val returnType: AstType
     override val receiverType: AstType?
+    override val returnType: AstType
+    override val annotations: List<AstFunctionCall>
     override val symbol: AstFunctionSymbol<F>
     val valueParameters: List<AstValueParameter>
     val body: AstBlock?

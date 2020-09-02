@@ -5,7 +5,7 @@ import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstThisReference
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.impl.AstImplicitThisReference
-import com.ivianuu.ast.symbols.AbstractAstSymbol
+import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
@@ -19,7 +19,7 @@ import kotlin.contracts.*
 class AstImplicitThisReferenceBuilder : AstExpressionBuilder {
     override lateinit var type: AstType
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
-    var boundSymbol: AbstractAstSymbol<*>? = null
+    var boundSymbol: AstSymbol<*>? = null
 
     override fun build(): AstThisReference {
         return AstImplicitThisReference(

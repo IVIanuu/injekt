@@ -53,7 +53,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         symbolOwner.configure {
             withArg("E", symbolOwner, declaration)
-            +symbolWithPackage("ast.symbols", "AbstractAstSymbol", "E")
+            +symbolWithPackage("ast.symbols", "AstSymbol", "E")
         }
 
         typeParameter.configure {
@@ -69,20 +69,12 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +field("attributes", declarationAttributesType)
         }
 
-        typedDeclaration.configure {
-            +field("returnType", type)
-        }
-
         callableDeclaration.configure {
             withArg("F", "AstCallableDeclaration<F>")
             parentArg(symbolOwner, "E", "F")
             +field("receiverType", type, nullable = true)
+            +field("returnType", type)
             +symbol("AstCallableSymbol", "F")
-        }
-
-        callableMemberDeclaration.configure {
-            withArg("F", "AstCallableMemberDeclaration<F>")
-            parentArg(callableDeclaration, "F", "F")
         }
 
         function.configure {
@@ -105,14 +97,12 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         block.configure {
             +fieldList(statement)
             +typeField
-            needTransformOtherChildren()
         }
 
-        binaryLogicExpression.configure {
+        binaryLogicOperation.configure {
             +field("leftOperand", expression)
             +field("rightOperand", expression)
             +field("kind", operationKindType)
-            needTransformOtherChildren()
         }
 
         jump.configure {
@@ -127,7 +117,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         returnExpression.configure {
             parentArg(jump, "E", function.withArgs("F" to "*"))
             +field("result", expression)
-            needTransformOtherChildren()
         }
 
         label.configure {
@@ -135,36 +124,33 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         loop.configure {
-            +field(block)
+            +field("body", expression)
             +field("condition", expression)
             +field(label, nullable = true)
-            needTransformOtherChildren()
         }
 
         whileLoop.configure {
             +field("condition", expression)
-            +field(block)
+            +field("body", expression)
         }
 
         catchClause.configure {
             +field("parameter", valueParameter)
-            +field(block)
-            needTransformOtherChildren()
+            +field("body", expression)
         }
 
         tryExpression.configure {
-            +field("tryBlock", block)
+            +field("tryBody", expression)
             +fieldList("catches", catchClause)
-            +field("finallyBlock", block, nullable = true)
-            needTransformOtherChildren()
-        }
-
-        elvisExpression.configure {
-            +field("lhs", expression)
-            +field("rhs", expression)
+            +field("finallyBody", expression, nullable = true)
         }
 
         qualifiedAccess.configure {
+            +field(
+                "callee",
+                astSymbolType,
+                "*"
+            )
             +typeArguments
             +receivers
         }
@@ -176,18 +162,16 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         functionCall.configure {
-            +field("callee", functionSymbolType)
+            +field("callee", functionSymbolType, "*")
         }
 
-        comparisonExpression.configure {
+        comparisonOperation.configure {
             +field("operation", operationType)
             +field("compareToCall", functionCall)
         }
 
-        typeOperatorCall.configure {
+        typeOperation.configure {
             +field("operation", operationType)
-            +field("conversionType", type)
-            needTransformOtherChildren()
         }
 
         assignmentOperatorStatement.configure {
@@ -196,14 +180,13 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +field("rightArgument", expression)
         }
 
-        equalityOperatorCall.configure {
+        equalityOperation.configure {
             +field("operation", operationType)
         }
 
         whenBranch.configure {
             +field("condition", expression)
-            +field("result", block)
-            needTransformOtherChildren()
+            +field("result", expression)
         }
 
         classLikeDeclaration.configure {
@@ -273,7 +256,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         namedFunction.configure {
             parentArg(function, "F", namedFunction)
-            parentArg(callableMemberDeclaration, "F", namedFunction)
+            parentArg(callableDeclaration, "F", namedFunction)
             +name
             +visibility
             +expectActual
@@ -291,7 +274,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         property.configure {
             parentArg(variable, "F", property)
-            parentArg(callableMemberDeclaration, "F", property)
+            parentArg(callableDeclaration, "F", property)
             +symbol("AstPropertySymbol")
             +field("backingFieldSymbol", backingFieldSymbolType)
             +booleanField("isLocal")
@@ -312,7 +295,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         constructor.configure {
             parentArg(function, "F", constructor)
-            parentArg(callableMemberDeclaration, "F", constructor)
+            parentArg(callableDeclaration, "F", constructor)
             +annotations
             +symbol("AstConstructorSymbol")
             +field(
@@ -348,17 +331,16 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +field("getter", propertyAccessor, nullable = true)
             +field("setter", propertyAccessor, nullable = true)
             +annotations
-            needTransformOtherChildren()
         }
 
         enumEntry.configure {
             parentArg(variable, "F", enumEntry)
-            parentArg(callableMemberDeclaration, "F", enumEntry)
+            parentArg(callableDeclaration, "F", enumEntry)
         }
 
         field.configure {
             parentArg(variable, "F", field)
-            parentArg(callableMemberDeclaration, "F", field)
+            parentArg(callableDeclaration, "F", field)
         }
 
         anonymousInitializer.configure {
@@ -382,36 +364,9 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +field("classType", type)
         }
 
-        expressionWithSmartcast.configure {
-            +field("originalExpression", qualifiedAccess)
-            +field(
-                "typesFromSmartCast",
-                "Collection<AstType>",
-                null,
-                customType = type
-            )
-            +field("originalType", type)
-        }
-
-        safeCallExpression.configure {
-            +field("receiver", expression)
-            // Special node that might be used as a reference to receiver of a safe call after null check
-            +field("checkedSubjectRef", safeCallCheckedSubjectReferenceType)
-            // One that uses checkedReceiver as a receiver
-            +field("regularQualifiedAccess", qualifiedAccess)
-        }
-
-        checkedSafeCallSubject.configure {
-            +field("originalReceiverRef", safeCallOriginalReceiverReferenceType)
-        }
-
-        callableReferenceAccess.configure {
-            +field("callee", callableSymbolType)
+        callableReference.configure {
+            +field("callee", callableSymbolType, "*")
             +booleanField("hasQuestionMarkAtLHS")
-        }
-
-        getClassCall.configure {
-            +field("valueArgument", expression)
         }
 
         throwExpression.configure {
@@ -419,12 +374,8 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         variableAssignment.configure {
-            +field("left", expression)
-            +field("right", expression)
-        }
-
-        whenSubjectExpression.configure {
-            +field("whenRef", whenRefType)
+            +field("callee", variableSymbol, "*")
+            +field("value", expression)
         }
 
         vararg.configure {
@@ -444,7 +395,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +stringField("labelName", nullable = true)
             +field(
                 "boundSymbol",
-                abstractAstSymbolType,
+                astSymbolType,
                 "*",
                 nullable = true
             )
@@ -456,20 +407,14 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         simpleType.configure {
-            +field("classifier", classifierSymbolType)
+            +field("classifier", classifierSymbolType, "*")
             +fieldList("arguments", typeProjection)
-        }
-
-        thisReceiverExpression.configure {
-            +field("calleeReference", thisReference)
         }
 
         whenExpression.configure {
             +field("subject", expression, nullable = true)
             +field("subjectVariable", variable.withArgs("F" to "*"), nullable = true)
             +fieldList("branches", whenBranch)
-            +booleanField("isExhaustive")
-            needTransformOtherChildren()
         }
 
         typeProjectionWithVariance.configure {

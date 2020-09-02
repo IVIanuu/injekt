@@ -1,5 +1,6 @@
 package com.ivianuu.ast.expressions
 
+import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.visitors.*
@@ -12,6 +13,7 @@ import com.ivianuu.ast.visitors.*
 abstract class AstQualifiedAccess : AstExpression() {
     abstract override val type: AstType
     abstract override val annotations: List<AstFunctionCall>
+    abstract val callee: AstSymbol<*>
     abstract val typeArguments: List<AstTypeProjection>
     abstract val dispatchReceiver: AstExpression?
     abstract val extensionReceiver: AstExpression?

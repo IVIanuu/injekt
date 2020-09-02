@@ -1,7 +1,6 @@
 package com.ivianuu.ast.expressions.builder
 
 import com.ivianuu.ast.builder.AstBuilderDsl
-import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstWhenBranch
 import com.ivianuu.ast.expressions.impl.AstWhenBranchImpl
@@ -16,7 +15,7 @@ import kotlin.contracts.*
 @AstBuilderDsl
 class AstWhenBranchBuilder {
     lateinit var condition: AstExpression
-    lateinit var result: AstBlock
+    lateinit var result: AstExpression
 
     fun build(): AstWhenBranch {
         return AstWhenBranchImpl(

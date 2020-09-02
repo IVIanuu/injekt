@@ -29,8 +29,8 @@ import org.jetbrains.kotlin.name.Name
 @AstBuilderDsl
 class AstPropertyBuilder : AstTypeParametersOwnerBuilder {
     var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
-    lateinit var returnType: AstType
     var receiverType: AstType? = null
+    lateinit var returnType: AstType
     lateinit var name: Name
     var initializer: AstExpression? = null
     var delegate: AstExpression? = null
@@ -52,8 +52,8 @@ class AstPropertyBuilder : AstTypeParametersOwnerBuilder {
     override fun build(): AstProperty {
         return AstPropertyImpl(
             origin,
-            returnType,
             receiverType,
+            returnType,
             name,
             initializer,
             delegate,

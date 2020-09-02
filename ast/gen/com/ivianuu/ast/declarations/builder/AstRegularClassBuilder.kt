@@ -28,10 +28,12 @@ import org.jetbrains.kotlin.name.Name
 @AstBuilderDsl
 open class AstRegularClassBuilder : AstClassBuilder, AstTypeParametersOwnerBuilder {
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
-    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+    open var receiverType: AstType? = null
+    open lateinit var returnType: AstType
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
     override var classKind: ClassKind = ClassKind.CLASS
     override val declarations: MutableList<AstDeclaration> = mutableListOf()
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     open lateinit var name: Name
     open var visibility: Visibility = Visibilities.Public
     open var isExpect: Boolean = false
@@ -49,10 +51,12 @@ open class AstRegularClassBuilder : AstClassBuilder, AstTypeParametersOwnerBuild
     override fun build(): AstRegularClass {
         return AstRegularClassImpl(
             origin,
-            annotations,
+            receiverType,
+            returnType,
             typeParameters,
             classKind,
             declarations,
+            annotations,
             name,
             visibility,
             isExpect,
@@ -68,6 +72,7 @@ open class AstRegularClassBuilder : AstClassBuilder, AstTypeParametersOwnerBuild
             isExternal,
         )
     }
+
 
     @Deprecated("Modification of 'attributes' has no impact for AstRegularClassBuilder", level = DeprecationLevel.HIDDEN)
     override var attributes: AstDeclarationAttributes

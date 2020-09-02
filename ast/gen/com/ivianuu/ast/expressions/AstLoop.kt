@@ -12,11 +12,9 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstLoop : AstPureAbstractElement(), AstStatement, AstTargetElement {
     abstract override val annotations: List<AstFunctionCall>
-    abstract val block: AstBlock
+    abstract val body: AstExpression
     abstract val condition: AstExpression
     abstract val label: AstLabel?
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitLoop(this, data)
-
-    abstract fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstLoop
 }

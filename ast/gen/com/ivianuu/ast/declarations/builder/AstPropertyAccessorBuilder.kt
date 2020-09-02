@@ -25,8 +25,8 @@ import org.jetbrains.kotlin.descriptors.Modality
 @AstBuilderDsl
 class AstPropertyAccessorBuilder : AstFunctionBuilder {
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
-    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var returnType: AstType
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
     override var body: AstBlock? = null
     val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
@@ -37,8 +37,8 @@ class AstPropertyAccessorBuilder : AstFunctionBuilder {
     override fun build(): AstPropertyAccessor {
         return AstPropertyAccessorImpl(
             origin,
-            annotations,
             returnType,
+            annotations,
             valueParameters,
             body,
             typeParameters,

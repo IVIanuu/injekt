@@ -12,11 +12,11 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstEnumEntry : AstVariable<AstEnumEntry>(), AstCallableMemberDeclaration<AstEnumEntry> {
+abstract class AstEnumEntry : AstVariable<AstEnumEntry>(), AstCallableDeclaration<AstEnumEntry> {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
-    abstract override val returnType: AstType
     abstract override val receiverType: AstType?
+    abstract override val returnType: AstType
     abstract override val name: Name
     abstract override val symbol: AstVariableSymbol<AstEnumEntry>
     abstract override val initializer: AstExpression?
@@ -28,6 +28,4 @@ abstract class AstEnumEntry : AstVariable<AstEnumEntry>(), AstCallableMemberDecl
     abstract override val annotations: List<AstFunctionCall>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitEnumEntry(this, data)
-
-    abstract override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstEnumEntry
 }

@@ -14,6 +14,4 @@ abstract class AstBlock : AstExpression() {
     abstract override val type: AstType
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitBlock(this, data)
-
-    abstract fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstBlock
 }

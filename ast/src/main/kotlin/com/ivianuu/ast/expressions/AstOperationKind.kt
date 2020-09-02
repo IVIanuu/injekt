@@ -75,3 +75,48 @@ object AstOperationNameConventions {
         )
     )
 }
+
+/*
+sealed class AstOperationKind(val operator: String)
+
+sealed class AstComparisonOperationKind(operator: String) : AstOperationKind(operator) {
+    object LessThan : AstComparisonOperationKind("<")
+    object GreaterThan : AstComparisonOperationKind(">")
+    object LessThanEqual : AstComparisonOperationKind("<=")
+    object GreaterThanEqual : AstComparisonOperationKind(">=")
+}
+
+sealed class AstEqualityOperationKind(operator: String) : AstOperationKind(operator) {
+    object Equal : AstEqualityOperationKind("==")
+    object NotEqual : AstEqualityOperationKind("!=")
+    object Identity : AstEqualityOperationKind("===")
+    object NotIdentity : AstEqualityOperationKind("!==")
+}
+
+sealed class AstLogicOperationKind(operator: String) : AstOperationKind(operator) {
+    object And : AstLogicOperationKind("&&")
+    object Or : AstLogicOperationKind("||")
+}
+
+sealed class AstTypeOperationKind(operator: String) : AstOperationKind(operator) {
+    object Is : AstTypeOperationKind("is")
+    object NotIs : AstTypeOperationKind("!is")
+    object As : AstTypeOperationKind("as")
+    object SafeAs : AstTypeOperationKind("as?")
+}
+
+sealed class AstAssignmentOperationKind(operator: String) : AstOperationKind(operator) {
+    object PlusAssign = ""
+}
+
+enum class AstOperation2(val operator: String = "???") {
+    PLUS_ASSIGN("+="),
+    MINUS_ASSIGN("-="),
+    TIMES_ASSIGN("*="),
+    DIV_ASSIGN("/="),
+    REM_ASSIGN("%="),
+
+    // Unary
+    EXCL("!"),
+}
+*/

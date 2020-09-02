@@ -1,8 +1,8 @@
 package com.ivianuu.ast.expressions.impl
 
 import com.ivianuu.ast.declarations.AstValueParameter
-import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstCatch
+import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -12,15 +12,16 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstCatchImpl(
     override var parameter: AstValueParameter,
-    override var block: AstBlock,
+    override var body: AstExpression,
 ) : AstCatch() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         parameter.accept(visitor, data)
-        block.accept(visitor, data)
+        body.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstCatchImpl {
-        transformOtherChildren(transformer, data)
+        parameter = parameter.transformSingle(transformer, data)
+        body = body.transformSingle(transformer, data)
         return this
     }
 }

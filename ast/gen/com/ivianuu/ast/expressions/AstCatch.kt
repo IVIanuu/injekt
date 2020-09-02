@@ -12,9 +12,7 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstCatch : AstPureAbstractElement(), AstElement {
     abstract val parameter: AstValueParameter
-    abstract val block: AstBlock
+    abstract val body: AstExpression
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitCatch(this, data)
-
-    abstract fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstCatch
 }

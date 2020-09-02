@@ -17,7 +17,7 @@ import kotlin.contracts.*
 @AstBuilderDsl
 class AstSimpleTypeBuilder {
     val annotations: MutableList<AstFunctionCall> = mutableListOf()
-    var isMarkedNullable: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
+    var isMarkedNullable: Boolean = false
     lateinit var classifier: AstClassifierSymbol<*>
     val arguments: MutableList<AstTypeProjection> = mutableListOf()
 

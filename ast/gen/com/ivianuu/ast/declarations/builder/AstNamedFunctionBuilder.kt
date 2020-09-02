@@ -29,8 +29,8 @@ import org.jetbrains.kotlin.name.Name
 @AstBuilderDsl
 open class AstNamedFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwnerBuilder {
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
-    override lateinit var returnType: AstType
     open var receiverType: AstType? = null
+    override lateinit var returnType: AstType
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
     override var body: AstBlock? = null
     open lateinit var name: Name
@@ -52,8 +52,8 @@ open class AstNamedFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwnerB
     override fun build(): AstNamedFunction {
         return AstNamedFunctionImpl(
             origin,
-            returnType,
             receiverType,
+            returnType,
             valueParameters,
             body,
             name,
@@ -91,8 +91,8 @@ inline fun buildNamedFunction(init: AstNamedFunctionBuilder.() -> Unit): AstName
 inline fun buildNamedFunctionCopy(original: AstNamedFunction, init: AstNamedFunctionBuilder.() -> Unit): AstNamedFunction {
     val copyBuilder = AstNamedFunctionBuilder()
     copyBuilder.origin = original.origin
-    copyBuilder.returnType = original.returnType
     copyBuilder.receiverType = original.receiverType
+    copyBuilder.returnType = original.returnType
     copyBuilder.valueParameters.addAll(original.valueParameters)
     copyBuilder.body = original.body
     copyBuilder.name = original.name

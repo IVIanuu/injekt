@@ -10,14 +10,10 @@ import com.ivianuu.ast.AstTargetElement
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.declarations.AstDeclaration
-import com.ivianuu.ast.declarations.AstAnnotatedDeclaration
 import com.ivianuu.ast.declarations.AstAnonymousInitializer
-import com.ivianuu.ast.declarations.AstTypedDeclaration
 import com.ivianuu.ast.declarations.AstCallableDeclaration
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.AstTypeParametersOwner
-import com.ivianuu.ast.declarations.AstMemberDeclaration
-import com.ivianuu.ast.declarations.AstCallableMemberDeclaration
 import com.ivianuu.ast.declarations.AstVariable
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.declarations.AstProperty
@@ -39,42 +35,34 @@ import com.ivianuu.ast.expressions.AstLoop
 import com.ivianuu.ast.expressions.AstDoWhileLoop
 import com.ivianuu.ast.expressions.AstWhileLoop
 import com.ivianuu.ast.expressions.AstBlock
-import com.ivianuu.ast.expressions.AstBinaryLogicExpression
+import com.ivianuu.ast.expressions.AstBinaryLogicOperation
 import com.ivianuu.ast.expressions.AstJump
 import com.ivianuu.ast.expressions.AstLoopJump
-import com.ivianuu.ast.expressions.AstBreakExpression
-import com.ivianuu.ast.expressions.AstContinueExpression
+import com.ivianuu.ast.expressions.AstBreak
+import com.ivianuu.ast.expressions.AstContinue
 import com.ivianuu.ast.expressions.AstCatch
-import com.ivianuu.ast.expressions.AstTryExpression
-import com.ivianuu.ast.expressions.AstConstExpression
+import com.ivianuu.ast.expressions.AstTry
+import com.ivianuu.ast.expressions.AstConst
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstStarProjection
 import com.ivianuu.ast.types.AstTypeProjectionWithVariance
 import com.ivianuu.ast.expressions.AstCall
-import com.ivianuu.ast.expressions.AstComparisonExpression
-import com.ivianuu.ast.expressions.AstTypeOperatorCall
+import com.ivianuu.ast.expressions.AstComparisonOperation
+import com.ivianuu.ast.expressions.AstTypeOperation
 import com.ivianuu.ast.expressions.AstAssignmentOperatorStatement
-import com.ivianuu.ast.expressions.AstEqualityOperatorCall
-import com.ivianuu.ast.expressions.AstWhenExpression
+import com.ivianuu.ast.expressions.AstEqualityOperation
+import com.ivianuu.ast.expressions.AstWhen
 import com.ivianuu.ast.expressions.AstWhenBranch
-import com.ivianuu.ast.expressions.AstElvisExpression
 import com.ivianuu.ast.expressions.AstClassReference
 import com.ivianuu.ast.expressions.AstQualifiedAccess
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
-import com.ivianuu.ast.expressions.AstCallableReferenceAccess
-import com.ivianuu.ast.expressions.AstThisReceiverExpression
-import com.ivianuu.ast.expressions.AstExpressionWithSmartcast
-import com.ivianuu.ast.expressions.AstSafeCallExpression
-import com.ivianuu.ast.expressions.AstCheckedSafeCallSubject
-import com.ivianuu.ast.expressions.AstGetClassCall
+import com.ivianuu.ast.expressions.AstCallableReference
 import com.ivianuu.ast.expressions.AstVararg
 import com.ivianuu.ast.AstSpreadElement
-import com.ivianuu.ast.expressions.AstReturnExpression
-import com.ivianuu.ast.expressions.AstStringConcatenationCall
-import com.ivianuu.ast.expressions.AstThrowExpression
+import com.ivianuu.ast.expressions.AstReturn
+import com.ivianuu.ast.expressions.AstThrow
 import com.ivianuu.ast.expressions.AstVariableAssignment
-import com.ivianuu.ast.expressions.AstWhenSubjectExpression
 import com.ivianuu.ast.expressions.AstSuperReference
 import com.ivianuu.ast.expressions.AstThisReference
 import com.ivianuu.ast.expressions.AstBackingFieldReference
@@ -124,16 +112,8 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(declaration)
     }
 
-    open fun visitAnnotatedDeclaration(annotatedDeclaration: AstAnnotatedDeclaration) {
-        visitElement(annotatedDeclaration)
-    }
-
     open fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer) {
         visitElement(anonymousInitializer)
-    }
-
-    open fun visitTypedDeclaration(typedDeclaration: AstTypedDeclaration) {
-        visitElement(typedDeclaration)
     }
 
     open fun <F : AstCallableDeclaration<F>> visitCallableDeclaration(callableDeclaration: AstCallableDeclaration<F>) {
@@ -146,14 +126,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     open fun visitTypeParametersOwner(typeParametersOwner: AstTypeParametersOwner) {
         visitElement(typeParametersOwner)
-    }
-
-    open fun visitMemberDeclaration(memberDeclaration: AstMemberDeclaration) {
-        visitElement(memberDeclaration)
-    }
-
-    open fun <F : AstCallableMemberDeclaration<F>> visitCallableMemberDeclaration(callableMemberDeclaration: AstCallableMemberDeclaration<F>) {
-        visitElement(callableMemberDeclaration)
     }
 
     open fun <F : AstVariable<F>> visitVariable(variable: AstVariable<F>) {
@@ -240,8 +212,8 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(block)
     }
 
-    open fun visitBinaryLogicExpression(binaryLogicExpression: AstBinaryLogicExpression) {
-        visitElement(binaryLogicExpression)
+    open fun visitBinaryLogicOperation(binaryLogicOperation: AstBinaryLogicOperation) {
+        visitElement(binaryLogicOperation)
     }
 
     open fun <E : AstTargetElement> visitJump(jump: AstJump<E>) {
@@ -252,11 +224,11 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(loopJump)
     }
 
-    open fun visitBreakExpression(breakExpression: AstBreakExpression) {
+    open fun visitBreak(breakExpression: AstBreak) {
         visitElement(breakExpression)
     }
 
-    open fun visitContinueExpression(continueExpression: AstContinueExpression) {
+    open fun visitContinue(continueExpression: AstContinue) {
         visitElement(continueExpression)
     }
 
@@ -264,12 +236,12 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(catch)
     }
 
-    open fun visitTryExpression(tryExpression: AstTryExpression) {
+    open fun visitTry(tryExpression: AstTry) {
         visitElement(tryExpression)
     }
 
-    open fun <T> visitConstExpression(constExpression: AstConstExpression<T>) {
-        visitElement(constExpression)
+    open fun <T> visitConst(const: AstConst<T>) {
+        visitElement(const)
     }
 
     open fun visitTypeProjection(typeProjection: AstTypeProjection) {
@@ -288,32 +260,28 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(call)
     }
 
-    open fun visitComparisonExpression(comparisonExpression: AstComparisonExpression) {
-        visitElement(comparisonExpression)
+    open fun visitComparisonOperation(comparisonOperation: AstComparisonOperation) {
+        visitElement(comparisonOperation)
     }
 
-    open fun visitTypeOperatorCall(typeOperatorCall: AstTypeOperatorCall) {
-        visitElement(typeOperatorCall)
+    open fun visitTypeOperation(typeOperation: AstTypeOperation) {
+        visitElement(typeOperation)
     }
 
     open fun visitAssignmentOperatorStatement(assignmentOperatorStatement: AstAssignmentOperatorStatement) {
         visitElement(assignmentOperatorStatement)
     }
 
-    open fun visitEqualityOperatorCall(equalityOperatorCall: AstEqualityOperatorCall) {
-        visitElement(equalityOperatorCall)
+    open fun visitEqualityOperation(equalityOperation: AstEqualityOperation) {
+        visitElement(equalityOperation)
     }
 
-    open fun visitWhenExpression(whenExpression: AstWhenExpression) {
+    open fun visitWhen(whenExpression: AstWhen) {
         visitElement(whenExpression)
     }
 
     open fun visitWhenBranch(whenBranch: AstWhenBranch) {
         visitElement(whenBranch)
-    }
-
-    open fun visitElvisExpression(elvisExpression: AstElvisExpression) {
-        visitElement(elvisExpression)
     }
 
     open fun visitClassReference(classReference: AstClassReference) {
@@ -332,28 +300,8 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(delegatedConstructorCall)
     }
 
-    open fun visitCallableReferenceAccess(callableReferenceAccess: AstCallableReferenceAccess) {
-        visitElement(callableReferenceAccess)
-    }
-
-    open fun visitThisReceiverExpression(thisReceiverExpression: AstThisReceiverExpression) {
-        visitElement(thisReceiverExpression)
-    }
-
-    open fun visitExpressionWithSmartcast(expressionWithSmartcast: AstExpressionWithSmartcast) {
-        visitElement(expressionWithSmartcast)
-    }
-
-    open fun visitSafeCallExpression(safeCallExpression: AstSafeCallExpression) {
-        visitElement(safeCallExpression)
-    }
-
-    open fun visitCheckedSafeCallSubject(checkedSafeCallSubject: AstCheckedSafeCallSubject) {
-        visitElement(checkedSafeCallSubject)
-    }
-
-    open fun visitGetClassCall(getClassCall: AstGetClassCall) {
-        visitElement(getClassCall)
+    open fun visitCallableReference(callableReference: AstCallableReference) {
+        visitElement(callableReference)
     }
 
     open fun visitVararg(vararg: AstVararg) {
@@ -364,24 +312,16 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(spreadElement)
     }
 
-    open fun visitReturnExpression(returnExpression: AstReturnExpression) {
+    open fun visitReturn(returnExpression: AstReturn) {
         visitElement(returnExpression)
     }
 
-    open fun visitStringConcatenationCall(stringConcatenationCall: AstStringConcatenationCall) {
-        visitElement(stringConcatenationCall)
-    }
-
-    open fun visitThrowExpression(throwExpression: AstThrowExpression) {
+    open fun visitThrow(throwExpression: AstThrow) {
         visitElement(throwExpression)
     }
 
     open fun visitVariableAssignment(variableAssignment: AstVariableAssignment) {
         visitElement(variableAssignment)
-    }
-
-    open fun visitWhenSubjectExpression(whenSubjectExpression: AstWhenSubjectExpression) {
-        visitElement(whenSubjectExpression)
     }
 
     open fun visitSuperReference(superReference: AstSuperReference) {
@@ -440,16 +380,8 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitDeclaration(declaration)
     }
 
-    final override fun visitAnnotatedDeclaration(annotatedDeclaration: AstAnnotatedDeclaration, data: Nothing?) {
-        visitAnnotatedDeclaration(annotatedDeclaration)
-    }
-
     final override fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer, data: Nothing?) {
         visitAnonymousInitializer(anonymousInitializer)
-    }
-
-    final override fun visitTypedDeclaration(typedDeclaration: AstTypedDeclaration, data: Nothing?) {
-        visitTypedDeclaration(typedDeclaration)
     }
 
     final override fun <F : AstCallableDeclaration<F>> visitCallableDeclaration(callableDeclaration: AstCallableDeclaration<F>, data: Nothing?) {
@@ -462,14 +394,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     final override fun visitTypeParametersOwner(typeParametersOwner: AstTypeParametersOwner, data: Nothing?) {
         visitTypeParametersOwner(typeParametersOwner)
-    }
-
-    final override fun visitMemberDeclaration(memberDeclaration: AstMemberDeclaration, data: Nothing?) {
-        visitMemberDeclaration(memberDeclaration)
-    }
-
-    final override fun <F : AstCallableMemberDeclaration<F>> visitCallableMemberDeclaration(callableMemberDeclaration: AstCallableMemberDeclaration<F>, data: Nothing?) {
-        visitCallableMemberDeclaration(callableMemberDeclaration)
     }
 
     final override fun <F : AstVariable<F>> visitVariable(variable: AstVariable<F>, data: Nothing?) {
@@ -556,8 +480,8 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitBlock(block)
     }
 
-    final override fun visitBinaryLogicExpression(binaryLogicExpression: AstBinaryLogicExpression, data: Nothing?) {
-        visitBinaryLogicExpression(binaryLogicExpression)
+    final override fun visitBinaryLogicOperation(binaryLogicOperation: AstBinaryLogicOperation, data: Nothing?) {
+        visitBinaryLogicOperation(binaryLogicOperation)
     }
 
     final override fun <E : AstTargetElement> visitJump(jump: AstJump<E>, data: Nothing?) {
@@ -568,24 +492,24 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitLoopJump(loopJump)
     }
 
-    final override fun visitBreakExpression(breakExpression: AstBreakExpression, data: Nothing?) {
-        visitBreakExpression(breakExpression)
+    final override fun visitBreak(breakExpression: AstBreak, data: Nothing?) {
+        visitBreak(breakExpression)
     }
 
-    final override fun visitContinueExpression(continueExpression: AstContinueExpression, data: Nothing?) {
-        visitContinueExpression(continueExpression)
+    final override fun visitContinue(continueExpression: AstContinue, data: Nothing?) {
+        visitContinue(continueExpression)
     }
 
     final override fun visitCatch(catch: AstCatch, data: Nothing?) {
         visitCatch(catch)
     }
 
-    final override fun visitTryExpression(tryExpression: AstTryExpression, data: Nothing?) {
-        visitTryExpression(tryExpression)
+    final override fun visitTry(tryExpression: AstTry, data: Nothing?) {
+        visitTry(tryExpression)
     }
 
-    final override fun <T> visitConstExpression(constExpression: AstConstExpression<T>, data: Nothing?) {
-        visitConstExpression(constExpression)
+    final override fun <T> visitConst(const: AstConst<T>, data: Nothing?) {
+        visitConst(const)
     }
 
     final override fun visitTypeProjection(typeProjection: AstTypeProjection, data: Nothing?) {
@@ -604,32 +528,28 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitCall(call)
     }
 
-    final override fun visitComparisonExpression(comparisonExpression: AstComparisonExpression, data: Nothing?) {
-        visitComparisonExpression(comparisonExpression)
+    final override fun visitComparisonOperation(comparisonOperation: AstComparisonOperation, data: Nothing?) {
+        visitComparisonOperation(comparisonOperation)
     }
 
-    final override fun visitTypeOperatorCall(typeOperatorCall: AstTypeOperatorCall, data: Nothing?) {
-        visitTypeOperatorCall(typeOperatorCall)
+    final override fun visitTypeOperation(typeOperation: AstTypeOperation, data: Nothing?) {
+        visitTypeOperation(typeOperation)
     }
 
     final override fun visitAssignmentOperatorStatement(assignmentOperatorStatement: AstAssignmentOperatorStatement, data: Nothing?) {
         visitAssignmentOperatorStatement(assignmentOperatorStatement)
     }
 
-    final override fun visitEqualityOperatorCall(equalityOperatorCall: AstEqualityOperatorCall, data: Nothing?) {
-        visitEqualityOperatorCall(equalityOperatorCall)
+    final override fun visitEqualityOperation(equalityOperation: AstEqualityOperation, data: Nothing?) {
+        visitEqualityOperation(equalityOperation)
     }
 
-    final override fun visitWhenExpression(whenExpression: AstWhenExpression, data: Nothing?) {
-        visitWhenExpression(whenExpression)
+    final override fun visitWhen(whenExpression: AstWhen, data: Nothing?) {
+        visitWhen(whenExpression)
     }
 
     final override fun visitWhenBranch(whenBranch: AstWhenBranch, data: Nothing?) {
         visitWhenBranch(whenBranch)
-    }
-
-    final override fun visitElvisExpression(elvisExpression: AstElvisExpression, data: Nothing?) {
-        visitElvisExpression(elvisExpression)
     }
 
     final override fun visitClassReference(classReference: AstClassReference, data: Nothing?) {
@@ -648,28 +568,8 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitDelegatedConstructorCall(delegatedConstructorCall)
     }
 
-    final override fun visitCallableReferenceAccess(callableReferenceAccess: AstCallableReferenceAccess, data: Nothing?) {
-        visitCallableReferenceAccess(callableReferenceAccess)
-    }
-
-    final override fun visitThisReceiverExpression(thisReceiverExpression: AstThisReceiverExpression, data: Nothing?) {
-        visitThisReceiverExpression(thisReceiverExpression)
-    }
-
-    final override fun visitExpressionWithSmartcast(expressionWithSmartcast: AstExpressionWithSmartcast, data: Nothing?) {
-        visitExpressionWithSmartcast(expressionWithSmartcast)
-    }
-
-    final override fun visitSafeCallExpression(safeCallExpression: AstSafeCallExpression, data: Nothing?) {
-        visitSafeCallExpression(safeCallExpression)
-    }
-
-    final override fun visitCheckedSafeCallSubject(checkedSafeCallSubject: AstCheckedSafeCallSubject, data: Nothing?) {
-        visitCheckedSafeCallSubject(checkedSafeCallSubject)
-    }
-
-    final override fun visitGetClassCall(getClassCall: AstGetClassCall, data: Nothing?) {
-        visitGetClassCall(getClassCall)
+    final override fun visitCallableReference(callableReference: AstCallableReference, data: Nothing?) {
+        visitCallableReference(callableReference)
     }
 
     final override fun visitVararg(vararg: AstVararg, data: Nothing?) {
@@ -680,24 +580,16 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitSpreadElement(spreadElement)
     }
 
-    final override fun visitReturnExpression(returnExpression: AstReturnExpression, data: Nothing?) {
-        visitReturnExpression(returnExpression)
+    final override fun visitReturn(returnExpression: AstReturn, data: Nothing?) {
+        visitReturn(returnExpression)
     }
 
-    final override fun visitStringConcatenationCall(stringConcatenationCall: AstStringConcatenationCall, data: Nothing?) {
-        visitStringConcatenationCall(stringConcatenationCall)
-    }
-
-    final override fun visitThrowExpression(throwExpression: AstThrowExpression, data: Nothing?) {
-        visitThrowExpression(throwExpression)
+    final override fun visitThrow(throwExpression: AstThrow, data: Nothing?) {
+        visitThrow(throwExpression)
     }
 
     final override fun visitVariableAssignment(variableAssignment: AstVariableAssignment, data: Nothing?) {
         visitVariableAssignment(variableAssignment)
-    }
-
-    final override fun visitWhenSubjectExpression(whenSubjectExpression: AstWhenSubjectExpression, data: Nothing?) {
-        visitWhenSubjectExpression(whenSubjectExpression)
     }
 
     final override fun visitSuperReference(superReference: AstSuperReference, data: Nothing?) {

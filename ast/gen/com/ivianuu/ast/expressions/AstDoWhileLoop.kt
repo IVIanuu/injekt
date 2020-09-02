@@ -10,11 +10,9 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstDoWhileLoop : AstLoop() {
     abstract override val annotations: List<AstFunctionCall>
-    abstract override val block: AstBlock
+    abstract override val body: AstExpression
     abstract override val condition: AstExpression
     abstract override val label: AstLabel?
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitDoWhileLoop(this, data)
-
-    abstract override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstDoWhileLoop
 }

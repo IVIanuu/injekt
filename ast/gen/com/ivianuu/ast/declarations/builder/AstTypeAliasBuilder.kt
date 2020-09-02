@@ -25,6 +25,8 @@ import org.jetbrains.kotlin.name.Name
 @AstBuilderDsl
 class AstTypeAliasBuilder : AstTypeParametersOwnerBuilder {
     var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
+    var receiverType: AstType? = null
+    lateinit var returnType: AstType
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
     lateinit var name: Name
     var visibility: Visibility = Visibilities.Public
@@ -38,6 +40,8 @@ class AstTypeAliasBuilder : AstTypeParametersOwnerBuilder {
     override fun build(): AstTypeAlias {
         return AstTypeAliasImpl(
             origin,
+            receiverType,
+            returnType,
             typeParameters,
             name,
             visibility,
@@ -49,6 +53,7 @@ class AstTypeAliasBuilder : AstTypeParametersOwnerBuilder {
             annotations,
         )
     }
+
 }
 
 @OptIn(ExperimentalContracts::class)

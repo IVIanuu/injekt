@@ -17,7 +17,7 @@ abstract class AstFunctionCall : AstQualifiedAccess(), AstCall {
     abstract override val dispatchReceiver: AstExpression?
     abstract override val extensionReceiver: AstExpression?
     abstract override val valueArguments: List<AstExpression>
-    abstract val callee: AstFunctionSymbol<*>
+    abstract override val callee: AstFunctionSymbol<*>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitFunctionCall(this, data)
 }

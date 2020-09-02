@@ -12,11 +12,11 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstField : AstVariable<AstField>(), AstTypeParametersOwner, AstCallableMemberDeclaration<AstField> {
+abstract class AstField : AstVariable<AstField>(), AstTypeParametersOwner, AstCallableDeclaration<AstField> {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
-    abstract override val returnType: AstType
     abstract override val receiverType: AstType?
+    abstract override val returnType: AstType
     abstract override val name: Name
     abstract override val symbol: AstVariableSymbol<AstField>
     abstract override val initializer: AstExpression?
@@ -29,6 +29,4 @@ abstract class AstField : AstVariable<AstField>(), AstTypeParametersOwner, AstCa
     abstract override val typeParameters: List<AstTypeParameter>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitField(this, data)
-
-    abstract override fun <D> transformOtherChildren(transformer: AstTransformer<D>, data: D): AstField
 }

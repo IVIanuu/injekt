@@ -22,8 +22,8 @@ import com.ivianuu.ast.visitors.*
 
 open class AstNamedFunctionImpl @AstImplementationDetail constructor(
     override val origin: AstDeclarationOrigin,
-    override var returnType: AstType,
     override var receiverType: AstType?,
+    override var returnType: AstType,
     override val valueParameters: MutableList<AstValueParameter>,
     override var body: AstBlock?,
     override val name: Name,
@@ -44,8 +44,8 @@ open class AstNamedFunctionImpl @AstImplementationDetail constructor(
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        returnType.accept(visitor, data)
         receiverType?.accept(visitor, data)
+        returnType.accept(visitor, data)
         valueParameters.forEach { it.accept(visitor, data) }
         body?.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
@@ -53,8 +53,8 @@ open class AstNamedFunctionImpl @AstImplementationDetail constructor(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstNamedFunctionImpl {
-        returnType = returnType.transformSingle(transformer, data)
         receiverType = receiverType?.transformSingle(transformer, data)
+        returnType = returnType.transformSingle(transformer, data)
         valueParameters.transformInplace(transformer, data)
         body = body?.transformSingle(transformer, data)
         annotations.transformInplace(transformer, data)
