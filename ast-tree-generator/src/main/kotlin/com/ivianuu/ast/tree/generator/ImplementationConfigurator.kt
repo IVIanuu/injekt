@@ -22,9 +22,7 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
 
         noImpl(declarationStatus)
 
-        impl(regularClass) {
-            defaultFalse("hasLazyNestedClassifiers", withGetter = true)
-        }
+        impl(regularClass)
 
         impl(anonymousObject)
 

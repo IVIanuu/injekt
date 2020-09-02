@@ -31,7 +31,6 @@ internal class AstRegularClassImpl(
     override val superTypes: MutableList<AstType>,
 ) : AstRegularClass() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
-    override val hasLazyNestedClassifiers: Boolean get() = false
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }

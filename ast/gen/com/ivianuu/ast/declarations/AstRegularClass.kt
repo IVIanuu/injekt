@@ -24,7 +24,6 @@ abstract class AstRegularClass : AstPureAbstractElement(), AstMemberDeclaration,
     abstract val name: Name
     abstract override val symbol: AstRegularClassSymbol
     abstract val companionObject: AstRegularClass?
-    abstract val hasLazyNestedClassifiers: Boolean
     abstract override val superTypes: List<AstType>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitRegularClass(this, data)

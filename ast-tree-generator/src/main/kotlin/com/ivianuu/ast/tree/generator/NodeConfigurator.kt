@@ -220,7 +220,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +name
             +symbol("AstRegularClassSymbol")
             +field("companionObject", regularClass, nullable = true).withTransform()
-            +booleanField("hasLazyNestedClassifiers")
             +superTypes(withReplace = true)
         }
 
