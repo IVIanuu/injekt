@@ -4,8 +4,10 @@ import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstDoWhileLoop
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
+import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.builder.AstLoopBuilder
 import com.ivianuu.ast.expressions.impl.AstDoWhileLoopImpl
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 
@@ -15,7 +17,8 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstDoWhileLoopBuilder : AstLoopBuilder {
+class AstDoWhileLoopBuilder : AstLoopBuilder, AstExpressionBuilder {
+    override lateinit var type: AstType
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var body: AstExpression
     override lateinit var condition: AstExpression
@@ -23,6 +26,7 @@ class AstDoWhileLoopBuilder : AstLoopBuilder {
 
     override fun build(): AstDoWhileLoop {
         return AstDoWhileLoopImpl(
+            type,
             annotations,
             body,
             condition,

@@ -1,5 +1,6 @@
 package com.ivianuu.ast.expressions
 
+import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.symbols.impl.AstBackingFieldSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -9,7 +10,7 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstBackingFieldReference : AstExpression() {
+abstract class AstBackingFieldReference : AstPureAbstractElement(), AstExpression {
     abstract override val type: AstType
     abstract override val annotations: List<AstFunctionCall>
     abstract val resolvedSymbol: AstBackingFieldSymbol

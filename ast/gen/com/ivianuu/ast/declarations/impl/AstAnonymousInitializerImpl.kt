@@ -4,6 +4,7 @@ import com.ivianuu.ast.declarations.AstAnonymousInitializer
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.expressions.AstBlock
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstAnonymousInitializerSymbol
 import com.ivianuu.ast.visitors.*
 
@@ -13,6 +14,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstAnonymousInitializerImpl(
+    override val annotations: MutableList<AstFunctionCall>,
     override val origin: AstDeclarationOrigin,
     override var body: AstBlock?,
     override val symbol: AstAnonymousInitializerSymbol,
@@ -20,10 +22,12 @@ internal class AstAnonymousInitializerImpl(
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+        annotations.forEach { it.accept(visitor, data) }
         body?.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstAnonymousInitializerImpl {
+        annotations.transformInplace(transformer, data)
         body = body?.transformSingle(transformer, data)
         return this
     }

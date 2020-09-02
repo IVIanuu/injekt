@@ -12,6 +12,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstDelegatedConstructorCallImpl(
+    override var type: AstType,
     override val annotations: MutableList<AstFunctionCall>,
     override val valueArguments: MutableList<AstExpression>,
     override var constructedType: AstType,
@@ -21,12 +22,14 @@ internal class AstDelegatedConstructorCallImpl(
     override val isSuper: Boolean get() = !isThis
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+        type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
         valueArguments.forEach { it.accept(visitor, data) }
         constructedType.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstDelegatedConstructorCallImpl {
+        type = type.transformSingle(transformer, data)
         annotations.transformInplace(transformer, data)
         valueArguments.transformInplace(transformer, data)
         constructedType = constructedType.transformSingle(transformer, data)

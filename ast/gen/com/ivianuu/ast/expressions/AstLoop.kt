@@ -2,6 +2,7 @@ package com.ivianuu.ast.expressions
 
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.AstTargetElement
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -9,7 +10,8 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstLoop : AstPureAbstractElement(), AstStatement, AstTargetElement {
+abstract class AstLoop : AstPureAbstractElement(), AstExpression, AstTargetElement {
+    abstract override val type: AstType
     abstract override val annotations: List<AstFunctionCall>
     abstract val body: AstExpression
     abstract val condition: AstExpression

@@ -1,5 +1,6 @@
 package com.ivianuu.ast.declarations
 
+import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstAnonymousObjectSymbol
@@ -12,7 +13,7 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstAnonymousObject : AstClass<AstAnonymousObject>, AstExpression() {
+abstract class AstAnonymousObject : AstPureAbstractElement(), AstClass<AstAnonymousObject>, AstExpression {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
     abstract override val classKind: ClassKind

@@ -10,7 +10,7 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstFunctionCall : AstQualifiedAccess(), AstCall {
+abstract class AstFunctionCall : AstQualifiedAccess, AstCall() {
     abstract override val type: AstType
     abstract override val annotations: List<AstFunctionCall>
     abstract override val typeArguments: List<AstTypeProjection>

@@ -1,5 +1,6 @@
 package com.ivianuu.ast.expressions
 
+import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.symbols.impl.AstCallableSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
@@ -10,7 +11,7 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstCallableReference : AstQualifiedAccess() {
+abstract class AstCallableReference : AstPureAbstractElement(), AstQualifiedAccess {
     abstract override val type: AstType
     abstract override val annotations: List<AstFunctionCall>
     abstract override val typeArguments: List<AstTypeProjection>

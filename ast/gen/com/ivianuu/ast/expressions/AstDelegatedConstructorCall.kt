@@ -1,6 +1,5 @@
 package com.ivianuu.ast.expressions
 
-import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -9,7 +8,8 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstDelegatedConstructorCall : AstPureAbstractElement(), AstCall {
+abstract class AstDelegatedConstructorCall : AstCall() {
+    abstract override val type: AstType
     abstract override val annotations: List<AstFunctionCall>
     abstract override val valueArguments: List<AstExpression>
     abstract val constructedType: AstType

@@ -1,7 +1,6 @@
 package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.expressions.AstFunctionCall
-import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.symbols.impl.AstClassSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -12,7 +11,7 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-interface AstClass<F : AstClass<F>> : AstClassLikeDeclaration<F>, AstStatement {
+interface AstClass<F : AstClass<F>> : AstClassLikeDeclaration<F> {
     override val origin: AstDeclarationOrigin
     override val attributes: AstDeclarationAttributes
     override val symbol: AstClassSymbol<F>

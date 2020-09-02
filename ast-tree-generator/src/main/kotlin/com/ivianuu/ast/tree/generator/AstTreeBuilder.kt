@@ -22,7 +22,7 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
 
     val statement = element("Statement", Expression, annotationContainer)
     val expression = element("Expression", Expression, statement, varargElement)
-    val declaration = element("Declaration", Declaration)
+    val declaration = element("Declaration", Declaration, statement, annotationContainer)
     val anonymousInitializer = element(
         "AnonymousInitializer",
         Declaration,
@@ -33,11 +33,11 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val callableDeclaration =
         element("CallableDeclaration", Declaration, declaration, symbolOwner)
     val typeParameter =
-        element("TypeParameter", Declaration, declaration, annotationContainer, symbolOwner)
+        element("TypeParameter", Declaration, declaration, symbolOwner)
     val typeParametersOwner = element("TypeParametersOwner", Declaration)
 
     val variable =
-        element("Variable", Declaration, callableDeclaration, declaration, annotationContainer, statement)
+        element("Variable", Declaration, callableDeclaration, declaration)
     val valueParameter = element("ValueParameter", Declaration, variable)
     val property = element(
         "Property",
@@ -51,9 +51,9 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val enumEntry = element("EnumEntry", Declaration, variable, callableDeclaration)
 
     val classLikeDeclaration =
-        element("ClassLikeDeclaration", Declaration, declaration, annotationContainer, statement, symbolOwner)
+        element("ClassLikeDeclaration", Declaration, declaration, symbolOwner)
     val klass =
-        element("Class", Declaration, classLikeDeclaration, statement)
+        element("Class", Declaration, classLikeDeclaration)
     val regularClass = element(
         "RegularClass",
         Declaration,
@@ -65,7 +65,6 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         "TypeAlias",
         Declaration,
         classLikeDeclaration,
-        declaration,
         typeParametersOwner
     )
 
@@ -73,8 +72,7 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         "Function",
         Declaration,
         callableDeclaration,
-        targetElement,
-        statement
+        targetElement
     )
 
     val namedFunction = element(
@@ -100,7 +98,7 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val anonymousObject =
         element("AnonymousObject", Declaration, klass, expression)
 
-    val loop = element("Loop", Expression, statement, targetElement)
+    val loop = element("Loop", Expression, expression, targetElement)
     val doWhileLoop = element("DoWhileLoop", Expression, loop)
     val whileLoop = element("WhileLoop", Expression, loop)
 
@@ -118,7 +116,7 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val call = element(
         "Call",
         Expression,
-        statement
+        expression
     )
     val comparisonOperation = element("ComparisonOperation", Expression, expression)
     val typeOperation = element("TypeOperation", Expression, expression)

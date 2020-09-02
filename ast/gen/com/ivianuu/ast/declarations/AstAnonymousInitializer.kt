@@ -3,6 +3,7 @@ package com.ivianuu.ast.declarations
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.expressions.AstBlock
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstAnonymousInitializerSymbol
 import com.ivianuu.ast.visitors.*
 
@@ -12,6 +13,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstAnonymousInitializer : AstPureAbstractElement(), AstDeclaration, AstSymbolOwner<AstAnonymousInitializer> {
+    abstract override val annotations: List<AstFunctionCall>
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
     abstract val body: AstBlock?

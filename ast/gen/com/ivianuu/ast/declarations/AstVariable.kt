@@ -1,10 +1,8 @@
 package com.ivianuu.ast.declarations
 
-import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
-import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
@@ -15,7 +13,7 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstVariable<F : AstVariable<F>> : AstPureAbstractElement(), AstCallableDeclaration<F>, AstDeclaration, AstAnnotationContainer, AstStatement {
+abstract class AstVariable<F : AstVariable<F>> : AstPureAbstractElement(), AstCallableDeclaration<F>, AstDeclaration {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
     abstract override val receiverType: AstType?

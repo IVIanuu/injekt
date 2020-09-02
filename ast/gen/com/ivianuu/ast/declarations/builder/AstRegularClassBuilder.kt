@@ -27,11 +27,11 @@ import org.jetbrains.kotlin.name.Name
 
 @AstBuilderDsl
 open class AstRegularClassBuilder : AstClassBuilder, AstTypeParametersOwnerBuilder {
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
     override var classKind: ClassKind = ClassKind.CLASS
     override val declarations: MutableList<AstDeclaration> = mutableListOf()
-    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     open lateinit var name: Name
     open var visibility: Visibility = Visibilities.Public
     open var isExpect: Boolean = false
@@ -48,11 +48,11 @@ open class AstRegularClassBuilder : AstClassBuilder, AstTypeParametersOwnerBuild
 
     override fun build(): AstRegularClass {
         return AstRegularClassImpl(
+            annotations,
             origin,
             typeParameters,
             classKind,
             declarations,
-            annotations,
             name,
             visibility,
             isExpect,

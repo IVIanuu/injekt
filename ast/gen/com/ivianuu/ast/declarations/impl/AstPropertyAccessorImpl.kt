@@ -19,9 +19,9 @@ import com.ivianuu.ast.visitors.*
  */
 
 open class AstPropertyAccessorImpl @AstImplementationDetail constructor(
+    override val annotations: MutableList<AstFunctionCall>,
     override val origin: AstDeclarationOrigin,
     override var returnType: AstType,
-    override val annotations: MutableList<AstFunctionCall>,
     override val valueParameters: MutableList<AstValueParameter>,
     override var body: AstBlock?,
     override val typeParameters: MutableList<AstTypeParameter>,
@@ -33,16 +33,16 @@ open class AstPropertyAccessorImpl @AstImplementationDetail constructor(
     override val isSetter: Boolean get() = !isGetter
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        returnType.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
+        returnType.accept(visitor, data)
         valueParameters.forEach { it.accept(visitor, data) }
         body?.accept(visitor, data)
         typeParameters.forEach { it.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
-        returnType = returnType.transformSingle(transformer, data)
         annotations.transformInplace(transformer, data)
+        returnType = returnType.transformSingle(transformer, data)
         valueParameters.transformInplace(transformer, data)
         body = body?.transformSingle(transformer, data)
         typeParameters.transformInplace(transformer, data)
