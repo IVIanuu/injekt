@@ -6,7 +6,6 @@
 package com.ivianuu.ast.symbols.impl
 
 import com.ivianuu.ast.declarations.AstCallableDeclaration
-import com.ivianuu.ast.declarations.AstMemberDeclaration
 import com.ivianuu.ast.symbols.AbstractAstSymbol
 import com.ivianuu.ast.symbols.CallableId
 

@@ -14,11 +14,9 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstTypeAlias : AstPureAbstractElement(), AstClassLikeDeclaration<AstTypeAlias>, AstCallableDeclaration, AstTypeParametersOwner {
+abstract class AstTypeAlias : AstPureAbstractElement(), AstClassLikeDeclaration<AstTypeAlias>, AstDeclaration, AstTypeParametersOwner {
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
-    abstract override val receiverType: AstType?
-    abstract override val returnType: AstType
     abstract override val typeParameters: List<AstTypeParameter>
     abstract val name: Name
     abstract val visibility: Visibility

@@ -57,7 +57,7 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val regularClass = element(
         "RegularClass",
         Declaration,
-        callableDeclaration,
+        declaration,
         typeParametersOwner,
         klass
     )
@@ -65,7 +65,7 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         "TypeAlias",
         Declaration,
         classLikeDeclaration,
-        callableDeclaration,
+        declaration,
         typeParametersOwner
     )
 
@@ -106,8 +106,7 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
 
     val block = element("Block", Expression, expression)
     val binaryLogicOperation = element("BinaryLogicOperation", Expression, expression)
-    val jump = element("Jump", Expression, expression)
-    val loopJump = element("LoopJump", Expression, jump)
+    val loopJump = element("LoopJump", Expression, expression)
     val breakExpression = element("Break", Expression, loopJump)
     val continueExpression = element("Continue", Expression, loopJump)
     val catchClause = element("Catch", Expression)
@@ -137,7 +136,7 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val vararg = element("Vararg", Expression, expression)
     val spreadElement = element("SpreadElement", Other, varargElement)
 
-    val returnExpression = element("Return", Expression, jump)
+    val returnExpression = element("Return", Expression, expression)
     val throwExpression = element("Throw", Expression, expression)
     val variableAssignment = element("VariableAssignment", Expression, qualifiedAccess)
 

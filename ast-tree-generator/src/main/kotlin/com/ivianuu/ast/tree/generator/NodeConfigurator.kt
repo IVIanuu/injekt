@@ -106,18 +106,13 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +field("kind", operationKindType)
         }
 
-        jump.configure {
-            withArg("E", targetElement)
-            +field("target", jumpTargetType.withArgs("E"))
-        }
-
         loopJump.configure {
-            parentArg(jump, "E", loop)
+            +field("target", loop)
         }
 
         returnExpression.configure {
-            parentArg(jump, "E", function.withArgs("F" to "*"))
             +field("result", expression)
+            +field("target", functionSymbolType, "*")
         }
 
         loop.configure {

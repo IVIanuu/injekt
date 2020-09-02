@@ -1,6 +1,5 @@
 package com.ivianuu.ast.expressions
 
-import com.ivianuu.ast.AstTarget
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -12,7 +11,7 @@ import com.ivianuu.ast.visitors.*
 abstract class AstContinue : AstLoopJump() {
     abstract override val type: AstType
     abstract override val annotations: List<AstFunctionCall>
-    abstract override val target: AstTarget<AstLoop>
+    abstract override val target: AstLoop
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitContinue(this, data)
 }

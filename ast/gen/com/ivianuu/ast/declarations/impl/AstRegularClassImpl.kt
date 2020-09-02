@@ -21,8 +21,6 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstRegularClassImpl(
     override val origin: AstDeclarationOrigin,
-    override var receiverType: AstType?,
-    override var returnType: AstType,
     override val typeParameters: MutableList<AstTypeParameter>,
     override val classKind: ClassKind,
     override val declarations: MutableList<AstDeclaration>,
@@ -44,8 +42,6 @@ internal class AstRegularClassImpl(
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        receiverType?.accept(visitor, data)
-        returnType.accept(visitor, data)
         typeParameters.forEach { it.accept(visitor, data) }
         declarations.forEach { it.accept(visitor, data) }
         annotations.forEach { it.accept(visitor, data) }
@@ -53,8 +49,6 @@ internal class AstRegularClassImpl(
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstRegularClassImpl {
-        receiverType = receiverType?.transformSingle(transformer, data)
-        returnType = returnType.transformSingle(transformer, data)
         typeParameters.transformInplace(transformer, data)
         declarations.transformInplace(transformer, data)
         annotations.transformInplace(transformer, data)

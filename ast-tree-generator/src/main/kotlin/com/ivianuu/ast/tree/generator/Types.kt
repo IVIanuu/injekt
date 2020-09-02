@@ -14,7 +14,6 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.Variance
 
-val jumpTargetType = type("ast", "AstTarget")
 val constKindType = generatedType("expressions", "AstConstKind")
 val operationType = type("ast.expressions", "AstOperation")
 val classKindType = type(ClassKind::class)

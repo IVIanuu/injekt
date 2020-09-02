@@ -1,6 +1,5 @@
 package com.ivianuu.ast.expressions.builder
 
-import com.ivianuu.ast.AstTarget
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstBreak
 import com.ivianuu.ast.expressions.AstFunctionCall
@@ -21,7 +20,7 @@ import kotlin.contracts.*
 class AstBreakBuilder : AstLoopJumpBuilder, AstExpressionBuilder {
     override lateinit var type: AstType
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
-    override lateinit var target: AstTarget<AstLoop>
+    override lateinit var target: AstLoop
 
     override fun build(): AstBreak {
         return AstBreakImpl(

@@ -35,7 +35,6 @@ import com.ivianuu.ast.expressions.AstDoWhileLoop
 import com.ivianuu.ast.expressions.AstWhileLoop
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstBinaryLogicOperation
-import com.ivianuu.ast.expressions.AstJump
 import com.ivianuu.ast.expressions.AstLoopJump
 import com.ivianuu.ast.expressions.AstBreak
 import com.ivianuu.ast.expressions.AstContinue
@@ -209,10 +208,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     open fun visitBinaryLogicOperation(binaryLogicOperation: AstBinaryLogicOperation) {
         visitElement(binaryLogicOperation)
-    }
-
-    open fun <E : AstTargetElement> visitJump(jump: AstJump<E>) {
-        visitElement(jump)
     }
 
     open fun visitLoopJump(loopJump: AstLoopJump) {
@@ -473,10 +468,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     final override fun visitBinaryLogicOperation(binaryLogicOperation: AstBinaryLogicOperation, data: Nothing?) {
         visitBinaryLogicOperation(binaryLogicOperation)
-    }
-
-    final override fun <E : AstTargetElement> visitJump(jump: AstJump<E>, data: Nothing?) {
-        visitJump(jump)
     }
 
     final override fun visitLoopJump(loopJump: AstLoopJump, data: Nothing?) {

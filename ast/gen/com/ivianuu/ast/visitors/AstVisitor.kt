@@ -35,7 +35,6 @@ import com.ivianuu.ast.expressions.AstDoWhileLoop
 import com.ivianuu.ast.expressions.AstWhileLoop
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstBinaryLogicOperation
-import com.ivianuu.ast.expressions.AstJump
 import com.ivianuu.ast.expressions.AstLoopJump
 import com.ivianuu.ast.expressions.AstBreak
 import com.ivianuu.ast.expressions.AstContinue
@@ -142,8 +141,6 @@ abstract class AstVisitor<out R, in D> {
     open fun visitBlock(block: AstBlock, data: D): R  = visitElement(block, data)
 
     open fun visitBinaryLogicOperation(binaryLogicOperation: AstBinaryLogicOperation, data: D): R  = visitElement(binaryLogicOperation, data)
-
-    open fun <E : AstTargetElement> visitJump(jump: AstJump<E>, data: D): R  = visitElement(jump, data)
 
     open fun visitLoopJump(loopJump: AstLoopJump, data: D): R  = visitElement(loopJump, data)
 

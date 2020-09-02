@@ -5,6 +5,7 @@
 
 package com.ivianuu.ast.declarations
 
+import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.declarations.impl.AstFileImpl
 import com.ivianuu.ast.declarations.impl.AstModuleFragmentImpl
 import com.ivianuu.ast.declarations.impl.AstRegularClassImpl
@@ -42,6 +43,6 @@ val AstType.regularClassOrFail: AstRegularClassSymbol
 val AstType.regularClassOrNull: AstRegularClassSymbol?
     get() = (this as? AstSimpleType)?.classifier as? AstRegularClassSymbol
 
-fun AstAnnotatedDeclaration.hasAnnotation(classId: ClassId): Boolean {
+fun AstAnnotationContainer.hasAnnotation(classId: ClassId): Boolean {
     return annotations.any { it.callee.callableId.classId == classId }
 }

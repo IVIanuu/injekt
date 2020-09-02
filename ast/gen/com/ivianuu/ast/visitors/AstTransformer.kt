@@ -35,7 +35,6 @@ import com.ivianuu.ast.expressions.AstDoWhileLoop
 import com.ivianuu.ast.expressions.AstWhileLoop
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstBinaryLogicOperation
-import com.ivianuu.ast.expressions.AstJump
 import com.ivianuu.ast.expressions.AstLoopJump
 import com.ivianuu.ast.expressions.AstBreak
 import com.ivianuu.ast.expressions.AstContinue
@@ -211,10 +210,6 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     open fun transformBinaryLogicOperation(binaryLogicOperation: AstBinaryLogicOperation, data: D): CompositeTransformResult<AstVarargElement> {
         return transformElement(binaryLogicOperation, data)
-    }
-
-    open fun <E : AstTargetElement> transformJump(jump: AstJump<E>, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformElement(jump, data)
     }
 
     open fun transformLoopJump(loopJump: AstLoopJump, data: D): CompositeTransformResult<AstVarargElement> {
@@ -475,10 +470,6 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     final override fun visitBinaryLogicOperation(binaryLogicOperation: AstBinaryLogicOperation, data: D): CompositeTransformResult<AstVarargElement> {
         return transformBinaryLogicOperation(binaryLogicOperation, data)
-    }
-
-    final override fun <E : AstTargetElement> visitJump(jump: AstJump<E>, data: D): CompositeTransformResult<AstVarargElement> {
-        return transformJump(jump, data)
     }
 
     final override fun visitLoopJump(loopJump: AstLoopJump, data: D): CompositeTransformResult<AstVarargElement> {
