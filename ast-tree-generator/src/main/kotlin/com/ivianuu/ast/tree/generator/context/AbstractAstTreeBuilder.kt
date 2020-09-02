@@ -6,6 +6,7 @@
 package com.ivianuu.ast.tree.generator.context
 
 import com.ivianuu.ast.tree.generator.model.Element
+import com.ivianuu.ast.tree.generator.model.Importable
 import com.ivianuu.ast.tree.generator.model.IntermediateBuilder
 import com.ivianuu.ast.tree.generator.model.Type
 import com.ivianuu.ast.tree.generator.printer.BASE_PACKAGE
@@ -16,7 +17,10 @@ abstract class AbstractAstTreeBuilder {
         val baseAstElement = Element(
             "Element",
             Element.Kind.Other
-        )
+        ).apply {
+            visitorSuperType = null
+            transformerType = this
+        }
 
         const val string = "String"
         const val boolean = "Boolean"

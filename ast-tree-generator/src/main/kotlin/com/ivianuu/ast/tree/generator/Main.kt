@@ -7,8 +7,6 @@ package com.ivianuu.ast.tree.generator
 
 import com.ivianuu.ast.tree.generator.printer.printElements
 import com.ivianuu.ast.tree.generator.util.configureInterfacesAndAbstractClasses
-import com.ivianuu.ast.tree.generator.util.detectBaseTransformerTypes
-import com.ivianuu.ast.tree.generator.util.printHierarchyGraph
 import com.ivianuu.ast.tree.generator.util.removePreviousGeneratedFiles
 import java.io.File
 
@@ -17,7 +15,6 @@ fun main(args: Array<String>) {
         ?: File("ast/gen").absoluteFile
 
     NodeConfigurator.configureFields()
-    detectBaseTransformerTypes(AstTreeBuilder)
     ImplementationConfigurator.configureImplementations()
     configureInterfacesAndAbstractClasses(AstTreeBuilder)
     BuilderConfigurator.configureBuilders()

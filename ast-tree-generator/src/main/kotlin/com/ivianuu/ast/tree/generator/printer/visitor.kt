@@ -23,7 +23,7 @@ fun printVisitor(elements: List<Element>, generationPath: File) {
             if (element == AbstractAstTreeBuilder.baseAstElement) continue
             with(element) {
                 val varName = safeDecapitalizedName
-                println("open fun ${typeParameters}visit$name($varName: $typeWithArguments, data: D): R${multipleUpperBoundsList()} = visitElement($varName, data)")
+                println("open fun ${typeParameters}visit$name($varName: $typeWithArguments, data: D): R${multipleUpperBoundsList()} = visit${element.visitorSuperType!!.name}($varName, data)")
                 println()
             }
         }

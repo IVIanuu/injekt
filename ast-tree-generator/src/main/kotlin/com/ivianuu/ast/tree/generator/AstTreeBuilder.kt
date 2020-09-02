@@ -13,67 +13,133 @@ import com.ivianuu.ast.tree.generator.model.Element.Kind.Type
 
 @Suppress("unused", "MemberVisibilityCanBePrivate")
 object AstTreeBuilder : AbstractAstTreeBuilder() {
-    val annotationContainer = element("AnnotationContainer", Other)
-    val type = element("Type", Type, annotationContainer)
-    val symbolOwner = element("SymbolOwner", Other)
-    val varargElement = element("VarargElement", Other)
+    val annotationContainer = element("AnnotationContainer", Other) {
+        visitorSuperType = baseAstElement
+        transformerType = baseAstElement
+    }
+    val type = element("Type", Type, annotationContainer) {
+        visitorSuperType = baseAstElement
+        transformerType = this
+    }
+    val symbolOwner = element("SymbolOwner", Other) {
+        visitorSuperType = baseAstElement
+        transformerType = baseAstElement
+    }
+    val varargElement = element("VarargElement", Other) {
+        visitorSuperType = baseAstElement
+        transformerType = this
+    }
 
-    val targetElement = element("TargetElement", Other)
+    val targetElement = element("TargetElement", Other) {
+        visitorSuperType = baseAstElement
+        transformerType = this
+    }
 
-    val statement = element("Statement", Expression, annotationContainer)
-    val expression = element("Expression", Expression, statement, varargElement)
-    val declaration = element("Declaration", Declaration, statement, annotationContainer)
+    val statement = element("Statement", Expression, annotationContainer) {
+        visitorSuperType = baseAstElement
+        transformerType = this
+    }
+    val expression = element("Expression", Expression, statement, varargElement) {
+        visitorSuperType = statement
+        transformerType = statement
+    }
+    val declaration = element("Declaration", Declaration, statement, annotationContainer) {
+        visitorSuperType = statement
+        transformerType = statement
+    }
     val anonymousInitializer = element(
         "AnonymousInitializer",
         Declaration,
         declaration,
         symbolOwner
-    )
+    ) {
+        visitorSuperType = declaration
+        transformerType = statement
+    }
     // todo remove?
     val callableDeclaration =
-        element("CallableDeclaration", Declaration, declaration, symbolOwner)
+        element("CallableDeclaration", Declaration, declaration, symbolOwner) {
+            visitorSuperType = declaration
+            transformerType = statement
+        }
     val typeParameter =
-        element("TypeParameter", Declaration, declaration, symbolOwner)
-    val typeParametersOwner = element("TypeParametersOwner", Declaration)
+        element("TypeParameter", Declaration, declaration, symbolOwner) {
+            visitorSuperType = declaration
+            transformerType = statement
+        }
+    val typeParametersOwner = element("TypeParametersOwner", Declaration) {
+        visitorSuperType = baseAstElement
+        transformerType = baseAstElement
+    }
 
     val variable =
-        element("Variable", Declaration, callableDeclaration, declaration)
-    val valueParameter = element("ValueParameter", Declaration, variable)
+        element("Variable", Declaration, callableDeclaration, declaration) {
+            visitorSuperType = declaration
+            transformerType = statement
+        }
+    val valueParameter = element("ValueParameter", Declaration, variable) {
+        visitorSuperType = variable
+        transformerType = statement
+    }
     val property = element(
         "Property",
         Declaration,
         variable,
         typeParametersOwner,
         callableDeclaration
-    )
+    ) {
+        visitorSuperType = variable
+        transformerType = statement
+    }
     val field =
-        element("Field", Declaration, variable, typeParametersOwner, callableDeclaration)
-    val enumEntry = element("EnumEntry", Declaration, variable, callableDeclaration)
+        element("Field", Declaration, variable, typeParametersOwner, callableDeclaration) {
+            visitorSuperType = variable
+            transformerType = statement
+        }
+    val enumEntry = element("EnumEntry", Declaration, variable, callableDeclaration) {
+        visitorSuperType = variable
+        transformerType = statement
+    }
 
     val classLikeDeclaration =
-        element("ClassLikeDeclaration", Declaration, declaration, symbolOwner)
+        element("ClassLikeDeclaration", Declaration, declaration, symbolOwner) {
+            visitorSuperType = declaration
+            transformerType = statement
+        }
     val klass =
-        element("Class", Declaration, classLikeDeclaration)
+        element("Class", Declaration, classLikeDeclaration) {
+            visitorSuperType = classLikeDeclaration
+            transformerType = statement
+        }
     val regularClass = element(
         "RegularClass",
         Declaration,
         declaration,
         typeParametersOwner,
         klass
-    )
+    ) {
+        visitorSuperType = klass
+        transformerType = statement
+    }
     val typeAlias = element(
         "TypeAlias",
         Declaration,
         classLikeDeclaration,
         typeParametersOwner
-    )
+    ) {
+        visitorSuperType = classLikeDeclaration
+        transformerType = statement
+    }
 
     val function = element(
         "Function",
         Declaration,
         callableDeclaration,
         targetElement
-    )
+    ) {
+        visitorSuperType = declaration
+        transformerType = statement
+    }
 
     val namedFunction = element(
         "NamedFunction",
@@ -81,66 +147,192 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         function,
         callableDeclaration,
         typeParametersOwner
-    )
-    val propertyAccessor = element("PropertyAccessor", Declaration, function, typeParametersOwner)
+    ) {
+        visitorSuperType = function
+        transformerType = statement
+    }
+    val propertyAccessor = element("PropertyAccessor", Declaration, function, typeParametersOwner) {
+        visitorSuperType = function
+        transformerType = statement
+    }
     val constructor = element(
         "Constructor",
         Declaration,
         function,
         callableDeclaration
-    )
+    ) {
+        visitorSuperType = function
+        transformerType = statement
+    }
 
-    val moduleFragment = element("ModuleFragment", Declaration)
-    val file = element("File", Declaration, annotationContainer)
+    val moduleFragment = element("ModuleFragment", Declaration) {
+        visitorSuperType = baseAstElement
+        transformerType = this
+    }
+    val file = element("File", Declaration, annotationContainer) {
+        visitorSuperType = baseAstElement
+        transformerType = this
+    }
 
     val anonymousFunction =
-        element("AnonymousFunction", Declaration, function, expression)
+        element("AnonymousFunction", Declaration, function, expression) {
+            visitorSuperType = function
+            transformerType = statement
+        }
     val anonymousObject =
-        element("AnonymousObject", Declaration, klass, expression)
+        element("AnonymousObject", Declaration, klass, expression) {
+            visitorSuperType = klass
+            transformerType = statement
+        }
 
-    val loop = element("Loop", Expression, expression, targetElement)
-    val doWhileLoop = element("DoWhileLoop", Expression, loop)
-    val whileLoop = element("WhileLoop", Expression, loop)
+    val loop = element("Loop", Expression, expression, targetElement) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
+    val doWhileLoop = element("DoWhileLoop", Expression, loop) {
+        visitorSuperType = loop
+        transformerType = statement
+    }
+    val whileLoop = element("WhileLoop", Expression, loop) {
+        visitorSuperType = loop
+        transformerType = statement
+    }
 
-    val block = element("Block", Expression, expression)
-    val binaryLogicOperation = element("BinaryLogicOperation", Expression, expression)
-    val loopJump = element("LoopJump", Expression, expression)
-    val breakExpression = element("Break", Expression, loopJump)
-    val continueExpression = element("Continue", Expression, loopJump)
-    val catchClause = element("Catch", Expression)
-    val tryExpression = element("Try", Expression, expression)
-    val constExpression = element("Const", Expression, expression)
-    val typeProjection = element("TypeProjection", Type)
-    val starProjection = element("StarProjection", Type, typeProjection)
-    val typeProjectionWithVariance = element("TypeProjectionWithVariance", Type, typeProjection)
+    val block = element("Block", Expression, expression) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
+    val binaryLogicOperation = element("BinaryLogicOperation", Expression, expression) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
+    val loopJump = element("LoopJump", Expression, expression) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
+    val breakExpression = element("Break", Expression, loopJump) {
+        visitorSuperType = loopJump
+        transformerType = statement
+    }
+    val continueExpression = element("Continue", Expression, loopJump) {
+        visitorSuperType = loopJump
+        transformerType = statement
+    }
+    val catchClause = element("Catch", Expression) {
+        visitorSuperType = baseAstElement
+        transformerType = this
+    }
+    val tryExpression = element("Try", Expression, expression) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
+    val constExpression = element("Const", Expression, expression) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
+    val typeProjection = element("TypeProjection", Type) {
+        visitorSuperType = baseAstElement
+        transformerType = this
+    }
+    val starProjection = element("StarProjection", Type, typeProjection) {
+        visitorSuperType = typeProjection
+        transformerType = typeProjection
+    }
+    val typeProjectionWithVariance = element("TypeProjectionWithVariance", Type, typeProjection) {
+        visitorSuperType = typeProjection
+        transformerType = typeProjection
+    }
     val call = element(
         "Call",
         Expression,
         expression
-    )
-    val comparisonOperation = element("ComparisonOperation", Expression, expression)
-    val typeOperation = element("TypeOperation", Expression, expression)
-    val assignmentOperatorStatement = element("AssignmentOperatorStatement", Expression, statement)
-    val equalityOperation = element("EqualityOperation", Expression, expression)
-    val whenExpression = element("When", Expression, expression)
-    val whenBranch = element("WhenBranch", Expression)
+    ) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
+    val comparisonOperation = element("ComparisonOperation", Expression, expression) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
+    val typeOperation = element("TypeOperation", Expression, expression) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
+    val assignmentOperatorStatement = element("AssignmentOperatorStatement", Expression, statement) {
+        visitorSuperType = statement
+        transformerType = statement
+    }
+    val equalityOperation = element("EqualityOperation", Expression, expression) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
+    val whenExpression = element("When", Expression, expression) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
+    val whenBranch = element("WhenBranch", Expression) {
+        visitorSuperType = baseAstElement
+        transformerType = this
+    }
 
-    val classReference = element("ClassReference", Expression, expression)
-    val qualifiedAccess = element("QualifiedAccess", Expression, expression)
-    val functionCall = element("FunctionCall", Expression, qualifiedAccess, call)
-    val delegatedConstructorCall = element("DelegatedConstructorCall", Expression, call)
-    val callableReference = element("CallableReference", Expression, qualifiedAccess)
+    val classReference = element("ClassReference", Expression, expression) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
+    val qualifiedAccess = element("QualifiedAccess", Expression, expression) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
+    val functionCall = element("FunctionCall", Expression, qualifiedAccess, call) {
+        visitorSuperType = qualifiedAccess
+        transformerType = statement
+    }
+    val delegatedConstructorCall = element("DelegatedConstructorCall", Expression, call) {
+        visitorSuperType = call
+        transformerType = statement
+    }
+    val callableReference = element("CallableReference", Expression, qualifiedAccess) {
+        visitorSuperType = qualifiedAccess
+        transformerType = statement
+    }
 
-    val vararg = element("Vararg", Expression, expression)
-    val spreadElement = element("SpreadElement", Other, varargElement)
+    val vararg = element("Vararg", Expression, expression) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
+    val spreadElement = element("SpreadElement", Other, varargElement) {
+        visitorSuperType = varargElement
+        transformerType = varargElement
+    }
 
-    val returnExpression = element("Return", Expression, expression)
-    val throwExpression = element("Throw", Expression, expression)
-    val variableAssignment = element("VariableAssignment", Expression, qualifiedAccess)
+    val returnExpression = element("Return", Expression, expression) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
+    val throwExpression = element("Throw", Expression, expression) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
+    val variableAssignment = element("VariableAssignment", Expression, qualifiedAccess) {
+        visitorSuperType = qualifiedAccess
+        transformerType = statement
+    }
 
-    val superReference = element("SuperReference", Expression, expression)
-    val thisReference = element("ThisReference", Expression, expression)
-    val backingFieldReference = element("BackingFieldReference", Expression, expression)
+    val superReference = element("SuperReference", Expression, expression) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
+    val thisReference = element("ThisReference", Expression, expression) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
+    val backingFieldReference = element("BackingFieldReference", Expression, expression) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
 
-    val simpleType = element("SimpleType", Type, type)
+    val simpleType = element("SimpleType", Type, type) {
+        visitorSuperType = this@AstTreeBuilder.type
+        transformerType = this@AstTreeBuilder.type
+    }
 }

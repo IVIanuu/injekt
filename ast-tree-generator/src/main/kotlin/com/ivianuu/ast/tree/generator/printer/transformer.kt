@@ -34,7 +34,7 @@ fun printTransformer(elements: List<Element>, generationPath: File) {
                     }>${element.multipleUpperBoundsList()}{",
                 )
                 withIndent {
-                    println("return transformElement($varName, data)")
+                    println("return transform${element.visitorSuperType!!.name}($varName, data)")
                 }
                 println("}")
                 println()

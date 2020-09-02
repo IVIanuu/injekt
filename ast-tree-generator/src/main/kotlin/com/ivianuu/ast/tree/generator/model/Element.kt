@@ -15,11 +15,12 @@ interface FieldContainer {
 }
 
 interface AbstractElement : FieldContainer, KindOwner {
+    val name: String
     val fields: Set<Field>
     val parents: List<AbstractElement>
     val typeArguments: List<TypeArgument>
     val parentsArguments: Map<AbstractElement, Map<Importable, Importable>>
-    val baseTransformerType: AbstractElement?
+    val visitorSuperType: AbstractElement?
     val transformerType: AbstractElement
     val doesNotNeedImplementation: Boolean
     val allImplementations: List<Implementation>
@@ -31,7 +32,12 @@ interface AbstractElement : FieldContainer, KindOwner {
     override val allParents: List<KindOwner> get() = parents
 }
 
-class Element(val name: String, kind: Kind) : AbstractElement {
+class Element(
+    override val name: String,
+    kind: Kind
+) : AbstractElement {
+    override var visitorSuperType: AbstractElement? = null
+    override lateinit var transformerType: AbstractElement
     override val fields = mutableSetOf<Field>()
     override val type: String = "Ast$name"
     override val packageName: String =
@@ -50,9 +56,6 @@ class Element(val name: String, kind: Kind) : AbstractElement {
             }
             field = value
         }
-
-    override var baseTransformerType: Element? = null
-    override val transformerType: Element get() = baseTransformerType ?: this
 
     override var doesNotNeedImplementation: Boolean = false
 
