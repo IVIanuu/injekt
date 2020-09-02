@@ -5,6 +5,7 @@ import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.AstSymbolOwner
+import com.ivianuu.ast.AstVarargElement
 import com.ivianuu.ast.AstTargetElement
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.expressions.AstExpression
@@ -67,18 +68,13 @@ import com.ivianuu.ast.expressions.AstExpressionWithSmartcast
 import com.ivianuu.ast.expressions.AstSafeCallExpression
 import com.ivianuu.ast.expressions.AstCheckedSafeCallSubject
 import com.ivianuu.ast.expressions.AstGetClassCall
-import com.ivianuu.ast.expressions.AstWrappedExpression
-import com.ivianuu.ast.expressions.AstWrappedArgumentExpression
-import com.ivianuu.ast.expressions.AstLambdaArgumentExpression
-import com.ivianuu.ast.expressions.AstSpreadArgumentExpression
-import com.ivianuu.ast.expressions.AstNamedArgumentExpression
-import com.ivianuu.ast.expressions.AstVarargArgumentsExpression
+import com.ivianuu.ast.expressions.AstVararg
+import com.ivianuu.ast.AstSpreadElement
 import com.ivianuu.ast.expressions.AstReturnExpression
 import com.ivianuu.ast.expressions.AstStringConcatenationCall
 import com.ivianuu.ast.expressions.AstThrowExpression
 import com.ivianuu.ast.expressions.AstVariableAssignment
 import com.ivianuu.ast.expressions.AstWhenSubjectExpression
-import com.ivianuu.ast.expressions.AstWrappedDelegateExpression
 import com.ivianuu.ast.expressions.AstSuperReference
 import com.ivianuu.ast.expressions.AstThisReference
 import com.ivianuu.ast.expressions.AstBackingFieldReference
@@ -106,6 +102,10 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     open fun <E> visitSymbolOwner(symbolOwner: AstSymbolOwner<E>) where E : AstSymbolOwner<E>, E : AstDeclaration {
         visitElement(symbolOwner)
+    }
+
+    open fun visitVarargElement(varargElement: AstVarargElement) {
+        visitElement(varargElement)
     }
 
     open fun visitTargetElement(targetElement: AstTargetElement) {
@@ -356,28 +356,12 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(getClassCall)
     }
 
-    open fun visitWrappedExpression(wrappedExpression: AstWrappedExpression) {
-        visitElement(wrappedExpression)
+    open fun visitVararg(vararg: AstVararg) {
+        visitElement(vararg)
     }
 
-    open fun visitWrappedArgumentExpression(wrappedArgumentExpression: AstWrappedArgumentExpression) {
-        visitElement(wrappedArgumentExpression)
-    }
-
-    open fun visitLambdaArgumentExpression(lambdaArgumentExpression: AstLambdaArgumentExpression) {
-        visitElement(lambdaArgumentExpression)
-    }
-
-    open fun visitSpreadArgumentExpression(spreadArgumentExpression: AstSpreadArgumentExpression) {
-        visitElement(spreadArgumentExpression)
-    }
-
-    open fun visitNamedArgumentExpression(namedArgumentExpression: AstNamedArgumentExpression) {
-        visitElement(namedArgumentExpression)
-    }
-
-    open fun visitVarargArgumentsExpression(varargArgumentsExpression: AstVarargArgumentsExpression) {
-        visitElement(varargArgumentsExpression)
+    open fun visitSpreadElement(spreadElement: AstSpreadElement) {
+        visitElement(spreadElement)
     }
 
     open fun visitReturnExpression(returnExpression: AstReturnExpression) {
@@ -398,10 +382,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     open fun visitWhenSubjectExpression(whenSubjectExpression: AstWhenSubjectExpression) {
         visitElement(whenSubjectExpression)
-    }
-
-    open fun visitWrappedDelegateExpression(wrappedDelegateExpression: AstWrappedDelegateExpression) {
-        visitElement(wrappedDelegateExpression)
     }
 
     open fun visitSuperReference(superReference: AstSuperReference) {
@@ -438,6 +418,10 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     final override fun <E> visitSymbolOwner(symbolOwner: AstSymbolOwner<E>, data: Nothing?) where E : AstSymbolOwner<E>, E : AstDeclaration {
         visitSymbolOwner(symbolOwner)
+    }
+
+    final override fun visitVarargElement(varargElement: AstVarargElement, data: Nothing?) {
+        visitVarargElement(varargElement)
     }
 
     final override fun visitTargetElement(targetElement: AstTargetElement, data: Nothing?) {
@@ -688,28 +672,12 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitGetClassCall(getClassCall)
     }
 
-    final override fun visitWrappedExpression(wrappedExpression: AstWrappedExpression, data: Nothing?) {
-        visitWrappedExpression(wrappedExpression)
+    final override fun visitVararg(vararg: AstVararg, data: Nothing?) {
+        visitVararg(vararg)
     }
 
-    final override fun visitWrappedArgumentExpression(wrappedArgumentExpression: AstWrappedArgumentExpression, data: Nothing?) {
-        visitWrappedArgumentExpression(wrappedArgumentExpression)
-    }
-
-    final override fun visitLambdaArgumentExpression(lambdaArgumentExpression: AstLambdaArgumentExpression, data: Nothing?) {
-        visitLambdaArgumentExpression(lambdaArgumentExpression)
-    }
-
-    final override fun visitSpreadArgumentExpression(spreadArgumentExpression: AstSpreadArgumentExpression, data: Nothing?) {
-        visitSpreadArgumentExpression(spreadArgumentExpression)
-    }
-
-    final override fun visitNamedArgumentExpression(namedArgumentExpression: AstNamedArgumentExpression, data: Nothing?) {
-        visitNamedArgumentExpression(namedArgumentExpression)
-    }
-
-    final override fun visitVarargArgumentsExpression(varargArgumentsExpression: AstVarargArgumentsExpression, data: Nothing?) {
-        visitVarargArgumentsExpression(varargArgumentsExpression)
+    final override fun visitSpreadElement(spreadElement: AstSpreadElement, data: Nothing?) {
+        visitSpreadElement(spreadElement)
     }
 
     final override fun visitReturnExpression(returnExpression: AstReturnExpression, data: Nothing?) {
@@ -730,10 +698,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     final override fun visitWhenSubjectExpression(whenSubjectExpression: AstWhenSubjectExpression, data: Nothing?) {
         visitWhenSubjectExpression(whenSubjectExpression)
-    }
-
-    final override fun visitWrappedDelegateExpression(wrappedDelegateExpression: AstWrappedDelegateExpression, data: Nothing?) {
-        visitWrappedDelegateExpression(wrappedDelegateExpression)
     }
 
     final override fun visitSuperReference(superReference: AstSuperReference, data: Nothing?) {

@@ -5,6 +5,7 @@ import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.AstLabel
 import com.ivianuu.ast.AstSymbolOwner
+import com.ivianuu.ast.AstVarargElement
 import com.ivianuu.ast.AstTargetElement
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.expressions.AstExpression
@@ -67,18 +68,13 @@ import com.ivianuu.ast.expressions.AstExpressionWithSmartcast
 import com.ivianuu.ast.expressions.AstSafeCallExpression
 import com.ivianuu.ast.expressions.AstCheckedSafeCallSubject
 import com.ivianuu.ast.expressions.AstGetClassCall
-import com.ivianuu.ast.expressions.AstWrappedExpression
-import com.ivianuu.ast.expressions.AstWrappedArgumentExpression
-import com.ivianuu.ast.expressions.AstLambdaArgumentExpression
-import com.ivianuu.ast.expressions.AstSpreadArgumentExpression
-import com.ivianuu.ast.expressions.AstNamedArgumentExpression
-import com.ivianuu.ast.expressions.AstVarargArgumentsExpression
+import com.ivianuu.ast.expressions.AstVararg
+import com.ivianuu.ast.AstSpreadElement
 import com.ivianuu.ast.expressions.AstReturnExpression
 import com.ivianuu.ast.expressions.AstStringConcatenationCall
 import com.ivianuu.ast.expressions.AstThrowExpression
 import com.ivianuu.ast.expressions.AstVariableAssignment
 import com.ivianuu.ast.expressions.AstWhenSubjectExpression
-import com.ivianuu.ast.expressions.AstWrappedDelegateExpression
 import com.ivianuu.ast.expressions.AstSuperReference
 import com.ivianuu.ast.expressions.AstThisReference
 import com.ivianuu.ast.expressions.AstBackingFieldReference
@@ -99,6 +95,8 @@ abstract class AstVisitor<out R, in D> {
     open fun visitLabel(label: AstLabel, data: D): R  = visitElement(label, data)
 
     open fun <E> visitSymbolOwner(symbolOwner: AstSymbolOwner<E>, data: D): R where E : AstSymbolOwner<E>, E : AstDeclaration  = visitElement(symbolOwner, data)
+
+    open fun visitVarargElement(varargElement: AstVarargElement, data: D): R  = visitElement(varargElement, data)
 
     open fun visitTargetElement(targetElement: AstTargetElement, data: D): R  = visitElement(targetElement, data)
 
@@ -224,17 +222,9 @@ abstract class AstVisitor<out R, in D> {
 
     open fun visitGetClassCall(getClassCall: AstGetClassCall, data: D): R  = visitElement(getClassCall, data)
 
-    open fun visitWrappedExpression(wrappedExpression: AstWrappedExpression, data: D): R  = visitElement(wrappedExpression, data)
+    open fun visitVararg(vararg: AstVararg, data: D): R  = visitElement(vararg, data)
 
-    open fun visitWrappedArgumentExpression(wrappedArgumentExpression: AstWrappedArgumentExpression, data: D): R  = visitElement(wrappedArgumentExpression, data)
-
-    open fun visitLambdaArgumentExpression(lambdaArgumentExpression: AstLambdaArgumentExpression, data: D): R  = visitElement(lambdaArgumentExpression, data)
-
-    open fun visitSpreadArgumentExpression(spreadArgumentExpression: AstSpreadArgumentExpression, data: D): R  = visitElement(spreadArgumentExpression, data)
-
-    open fun visitNamedArgumentExpression(namedArgumentExpression: AstNamedArgumentExpression, data: D): R  = visitElement(namedArgumentExpression, data)
-
-    open fun visitVarargArgumentsExpression(varargArgumentsExpression: AstVarargArgumentsExpression, data: D): R  = visitElement(varargArgumentsExpression, data)
+    open fun visitSpreadElement(spreadElement: AstSpreadElement, data: D): R  = visitElement(spreadElement, data)
 
     open fun visitReturnExpression(returnExpression: AstReturnExpression, data: D): R  = visitElement(returnExpression, data)
 
@@ -245,8 +235,6 @@ abstract class AstVisitor<out R, in D> {
     open fun visitVariableAssignment(variableAssignment: AstVariableAssignment, data: D): R  = visitElement(variableAssignment, data)
 
     open fun visitWhenSubjectExpression(whenSubjectExpression: AstWhenSubjectExpression, data: D): R  = visitElement(whenSubjectExpression, data)
-
-    open fun visitWrappedDelegateExpression(wrappedDelegateExpression: AstWrappedDelegateExpression, data: D): R  = visitElement(wrappedDelegateExpression, data)
 
     open fun visitSuperReference(superReference: AstSuperReference, data: D): R  = visitElement(superReference, data)
 

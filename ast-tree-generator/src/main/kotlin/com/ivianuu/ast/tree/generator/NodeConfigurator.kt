@@ -415,19 +415,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +field("valueArgument", expression)
         }
 
-        wrappedArgumentExpression.configure {
-            +booleanField("isSpread")
-        }
-
-        namedArgumentExpression.configure {
-            +name
-        }
-
-        varargArgumentsExpression.configure {
-            +fieldList("arguments", expression)
-            +field("varargElementType", type)
-        }
-
         throwExpression.configure {
             +field("exception", expression)
         }
@@ -441,12 +428,8 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +field("whenRef", whenRefType)
         }
 
-        wrappedExpression.configure {
-            +field(expression)
-        }
-
-        wrappedDelegateExpression.configure {
-            +field("delegateProvider", expression)
+        vararg.configure {
+            +fieldList("elements", varargElement)
         }
 
         backingFieldReference.configure {

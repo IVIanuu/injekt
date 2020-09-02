@@ -17,11 +17,12 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val type = element("Type", Type, annotationContainer)
     val label = element("Label", Other)
     val symbolOwner = element("SymbolOwner", Other)
+    val varargElement = element("VarargElement", Other)
 
     val targetElement = element("TargetElement", Other)
 
     val statement = element("Statement", Expression, annotationContainer)
-    val expression = element("Expression", Expression, statement)
+    val expression = element("Expression", Expression, statement, varargElement)
     val declaration = element("Declaration", Declaration)
     val annotatedDeclaration =
         element("AnnotatedDeclaration", Declaration, declaration, annotationContainer)
@@ -148,25 +149,15 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     val safeCallExpression = element("SafeCallExpression", Expression, expression)
     val checkedSafeCallSubject = element("CheckedSafeCallSubject", Expression, expression)
     val getClassCall = element("GetClassCall", Expression, expression, call)
-    val wrappedExpression = element("WrappedExpression", Expression, expression)
-    val wrappedArgumentExpression =
-        element("WrappedArgumentExpression", Expression, wrappedExpression)
-    val lambdaArgumentExpression =
-        element("LambdaArgumentExpression", Expression, wrappedArgumentExpression)
-    val spreadArgumentExpression =
-        element("SpreadArgumentExpression", Expression, wrappedArgumentExpression)
-    val namedArgumentExpression =
-        element("NamedArgumentExpression", Expression, wrappedArgumentExpression)
-    val varargArgumentsExpression = element("VarargArgumentsExpression", Expression, expression)
+
+    val vararg = element("Vararg", Expression, expression)
+    val spreadElement = element("SpreadElement", Other, varargElement)
 
     val returnExpression = element("ReturnExpression", Expression, jump)
     val stringConcatenationCall = element("StringConcatenationCall", Expression, call, expression)
     val throwExpression = element("ThrowExpression", Expression, expression)
     val variableAssignment = element("VariableAssignment", Expression, qualifiedAccess)
     val whenSubjectExpression = element("WhenSubjectExpression", Expression, expression)
-
-    val wrappedDelegateExpression =
-        element("WrappedDelegateExpression", Expression, wrappedExpression)
 
     val superReference = element("SuperReference", Expression, expression)
     val thisReference = element("ThisReference", Expression, expression)

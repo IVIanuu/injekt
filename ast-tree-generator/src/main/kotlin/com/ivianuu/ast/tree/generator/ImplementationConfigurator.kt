@@ -90,32 +90,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             )
         }
 
-        impl(namedArgumentExpression) {
-            default("type") {
-                delegate = "expression"
-            }
-        }
-
-        impl(lambdaArgumentExpression) {
-            default("isSpread") {
-                value = "false"
-                withGetter = true
-            }
-            default("type") {
-                delegate = "expression"
-            }
-        }
-
-        impl(spreadArgumentExpression) {
-            default("isSpread") {
-                value = "true"
-                withGetter = true
-            }
-            default("type") {
-                delegate = "expression"
-            }
-        }
-
         impl(typeOperatorCall)
 
         impl(assignmentOperatorStatement)
@@ -145,12 +119,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
                 withGetter = true
             }
             useTypes(whenExpressionType)
-        }
-
-        impl(wrappedDelegateExpression) {
-            default("type") {
-                delegate = "expression"
-            }
         }
 
         impl(backingFieldReference)
