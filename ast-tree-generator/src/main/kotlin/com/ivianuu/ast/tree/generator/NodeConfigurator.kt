@@ -39,6 +39,7 @@ import com.ivianuu.ast.tree.generator.context.AbstractFieldConfigurator
 import com.ivianuu.ast.tree.generator.model.AbstractElement
 import com.ivianuu.ast.tree.generator.model.Element
 import com.ivianuu.ast.tree.generator.model.ElementWithArguments
+import com.ivianuu.ast.tree.generator.model.Implementation
 import com.ivianuu.ast.tree.generator.model.SimpleTypeArgument
 import com.ivianuu.ast.tree.generator.model.booleanField
 import com.ivianuu.ast.tree.generator.model.field

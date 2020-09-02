@@ -17,4 +17,3 @@ abstract class Visibility protected constructor(
 
     open fun normalize(): Visibility = this
 }
-

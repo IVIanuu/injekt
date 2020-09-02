@@ -1,6 +1,8 @@
 package com.ivianuu.ast.tree.generator
 
+import com.ivianuu.ast.tree.generator.NodeConfigurator.configure
 import com.ivianuu.ast.tree.generator.context.AbstractAstTreeImplementationConfigurator
+import com.ivianuu.ast.tree.generator.model.Implementation
 import com.ivianuu.ast.tree.generator.model.Implementation.Kind.Object
 import com.ivianuu.ast.tree.generator.model.Implementation.Kind.OpenClass
 
@@ -110,6 +112,10 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
 
         impl(namedFunction) {
             kind = OpenClass
+        }
+
+        impl(starProjection) {
+            kind = Object
         }
     }
 
