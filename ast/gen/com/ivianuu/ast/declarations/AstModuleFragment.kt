@@ -14,4 +14,8 @@ abstract class AstModuleFragment : AstPureAbstractElement(), AstElement {
     abstract val files: List<AstFile>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitModuleFragment(this, data)
+
+    abstract fun replaceName(newName: String)
+
+    abstract fun replaceFiles(newFiles: List<AstFile>)
 }

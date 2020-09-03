@@ -11,12 +11,24 @@ import com.ivianuu.ast.visitors.*
  */
 
 interface AstQualifiedAccess : AstExpression {
-    override val type: AstType
     override val annotations: List<AstFunctionCall>
+    override val type: AstType
     val callee: AstSymbol<*>
     val typeArguments: List<AstTypeProjection>
     val dispatchReceiver: AstExpression?
     val extensionReceiver: AstExpression?
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitQualifiedAccess(this, data)
+
+    override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
+
+    override fun replaceType(newType: AstType)
+
+    fun replaceCallee(newCallee: AstSymbol<*>)
+
+    fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>)
+
+    fun replaceDispatchReceiver(newDispatchReceiver: AstExpression?)
+
+    fun replaceExtensionReceiver(newExtensionReceiver: AstExpression?)
 }

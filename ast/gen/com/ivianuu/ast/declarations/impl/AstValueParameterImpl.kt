@@ -8,6 +8,7 @@ import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstValueParameterSymbol
+import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.name.Name
 import com.ivianuu.ast.visitors.*
@@ -18,35 +19,73 @@ import com.ivianuu.ast.visitors.*
  */
 
 open class AstValueParameterImpl @AstImplementationDetail constructor(
-    override val origin: AstDeclarationOrigin,
-    override var returnType: AstType,
-    override val name: Name,
     override val annotations: MutableList<AstFunctionCall>,
-    override val symbol: AstValueParameterSymbol,
+    override var origin: AstDeclarationOrigin,
+    override var returnType: AstType,
+    override var name: Name,
+    override var isVar: Boolean,
+    override var symbol: AstValueParameterSymbol,
     override var defaultValue: AstExpression?,
-    override val isCrossinline: Boolean,
-    override val isNoinline: Boolean,
-    override val isVararg: Boolean,
+    override var isCrossinline: Boolean,
+    override var isNoinline: Boolean,
+    override var isVararg: Boolean,
 ) : AstValueParameter() {
-    override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
+    override var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override val receiverType: AstType? get() = null
     override val initializer: AstExpression? get() = null
     override val delegate: AstExpression? get() = null
-    override val isVar: Boolean get() = false
-    override val isVal: Boolean get() = true
     override val getter: AstPropertyAccessor? get() = null
     override val setter: AstPropertyAccessor? get() = null
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        returnType.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
+        returnType.accept(visitor, data)
         defaultValue?.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstValueParameterImpl {
-        returnType = returnType.transformSingle(transformer, data)
         annotations.transformInplace(transformer, data)
+        returnType = returnType.transformSingle(transformer, data)
         defaultValue = defaultValue?.transformSingle(transformer, data)
         return this
+    }
+
+    override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>) {
+        annotations.clear()
+        annotations.addAll(newAnnotations)
+    }
+
+    override fun replaceReceiverType(newReceiverType: AstType?) {}
+
+    override fun replaceReturnType(newReturnType: AstType) {
+        returnType = newReturnType
+    }
+
+    override fun replaceInitializer(newInitializer: AstExpression?) {}
+
+    override fun replaceDelegate(newDelegate: AstExpression?) {}
+
+    override fun replaceIsVar(newIsVar: Boolean) {
+        isVar = newIsVar
+    }
+
+    override fun replaceGetter(newGetter: AstPropertyAccessor?) {}
+
+    override fun replaceSetter(newSetter: AstPropertyAccessor?) {}
+
+    override fun replaceDefaultValue(newDefaultValue: AstExpression?) {
+        defaultValue = newDefaultValue
+    }
+
+    override fun replaceIsCrossinline(newIsCrossinline: Boolean) {
+        isCrossinline = newIsCrossinline
+    }
+
+    override fun replaceIsNoinline(newIsNoinline: Boolean) {
+        isNoinline = newIsNoinline
+    }
+
+    override fun replaceIsVararg(newIsVararg: Boolean) {
+        isVararg = newIsVararg
     }
 }

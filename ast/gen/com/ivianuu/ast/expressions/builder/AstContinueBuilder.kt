@@ -18,14 +18,14 @@ import kotlin.contracts.*
 
 @AstBuilderDsl
 class AstContinueBuilder : AstLoopJumpBuilder, AstExpressionBuilder {
-    override lateinit var type: AstType
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+    override lateinit var type: AstType
     override lateinit var target: AstLoop
 
     override fun build(): AstContinue {
         return AstContinueImpl(
-            type,
             annotations,
+            type,
             target,
         )
     }

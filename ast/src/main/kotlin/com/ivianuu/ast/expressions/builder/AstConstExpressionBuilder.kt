@@ -12,5 +12,5 @@ fun <T> buildConst(
     value: T,
     annotations: MutableList<AstFunctionCall> = mutableListOf(),
 ): AstConst<T> {
-    return AstConstImpl(type, annotations, kind, value)
+    return AstConstImpl(annotations, type, kind, value)
 }

@@ -28,4 +28,16 @@ internal class AstDelegatedTypeImpl(
         expression = expression.transformSingle(transformer, data)
         return this
     }
+
+    override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>) {}
+
+    override fun replaceIsMarkedNullable(newIsMarkedNullable: Boolean) {}
+
+    override fun replaceType(newType: AstType) {
+        type = newType
+    }
+
+    override fun replaceExpression(newExpression: AstExpression) {
+        expression = newExpression
+    }
 }

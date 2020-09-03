@@ -1,6 +1,9 @@
 package com.ivianuu.ast.declarations.builder
 
 import com.ivianuu.ast.AstImplementationDetail
+import com.ivianuu.ast.PlatformStatus
+import com.ivianuu.ast.Visibilities
+import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
@@ -11,11 +14,13 @@ import com.ivianuu.ast.declarations.builder.AstFunctionBuilder
 import com.ivianuu.ast.declarations.impl.AstPropertyAccessorImpl
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstFunctionCall
+import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.symbols.impl.AstPropertyAccessorSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.name.Name
 
 /*
  * This file was generated automatically
@@ -29,9 +34,13 @@ class AstPropertyAccessorBuilder : AstFunctionBuilder {
     override lateinit var returnType: AstType
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
     override var body: AstBlock? = null
+    lateinit var name: Name
+    var visibility: Visibility = Visibilities.Public
+    var modality: Modality = Modality.FINAL
+    var platformStatus: PlatformStatus = PlatformStatus.DEFAULT
     val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
     lateinit var symbol: AstPropertyAccessorSymbol
-    var isGetter: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
+    var isSetter: Boolean = false
 
     @OptIn(AstImplementationDetail::class)
     override fun build(): AstPropertyAccessor {
@@ -41,9 +50,13 @@ class AstPropertyAccessorBuilder : AstFunctionBuilder {
             returnType,
             valueParameters,
             body,
+            name,
+            visibility,
+            modality,
+            platformStatus,
             typeParameters,
             symbol,
-            isGetter,
+            isSetter,
         )
     }
 

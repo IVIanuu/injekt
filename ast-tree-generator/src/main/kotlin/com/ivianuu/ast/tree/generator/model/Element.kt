@@ -23,11 +23,13 @@ interface AbstractElement : FieldContainer, KindOwner {
     val visitorSuperType: AbstractElement?
     val transformerType: AbstractElement
     val doesNotNeedImplementation: Boolean
+    val needTransformOtherChildren: Boolean
     val allImplementations: List<Implementation>
     val allAstFields: List<Field>
     val defaultImplementation: Implementation?
     val customImplementations: List<Implementation>
     val overriddenFields: Map<Field, Map<Importable, Boolean>>
+    val useNullableForReplace: Set<Field>
 
     override val allParents: List<KindOwner> get() = parents
 }
@@ -56,11 +58,14 @@ class Element(
             }
             field = value
         }
+    var _needTransformOtherChildren: Boolean = false
 
     override var doesNotNeedImplementation: Boolean = false
 
+    override val needTransformOtherChildren: Boolean get() = _needTransformOtherChildren || parents.any { it.needTransformOtherChildren }
     override val overriddenFields: MutableMap<Field, MutableMap<Importable, Boolean>> =
         mutableMapOf()
+    override val useNullableForReplace: MutableSet<Field> = mutableSetOf()
     override val allImplementations: List<Implementation> by lazy {
         if (doesNotNeedImplementation) {
             emptyList()
@@ -80,8 +85,10 @@ class Element(
             if (overrides) {
                 val existingField = result.first { it == parentField }
                 existingField.fromParent = true
-                existingField.mutable = parentField.mutable || existingField.mutable
-                if (parentField.type != existingField.type && parentField.mutable) {
+                existingField.needsSeparateTransform = existingField.needsSeparateTransform || parentField.needsSeparateTransform
+                existingField.needTransformInOtherChildren = existingField.needTransformInOtherChildren || parentField.needTransformInOtherChildren
+                existingField.isMutable = parentField.isMutable || existingField.isMutable
+                if (parentField.type != existingField.type && parentField.isMutable) {
                     existingField.overriddenTypes += parentField
                     overriddenFields[existingField, parentField] = false
                 } else {

@@ -10,11 +10,21 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstTry : AstPureAbstractElement(), AstExpression {
-    abstract override val type: AstType
     abstract override val annotations: List<AstFunctionCall>
+    abstract override val type: AstType
     abstract val tryBody: AstExpression
     abstract val catches: List<AstCatch>
     abstract val finallyBody: AstExpression?
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitTry(this, data)
+
+    abstract override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
+
+    abstract override fun replaceType(newType: AstType)
+
+    abstract fun replaceTryBody(newTryBody: AstExpression)
+
+    abstract fun replaceCatches(newCatches: List<AstCatch>)
+
+    abstract fun replaceFinallyBody(newFinallyBody: AstExpression?)
 }

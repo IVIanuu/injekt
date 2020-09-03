@@ -16,15 +16,15 @@ import kotlin.contracts.*
 
 @AstBuilderDsl
 class AstSuperReferenceBuilder : AstExpressionBuilder {
-    override lateinit var type: AstType
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+    override lateinit var type: AstType
     var labelName: String? = null
     lateinit var superType: AstType
 
     override fun build(): AstSuperReference {
         return AstSuperReferenceImpl(
-            type,
             annotations,
+            type,
             labelName,
             superType,
         )

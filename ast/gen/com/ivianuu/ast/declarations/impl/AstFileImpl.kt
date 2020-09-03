@@ -14,8 +14,8 @@ import com.ivianuu.ast.visitors.*
 internal class AstFileImpl(
     override val annotations: MutableList<AstFunctionCall>,
     override val declarations: MutableList<AstDeclaration>,
-    override val name: String,
-    override val packageFqName: FqName,
+    override var name: String,
+    override var packageFqName: FqName,
 ) : AstFile() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
@@ -26,5 +26,23 @@ internal class AstFileImpl(
         annotations.transformInplace(transformer, data)
         declarations.transformInplace(transformer, data)
         return this
+    }
+
+    override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>) {
+        annotations.clear()
+        annotations.addAll(newAnnotations)
+    }
+
+    override fun replaceDeclarations(newDeclarations: List<AstDeclaration>) {
+        declarations.clear()
+        declarations.addAll(newDeclarations)
+    }
+
+    override fun replaceName(newName: String) {
+        name = newName
+    }
+
+    override fun replacePackageFqName(newPackageFqName: FqName) {
+        packageFqName = newPackageFqName
     }
 }

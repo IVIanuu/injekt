@@ -14,4 +14,8 @@ interface AstType : AstAnnotationContainer {
     val isMarkedNullable: Boolean
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitType(this, data)
+
+    override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
+
+    fun replaceIsMarkedNullable(newIsMarkedNullable: Boolean)
 }

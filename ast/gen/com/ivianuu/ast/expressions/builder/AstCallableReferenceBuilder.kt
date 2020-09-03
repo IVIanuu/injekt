@@ -7,6 +7,7 @@ import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.builder.AstQualifiedAccessBuilder
 import com.ivianuu.ast.expressions.impl.AstCallableReferenceImpl
+import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.symbols.impl.AstCallableSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
@@ -20,8 +21,8 @@ import kotlin.contracts.*
 
 @AstBuilderDsl
 class AstCallableReferenceBuilder : AstQualifiedAccessBuilder, AstExpressionBuilder {
-    override lateinit var type: AstType
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+    override lateinit var type: AstType
     override val typeArguments: MutableList<AstTypeProjection> = mutableListOf()
     override var dispatchReceiver: AstExpression? = null
     override var extensionReceiver: AstExpression? = null
@@ -30,8 +31,8 @@ class AstCallableReferenceBuilder : AstQualifiedAccessBuilder, AstExpressionBuil
 
     override fun build(): AstCallableReference {
         return AstCallableReferenceImpl(
-            type,
             annotations,
+            type,
             typeArguments,
             dispatchReceiver,
             extensionReceiver,

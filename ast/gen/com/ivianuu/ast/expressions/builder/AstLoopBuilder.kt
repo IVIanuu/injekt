@@ -14,8 +14,8 @@ import com.ivianuu.ast.visitors.*
 
 @AstBuilderDsl
 interface AstLoopBuilder {
-    abstract var type: AstType
     abstract val annotations: MutableList<AstFunctionCall>
+    abstract var type: AstType
     abstract var body: AstExpression
     abstract var condition: AstExpression
     abstract var label: String?

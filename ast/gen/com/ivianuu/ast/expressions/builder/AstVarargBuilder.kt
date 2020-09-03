@@ -17,14 +17,14 @@ import kotlin.contracts.*
 
 @AstBuilderDsl
 class AstVarargBuilder : AstExpressionBuilder {
-    override lateinit var type: AstType
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+    override lateinit var type: AstType
     val elements: MutableList<AstVarargElement> = mutableListOf()
 
     override fun build(): AstVararg {
         return AstVarargImpl(
-            type,
             annotations,
+            type,
             elements,
         )
     }

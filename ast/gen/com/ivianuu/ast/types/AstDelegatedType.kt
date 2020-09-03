@@ -17,4 +17,12 @@ abstract class AstDelegatedType : AstPureAbstractElement(), AstType {
     abstract val expression: AstExpression
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitDelegatedType(this, data)
+
+    abstract override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
+
+    abstract override fun replaceIsMarkedNullable(newIsMarkedNullable: Boolean)
+
+    abstract fun replaceType(newType: AstType)
+
+    abstract fun replaceExpression(newExpression: AstExpression)
 }

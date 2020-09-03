@@ -8,6 +8,7 @@ import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.impl.AstEnumEntryImpl
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
+import com.ivianuu.ast.symbols.impl.AstCallableSymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -21,21 +22,21 @@ import org.jetbrains.kotlin.name.Name
 
 @AstBuilderDsl
 class AstEnumEntryBuilder {
+    val annotations: MutableList<AstFunctionCall> = mutableListOf()
     var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     lateinit var returnType: AstType
     lateinit var name: Name
     lateinit var symbol: AstVariableSymbol<AstEnumEntry>
     var initializer: AstExpression? = null
-    val annotations: MutableList<AstFunctionCall> = mutableListOf()
 
     fun build(): AstEnumEntry {
         return AstEnumEntryImpl(
+            annotations,
             origin,
             returnType,
             name,
             symbol,
             initializer,
-            annotations,
         )
     }
 

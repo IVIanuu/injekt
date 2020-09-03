@@ -13,8 +13,8 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstSimpleTypeImpl(
     override val annotations: MutableList<AstFunctionCall>,
-    override val isMarkedNullable: Boolean,
-    override val classifier: AstClassifierSymbol<*>,
+    override var isMarkedNullable: Boolean,
+    override var classifier: AstClassifierSymbol<*>,
     override val arguments: MutableList<AstTypeProjection>,
 ) : AstSimpleType() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
@@ -26,5 +26,23 @@ internal class AstSimpleTypeImpl(
         annotations.transformInplace(transformer, data)
         arguments.transformInplace(transformer, data)
         return this
+    }
+
+    override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>) {
+        annotations.clear()
+        annotations.addAll(newAnnotations)
+    }
+
+    override fun replaceIsMarkedNullable(newIsMarkedNullable: Boolean) {
+        isMarkedNullable = newIsMarkedNullable
+    }
+
+    override fun replaceClassifier(newClassifier: AstClassifierSymbol<*>) {
+        classifier = newClassifier
+    }
+
+    override fun replaceArguments(newArguments: List<AstTypeProjection>) {
+        arguments.clear()
+        arguments.addAll(newArguments)
     }
 }

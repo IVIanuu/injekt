@@ -10,9 +10,9 @@ import com.ivianuu.ast.tree.generator.AstTreeBuilder.declaration
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.expression
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.file
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.functionCall
+import com.ivianuu.ast.tree.generator.AstTreeBuilder.type
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.typeParameter
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.typeProjection
-import com.ivianuu.ast.tree.generator.AstTreeBuilder.type
 import com.ivianuu.ast.tree.generator.AstTreeBuilder.valueParameter
 import com.ivianuu.ast.tree.generator.context.type
 import com.ivianuu.ast.tree.generator.model.Field
@@ -22,8 +22,6 @@ import com.ivianuu.ast.tree.generator.model.fieldList
 import com.ivianuu.ast.tree.generator.model.fieldSet
 
 object FieldSets {
-    val callee = field("callee", astSymbolType)
-
     val receivers = fieldSet(
         field("dispatchReceiver", expression, nullable = true),
         field("extensionReceiver", expression, nullable = true)
@@ -45,6 +43,7 @@ object FieldSets {
         argument: String? = null
     ): Field {
         return field("symbol", type(packageName, symbolClassName), argument)
+            .also { it.withReplace = false }
     }
 
     fun symbol(symbolClassName: String, argument: String? = null): Field =
@@ -65,6 +64,7 @@ object FieldSets {
     val typeParameters = fieldList("typeParameters", typeParameter)
 
     val name = field(nameType)
+        .also { it.withReplace = false }
 
     val initializer = field("initializer", expression, nullable = true)
 
@@ -74,10 +74,8 @@ object FieldSets {
 
     val visibility = field(visibilityType)
     val modality = field(modalityType)
-    val expectActual = fieldSet(
-        booleanField("isExpect"),
-        booleanField("isActual")
-    )
+    val platformStatus = field(platformStatusType)
+
     val isOperator = booleanField("isOperator")
     val isInfix = booleanField("isInfix")
     val isInline = booleanField("isInline")

@@ -12,24 +12,45 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstDoWhileLoopImpl(
-    override var type: AstType,
     override val annotations: MutableList<AstFunctionCall>,
+    override var type: AstType,
     override var body: AstExpression,
     override var condition: AstExpression,
-    override val label: String?,
+    override var label: String?,
 ) : AstDoWhileLoop() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
+        type.accept(visitor, data)
         body.accept(visitor, data)
         condition.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstDoWhileLoopImpl {
-        type = type.transformSingle(transformer, data)
         annotations.transformInplace(transformer, data)
+        type = type.transformSingle(transformer, data)
         body = body.transformSingle(transformer, data)
         condition = condition.transformSingle(transformer, data)
         return this
+    }
+
+    override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>) {
+        annotations.clear()
+        annotations.addAll(newAnnotations)
+    }
+
+    override fun replaceType(newType: AstType) {
+        type = newType
+    }
+
+    override fun replaceBody(newBody: AstExpression) {
+        body = newBody
+    }
+
+    override fun replaceCondition(newCondition: AstExpression) {
+        condition = newCondition
+    }
+
+    override fun replaceLabel(newLabel: String?) {
+        label = newLabel
     }
 }

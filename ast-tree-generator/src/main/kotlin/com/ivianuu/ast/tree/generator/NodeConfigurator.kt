@@ -6,34 +6,34 @@
 package com.ivianuu.ast.tree.generator
 
 import com.ivianuu.ast.tree.generator.FieldSets.annotations
-import com.ivianuu.ast.tree.generator.FieldSets.valueArguments
 import com.ivianuu.ast.tree.generator.FieldSets.body
 import com.ivianuu.ast.tree.generator.FieldSets.classKind
+import com.ivianuu.ast.tree.generator.FieldSets.declarations
+import com.ivianuu.ast.tree.generator.FieldSets.files
+import com.ivianuu.ast.tree.generator.FieldSets.initializer
 import com.ivianuu.ast.tree.generator.FieldSets.isCompanion
 import com.ivianuu.ast.tree.generator.FieldSets.isConst
 import com.ivianuu.ast.tree.generator.FieldSets.isData
-import com.ivianuu.ast.tree.generator.FieldSets.declarations
-import com.ivianuu.ast.tree.generator.FieldSets.expectActual
 import com.ivianuu.ast.tree.generator.FieldSets.isExternal
-import com.ivianuu.ast.tree.generator.FieldSets.files
 import com.ivianuu.ast.tree.generator.FieldSets.isFun
 import com.ivianuu.ast.tree.generator.FieldSets.isInfix
-import com.ivianuu.ast.tree.generator.FieldSets.initializer
 import com.ivianuu.ast.tree.generator.FieldSets.isInline
 import com.ivianuu.ast.tree.generator.FieldSets.isInner
 import com.ivianuu.ast.tree.generator.FieldSets.isLateinit
+import com.ivianuu.ast.tree.generator.FieldSets.isOperator
+import com.ivianuu.ast.tree.generator.FieldSets.isSuspend
+import com.ivianuu.ast.tree.generator.FieldSets.isTailrec
 import com.ivianuu.ast.tree.generator.FieldSets.modality
 import com.ivianuu.ast.tree.generator.FieldSets.name
-import com.ivianuu.ast.tree.generator.FieldSets.isOperator
+import com.ivianuu.ast.tree.generator.FieldSets.platformStatus
 import com.ivianuu.ast.tree.generator.FieldSets.receivers
 import com.ivianuu.ast.tree.generator.FieldSets.superTypes
-import com.ivianuu.ast.tree.generator.FieldSets.isSuspend
 import com.ivianuu.ast.tree.generator.FieldSets.symbol
 import com.ivianuu.ast.tree.generator.FieldSets.symbolWithPackage
-import com.ivianuu.ast.tree.generator.FieldSets.isTailrec
 import com.ivianuu.ast.tree.generator.FieldSets.typeArguments
-import com.ivianuu.ast.tree.generator.FieldSets.typeParameters
 import com.ivianuu.ast.tree.generator.FieldSets.typeField
+import com.ivianuu.ast.tree.generator.FieldSets.typeParameters
+import com.ivianuu.ast.tree.generator.FieldSets.valueArguments
 import com.ivianuu.ast.tree.generator.FieldSets.visibility
 import com.ivianuu.ast.tree.generator.context.AbstractFieldConfigurator
 import com.ivianuu.ast.tree.generator.model.AbstractElement
@@ -66,7 +66,20 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         declaration.configure {
             +field("origin", declarationOriginType)
+                .also { it.withReplace = false }
             +field("attributes", declarationAttributesType)
+                .also { it.withReplace = false }
+        }
+        declarationContainer.configure {
+            +declarations
+        }
+        namedDeclaration.configure {
+            +name
+        }
+        memberDeclaration.configure {
+            +visibility
+            +modality
+            +platformStatus
         }
 
         callableDeclaration.configure {
@@ -87,7 +100,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         expression.configure {
             +typeField
-            +annotations
         }
 
         call.configure {
@@ -167,16 +179,10 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +symbol("AstClassSymbol", "F")
             +classKind
             +superTypes()
-            +declarations
-            +annotations
         }
 
         regularClass.configure {
             parentArg(klass, "F", regularClass)
-            +name
-            +visibility
-            +expectActual
-            +modality
             +symbol("AstRegularClassSymbol")
             +superTypes()
             +isInline
@@ -195,13 +201,8 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         typeAlias.configure {
             +typeParameters
             parentArg(classLikeDeclaration, "F", typeAlias)
-            +name
-            +visibility
-            +expectActual
-            +modality
             +symbol("AstTypeAliasSymbol")
             +field("expandedType", type)
-            +annotations
         }
 
         anonymousFunction.configure {
@@ -217,16 +218,11 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +field(varianceType)
             +booleanField("isReified")
             +fieldList("bounds", type)
-            +annotations
         }
 
         namedFunction.configure {
             parentArg(function, "F", namedFunction)
             parentArg(callableDeclaration, "F", namedFunction)
-            +name
-            +visibility
-            +expectActual
-            +modality
             +isExternal
             +isSuspend
             +isOperator
@@ -234,8 +230,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +isInline
             +isTailrec
             +symbol("AstFunctionSymbol<AstNamedFunction>")
-            +annotations
-            +typeParameters
         }
 
         property.configure {
@@ -244,9 +238,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +symbol("AstPropertySymbol")
             +booleanField("hasBackingField")
             +booleanField("isLocal")
-            +visibility
-            +expectActual
-            +modality
             +isInline
             +isConst
             +isLateinit
@@ -255,14 +246,12 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         propertyAccessor.configure {
             parentArg(function, "F", propertyAccessor)
             +symbol("AstPropertyAccessorSymbol")
-            +booleanField("isGetter")
             +booleanField("isSetter")
         }
 
         constructor.configure {
             parentArg(function, "F", constructor)
             parentArg(callableDeclaration, "F", constructor)
-            +annotations
             +symbol("AstConstructorSymbol")
             +field(
                 "delegatedConstructor",
@@ -274,9 +263,8 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         delegatedConstructorCall.configure {
-            +field("constructedType", type)
             +field("dispatchReceiver", expression, nullable = true)
-            generateBooleanFields("this", "super")
+            +field("kind", delegatedConstructorCallKindType)
         }
 
         valueParameter.configure {
@@ -289,14 +277,12 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         variable.configure {
             withArg("F", variable)
             parentArg(callableDeclaration, "F", "F")
-            +name
             +symbol("AstVariableSymbol", "F")
             +initializer
             +field("delegate", expression, nullable = true)
-            generateBooleanFields("var", "val")
+            generateBooleanFields("var")
             +field("getter", propertyAccessor, nullable = true)
             +field("setter", propertyAccessor, nullable = true)
-            +annotations
         }
 
         enumEntry.configure {
@@ -313,6 +299,10 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         moduleFragment.configure {
             +stringField("name")
             +files
+        }
+
+        packageFragment.configure {
+
         }
 
         file.configure {
@@ -348,7 +338,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         propertyBackingFieldReference.configure {
-            +field("resolvedSymbol", backingFieldSymbolType)
+            +field("property", propertySymbolType)
         }
 
         superReference.configure {
@@ -367,7 +357,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         type.configure {
-            +annotations
             +booleanField("isMarkedNullable")
             shouldBeAnInterface()
         }

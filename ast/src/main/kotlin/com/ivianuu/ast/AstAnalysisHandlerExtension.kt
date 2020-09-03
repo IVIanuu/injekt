@@ -1,5 +1,6 @@
 package com.ivianuu.ast
 
+import com.ivianuu.ast.declarations.builder.buildNamedFunction
 import com.ivianuu.ast.extension.AstGenerationExtension
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.editor.Document
@@ -14,6 +15,7 @@ import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.diagnostics.Severity
+import org.jetbrains.kotlin.fir.lightTree.converter.nameAsSafeName
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.BindingTraceContext
@@ -41,6 +43,12 @@ class AstAnalysisHandlerExtension(
     ): AnalysisResult? {
         if (generatedCode) return null
         generatedCode = true
+
+        val builtIns = AstBuiltIns(module.builtIns)
+        val myFun = buildNamedFunction {
+            name = "hello".nameAsSafeName()
+            returnType = builtIns.unitType
+        }
 
         val extensions = AstGenerationExtension.getInstances(project)
         if (extensions.isEmpty()) return null

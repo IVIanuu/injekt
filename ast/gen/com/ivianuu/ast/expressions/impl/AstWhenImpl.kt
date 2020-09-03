@@ -14,25 +14,47 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstWhenImpl(
-    override var type: AstType,
     override val annotations: MutableList<AstFunctionCall>,
+    override var type: AstType,
     override var subject: AstExpression?,
     override var subjectVariable: AstVariable<*>?,
     override val branches: MutableList<AstWhenBranch>,
 ) : AstWhen() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
+        type.accept(visitor, data)
         subject?.accept(visitor, data)
         branches.forEach { it.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstWhenImpl {
-        type = type.transformSingle(transformer, data)
         annotations.transformInplace(transformer, data)
+        type = type.transformSingle(transformer, data)
         subject = subject?.transformSingle(transformer, data)
         subjectVariable = subjectVariable?.transformSingle(transformer, data)
         branches.transformInplace(transformer, data)
         return this
+    }
+
+    override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>) {
+        annotations.clear()
+        annotations.addAll(newAnnotations)
+    }
+
+    override fun replaceType(newType: AstType) {
+        type = newType
+    }
+
+    override fun replaceSubject(newSubject: AstExpression?) {
+        subject = newSubject
+    }
+
+    override fun replaceSubjectVariable(newSubjectVariable: AstVariable<*>?) {
+        subjectVariable = newSubjectVariable
+    }
+
+    override fun replaceBranches(newBranches: List<AstWhenBranch>) {
+        branches.clear()
+        branches.addAll(newBranches)
     }
 }

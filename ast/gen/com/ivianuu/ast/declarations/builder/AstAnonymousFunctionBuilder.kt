@@ -11,6 +11,7 @@ import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.symbols.impl.AstAnonymousFunctionSymbol
+import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*

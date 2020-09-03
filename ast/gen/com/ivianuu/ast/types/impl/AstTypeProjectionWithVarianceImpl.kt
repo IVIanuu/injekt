@@ -12,7 +12,7 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstTypeProjectionWithVarianceImpl(
     override var type: AstType,
-    override val variance: Variance,
+    override var variance: Variance,
 ) : AstTypeProjectionWithVariance() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         type.accept(visitor, data)
@@ -21,5 +21,13 @@ internal class AstTypeProjectionWithVarianceImpl(
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstTypeProjectionWithVarianceImpl {
         type = type.transformSingle(transformer, data)
         return this
+    }
+
+    override fun replaceType(newType: AstType) {
+        type = newType
+    }
+
+    override fun replaceVariance(newVariance: Variance) {
+        variance = newVariance
     }
 }

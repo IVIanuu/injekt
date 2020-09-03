@@ -10,8 +10,12 @@ import com.ivianuu.ast.visitors.*
  */
 
 interface AstExpression : AstStatement, AstVarargElement {
-    val type: AstType
     override val annotations: List<AstFunctionCall>
+    val type: AstType
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitExpression(this, data)
+
+    override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
+
+    fun replaceType(newType: AstType)
 }

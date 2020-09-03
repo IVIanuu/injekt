@@ -28,4 +28,18 @@ internal class AstBlockImpl(
         type = type.transformSingle(transformer, data)
         return this
     }
+
+    override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>) {
+        annotations.clear()
+        annotations.addAll(newAnnotations)
+    }
+
+    override fun replaceStatements(newStatements: List<AstStatement>) {
+        statements.clear()
+        statements.addAll(newStatements)
+    }
+
+    override fun replaceType(newType: AstType) {
+        type = newType
+    }
 }

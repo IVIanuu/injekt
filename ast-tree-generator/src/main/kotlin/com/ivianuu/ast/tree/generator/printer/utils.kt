@@ -98,15 +98,14 @@ val KindOwner.needPureAbstractElement: Boolean
     get() = (kind != Implementation.Kind.Interface) && !allParents.any { it.kind == Implementation.Kind.AbstractClass }
 
 
-val Field.isVal: Boolean get() = this is FieldList || (this is FieldWithDefault && origin is FieldList) || !mutable
-
+val Field.isVal: Boolean get() = this is FieldList || (this is FieldWithDefault && origin is FieldList) || !isMutable
 
 fun Field.transformFunctionDeclaration(returnType: String): String {
     return transformFunctionDeclaration(name.capitalize(), returnType)
 }
 
 fun transformFunctionDeclaration(transformName: String, returnType: String): String {
-    return "fun <D> transform$transformName(transformer: AstTransformer<D>, data: D): $returnType"
+    return "fun <D> transform$transformName(transformer: FirTransformer<D>, data: D): $returnType"
 }
 
 fun Field.replaceFunctionDeclaration(
@@ -123,8 +122,8 @@ fun Field.replaceFunctionDeclaration(
 
 val Field.mutableType: String
     get() = when (this) {
-        is FieldList -> if (mutable) "Mutable$typeWithArguments" else typeWithArguments
-        is FieldWithDefault -> if (mutable) origin.mutableType else typeWithArguments
+        is FieldList -> if (isMutable) "Mutable$typeWithArguments" else typeWithArguments
+        is FieldWithDefault -> if (isMutable) origin.mutableType else typeWithArguments
         else -> typeWithArguments
     }
 

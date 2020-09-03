@@ -24,4 +24,12 @@ internal class AstCatchImpl(
         body = body.transformSingle(transformer, data)
         return this
     }
+
+    override fun replaceParameter(newParameter: AstValueParameter) {
+        parameter = newParameter
+    }
+
+    override fun replaceBody(newBody: AstExpression) {
+        body = newBody
+    }
 }

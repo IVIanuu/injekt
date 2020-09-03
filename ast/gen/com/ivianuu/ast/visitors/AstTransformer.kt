@@ -9,6 +9,9 @@ import com.ivianuu.ast.AstTargetElement
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.declarations.AstDeclaration
+import com.ivianuu.ast.declarations.AstDeclarationContainer
+import com.ivianuu.ast.declarations.AstNamedDeclaration
+import com.ivianuu.ast.declarations.AstMemberDeclaration
 import com.ivianuu.ast.declarations.AstAnonymousInitializer
 import com.ivianuu.ast.declarations.AstCallableDeclaration
 import com.ivianuu.ast.declarations.AstTypeParameter
@@ -26,6 +29,7 @@ import com.ivianuu.ast.declarations.AstNamedFunction
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstModuleFragment
+import com.ivianuu.ast.declarations.AstPackageFragment
 import com.ivianuu.ast.declarations.AstFile
 import com.ivianuu.ast.declarations.AstAnonymousFunction
 import com.ivianuu.ast.declarations.AstAnonymousObject
@@ -103,6 +107,18 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformStatement(declaration, data)
     }
 
+    open fun transformDeclarationContainer(declarationContainer: AstDeclarationContainer, data: D): CompositeTransformResult<AstElement> {
+        return transformElement(declarationContainer, data)
+    }
+
+    open fun transformNamedDeclaration(namedDeclaration: AstNamedDeclaration, data: D): CompositeTransformResult<AstStatement> {
+        return transformDeclaration(namedDeclaration, data)
+    }
+
+    open fun transformMemberDeclaration(memberDeclaration: AstMemberDeclaration, data: D): CompositeTransformResult<AstStatement> {
+        return transformNamedDeclaration(memberDeclaration, data)
+    }
+
     open fun transformAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer, data: D): CompositeTransformResult<AstStatement> {
         return transformDeclaration(anonymousInitializer, data)
     }
@@ -171,8 +187,12 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformElement(moduleFragment, data)
     }
 
-    open fun transformFile(file: AstFile, data: D): CompositeTransformResult<AstFile> {
-        return transformElement(file, data)
+    open fun transformPackageFragment(packageFragment: AstPackageFragment, data: D): CompositeTransformResult<AstElement> {
+        return transformDeclarationContainer(packageFragment, data)
+    }
+
+    open fun transformFile(file: AstFile, data: D): CompositeTransformResult<AstElement> {
+        return transformPackageFragment(file, data)
     }
 
     open fun transformAnonymousFunction(anonymousFunction: AstAnonymousFunction, data: D): CompositeTransformResult<AstStatement> {
@@ -343,6 +363,18 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformDeclaration(declaration, data)
     }
 
+    final override fun visitDeclarationContainer(declarationContainer: AstDeclarationContainer, data: D): CompositeTransformResult<AstElement> {
+        return transformDeclarationContainer(declarationContainer, data)
+    }
+
+    final override fun visitNamedDeclaration(namedDeclaration: AstNamedDeclaration, data: D): CompositeTransformResult<AstStatement> {
+        return transformNamedDeclaration(namedDeclaration, data)
+    }
+
+    final override fun visitMemberDeclaration(memberDeclaration: AstMemberDeclaration, data: D): CompositeTransformResult<AstStatement> {
+        return transformMemberDeclaration(memberDeclaration, data)
+    }
+
     final override fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer, data: D): CompositeTransformResult<AstStatement> {
         return transformAnonymousInitializer(anonymousInitializer, data)
     }
@@ -411,7 +443,11 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformModuleFragment(moduleFragment, data)
     }
 
-    final override fun visitFile(file: AstFile, data: D): CompositeTransformResult<AstFile> {
+    final override fun visitPackageFragment(packageFragment: AstPackageFragment, data: D): CompositeTransformResult<AstElement> {
+        return transformPackageFragment(packageFragment, data)
+    }
+
+    final override fun visitFile(file: AstFile, data: D): CompositeTransformResult<AstElement> {
         return transformFile(file, data)
     }
 

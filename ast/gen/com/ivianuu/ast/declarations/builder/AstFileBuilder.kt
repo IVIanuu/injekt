@@ -3,6 +3,7 @@ package com.ivianuu.ast.declarations.builder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclaration
 import com.ivianuu.ast.declarations.AstFile
+import com.ivianuu.ast.declarations.builder.AstPackageFragmentBuilder
 import com.ivianuu.ast.declarations.impl.AstFileImpl
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.visitors.*
@@ -15,13 +16,13 @@ import org.jetbrains.kotlin.name.FqName
  */
 
 @AstBuilderDsl
-class AstFileBuilder {
+class AstFileBuilder : AstPackageFragmentBuilder {
     val annotations: MutableList<AstFunctionCall> = mutableListOf()
-    val declarations: MutableList<AstDeclaration> = mutableListOf()
+    override val declarations: MutableList<AstDeclaration> = mutableListOf()
     lateinit var name: String
     lateinit var packageFqName: FqName
 
-    fun build(): AstFile {
+    override fun build(): AstFile {
         return AstFileImpl(
             annotations,
             declarations,

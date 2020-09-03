@@ -58,8 +58,8 @@ class Implementation(val element: Element, val name: String?) : FieldContainer, 
         for (parent in parents) {
             for (field in allFields) {
                 val fieldFromParent = parent[field.name] ?: continue
-                field.mutable = field.mutable || fieldFromParent.mutable
-                if (field.mutable && field.customSetter == null) {
+                field.isMutable = field.isMutable || fieldFromParent.isMutable
+                if (field.isMutable && field.customSetter == null) {
                     field.withGetter = false
                 }
             }

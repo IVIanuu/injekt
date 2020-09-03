@@ -13,4 +13,8 @@ abstract class AstTypeProjectionWithVariance : AstTypeProjection() {
     abstract val variance: Variance
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitTypeProjectionWithVariance(this, data)
+
+    abstract fun replaceType(newType: AstType)
+
+    abstract fun replaceVariance(newVariance: Variance)
 }

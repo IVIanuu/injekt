@@ -14,4 +14,8 @@ abstract class AstWhenBranch : AstPureAbstractElement(), AstElement {
     abstract val result: AstExpression
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitWhenBranch(this, data)
+
+    abstract fun replaceCondition(newCondition: AstExpression)
+
+    abstract fun replaceResult(newResult: AstExpression)
 }

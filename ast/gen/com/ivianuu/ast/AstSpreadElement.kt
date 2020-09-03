@@ -12,4 +12,6 @@ abstract class AstSpreadElement : AstPureAbstractElement(), AstVarargElement {
     abstract val expression: AstExpression
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitSpreadElement(this, data)
+
+    abstract fun replaceExpression(newExpression: AstExpression)
 }

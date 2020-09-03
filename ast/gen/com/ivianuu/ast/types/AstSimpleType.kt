@@ -17,4 +17,12 @@ abstract class AstSimpleType : AstPureAbstractElement(), AstType {
     abstract val arguments: List<AstTypeProjection>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitSimpleType(this, data)
+
+    abstract override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
+
+    abstract override fun replaceIsMarkedNullable(newIsMarkedNullable: Boolean)
+
+    abstract fun replaceClassifier(newClassifier: AstClassifierSymbol<*>)
+
+    abstract fun replaceArguments(newArguments: List<AstTypeProjection>)
 }

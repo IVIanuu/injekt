@@ -47,6 +47,19 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         visitorSuperType = statement
         transformerType = statement
     }
+    val declarationContainer = element("DeclarationContainer", Declaration) {
+        visitorSuperType = baseAstElement
+        transformerType = baseAstElement
+    }
+    val namedDeclaration = element("NamedDeclaration", Declaration, declaration) {
+        visitorSuperType = declaration
+        transformerType = statement
+    }
+    val memberDeclaration = element("MemberDeclaration", Declaration, namedDeclaration) {
+        visitorSuperType = namedDeclaration
+        transformerType = statement
+    }
+
     val anonymousInitializer = element(
         "AnonymousInitializer",
         Declaration,
@@ -73,7 +86,7 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
     }
 
     val variable =
-        element("Variable", Declaration, callableDeclaration, declaration) {
+        element("Variable", Declaration, callableDeclaration, namedDeclaration) {
             visitorSuperType = declaration
             transformerType = statement
         }
@@ -102,14 +115,14 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
             transformerType = statement
         }
     val klass =
-        element("Class", Declaration, classLikeDeclaration) {
+        element("Class", Declaration, classLikeDeclaration, declarationContainer) {
             visitorSuperType = classLikeDeclaration
             transformerType = statement
         }
     val regularClass = element(
         "RegularClass",
         Declaration,
-        declaration,
+        memberDeclaration,
         typeParametersOwner,
         klass
     ) {
@@ -120,6 +133,7 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         "TypeAlias",
         Declaration,
         classLikeDeclaration,
+        memberDeclaration,
         typeParametersOwner
     ) {
         visitorSuperType = classLikeDeclaration
@@ -140,13 +154,14 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         "NamedFunction",
         Declaration,
         function,
+        memberDeclaration,
         callableDeclaration,
         typeParametersOwner
     ) {
         visitorSuperType = function
         transformerType = statement
     }
-    val propertyAccessor = element("PropertyAccessor", Declaration, function, typeParametersOwner) {
+    val propertyAccessor = element("PropertyAccessor", Declaration, function, memberDeclaration, typeParametersOwner) {
         visitorSuperType = function
         transformerType = statement
     }
@@ -164,9 +179,13 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         visitorSuperType = baseAstElement
         transformerType = this
     }
-    val file = element("File", Declaration, annotationContainer) {
-        visitorSuperType = baseAstElement
-        transformerType = this
+    val packageFragment = element("PackageFragment", Declaration, declarationContainer) {
+        visitorSuperType = declarationContainer
+        transformerType = baseAstElement
+    }
+    val file = element("File", Declaration, packageFragment, annotationContainer) {
+        visitorSuperType = packageFragment
+        transformerType = baseAstElement
     }
 
     val anonymousFunction =

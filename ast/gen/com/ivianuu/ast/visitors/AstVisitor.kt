@@ -9,6 +9,9 @@ import com.ivianuu.ast.AstTargetElement
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.declarations.AstDeclaration
+import com.ivianuu.ast.declarations.AstDeclarationContainer
+import com.ivianuu.ast.declarations.AstNamedDeclaration
+import com.ivianuu.ast.declarations.AstMemberDeclaration
 import com.ivianuu.ast.declarations.AstAnonymousInitializer
 import com.ivianuu.ast.declarations.AstCallableDeclaration
 import com.ivianuu.ast.declarations.AstTypeParameter
@@ -26,6 +29,7 @@ import com.ivianuu.ast.declarations.AstNamedFunction
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstModuleFragment
+import com.ivianuu.ast.declarations.AstPackageFragment
 import com.ivianuu.ast.declarations.AstFile
 import com.ivianuu.ast.declarations.AstAnonymousFunction
 import com.ivianuu.ast.declarations.AstAnonymousObject
@@ -85,6 +89,12 @@ abstract class AstVisitor<out R, in D> {
 
     open fun visitDeclaration(declaration: AstDeclaration, data: D): R  = visitStatement(declaration, data)
 
+    open fun visitDeclarationContainer(declarationContainer: AstDeclarationContainer, data: D): R  = visitElement(declarationContainer, data)
+
+    open fun visitNamedDeclaration(namedDeclaration: AstNamedDeclaration, data: D): R  = visitDeclaration(namedDeclaration, data)
+
+    open fun visitMemberDeclaration(memberDeclaration: AstMemberDeclaration, data: D): R  = visitNamedDeclaration(memberDeclaration, data)
+
     open fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer, data: D): R  = visitDeclaration(anonymousInitializer, data)
 
     open fun <F : AstCallableDeclaration<F>> visitCallableDeclaration(callableDeclaration: AstCallableDeclaration<F>, data: D): R  = visitDeclaration(callableDeclaration, data)
@@ -119,7 +129,9 @@ abstract class AstVisitor<out R, in D> {
 
     open fun visitModuleFragment(moduleFragment: AstModuleFragment, data: D): R  = visitElement(moduleFragment, data)
 
-    open fun visitFile(file: AstFile, data: D): R  = visitElement(file, data)
+    open fun visitPackageFragment(packageFragment: AstPackageFragment, data: D): R  = visitDeclarationContainer(packageFragment, data)
+
+    open fun visitFile(file: AstFile, data: D): R  = visitPackageFragment(file, data)
 
     open fun visitAnonymousFunction(anonymousFunction: AstAnonymousFunction, data: D): R  = visitFunction(anonymousFunction, data)
 

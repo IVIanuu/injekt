@@ -19,16 +19,16 @@ import kotlin.contracts.*
 
 @AstBuilderDsl
 class AstWhenBuilder : AstExpressionBuilder {
-    override lateinit var type: AstType
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+    override lateinit var type: AstType
     var subject: AstExpression? = null
     var subjectVariable: AstVariable<*>? = null
     val branches: MutableList<AstWhenBranch> = mutableListOf()
 
     override fun build(): AstWhen {
         return AstWhenImpl(
-            type,
             annotations,
+            type,
             subject,
             subjectVariable,
             branches,

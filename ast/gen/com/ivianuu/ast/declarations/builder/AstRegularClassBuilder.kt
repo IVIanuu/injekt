@@ -1,5 +1,6 @@
 package com.ivianuu.ast.declarations.builder
 
+import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.Visibilities
 import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.builder.AstBuilderDsl
@@ -9,9 +10,11 @@ import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstRegularClass
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.builder.AstClassBuilder
+import com.ivianuu.ast.declarations.builder.AstDeclarationContainerBuilder
 import com.ivianuu.ast.declarations.builder.AstTypeParametersOwnerBuilder
 import com.ivianuu.ast.declarations.impl.AstRegularClassImpl
 import com.ivianuu.ast.expressions.AstFunctionCall
+import com.ivianuu.ast.symbols.impl.AstClassSymbol
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -26,17 +29,16 @@ import org.jetbrains.kotlin.name.Name
  */
 
 @AstBuilderDsl
-open class AstRegularClassBuilder : AstClassBuilder, AstTypeParametersOwnerBuilder {
+open class AstRegularClassBuilder : AstClassBuilder, AstTypeParametersOwnerBuilder, AstDeclarationContainerBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
-    override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
-    override var classKind: ClassKind = ClassKind.CLASS
-    override val declarations: MutableList<AstDeclaration> = mutableListOf()
     open lateinit var name: Name
     open var visibility: Visibility = Visibilities.Public
-    open var isExpect: Boolean = false
-    open var isActual: Boolean = false
     open var modality: Modality = Modality.FINAL
+    open var platformStatus: PlatformStatus = PlatformStatus.DEFAULT
+    override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
+    override val declarations: MutableList<AstDeclaration> = mutableListOf()
+    override var classKind: ClassKind = ClassKind.CLASS
     open lateinit var symbol: AstRegularClassSymbol
     override val superTypes: MutableList<AstType> = mutableListOf()
     open var isInline: Boolean = false
@@ -50,14 +52,13 @@ open class AstRegularClassBuilder : AstClassBuilder, AstTypeParametersOwnerBuild
         return AstRegularClassImpl(
             annotations,
             origin,
-            typeParameters,
-            classKind,
-            declarations,
             name,
             visibility,
-            isExpect,
-            isActual,
             modality,
+            platformStatus,
+            typeParameters,
+            declarations,
+            classKind,
             symbol,
             superTypes,
             isInline,

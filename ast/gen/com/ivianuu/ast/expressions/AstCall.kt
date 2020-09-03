@@ -10,9 +10,15 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstCall : AstPureAbstractElement(), AstExpression {
-    abstract override val type: AstType
     abstract override val annotations: List<AstFunctionCall>
+    abstract override val type: AstType
     abstract val valueArguments: List<AstExpression>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitCall(this, data)
+
+    abstract override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
+
+    abstract override fun replaceType(newType: AstType)
+
+    abstract fun replaceValueArguments(newValueArguments: List<AstExpression>)
 }

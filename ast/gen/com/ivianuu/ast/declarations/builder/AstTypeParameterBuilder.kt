@@ -6,6 +6,7 @@ import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.impl.AstTypeParameterImpl
 import com.ivianuu.ast.expressions.AstFunctionCall
+import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.symbols.impl.AstTypeParameterSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -20,23 +21,23 @@ import org.jetbrains.kotlin.types.Variance
 
 @AstBuilderDsl
 class AstTypeParameterBuilder {
+    val annotations: MutableList<AstFunctionCall> = mutableListOf()
     var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     lateinit var name: Name
     lateinit var symbol: AstTypeParameterSymbol
     var variance: Variance = Variance.INVARIANT
     var isReified: Boolean = false
     val bounds: MutableList<AstType> = mutableListOf()
-    val annotations: MutableList<AstFunctionCall> = mutableListOf()
 
     fun build(): AstTypeParameter {
         return AstTypeParameterImpl(
+            annotations,
             origin,
             name,
             symbol,
             variance,
             isReified,
             bounds,
-            annotations,
         )
     }
 }

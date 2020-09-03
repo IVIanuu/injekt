@@ -16,27 +16,6 @@ import org.jetbrains.kotlin.name.ClassId
 
 val AstClass<*>.classId get() = symbol.classId
 
-fun AstFile.addDeclaration(declaration: AstDeclaration) {
-    require(this is AstFileImpl)
-    declarations += declaration
-}
-
-fun AstRegularClass.addDeclaration(declaration: AstDeclaration) {
-    @Suppress("LiftReturnOrAssignment")
-    when (this) {
-        is AstRegularClassImpl -> declarations += declaration
-        else -> throw IllegalStateException()
-    }
-}
-
-fun AstModuleFragment.addFile(file: AstFile) {
-    @Suppress("LiftReturnOrAssignment")
-    when (this) {
-        is AstModuleFragmentImpl -> files += file
-        else -> throw IllegalStateException()
-    }
-}
-
 val AstType.regularClassOrFail: AstRegularClassSymbol
     get() = regularClassOrNull ?: error("Could not get type for $this")
 

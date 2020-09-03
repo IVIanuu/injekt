@@ -11,6 +11,7 @@ import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
+import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
@@ -22,23 +23,23 @@ import kotlin.contracts.*
 
 @AstBuilderDsl
 class AstConstructorBuilder : AstAbstractConstructorBuilder {
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     override var receiverType: AstType? = null
     override lateinit var returnType: AstType
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
-    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var symbol: AstConstructorSymbol
     override var delegatedConstructor: AstDelegatedConstructorCall? = null
     override var body: AstBlock? = null
-    var isPrimary: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
+    var isPrimary: Boolean = false
 
     override fun build(): AstConstructor {
         return AstConstructorImpl(
+            annotations,
             origin,
             receiverType,
             returnType,
             valueParameters,
-            annotations,
             symbol,
             delegatedConstructor,
             body,

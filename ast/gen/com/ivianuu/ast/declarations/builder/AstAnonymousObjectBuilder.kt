@@ -10,6 +10,7 @@ import com.ivianuu.ast.declarations.impl.AstAnonymousObjectImpl
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.symbols.impl.AstAnonymousObjectSymbol
+import com.ivianuu.ast.symbols.impl.AstClassSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
@@ -22,21 +23,21 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 
 @AstBuilderDsl
 class AstAnonymousObjectBuilder : AstClassBuilder, AstExpressionBuilder {
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
+    override val declarations: MutableList<AstDeclaration> = mutableListOf()
     override var classKind: ClassKind = ClassKind.CLASS
     override val superTypes: MutableList<AstType> = mutableListOf()
-    override val declarations: MutableList<AstDeclaration> = mutableListOf()
-    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var type: AstType
     lateinit var symbol: AstAnonymousObjectSymbol
 
     override fun build(): AstAnonymousObject {
         return AstAnonymousObjectImpl(
+            annotations,
             origin,
+            declarations,
             classKind,
             superTypes,
-            declarations,
-            annotations,
             type,
             symbol,
         )

@@ -18,15 +18,15 @@ import kotlin.contracts.*
 
 @AstBuilderDsl
 class AstReturnBuilder : AstExpressionBuilder {
-    override lateinit var type: AstType
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+    override lateinit var type: AstType
     lateinit var result: AstExpression
     lateinit var target: AstFunctionSymbol<*>
 
     override fun build(): AstReturn {
         return AstReturnImpl(
-            type,
             annotations,
+            type,
             result,
             target,
         )

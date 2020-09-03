@@ -15,4 +15,8 @@ abstract class AstCatch : AstPureAbstractElement(), AstElement {
     abstract val body: AstExpression
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitCatch(this, data)
+
+    abstract fun replaceParameter(newParameter: AstValueParameter)
+
+    abstract fun replaceBody(newBody: AstExpression)
 }

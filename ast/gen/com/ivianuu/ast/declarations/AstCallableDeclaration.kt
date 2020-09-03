@@ -2,6 +2,7 @@ package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.expressions.AstFunctionCall
+import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.symbols.impl.AstCallableSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -20,4 +21,10 @@ interface AstCallableDeclaration<F : AstCallableDeclaration<F>> : AstDeclaration
     override val symbol: AstCallableSymbol<F>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitCallableDeclaration(this, data)
+
+    override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
+
+    fun replaceReceiverType(newReceiverType: AstType?)
+
+    fun replaceReturnType(newReturnType: AstType)
 }

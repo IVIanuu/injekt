@@ -5,6 +5,7 @@ import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstAnonymousFunctionSymbol
+import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -26,4 +27,18 @@ abstract class AstAnonymousFunction : AstPureAbstractElement(), AstFunction<AstA
     abstract val label: String?
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitAnonymousFunction(this, data)
+
+    abstract override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
+
+    abstract override fun replaceReceiverType(newReceiverType: AstType?)
+
+    abstract override fun replaceReturnType(newReturnType: AstType)
+
+    abstract override fun replaceValueParameters(newValueParameters: List<AstValueParameter>)
+
+    abstract override fun replaceBody(newBody: AstBlock?)
+
+    abstract override fun replaceType(newType: AstType)
+
+    abstract fun replaceLabel(newLabel: String?)
 }

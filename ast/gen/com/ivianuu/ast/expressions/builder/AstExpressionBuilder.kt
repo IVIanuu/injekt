@@ -13,8 +13,7 @@ import com.ivianuu.ast.visitors.*
 
 @AstBuilderDsl
 interface AstExpressionBuilder {
-    abstract var type: AstType
     abstract val annotations: MutableList<AstFunctionCall>
-
+    abstract var type: AstType
     fun build(): AstExpression
 }

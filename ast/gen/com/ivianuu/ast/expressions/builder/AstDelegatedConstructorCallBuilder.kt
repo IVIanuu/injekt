@@ -2,6 +2,7 @@ package com.ivianuu.ast.expressions.builder
 
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
+import com.ivianuu.ast.expressions.AstDelegatedConstructorCallKind
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.builder.AstCallBuilder
@@ -18,21 +19,19 @@ import kotlin.contracts.*
 
 @AstBuilderDsl
 class AstDelegatedConstructorCallBuilder : AstCallBuilder, AstExpressionBuilder {
-    override lateinit var type: AstType
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+    override lateinit var type: AstType
     override val valueArguments: MutableList<AstExpression> = mutableListOf()
-    lateinit var constructedType: AstType
     var dispatchReceiver: AstExpression? = null
-    var isThis: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
+    lateinit var kind: AstDelegatedConstructorCallKind
 
     override fun build(): AstDelegatedConstructorCall {
         return AstDelegatedConstructorCallImpl(
-            type,
             annotations,
+            type,
             valueArguments,
-            constructedType,
             dispatchReceiver,
-            isThis,
+            kind,
         )
     }
 

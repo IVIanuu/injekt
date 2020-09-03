@@ -18,16 +18,16 @@ import kotlin.contracts.*
 
 @AstBuilderDsl
 class AstWhileLoopBuilder : AstLoopBuilder, AstExpressionBuilder {
-    override lateinit var type: AstType
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+    override lateinit var type: AstType
     override var label: String? = null
     override lateinit var condition: AstExpression
     override lateinit var body: AstExpression
 
     override fun build(): AstWhileLoop {
         return AstWhileLoopImpl(
-            type,
             annotations,
+            type,
             label,
             condition,
             body,

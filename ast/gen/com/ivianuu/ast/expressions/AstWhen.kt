@@ -11,11 +11,21 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstWhen : AstPureAbstractElement(), AstExpression {
-    abstract override val type: AstType
     abstract override val annotations: List<AstFunctionCall>
+    abstract override val type: AstType
     abstract val subject: AstExpression?
     abstract val subjectVariable: AstVariable<*>?
     abstract val branches: List<AstWhenBranch>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitWhen(this, data)
+
+    abstract override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
+
+    abstract override fun replaceType(newType: AstType)
+
+    abstract fun replaceSubject(newSubject: AstExpression?)
+
+    abstract fun replaceSubjectVariable(newSubjectVariable: AstVariable<*>?)
+
+    abstract fun replaceBranches(newBranches: List<AstWhenBranch>)
 }

@@ -15,8 +15,8 @@ import com.ivianuu.ast.visitors.*
 
 @AstBuilderDsl
 interface AstQualifiedAccessBuilder {
-    abstract var type: AstType
     abstract val annotations: MutableList<AstFunctionCall>
+    abstract var type: AstType
     abstract val typeArguments: MutableList<AstTypeProjection>
     abstract var dispatchReceiver: AstExpression?
     abstract var extensionReceiver: AstExpression?

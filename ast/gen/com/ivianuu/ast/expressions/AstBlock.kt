@@ -15,4 +15,10 @@ abstract class AstBlock : AstPureAbstractElement(), AstExpression {
     abstract override val type: AstType
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitBlock(this, data)
+
+    abstract override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
+
+    abstract fun replaceStatements(newStatements: List<AstStatement>)
+
+    abstract override fun replaceType(newType: AstType)
 }

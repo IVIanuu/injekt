@@ -6,7 +6,6 @@ import com.ivianuu.ast.tree.generator.model.Field
 import com.ivianuu.ast.tree.generator.model.Implementation
 import com.ivianuu.ast.tree.generator.model.Importable
 import com.ivianuu.ast.tree.generator.pureAbstractElementType
-import com.ivianuu.ast.tree.generator.util.get
 import java.io.File
 
 fun Element.generateCode(generationPath: File) {
@@ -85,15 +84,36 @@ fun SmartPrinter.printElement(element: Element) {
             override()
             println("fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visit$name(this, data)")
 
-            fun Field.replaceDeclaration(
-                override: Boolean,
-                overriddenType: Importable? = null,
-                forceNullable: Boolean = false
-            ) {
+            fun Field.replaceDeclaration(override: Boolean, overriddenType: Importable? = null, forceNullable: Boolean = false) {
                 println()
                 abstract()
                 if (override) print("override ")
                 println(replaceFunctionDeclaration(overriddenType, forceNullable))
+            }
+
+            allFields.filter { it.withReplace }.forEach {
+                it.replaceDeclaration(overriddenFields[it]!![it]!!, forceNullable = it.useNullableForReplace)
+                for (overriddenType in it.overriddenTypes) {
+                    it.replaceDeclaration(true, overriddenType)
+                }
+            }
+
+            for (field in allFields) {
+                if (!field.needsSeparateTransform) continue
+                println()
+                abstract()
+                if (field.fromParent) {
+                    print("override ")
+                }
+                println(field.transformFunctionDeclaration(typeWithArguments))
+            }
+            if (needTransformOtherChildren) {
+                println()
+                abstract()
+                if (element.parents.any { it.needTransformOtherChildren }) {
+                    print("override ")
+                }
+                println(transformFunctionDeclaration("OtherChildren", typeWithArguments))
             }
 
             if (element == AbstractAstTreeBuilder.baseAstElement) {

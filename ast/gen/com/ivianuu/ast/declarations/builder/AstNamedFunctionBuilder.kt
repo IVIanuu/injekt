@@ -1,6 +1,7 @@
 package com.ivianuu.ast.declarations.builder
 
 import com.ivianuu.ast.AstImplementationDetail
+import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.Visibilities
 import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.builder.AstBuilderDsl
@@ -28,6 +29,7 @@ import org.jetbrains.kotlin.name.Name
 
 @AstBuilderDsl
 open class AstNamedFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwnerBuilder {
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     open var receiverType: AstType? = null
     override lateinit var returnType: AstType
@@ -35,9 +37,9 @@ open class AstNamedFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwnerB
     override var body: AstBlock? = null
     open lateinit var name: Name
     open var visibility: Visibility = Visibilities.Public
-    open var isExpect: Boolean = false
-    open var isActual: Boolean = false
     open var modality: Modality = Modality.FINAL
+    open var platformStatus: PlatformStatus = PlatformStatus.DEFAULT
+    override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
     open var isExternal: Boolean = false
     open var isSuspend: Boolean = false
     open var isOperator: Boolean = false
@@ -45,12 +47,11 @@ open class AstNamedFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwnerB
     open var isInline: Boolean = false
     open var isTailrec: Boolean = false
     open lateinit var symbol: AstFunctionSymbol<AstNamedFunction>
-    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
-    override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
 
     @OptIn(AstImplementationDetail::class)
     override fun build(): AstNamedFunction {
         return AstNamedFunctionImpl(
+            annotations,
             origin,
             receiverType,
             returnType,
@@ -58,9 +59,9 @@ open class AstNamedFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwnerB
             body,
             name,
             visibility,
-            isExpect,
-            isActual,
             modality,
+            platformStatus,
+            typeParameters,
             isExternal,
             isSuspend,
             isOperator,
@@ -68,8 +69,6 @@ open class AstNamedFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwnerB
             isInline,
             isTailrec,
             symbol,
-            annotations,
-            typeParameters,
         )
     }
 
@@ -90,6 +89,7 @@ inline fun buildNamedFunction(init: AstNamedFunctionBuilder.() -> Unit): AstName
 @OptIn(ExperimentalContracts::class)
 inline fun buildNamedFunctionCopy(original: AstNamedFunction, init: AstNamedFunctionBuilder.() -> Unit): AstNamedFunction {
     val copyBuilder = AstNamedFunctionBuilder()
+    copyBuilder.annotations.addAll(original.annotations)
     copyBuilder.origin = original.origin
     copyBuilder.receiverType = original.receiverType
     copyBuilder.returnType = original.returnType
@@ -97,9 +97,9 @@ inline fun buildNamedFunctionCopy(original: AstNamedFunction, init: AstNamedFunc
     copyBuilder.body = original.body
     copyBuilder.name = original.name
     copyBuilder.visibility = original.visibility
-    copyBuilder.isExpect = original.isExpect
-    copyBuilder.isActual = original.isActual
     copyBuilder.modality = original.modality
+    copyBuilder.platformStatus = original.platformStatus
+    copyBuilder.typeParameters.addAll(original.typeParameters)
     copyBuilder.isExternal = original.isExternal
     copyBuilder.isSuspend = original.isSuspend
     copyBuilder.isOperator = original.isOperator
@@ -107,7 +107,5 @@ inline fun buildNamedFunctionCopy(original: AstNamedFunction, init: AstNamedFunc
     copyBuilder.isInline = original.isInline
     copyBuilder.isTailrec = original.isTailrec
     copyBuilder.symbol = original.symbol
-    copyBuilder.annotations.addAll(original.annotations)
-    copyBuilder.typeParameters.addAll(original.typeParameters)
     return copyBuilder.apply(init).build()
 }

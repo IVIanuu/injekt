@@ -18,16 +18,16 @@ import kotlin.contracts.*
 
 @AstBuilderDsl
 class AstTryBuilder : AstExpressionBuilder {
-    override lateinit var type: AstType
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+    override lateinit var type: AstType
     lateinit var tryBody: AstExpression
     val catches: MutableList<AstCatch> = mutableListOf()
     var finallyBody: AstExpression? = null
 
     override fun build(): AstTry {
         return AstTryImpl(
-            type,
             annotations,
+            type,
             tryBody,
             catches,
             finallyBody,

@@ -20,4 +20,8 @@ internal class AstSpreadElementImpl(
         expression = expression.transformSingle(transformer, data)
         return this
     }
+
+    override fun replaceExpression(newExpression: AstExpression) {
+        expression = newExpression
+    }
 }

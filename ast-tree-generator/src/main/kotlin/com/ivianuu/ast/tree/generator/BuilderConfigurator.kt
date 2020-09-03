@@ -14,6 +14,19 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             fields from annotationContainer
         }
 
+        val declarationContainerBuilder by builder {
+            fields from declarationContainer
+        }
+
+        val namedDeclarationBuilder by builder {
+            fields from namedDeclaration
+        }
+
+        val memberDeclarationBuilder by builder {
+            parents += namedDeclarationBuilder
+            fields from memberDeclaration
+        }
+
         val expressionBuilder by builder {
             fields from expression
         }
@@ -29,7 +42,9 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
 
         builder(regularClass) {
             parents += classBuilder
+            parents + memberDeclarationBuilder
             parents += typeParametersOwnerBuilder
+            parents += declarationContainerBuilder
             default("classKind", "ClassKind.CLASS")
             defaultFalse("isInline")
             defaultFalse("isCompanion")
@@ -69,10 +84,20 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             fields from constructor without listOf("isPrimary", "attributes")
         }
 
+        val packageFragmentBuilder by builder {
+            parents += declarationContainerBuilder
+            fields from packageFragment
+        }
+
+        builder(file) {
+            parents += packageFragmentBuilder
+        }
+
         builder(constructor) {
             parents += abstractConstructorBuilder
             defaultNull("delegatedConstructor")
             defaultNull("body")
+            defaultFalse("isPrimary")
         }
 
         builder(anonymousObject) {
@@ -81,6 +106,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         }
 
         builder(typeAlias) {
+            parents + memberDeclarationBuilder
             parents += typeParametersOwnerBuilder
         }
 
@@ -118,6 +144,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         }
 
         builder(property) {
+            parents += memberDeclarationBuilder
             parents += typeParametersOwnerBuilder
             defaultNull("getter", "setter")
             defaultFalse("isVar")
@@ -141,6 +168,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         builder(propertyAccessor) {
             parents += functionBuilder
             defaultNull("body")
+            defaultFalse("isSetter")
         }
 
         builder(breakExpression) {
@@ -159,6 +187,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
 
         builder(namedFunction) {
             parents += functionBuilder
+            parents + memberDeclarationBuilder
             parents += typeParametersOwnerBuilder
             defaultNull("body")
             defaultFalse("isSuspend")
@@ -194,13 +223,10 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             useTypes(visibilitiesType)
         }
         configureFieldInAllLeafBuilders(field = "modality") {
-            default("modality", "Modality.FINAL")
+            default(it, "Modality.FINAL")
         }
-        configureFieldInAllLeafBuilders(field = "isExpect") {
-            defaultFalse(it)
-        }
-        configureFieldInAllLeafBuilders(field = "isActual") {
-            defaultFalse(it)
+        configureFieldInAllLeafBuilders(field = "platformStatus") {
+            default("platformStatus", "PlatformStatus.DEFAULT")
         }
         configureFieldInAllLeafBuilders(field = "isExternal") {
             defaultFalse(it)

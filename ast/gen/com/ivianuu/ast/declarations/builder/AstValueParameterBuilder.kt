@@ -10,6 +10,7 @@ import com.ivianuu.ast.declarations.impl.AstValueParameterImpl
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstValueParameterSymbol
+import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
@@ -22,10 +23,11 @@ import org.jetbrains.kotlin.name.Name
 
 @AstBuilderDsl
 open class AstValueParameterBuilder {
+    open val annotations: MutableList<AstFunctionCall> = mutableListOf()
     open var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     open lateinit var returnType: AstType
     open lateinit var name: Name
-    open val annotations: MutableList<AstFunctionCall> = mutableListOf()
+    open var isVar: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
     open lateinit var symbol: AstValueParameterSymbol
     open var defaultValue: AstExpression? = null
     open var isCrossinline: Boolean = false
@@ -35,10 +37,11 @@ open class AstValueParameterBuilder {
     @OptIn(AstImplementationDetail::class)
     fun build(): AstValueParameter {
         return AstValueParameterImpl(
+            annotations,
             origin,
             returnType,
             name,
-            annotations,
+            isVar,
             symbol,
             defaultValue,
             isCrossinline,
@@ -57,10 +60,11 @@ inline fun buildValueParameter(init: AstValueParameterBuilder.() -> Unit): AstVa
 @OptIn(ExperimentalContracts::class)
 inline fun buildValueParameterCopy(original: AstValueParameter, init: AstValueParameterBuilder.() -> Unit): AstValueParameter {
     val copyBuilder = AstValueParameterBuilder()
+    copyBuilder.annotations.addAll(original.annotations)
     copyBuilder.origin = original.origin
     copyBuilder.returnType = original.returnType
     copyBuilder.name = original.name
-    copyBuilder.annotations.addAll(original.annotations)
+    copyBuilder.isVar = original.isVar
     copyBuilder.symbol = original.symbol
     copyBuilder.defaultValue = original.defaultValue
     copyBuilder.isCrossinline = original.isCrossinline

@@ -12,4 +12,6 @@ interface AstAnnotationContainer : AstElement {
     val annotations: List<AstFunctionCall>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitAnnotationContainer(this, data)
+
+    fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
 }

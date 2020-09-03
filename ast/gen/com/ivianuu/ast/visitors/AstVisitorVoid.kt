@@ -9,6 +9,9 @@ import com.ivianuu.ast.AstTargetElement
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.declarations.AstDeclaration
+import com.ivianuu.ast.declarations.AstDeclarationContainer
+import com.ivianuu.ast.declarations.AstNamedDeclaration
+import com.ivianuu.ast.declarations.AstMemberDeclaration
 import com.ivianuu.ast.declarations.AstAnonymousInitializer
 import com.ivianuu.ast.declarations.AstCallableDeclaration
 import com.ivianuu.ast.declarations.AstTypeParameter
@@ -26,6 +29,7 @@ import com.ivianuu.ast.declarations.AstNamedFunction
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstModuleFragment
+import com.ivianuu.ast.declarations.AstPackageFragment
 import com.ivianuu.ast.declarations.AstFile
 import com.ivianuu.ast.declarations.AstAnonymousFunction
 import com.ivianuu.ast.declarations.AstAnonymousObject
@@ -101,6 +105,18 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(declaration)
     }
 
+    open fun visitDeclarationContainer(declarationContainer: AstDeclarationContainer) {
+        visitElement(declarationContainer)
+    }
+
+    open fun visitNamedDeclaration(namedDeclaration: AstNamedDeclaration) {
+        visitElement(namedDeclaration)
+    }
+
+    open fun visitMemberDeclaration(memberDeclaration: AstMemberDeclaration) {
+        visitElement(memberDeclaration)
+    }
+
     open fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer) {
         visitElement(anonymousInitializer)
     }
@@ -167,6 +183,10 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     open fun visitModuleFragment(moduleFragment: AstModuleFragment) {
         visitElement(moduleFragment)
+    }
+
+    open fun visitPackageFragment(packageFragment: AstPackageFragment) {
+        visitElement(packageFragment)
     }
 
     open fun visitFile(file: AstFile) {
@@ -341,6 +361,18 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitDeclaration(declaration)
     }
 
+    final override fun visitDeclarationContainer(declarationContainer: AstDeclarationContainer, data: Nothing?) {
+        visitDeclarationContainer(declarationContainer)
+    }
+
+    final override fun visitNamedDeclaration(namedDeclaration: AstNamedDeclaration, data: Nothing?) {
+        visitNamedDeclaration(namedDeclaration)
+    }
+
+    final override fun visitMemberDeclaration(memberDeclaration: AstMemberDeclaration, data: Nothing?) {
+        visitMemberDeclaration(memberDeclaration)
+    }
+
     final override fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer, data: Nothing?) {
         visitAnonymousInitializer(anonymousInitializer)
     }
@@ -407,6 +439,10 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     final override fun visitModuleFragment(moduleFragment: AstModuleFragment, data: Nothing?) {
         visitModuleFragment(moduleFragment)
+    }
+
+    final override fun visitPackageFragment(packageFragment: AstPackageFragment, data: Nothing?) {
+        visitPackageFragment(packageFragment)
     }
 
     final override fun visitFile(file: AstFile, data: Nothing?) {

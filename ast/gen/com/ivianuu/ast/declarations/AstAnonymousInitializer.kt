@@ -4,6 +4,7 @@ import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstFunctionCall
+import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.symbols.impl.AstAnonymousInitializerSymbol
 import com.ivianuu.ast.visitors.*
 
@@ -20,4 +21,8 @@ abstract class AstAnonymousInitializer : AstPureAbstractElement(), AstDeclaratio
     abstract override val symbol: AstAnonymousInitializerSymbol
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitAnonymousInitializer(this, data)
+
+    abstract override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
+
+    abstract fun replaceBody(newBody: AstBlock?)
 }

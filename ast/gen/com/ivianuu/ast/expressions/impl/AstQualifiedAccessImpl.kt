@@ -15,23 +15,49 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstQualifiedAccessImpl(
-    override var type: AstType,
     override val annotations: MutableList<AstFunctionCall>,
-    override val callee: AstSymbol<*>,
+    override var type: AstType,
+    override var callee: AstSymbol<*>,
     override val typeArguments: MutableList<AstTypeProjection>,
     override var dispatchReceiver: AstExpression?,
     override var extensionReceiver: AstExpression?,
 ) : AstPureAbstractElement(), AstQualifiedAccess {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        type.accept(visitor, data)
         annotations.forEach { it.accept(visitor, data) }
+        type.accept(visitor, data)
         typeArguments.forEach { it.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstQualifiedAccessImpl {
-        type = type.transformSingle(transformer, data)
         annotations.transformInplace(transformer, data)
+        type = type.transformSingle(transformer, data)
         typeArguments.transformInplace(transformer, data)
         return this
+    }
+
+    override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>) {
+        annotations.clear()
+        annotations.addAll(newAnnotations)
+    }
+
+    override fun replaceType(newType: AstType) {
+        type = newType
+    }
+
+    override fun replaceCallee(newCallee: AstSymbol<*>) {
+        callee = newCallee
+    }
+
+    override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>) {
+        typeArguments.clear()
+        typeArguments.addAll(newTypeArguments)
+    }
+
+    override fun replaceDispatchReceiver(newDispatchReceiver: AstExpression?) {
+        dispatchReceiver = newDispatchReceiver
+    }
+
+    override fun replaceExtensionReceiver(newExtensionReceiver: AstExpression?) {
+        extensionReceiver = newExtensionReceiver
     }
 }

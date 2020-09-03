@@ -109,7 +109,7 @@ abstract class AbstractAstTreeImplementationConfigurator {
         fun isMutable(vararg fields: String) {
             fields.forEach {
                 val field = getField(it)
-                field.mutable = true
+                field.isMutable = true
             }
         }
 
@@ -220,7 +220,7 @@ abstract class AbstractAstTreeImplementationConfigurator {
             fun applyConfiguration() {
                 field.withGetter = withGetter
                 field.customSetter = customSetter
-                isMutable?.let { field.mutable = it }
+                isMutable?.let { field.isMutable = it }
                 field.needAcceptAndTransform = needAcceptAndTransform
                 when {
                     value != null -> field.defaultValueInImplementation = value

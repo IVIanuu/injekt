@@ -21,9 +21,9 @@ interface AstClassBuilder : AstAnnotationContainerBuilder {
     abstract override val annotations: MutableList<AstFunctionCall>
     abstract var origin: AstDeclarationOrigin
     abstract var attributes: AstDeclarationAttributes
+    abstract val declarations: MutableList<AstDeclaration>
     abstract var classKind: ClassKind
     abstract val superTypes: MutableList<AstType>
-    abstract val declarations: MutableList<AstDeclaration>
 
     override fun build(): AstClass<*>
 }

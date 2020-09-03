@@ -7,6 +7,7 @@ import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstAnonymousFunctionSymbol
+import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -17,16 +18,16 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstAnonymousFunctionImpl(
     override val annotations: MutableList<AstFunctionCall>,
-    override val origin: AstDeclarationOrigin,
+    override var origin: AstDeclarationOrigin,
     override var receiverType: AstType?,
     override var returnType: AstType,
     override val valueParameters: MutableList<AstValueParameter>,
     override var body: AstBlock?,
     override var type: AstType,
-    override val symbol: AstAnonymousFunctionSymbol,
-    override val label: String?,
+    override var symbol: AstAnonymousFunctionSymbol,
+    override var label: String?,
 ) : AstAnonymousFunction() {
-    override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
+    override var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
@@ -45,5 +46,35 @@ internal class AstAnonymousFunctionImpl(
         body = body?.transformSingle(transformer, data)
         type = type.transformSingle(transformer, data)
         return this
+    }
+
+    override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>) {
+        annotations.clear()
+        annotations.addAll(newAnnotations)
+    }
+
+    override fun replaceReceiverType(newReceiverType: AstType?) {
+        receiverType = newReceiverType
+    }
+
+    override fun replaceReturnType(newReturnType: AstType) {
+        returnType = newReturnType
+    }
+
+    override fun replaceValueParameters(newValueParameters: List<AstValueParameter>) {
+        valueParameters.clear()
+        valueParameters.addAll(newValueParameters)
+    }
+
+    override fun replaceBody(newBody: AstBlock?) {
+        body = newBody
+    }
+
+    override fun replaceType(newType: AstType) {
+        type = newType
+    }
+
+    override fun replaceLabel(newLabel: String?) {
+        label = newLabel
     }
 }

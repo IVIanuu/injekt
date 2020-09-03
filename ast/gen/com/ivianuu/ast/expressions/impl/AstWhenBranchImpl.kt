@@ -23,4 +23,12 @@ internal class AstWhenBranchImpl(
         result = result.transformSingle(transformer, data)
         return this
     }
+
+    override fun replaceCondition(newCondition: AstExpression) {
+        condition = newCondition
+    }
+
+    override fun replaceResult(newResult: AstExpression) {
+        result = newResult
+    }
 }
