@@ -40,3 +40,14 @@ class AstDoWhileLoopBuilder : AstLoopBuilder, AstExpressionBuilder {
 inline fun buildDoWhileLoop(init: AstDoWhileLoopBuilder.() -> Unit): AstDoWhileLoop {
     return AstDoWhileLoopBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstDoWhileLoop.copy(init: AstDoWhileLoopBuilder.() -> Unit = {}): AstDoWhileLoop {
+    val copyBuilder = AstDoWhileLoopBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.type = type
+    copyBuilder.body = body
+    copyBuilder.condition = condition
+    copyBuilder.label = label
+    return copyBuilder.apply(init).build()
+}

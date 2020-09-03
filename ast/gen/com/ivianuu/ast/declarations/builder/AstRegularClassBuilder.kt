@@ -82,3 +82,26 @@ open class AstRegularClassBuilder : AstClassBuilder, AstTypeParametersOwnerBuild
 inline fun buildRegularClass(init: AstRegularClassBuilder.() -> Unit): AstRegularClass {
     return AstRegularClassBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstRegularClass.copy(init: AstRegularClassBuilder.() -> Unit = {}): AstRegularClass {
+    val copyBuilder = AstRegularClassBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.origin = origin
+    copyBuilder.name = name
+    copyBuilder.visibility = visibility
+    copyBuilder.modality = modality
+    copyBuilder.platformStatus = platformStatus
+    copyBuilder.typeParameters.addAll(typeParameters)
+    copyBuilder.declarations.addAll(declarations)
+    copyBuilder.classKind = classKind
+    copyBuilder.symbol = symbol
+    copyBuilder.superTypes.addAll(superTypes)
+    copyBuilder.isInline = isInline
+    copyBuilder.isCompanion = isCompanion
+    copyBuilder.isFun = isFun
+    copyBuilder.isData = isData
+    copyBuilder.isInner = isInner
+    copyBuilder.isExternal = isExternal
+    return copyBuilder.apply(init).build()
+}

@@ -235,7 +235,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +isInfix
             +isInline
             +isTailrec
-            +symbol("AstFunctionSymbol<AstNamedFunction>")
+            +symbol("AstNamedFunctionSymbol")
         }
 
         property.configure {
@@ -303,7 +303,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         moduleFragment.configure {
-            +stringField("name")
+            +name
             +files
         }
 

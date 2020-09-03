@@ -27,3 +27,10 @@ class AstSpreadElementBuilder {
 inline fun buildSpreadElement(init: AstSpreadElementBuilder.() -> Unit): AstSpreadElement {
     return AstSpreadElementBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstSpreadElement.copy(init: AstSpreadElementBuilder.() -> Unit = {}): AstSpreadElement {
+    val copyBuilder = AstSpreadElementBuilder()
+    copyBuilder.expression = expression
+    return copyBuilder.apply(init).build()
+}

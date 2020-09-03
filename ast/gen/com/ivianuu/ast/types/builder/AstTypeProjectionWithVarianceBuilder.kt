@@ -30,3 +30,11 @@ class AstTypeProjectionWithVarianceBuilder {
 inline fun buildTypeProjectionWithVariance(init: AstTypeProjectionWithVarianceBuilder.() -> Unit): AstTypeProjectionWithVariance {
     return AstTypeProjectionWithVarianceBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstTypeProjectionWithVariance.copy(init: AstTypeProjectionWithVarianceBuilder.() -> Unit = {}): AstTypeProjectionWithVariance {
+    val copyBuilder = AstTypeProjectionWithVarianceBuilder()
+    copyBuilder.type = type
+    copyBuilder.variance = variance
+    return copyBuilder.apply(init).build()
+}

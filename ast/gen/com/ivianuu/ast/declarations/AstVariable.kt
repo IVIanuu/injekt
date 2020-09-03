@@ -13,35 +13,35 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstVariable<F : AstVariable<F>> : AstCallableDeclaration<F>, AstNamedDeclaration() {
-    abstract override val annotations: List<AstFunctionCall>
-    abstract override val origin: AstDeclarationOrigin
-    abstract override val attributes: AstDeclarationAttributes
-    abstract override val receiverType: AstType?
-    abstract override val returnType: AstType
-    abstract override val name: Name
-    abstract override val symbol: AstVariableSymbol<F>
-    abstract val initializer: AstExpression?
-    abstract val delegate: AstExpression?
-    abstract val isVar: Boolean
-    abstract val getter: AstPropertyAccessor?
-    abstract val setter: AstPropertyAccessor?
+interface AstVariable<F : AstVariable<F>> : AstCallableDeclaration<F>, AstNamedDeclaration {
+    override val annotations: List<AstFunctionCall>
+    override val origin: AstDeclarationOrigin
+    override val attributes: AstDeclarationAttributes
+    override val receiverType: AstType?
+    override val returnType: AstType
+    override val name: Name
+    override val symbol: AstVariableSymbol<F>
+    val initializer: AstExpression?
+    val delegate: AstExpression?
+    val isVar: Boolean
+    val getter: AstPropertyAccessor?
+    val setter: AstPropertyAccessor?
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitVariable(this, data)
 
-    abstract override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
+    override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
 
-    abstract override fun replaceReceiverType(newReceiverType: AstType?)
+    override fun replaceReceiverType(newReceiverType: AstType?)
 
-    abstract override fun replaceReturnType(newReturnType: AstType)
+    override fun replaceReturnType(newReturnType: AstType)
 
-    abstract fun replaceInitializer(newInitializer: AstExpression?)
+    fun replaceInitializer(newInitializer: AstExpression?)
 
-    abstract fun replaceDelegate(newDelegate: AstExpression?)
+    fun replaceDelegate(newDelegate: AstExpression?)
 
-    abstract fun replaceIsVar(newIsVar: Boolean)
+    fun replaceIsVar(newIsVar: Boolean)
 
-    abstract fun replaceGetter(newGetter: AstPropertyAccessor?)
+    fun replaceGetter(newGetter: AstPropertyAccessor?)
 
-    abstract fun replaceSetter(newSetter: AstPropertyAccessor?)
+    fun replaceSetter(newSetter: AstPropertyAccessor?)
 }

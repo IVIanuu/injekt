@@ -27,7 +27,6 @@ open class AstValueParameterBuilder {
     open var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     open lateinit var returnType: AstType
     open lateinit var name: Name
-    open var isVar: Boolean by kotlin.properties.Delegates.notNull<Boolean>()
     open lateinit var symbol: AstValueParameterSymbol
     open var defaultValue: AstExpression? = null
     open var isCrossinline: Boolean = false
@@ -41,7 +40,6 @@ open class AstValueParameterBuilder {
             origin,
             returnType,
             name,
-            isVar,
             symbol,
             defaultValue,
             isCrossinline,
@@ -58,17 +56,16 @@ inline fun buildValueParameter(init: AstValueParameterBuilder.() -> Unit): AstVa
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildValueParameterCopy(original: AstValueParameter, init: AstValueParameterBuilder.() -> Unit): AstValueParameter {
+inline fun AstValueParameter.copy(init: AstValueParameterBuilder.() -> Unit = {}): AstValueParameter {
     val copyBuilder = AstValueParameterBuilder()
-    copyBuilder.annotations.addAll(original.annotations)
-    copyBuilder.origin = original.origin
-    copyBuilder.returnType = original.returnType
-    copyBuilder.name = original.name
-    copyBuilder.isVar = original.isVar
-    copyBuilder.symbol = original.symbol
-    copyBuilder.defaultValue = original.defaultValue
-    copyBuilder.isCrossinline = original.isCrossinline
-    copyBuilder.isNoinline = original.isNoinline
-    copyBuilder.isVararg = original.isVararg
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.origin = origin
+    copyBuilder.returnType = returnType
+    copyBuilder.name = name
+    copyBuilder.symbol = symbol
+    copyBuilder.defaultValue = defaultValue
+    copyBuilder.isCrossinline = isCrossinline
+    copyBuilder.isNoinline = isNoinline
+    copyBuilder.isVararg = isVararg
     return copyBuilder.apply(init).build()
 }

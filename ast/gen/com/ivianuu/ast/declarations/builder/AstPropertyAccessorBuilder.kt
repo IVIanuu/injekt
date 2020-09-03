@@ -73,3 +73,21 @@ class AstPropertyAccessorBuilder : AstFunctionBuilder {
 inline fun buildPropertyAccessor(init: AstPropertyAccessorBuilder.() -> Unit): AstPropertyAccessor {
     return AstPropertyAccessorBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstPropertyAccessor.copy(init: AstPropertyAccessorBuilder.() -> Unit = {}): AstPropertyAccessor {
+    val copyBuilder = AstPropertyAccessorBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.origin = origin
+    copyBuilder.returnType = returnType
+    copyBuilder.valueParameters.addAll(valueParameters)
+    copyBuilder.body = body
+    copyBuilder.name = name
+    copyBuilder.visibility = visibility
+    copyBuilder.modality = modality
+    copyBuilder.platformStatus = platformStatus
+    copyBuilder.typeParameters.addAll(typeParameters)
+    copyBuilder.symbol = symbol
+    copyBuilder.isSetter = isSetter
+    return copyBuilder.apply(init).build()
+}

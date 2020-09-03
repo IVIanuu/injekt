@@ -35,3 +35,12 @@ class AstBreakBuilder : AstLoopJumpBuilder, AstExpressionBuilder {
 inline fun buildBreak(init: AstBreakBuilder.() -> Unit): AstBreak {
     return AstBreakBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstBreak.copy(init: AstBreakBuilder.() -> Unit = {}): AstBreak {
+    val copyBuilder = AstBreakBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.type = type
+    copyBuilder.target = target
+    return copyBuilder.apply(init).build()
+}

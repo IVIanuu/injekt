@@ -47,3 +47,16 @@ class AstVariableAssignmentBuilder : AstQualifiedAccessBuilder, AstExpressionBui
 inline fun buildVariableAssignment(init: AstVariableAssignmentBuilder.() -> Unit): AstVariableAssignment {
     return AstVariableAssignmentBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstVariableAssignment.copy(init: AstVariableAssignmentBuilder.() -> Unit = {}): AstVariableAssignment {
+    val copyBuilder = AstVariableAssignmentBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.type = type
+    copyBuilder.typeArguments.addAll(typeArguments)
+    copyBuilder.dispatchReceiver = dispatchReceiver
+    copyBuilder.extensionReceiver = extensionReceiver
+    copyBuilder.callee = callee
+    copyBuilder.value = value
+    return copyBuilder.apply(init).build()
+}

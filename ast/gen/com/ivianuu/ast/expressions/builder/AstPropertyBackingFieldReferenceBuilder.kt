@@ -34,3 +34,12 @@ class AstPropertyBackingFieldReferenceBuilder : AstExpressionBuilder {
 inline fun buildPropertyBackingFieldReference(init: AstPropertyBackingFieldReferenceBuilder.() -> Unit): AstPropertyBackingFieldReference {
     return AstPropertyBackingFieldReferenceBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstPropertyBackingFieldReference.copy(init: AstPropertyBackingFieldReferenceBuilder.() -> Unit = {}): AstPropertyBackingFieldReference {
+    val copyBuilder = AstPropertyBackingFieldReferenceBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.type = type
+    copyBuilder.property = property
+    return copyBuilder.apply(init).build()
+}

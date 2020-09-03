@@ -35,7 +35,7 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        val injektContext = InjektContext(pluginContext, moduleFragment)
+        /*val injektContext = InjektContext(pluginContext, moduleFragment)
         var initializeInjekt = false
         var initTrigger: IrDeclarationWithName? = null
 
@@ -90,7 +90,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             ).doLower(moduleFragment)
         }
 
-        generateSymbols(pluginContext)
+        generateSymbols(pluginContext)*/
     }
 
 }

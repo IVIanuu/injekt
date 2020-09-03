@@ -40,3 +40,14 @@ class AstTryBuilder : AstExpressionBuilder {
 inline fun buildTry(init: AstTryBuilder.() -> Unit): AstTry {
     return AstTryBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstTry.copy(init: AstTryBuilder.() -> Unit = {}): AstTry {
+    val copyBuilder = AstTryBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.type = type
+    copyBuilder.tryBody = tryBody
+    copyBuilder.catches.addAll(catches)
+    copyBuilder.finallyBody = finallyBody
+    return copyBuilder.apply(init).build()
+}

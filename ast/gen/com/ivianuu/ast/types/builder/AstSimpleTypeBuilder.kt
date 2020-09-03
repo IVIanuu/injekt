@@ -35,3 +35,13 @@ class AstSimpleTypeBuilder {
 inline fun buildSimpleType(init: AstSimpleTypeBuilder.() -> Unit): AstSimpleType {
     return AstSimpleTypeBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstSimpleType.copy(init: AstSimpleTypeBuilder.() -> Unit = {}): AstSimpleType {
+    val copyBuilder = AstSimpleTypeBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.isMarkedNullable = isMarkedNullable
+    copyBuilder.classifier = classifier
+    copyBuilder.arguments.addAll(arguments)
+    return copyBuilder.apply(init).build()
+}

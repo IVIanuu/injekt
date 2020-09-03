@@ -37,3 +37,13 @@ class AstReturnBuilder : AstExpressionBuilder {
 inline fun buildReturn(init: AstReturnBuilder.() -> Unit): AstReturn {
     return AstReturnBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstReturn.copy(init: AstReturnBuilder.() -> Unit = {}): AstReturn {
+    val copyBuilder = AstReturnBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.type = type
+    copyBuilder.result = result
+    copyBuilder.target = target
+    return copyBuilder.apply(init).build()
+}

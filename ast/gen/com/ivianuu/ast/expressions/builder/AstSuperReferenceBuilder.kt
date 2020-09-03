@@ -36,3 +36,13 @@ class AstSuperReferenceBuilder : AstExpressionBuilder {
 inline fun buildSuperReference(init: AstSuperReferenceBuilder.() -> Unit): AstSuperReference {
     return AstSuperReferenceBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstSuperReference.copy(init: AstSuperReferenceBuilder.() -> Unit = {}): AstSuperReference {
+    val copyBuilder = AstSuperReferenceBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.type = type
+    copyBuilder.labelName = labelName
+    copyBuilder.superType = superType
+    return copyBuilder.apply(init).build()
+}

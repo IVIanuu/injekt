@@ -40,7 +40,8 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
     override fun visitElement(element: AstElement) {
     }
 
-    /*private val printer = Printer(out, "%tab%")
+    /*
+    private val printer = Printer(out, "%tab%")
     private fun emit(value: Any?) {
         printer.print(value)
     }
@@ -738,4 +739,5 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
             else -> error("Unexpected type argument $this")
         }
     }*/
+
 }

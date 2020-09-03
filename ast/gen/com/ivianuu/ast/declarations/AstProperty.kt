@@ -1,10 +1,13 @@
 package com.ivianuu.ast.declarations
 
+import com.ivianuu.ast.PlatformStatus
+import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstPropertySymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.name.Name
 import com.ivianuu.ast.visitors.*
 
@@ -13,7 +16,7 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstProperty : AstVariable<AstProperty>(), AstTypeParametersOwner, AstCallableDeclaration<AstProperty> {
+abstract class AstProperty : AstVariable<AstProperty>, AstTypeParametersOwner, AstCallableDeclaration<AstProperty>, AstMemberDeclaration() {
     abstract override val annotations: List<AstFunctionCall>
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
@@ -26,6 +29,9 @@ abstract class AstProperty : AstVariable<AstProperty>(), AstTypeParametersOwner,
     abstract override val getter: AstPropertyAccessor?
     abstract override val setter: AstPropertyAccessor?
     abstract override val typeParameters: List<AstTypeParameter>
+    abstract override val visibility: Visibility
+    abstract override val modality: Modality
+    abstract override val platformStatus: PlatformStatus
     abstract override val symbol: AstPropertySymbol
     abstract val hasBackingField: Boolean
     abstract val isLocal: Boolean
@@ -52,6 +58,12 @@ abstract class AstProperty : AstVariable<AstProperty>(), AstTypeParametersOwner,
     abstract override fun replaceSetter(newSetter: AstPropertyAccessor?)
 
     abstract override fun replaceTypeParameters(newTypeParameters: List<AstTypeParameter>)
+
+    abstract override fun replaceVisibility(newVisibility: Visibility)
+
+    abstract override fun replaceModality(newModality: Modality)
+
+    abstract override fun replacePlatformStatus(newPlatformStatus: PlatformStatus)
 
     abstract fun replaceHasBackingField(newHasBackingField: Boolean)
 

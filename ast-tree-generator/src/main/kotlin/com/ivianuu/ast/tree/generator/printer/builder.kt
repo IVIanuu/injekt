@@ -7,6 +7,7 @@ import com.ivianuu.ast.tree.generator.model.FieldWithDefault
 import com.ivianuu.ast.tree.generator.model.IntermediateBuilder
 import com.ivianuu.ast.tree.generator.model.LeafBuilder
 import java.io.File
+import kotlin.contracts.ExperimentalContracts
 
 fun Builder.generateCode(generationPath: File) {
     val dir = generationPath.resolve(packageName.replace(".", "/"))
@@ -121,7 +122,7 @@ private fun SmartPrinter.printBuilder(builder: Builder) {
 
         if (builder.wantsCopy) {
             println()
-            printDslBuildCopyFunction(builder, hasRequiredFields)
+            printDslBuildCopyFunction(builder)
         }
     }
 }
@@ -286,31 +287,24 @@ private fun SmartPrinter.printDslBuildFunction(
     println("}")
 }
 
-private fun SmartPrinter.printDslBuildCopyFunction(
-    builder: LeafBuilder,
-    hasRequiredFields: Boolean
-) {
+private fun SmartPrinter.printDslBuildCopyFunction(builder: LeafBuilder) {
+    val name =
+        builder.implementation.name?.replaceFirst("Ast", "") ?: builder.implementation.element.name
+    val builderType = builder.typeWithArguments
+
     println("@OptIn(ExperimentalContracts::class)")
-    print("inline ")
-    print("fun ")
+    print("inline fun ")
     builder.implementation.element.typeArguments.takeIf { it.isNotEmpty() }?.let {
         print(it.joinToString(separator = ", ", prefix = "<", postfix = "> ") { it.name })
     }
-    val builderType = builder.typeWithArguments
-    val name =
-        builder.implementation.name?.replaceFirst("Ast", "") ?: builder.implementation.element.name
-    print("build${name}Copy(")
-    print("original: ${builder.implementation.element.typeWithArguments}, init: $builderType.() -> Unit")
-    if (!hasRequiredFields) {
-        print(" = {}")
-    }
+    print("Ast$name.copy(init: $builderType.() -> Unit = {}")
     println("): ${builder.implementation.element.typeWithArguments} {")
     withIndent {
         println("val copyBuilder = $builderType()")
         for (field in builder.allFields) {
             when (field.origin) {
-                is FieldList -> println("copyBuilder.${field.name}.addAll(original.${field.name})")
-                else -> println("copyBuilder.${field.name} = original.${field.name}")
+                is FieldList -> println("copyBuilder.${field.name}.addAll(${field.name})")
+                else -> println("copyBuilder.${field.name} = ${field.name}")
             }
         }
         println("return copyBuilder.apply(init).build()")

@@ -11,6 +11,7 @@ import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
+import com.ivianuu.ast.symbols.impl.AstNamedFunctionSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.name.Name
@@ -39,7 +40,7 @@ open class AstNamedFunctionImpl @AstImplementationDetail constructor(
     override var isInfix: Boolean,
     override var isInline: Boolean,
     override var isTailrec: Boolean,
-    override var symbol: AstFunctionSymbol<AstNamedFunction>,
+    override var symbol: AstNamedFunctionSymbol,
 ) : AstNamedFunction() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
 

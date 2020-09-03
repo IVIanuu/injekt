@@ -1,5 +1,6 @@
 package com.ivianuu.ast.declarations
 
+import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstCallableSymbol
@@ -13,7 +14,7 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstEnumEntry : AstVariable<AstEnumEntry>(), AstCallableDeclaration<AstEnumEntry> {
+abstract class AstEnumEntry : AstPureAbstractElement(), AstVariable<AstEnumEntry>, AstCallableDeclaration<AstEnumEntry> {
     abstract override val annotations: List<AstFunctionCall>
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes

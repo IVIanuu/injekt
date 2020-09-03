@@ -5,6 +5,7 @@ import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
+import com.ivianuu.ast.symbols.impl.AstNamedFunctionSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.name.Name
@@ -34,7 +35,7 @@ abstract class AstNamedFunction : AstFunction<AstNamedFunction>, AstMemberDeclar
     abstract val isInfix: Boolean
     abstract val isInline: Boolean
     abstract val isTailrec: Boolean
-    abstract override val symbol: AstFunctionSymbol<AstNamedFunction>
+    abstract override val symbol: AstNamedFunctionSymbol
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitNamedFunction(this, data)
 

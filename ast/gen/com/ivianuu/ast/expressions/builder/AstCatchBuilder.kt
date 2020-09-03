@@ -30,3 +30,11 @@ class AstCatchBuilder {
 inline fun buildCatch(init: AstCatchBuilder.() -> Unit): AstCatch {
     return AstCatchBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstCatch.copy(init: AstCatchBuilder.() -> Unit = {}): AstCatch {
+    val copyBuilder = AstCatchBuilder()
+    copyBuilder.parameter = parameter
+    copyBuilder.body = body
+    return copyBuilder.apply(init).build()
+}

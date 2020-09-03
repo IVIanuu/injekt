@@ -40,7 +40,6 @@ data class CallableId(
 
     constructor(packageName: FqName, callableName: Name) : this(packageName, null, callableName)
 
-    @Deprecated("TODO: Better solution for local callables?")
     constructor(
         callableName: Name,
         // Currently, it's only used for debug info

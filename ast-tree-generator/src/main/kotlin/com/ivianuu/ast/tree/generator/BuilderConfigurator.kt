@@ -182,7 +182,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         builder(valueParameter) {
             openBuilder()
             defaultFalse("isCrossinline", "isNoinline", "isVararg")
-            withCopy()
         }
 
         builder(namedFunction) {
@@ -196,7 +195,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             defaultFalse("isInline")
             defaultFalse("isTailrec")
             openBuilder()
-            withCopy()
         }
 
         builder(typeParameter) {

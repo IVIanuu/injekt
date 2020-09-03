@@ -1,5 +1,7 @@
 package com.ivianuu.ast.declarations.impl
 
+import com.ivianuu.ast.PlatformStatus
+import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstProperty
@@ -10,6 +12,7 @@ import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstPropertySymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.name.Name
 import com.ivianuu.ast.visitors.*
 
@@ -30,6 +33,9 @@ internal class AstPropertyImpl(
     override var getter: AstPropertyAccessor?,
     override var setter: AstPropertyAccessor?,
     override val typeParameters: MutableList<AstTypeParameter>,
+    override var visibility: Visibility,
+    override var modality: Modality,
+    override var platformStatus: PlatformStatus,
     override var symbol: AstPropertySymbol,
     override var hasBackingField: Boolean,
     override var isLocal: Boolean,
@@ -102,6 +108,18 @@ internal class AstPropertyImpl(
     override fun replaceTypeParameters(newTypeParameters: List<AstTypeParameter>) {
         typeParameters.clear()
         typeParameters.addAll(newTypeParameters)
+    }
+
+    override fun replaceVisibility(newVisibility: Visibility) {
+        visibility = newVisibility
+    }
+
+    override fun replaceModality(newModality: Modality) {
+        modality = newModality
+    }
+
+    override fun replacePlatformStatus(newPlatformStatus: PlatformStatus) {
+        platformStatus = newPlatformStatus
     }
 
     override fun replaceHasBackingField(newHasBackingField: Boolean) {

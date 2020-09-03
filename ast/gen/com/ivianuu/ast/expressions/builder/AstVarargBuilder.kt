@@ -34,3 +34,12 @@ class AstVarargBuilder : AstExpressionBuilder {
 inline fun buildVararg(init: AstVarargBuilder.() -> Unit): AstVararg {
     return AstVarargBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstVararg.copy(init: AstVarargBuilder.() -> Unit = {}): AstVararg {
+    val copyBuilder = AstVarargBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.type = type
+    copyBuilder.elements.addAll(elements)
+    return copyBuilder.apply(init).build()
+}

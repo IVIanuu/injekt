@@ -60,3 +60,18 @@ class AstConstructorBuilder : AstAbstractConstructorBuilder {
 inline fun buildConstructor(init: AstConstructorBuilder.() -> Unit): AstConstructor {
     return AstConstructorBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstConstructor.copy(init: AstConstructorBuilder.() -> Unit = {}): AstConstructor {
+    val copyBuilder = AstConstructorBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.origin = origin
+    copyBuilder.receiverType = receiverType
+    copyBuilder.returnType = returnType
+    copyBuilder.valueParameters.addAll(valueParameters)
+    copyBuilder.symbol = symbol
+    copyBuilder.delegatedConstructor = delegatedConstructor
+    copyBuilder.body = body
+    copyBuilder.isPrimary = isPrimary
+    return copyBuilder.apply(init).build()
+}

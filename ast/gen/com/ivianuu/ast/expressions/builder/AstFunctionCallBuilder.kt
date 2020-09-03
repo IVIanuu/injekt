@@ -49,3 +49,16 @@ open class AstFunctionCallBuilder : AstQualifiedAccessBuilder, AstCallBuilder, A
 inline fun buildFunctionCall(init: AstFunctionCallBuilder.() -> Unit): AstFunctionCall {
     return AstFunctionCallBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstFunctionCall.copy(init: AstFunctionCallBuilder.() -> Unit = {}): AstFunctionCall {
+    val copyBuilder = AstFunctionCallBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.type = type
+    copyBuilder.typeArguments.addAll(typeArguments)
+    copyBuilder.dispatchReceiver = dispatchReceiver
+    copyBuilder.extensionReceiver = extensionReceiver
+    copyBuilder.valueArguments.addAll(valueArguments)
+    copyBuilder.callee = callee
+    return copyBuilder.apply(init).build()
+}

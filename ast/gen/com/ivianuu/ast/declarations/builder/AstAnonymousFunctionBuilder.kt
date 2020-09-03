@@ -60,3 +60,18 @@ class AstAnonymousFunctionBuilder : AstFunctionBuilder, AstExpressionBuilder {
 inline fun buildAnonymousFunction(init: AstAnonymousFunctionBuilder.() -> Unit): AstAnonymousFunction {
     return AstAnonymousFunctionBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstAnonymousFunction.copy(init: AstAnonymousFunctionBuilder.() -> Unit = {}): AstAnonymousFunction {
+    val copyBuilder = AstAnonymousFunctionBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.origin = origin
+    copyBuilder.receiverType = receiverType
+    copyBuilder.returnType = returnType
+    copyBuilder.valueParameters.addAll(valueParameters)
+    copyBuilder.body = body
+    copyBuilder.type = type
+    copyBuilder.symbol = symbol
+    copyBuilder.label = label
+    return copyBuilder.apply(init).build()
+}

@@ -35,3 +35,12 @@ class AstThisReferenceBuilder : AstExpressionBuilder {
 inline fun buildThisReference(init: AstThisReferenceBuilder.() -> Unit): AstThisReference {
     return AstThisReferenceBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstThisReference.copy(init: AstThisReferenceBuilder.() -> Unit = {}): AstThisReference {
+    val copyBuilder = AstThisReferenceBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.type = type
+    copyBuilder.labelName = labelName
+    return copyBuilder.apply(init).build()
+}

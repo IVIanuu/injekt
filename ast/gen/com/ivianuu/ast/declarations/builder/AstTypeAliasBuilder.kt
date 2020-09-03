@@ -55,3 +55,18 @@ class AstTypeAliasBuilder : AstTypeParametersOwnerBuilder {
 inline fun buildTypeAlias(init: AstTypeAliasBuilder.() -> Unit): AstTypeAlias {
     return AstTypeAliasBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstTypeAlias.copy(init: AstTypeAliasBuilder.() -> Unit = {}): AstTypeAlias {
+    val copyBuilder = AstTypeAliasBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.origin = origin
+    copyBuilder.name = name
+    copyBuilder.visibility = visibility
+    copyBuilder.modality = modality
+    copyBuilder.platformStatus = platformStatus
+    copyBuilder.typeParameters.addAll(typeParameters)
+    copyBuilder.symbol = symbol
+    copyBuilder.expandedType = expandedType
+    return copyBuilder.apply(init).build()
+}

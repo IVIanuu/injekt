@@ -35,3 +35,12 @@ class AstContinueBuilder : AstLoopJumpBuilder, AstExpressionBuilder {
 inline fun buildContinue(init: AstContinueBuilder.() -> Unit): AstContinue {
     return AstContinueBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstContinue.copy(init: AstContinueBuilder.() -> Unit = {}): AstContinue {
+    val copyBuilder = AstContinueBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.type = type
+    copyBuilder.target = target
+    return copyBuilder.apply(init).build()
+}

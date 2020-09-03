@@ -63,6 +63,9 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
 
         impl(valueParameter) {
             kind = OpenClass
+            default("isVar") {
+                value = "false"
+            }
             defaultNull(
                 "getter",
                 "setter",

@@ -44,7 +44,7 @@ class LeafBuilder(val implementation: Implementation) : Builder() {
 
     override val packageName: String = implementation.packageName.replace(".impl", ".builder")
     var isOpen: Boolean = false
-    var wantsCopy: Boolean = false
+    var wantsCopy: Boolean = true
 }
 
 class IntermediateBuilder(override val type: String) : Builder() {

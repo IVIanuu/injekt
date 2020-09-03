@@ -41,3 +41,14 @@ class AstWhenBuilder : AstExpressionBuilder {
 inline fun buildWhen(init: AstWhenBuilder.() -> Unit): AstWhen {
     return AstWhenBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstWhen.copy(init: AstWhenBuilder.() -> Unit = {}): AstWhen {
+    val copyBuilder = AstWhenBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.type = type
+    copyBuilder.subject = subject
+    copyBuilder.subjectVariable = subjectVariable
+    copyBuilder.branches.addAll(branches)
+    return copyBuilder.apply(init).build()
+}

@@ -95,23 +95,20 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
                 }
             }
 
-            element.allFields.filter { it.type.contains("Symbol") && it !is FieldList }
-                .takeIf {
-                    it.isNotEmpty() && !isInterface && !isAbstract &&
-                            !element.type.contains("Reference")
-                            && !element.type.contains("ResolvedQualifier")
-                            && !element.type.endsWith("Ref")
-                }
-                ?.let { symbolFields ->
-                    println("init {")
-                    for (symbolField in symbolFields) {
-                        withIndent {
-                            println("${symbolField.name}${symbolField.call()}bind(this)")
+            if (!isInterface && !isAbstract) {
+                element.allFields.filter { it.bindSymbol }
+                    .takeIf { it.isNotEmpty() }
+                    ?.let { symbolFields ->
+                        println("init {")
+                        for (symbolField in symbolFields) {
+                            withIndent {
+                                println("${symbolField.name}${symbolField.call()}bind(this)")
+                            }
                         }
+                        println("}")
+                        println()
                     }
-                    println("}")
-                    println()
-                }
+            }
 
             fun Field.acceptString(): String = "${name}${call()}accept(visitor, data)"
             if (!isInterface && !isAbstract) {

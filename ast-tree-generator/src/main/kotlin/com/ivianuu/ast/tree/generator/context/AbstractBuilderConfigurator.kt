@@ -152,8 +152,8 @@ abstract class AbstractBuilderConfigurator<T : AbstractAstTreeBuilder>(val astTr
             builder.isOpen = true
         }
 
-        fun withCopy() {
-            builder.wantsCopy = true
+        fun withoutCopy() {
+            builder.wantsCopy = false
         }
     }
 

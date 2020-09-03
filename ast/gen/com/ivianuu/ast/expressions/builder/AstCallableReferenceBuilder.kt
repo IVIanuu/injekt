@@ -47,3 +47,16 @@ class AstCallableReferenceBuilder : AstQualifiedAccessBuilder, AstExpressionBuil
 inline fun buildCallableReference(init: AstCallableReferenceBuilder.() -> Unit): AstCallableReference {
     return AstCallableReferenceBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstCallableReference.copy(init: AstCallableReferenceBuilder.() -> Unit = {}): AstCallableReference {
+    val copyBuilder = AstCallableReferenceBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.type = type
+    copyBuilder.typeArguments.addAll(typeArguments)
+    copyBuilder.dispatchReceiver = dispatchReceiver
+    copyBuilder.extensionReceiver = extensionReceiver
+    copyBuilder.callee = callee
+    copyBuilder.hasQuestionMarkAtLHS = hasQuestionMarkAtLHS
+    return copyBuilder.apply(init).build()
+}

@@ -36,3 +36,13 @@ class AstFileBuilder : AstPackageFragmentBuilder {
 inline fun buildFile(init: AstFileBuilder.() -> Unit): AstFile {
     return AstFileBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstFile.copy(init: AstFileBuilder.() -> Unit = {}): AstFile {
+    val copyBuilder = AstFileBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.declarations.addAll(declarations)
+    copyBuilder.name = name
+    copyBuilder.packageFqName = packageFqName
+    return copyBuilder.apply(init).build()
+}

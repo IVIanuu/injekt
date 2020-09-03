@@ -1,6 +1,7 @@
-package com.ivianuu.ast
+package com.ivianuu.ast.psi2ast
 
-import com.ivianuu.ast.declarations.builder.buildNamedFunction
+import com.ivianuu.ast.AstBuiltIns
+import com.ivianuu.ast.ast2string.toKotlinSourceString
 import com.ivianuu.ast.extension.AstGenerationExtension
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.editor.Document
@@ -15,7 +16,6 @@ import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.diagnostics.Severity
-import org.jetbrains.kotlin.fir.lightTree.converter.nameAsSafeName
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.BindingTraceContext
@@ -26,6 +26,8 @@ import org.jetbrains.kotlin.util.slicedMap.SlicedMapImpl
 import java.io.File
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
+
+var astEnabled = false
 
 class AstAnalysisHandlerExtension(
     private val outputDir: String
@@ -41,17 +43,12 @@ class AstAnalysisHandlerExtension(
         bindingTrace: BindingTrace,
         componentProvider: ComponentProvider
     ): AnalysisResult? {
+        if (!astEnabled) return null
         if (generatedCode) return null
         generatedCode = true
 
-        val builtIns = AstBuiltIns(module.builtIns)
-        val myFun = buildNamedFunction {
-            name = "hello".nameAsSafeName()
-            returnType = builtIns.unitType
-        }
-
         val extensions = AstGenerationExtension.getInstances(project)
-        if (extensions.isEmpty()) return null
+        //if (extensions.isEmpty()) return null
 
         files as ArrayList<KtFile>
 
@@ -87,21 +84,15 @@ class AstAnalysisHandlerExtension(
         extensions: List<AstGenerationExtension>,
         files: List<KtFile>
     ): List<KtFile> {
-        return emptyList()
-        /*val storage = Psi2AstStorage()
-        val stubGenerator = Psi2AstStubGenerator(storage)
-        val astProvider = AstProvider(stubGenerator, storage)
-        val typeMapper = TypeMapper(astProvider, storage)
-        stubGenerator.typeMapper = typeMapper
-        val builtIns = AstBuiltIns(module.builtIns, astProvider, typeMapper)
-        val context = AstGeneratorContext(
-            builtIns,
+        val symbolTable = DescriptorSymbolTable()
+        val typeConverter = TypeConverter(AnnotationGenerator(), symbolTable)
+        val builtIns = AstBuiltIns(module.builtIns, typeConverter, symbolTable)
+        val context = Psi2AstGeneratorContext(
             module,
-            astProvider,
             bindingTrace.bindingContext,
             module.builtIns,
-            typeMapper,
-            storage
+            typeConverter,
+            builtIns
         )
         val generator = Psi2AstTranslator(context)
 
@@ -113,13 +104,13 @@ class AstAnalysisHandlerExtension(
 
         return moduleFragment.files
             .map { file ->
-                val src = file.toKotlinSource()
+                val src = file.toKotlinSourceString()
                 val dir = file.packageFqName.pathSegments().fold(File(outputDir)) { dir, segment ->
                     dir.resolve(segment.asString())
                 }.also { it.mkdirs() }
                 val virtualFile = CoreLocalVirtualFile(
                     CoreLocalFileSystem(),
-                    dir.resolve(file.name.asString())
+                    dir.resolve(file.name)
                         .also { if (!it.exists()) it.createNewFile() }
                         .also { it.writeText(src) }
                 )
@@ -129,12 +120,12 @@ class AstAnalysisHandlerExtension(
                         virtualFile
                     ) {
                         it?.also {
-                            it.setText(file.toKotlinSource())
+                            it.setText(src)
                         }
                     },
                     isCompiled = false
                 )
-            }*/
+            }
     }
 
     private fun forceResolveContents(

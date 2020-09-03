@@ -23,7 +23,6 @@ open class AstValueParameterImpl @AstImplementationDetail constructor(
     override val origin: AstDeclarationOrigin,
     override var returnType: AstType,
     override var name: Name,
-    override var isVar: Boolean,
     override var symbol: AstValueParameterSymbol,
     override var defaultValue: AstExpression?,
     override var isCrossinline: Boolean,
@@ -34,6 +33,7 @@ open class AstValueParameterImpl @AstImplementationDetail constructor(
     override val receiverType: AstType? get() = null
     override val initializer: AstExpression? get() = null
     override val delegate: AstExpression? get() = null
+    override var isVar: Boolean = false
     override val getter: AstPropertyAccessor? get() = null
     override val setter: AstPropertyAccessor? get() = null
 

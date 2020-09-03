@@ -1,5 +1,6 @@
 package com.ivianuu.ast.extension
 
+import com.ivianuu.ast.AstBuiltIns
 import com.ivianuu.ast.declarations.AstModuleFragment
 import org.jetbrains.kotlin.extensions.ProjectExtensionDescriptor
 
@@ -12,4 +13,6 @@ interface AstGenerationExtension {
     fun generate(moduleFragment: AstModuleFragment, context: AstGeneratorContext)
 }
 
-interface AstGeneratorContext
+interface AstGeneratorContext {
+    val builtIns: AstBuiltIns
+}

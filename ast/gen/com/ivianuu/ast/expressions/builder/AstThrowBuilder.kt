@@ -34,3 +34,12 @@ class AstThrowBuilder : AstExpressionBuilder {
 inline fun buildThrow(init: AstThrowBuilder.() -> Unit): AstThrow {
     return AstThrowBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstThrow.copy(init: AstThrowBuilder.() -> Unit = {}): AstThrow {
+    val copyBuilder = AstThrowBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.type = type
+    copyBuilder.exception = exception
+    return copyBuilder.apply(init).build()
+}

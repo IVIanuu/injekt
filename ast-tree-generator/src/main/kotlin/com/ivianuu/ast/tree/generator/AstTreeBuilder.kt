@@ -99,7 +99,8 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         Declaration,
         variable,
         typeParametersOwner,
-        callableDeclaration
+        callableDeclaration,
+        memberDeclaration
     ) {
         visitorSuperType = variable
         transformerType = statement

@@ -46,3 +46,16 @@ class AstTypeParameterBuilder {
 inline fun buildTypeParameter(init: AstTypeParameterBuilder.() -> Unit): AstTypeParameter {
     return AstTypeParameterBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstTypeParameter.copy(init: AstTypeParameterBuilder.() -> Unit = {}): AstTypeParameter {
+    val copyBuilder = AstTypeParameterBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.origin = origin
+    copyBuilder.name = name
+    copyBuilder.symbol = symbol
+    copyBuilder.variance = variance
+    copyBuilder.isReified = isReified
+    copyBuilder.bounds.addAll(bounds)
+    return copyBuilder.apply(init).build()
+}

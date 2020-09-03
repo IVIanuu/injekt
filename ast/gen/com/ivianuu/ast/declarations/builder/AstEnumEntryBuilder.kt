@@ -46,3 +46,15 @@ class AstEnumEntryBuilder {
 inline fun buildEnumEntry(init: AstEnumEntryBuilder.() -> Unit): AstEnumEntry {
     return AstEnumEntryBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstEnumEntry.copy(init: AstEnumEntryBuilder.() -> Unit = {}): AstEnumEntry {
+    val copyBuilder = AstEnumEntryBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.origin = origin
+    copyBuilder.returnType = returnType
+    copyBuilder.name = name
+    copyBuilder.symbol = symbol
+    copyBuilder.initializer = initializer
+    return copyBuilder.apply(init).build()
+}

@@ -31,3 +31,11 @@ class AstDelegatedTypeBuilder {
 inline fun buildDelegatedType(init: AstDelegatedTypeBuilder.() -> Unit): AstDelegatedType {
     return AstDelegatedTypeBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstDelegatedType.copy(init: AstDelegatedTypeBuilder.() -> Unit = {}): AstDelegatedType {
+    val copyBuilder = AstDelegatedTypeBuilder()
+    copyBuilder.type = type
+    copyBuilder.expression = expression
+    return copyBuilder.apply(init).build()
+}

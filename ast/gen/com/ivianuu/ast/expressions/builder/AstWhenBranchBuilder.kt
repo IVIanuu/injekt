@@ -29,3 +29,11 @@ class AstWhenBranchBuilder {
 inline fun buildWhenBranch(init: AstWhenBranchBuilder.() -> Unit): AstWhenBranch {
     return AstWhenBranchBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstWhenBranch.copy(init: AstWhenBranchBuilder.() -> Unit = {}): AstWhenBranch {
+    val copyBuilder = AstWhenBranchBuilder()
+    copyBuilder.condition = condition
+    copyBuilder.result = result
+    return copyBuilder.apply(init).build()
+}

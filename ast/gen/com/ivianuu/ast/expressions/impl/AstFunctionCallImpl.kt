@@ -23,10 +23,6 @@ open class AstFunctionCallImpl @AstImplementationDetail constructor(
     override val valueArguments: MutableList<AstExpression>,
     override var callee: AstFunctionSymbol<*>,
 ) : AstFunctionCall() {
-    init {
-        callee.bind(this)
-    }
-
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
         type.accept(visitor, data)

@@ -41,3 +41,14 @@ class AstDelegatedConstructorCallBuilder : AstCallBuilder, AstExpressionBuilder 
 inline fun buildDelegatedConstructorCall(init: AstDelegatedConstructorCallBuilder.() -> Unit): AstDelegatedConstructorCall {
     return AstDelegatedConstructorCallBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstDelegatedConstructorCall.copy(init: AstDelegatedConstructorCallBuilder.() -> Unit = {}): AstDelegatedConstructorCall {
+    val copyBuilder = AstDelegatedConstructorCallBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.type = type
+    copyBuilder.valueArguments.addAll(valueArguments)
+    copyBuilder.dispatchReceiver = dispatchReceiver
+    copyBuilder.kind = kind
+    return copyBuilder.apply(init).build()
+}

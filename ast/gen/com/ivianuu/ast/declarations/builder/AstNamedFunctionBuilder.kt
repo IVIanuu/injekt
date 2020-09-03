@@ -16,6 +16,7 @@ import com.ivianuu.ast.declarations.impl.AstNamedFunctionImpl
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
+import com.ivianuu.ast.symbols.impl.AstNamedFunctionSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
@@ -46,7 +47,7 @@ open class AstNamedFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwnerB
     open var isInfix: Boolean = false
     open var isInline: Boolean = false
     open var isTailrec: Boolean = false
-    open lateinit var symbol: AstFunctionSymbol<AstNamedFunction>
+    open lateinit var symbol: AstNamedFunctionSymbol
 
     @OptIn(AstImplementationDetail::class)
     override fun build(): AstNamedFunction {
@@ -87,25 +88,25 @@ inline fun buildNamedFunction(init: AstNamedFunctionBuilder.() -> Unit): AstName
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildNamedFunctionCopy(original: AstNamedFunction, init: AstNamedFunctionBuilder.() -> Unit): AstNamedFunction {
+inline fun AstNamedFunction.copy(init: AstNamedFunctionBuilder.() -> Unit = {}): AstNamedFunction {
     val copyBuilder = AstNamedFunctionBuilder()
-    copyBuilder.annotations.addAll(original.annotations)
-    copyBuilder.origin = original.origin
-    copyBuilder.receiverType = original.receiverType
-    copyBuilder.returnType = original.returnType
-    copyBuilder.valueParameters.addAll(original.valueParameters)
-    copyBuilder.body = original.body
-    copyBuilder.name = original.name
-    copyBuilder.visibility = original.visibility
-    copyBuilder.modality = original.modality
-    copyBuilder.platformStatus = original.platformStatus
-    copyBuilder.typeParameters.addAll(original.typeParameters)
-    copyBuilder.isExternal = original.isExternal
-    copyBuilder.isSuspend = original.isSuspend
-    copyBuilder.isOperator = original.isOperator
-    copyBuilder.isInfix = original.isInfix
-    copyBuilder.isInline = original.isInline
-    copyBuilder.isTailrec = original.isTailrec
-    copyBuilder.symbol = original.symbol
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.origin = origin
+    copyBuilder.receiverType = receiverType
+    copyBuilder.returnType = returnType
+    copyBuilder.valueParameters.addAll(valueParameters)
+    copyBuilder.body = body
+    copyBuilder.name = name
+    copyBuilder.visibility = visibility
+    copyBuilder.modality = modality
+    copyBuilder.platformStatus = platformStatus
+    copyBuilder.typeParameters.addAll(typeParameters)
+    copyBuilder.isExternal = isExternal
+    copyBuilder.isSuspend = isSuspend
+    copyBuilder.isOperator = isOperator
+    copyBuilder.isInfix = isInfix
+    copyBuilder.isInline = isInline
+    copyBuilder.isTailrec = isTailrec
+    copyBuilder.symbol = symbol
     return copyBuilder.apply(init).build()
 }

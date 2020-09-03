@@ -43,7 +43,10 @@ object FieldSets {
         argument: String? = null
     ): Field {
         return field("symbol", type(packageName, symbolClassName), argument)
-            .also { it.withReplace = false }
+            .also {
+                it.withReplace = false
+                it.bindSymbol = true
+            }
     }
 
     fun symbol(symbolClassName: String, argument: String? = null): Field =

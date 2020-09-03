@@ -34,3 +34,12 @@ class AstBlockBuilder : AstExpressionBuilder {
 inline fun buildBlock(init: AstBlockBuilder.() -> Unit): AstBlock {
     return AstBlockBuilder().apply(init).build()
 }
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstBlock.copy(init: AstBlockBuilder.() -> Unit = {}): AstBlock {
+    val copyBuilder = AstBlockBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.statements.addAll(statements)
+    copyBuilder.type = type
+    return copyBuilder.apply(init).build()
+}

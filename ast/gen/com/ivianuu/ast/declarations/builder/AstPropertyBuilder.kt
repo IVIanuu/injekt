@@ -1,5 +1,8 @@
 package com.ivianuu.ast.declarations.builder
 
+import com.ivianuu.ast.PlatformStatus
+import com.ivianuu.ast.Visibilities
+import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
@@ -16,6 +19,7 @@ import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.name.Name
 
 /*
@@ -36,6 +40,9 @@ class AstPropertyBuilder : AstMemberDeclarationBuilder, AstTypeParametersOwnerBu
     var getter: AstPropertyAccessor? = null
     var setter: AstPropertyAccessor? = null
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
+    override var visibility: Visibility = Visibilities.Public
+    override var modality: Modality = Modality.FINAL
+    override var platformStatus: PlatformStatus = PlatformStatus.DEFAULT
     lateinit var symbol: AstPropertySymbol
     var hasBackingField: Boolean = false
     var isLocal: Boolean = false
@@ -56,6 +63,9 @@ class AstPropertyBuilder : AstMemberDeclarationBuilder, AstTypeParametersOwnerBu
             getter,
             setter,
             typeParameters,
+            visibility,
+            modality,
+            platformStatus,
             symbol,
             hasBackingField,
             isLocal,
@@ -77,4 +87,30 @@ class AstPropertyBuilder : AstMemberDeclarationBuilder, AstTypeParametersOwnerBu
 @OptIn(ExperimentalContracts::class)
 inline fun buildProperty(init: AstPropertyBuilder.() -> Unit): AstProperty {
     return AstPropertyBuilder().apply(init).build()
+}
+
+@OptIn(ExperimentalContracts::class)
+inline fun AstProperty.copy(init: AstPropertyBuilder.() -> Unit = {}): AstProperty {
+    val copyBuilder = AstPropertyBuilder()
+    copyBuilder.annotations.addAll(annotations)
+    copyBuilder.origin = origin
+    copyBuilder.receiverType = receiverType
+    copyBuilder.returnType = returnType
+    copyBuilder.name = name
+    copyBuilder.initializer = initializer
+    copyBuilder.delegate = delegate
+    copyBuilder.isVar = isVar
+    copyBuilder.getter = getter
+    copyBuilder.setter = setter
+    copyBuilder.typeParameters.addAll(typeParameters)
+    copyBuilder.visibility = visibility
+    copyBuilder.modality = modality
+    copyBuilder.platformStatus = platformStatus
+    copyBuilder.symbol = symbol
+    copyBuilder.hasBackingField = hasBackingField
+    copyBuilder.isLocal = isLocal
+    copyBuilder.isInline = isInline
+    copyBuilder.isConst = isConst
+    copyBuilder.isLateinit = isLateinit
+    return copyBuilder.apply(init).build()
 }

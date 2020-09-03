@@ -18,10 +18,6 @@ internal class AstReturnImpl(
     override var result: AstExpression,
     override var target: AstFunctionSymbol<*>,
 ) : AstReturn() {
-    init {
-        target.bind(this)
-    }
-
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
         type.accept(visitor, data)
