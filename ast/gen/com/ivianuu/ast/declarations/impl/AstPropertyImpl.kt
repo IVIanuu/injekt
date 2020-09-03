@@ -20,7 +20,7 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstPropertyImpl(
     override val annotations: MutableList<AstFunctionCall>,
-    override var origin: AstDeclarationOrigin,
+    override val origin: AstDeclarationOrigin,
     override var receiverType: AstType?,
     override var returnType: AstType,
     override var name: Name,
@@ -37,7 +37,11 @@ internal class AstPropertyImpl(
     override var isConst: Boolean,
     override var isLateinit: Boolean,
 ) : AstProperty() {
-    override var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
+    override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
+
+    init {
+        symbol.bind(this)
+    }
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }

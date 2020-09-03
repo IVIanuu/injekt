@@ -18,14 +18,18 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstAnonymousObjectImpl(
     override val annotations: MutableList<AstFunctionCall>,
-    override var origin: AstDeclarationOrigin,
+    override val origin: AstDeclarationOrigin,
     override val declarations: MutableList<AstDeclaration>,
     override var classKind: ClassKind,
     override val superTypes: MutableList<AstType>,
     override var type: AstType,
     override var symbol: AstAnonymousObjectSymbol,
 ) : AstAnonymousObject() {
-    override var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
+    override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
+
+    init {
+        symbol.bind(this)
+    }
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }

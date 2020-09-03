@@ -22,6 +22,10 @@ internal class AstQualifiedAccessImpl(
     override var dispatchReceiver: AstExpression?,
     override var extensionReceiver: AstExpression?,
 ) : AstPureAbstractElement(), AstQualifiedAccess {
+    init {
+        callee.bind(this)
+    }
+
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
         type.accept(visitor, data)

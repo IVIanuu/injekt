@@ -16,11 +16,15 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstAnonymousInitializerImpl(
     override val annotations: MutableList<AstFunctionCall>,
-    override var origin: AstDeclarationOrigin,
+    override val origin: AstDeclarationOrigin,
     override var body: AstBlock?,
     override var symbol: AstAnonymousInitializerSymbol,
 ) : AstAnonymousInitializer() {
-    override var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
+    override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
+
+    init {
+        symbol.bind(this)
+    }
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }

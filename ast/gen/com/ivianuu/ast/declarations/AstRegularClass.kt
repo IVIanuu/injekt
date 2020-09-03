@@ -1,8 +1,9 @@
 package com.ivianuu.ast.declarations
 
-import com.ivianuu.ast.AstPureAbstractElement
+import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.expressions.AstFunctionCall
+import com.ivianuu.ast.symbols.impl.AstClassSymbol
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.types.AstType
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -15,18 +16,17 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstRegularClass : AstPureAbstractElement(), AstDeclaration, AstTypeParametersOwner, AstClass<AstRegularClass> {
+abstract class AstRegularClass : AstMemberDeclaration(), AstTypeParametersOwner, AstClass<AstRegularClass> {
     abstract override val annotations: List<AstFunctionCall>
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
+    abstract override val name: Name
+    abstract override val visibility: Visibility
+    abstract override val modality: Modality
+    abstract override val platformStatus: PlatformStatus
     abstract override val typeParameters: List<AstTypeParameter>
-    abstract override val classKind: ClassKind
     abstract override val declarations: List<AstDeclaration>
-    abstract val name: Name
-    abstract val visibility: Visibility
-    abstract val isExpect: Boolean
-    abstract val isActual: Boolean
-    abstract val modality: Modality
+    abstract override val classKind: ClassKind
     abstract override val symbol: AstRegularClassSymbol
     abstract override val superTypes: List<AstType>
     abstract val isInline: Boolean
@@ -37,4 +37,32 @@ abstract class AstRegularClass : AstPureAbstractElement(), AstDeclaration, AstTy
     abstract val isExternal: Boolean
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitRegularClass(this, data)
+
+    abstract override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
+
+    abstract override fun replaceVisibility(newVisibility: Visibility)
+
+    abstract override fun replaceModality(newModality: Modality)
+
+    abstract override fun replacePlatformStatus(newPlatformStatus: PlatformStatus)
+
+    abstract override fun replaceTypeParameters(newTypeParameters: List<AstTypeParameter>)
+
+    abstract override fun replaceDeclarations(newDeclarations: List<AstDeclaration>)
+
+    abstract override fun replaceClassKind(newClassKind: ClassKind)
+
+    abstract override fun replaceSuperTypes(newSuperTypes: List<AstType>)
+
+    abstract fun replaceIsInline(newIsInline: Boolean)
+
+    abstract fun replaceIsCompanion(newIsCompanion: Boolean)
+
+    abstract fun replaceIsFun(newIsFun: Boolean)
+
+    abstract fun replaceIsData(newIsData: Boolean)
+
+    abstract fun replaceIsInner(newIsInner: Boolean)
+
+    abstract fun replaceIsExternal(newIsExternal: Boolean)
 }

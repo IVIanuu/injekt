@@ -18,14 +18,18 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstTypeParameterImpl(
     override val annotations: MutableList<AstFunctionCall>,
-    override var origin: AstDeclarationOrigin,
+    override val origin: AstDeclarationOrigin,
     override var name: Name,
     override var symbol: AstTypeParameterSymbol,
     override var variance: Variance,
     override var isReified: Boolean,
     override val bounds: MutableList<AstType>,
 ) : AstTypeParameter() {
-    override var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
+    override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
+
+    init {
+        symbol.bind(this)
+    }
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }

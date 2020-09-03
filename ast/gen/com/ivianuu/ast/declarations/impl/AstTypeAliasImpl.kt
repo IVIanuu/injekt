@@ -21,7 +21,7 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstTypeAliasImpl(
     override val annotations: MutableList<AstFunctionCall>,
-    override var origin: AstDeclarationOrigin,
+    override val origin: AstDeclarationOrigin,
     override var name: Name,
     override var visibility: Visibility,
     override var modality: Modality,
@@ -30,7 +30,11 @@ internal class AstTypeAliasImpl(
     override var symbol: AstTypeAliasSymbol,
     override var expandedType: AstType,
 ) : AstTypeAlias() {
-    override var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
+    override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
+
+    init {
+        symbol.bind(this)
+    }
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }

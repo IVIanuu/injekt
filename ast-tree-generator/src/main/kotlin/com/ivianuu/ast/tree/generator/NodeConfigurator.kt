@@ -66,9 +66,15 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         declaration.configure {
             +field("origin", declarationOriginType)
-                .also { it.withReplace = false }
+                .also {
+                    it.withReplace = false
+                    it.isMutable = false
+                }
             +field("attributes", declarationAttributesType)
-                .also { it.withReplace = false }
+                .also {
+                    it.withReplace = false
+                    it.isMutable = false
+                }
         }
         declarationContainer.configure {
             +declarations

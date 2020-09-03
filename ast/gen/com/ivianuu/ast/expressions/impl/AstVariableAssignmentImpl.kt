@@ -23,6 +23,10 @@ internal class AstVariableAssignmentImpl(
     override var callee: AstVariableSymbol<*>,
     override var value: AstExpression,
 ) : AstVariableAssignment() {
+    init {
+        callee.bind(this)
+    }
+
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
         type.accept(visitor, data)

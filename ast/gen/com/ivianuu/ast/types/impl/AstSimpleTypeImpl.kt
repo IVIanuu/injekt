@@ -17,6 +17,10 @@ internal class AstSimpleTypeImpl(
     override var classifier: AstClassifierSymbol<*>,
     override val arguments: MutableList<AstTypeProjection>,
 ) : AstSimpleType() {
+    init {
+        classifier.bind(this)
+    }
+
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
         arguments.forEach { it.accept(visitor, data) }

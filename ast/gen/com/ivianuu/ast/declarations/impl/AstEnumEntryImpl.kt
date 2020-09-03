@@ -19,18 +19,22 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstEnumEntryImpl(
     override val annotations: MutableList<AstFunctionCall>,
-    override var origin: AstDeclarationOrigin,
+    override val origin: AstDeclarationOrigin,
     override var returnType: AstType,
     override var name: Name,
     override var symbol: AstVariableSymbol<AstEnumEntry>,
     override var initializer: AstExpression?,
 ) : AstEnumEntry() {
-    override var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
+    override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override val receiverType: AstType? get() = null
     override val delegate: AstExpression? get() = null
     override val isVar: Boolean get() = false
     override val getter: AstPropertyAccessor? get() = null
     override val setter: AstPropertyAccessor? get() = null
+
+    init {
+        symbol.bind(this)
+    }
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }

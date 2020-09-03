@@ -20,7 +20,7 @@ import com.ivianuu.ast.visitors.*
 
 open class AstValueParameterImpl @AstImplementationDetail constructor(
     override val annotations: MutableList<AstFunctionCall>,
-    override var origin: AstDeclarationOrigin,
+    override val origin: AstDeclarationOrigin,
     override var returnType: AstType,
     override var name: Name,
     override var isVar: Boolean,
@@ -30,12 +30,16 @@ open class AstValueParameterImpl @AstImplementationDetail constructor(
     override var isNoinline: Boolean,
     override var isVararg: Boolean,
 ) : AstValueParameter() {
-    override var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
+    override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override val receiverType: AstType? get() = null
     override val initializer: AstExpression? get() = null
     override val delegate: AstExpression? get() = null
     override val getter: AstPropertyAccessor? get() = null
     override val setter: AstPropertyAccessor? get() = null
+
+    init {
+        symbol.bind(this)
+    }
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
