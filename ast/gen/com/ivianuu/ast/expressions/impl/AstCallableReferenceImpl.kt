@@ -3,7 +3,6 @@ package com.ivianuu.ast.expressions.impl
 import com.ivianuu.ast.expressions.AstCallableReference
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
-import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.symbols.impl.AstCallableSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
@@ -60,11 +59,6 @@ internal class AstCallableReferenceImpl(
 
     override fun replaceCallee(newCallee: AstCallableSymbol<*>) {
         callee = newCallee
-    }
-
-    override fun replaceCallee(newCallee: AstSymbol<*>) {
-        require(newCallee is AstCallableSymbol<*>)
-        replaceCallee(newCallee)
     }
 
     override fun replaceHasQuestionMarkAtLHS(newHasQuestionMarkAtLHS: Boolean) {

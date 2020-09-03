@@ -3,7 +3,6 @@ package com.ivianuu.ast.expressions.impl
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstVariableAssignment
-import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
@@ -62,11 +61,6 @@ internal class AstVariableAssignmentImpl(
 
     override fun replaceCallee(newCallee: AstVariableSymbol<*>) {
         callee = newCallee
-    }
-
-    override fun replaceCallee(newCallee: AstSymbol<*>) {
-        require(newCallee is AstVariableSymbol<*>)
-        replaceCallee(newCallee)
     }
 
     override fun replaceValue(newValue: AstExpression) {

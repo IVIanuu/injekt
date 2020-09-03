@@ -1,6 +1,5 @@
 package com.ivianuu.ast.declarations.builder
 
-import com.ivianuu.ast.AstImplementationDetail
 import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.Visibilities
 import com.ivianuu.ast.Visibility
@@ -37,12 +36,9 @@ class AstPropertyAccessorBuilder : AstFunctionBuilder {
     lateinit var name: Name
     var visibility: Visibility = Visibilities.Public
     var modality: Modality = Modality.FINAL
-    var platformStatus: PlatformStatus = PlatformStatus.DEFAULT
-    val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
     lateinit var symbol: AstPropertyAccessorSymbol
     var isSetter: Boolean = false
 
-    @OptIn(AstImplementationDetail::class)
     override fun build(): AstPropertyAccessor {
         return AstPropertyAccessorImpl(
             annotations,
@@ -53,8 +49,6 @@ class AstPropertyAccessorBuilder : AstFunctionBuilder {
             name,
             visibility,
             modality,
-            platformStatus,
-            typeParameters,
             symbol,
             isSetter,
         )
@@ -85,8 +79,6 @@ inline fun AstPropertyAccessor.copy(init: AstPropertyAccessorBuilder.() -> Unit 
     copyBuilder.name = name
     copyBuilder.visibility = visibility
     copyBuilder.modality = modality
-    copyBuilder.platformStatus = platformStatus
-    copyBuilder.typeParameters.addAll(typeParameters)
     copyBuilder.symbol = symbol
     copyBuilder.isSetter = isSetter
     return copyBuilder.apply(init).build()

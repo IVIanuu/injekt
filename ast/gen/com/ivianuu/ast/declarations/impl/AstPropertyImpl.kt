@@ -24,7 +24,8 @@ import com.ivianuu.ast.visitors.*
 internal class AstPropertyImpl(
     override val annotations: MutableList<AstFunctionCall>,
     override val origin: AstDeclarationOrigin,
-    override var receiverType: AstType?,
+    override var dispatchReceiverType: AstType?,
+    override var extensionReceiverType: AstType?,
     override var returnType: AstType,
     override var name: Name,
     override var initializer: AstExpression?,
@@ -37,11 +38,11 @@ internal class AstPropertyImpl(
     override var modality: Modality,
     override var platformStatus: PlatformStatus,
     override var symbol: AstPropertySymbol,
-    override var hasBackingField: Boolean,
     override var isLocal: Boolean,
     override var isInline: Boolean,
     override var isConst: Boolean,
     override var isLateinit: Boolean,
+    override var isExternal: Boolean,
 ) : AstProperty() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
 
@@ -51,7 +52,8 @@ internal class AstPropertyImpl(
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
-        receiverType?.accept(visitor, data)
+        dispatchReceiverType?.accept(visitor, data)
+        extensionReceiverType?.accept(visitor, data)
         returnType.accept(visitor, data)
         initializer?.accept(visitor, data)
         delegate?.accept(visitor, data)
@@ -62,7 +64,8 @@ internal class AstPropertyImpl(
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstPropertyImpl {
         annotations.transformInplace(transformer, data)
-        receiverType = receiverType?.transformSingle(transformer, data)
+        dispatchReceiverType = dispatchReceiverType?.transformSingle(transformer, data)
+        extensionReceiverType = extensionReceiverType?.transformSingle(transformer, data)
         returnType = returnType.transformSingle(transformer, data)
         initializer = initializer?.transformSingle(transformer, data)
         delegate = delegate?.transformSingle(transformer, data)
@@ -77,8 +80,12 @@ internal class AstPropertyImpl(
         annotations.addAll(newAnnotations)
     }
 
-    override fun replaceReceiverType(newReceiverType: AstType?) {
-        receiverType = newReceiverType
+    override fun replaceDispatchReceiverType(newDispatchReceiverType: AstType?) {
+        dispatchReceiverType = newDispatchReceiverType
+    }
+
+    override fun replaceExtensionReceiverType(newExtensionReceiverType: AstType?) {
+        extensionReceiverType = newExtensionReceiverType
     }
 
     override fun replaceReturnType(newReturnType: AstType) {
@@ -122,10 +129,6 @@ internal class AstPropertyImpl(
         platformStatus = newPlatformStatus
     }
 
-    override fun replaceHasBackingField(newHasBackingField: Boolean) {
-        hasBackingField = newHasBackingField
-    }
-
     override fun replaceIsLocal(newIsLocal: Boolean) {
         isLocal = newIsLocal
     }
@@ -140,5 +143,9 @@ internal class AstPropertyImpl(
 
     override fun replaceIsLateinit(newIsLateinit: Boolean) {
         isLateinit = newIsLateinit
+    }
+
+    override fun replaceIsExternal(newIsExternal: Boolean) {
+        isExternal = newIsExternal
     }
 }

@@ -36,6 +36,7 @@ import com.ivianuu.ast.tree.generator.FieldSets.typeParameters
 import com.ivianuu.ast.tree.generator.FieldSets.valueArguments
 import com.ivianuu.ast.tree.generator.FieldSets.visibility
 import com.ivianuu.ast.tree.generator.context.AbstractFieldConfigurator
+import com.ivianuu.ast.tree.generator.context.type
 import com.ivianuu.ast.tree.generator.model.AbstractElement
 import com.ivianuu.ast.tree.generator.model.Element
 import com.ivianuu.ast.tree.generator.model.ElementWithArguments
@@ -91,7 +92,8 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         callableDeclaration.configure {
             withArg("F", "AstCallableDeclaration<F>")
             parentArg(symbolOwner, "E", "F")
-            +field("receiverType", type, nullable = true)
+            +field("dispatchReceiverType", type, nullable = true)
+            +field("extensionReceiverType", type, nullable = true)
             +field("returnType", type)
             +symbol("AstCallableSymbol", "F")
         }
@@ -108,7 +110,16 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +typeField
         }
 
+        calleeReference.configure {
+            +field(
+                "callee",
+                astSymbolType,
+                "*"
+            )
+        }
+
         call.configure {
+            +field("callee", functionSymbolType, "*")
             +valueArguments
         }
 
@@ -149,11 +160,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         baseQualifiedAccess.configure {
-            +field(
-                "callee",
-                astSymbolType,
-                "*"
-            )
             +typeArguments
             +receivers
         }
@@ -162,10 +168,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             withArg("T")
             +field("kind", constKindType.withArgs("T"))
             +field("value", "T", null)
-        }
-
-        functionCall.configure {
-            +field("callee", functionSymbolType, "*")
         }
 
         whenBranch.configure {
@@ -242,11 +244,11 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             parentArg(variable, "F", property)
             parentArg(callableDeclaration, "F", property)
             +symbol("AstPropertySymbol")
-            +booleanField("hasBackingField")
             +booleanField("isLocal")
             +isInline
             +isConst
             +isLateinit
+            +isExternal
         }
 
         propertyAccessor.configure {
@@ -269,6 +271,10 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         delegatedConstructorCall.configure {
+            +field("callee", constructorSymbolType)
+                .also {
+                    it.overriddenTypes += type("ast.symbols", "AstSymbol<*>")
+                }
             +field("dispatchReceiver", expression, nullable = true)
             +field("kind", delegatedConstructorCallKindType)
         }

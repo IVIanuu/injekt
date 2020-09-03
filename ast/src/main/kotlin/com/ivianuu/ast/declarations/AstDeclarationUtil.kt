@@ -6,9 +6,6 @@
 package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstAnnotationContainer
-import com.ivianuu.ast.declarations.impl.AstFileImpl
-import com.ivianuu.ast.declarations.impl.AstModuleFragmentImpl
-import com.ivianuu.ast.declarations.impl.AstRegularClassImpl
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.types.AstSimpleType
 import com.ivianuu.ast.types.AstType

@@ -46,6 +46,7 @@ import com.ivianuu.ast.expressions.AstConst
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstStarProjection
 import com.ivianuu.ast.types.AstTypeProjectionWithVariance
+import com.ivianuu.ast.expressions.AstCalleeReference
 import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstWhen
 import com.ivianuu.ast.expressions.AstWhenBranch
@@ -252,6 +253,10 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     open fun visitTypeProjectionWithVariance(typeProjectionWithVariance: AstTypeProjectionWithVariance) {
         visitElement(typeProjectionWithVariance)
+    }
+
+    open fun visitCalleeReference(calleeReference: AstCalleeReference) {
+        visitElement(calleeReference)
     }
 
     open fun visitCall(call: AstCall) {
@@ -512,6 +517,10 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     final override fun visitTypeProjectionWithVariance(typeProjectionWithVariance: AstTypeProjectionWithVariance, data: Nothing?) {
         visitTypeProjectionWithVariance(typeProjectionWithVariance)
+    }
+
+    final override fun visitCalleeReference(calleeReference: AstCalleeReference, data: Nothing?) {
+        visitCalleeReference(calleeReference)
     }
 
     final override fun visitCall(call: AstCall, data: Nothing?) {

@@ -31,7 +31,8 @@ import org.jetbrains.kotlin.name.Name
 class AstPropertyBuilder : AstMemberDeclarationBuilder, AstTypeParametersOwnerBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
-    var receiverType: AstType? = null
+    var dispatchReceiverType: AstType? = null
+    var extensionReceiverType: AstType? = null
     lateinit var returnType: AstType
     override lateinit var name: Name
     var initializer: AstExpression? = null
@@ -44,17 +45,18 @@ class AstPropertyBuilder : AstMemberDeclarationBuilder, AstTypeParametersOwnerBu
     override var modality: Modality = Modality.FINAL
     override var platformStatus: PlatformStatus = PlatformStatus.DEFAULT
     lateinit var symbol: AstPropertySymbol
-    var hasBackingField: Boolean = false
     var isLocal: Boolean = false
     var isInline: Boolean = false
     var isConst: Boolean = false
     var isLateinit: Boolean = false
+    var isExternal: Boolean = false
 
     override fun build(): AstProperty {
         return AstPropertyImpl(
             annotations,
             origin,
-            receiverType,
+            dispatchReceiverType,
+            extensionReceiverType,
             returnType,
             name,
             initializer,
@@ -67,11 +69,11 @@ class AstPropertyBuilder : AstMemberDeclarationBuilder, AstTypeParametersOwnerBu
             modality,
             platformStatus,
             symbol,
-            hasBackingField,
             isLocal,
             isInline,
             isConst,
             isLateinit,
+            isExternal,
         )
     }
 
@@ -94,7 +96,8 @@ inline fun AstProperty.copy(init: AstPropertyBuilder.() -> Unit = {}): AstProper
     val copyBuilder = AstPropertyBuilder()
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
-    copyBuilder.receiverType = receiverType
+    copyBuilder.dispatchReceiverType = dispatchReceiverType
+    copyBuilder.extensionReceiverType = extensionReceiverType
     copyBuilder.returnType = returnType
     copyBuilder.name = name
     copyBuilder.initializer = initializer
@@ -107,10 +110,10 @@ inline fun AstProperty.copy(init: AstPropertyBuilder.() -> Unit = {}): AstProper
     copyBuilder.modality = modality
     copyBuilder.platformStatus = platformStatus
     copyBuilder.symbol = symbol
-    copyBuilder.hasBackingField = hasBackingField
     copyBuilder.isLocal = isLocal
     copyBuilder.isInline = isInline
     copyBuilder.isConst = isConst
     copyBuilder.isLateinit = isLateinit
+    copyBuilder.isExternal = isExternal
     return copyBuilder.apply(init).build()
 }

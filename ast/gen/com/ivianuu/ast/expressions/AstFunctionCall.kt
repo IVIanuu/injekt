@@ -17,8 +17,8 @@ abstract class AstFunctionCall : AstBaseQualifiedAccess, AstCall() {
     abstract override val typeArguments: List<AstTypeProjection>
     abstract override val dispatchReceiver: AstExpression?
     abstract override val extensionReceiver: AstExpression?
-    abstract override val valueArguments: List<AstExpression?>
     abstract override val callee: AstFunctionSymbol<*>
+    abstract override val valueArguments: List<AstExpression?>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitFunctionCall(this, data)
 
@@ -32,9 +32,9 @@ abstract class AstFunctionCall : AstBaseQualifiedAccess, AstCall() {
 
     abstract override fun replaceExtensionReceiver(newExtensionReceiver: AstExpression?)
 
-    abstract override fun replaceValueArguments(newValueArguments: List<AstExpression?>)
-
-    abstract fun replaceCallee(newCallee: AstFunctionSymbol<*>)
+    abstract override fun replaceCallee(newCallee: AstFunctionSymbol<*>)
 
     abstract override fun replaceCallee(newCallee: AstSymbol<*>)
+
+    abstract override fun replaceValueArguments(newValueArguments: List<AstExpression?>)
 }

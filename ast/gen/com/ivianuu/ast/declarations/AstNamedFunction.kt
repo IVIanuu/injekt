@@ -20,7 +20,8 @@ abstract class AstNamedFunction : AstFunction<AstNamedFunction>, AstMemberDeclar
     abstract override val annotations: List<AstFunctionCall>
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
-    abstract override val receiverType: AstType?
+    abstract override val dispatchReceiverType: AstType?
+    abstract override val extensionReceiverType: AstType?
     abstract override val returnType: AstType
     abstract override val valueParameters: List<AstValueParameter>
     abstract override val body: AstBlock?
@@ -41,7 +42,9 @@ abstract class AstNamedFunction : AstFunction<AstNamedFunction>, AstMemberDeclar
 
     abstract override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
 
-    abstract override fun replaceReceiverType(newReceiverType: AstType?)
+    abstract override fun replaceDispatchReceiverType(newDispatchReceiverType: AstType?)
+
+    abstract override fun replaceExtensionReceiverType(newExtensionReceiverType: AstType?)
 
     abstract override fun replaceReturnType(newReturnType: AstType)
 

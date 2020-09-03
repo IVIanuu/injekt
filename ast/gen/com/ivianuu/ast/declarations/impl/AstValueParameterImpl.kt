@@ -30,7 +30,8 @@ open class AstValueParameterImpl @AstImplementationDetail constructor(
     override var isVararg: Boolean,
 ) : AstValueParameter() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
-    override val receiverType: AstType? get() = null
+    override val dispatchReceiverType: AstType? get() = null
+    override val extensionReceiverType: AstType? get() = null
     override val initializer: AstExpression? get() = null
     override val delegate: AstExpression? get() = null
     override var isVar: Boolean = false
@@ -59,7 +60,9 @@ open class AstValueParameterImpl @AstImplementationDetail constructor(
         annotations.addAll(newAnnotations)
     }
 
-    override fun replaceReceiverType(newReceiverType: AstType?) {}
+    override fun replaceDispatchReceiverType(newDispatchReceiverType: AstType?) {}
+
+    override fun replaceExtensionReceiverType(newExtensionReceiverType: AstType?) {}
 
     override fun replaceReturnType(newReturnType: AstType) {
         returnType = newReturnType

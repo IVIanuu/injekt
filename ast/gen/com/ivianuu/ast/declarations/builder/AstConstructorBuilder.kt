@@ -25,7 +25,8 @@ import kotlin.contracts.*
 class AstConstructorBuilder : AstAbstractConstructorBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
-    override var receiverType: AstType? = null
+    override var dispatchReceiverType: AstType? = null
+    override var extensionReceiverType: AstType? = null
     override lateinit var returnType: AstType
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
     override lateinit var symbol: AstConstructorSymbol
@@ -37,7 +38,8 @@ class AstConstructorBuilder : AstAbstractConstructorBuilder {
         return AstConstructorImpl(
             annotations,
             origin,
-            receiverType,
+            dispatchReceiverType,
+            extensionReceiverType,
             returnType,
             valueParameters,
             symbol,
@@ -66,7 +68,8 @@ inline fun AstConstructor.copy(init: AstConstructorBuilder.() -> Unit = {}): Ast
     val copyBuilder = AstConstructorBuilder()
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
-    copyBuilder.receiverType = receiverType
+    copyBuilder.dispatchReceiverType = dispatchReceiverType
+    copyBuilder.extensionReceiverType = extensionReceiverType
     copyBuilder.returnType = returnType
     copyBuilder.valueParameters.addAll(valueParameters)
     copyBuilder.symbol = symbol

@@ -22,7 +22,7 @@ class AstBuiltIns(
 ) {
 
     val anyType = kotlinBuiltIns.anyType.toAstType()
-    val anyClass = kotlinBuiltIns.any.toAstRegularClassSymbol()
+    val anySymbol = kotlinBuiltIns.any.toAstRegularClassSymbol()
     val anyNType = anyType.copy { isMarkedNullable = true }
 
     val booleanType = kotlinBuiltIns.booleanType.toAstType()
@@ -90,23 +90,23 @@ class AstBuiltIns(
         }.symbol
     }
 
-    val lessThanOperation = intrinsicFunction(AstIntrinsics.LessThan, booleanType, 2)
-    val greaterThanOperation = intrinsicFunction(AstIntrinsics.GreaterThan, booleanType, 2)
-    val lessThanEqualOperation = intrinsicFunction(AstIntrinsics.LessThanEqual, booleanType, 2)
-    val greaterThanEqualOperation = intrinsicFunction(AstIntrinsics.GreaterThanEqual, booleanType, 2)
+    val lessThan = intrinsicFunction(AstIntrinsics.LessThan, booleanType, 2)
+    val greaterThan = intrinsicFunction(AstIntrinsics.GreaterThan, booleanType, 2)
+    val lessThanEqual = intrinsicFunction(AstIntrinsics.LessThanEqual, booleanType, 2)
+    val greaterThanEqual = intrinsicFunction(AstIntrinsics.GreaterThanEqual, booleanType, 2)
 
-    val equalOperation = intrinsicFunction(AstIntrinsics.Equal, booleanType, 2)
-    val notEqualOperation = intrinsicFunction(AstIntrinsics.NotEqual, booleanType, 2)
-    val identityOperation = intrinsicFunction(AstIntrinsics.Identity, booleanType, 2)
-    val notIdentityOperation = intrinsicFunction(AstIntrinsics.NotIdentity, booleanType, 2)
+    val structuralEqual = intrinsicFunction(AstIntrinsics.StructuralEqual, booleanType, 2)
+    val structuralNotEqual = intrinsicFunction(AstIntrinsics.StructuralNotEqual, booleanType, 2)
+    val identityEqual = intrinsicFunction(AstIntrinsics.IdentityEqual, booleanType, 2)
+    val identityNotEqual = intrinsicFunction(AstIntrinsics.IdentityNotEqual, booleanType, 2)
 
-    val andOperation = intrinsicFunction(AstIntrinsics.And, booleanType, 2)
-    val orOperation = intrinsicFunction(AstIntrinsics.Or, booleanType, 2)
+    val lazyAnd = intrinsicFunction(AstIntrinsics.LazyAnd, booleanType, 2)
+    val lazyOr = intrinsicFunction(AstIntrinsics.LazyOr, booleanType, 2)
 
-    val isOperation = intrinsicFunction(AstIntrinsics.Is, booleanType, 1)
-    val notIsOperation = intrinsicFunction(AstIntrinsics.NotIs, booleanType, 1)
-    fun asOperation(type: AstType) = intrinsicFunction(AstIntrinsics.As, type, 1)
-    fun safeAsOperation(type: AstType) = intrinsicFunction(AstIntrinsics.SafeAs,
+    val isType = intrinsicFunction(AstIntrinsics.IsType, booleanType, 1)
+    val isNotType = intrinsicFunction(AstIntrinsics.IsNotType, booleanType, 1)
+    fun asType(type: AstType) = intrinsicFunction(AstIntrinsics.AsType, type, 1)
+    fun safeAsType(type: AstType) = intrinsicFunction(AstIntrinsics.SafeAsType,
         (type as AstSimpleType).copy { isMarkedNullable = true }, 1)
 
     private fun ClassDescriptor.toAstRegularClassSymbol() = symbolTable.getClassSymbol(this)

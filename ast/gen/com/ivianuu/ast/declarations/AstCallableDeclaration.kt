@@ -16,7 +16,8 @@ interface AstCallableDeclaration<F : AstCallableDeclaration<F>> : AstDeclaration
     override val annotations: List<AstFunctionCall>
     override val origin: AstDeclarationOrigin
     override val attributes: AstDeclarationAttributes
-    val receiverType: AstType?
+    val dispatchReceiverType: AstType?
+    val extensionReceiverType: AstType?
     val returnType: AstType
     override val symbol: AstCallableSymbol<F>
 
@@ -24,7 +25,9 @@ interface AstCallableDeclaration<F : AstCallableDeclaration<F>> : AstDeclaration
 
     override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
 
-    fun replaceReceiverType(newReceiverType: AstType?)
+    fun replaceDispatchReceiverType(newDispatchReceiverType: AstType?)
+
+    fun replaceExtensionReceiverType(newExtensionReceiverType: AstType?)
 
     fun replaceReturnType(newReturnType: AstType)
 }

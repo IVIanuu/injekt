@@ -253,12 +253,16 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         visitorSuperType = typeProjection
         transformerType = typeProjection
     }
+    val calleeReference = element("CalleeReference", Expression, expression) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
     val call = element(
         "Call",
         Expression,
-        expression
+        calleeReference
     ) {
-        visitorSuperType = expression
+        visitorSuperType = calleeReference
         transformerType = statement
     }
     val whenExpression = element("When", Expression, expression) {
@@ -274,11 +278,12 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         visitorSuperType = expression
         transformerType = statement
     }
+
     val baseQualifiedAccess = element("BaseQualifiedAccess", Expression, expression) {
         visitorSuperType = expression
         transformerType = statement
     }
-    val qualifiedAccess = element("QualifiedAccess", Expression, baseQualifiedAccess) {
+    val qualifiedAccess = element("QualifiedAccess", Expression, baseQualifiedAccess, calleeReference) {
         visitorSuperType = baseQualifiedAccess
         transformerType = statement
     }

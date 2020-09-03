@@ -86,7 +86,8 @@ class AstAnalysisHandlerExtension(
     ): List<KtFile> {
         val symbolTable = DescriptorSymbolTable()
         val typeConverter = TypeConverter(symbolTable)
-            .also { it.constantValueGenerator = ConstantValueGenerator(module, it) }
+        val constantValueGenerator = ConstantValueGenerator(module, symbolTable, typeConverter)
+        typeConverter.constantValueGenerator = constantValueGenerator
         val builtIns = AstBuiltIns(module.builtIns, typeConverter, symbolTable)
         val context = Psi2AstGeneratorContext(
             module,
@@ -94,6 +95,7 @@ class AstAnalysisHandlerExtension(
             module.builtIns,
             typeConverter,
             symbolTable,
+            constantValueGenerator,
             builtIns
         )
         val generator = Psi2AstTranslator(context)

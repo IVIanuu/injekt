@@ -7,7 +7,6 @@ import com.ivianuu.ast.expressions.AstVariableAssignment
 import com.ivianuu.ast.expressions.builder.AstBaseQualifiedAccessBuilder
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.impl.AstVariableAssignmentImpl
-import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection

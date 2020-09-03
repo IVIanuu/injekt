@@ -19,7 +19,7 @@ class TypeConverter(private val symbolTable: DescriptorSymbolTable) {
 
         return buildSimpleType {
             annotations += approximatedType.annotations.map {
-                constantValueGenerator.generateAnnotationFunctionCall(it)
+                constantValueGenerator.generateAnnotationConstructorCall(it)!!
             }
             classifier = when (val classifierDescriptor = approximatedType.constructor.declarationDescriptor) {
                 is ClassDescriptor -> symbolTable.getClassSymbol(classifierDescriptor)

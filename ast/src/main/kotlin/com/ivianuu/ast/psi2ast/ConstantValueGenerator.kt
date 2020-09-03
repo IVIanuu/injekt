@@ -1,18 +1,15 @@
 package com.ivianuu.ast.psi2ast
 
 import com.ivianuu.ast.expressions.AstConstKind
-import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.builder.buildConst
 import com.ivianuu.ast.expressions.builder.buildFunctionCall
-import com.ivianuu.ast.expressions.builder.buildQualifiedAccess
 import com.ivianuu.ast.expressions.builder.buildVararg
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.NotFoundClasses
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
-import org.jetbrains.kotlin.fir.expressions.builder.buildQualifiedAccessExpression
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.resolve.constants.AnnotationValue
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
@@ -108,9 +105,7 @@ class ConstantValueGenerator(
         }
     }
 
-    fun generateAnnotationConstructorCall(
-        annotationDescriptor: AnnotationDescriptor
-    ): AstFunctionCall? {
+    fun generateAnnotationConstructorCall(annotationDescriptor: AnnotationDescriptor): AstFunctionCall? {
         val annotationType = annotationDescriptor.type
         val annotationClassDescriptor = annotationType.constructor.declarationDescriptor
         if (annotationClassDescriptor !is ClassDescriptor) return null

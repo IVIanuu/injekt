@@ -22,19 +22,19 @@ import kotlin.contracts.*
 class AstQualifiedAccessBuilder : AstBaseQualifiedAccessBuilder, AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var type: AstType
-    lateinit var callee: AstSymbol<*>
     override val typeArguments: MutableList<AstTypeProjection> = mutableListOf()
     override var dispatchReceiver: AstExpression? = null
     override var extensionReceiver: AstExpression? = null
+    lateinit var callee: AstSymbol<*>
 
     override fun build(): AstQualifiedAccess {
         return AstQualifiedAccessImpl(
             annotations,
             type,
-            callee,
             typeArguments,
             dispatchReceiver,
             extensionReceiver,
+            callee,
         )
     }
 
@@ -50,9 +50,9 @@ inline fun AstQualifiedAccess.copy(init: AstQualifiedAccessBuilder.() -> Unit = 
     val copyBuilder = AstQualifiedAccessBuilder()
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.type = type
-    copyBuilder.callee = callee
     copyBuilder.typeArguments.addAll(typeArguments)
     copyBuilder.dispatchReceiver = dispatchReceiver
     copyBuilder.extensionReceiver = extensionReceiver
+    copyBuilder.callee = callee
     return copyBuilder.apply(init).build()
 }

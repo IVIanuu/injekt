@@ -9,8 +9,7 @@ import com.ivianuu.ast.visitors.AstTransformer
 import com.ivianuu.ast.visitors.AstVisitor
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.Visibilities as KotlinVisibilities
-import org.jetbrains.kotlin.descriptors.Visibility as KotlinVisibility
+import org.jetbrains.kotlin.descriptors.MemberDescriptor
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingContext
@@ -19,6 +18,8 @@ import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.util.slicedMap.ReadOnlySlice
+import org.jetbrains.kotlin.descriptors.Visibilities as KotlinVisibilities
+import org.jetbrains.kotlin.descriptors.Visibility as KotlinVisibility
 
 interface Generator {
 
@@ -67,10 +68,7 @@ fun KotlinVisibility.toAstVisibility() = when (this) {
     else -> Visibilities.Local
 }
 
-fun platformStatusOf(
-    isActual: Boolean,
-    isExpect: Boolean
-) = when {
+val MemberDescriptor.platformStatus get() = when {
     isActual -> PlatformStatus.ACTUAL
     isExpect -> PlatformStatus.EXPECT
     else -> PlatformStatus.DEFAULT

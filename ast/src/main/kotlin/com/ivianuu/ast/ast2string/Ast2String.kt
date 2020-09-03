@@ -3,7 +3,17 @@ package com.ivianuu.ast.ast2string
 import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.AstElement
 import com.ivianuu.ast.PlatformStatus
-import com.ivianuu.ast.declarations.*
+import com.ivianuu.ast.declarations.AstConstructor
+import com.ivianuu.ast.declarations.AstDeclarationContainer
+import com.ivianuu.ast.declarations.AstEnumEntry
+import com.ivianuu.ast.declarations.AstFile
+import com.ivianuu.ast.declarations.AstMemberDeclaration
+import com.ivianuu.ast.declarations.AstRegularClass
+import com.ivianuu.ast.declarations.AstTypeParameter
+import com.ivianuu.ast.declarations.regularClassOrNull
+import com.ivianuu.ast.expressions.AstCall
+import com.ivianuu.ast.expressions.AstDelegatedConstructorCallKind
+import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.symbols.impl.AstTypeParameterSymbol
 import com.ivianuu.ast.types.AstSimpleType
@@ -18,22 +28,29 @@ import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.utils.Printer
 
 fun AstElement.toKotlinSourceString(): String {
-    return buildString { accept(Ast2KotlinSourceWriter(this), null) }
-        // replace tabs at beginning of line with white space
-        .replace(Regex("\\n(%tab%)+", RegexOption.MULTILINE)) {
-            val size = it.range.last - it.range.first - 1
-            "\n" + (0..(size / 5)).joinToString("") { "    " }
+    return buildString {
+        try {
+            accept(Ast2KotlinSourceWriter(this), null)
+        } catch (e: Exception) {
+            throw RuntimeException("${this.toString().format()}", e)
         }
+    }.format()
+}
+
+private fun String.format() =
+    // replace tabs at beginning of line with white space
+    replace(Regex("\\n(%tab%)+", RegexOption.MULTILINE)) {
+        val size = it.range.last - it.range.first - 1
+        "\n" + (0..(size / 5)).joinToString("") { "    " }
+    }
         // tabs that are inserted in the middle of lines should be replaced with empty strings
         .replace(Regex("%tab%", RegexOption.MULTILINE), "")
         // remove empty lines
         .replace(Regex("\\n(\\s)*$", RegexOption.MULTILINE), "")
         // brackets with comma on new line
         .replace(Regex("}\\n(\\s)*,", RegexOption.MULTILINE), "},")
-}
 
 private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
-
 
     private val printer = Printer(out, "%tab%")
     private fun emit(value: Any?) {
@@ -287,9 +304,35 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
                 body.emit()
             }
         } ?: emitLine()
+    }*/
+
+    private fun List<AstExpression?>.emit() {
+
     }
 
-    override fun visitProperty(property: AstProperty) {
+    override fun visitConstructor(constructor: AstConstructor) = with(constructor) {
+        emitAnnotations()
+        // todo emitVisibility()
+        emit("constructor(")
+        valueParameters.forEachIndexed { index, valueParameter ->
+            valueParameter.emit()
+            if (index != valueParameters.lastIndex) emit(", ")
+        }
+        emit(")")
+        if (delegatedConstructor != null) {
+            emit(" : ${delegatedConstructor!!.kind.name.toLowerCase()}(")
+            delegatedConstructor!!.emitValueArguments()
+            emit(")")
+        }
+        body?.let { body ->
+            emitSpace()
+            bracedBlock {
+                body.emit()
+            }
+        } ?: emitLine()
+    }
+
+   /* override fun visitProperty(property: AstProperty) {
         property.emitAnnotations()
         if (property.visibility != AstVisibility.LOCAL) property.emitVisibility()
         property.emitExpectActual()
@@ -684,6 +727,22 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
             annotation.emit()
             emitLine()
         }
+    }
+
+    private fun AstCall.emitValueArguments() {
+        val useNamedArguments = valueArguments.any { it == null }
+        valueArguments
+            .mapIndexed { index, expression -> index to expression }
+            .filter { it.second != null }
+            .map { it.first to it.second!! }
+            .forEach { (index, valueArgument) ->
+                val valueParameter = callee.owner.valueParameters[index]
+                if (useNamedArguments) {
+                    emit("${valueParameter.name} = ")
+                }
+                valueArgument.emit()
+                if (index != valueArguments.lastIndex) emit(", ")
+            }
     }
 
     private fun AstType.emit() {

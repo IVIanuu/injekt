@@ -1,6 +1,5 @@
 package com.ivianuu.ast.expressions
 
-import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
@@ -11,13 +10,13 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstQualifiedAccess : AstPureAbstractElement(), AstBaseQualifiedAccess {
+abstract class AstQualifiedAccess : AstBaseQualifiedAccess, AstCalleeReference() {
     abstract override val annotations: List<AstFunctionCall>
     abstract override val type: AstType
-    abstract override val callee: AstSymbol<*>
     abstract override val typeArguments: List<AstTypeProjection>
     abstract override val dispatchReceiver: AstExpression?
     abstract override val extensionReceiver: AstExpression?
+    abstract override val callee: AstSymbol<*>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitQualifiedAccess(this, data)
 
@@ -25,11 +24,11 @@ abstract class AstQualifiedAccess : AstPureAbstractElement(), AstBaseQualifiedAc
 
     abstract override fun replaceType(newType: AstType)
 
-    abstract override fun replaceCallee(newCallee: AstSymbol<*>)
-
     abstract override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>)
 
     abstract override fun replaceDispatchReceiver(newDispatchReceiver: AstExpression?)
 
     abstract override fun replaceExtensionReceiver(newExtensionReceiver: AstExpression?)
+
+    abstract override fun replaceCallee(newCallee: AstSymbol<*>)
 }

@@ -59,7 +59,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         }
 
         val callBuilder by builder {
-            fields from call
+            fields from call without listOf("callee")
         }
 
         val loopBuilder by builder {
@@ -70,7 +70,8 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             parents += annotationContainerBuilder
             fields from function without listOf(
                 "symbol",
-                "receiverType",
+                "dispatchReceiverType",
+                "extensionReceiverType",
                 "typeParameters"
             )
         }
@@ -148,7 +149,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             parents += typeParametersOwnerBuilder
             defaultNull("getter", "setter")
             defaultFalse("isVar")
-            defaultFalse("hasBackingField")
             defaultFalse("isLocal")
             defaultFalse("isConst")
             defaultFalse("isLateinit")

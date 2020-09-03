@@ -1,6 +1,5 @@
 package com.ivianuu.ast.declarations.impl
 
-import com.ivianuu.ast.AstImplementationDetail
 import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
@@ -22,7 +21,7 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-open class AstPropertyAccessorImpl @AstImplementationDetail constructor(
+internal class AstPropertyAccessorImpl(
     override val annotations: MutableList<AstFunctionCall>,
     override val origin: AstDeclarationOrigin,
     override var returnType: AstType,
@@ -31,13 +30,14 @@ open class AstPropertyAccessorImpl @AstImplementationDetail constructor(
     override var name: Name,
     override var visibility: Visibility,
     override var modality: Modality,
-    override var platformStatus: PlatformStatus,
-    override val typeParameters: MutableList<AstTypeParameter>,
     override var symbol: AstPropertyAccessorSymbol,
     override var isSetter: Boolean,
 ) : AstPropertyAccessor() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
-    override val receiverType: AstType? get() = null
+    override val dispatchReceiverType: AstType? get() = null
+    override val extensionReceiverType: AstType? get() = null
+    override val platformStatus: PlatformStatus get() = PlatformStatus.DEFAULT
+    override val typeParameters: List<AstTypeParameter> get() = emptyList()
 
     init {
         symbol.bind(this)
@@ -48,7 +48,6 @@ open class AstPropertyAccessorImpl @AstImplementationDetail constructor(
         returnType.accept(visitor, data)
         valueParameters.forEach { it.accept(visitor, data) }
         body?.accept(visitor, data)
-        typeParameters.forEach { it.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstPropertyAccessorImpl {
@@ -56,7 +55,6 @@ open class AstPropertyAccessorImpl @AstImplementationDetail constructor(
         returnType = returnType.transformSingle(transformer, data)
         valueParameters.transformInplace(transformer, data)
         body = body?.transformSingle(transformer, data)
-        typeParameters.transformInplace(transformer, data)
         return this
     }
 
@@ -65,7 +63,9 @@ open class AstPropertyAccessorImpl @AstImplementationDetail constructor(
         annotations.addAll(newAnnotations)
     }
 
-    override fun replaceReceiverType(newReceiverType: AstType?) {}
+    override fun replaceDispatchReceiverType(newDispatchReceiverType: AstType?) {}
+
+    override fun replaceExtensionReceiverType(newExtensionReceiverType: AstType?) {}
 
     override fun replaceReturnType(newReturnType: AstType) {
         returnType = newReturnType
@@ -88,14 +88,9 @@ open class AstPropertyAccessorImpl @AstImplementationDetail constructor(
         modality = newModality
     }
 
-    override fun replacePlatformStatus(newPlatformStatus: PlatformStatus) {
-        platformStatus = newPlatformStatus
-    }
+    override fun replacePlatformStatus(newPlatformStatus: PlatformStatus) {}
 
-    override fun replaceTypeParameters(newTypeParameters: List<AstTypeParameter>) {
-        typeParameters.clear()
-        typeParameters.addAll(newTypeParameters)
-    }
+    override fun replaceTypeParameters(newTypeParameters: List<AstTypeParameter>) {}
 
     override fun replaceIsSetter(newIsSetter: Boolean) {
         isSetter = newIsSetter

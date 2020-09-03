@@ -17,7 +17,8 @@ interface AstVariable<F : AstVariable<F>> : AstCallableDeclaration<F>, AstNamedD
     override val annotations: List<AstFunctionCall>
     override val origin: AstDeclarationOrigin
     override val attributes: AstDeclarationAttributes
-    override val receiverType: AstType?
+    override val dispatchReceiverType: AstType?
+    override val extensionReceiverType: AstType?
     override val returnType: AstType
     override val name: Name
     override val symbol: AstVariableSymbol<F>
@@ -31,7 +32,9 @@ interface AstVariable<F : AstVariable<F>> : AstCallableDeclaration<F>, AstNamedD
 
     override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
 
-    override fun replaceReceiverType(newReceiverType: AstType?)
+    override fun replaceDispatchReceiverType(newDispatchReceiverType: AstType?)
+
+    override fun replaceExtensionReceiverType(newExtensionReceiverType: AstType?)
 
     override fun replaceReturnType(newReturnType: AstType)
 

@@ -26,7 +26,8 @@ internal class AstEnumEntryImpl(
     override var initializer: AstExpression?,
 ) : AstEnumEntry() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
-    override val receiverType: AstType? get() = null
+    override val dispatchReceiverType: AstType? get() = null
+    override val extensionReceiverType: AstType? get() = null
     override val delegate: AstExpression? get() = null
     override val isVar: Boolean get() = false
     override val getter: AstPropertyAccessor? get() = null
@@ -54,7 +55,9 @@ internal class AstEnumEntryImpl(
         annotations.addAll(newAnnotations)
     }
 
-    override fun replaceReceiverType(newReceiverType: AstType?) {}
+    override fun replaceDispatchReceiverType(newDispatchReceiverType: AstType?) {}
+
+    override fun replaceExtensionReceiverType(newExtensionReceiverType: AstType?) {}
 
     override fun replaceReturnType(newReturnType: AstType) {
         returnType = newReturnType

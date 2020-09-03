@@ -7,7 +7,6 @@ import com.ivianuu.ast.declarations.AstNamedFunction
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.symbols.AccessorSymbol
 import com.ivianuu.ast.symbols.CallableId
-import com.ivianuu.ast.types.AstTypeProjection
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 

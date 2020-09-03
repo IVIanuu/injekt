@@ -25,7 +25,8 @@ import kotlin.contracts.*
 class AstAnonymousFunctionBuilder : AstFunctionBuilder, AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
-    var receiverType: AstType? = null
+    var dispatchReceiverType: AstType? = null
+    var extensionReceiverType: AstType? = null
     override lateinit var returnType: AstType
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
     override var body: AstBlock? = null
@@ -37,7 +38,8 @@ class AstAnonymousFunctionBuilder : AstFunctionBuilder, AstExpressionBuilder {
         return AstAnonymousFunctionImpl(
             annotations,
             origin,
-            receiverType,
+            dispatchReceiverType,
+            extensionReceiverType,
             returnType,
             valueParameters,
             body,
@@ -66,7 +68,8 @@ inline fun AstAnonymousFunction.copy(init: AstAnonymousFunctionBuilder.() -> Uni
     val copyBuilder = AstAnonymousFunctionBuilder()
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
-    copyBuilder.receiverType = receiverType
+    copyBuilder.dispatchReceiverType = dispatchReceiverType
+    copyBuilder.extensionReceiverType = extensionReceiverType
     copyBuilder.returnType = returnType
     copyBuilder.valueParameters.addAll(valueParameters)
     copyBuilder.body = body

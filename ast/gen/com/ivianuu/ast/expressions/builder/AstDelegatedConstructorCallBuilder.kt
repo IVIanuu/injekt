@@ -8,6 +8,9 @@ import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.builder.AstCallBuilder
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.impl.AstDelegatedConstructorCallImpl
+import com.ivianuu.ast.symbols.AstSymbol
+import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
+import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
@@ -22,6 +25,7 @@ class AstDelegatedConstructorCallBuilder : AstCallBuilder, AstExpressionBuilder 
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var type: AstType
     override val valueArguments: MutableList<AstExpression?> = mutableListOf()
+    lateinit var callee: AstConstructorSymbol
     var dispatchReceiver: AstExpression? = null
     lateinit var kind: AstDelegatedConstructorCallKind
 
@@ -30,6 +34,7 @@ class AstDelegatedConstructorCallBuilder : AstCallBuilder, AstExpressionBuilder 
             annotations,
             type,
             valueArguments,
+            callee,
             dispatchReceiver,
             kind,
         )
@@ -48,6 +53,7 @@ inline fun AstDelegatedConstructorCall.copy(init: AstDelegatedConstructorCallBui
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.type = type
     copyBuilder.valueArguments.addAll(valueArguments)
+    copyBuilder.callee = callee
     copyBuilder.dispatchReceiver = dispatchReceiver
     copyBuilder.kind = kind
     return copyBuilder.apply(init).build()

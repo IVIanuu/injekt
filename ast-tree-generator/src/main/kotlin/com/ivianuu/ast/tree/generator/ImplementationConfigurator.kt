@@ -37,7 +37,8 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         impl(enumEntry) {
             defaultFalse("isVar", withGetter = true)
             defaultNull(
-                "receiverType",
+                "dispatchReceiverType",
+                "extensionReceiverType",
                 "delegate",
                 "getter",
                 "setter",
@@ -46,12 +47,22 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         }
 
         impl(propertyAccessor) {
-            default("receiverType") {
+            default("dispatchReceiverType") {
                 value = "null"
                 withGetter = true
             }
-            useTypes(modalityType)
-            kind = OpenClass
+            default("extensionReceiverType") {
+                value = "null"
+                withGetter = true
+            }
+            default("platformStatus") {
+                value = "PlatformStatus.DEFAULT"
+                withGetter = true
+            }
+            default("typeParameters") {
+                value = "emptyList()"
+                withGetter = true
+            }
         }
 
         impl(thisReference) {
@@ -71,7 +82,8 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
                 "setter",
                 "initializer",
                 "delegate",
-                "receiverType",
+                "dispatchReceiverType",
+                "extensionReceiverType",
                 withGetter = true
             )
         }

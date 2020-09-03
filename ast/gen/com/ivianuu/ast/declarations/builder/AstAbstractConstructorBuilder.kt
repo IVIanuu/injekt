@@ -26,7 +26,8 @@ interface AstAbstractConstructorBuilder : AstFunctionBuilder {
     abstract override var returnType: AstType
     abstract override val valueParameters: MutableList<AstValueParameter>
     abstract override var body: AstBlock?
-    abstract var receiverType: AstType?
+    abstract var dispatchReceiverType: AstType?
+    abstract var extensionReceiverType: AstType?
     abstract var symbol: AstConstructorSymbol
     abstract var delegatedConstructor: AstDelegatedConstructorCall?
     override fun build(): AstConstructor

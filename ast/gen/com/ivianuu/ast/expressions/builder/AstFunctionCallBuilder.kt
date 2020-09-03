@@ -27,8 +27,8 @@ open class AstFunctionCallBuilder : AstBaseQualifiedAccessBuilder, AstCallBuilde
     override val typeArguments: MutableList<AstTypeProjection> = mutableListOf()
     override var dispatchReceiver: AstExpression? = null
     override var extensionReceiver: AstExpression? = null
-    override val valueArguments: MutableList<AstExpression?> = mutableListOf()
     open lateinit var callee: AstFunctionSymbol<*>
+    override val valueArguments: MutableList<AstExpression?> = mutableListOf()
 
     @OptIn(AstImplementationDetail::class)
     override fun build(): AstFunctionCall {
@@ -38,8 +38,8 @@ open class AstFunctionCallBuilder : AstBaseQualifiedAccessBuilder, AstCallBuilde
             typeArguments,
             dispatchReceiver,
             extensionReceiver,
-            valueArguments,
             callee,
+            valueArguments,
         )
     }
 
@@ -58,7 +58,7 @@ inline fun AstFunctionCall.copy(init: AstFunctionCallBuilder.() -> Unit = {}): A
     copyBuilder.typeArguments.addAll(typeArguments)
     copyBuilder.dispatchReceiver = dispatchReceiver
     copyBuilder.extensionReceiver = extensionReceiver
-    copyBuilder.valueArguments.addAll(valueArguments)
     copyBuilder.callee = callee
+    copyBuilder.valueArguments.addAll(valueArguments)
     return copyBuilder.apply(init).build()
 }

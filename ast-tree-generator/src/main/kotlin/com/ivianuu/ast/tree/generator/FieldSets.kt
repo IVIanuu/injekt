@@ -60,8 +60,6 @@ object FieldSets {
 
     val typeField = field(type)
 
-    fun receiverType(nullable: Boolean = false) = field("receiverType", type, nullable)
-
     val valueParameters = fieldList(valueParameter)
 
     val typeParameters = fieldList("typeParameters", typeParameter)

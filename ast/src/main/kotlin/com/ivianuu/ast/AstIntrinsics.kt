@@ -12,17 +12,16 @@ object AstIntrinsics {
     val LessThanEqual = CallableId(Package, "lessThanEqual".nameAsSafeName())
     val GreaterThanEqual = CallableId(Package, "greaterThanEqual".nameAsSafeName())
 
-    val Equal = CallableId(Package, "equal".nameAsSafeName())
-    val NotEqual = CallableId(Package, "notEqual".nameAsSafeName())
-    val Identity = CallableId(Package, "identity".nameAsSafeName())
-    val NotIdentity = CallableId(Package, "notIdentity".nameAsSafeName())
+    val StructuralEqual = CallableId(Package, "structuralEqual".nameAsSafeName())
+    val StructuralNotEqual = CallableId(Package, "structuralNotEqual".nameAsSafeName())
+    val IdentityEqual = CallableId(Package, "identityEqual".nameAsSafeName())
+    val IdentityNotEqual = CallableId(Package, "identityNotEqual".nameAsSafeName())
 
-    val And = CallableId(Package, "andAnd".nameAsSafeName())
-    val Or = CallableId(Package, "orOr".nameAsSafeName())
+    val LazyAnd = CallableId(Package, "lazyAnd".nameAsSafeName())
+    val LazyOr = CallableId(Package, "lazyOr".nameAsSafeName())
 
-    val Is = CallableId(Package, "is".nameAsSafeName())
-    val NotIs = CallableId(Package, "notIs".nameAsSafeName())
-    val As = CallableId(Package, "as".nameAsSafeName())
-    val SafeAs = CallableId(Package, "safeAs".nameAsSafeName())
+    val IsType = CallableId(Package, "isType".nameAsSafeName())
+    val IsNotType = CallableId(Package, "isNotType".nameAsSafeName())
+    val AsType = CallableId(Package, "asType".nameAsSafeName())
+    val SafeAsType = CallableId(Package, "safeAsType".nameAsSafeName())
 }
-

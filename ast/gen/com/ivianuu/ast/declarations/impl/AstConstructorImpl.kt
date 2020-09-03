@@ -20,7 +20,8 @@ import com.ivianuu.ast.visitors.*
 internal class AstConstructorImpl(
     override val annotations: MutableList<AstFunctionCall>,
     override val origin: AstDeclarationOrigin,
-    override var receiverType: AstType?,
+    override var dispatchReceiverType: AstType?,
+    override var extensionReceiverType: AstType?,
     override var returnType: AstType,
     override val valueParameters: MutableList<AstValueParameter>,
     override var symbol: AstConstructorSymbol,
@@ -36,7 +37,8 @@ internal class AstConstructorImpl(
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
-        receiverType?.accept(visitor, data)
+        dispatchReceiverType?.accept(visitor, data)
+        extensionReceiverType?.accept(visitor, data)
         returnType.accept(visitor, data)
         valueParameters.forEach { it.accept(visitor, data) }
         delegatedConstructor?.accept(visitor, data)
@@ -45,7 +47,8 @@ internal class AstConstructorImpl(
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstConstructorImpl {
         annotations.transformInplace(transformer, data)
-        receiverType = receiverType?.transformSingle(transformer, data)
+        dispatchReceiverType = dispatchReceiverType?.transformSingle(transformer, data)
+        extensionReceiverType = extensionReceiverType?.transformSingle(transformer, data)
         returnType = returnType.transformSingle(transformer, data)
         valueParameters.transformInplace(transformer, data)
         delegatedConstructor = delegatedConstructor?.transformSingle(transformer, data)
@@ -58,8 +61,12 @@ internal class AstConstructorImpl(
         annotations.addAll(newAnnotations)
     }
 
-    override fun replaceReceiverType(newReceiverType: AstType?) {
-        receiverType = newReceiverType
+    override fun replaceDispatchReceiverType(newDispatchReceiverType: AstType?) {
+        dispatchReceiverType = newDispatchReceiverType
+    }
+
+    override fun replaceExtensionReceiverType(newExtensionReceiverType: AstType?) {
+        extensionReceiverType = newExtensionReceiverType
     }
 
     override fun replaceReturnType(newReturnType: AstType) {

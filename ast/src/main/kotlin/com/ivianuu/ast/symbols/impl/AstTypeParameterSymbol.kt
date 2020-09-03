@@ -6,6 +6,5 @@
 package com.ivianuu.ast.symbols.impl
 
 import com.ivianuu.ast.declarations.AstTypeParameter
-import org.jetbrains.kotlin.name.Name
 
 class AstTypeParameterSymbol : AstClassifierSymbol<AstTypeParameter>()

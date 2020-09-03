@@ -20,8 +20,8 @@ open class AstFunctionCallImpl @AstImplementationDetail constructor(
     override val typeArguments: MutableList<AstTypeProjection>,
     override var dispatchReceiver: AstExpression?,
     override var extensionReceiver: AstExpression?,
-    override val valueArguments: MutableList<AstExpression?>,
     override var callee: AstFunctionSymbol<*>,
+    override val valueArguments: MutableList<AstExpression?>,
 ) : AstFunctionCall() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
@@ -60,11 +60,6 @@ open class AstFunctionCallImpl @AstImplementationDetail constructor(
         extensionReceiver = newExtensionReceiver
     }
 
-    override fun replaceValueArguments(newValueArguments: List<AstExpression?>) {
-        valueArguments.clear()
-        valueArguments.addAll(newValueArguments)
-    }
-
     override fun replaceCallee(newCallee: AstFunctionSymbol<*>) {
         callee = newCallee
     }
@@ -72,5 +67,10 @@ open class AstFunctionCallImpl @AstImplementationDetail constructor(
     override fun replaceCallee(newCallee: AstSymbol<*>) {
         require(newCallee is AstFunctionSymbol<*>)
         replaceCallee(newCallee)
+    }
+
+    override fun replaceValueArguments(newValueArguments: List<AstExpression?>) {
+        valueArguments.clear()
+        valueArguments.addAll(newValueArguments)
     }
 }

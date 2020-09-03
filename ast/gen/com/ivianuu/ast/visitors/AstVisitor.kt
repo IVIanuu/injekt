@@ -46,6 +46,7 @@ import com.ivianuu.ast.expressions.AstConst
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstStarProjection
 import com.ivianuu.ast.types.AstTypeProjectionWithVariance
+import com.ivianuu.ast.expressions.AstCalleeReference
 import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstWhen
 import com.ivianuu.ast.expressions.AstWhenBranch
@@ -164,7 +165,9 @@ abstract class AstVisitor<out R, in D> {
 
     open fun visitTypeProjectionWithVariance(typeProjectionWithVariance: AstTypeProjectionWithVariance, data: D): R  = visitTypeProjection(typeProjectionWithVariance, data)
 
-    open fun visitCall(call: AstCall, data: D): R  = visitExpression(call, data)
+    open fun visitCalleeReference(calleeReference: AstCalleeReference, data: D): R  = visitExpression(calleeReference, data)
+
+    open fun visitCall(call: AstCall, data: D): R  = visitCalleeReference(call, data)
 
     open fun visitWhen(whenExpression: AstWhen, data: D): R  = visitExpression(whenExpression, data)
 

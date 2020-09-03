@@ -20,7 +20,8 @@ abstract class AstProperty : AstVariable<AstProperty>, AstTypeParametersOwner, A
     abstract override val annotations: List<AstFunctionCall>
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
-    abstract override val receiverType: AstType?
+    abstract override val dispatchReceiverType: AstType?
+    abstract override val extensionReceiverType: AstType?
     abstract override val returnType: AstType
     abstract override val name: Name
     abstract override val initializer: AstExpression?
@@ -33,17 +34,19 @@ abstract class AstProperty : AstVariable<AstProperty>, AstTypeParametersOwner, A
     abstract override val modality: Modality
     abstract override val platformStatus: PlatformStatus
     abstract override val symbol: AstPropertySymbol
-    abstract val hasBackingField: Boolean
     abstract val isLocal: Boolean
     abstract val isInline: Boolean
     abstract val isConst: Boolean
     abstract val isLateinit: Boolean
+    abstract val isExternal: Boolean
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitProperty(this, data)
 
     abstract override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
 
-    abstract override fun replaceReceiverType(newReceiverType: AstType?)
+    abstract override fun replaceDispatchReceiverType(newDispatchReceiverType: AstType?)
+
+    abstract override fun replaceExtensionReceiverType(newExtensionReceiverType: AstType?)
 
     abstract override fun replaceReturnType(newReturnType: AstType)
 
@@ -65,8 +68,6 @@ abstract class AstProperty : AstVariable<AstProperty>, AstTypeParametersOwner, A
 
     abstract override fun replacePlatformStatus(newPlatformStatus: PlatformStatus)
 
-    abstract fun replaceHasBackingField(newHasBackingField: Boolean)
-
     abstract fun replaceIsLocal(newIsLocal: Boolean)
 
     abstract fun replaceIsInline(newIsInline: Boolean)
@@ -74,4 +75,6 @@ abstract class AstProperty : AstVariable<AstProperty>, AstTypeParametersOwner, A
     abstract fun replaceIsConst(newIsConst: Boolean)
 
     abstract fun replaceIsLateinit(newIsLateinit: Boolean)
+
+    abstract fun replaceIsExternal(newIsExternal: Boolean)
 }

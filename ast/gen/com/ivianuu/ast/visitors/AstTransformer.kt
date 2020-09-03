@@ -46,6 +46,7 @@ import com.ivianuu.ast.expressions.AstConst
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstStarProjection
 import com.ivianuu.ast.types.AstTypeProjectionWithVariance
+import com.ivianuu.ast.expressions.AstCalleeReference
 import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstWhen
 import com.ivianuu.ast.expressions.AstWhenBranch
@@ -256,8 +257,12 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformTypeProjection(typeProjectionWithVariance, data)
     }
 
+    open fun transformCalleeReference(calleeReference: AstCalleeReference, data: D): CompositeTransformResult<AstStatement> {
+        return transformExpression(calleeReference, data)
+    }
+
     open fun transformCall(call: AstCall, data: D): CompositeTransformResult<AstStatement> {
-        return transformExpression(call, data)
+        return transformCalleeReference(call, data)
     }
 
     open fun transformWhen(whenExpression: AstWhen, data: D): CompositeTransformResult<AstStatement> {
@@ -514,6 +519,10 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     final override fun visitTypeProjectionWithVariance(typeProjectionWithVariance: AstTypeProjectionWithVariance, data: D): CompositeTransformResult<AstTypeProjection> {
         return transformTypeProjectionWithVariance(typeProjectionWithVariance, data)
+    }
+
+    final override fun visitCalleeReference(calleeReference: AstCalleeReference, data: D): CompositeTransformResult<AstStatement> {
+        return transformCalleeReference(calleeReference, data)
     }
 
     final override fun visitCall(call: AstCall, data: D): CompositeTransformResult<AstStatement> {
