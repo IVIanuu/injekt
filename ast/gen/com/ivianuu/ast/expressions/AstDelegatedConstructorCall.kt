@@ -11,7 +11,7 @@ import com.ivianuu.ast.visitors.*
 abstract class AstDelegatedConstructorCall : AstCall() {
     abstract override val annotations: List<AstFunctionCall>
     abstract override val type: AstType
-    abstract override val valueArguments: List<AstExpression>
+    abstract override val valueArguments: List<AstExpression?>
     abstract val dispatchReceiver: AstExpression?
     abstract val kind: AstDelegatedConstructorCallKind
 
@@ -21,7 +21,7 @@ abstract class AstDelegatedConstructorCall : AstCall() {
 
     abstract override fun replaceType(newType: AstType)
 
-    abstract override fun replaceValueArguments(newValueArguments: List<AstExpression>)
+    abstract override fun replaceValueArguments(newValueArguments: List<AstExpression?>)
 
     abstract fun replaceDispatchReceiver(newDispatchReceiver: AstExpression?)
 

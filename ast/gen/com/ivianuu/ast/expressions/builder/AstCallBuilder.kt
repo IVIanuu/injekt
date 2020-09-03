@@ -16,7 +16,7 @@ import com.ivianuu.ast.visitors.*
 interface AstCallBuilder {
     abstract val annotations: MutableList<AstFunctionCall>
     abstract var type: AstType
-    abstract val valueArguments: MutableList<AstExpression>
+    abstract val valueArguments: MutableList<AstExpression?>
 
     fun build(): AstCall
 }

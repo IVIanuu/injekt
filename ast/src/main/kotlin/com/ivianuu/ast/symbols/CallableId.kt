@@ -40,6 +40,8 @@ data class CallableId(
 
     constructor(packageName: FqName, callableName: Name) : this(packageName, null, callableName)
 
+    constructor(fqName: FqName) : this(fqName.parent(), null, fqName.shortName())
+
     constructor(
         callableName: Name,
         // Currently, it's only used for debug info

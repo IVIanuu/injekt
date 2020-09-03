@@ -50,6 +50,7 @@ import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstWhen
 import com.ivianuu.ast.expressions.AstWhenBranch
 import com.ivianuu.ast.expressions.AstClassReference
+import com.ivianuu.ast.expressions.AstBaseQualifiedAccess
 import com.ivianuu.ast.expressions.AstQualifiedAccess
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
@@ -271,12 +272,16 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformExpression(classReference, data)
     }
 
+    open fun transformBaseQualifiedAccess(baseQualifiedAccess: AstBaseQualifiedAccess, data: D): CompositeTransformResult<AstStatement> {
+        return transformExpression(baseQualifiedAccess, data)
+    }
+
     open fun transformQualifiedAccess(qualifiedAccess: AstQualifiedAccess, data: D): CompositeTransformResult<AstStatement> {
-        return transformExpression(qualifiedAccess, data)
+        return transformBaseQualifiedAccess(qualifiedAccess, data)
     }
 
     open fun transformFunctionCall(functionCall: AstFunctionCall, data: D): CompositeTransformResult<AstStatement> {
-        return transformQualifiedAccess(functionCall, data)
+        return transformBaseQualifiedAccess(functionCall, data)
     }
 
     open fun transformDelegatedConstructorCall(delegatedConstructorCall: AstDelegatedConstructorCall, data: D): CompositeTransformResult<AstStatement> {
@@ -284,7 +289,7 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
     }
 
     open fun transformCallableReference(callableReference: AstCallableReference, data: D): CompositeTransformResult<AstStatement> {
-        return transformQualifiedAccess(callableReference, data)
+        return transformBaseQualifiedAccess(callableReference, data)
     }
 
     open fun transformVararg(vararg: AstVararg, data: D): CompositeTransformResult<AstStatement> {
@@ -304,7 +309,7 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
     }
 
     open fun transformVariableAssignment(variableAssignment: AstVariableAssignment, data: D): CompositeTransformResult<AstStatement> {
-        return transformQualifiedAccess(variableAssignment, data)
+        return transformBaseQualifiedAccess(variableAssignment, data)
     }
 
     open fun transformSuperReference(superReference: AstSuperReference, data: D): CompositeTransformResult<AstStatement> {
@@ -525,6 +530,10 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     final override fun visitClassReference(classReference: AstClassReference, data: D): CompositeTransformResult<AstStatement> {
         return transformClassReference(classReference, data)
+    }
+
+    final override fun visitBaseQualifiedAccess(baseQualifiedAccess: AstBaseQualifiedAccess, data: D): CompositeTransformResult<AstStatement> {
+        return transformBaseQualifiedAccess(baseQualifiedAccess, data)
     }
 
     final override fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess, data: D): CompositeTransformResult<AstStatement> {

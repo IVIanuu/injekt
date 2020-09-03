@@ -34,6 +34,27 @@ fun <T : AstElement, D> MutableList<T>.transformInplace(transformer: AstTransfor
     }
 }
 
+fun <T : AstElement, D> MutableList<T?>.transformInplaceNullable(transformer: AstTransformer<D>, data: D) {
+    val iterator = this.listIterator()
+    while (iterator.hasNext()) {
+        val next = iterator.next() as? AstPureAbstractElement
+        val result = next?.transform<T, D>(transformer, data) ?: continue
+        if (result.isSingle) {
+            iterator.set(result.single)
+        } else {
+            val resultIterator = result.list.listIterator()
+            if (!resultIterator.hasNext()) {
+                iterator.remove()
+            } else {
+                iterator.set(resultIterator.next())
+            }
+            while (resultIterator.hasNext()) {
+                iterator.add(resultIterator.next())
+            }
+        }
+    }
+}
+
 sealed class TransformData<out D> {
     class Data<D>(val value: D) : TransformData<D>()
     object Nothing : TransformData<kotlin.Nothing>()
@@ -47,6 +68,23 @@ inline fun <T : AstElement, D> MutableList<T>.transformInplace(
     var index = 0
     while (iterator.hasNext()) {
         val next = iterator.next() as AstPureAbstractElement
+        val data = when (val data = dataProducer(index++)) {
+            is TransformData.Data<D> -> data.value
+            TransformData.Nothing -> continue
+        }
+        val result = next.transform<T, D>(transformer, data).single
+        iterator.set(result)
+    }
+}
+
+inline fun <T : AstElement, D> MutableList<T?>.transformInplaceNullable(
+    transformer: AstTransformer<D>,
+    dataProducer: (Int) -> TransformData<D>
+) {
+    val iterator = this.listIterator()
+    var index = 0
+    while (iterator.hasNext()) {
+        val next = iterator.next() as? AstPureAbstractElement ?: continue
         val data = when (val data = dataProducer(index++)) {
             is TransformData.Data<D> -> data.value
             TransformData.Nothing -> continue

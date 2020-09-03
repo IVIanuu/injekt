@@ -30,7 +30,7 @@ object FieldSets {
     val typeArguments = fieldList("typeArguments", typeProjection)
 
     val valueArguments =
-        fieldList("valueArguments", expression)
+        fieldList("valueArguments", expression, nullableBaseType = true)
 
     val declarations = fieldList(declaration)
     val files = fieldList(file)

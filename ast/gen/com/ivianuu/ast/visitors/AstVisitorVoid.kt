@@ -50,6 +50,7 @@ import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstWhen
 import com.ivianuu.ast.expressions.AstWhenBranch
 import com.ivianuu.ast.expressions.AstClassReference
+import com.ivianuu.ast.expressions.AstBaseQualifiedAccess
 import com.ivianuu.ast.expressions.AstQualifiedAccess
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
@@ -267,6 +268,10 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     open fun visitClassReference(classReference: AstClassReference) {
         visitElement(classReference)
+    }
+
+    open fun visitBaseQualifiedAccess(baseQualifiedAccess: AstBaseQualifiedAccess) {
+        visitElement(baseQualifiedAccess)
     }
 
     open fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess) {
@@ -523,6 +528,10 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     final override fun visitClassReference(classReference: AstClassReference, data: Nothing?) {
         visitClassReference(classReference)
+    }
+
+    final override fun visitBaseQualifiedAccess(baseQualifiedAccess: AstBaseQualifiedAccess, data: Nothing?) {
+        visitBaseQualifiedAccess(baseQualifiedAccess)
     }
 
     final override fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess, data: Nothing?) {

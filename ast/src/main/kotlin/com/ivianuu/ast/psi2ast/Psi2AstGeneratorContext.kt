@@ -11,5 +11,7 @@ class Psi2AstGeneratorContext(
     val bindingContext: BindingContext,
     val kotlinBuiltIns: KotlinBuiltIns,
     val typeConverter: TypeConverter,
+    val symbolTable: DescriptorSymbolTable,
+    val constantValueGenerator: ConstantValueGenerator,
     override val builtIns: AstBuiltIns
 ) : AstGeneratorContext

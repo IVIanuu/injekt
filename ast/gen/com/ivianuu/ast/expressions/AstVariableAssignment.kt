@@ -12,7 +12,7 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstVariableAssignment : AstPureAbstractElement(), AstQualifiedAccess {
+abstract class AstVariableAssignment : AstPureAbstractElement(), AstBaseQualifiedAccess {
     abstract override val annotations: List<AstFunctionCall>
     abstract override val type: AstType
     abstract override val typeArguments: List<AstTypeProjection>

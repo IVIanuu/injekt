@@ -15,20 +15,20 @@ import com.ivianuu.ast.visitors.*
 internal class AstDelegatedConstructorCallImpl(
     override val annotations: MutableList<AstFunctionCall>,
     override var type: AstType,
-    override val valueArguments: MutableList<AstExpression>,
+    override val valueArguments: MutableList<AstExpression?>,
     override var dispatchReceiver: AstExpression?,
     override var kind: AstDelegatedConstructorCallKind,
 ) : AstDelegatedConstructorCall() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
         type.accept(visitor, data)
-        valueArguments.forEach { it.accept(visitor, data) }
+        valueArguments.forEach { it?.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstDelegatedConstructorCallImpl {
         annotations.transformInplace(transformer, data)
         type = type.transformSingle(transformer, data)
-        valueArguments.transformInplace(transformer, data)
+        valueArguments.transformInplaceNullable(transformer, data)
         return this
     }
 
@@ -41,7 +41,7 @@ internal class AstDelegatedConstructorCallImpl(
         type = newType
     }
 
-    override fun replaceValueArguments(newValueArguments: List<AstExpression>) {
+    override fun replaceValueArguments(newValueArguments: List<AstExpression?>) {
         valueArguments.clear()
         valueArguments.addAll(newValueArguments)
     }

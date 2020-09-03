@@ -2,10 +2,8 @@ package com.ivianuu.ast.ast2string
 
 import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.AstElement
-import com.ivianuu.ast.Visibilities
-import com.ivianuu.ast.Visibility
+import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.declarations.*
-import com.ivianuu.ast.expressions.*
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.symbols.impl.AstTypeParameterSymbol
 import com.ivianuu.ast.types.AstSimpleType
@@ -15,7 +13,6 @@ import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstTypeProjectionWithVariance
 import com.ivianuu.ast.visitors.AstVisitorVoid
 import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.utils.Printer
@@ -37,10 +34,7 @@ fun AstElement.toKotlinSourceString(): String {
 
 private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
 
-    override fun visitElement(element: AstElement) {
-    }
 
-    /*
     private val printer = Printer(out, "%tab%")
     private fun emit(value: Any?) {
         printer.print(value)
@@ -78,9 +72,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         emitLine("}")
     }
 
-    private var currentFile: AstFile? = null
-
-    private val uniqueNameByElement =
+    /*private val uniqueNameByElement =
         mutableMapOf<AstElement, String>()
     private val existingNames = mutableSetOf<String>()
     private fun AstElement.uniqueName(): String {
@@ -98,20 +90,17 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
             existingNames += name
             return@getOrPut name
         }
-    }
+    }*/
 
     override fun visitElement(element: AstElement) {
         error("Unhandled $element")
     }
 
-    override fun visitFile(file: AstFile) {
-        val previousFile = currentFile
-        currentFile = file
-        if (file.packageFqName != FqName.ROOT)
-            emitLine("package ${file.packageFqName}")
+    override fun visitFile(file: AstFile) = with(file) {
+        if (packageFqName != FqName.ROOT) emitLine("package $packageFqName")
 
         val imports = mutableSetOf<FqName>()
-        file.accept(
+        accept(
             object : AstVisitorVoid() {
                 override fun visitElement(element: AstElement) {
                     element.acceptChildren(this)
@@ -132,67 +121,55 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         if (imports.isNotEmpty()) {
             emitLine()
             imports
-                .filterNot { it.parent().isRoot || it.parent() == file.packageFqName }
+                .filterNot { it.parent().isRoot || it.parent() == packageFqName }
                 .forEach { emitLine("import $it") }
         }
 
-        if (file.declarations.isNotEmpty()) emitLine()
+        if (declarations.isNotEmpty()) emitLine()
 
-        file.emitDeclarations()
-
-        currentFile = previousFile
+        emitDeclarations()
     }
 
-    override fun <F : AstClass<F>> visitClass(klass: AstClass<F>) {
-        super.visitClass(klass)
-        klass.emitAnnotations()
-        if (klass is AstRegularClass) {
-            if (klass.visibility != Visibilities.Local &&
-                klass.classKind != ClassKind.ENUM_ENTRY
-            ) klass.emitVisibility()
-        }
-        if (klass.classKind != AstClass.Kind.ENUM_ENTRY) klass.emitExpectActual()
-        if (klass.classKind != ClassKind.INTERFACE &&
-            klass.classKind != ClassKind.ENUM_CLASS &&
-            klass.classKind != ClassKind.ENUM_ENTRY &&
-            klass.visibility != AstVisibility.LOCAL
-        ) klass.emitModality()
-        if (klass.isFun) {
+    override fun visitRegularClass(regularClass: AstRegularClass) = with(regularClass) {
+        emitAnnotations()
+        emitVisibility()
+        emitPlatformStatus()
+        if (classKind != ClassKind.ANNOTATION_CLASS) emitModality()
+        if (isFun) {
             emit("fun ")
         }
-        if (klass.isData) {
+        if (isData) {
             emit("data ")
         }
-        if (klass.isInner) {
+        if (isInner) {
             emit("inner ")
         }
-        if (klass.isExternal) {
+        if (isExternal) {
             emit("external ")
         }
-        when (klass.kind) {
-            AstClass.Kind.CLASS -> emit("class ")
-            AstClass.Kind.INTERFACE -> emit("interface ")
-            AstClass.Kind.ENUM_CLASS -> emit("enum class ")
-            AstClass.Kind.ENUM_ENTRY -> emit("")
-            AstClass.Kind.ANNOTATION -> emit("annotation class ")
-            AstClass.Kind.OBJECT, AstClass.Kind.ANONYMOUS_OBJECT -> {
-                if (klass.isCompanion) emit("companion ")
+        when (classKind) {
+            ClassKind.CLASS -> emit("class ")
+            ClassKind.INTERFACE -> emit("interface ")
+            ClassKind.ENUM_CLASS -> emit("enum class ")
+            ClassKind.ENUM_ENTRY -> {} // enum entry is modelled a a separate element
+            ClassKind.ANNOTATION_CLASS -> emit("annotation class ")
+            ClassKind.OBJECT -> {
+                if (isCompanion) emit("companion ")
                 emit("object ")
             }
         }.let { }
-        if (!klass.name.isSpecial) emit("${klass.name}")
+        if (!name.isSpecial) emit("${name}")
 
-        if (klass.typeParameters.isNotEmpty()) {
-            klass.typeParameters.emitList()
+        if (typeParameters.isNotEmpty()) {
+            typeParameters.emitList()
             emitSpace()
         }
 
-        val primaryConstructor = klass.primaryConstructor
+        val primaryConstructor = declarations
+            .filterIsInstance<AstConstructor>()
+            .singleOrNull { it.isPrimary }
 
-        if (primaryConstructor != null &&
-            klass.kind != AstClass.Kind.OBJECT &&
-            klass.kind != AstClass.Kind.ANONYMOUS_OBJECT
-        ) {
+        if (primaryConstructor != null) {
             emit("(")
             primaryConstructor.valueParameters.forEachIndexed { index, valueParameter ->
                 valueParameter.emit()
@@ -201,19 +178,17 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
             emit(") ")
         }
 
-        klass.typeParameters.emitWhere()
+        typeParameters.emitWhere()
 
-        val declarationsExceptPrimaryConstructor = klass.declarations
+        val declarationsExceptPrimaryConstructor = declarations
             .filter { it != primaryConstructor }
 
-        if (declarationsExceptPrimaryConstructor.isNotEmpty() ||
-            klass.kind == AstClass.Kind.ANONYMOUS_OBJECT
-        ) {
+        if (declarationsExceptPrimaryConstructor.isNotEmpty()) {
             emitSpace()
 
             bracedBlock {
                 val (enumEntryDeclarations, otherDeclarations) = declarationsExceptPrimaryConstructor
-                    .partition { it is AstClass && it.kind == AstClass.Kind.ENUM_ENTRY }
+                    .partition { it is AstEnumEntry }
 
                 enumEntryDeclarations.forEachIndexed { index, declaration ->
                     declaration.emit()
@@ -234,7 +209,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         emitLine()
     }
 
-    override fun visitFunction(function: AstFunction) {
+    /*override fun visitFunction(function: AstFunction) {
         function.emitAnnotations()
 
         if (function.kind != AstFunction.Kind.ANONYMOUS_FUNCTION) {
@@ -375,7 +350,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         bracedBlock(header = "init") {
             anonymousInitializer.body.emit()
         }
-    }
+    }*/
 
     override fun visitTypeParameter(typeParameter: AstTypeParameter) {
         typeParameter.emit(null)
@@ -396,7 +371,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         if (isNotEmpty()) {
             emit("where ")
             val typeParametersWithSuperTypes = flatMap { typeParameter ->
-                typeParameter.superTypes
+                typeParameter.bounds
                     .map { typeParameter to it }
             }
 
@@ -419,7 +394,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         }
     }
 
-    override fun visitValueParameter(valueParameter: AstValueParameter) {
+    /*override fun visitValueParameter(valueParameter: AstValueParameter) {
         valueParameter.emitAnnotations()
         if (valueParameter.isVararg) {
             emit("vararg ")
@@ -677,20 +652,21 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         emit("throw ")
         astThrow.expression.emit()
     }
+     */
 
-    private fun AstDeclarationWithVisibility.emitVisibility(emitSpace: Boolean = true) {
+    private fun AstMemberDeclaration.emitVisibility(emitSpace: Boolean = true) {
         emit(visibility.name.toLowerCase())
         if (emitSpace) emitSpace()
     }
 
-    private fun AstDeclarationWithExpectActual.emitExpectActual(emitSpace: Boolean = true) {
-        if (expectActual != null) {
-            emit(expectActual!!.name.toLowerCase())
+    private fun AstMemberDeclaration.emitPlatformStatus(emitSpace: Boolean = true) {
+        if (platformStatus != PlatformStatus.DEFAULT) {
+            emit(platformStatus.name.toLowerCase())
             if (emitSpace) emitSpace()
         }
     }
 
-    private fun Modality.emitModality(emitSpace: Boolean = true) {
+    private fun AstMemberDeclaration.emitModality(emitSpace: Boolean = true) {
         emit(modality.name.toLowerCase())
         if (emitSpace) emitSpace()
     }
@@ -738,6 +714,6 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
             }
             else -> error("Unexpected type argument $this")
         }
-    }*/
+    }
 
 }

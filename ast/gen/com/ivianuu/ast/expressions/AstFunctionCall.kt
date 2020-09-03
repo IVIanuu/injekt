@@ -11,13 +11,13 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstFunctionCall : AstQualifiedAccess, AstCall() {
+abstract class AstFunctionCall : AstBaseQualifiedAccess, AstCall() {
     abstract override val annotations: List<AstFunctionCall>
     abstract override val type: AstType
     abstract override val typeArguments: List<AstTypeProjection>
     abstract override val dispatchReceiver: AstExpression?
     abstract override val extensionReceiver: AstExpression?
-    abstract override val valueArguments: List<AstExpression>
+    abstract override val valueArguments: List<AstExpression?>
     abstract override val callee: AstFunctionSymbol<*>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitFunctionCall(this, data)
@@ -32,7 +32,7 @@ abstract class AstFunctionCall : AstQualifiedAccess, AstCall() {
 
     abstract override fun replaceExtensionReceiver(newExtensionReceiver: AstExpression?)
 
-    abstract override fun replaceValueArguments(newValueArguments: List<AstExpression>)
+    abstract override fun replaceValueArguments(newValueArguments: List<AstExpression?>)
 
     abstract fun replaceCallee(newCallee: AstFunctionSymbol<*>)
 

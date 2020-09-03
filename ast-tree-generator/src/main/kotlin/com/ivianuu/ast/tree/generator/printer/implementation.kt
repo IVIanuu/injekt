@@ -35,7 +35,11 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
                 println("$name = ${name}${call()}transformSingle(transformer, data)")
 
             is FieldList -> {
-                println("${name}.transformInplace(transformer, data)")
+                if (nullableBaseType) {
+                    println("${name}.transformInplaceNullable(transformer, data)")
+                } else {
+                    println("${name}.transformInplace(transformer, data)")
+                }
             }
 
             else -> throw IllegalStateException()
@@ -159,7 +163,11 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
                                             }
 
                                             is FieldList -> {
-                                                println("${field.name}.forEach { it.accept(visitor, data) }")
+                                                if (field.origin.nullableBaseType) {
+                                                    println("${field.name}.forEach { it?.accept(visitor, data) }")
+                                                } else {
+                                                    println("${field.name}.forEach { it.accept(visitor, data) }")
+                                                }
                                             }
 
                                             else -> throw IllegalStateException()

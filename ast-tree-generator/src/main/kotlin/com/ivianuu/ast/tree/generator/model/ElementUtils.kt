@@ -94,12 +94,12 @@ fun field(element: Element, nullable: Boolean = false, withReplace: Boolean = tr
     return AstField(element.name.decapitalize(), element, nullable, withReplace)
 }
 
-fun fieldList(name: String, type: Importable, withReplace: Boolean = true): Field {
-    return FieldList(name, type, withReplace)
+fun fieldList(name: String, type: Importable, withReplace: Boolean = true, nullableBaseType: Boolean = false): Field {
+    return FieldList(name, type, withReplace, nullableBaseType)
 }
 
-fun fieldList(element: Element, withReplace: Boolean = true): Field {
-    return FieldList(element.name.decapitalize() + "s", element, withReplace)
+fun fieldList(element: Element, withReplace: Boolean = true, nullableBaseType: Boolean = false): Field {
+    return FieldList(element.name.decapitalize() + "s", element, withReplace, nullableBaseType)
 }
 
 typealias FieldSet = List<Field>

@@ -21,7 +21,7 @@ import kotlin.contracts.*
 class AstDelegatedConstructorCallBuilder : AstCallBuilder, AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var type: AstType
-    override val valueArguments: MutableList<AstExpression> = mutableListOf()
+    override val valueArguments: MutableList<AstExpression?> = mutableListOf()
     var dispatchReceiver: AstExpression? = null
     lateinit var kind: AstDelegatedConstructorCallKind
 

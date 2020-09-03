@@ -54,8 +54,8 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             openBuilder()
         }
 
-        val qualifiedAccessBuilder by builder {
-            fields from qualifiedAccess without listOf("callee")
+        val baseQualifiedAccessBuilder by builder {
+            fields from baseQualifiedAccess without listOf("callee")
         }
 
         val callBuilder by builder {
@@ -111,7 +111,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         }
 
         builder(callableReference) {
-            parents += qualifiedAccessBuilder
+            parents += baseQualifiedAccessBuilder
             defaultNoReceivers()
             defaultFalse("hasQuestionMarkAtLHS")
         }
@@ -132,14 +132,14 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         }
 
         builder(functionCall) {
-            parents += qualifiedAccessBuilder
+            parents += baseQualifiedAccessBuilder
             parents += callBuilder
             defaultNoReceivers()
             openBuilder()
         }
 
         builder(qualifiedAccess) {
-            parents += qualifiedAccessBuilder
+            parents += baseQualifiedAccessBuilder
             defaultNoReceivers()
         }
 
@@ -156,7 +156,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         }
 
         builder(variableAssignment) {
-            parents += qualifiedAccessBuilder
+            parents += baseQualifiedAccessBuilder
             defaultNoReceivers()
         }
 

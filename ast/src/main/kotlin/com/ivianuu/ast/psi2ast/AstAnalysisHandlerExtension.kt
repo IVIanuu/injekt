@@ -85,13 +85,15 @@ class AstAnalysisHandlerExtension(
         files: List<KtFile>
     ): List<KtFile> {
         val symbolTable = DescriptorSymbolTable()
-        val typeConverter = TypeConverter(AnnotationGenerator(), symbolTable)
+        val typeConverter = TypeConverter(symbolTable)
+            .also { it.constantValueGenerator = ConstantValueGenerator(module, it) }
         val builtIns = AstBuiltIns(module.builtIns, typeConverter, symbolTable)
         val context = Psi2AstGeneratorContext(
             module,
             bindingTrace.bindingContext,
             module.builtIns,
             typeConverter,
+            symbolTable,
             builtIns
         )
         val generator = Psi2AstTranslator(context)

@@ -12,7 +12,7 @@ import com.ivianuu.ast.visitors.*
 abstract class AstCall : AstPureAbstractElement(), AstExpression {
     abstract override val annotations: List<AstFunctionCall>
     abstract override val type: AstType
-    abstract val valueArguments: List<AstExpression>
+    abstract val valueArguments: List<AstExpression?>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitCall(this, data)
 
@@ -20,5 +20,5 @@ abstract class AstCall : AstPureAbstractElement(), AstExpression {
 
     abstract override fun replaceType(newType: AstType)
 
-    abstract fun replaceValueArguments(newValueArguments: List<AstExpression>)
+    abstract fun replaceValueArguments(newValueArguments: List<AstExpression?>)
 }

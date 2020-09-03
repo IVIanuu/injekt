@@ -1,89 +1,59 @@
 package com.ivianuu.ast.psi2ast
 
 import com.ivianuu.ast.AstElement
+import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstFunction
+import com.ivianuu.ast.declarations.builder.buildConstructor
 import com.ivianuu.ast.declarations.builder.buildFile
+import com.ivianuu.ast.declarations.builder.buildRegularClass
+import com.ivianuu.ast.expressions.AstBlock
+import com.ivianuu.ast.expressions.AstDelegatedConstructorCallKind
+import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstLoop
-import com.ivianuu.ast.extension.AstGeneratorContext
+import com.ivianuu.ast.expressions.builder.buildBlock
+import com.ivianuu.ast.expressions.builder.buildDelegatedConstructorCall
+import com.ivianuu.ast.expressions.builder.buildReturn
+import com.ivianuu.ast.symbols.CallableId
+import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
-import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
-import org.jetbrains.kotlin.descriptors.VariableDescriptor
-import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.js.translate.callTranslator.getReturnType
 import org.jetbrains.kotlin.lexer.KtTokens
-import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi.KtAnnotationEntry
-import org.jetbrains.kotlin.psi.KtAnonymousInitializer
 import org.jetbrains.kotlin.psi.KtBinaryExpression
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtBreakExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstantExpression
+import org.jetbrains.kotlin.psi.KtConstructor
+import org.jetbrains.kotlin.psi.KtConstructorDelegationCall
 import org.jetbrains.kotlin.psi.KtContinueExpression
-import org.jetbrains.kotlin.psi.KtDestructuringDeclaration
 import org.jetbrains.kotlin.psi.KtDoWhileExpression
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtElement
-import org.jetbrains.kotlin.psi.KtEscapeStringTemplateEntry
 import org.jetbrains.kotlin.psi.KtExpression
-import org.jetbrains.kotlin.psi.KtExpressionWithLabel
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtForExpression
-import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtIfExpression
-import org.jetbrains.kotlin.psi.KtLabeledExpression
-import org.jetbrains.kotlin.psi.KtLambdaExpression
-import org.jetbrains.kotlin.psi.KtLiteralStringTemplateEntry
 import org.jetbrains.kotlin.psi.KtLoopExpression
-import org.jetbrains.kotlin.psi.KtNamedFunction
-import org.jetbrains.kotlin.psi.KtObjectLiteralExpression
-import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtPrimaryConstructor
-import org.jetbrains.kotlin.psi.KtProperty
-import org.jetbrains.kotlin.psi.KtPropertyAccessor
-import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtReturnExpression
 import org.jetbrains.kotlin.psi.KtSafeQualifiedExpression
 import org.jetbrains.kotlin.psi.KtSecondaryConstructor
-import org.jetbrains.kotlin.psi.KtStringTemplateEntryWithExpression
-import org.jetbrains.kotlin.psi.KtStringTemplateExpression
-import org.jetbrains.kotlin.psi.KtThisExpression
 import org.jetbrains.kotlin.psi.KtThrowExpression
 import org.jetbrains.kotlin.psi.KtTryExpression
-import org.jetbrains.kotlin.psi.KtTypeAlias
-import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.KtVisitor
 import org.jetbrains.kotlin.psi.KtWhileExpression
 import org.jetbrains.kotlin.psi.KtWhileExpressionBase
-import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
 import org.jetbrains.kotlin.psi2ir.deparenthesize
-import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.BindingContextUtils
-import org.jetbrains.kotlin.resolve.calls.components.isVararg
-import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
-import org.jetbrains.kotlin.resolve.calls.model.ExpressionValueArgument
-import org.jetbrains.kotlin.resolve.calls.model.VarargValueArgument
 import org.jetbrains.kotlin.resolve.constants.evaluate.ConstantExpressionEvaluator
-import org.jetbrains.kotlin.resolve.scopes.receivers.ClassValueReceiver
-import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
-import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
-import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
-import org.jetbrains.kotlin.resolve.scopes.receivers.SuperCallReceiverValue
-import org.jetbrains.kotlin.resolve.scopes.receivers.ThisClassReceiver
-import org.jetbrains.kotlin.types.expressions.ExpressionTypingUtils
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class Psi2AstVisitor(
     override val context: Psi2AstGeneratorContext
 ) : KtVisitor<AstElement, Nothing?>(), Generator {
-
-    private val annotationGenerator = AnnotationGenerator()
 
     private val functionStack = mutableListOf<AstFunction<*>>()
     private val loops = mutableMapOf<KtLoopExpression, AstLoop>()
@@ -111,63 +81,75 @@ class Psi2AstVisitor(
         }
     }
 
-    /*override fun visitClassOrObject(classOrObject: KtClassOrObject, data: Nothing?): AstElement {
+    override fun visitClassOrObject(classOrObject: KtClassOrObject, data: Nothing?): AstElement {
         val descriptor = classOrObject.descriptor<ClassDescriptor>()
-        return descriptor.cached(
-            context.storage.classes,
-            {
-                AstClass(
-                    name = descriptor.name,
-                    kind = descriptor.toAstClassKind(),
-                    visibility = descriptor.visibility.toAstVisibility(),
-                    expectActual = platformStatusOf(descriptor.isActual, descriptor.isExpect),
-                    modality = descriptor.modality.toAstModality(),
-                    isCompanion = descriptor.isCompanionObject,
-                    isFun = descriptor.isFun,
-                    isData = descriptor.isData,
-                    isInner = descriptor.isInner,
-                    isExternal = descriptor.isExternal
-                ).applyParentFromStack()
-            }
-        ) {
-            withDeclarationParent(this) {
-                if (mode == Mode.FULL) {
-                    annotations.clear()
-                    annotations += classOrObject.annotationEntries.map { it.accept(mode) }
-                }
-                typeParameters.clear()
-                typeParameters += classOrObject.typeParameters
-                    .map { it.accept(mode) }
+        return buildRegularClass {
+            symbol = context.symbolTable.getClassSymbol(descriptor)
+            name = descriptor.name
+            classKind = descriptor.kind
+            visibility = descriptor.visibility.toAstVisibility()
+            platformStatus = platformStatusOf(descriptor.isActual, descriptor.isExpect)
+            modality = descriptor.modality
+            isCompanion = descriptor.isCompanionObject
+            isFun = descriptor.isFun
+            isData = descriptor.isData
+            isInner = descriptor.isInner
+            isExternal = descriptor.isExternal
 
-                val primaryConstructor = classOrObject.primaryConstructor
+            annotations += classOrObject.annotationEntries.map { it.convert() }
+            typeParameters += classOrObject.typeParameters.map { it.convert() }
 
-                if (primaryConstructor != null) {
-                    val astPrimaryConstructor = primaryConstructor.accept<AstFunction>(mode)
-                    this.primaryConstructor = astPrimaryConstructor
-                    // todo? addChild(astPrimaryConstructor)
-                    /*primaryConstructor
-                        .valueParameters
-                        .mapNotNull { get(BindingContext.PRIMARY_CONSTRUCTOR_PARAMETER, it) }
-                        .map { property ->
-                            property.findPsi()!!
-                                .accept<AstProperty>(mode)
-                            property.toAstProperty(
-                                astPrimaryConstructor.valueParameters
-                                    .single { it.name == property.name }
-                            )
-                        }
-                        .forEach { addChild(it) }*/
-                }
+            /*val primaryConstructor = classOrObject.primaryConstructor
 
-                declarations.clear()
-                classOrObject.declarations
-                    .filterNot { it is KtPropertyAccessor }
-                    .map { it.accept<AstDeclaration>(mode) }
-                    .forEach { addChild(it) }
-            }
+            if (primaryConstructor != null) {
+                val astPrimaryConstructor = primaryConstructor.accept<AstFunction>(mode)
+                this.primaryConstructor = astPrimaryConstructor
+                // todo? addChild(astPrimaryConstructor)
+                /*primaryConstructor
+                    .valueParameters
+                    .mapNotNull { get(BindingContext.PRIMARY_CONSTRUCTOR_PARAMETER, it) }
+                    .map { property ->
+                        property.findPsi()!!
+                            .accept<AstProperty>(mode)
+                        property.toAstProperty(
+                            astPrimaryConstructor.valueParameters
+                                .single { it.name == property.name }
+                        )
+                    }
+                    .forEach { addChild(it) }*/
+            }*/
+
+            declarations += classOrObject.declarations.map { it.convert() }
         }
     }
 
+    override fun visitPrimaryConstructor(
+        constructor: KtPrimaryConstructor,
+        data: Nothing?
+    ) = toAstConstructor(constructor)
+
+    override fun visitSecondaryConstructor(
+        constructor: KtSecondaryConstructor,
+        data: Nothing?
+    ) = toAstConstructor(constructor)
+
+    private fun toAstConstructor(constructor: KtConstructor<*>): AstConstructor {
+        val descriptor = constructor.descriptor<ConstructorDescriptor>()
+        return buildConstructor {
+            symbol = context.symbolTable.getConstructorSymbol(descriptor)
+                AstConstructorSymbol(CallableId(descriptor.fqNameSafe))
+            isPrimary = constructor is KtPrimaryConstructor
+            returnType = descriptor.returnType.toAstType()
+            annotations += constructor.annotationEntries.map { it.convert() }
+            valueParameters += constructor.valueParameters.map { it.convert() }
+            if (constructor is KtSecondaryConstructor) {
+                delegatedConstructor = constructor.getDelegationCallOrNull()?.convert()
+            }
+            body = constructor.bodyExpression?.toAstBlock()
+        }
+    }
+
+    /*
     override fun visitNamedFunction(function: KtNamedFunction, data: Nothing?): AstFunction =
         visitFunction(function, mode)
 
@@ -394,26 +376,28 @@ class Psi2AstVisitor(
                 body = expression.bodyExpression
             )
         )
-    }
+    }*/
 
     override fun visitBlockExpression(expression: KtBlockExpression, data: Nothing?): AstBlock {
-        return AstBlock(expression.getExpressionTypeWithCoercionToUnitOrFail().toAstType()).apply {
-            statements += expression.statements.map { it.accept(mode) }
+        return buildBlock {
+            type = expression.getExpressionTypeWithCoercionToUnitOrFail().toAstType()
+            statements += expression.statements.map { it.convert() }
         }
     }
 
-    private fun visitExpressionForBlock(expression: KtExpression, data: Nothing?): AstBlock {
-        return if (expression is KtBlockExpression) expression.accept(mode)
+    private fun KtExpression.toAstBlock(): AstBlock {
+        return if (this is KtBlockExpression) convert()
         else {
-            val type = expression.getTypeInferredByFrontendOrFail().toAstType()
-            val astExpression = expression.accept<AstExpression>(mode)
-            AstBlock(type).apply {
+            val astExpression = convert<AstExpression>()
+            val type = getTypeInferredByFrontendOrFail().toAstType()
+            buildBlock {
+                this.type = type
                 statements += if (functionStack.isNotEmpty()) {
-                    AstReturn(
-                        type,
-                        functionStack.last(),
-                        astExpression
-                    )
+                    buildReturn {
+                        this.type = type
+                        target = functionStack.last().symbol
+                        result = astExpression
+                    }
                 } else {
                     astExpression
                 }
@@ -421,7 +405,7 @@ class Psi2AstVisitor(
         }
     }
 
-    override fun visitStringTemplateExpression(
+    /*override fun visitStringTemplateExpression(
         expression: KtStringTemplateExpression,
         data: Nothing?
     ): AstElement {
@@ -478,9 +462,24 @@ class Psi2AstVisitor(
     override fun visitStringTemplateEntryWithExpression(
         entry: KtStringTemplateEntryWithExpression,
         data: Nothing?
-    ): AstExpression = entry.expression!!.accept(mode)
+    ): AstExpression = entry.expression!!.accept(mode)*/
 
-    override fun visitReferenceExpression(
+    override fun visitConstructorDelegationCall(
+        call: KtConstructorDelegationCall,
+        data: Nothing?
+    ): AstElement {
+        val resolvedCall = call.getResolvedCall()!!
+        return buildDelegatedConstructorCall {
+            type = resolvedCall.getReturnType().toAstType()
+            kind = if (call.isCallToThis) AstDelegatedConstructorCallKind.THIS
+            else AstDelegatedConstructorCallKind.SUPER
+            valueArguments += call.valueArguments.map {
+                it.getArgumentExpression()!!.convert()
+            }
+        }
+    }
+
+    /*override fun visitReferenceExpression(
         expression: KtReferenceExpression,
         data: Nothing?
     ): AstElement {
@@ -581,13 +580,14 @@ class Psi2AstVisitor(
         val referenceTarget =
             getOrFail(BindingContext.REFERENCE_TARGET, expression.instanceReference)
         TODO("What $referenceTarget")
-    }
+    }*/
 
-    override fun visitConstantExpression(
+    /*override fun visitConstantExpression(
         expression: KtConstantExpression,
         data: Nothing?
-    ) = visitExpressionForConstant(expression)
+    ) = visitExpressionForConstant(expression)*/
 
+    /*
     private fun visitExpressionForConstant(expression: KtExpression): AstExpression {
         val constantValue =
             ConstantExpressionEvaluator.getConstant(expression, context.bindingContext)
@@ -968,20 +968,22 @@ class Psi2AstVisitor(
         return expression.selectorExpression!!.accept<AstQualifiedAccess>(mode).also {
             it.safe = true
         }
-    }
+    }*/
 
-    fun ReceiverValue.toAstExpression(data: Nothing?): AstExpression {
+    /*fun ReceiverValue.toAstExpression(data: Nothing?): AstExpression {
         return when (this) {
             is ImplicitClassReceiver -> {
-                val receiverClass = context.provider.get<AstClass>(classDescriptor)
-                AstThis(type.toAstType(), receiverClass)
+                buildThisReference {
+                    type = this@toAstExpression.type.toAstType()
+                }
             }
             is ThisClassReceiver -> {
-                val receiverClass = context.provider.get<AstClass>(classDescriptor)
-                AstThis(type.toAstType(), receiverClass)
+                buildThisReference {
+                    type = this@toAstExpression.type.toAstType()
+                }
             }
             is SuperCallReceiverValue -> TODO()
-            is ExpressionReceiver -> expression.accept(mode)
+            is ExpressionReceiver -> expression.convert()
             is ClassValueReceiver -> {
                 val receiverClass = context.provider.get<AstClass>(
                     classQualifier.descriptor as ClassDescriptor

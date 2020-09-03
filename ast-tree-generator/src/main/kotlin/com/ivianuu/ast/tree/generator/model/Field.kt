@@ -191,12 +191,13 @@ class AstField(
 class FieldList(
     override val name: String,
     val baseType: Importable,
-    override var withReplace: Boolean
+    override var withReplace: Boolean,
+    val nullableBaseType: Boolean = false
 ) : Field() {
     override var defaultValueInImplementation: String? = null
     override val packageName: String? get() = baseType.packageName
     override val fullQualifiedName: String? get() = baseType.fullQualifiedName
-    override val type: String = "List<${baseType.typeWithArguments}>"
+    override val type: String = "List<${baseType.typeWithArguments}${if (nullableBaseType) "?" else ""}>"
 
     override val nullable: Boolean
         get() = false
@@ -207,7 +208,8 @@ class FieldList(
         return FieldList(
             name,
             baseType,
-            withReplace
+            withReplace,
+            nullableBaseType
         )
     }
 

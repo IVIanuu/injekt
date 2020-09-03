@@ -274,20 +274,24 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         visitorSuperType = expression
         transformerType = statement
     }
-    val qualifiedAccess = element("QualifiedAccess", Expression, expression) {
+    val baseQualifiedAccess = element("BaseQualifiedAccess", Expression, expression) {
         visitorSuperType = expression
         transformerType = statement
     }
-    val functionCall = element("FunctionCall", Expression, qualifiedAccess, call) {
-        visitorSuperType = qualifiedAccess
+    val qualifiedAccess = element("QualifiedAccess", Expression, baseQualifiedAccess) {
+        visitorSuperType = baseQualifiedAccess
+        transformerType = statement
+    }
+    val functionCall = element("FunctionCall", Expression, baseQualifiedAccess, call) {
+        visitorSuperType = baseQualifiedAccess
         transformerType = statement
     }
     val delegatedConstructorCall = element("DelegatedConstructorCall", Expression, call) {
         visitorSuperType = call
         transformerType = statement
     }
-    val callableReference = element("CallableReference", Expression, qualifiedAccess) {
-        visitorSuperType = qualifiedAccess
+    val callableReference = element("CallableReference", Expression, baseQualifiedAccess) {
+        visitorSuperType = baseQualifiedAccess
         transformerType = statement
     }
 
@@ -308,8 +312,8 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         visitorSuperType = expression
         transformerType = statement
     }
-    val variableAssignment = element("VariableAssignment", Expression, qualifiedAccess) {
-        visitorSuperType = qualifiedAccess
+    val variableAssignment = element("VariableAssignment", Expression, baseQualifiedAccess) {
+        visitorSuperType = baseQualifiedAccess
         transformerType = statement
     }
 

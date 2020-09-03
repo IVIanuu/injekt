@@ -50,6 +50,7 @@ import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstWhen
 import com.ivianuu.ast.expressions.AstWhenBranch
 import com.ivianuu.ast.expressions.AstClassReference
+import com.ivianuu.ast.expressions.AstBaseQualifiedAccess
 import com.ivianuu.ast.expressions.AstQualifiedAccess
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
@@ -171,13 +172,15 @@ abstract class AstVisitor<out R, in D> {
 
     open fun visitClassReference(classReference: AstClassReference, data: D): R  = visitExpression(classReference, data)
 
-    open fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess, data: D): R  = visitExpression(qualifiedAccess, data)
+    open fun visitBaseQualifiedAccess(baseQualifiedAccess: AstBaseQualifiedAccess, data: D): R  = visitExpression(baseQualifiedAccess, data)
 
-    open fun visitFunctionCall(functionCall: AstFunctionCall, data: D): R  = visitQualifiedAccess(functionCall, data)
+    open fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess, data: D): R  = visitBaseQualifiedAccess(qualifiedAccess, data)
+
+    open fun visitFunctionCall(functionCall: AstFunctionCall, data: D): R  = visitBaseQualifiedAccess(functionCall, data)
 
     open fun visitDelegatedConstructorCall(delegatedConstructorCall: AstDelegatedConstructorCall, data: D): R  = visitCall(delegatedConstructorCall, data)
 
-    open fun visitCallableReference(callableReference: AstCallableReference, data: D): R  = visitQualifiedAccess(callableReference, data)
+    open fun visitCallableReference(callableReference: AstCallableReference, data: D): R  = visitBaseQualifiedAccess(callableReference, data)
 
     open fun visitVararg(vararg: AstVararg, data: D): R  = visitExpression(vararg, data)
 
@@ -187,7 +190,7 @@ abstract class AstVisitor<out R, in D> {
 
     open fun visitThrow(throwExpression: AstThrow, data: D): R  = visitExpression(throwExpression, data)
 
-    open fun visitVariableAssignment(variableAssignment: AstVariableAssignment, data: D): R  = visitQualifiedAccess(variableAssignment, data)
+    open fun visitVariableAssignment(variableAssignment: AstVariableAssignment, data: D): R  = visitBaseQualifiedAccess(variableAssignment, data)
 
     open fun visitSuperReference(superReference: AstSuperReference, data: D): R  = visitExpression(superReference, data)
 

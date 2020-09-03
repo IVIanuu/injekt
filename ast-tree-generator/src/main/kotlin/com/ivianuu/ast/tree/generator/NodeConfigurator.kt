@@ -148,7 +148,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +field("finallyBody", expression, nullable = true)
         }
 
-        qualifiedAccess.configure {
+        baseQualifiedAccess.configure {
             +field(
                 "callee",
                 astSymbolType,
