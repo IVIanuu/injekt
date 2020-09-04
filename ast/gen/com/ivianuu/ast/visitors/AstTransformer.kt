@@ -130,7 +130,7 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
     }
 
     open fun transformTypeParameter(typeParameter: AstTypeParameter, data: D): CompositeTransformResult<AstStatement> {
-        return transformDeclaration(typeParameter, data)
+        return transformNamedDeclaration(typeParameter, data)
     }
 
     open fun transformTypeParametersOwner(typeParametersOwner: AstTypeParametersOwner, data: D): CompositeTransformResult<AstElement> {

@@ -89,7 +89,7 @@ class AstAnalysisHandlerExtension(
         val constantValueGenerator = ConstantValueGenerator(module, symbolTable, typeConverter)
         typeConverter.constantValueGenerator = constantValueGenerator
         val builtIns = AstBuiltIns(module.builtIns, typeConverter, symbolTable)
-        val stubGenerator = DeclarationStubGenerator(constantValueGenerator, module, symbolTable, typeConverter)
+        val stubGenerator = DeclarationStubGenerator(constantValueGenerator, symbolTable, typeConverter)
         val context = Psi2AstGeneratorContext(
             module,
             bindingTrace.bindingContext,
@@ -100,9 +100,9 @@ class AstAnalysisHandlerExtension(
             stubGenerator,
             builtIns
         )
-        val generator = Psi2AstTranslator(context)
+        val builder = Psi2AstBuilder(context)
 
-        val moduleFragment = generator.generateModule(files)
+        val moduleFragment = builder.buildModule(files)
 
         println("generated module $moduleFragment for ${files.map { it.name }}")
 

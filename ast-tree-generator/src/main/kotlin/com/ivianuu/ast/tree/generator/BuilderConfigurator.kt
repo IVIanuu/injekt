@@ -19,6 +19,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         }
 
         val namedDeclarationBuilder by builder {
+            parents += annotationContainerBuilder
             fields from namedDeclaration
         }
 
@@ -28,6 +29,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         }
 
         val expressionBuilder by builder {
+            parents += annotationContainerBuilder
             fields from expression
         }
 
@@ -180,6 +182,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         }
 
         builder(valueParameter) {
+            parents += namedDeclarationBuilder
             openBuilder()
             defaultFalse("isCrossinline", "isNoinline", "isVararg")
         }
@@ -198,6 +201,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         }
 
         builder(typeParameter) {
+            parents += namedDeclarationBuilder
             defaultFalse("isReified")
             default("variance", "Variance.INVARIANT")
         }

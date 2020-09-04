@@ -3,6 +3,7 @@ package com.ivianuu.injekt.integrationtests.ast
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.test.compile
 import com.ivianuu.injekt.test.source
+import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
 
@@ -30,6 +31,9 @@ fun main() {
             Files.walk(Paths.get("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText"))
                 .filter { it.toString().endsWith(".kt") }
                 .forEach { filePath ->
+                    val fileContent = filePath.toFile().readText()
+                    if (fileContent.contains("// FILE:")) return@forEach
+
                     appendLine(
                         """
                                 @Test

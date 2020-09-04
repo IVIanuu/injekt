@@ -101,7 +101,7 @@ abstract class AstVisitor<out R, in D> {
 
     open fun <F : AstCallableDeclaration<F>> visitCallableDeclaration(callableDeclaration: AstCallableDeclaration<F>, data: D): R  = visitDeclaration(callableDeclaration, data)
 
-    open fun visitTypeParameter(typeParameter: AstTypeParameter, data: D): R  = visitDeclaration(typeParameter, data)
+    open fun visitTypeParameter(typeParameter: AstTypeParameter, data: D): R  = visitNamedDeclaration(typeParameter, data)
 
     open fun visitTypeParametersOwner(typeParametersOwner: AstTypeParametersOwner, data: D): R  = visitElement(typeParametersOwner, data)
 

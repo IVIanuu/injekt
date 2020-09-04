@@ -39,7 +39,6 @@ import org.jetbrains.kotlin.types.KotlinType
 
 class DeclarationStubGenerator(
     private val constantValueGenerator: ConstantValueGenerator,
-    private val module: ModuleDescriptor,
     private val symbolTable: DescriptorSymbolTable,
     private val typeConverter: TypeConverter
 ) {

@@ -1,17 +1,14 @@
 package com.ivianuu.ast.psi2ast
 
-import com.ivianuu.ast.AstElement
+import com.ivianuu.ast.AstBuiltIns
 import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.Visibilities
-import com.ivianuu.ast.expressions.AstFunctionCall
-import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.visitors.AstTransformer
-import com.ivianuu.ast.visitors.AstVisitor
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.MemberDescriptor
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtExpression
+import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.bindingContextUtil.isUsedAsExpression
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
@@ -24,6 +21,8 @@ import org.jetbrains.kotlin.descriptors.Visibility as KotlinVisibility
 interface Generator {
 
     val context: Psi2AstGeneratorContext
+    val builtIns: AstBuiltIns get() = context.builtIns
+    val symbolTable: DescriptorSymbolTable get() = context.symbolTable
 
     fun <T : DeclarationDescriptor> KtElement.descriptor(): T =
         getOrFail(BindingContext.DECLARATION_TO_DESCRIPTOR, this).original as T
@@ -57,6 +56,8 @@ interface Generator {
 
     fun KotlinType.toAstType() = context.typeConverter.convert(this)
 
+    fun KtTypeReference.toAstType() = getOrFail(BindingContext.TYPE, this).toAstType()
+
 }
 
 fun KotlinVisibility.toAstVisibility() = when (this) {
@@ -72,24 +73,4 @@ val MemberDescriptor.platformStatus get() = when {
     isActual -> PlatformStatus.ACTUAL
     isExpect -> PlatformStatus.EXPECT
     else -> PlatformStatus.DEFAULT
-}
-
-val UninitializedType = object : AstType {
-    override val annotations: List<AstFunctionCall>
-        get() = emptyList()
-    override val isMarkedNullable: Boolean
-        get() = false
-
-    override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-    }
-
-    override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>) {
-    }
-
-    override fun replaceIsMarkedNullable(newIsMarkedNullable: Boolean) {
-    }
-
-    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstElement {
-        return this
-    }
 }

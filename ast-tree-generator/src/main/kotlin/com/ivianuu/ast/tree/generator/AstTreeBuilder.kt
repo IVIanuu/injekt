@@ -76,8 +76,8 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
             transformerType = statement
         }
     val typeParameter =
-        element("TypeParameter", Declaration, declaration, symbolOwner) {
-            visitorSuperType = declaration
+        element("TypeParameter", Declaration, namedDeclaration, symbolOwner) {
+            visitorSuperType = namedDeclaration
             transformerType = statement
         }
     val typeParametersOwner = element("TypeParametersOwner", Declaration) {

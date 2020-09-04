@@ -391,20 +391,6 @@ class GeneratedAstTests {
 
 
     @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_javaSyntheticPropertyAccesskt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/javaSyntheticPropertyAccess.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
     fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_fieldkt() {
         compile {
             sources += source(
@@ -503,132 +489,6 @@ class GeneratedAstTests {
 
 
     @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_sam_samByProjectedTypekt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/sam/samByProjectedType.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_sam_samConversionInGenericConstructorCall_NIkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/sam/samConversionInGenericConstructorCall_NI.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_sam_genericSamProjectedOutkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/sam/genericSamProjectedOut.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_sam_samConversionskt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/sam/samConversions.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_sam_samOperatorskt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/sam/samOperators.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_sam_samConversionsWithSmartCastskt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/sam/samConversionsWithSmartCasts.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_sam_samConversionToGenerickt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/sam/samConversionToGeneric.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_sam_arrayAsVarargAfterSamArgumentkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/sam/arrayAsVarargAfterSamArgument.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_sam_samConversionInGenericConstructorCallkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/sam/samConversionInGenericConstructorCall.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
     fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_arrayAssignmentkt() {
         compile {
             sources += source(
@@ -703,34 +563,6 @@ class GeneratedAstTests {
         compile {
             sources += source(
                 source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/stringPlus.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_jvmFieldReferenceWithIntersectionTypeskt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/jvmFieldReferenceWithIntersectionTypes.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_constructorWithOwnTypeParametersCallkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/constructorWithOwnTypeParametersCall.kt").readText(),
                 injektImports = false,
                 initializeInjekt = false
             )
@@ -1119,34 +951,6 @@ class GeneratedAstTests {
 
 
     @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_nullCheckOnGenericLambdaReturnkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/nullCheckOnGenericLambdaReturn.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_signedToUnsignedConversionskt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/signedToUnsignedConversions.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
     fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_objectReferenceInClosureInSuperConstructorCallkt() {
         compile {
             sources += source(
@@ -1193,20 +997,6 @@ class GeneratedAstTests {
         compile {
             sources += source(
                 source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/whileDoWhile.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_implicitNotNullInDestructuringAssignmentkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/implicitNotNullInDestructuringAssignment.kt").readText(),
                 injektImports = false,
                 initializeInjekt = false
             )
@@ -1305,20 +1095,6 @@ class GeneratedAstTests {
         compile {
             sources += source(
                 source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/incrementDecrement.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_kt16904kt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/kt16904.kt").readText(),
                 injektImports = false,
                 initializeInjekt = false
             )
@@ -1581,20 +1357,6 @@ class GeneratedAstTests {
 
 
     @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_nullCheckOnLambdaReturnkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/nullCheckOnLambdaReturn.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
     fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_augmentedAssignment1kt() {
         compile {
             sources += source(
@@ -1725,20 +1487,6 @@ class GeneratedAstTests {
         compile {
             sources += source(
                 source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/forWithBreakContinue.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_javaSyntheticGenericPropretyAccesskt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/javaSyntheticGenericPropretyAccess.kt").readText(),
                 injektImports = false,
                 initializeInjekt = false
             )
@@ -1973,38 +1721,10 @@ class GeneratedAstTests {
 
 
     @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_propertyReferenceskt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/propertyReferences.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
     fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_objectReferencekt() {
         compile {
             sources += source(
                 source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/objectReference.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_setFieldWithImplicitCastkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/setFieldWithImplicitCast.kt").readText(),
                 injektImports = false,
                 initializeInjekt = false
             )
@@ -2183,20 +1903,6 @@ class GeneratedAstTests {
 
 
     @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_equalskt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/equals.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
     fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_stringComparisonskt() {
         compile {
             sources += source(
@@ -2285,20 +1991,6 @@ class GeneratedAstTests {
         compile {
             sources += source(
                 source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/enumEntryAsReceiver.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_jvmInstanceFieldReferencekt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/jvmInstanceFieldReference.kt").readText(),
                 injektImports = false,
                 initializeInjekt = false
             )
@@ -3051,20 +2743,6 @@ class GeneratedAstTests {
 
 
     @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_declarations_kt29833kt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/declarations/kt29833.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
     fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_declarations_localDelegatedPropertieskt() {
         compile {
             sources += source(
@@ -3111,20 +2789,6 @@ class GeneratedAstTests {
         compile {
             sources += source(
                 source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/declarations/primaryCtorDefaultArguments.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_declarations_annotations_javaAnnotationkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/declarations/annotations/javaAnnotation.kt").readText(),
                 injektImports = false,
                 initializeInjekt = false
             )
@@ -3639,90 +3303,6 @@ class GeneratedAstTests {
 
 
     @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_stubs_javaMethodkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/stubs/javaMethod.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_stubs_javaInnerClasskt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/stubs/javaInnerClass.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_stubs_javaNestedClasskt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/stubs/javaNestedClass.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_stubs_javaSyntheticPropertykt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/stubs/javaSyntheticProperty.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_stubs_javaConstructorWithTypeParameterskt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/stubs/javaConstructorWithTypeParameters.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_stubs_javaStaticMethodkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/stubs/javaStaticMethod.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
     fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_stubs_simplekt() {
         compile {
             sources += source(
@@ -3751,34 +3331,6 @@ class GeneratedAstTests {
 
 
     @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_stubs_javaEnumkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/stubs/javaEnum.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_stubs_kotlinInnerClasskt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/stubs/kotlinInnerClass.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
     fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_stubs_builtinMapkt() {
         compile {
             sources += source(
@@ -3793,38 +3345,10 @@ class GeneratedAstTests {
 
 
     @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_stubs_genericClassInDifferentModulekt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/stubs/genericClassInDifferentModule.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
     fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_firProblems_deprecatedkt() {
         compile {
             sources += source(
                 source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/firProblems/deprecated.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_firProblems_FirBuilderkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/firProblems/FirBuilder.kt").readText(),
                 injektImports = false,
                 initializeInjekt = false
             )
@@ -3937,20 +3461,6 @@ class GeneratedAstTests {
         compile {
             sources += source(
                 source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/regressions/coercionInLoop.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_regressions_typeParametersInImplicitCastkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/regressions/typeParametersInImplicitCast.kt").readText(),
                 injektImports = false,
                 initializeInjekt = false
             )
@@ -4143,118 +3653,6 @@ class GeneratedAstTests {
 
 
     @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_types_smartCastOnFieldReceiverOfGenericTypekt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/types/smartCastOnFieldReceiverOfGenericType.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_types_nullChecks_enhancedNullabilityInDestructuringAssignmentkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/types/nullChecks/enhancedNullabilityInDestructuringAssignment.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_types_nullChecks_enhancedNullabilitykt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/types/nullChecks/enhancedNullability.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_types_nullChecks_platformTypeReceiverkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/types/nullChecks/platformTypeReceiver.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_types_nullChecks_implicitNotNullOnPlatformTypekt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/types/nullChecks/implicitNotNullOnPlatformType.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_types_nullChecks_enhancedNullabilityInForLoopkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/types/nullChecks/enhancedNullabilityInForLoop.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_types_nullChecks_explicitEqualsAndCompareToCallsOnPlatformTypeReceiverkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/types/nullChecks/explicitEqualsAndCompareToCallsOnPlatformTypeReceiver.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_types_nullChecks_nullabilityAssertionOnExtensionReceiverkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/types/nullChecks/nullabilityAssertionOnExtensionReceiver.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
     fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_types_inStarProjectionInReceiverTypekt() {
         compile {
             sources += source(
@@ -4325,38 +3723,10 @@ class GeneratedAstTests {
 
 
     @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_types_asOnPlatformTypekt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/types/asOnPlatformType.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
     fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_types_abbreviatedTypeskt() {
         compile {
             sources += source(
                 source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/types/abbreviatedTypes.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_types_receiverOfIntersectionTypekt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/types/receiverOfIntersectionType.kt").readText(),
                 injektImports = false,
                 initializeInjekt = false
             )
@@ -4955,20 +4325,6 @@ class GeneratedAstTests {
 
 
     @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_classes_implicitNotNullOnDelegatedImplementationkt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/classes/implicitNotNullOnDelegatedImplementation.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
     fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_classes_initValInLambdakt() {
         compile {
             sources += source(
@@ -5043,20 +4399,6 @@ class GeneratedAstTests {
         compile {
             sources += source(
                 source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/classes/superCalls.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_classes_fakeOverridesForJavaStaticMemberskt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/classes/fakeOverridesForJavaStaticMembers.kt").readText(),
                 injektImports = false,
                 initializeInjekt = false
             )

@@ -4,6 +4,7 @@ import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstTypeParameter
+import com.ivianuu.ast.declarations.builder.AstNamedDeclarationBuilder
 import com.ivianuu.ast.declarations.impl.AstTypeParameterImpl
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.AstSymbol
@@ -20,16 +21,16 @@ import org.jetbrains.kotlin.types.Variance
  */
 
 @AstBuilderDsl
-class AstTypeParameterBuilder {
-    val annotations: MutableList<AstFunctionCall> = mutableListOf()
-    var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
-    lateinit var name: Name
+class AstTypeParameterBuilder : AstNamedDeclarationBuilder {
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+    override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
+    override lateinit var name: Name
     lateinit var symbol: AstTypeParameterSymbol
     var variance: Variance = Variance.INVARIANT
     var isReified: Boolean = false
     val bounds: MutableList<AstType> = mutableListOf()
 
-    fun build(): AstTypeParameter {
+    override fun build(): AstTypeParameter {
         return AstTypeParameterImpl(
             annotations,
             origin,
@@ -40,6 +41,13 @@ class AstTypeParameterBuilder {
             bounds,
         )
     }
+
+    @Deprecated("Modification of 'attributes' has no impact for AstTypeParameterBuilder", level = DeprecationLevel.HIDDEN)
+    override var attributes: AstDeclarationAttributes
+        get() = throw IllegalStateException()
+        set(value) {
+            throw IllegalStateException()
+        }
 }
 
 @OptIn(ExperimentalContracts::class)

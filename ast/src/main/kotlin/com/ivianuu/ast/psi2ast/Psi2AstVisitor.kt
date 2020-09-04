@@ -1,5 +1,6 @@
 package com.ivianuu.ast.psi2ast
 
+import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.AstElement
 import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstDeclaration
@@ -53,6 +54,8 @@ import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.impl.TypeAliasConstructorDescriptor
 import org.jetbrains.kotlin.js.translate.callTranslator.getReturnType
 import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.psi.KtAnnotatedExpression
+import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtBinaryExpression
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtCallElement
@@ -960,6 +963,21 @@ class Psi2AstVisitor(
     ): AstElement = expression.expression?.accept(this, null)
         ?: error("$expression ${expression.text}")
 
+    override fun visitAnnotatedExpression(
+        expression: KtAnnotatedExpression,
+        data: Nothing?
+    ): AstElement {
+        return expression.baseExpression?.accept(this, null)
+            ?.also {
+                (it as AstAnnotationContainer)
+                    .replaceAnnotations(
+                        expression.annotationEntries
+                            .map { it.convert() }
+                    )
+            }
+            ?: error("$expression ${expression.text}")
+    }
+
      /*
     override fun visitDotQualifiedExpression(
         expression: KtDotQualifiedExpression,
@@ -1064,10 +1082,10 @@ class Psi2AstVisitor(
         }
         return null
     }
-
-    override fun visitAnnotationEntry(annotationEntry: KtAnnotationEntry, data: Mode?): AstElement {
+*/
+    override fun visitAnnotationEntry(annotationEntry: KtAnnotationEntry, data: Nothing?): AstElement {
         val descriptor = getOrFail(BindingContext.ANNOTATION, annotationEntry)
-        return context.generateAnnotationConstructorCall(descriptor)!!
-    }*/
+        return context.constantValueGenerator.generateAnnotationConstructorCall(descriptor)!!
+    }
 
 }

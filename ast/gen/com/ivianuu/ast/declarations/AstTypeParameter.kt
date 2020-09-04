@@ -15,11 +15,11 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstTypeParameter : AstPureAbstractElement(), AstDeclaration, AstSymbolOwner<AstTypeParameter> {
+abstract class AstTypeParameter : AstPureAbstractElement(), AstNamedDeclaration, AstSymbolOwner<AstTypeParameter> {
     abstract override val annotations: List<AstFunctionCall>
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
-    abstract val name: Name
+    abstract override val name: Name
     abstract override val symbol: AstTypeParameterSymbol
     abstract val variance: Variance
     abstract val isReified: Boolean

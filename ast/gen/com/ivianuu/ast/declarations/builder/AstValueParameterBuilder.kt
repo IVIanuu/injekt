@@ -6,6 +6,7 @@ import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstValueParameter
+import com.ivianuu.ast.declarations.builder.AstNamedDeclarationBuilder
 import com.ivianuu.ast.declarations.impl.AstValueParameterImpl
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
@@ -22,11 +23,11 @@ import org.jetbrains.kotlin.name.Name
  */
 
 @AstBuilderDsl
-open class AstValueParameterBuilder {
-    open val annotations: MutableList<AstFunctionCall> = mutableListOf()
-    open var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
+open class AstValueParameterBuilder : AstNamedDeclarationBuilder {
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+    override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     open lateinit var returnType: AstType
-    open lateinit var name: Name
+    override lateinit var name: Name
     open lateinit var symbol: AstValueParameterSymbol
     open var defaultValue: AstExpression? = null
     open var isCrossinline: Boolean = false
@@ -34,7 +35,7 @@ open class AstValueParameterBuilder {
     open var isVararg: Boolean = false
 
     @OptIn(AstImplementationDetail::class)
-    fun build(): AstValueParameter {
+    override fun build(): AstValueParameter {
         return AstValueParameterImpl(
             annotations,
             origin,
@@ -48,6 +49,13 @@ open class AstValueParameterBuilder {
         )
     }
 
+
+    @Deprecated("Modification of 'attributes' has no impact for AstValueParameterBuilder", level = DeprecationLevel.HIDDEN)
+    override var attributes: AstDeclarationAttributes
+        get() = throw IllegalStateException()
+        set(value) {
+            throw IllegalStateException()
+        }
 }
 
 @OptIn(ExperimentalContracts::class)
