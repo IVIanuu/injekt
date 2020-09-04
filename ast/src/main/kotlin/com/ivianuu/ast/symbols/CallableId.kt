@@ -72,4 +72,5 @@ data class CallableId(
     }
 }
 
-
+val CallableId.fqName: FqName
+    get() = classId?.asSingleFqName()?.child(callableName) ?: packageName.child(callableName)

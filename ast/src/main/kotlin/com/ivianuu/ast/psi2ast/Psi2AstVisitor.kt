@@ -2,14 +2,18 @@ package com.ivianuu.ast.psi2ast
 
 import com.ivianuu.ast.AstElement
 import com.ivianuu.ast.declarations.AstConstructor
+import com.ivianuu.ast.declarations.AstDeclaration
 import com.ivianuu.ast.declarations.AstFunction
 import com.ivianuu.ast.declarations.AstNamedFunction
+import com.ivianuu.ast.declarations.AstProperty
 import com.ivianuu.ast.declarations.builder.buildConstructor
 import com.ivianuu.ast.declarations.builder.buildFile
 import com.ivianuu.ast.declarations.builder.buildNamedFunction
 import com.ivianuu.ast.declarations.builder.buildProperty
 import com.ivianuu.ast.declarations.builder.buildPropertyAccessor
 import com.ivianuu.ast.declarations.builder.buildRegularClass
+import com.ivianuu.ast.declarations.builder.buildTypeAlias
+import com.ivianuu.ast.declarations.builder.buildTypeParameter
 import com.ivianuu.ast.declarations.builder.buildValueParameter
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstConst
@@ -36,13 +40,17 @@ import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
+import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import org.jetbrains.kotlin.descriptors.impl.TypeAliasConstructorDescriptor
 import org.jetbrains.kotlin.js.translate.callTranslator.getReturnType
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtBinaryExpression
@@ -69,7 +77,10 @@ import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtSecondaryConstructor
 import org.jetbrains.kotlin.psi.KtStringTemplateEntryWithExpression
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
+import org.jetbrains.kotlin.psi.KtTypeAlias
+import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.KtVisitor
+import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.components.isVararg
 import org.jetbrains.kotlin.resolve.constants.evaluate.ConstantExpressionEvaluator
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -122,25 +133,41 @@ class Psi2AstVisitor(
             annotations += classOrObject.annotationEntries.map { it.convert() }
             typeParameters += classOrObject.typeParameters.map { it.convert() }
 
-            /*val primaryConstructor = classOrObject.primaryConstructor
-
+            val primaryConstructor = classOrObject.primaryConstructor
+                ?.convert()
+                ?: descriptor.unsubstitutedPrimaryConstructor
+                    ?.takeIf { descriptor.kind != ClassKind.OBJECT }
+                    ?.let { primaryConstructorDescriptor ->
+                        buildConstructor {
+                            symbol = context.symbolTable.getConstructorSymbol(primaryConstructorDescriptor)
+                            isPrimary = true
+                            returnType = primaryConstructorDescriptor.returnType.toAstType()
+                        }
+                }
             if (primaryConstructor != null) {
-                val astPrimaryConstructor = primaryConstructor.accept<AstFunction>(mode)
-                this.primaryConstructor = astPrimaryConstructor
-                // todo? addChild(astPrimaryConstructor)
-                /*primaryConstructor
-                    .valueParameters
-                    .mapNotNull { get(BindingContext.PRIMARY_CONSTRUCTOR_PARAMETER, it) }
-                    .map { property ->
-                        property.findPsi()!!
-                            .accept<AstProperty>(mode)
-                        property.toAstProperty(
-                            astPrimaryConstructor.valueParameters
-                                .single { it.name == property.name }
-                        )
+                declarations += primaryConstructor
+                classOrObject
+                    .primaryConstructor
+                    ?.valueParameters
+                    ?.mapNotNull { get(BindingContext.PRIMARY_CONSTRUCTOR_PARAMETER, it) }
+                    ?.map { propertyDescriptor ->
+                        buildProperty {
+                            symbol = context.symbolTable.getPropertySymbol(propertyDescriptor)
+                            returnType = propertyDescriptor.type.toAstType()
+                            name = propertyDescriptor.name
+                            isVar = propertyDescriptor.isVar
+                            visibility = propertyDescriptor.visibility.toAstVisibility()
+                            dispatchReceiverType = propertyDescriptor.dispatchReceiverParameter!!.type.toAstType()
+                            initializer = buildQualifiedAccess {
+                                type = propertyDescriptor.type.toAstType()
+                                callee = primaryConstructor.valueParameters
+                                    .single { it.name == propertyDescriptor.name }
+                                    .symbol
+                            }
+                        }
                     }
-                    .forEach { addChild(it) }*/
-            }*/
+                    ?.forEach { declarations += it }
+            }
 
             declarations += classOrObject.declarations.map { it.convert() }
         }
@@ -153,6 +180,7 @@ class Psi2AstVisitor(
             name = function.nameAsSafeName
             returnType = descriptor.returnType!!.toAstType()
             visibility = descriptor.visibility.toAstVisibility()
+            modality = descriptor.modality
             platformStatus = descriptor.platformStatus
             isInfix = descriptor.isInfix
             isOperator = descriptor.isOperator
@@ -191,7 +219,9 @@ class Psi2AstVisitor(
             if (constructor is KtSecondaryConstructor) {
                 delegatedConstructor = constructor.getDelegationCallOrNull()?.convert()
             }
+            functionStack.push(symbol)
             body = constructor.bodyExpression?.toAstBlock()
+            functionStack.pop()
         }
     }
 
@@ -207,7 +237,7 @@ class Psi2AstVisitor(
             typeParameters += property.typeParameters.map { it.convert() }
             isVar = property.isVar
             initializer = property.initializer?.convert()
-            delegate = property.delegate?.convert()
+            delegate = property.delegate?.expression?.convert()
             getter = property.getter?.convert()
             setter = property.setter?.convert()
             visibility = descriptor.visibility.toAstVisibility()
@@ -231,7 +261,9 @@ class Psi2AstVisitor(
             isSetter = accessor.isSetter
             returnType = descriptor.returnType!!.toAstType()
             valueParameters += accessor.valueParameters.map { it.convert() }
+            functionStack.push(symbol)
             body = accessor.bodyExpression?.toAstBlock()
+            functionStack.pop()
             visibility = descriptor.visibility.toAstVisibility()
             modality = descriptor.modality
             annotations += accessor.annotationEntries.map { it.convert() }
@@ -251,28 +283,19 @@ class Psi2AstVisitor(
                 body = visitExpressionForBlock(initializer.body!!, mode)
             }
         }
-    }
+    }*/
 
     override fun visitTypeParameter(parameter: KtTypeParameter, data: Nothing?): AstElement {
         val descriptor = parameter.descriptor<TypeParameterDescriptor>()
-        return descriptor.cached(
-            context.storage.typeParameters,
-            {
-                AstTypeParameter(
-                    name = descriptor.name,
-                    isReified = descriptor.isReified,
-                    variance = descriptor.variance.toAstVariance()
-                ).applyParentFromStack()
-            }
-        ) {
-            if (mode == Mode.FULL) {
-                annotations.clear()
-                annotations += parameter.annotationEntries.map { it.accept(mode) }
-                superTypes.clear()
-                superTypes += descriptor.upperBounds.map { it.toAstType() }
-            }
+        return buildTypeParameter {
+            symbol = context.symbolTable.getTypeParameterSymbol(descriptor)
+            name = parameter.nameAsSafeName
+            isReified = descriptor.isReified
+            variance = descriptor.variance
+            annotations += parameter.annotationEntries.map { it.convert() }
+            bounds += descriptor.upperBounds.map { it.toAstType() }
         }
-    }*/
+    }
 
     override fun visitParameter(parameter: KtParameter, data: Nothing?): AstElement {
         val descriptor = parameter.descriptor<ParameterDescriptor>()
@@ -290,31 +313,20 @@ class Psi2AstVisitor(
         }
     }
 
-    /*
     override fun visitTypeAlias(typeAlias: KtTypeAlias, data: Nothing?): AstElement {
         val descriptor = typeAlias.descriptor<TypeAliasDescriptor>()
-        return descriptor.cached(
-            context.storage.typeAliases,
-            {
-                AstTypeAlias(
-                    name = descriptor.name,
-                    type = UninitializedType,
-                    visibility = descriptor.visibility.toAstVisibility(),
-                    expectActual = platformStatusOf(descriptor.isActual, descriptor.isExpect)
-                ).applyParentFromStack()
-            }
-        ) {
-            if (mode == Mode.FULL) {
-                annotations.clear()
-                annotations += typeAlias.annotationEntries.map { it.accept(mode) }
-                type = descriptor.expandedType.toAstType()
-            }
-
-            typeParameters.clear()
-            typeParameters += typeAlias.typeParameters
-                .map { it.accept(mode) }
+        return buildTypeAlias {
+            symbol = context.symbolTable.getTypeAliasSymbol(descriptor)
+            name = typeAlias.nameAsSafeName
+            expandedType = descriptor.expandedType.toAstType()
+            visibility = descriptor.visibility.toAstVisibility()
+            platformStatus = descriptor.platformStatus
+            annotations += typeAlias.annotationEntries.map { it.convert() }
+            typeParameters += typeAlias.typeParameters.map { it.convert() }
         }
     }
+
+    /*
 
     override fun visitObjectLiteralExpression(
         expression: KtObjectLiteralExpression,
@@ -447,6 +459,7 @@ class Psi2AstVisitor(
         val resolvedCall = expression.getResolvedCall()!!
         val callee = when (val calleeDescriptor = resolvedCall.resultingDescriptor) {
             is SimpleFunctionDescriptor -> context.symbolTable.getNamedFunctionSymbol(calleeDescriptor)
+            is ConstructorDescriptor -> context.symbolTable.getConstructorSymbol(calleeDescriptor)
             is PropertyDescriptor -> context.symbolTable.getPropertySymbol(calleeDescriptor)
             is ValueParameterDescriptor -> context.symbolTable.getValueParameterSymbol(calleeDescriptor)
             else -> error("Unexpected callee $calleeDescriptor for ${expression.text}")

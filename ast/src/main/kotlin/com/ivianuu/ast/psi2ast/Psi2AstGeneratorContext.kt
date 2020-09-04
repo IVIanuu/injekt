@@ -13,5 +13,6 @@ class Psi2AstGeneratorContext(
     val typeConverter: TypeConverter,
     val symbolTable: DescriptorSymbolTable,
     val constantValueGenerator: ConstantValueGenerator,
+    val stubGenerator: DeclarationStubGenerator,
     override val builtIns: AstBuiltIns
 ) : AstGeneratorContext

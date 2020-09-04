@@ -12,6 +12,12 @@ class Psi2AstTranslator(private val context: Psi2AstGeneratorContext) {
         return buildModuleFragment {
             name = context.module.name
             files += ktFiles.map { it.accept(visitor, null) as AstFile }
+            context.symbolTable.unboundSymbols
+                .forEach { (descriptor, symbol) ->
+                    if (!symbol.isBound) {
+                        context.stubGenerator.getDeclaration(symbol, descriptor)
+                    }
+                }
         }
     }
 

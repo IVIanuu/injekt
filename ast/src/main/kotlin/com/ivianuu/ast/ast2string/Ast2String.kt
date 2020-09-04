@@ -2,18 +2,38 @@ package com.ivianuu.ast.ast2string
 
 import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.AstElement
+import com.ivianuu.ast.AstIntrinsics
+import com.ivianuu.ast.AstSpreadElement
 import com.ivianuu.ast.PlatformStatus
+import com.ivianuu.ast.Visibilities
 import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstDeclarationContainer
 import com.ivianuu.ast.declarations.AstEnumEntry
 import com.ivianuu.ast.declarations.AstFile
 import com.ivianuu.ast.declarations.AstMemberDeclaration
+import com.ivianuu.ast.declarations.AstNamedDeclaration
+import com.ivianuu.ast.declarations.AstNamedFunction
+import com.ivianuu.ast.declarations.AstProperty
+import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstRegularClass
+import com.ivianuu.ast.declarations.AstTypeAlias
 import com.ivianuu.ast.declarations.AstTypeParameter
+import com.ivianuu.ast.declarations.AstValueParameter
+import com.ivianuu.ast.declarations.regularClassOrFail
 import com.ivianuu.ast.declarations.regularClassOrNull
+import com.ivianuu.ast.expressions.AstBaseQualifiedAccess
+import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstCall
-import com.ivianuu.ast.expressions.AstDelegatedConstructorCallKind
+import com.ivianuu.ast.expressions.AstConst
+import com.ivianuu.ast.expressions.AstConstKind
 import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.expressions.AstFunctionCall
+import com.ivianuu.ast.expressions.AstQualifiedAccess
+import com.ivianuu.ast.expressions.AstReturn
+import com.ivianuu.ast.expressions.AstThisReference
+import com.ivianuu.ast.expressions.AstVararg
+import com.ivianuu.ast.expressions.AstVariableAssignment
+import com.ivianuu.ast.symbols.fqName
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.symbols.impl.AstTypeParameterSymbol
 import com.ivianuu.ast.types.AstSimpleType
@@ -54,10 +74,12 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
 
     private val printer = Printer(out, "%tab%")
     private fun emit(value: Any?) {
+        check(value !is Unit)
         printer.print(value)
     }
 
     private fun emitLine(value: Any?) {
+        check(value !is Unit)
         printer.println(value)
     }
 
@@ -89,14 +111,12 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         emitLine("}")
     }
 
-    /*private val uniqueNameByElement =
+    private val uniqueNameByElement =
         mutableMapOf<AstElement, String>()
     private val existingNames = mutableSetOf<String>()
     private fun AstElement.uniqueName(): String {
         return uniqueNameByElement.getOrPut(this) {
-            /*if (this is AstDeclarationWithName &&
-                !name.isSpecial
-            ) return@getOrPut name.asString()*/ //todo
+            if (this is AstNamedDeclaration && !name.isSpecial) return@getOrPut name.asString()
             val finalBase = "uniqueName"
             var name = finalBase
             var differentiator = 2
@@ -107,7 +127,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
             existingNames += name
             return@getOrPut name
         }
-    }*/
+    }
 
     override fun visitElement(element: AstElement) {
         error("Unhandled $element")
@@ -226,88 +246,59 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         emitLine()
     }
 
-    /*override fun visitFunction(function: AstFunction) {
-        function.emitAnnotations()
-
-        if (function.kind != AstFunction.Kind.ANONYMOUS_FUNCTION) {
-            if (function.visibility != AstVisibility.LOCAL) function.emitVisibility()
-            function.emitExpectActual()
-            if (function.parent is AstClass) function.emitModality()
-            if (function.overriddenDeclarations.isNotEmpty()) {
-                emit("override ")
-            }
-            if (function.isInline) {
-                emit("inline ")
-            }
-            if (function.isExternal) {
-                emit("external ")
-            }
-            if (function.isInfix) {
-                emit("infix ")
-            }
-            if (function.isOperator) {
-                emit("operator ")
-            }
-            if (function.isTailrec) {
-                emit("tailrec ")
-            }
+    override fun visitNamedFunction(namedFunction: AstNamedFunction) = with(namedFunction) {
+        emitAnnotations()
+        if (visibility != Visibilities.Local) emitVisibility()
+        emitPlatformStatus()
+        if (symbol.callableId.className != null) emitModality()
+        // todo if (overriddenDeclarations.isNotEmpty()) { emit("override ") }
+        if (isInline) {
+            emit("inline ")
+        }
+        if (isExternal) {
+            emit("external ")
+        }
+        if (isInfix) {
+            emit("infix ")
+        }
+        if (isOperator) {
+            emit("operator ")
+        }
+        if (isTailrec) {
+            emit("tailrec ")
         }
 
-        if (function.isSuspend) {
+        if (isSuspend) {
             emit("suspend ")
         }
 
-        if (function.kind != AstFunction.Kind.ANONYMOUS_FUNCTION) {
-            emit("fun ")
-            if (function.typeParameters.isNotEmpty()) {
-                function.typeParameters.emitList()
-                emitSpace()
-            }
-            when (function.kind) {
-                AstFunction.Kind.SIMPLE_FUNCTION -> emit(function.name)
-                AstFunction.Kind.PROPERTY_GETTER -> emit("get")
-                AstFunction.Kind.PROPERTY_SETTER -> emit("set")
-                AstFunction.Kind.CONSTRUCTOR -> emit("constructor")
-                AstFunction.Kind.ANONYMOUS_FUNCTION -> Unit
-            }.let {}
-        }
-
-        if (function.kind == AstFunction.Kind.ANONYMOUS_FUNCTION) {
-            emit("{ ")
-        } else {
-            emit("(")
-        }
-        function.valueParameters.forEachIndexed { index, valueParameter ->
-            valueParameter.emit()
-            if (index != function.valueParameters.lastIndex) emit(", ")
-        }
-        if (function.kind == AstFunction.Kind.ANONYMOUS_FUNCTION) {
-            emit(" ->")
-        } else {
-            emit(")")
-        }
-
-        if (function.kind != AstFunction.Kind.PROPERTY_SETTER &&
-            function.kind != AstFunction.Kind.PROPERTY_GETTER &&
-            function.kind != AstFunction.Kind.CONSTRUCTOR &&
-            function.kind != AstFunction.Kind.ANONYMOUS_FUNCTION
-        ) {
-            emit(": ")
-            function.returnType.emit()
+        emit("fun ")
+        if (typeParameters.isNotEmpty()) {
+            typeParameters.emitList()
             emitSpace()
-            function.typeParameters.emitWhere()
         }
-        emitSpace()
+        emit(name)
 
-        function.body?.let { body ->
+        emit("(")
+        valueParameters.forEachIndexed { index, valueParameter ->
+            valueParameter.emit()
+            if (index != valueParameters.lastIndex) emit(", ")
+        }
+        emit(")")
+
+        emit(": ")
+        returnType.emit()
+        emitSpace()
+        if (typeParameters.isNotEmpty()) {
+            typeParameters.emitWhere()
+            emitSpace()
+        }
+
+        body?.let { body ->
             bracedBlock {
                 body.emit()
             }
         } ?: emitLine()
-    }*/
-
-    private fun List<AstExpression?>.emit() {
-
     }
 
     override fun visitConstructor(constructor: AstConstructor) = with(constructor) {
@@ -332,60 +323,76 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         } ?: emitLine()
     }
 
-   /* override fun visitProperty(property: AstProperty) {
-        property.emitAnnotations()
-        if (property.visibility != AstVisibility.LOCAL) property.emitVisibility()
-        property.emitExpectActual()
-        if (property.parent is AstClass) property.emitModality()
-        if (property.overriddenDeclarations.isNotEmpty()) {
-            emit("override ")
-        }
-        if (property.isInline) {
+    override fun visitProperty(property: AstProperty) = with(property) {
+        emitAnnotations()
+        if (!isLocal) emitVisibility()
+        emitPlatformStatus()
+        if (symbol.callableId.className != null) emitModality()
+        // todo if (overriddenDeclarations.isNotEmpty()) { emit("override ") }
+        if (isInline) {
             emit("inline ")
         }
-        if (property.setter != null) {
+        if (isVar) {
             emit("var ")
         } else {
             emit("val ")
         }
-        if (property.typeParameters.isNotEmpty()) {
-            property.typeParameters.emitList()
+        if (typeParameters.isNotEmpty()) {
+            typeParameters.emitList()
             emitSpace()
         }
-        emit(property.uniqueName())
+        emit(uniqueName())
         emit(": ")
-        property.type.emit()
-        if (property.typeParameters.isNotEmpty()) {
+        returnType.emit()
+        if (typeParameters.isNotEmpty()) {
             emitSpace()
-            property.typeParameters.emitWhere()
+            typeParameters.emitWhere()
         }
-        if (property.initializer != null) {
+        if (initializer != null) {
             emit(" = ")
-            property.initializer!!.emit()
+            initializer!!.emit()
         }
-        if (property.delegate != null) {
+        if (delegate != null) {
             emit(" by ")
-            property.delegate!!.emit()
+            delegate!!.emit()
         }
-        if (property.getter != null) {
+        if (getter != null) {
             emitLine()
-            emit(
-                indented {
-                    property.getter!!.emit()
-                }
-            )
+            indented {
+                getter!!.emit()
+            }
         }
-        if (property.setter != null) {
+        if (setter != null) {
             emitLine()
-            emit(
-                indented {
-                    property.setter!!.emit()
-                }
-            )
+            indented {
+                setter!!.emit()
+            }
         }
         emitLine()
     }
 
+    override fun visitPropertyAccessor(propertyAccessor: AstPropertyAccessor) = with(propertyAccessor) {
+        propertyAccessor.emitVisibility()
+        if (propertyAccessor.isSetter) {
+            emit("set")
+        } else {
+            emit("get")
+        }
+        emit("(")
+        propertyAccessor.valueParameters.forEachIndexed { index, valueParameter ->
+            valueParameter.emit()
+            if (index != valueParameters.lastIndex) emit(", ")
+        }
+        emit(")")
+        body?.let { body ->
+            emitSpace()
+            bracedBlock {
+                body.emit()
+            }
+        } ?: emitLine()
+    }
+
+    /*
     override fun visitAnonymousInitializer(
         anonymousInitializer: AstAnonymousInitializer,
         data: Nothing?
@@ -437,22 +444,25 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         }
     }
 
-    /*override fun visitValueParameter(valueParameter: AstValueParameter) {
-        valueParameter.emitAnnotations()
+    override fun visitValueParameter(valueParameter: AstValueParameter) = with(valueParameter) {
+        emitAnnotations()
         if (valueParameter.isVararg) {
             emit("vararg ")
         }
-        valueParameter.inlineHint?.let {
-            emit("${it.name.toLowerCase()} ")
+        if (valueParameter.isNoinline) {
+            emit("noinline ")
+        }
+        if (valueParameter.isCrossinline) {
+            emit("crossinline ")
         }
         emit("${valueParameter.name}: ")
         if (valueParameter.isVararg) {
-            valueParameter.type.arguments.single()
-                .let { it as AstTypeProjectionImpl }
+            (returnType as AstSimpleType).arguments.single()
+                .let { it as AstTypeProjectionWithVariance }
                 .type
                 .emit()
         } else {
-            valueParameter.type.emit()
+            valueParameter.returnType.emit()
         }
         if (valueParameter.defaultValue != null) {
             emit(" = ")
@@ -460,102 +470,221 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         }
     }
 
-    override fun visitTypeAlias(typeAlias: AstTypeAlias) {
-        typeAlias.emitAnnotations()
+    override fun visitTypeAlias(typeAlias: AstTypeAlias) = with(typeAlias) {
+        emitAnnotations()
         emit("typealias ")
-        emit("${typeAlias.name}")
-        typeAlias.typeParameters.emitList()
+        emit(name)
+        typeParameters.emitList()
         emit(" = ")
-        typeAlias.type.emit()
+        expandedType.emit()
     }
 
-    override fun <T> visitConst(const: AstConst<T>) {
+    override fun <T> visitConst(const: AstConst<T>) = with(const) {
         emit(
-            when (const.kind) {
-                AstConst.Kind.Null -> "null"
-                AstConst.Kind.Boolean -> const.value.toString()
-                AstConst.Kind.Char -> "'${const.value}'"
-                AstConst.Kind.Byte -> const.value.toString()
-                AstConst.Kind.Short -> const.value.toString()
-                AstConst.Kind.Int -> const.value.toString()
-                AstConst.Kind.Long -> "${const.value}L"
-                AstConst.Kind.String -> "\"${const.value}\""
-                AstConst.Kind.Float -> "${const.value}f"
-                AstConst.Kind.Double -> const.value.toString()
+            when (kind) {
+                AstConstKind.Null -> "null"
+                AstConstKind.Boolean -> value.toString()
+                AstConstKind.Char -> "'${value}'"
+                AstConstKind.Byte -> value.toString()
+                AstConstKind.Short -> value.toString()
+                AstConstKind.Int -> value.toString()
+                AstConstKind.Long -> "${value}L"
+                AstConstKind.String -> "\"${value}\""
+                AstConstKind.Float -> "${value}f"
+                AstConstKind.Double -> value.toString()
+                AstConstKind.UnsignedByte -> "${value}u"
+                AstConstKind.UnsignedShort -> "${value}u"
+                AstConstKind.UnsignedInt -> "${value}u"
+                AstConstKind.UnsignedLong -> "${value}uL"
+                AstConstKind.IntegerLiteral -> TODO()
+                AstConstKind.UnsignedIntegerLiteral -> TODO()
             }
         )
     }
 
-    override fun visitVararg(vararg: AstVararg) {
-        vararg.elements.forEachIndexed { index, element ->
+    override fun visitVararg(vararg: AstVararg) = with(vararg) {
+        elements.forEachIndexed { index, element ->
             element.emit()
-            if (index != vararg.elements.lastIndex) emit(", ")
+            if (index != elements.lastIndex) emit(", ")
         }
     }
 
-    override fun visitSpreadElement(spreadElement: AstSpreadElement) {
+    override fun visitSpreadElement(spreadElement: AstSpreadElement) = with(spreadElement) {
         emit("*")
-        spreadElement.expression.emit()
+        expression.emit()
     }
 
-    override fun visitBlock(block: AstBlock) {
-        block.statements.forEach { statement ->
+    override fun visitBlock(block: AstBlock) = with(block) {
+        statements.forEach { statement ->
             statement.emit()
             emitLine()
         }
     }
 
-    override fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess) {
-        val explicitReceiver = if (qualifiedAccess.extensionReceiver != null)
-            qualifiedAccess.extensionReceiver
-        else qualifiedAccess.dispatchReceiver
-            ?.takeIf { it !is AstThis } // todo
+    override fun visitFunctionCall(functionCall: AstFunctionCall) = with(functionCall) {
+        val callee = callee.owner
+
+        when (callee.symbol.callableId) {
+            AstIntrinsics.LessThan -> {
+                valueArguments[0]!!.emit()
+                emit(" < ")
+                valueArguments[1]!!.emit()
+                return@with
+            }
+            AstIntrinsics.GreaterThan -> {
+                valueArguments[0]!!.emit()
+                emit(" > ")
+                valueArguments[1]!!.emit()
+                return@with
+            }
+            AstIntrinsics.LessThanEqual -> {
+                valueArguments[0]!!.emit()
+                emit(" <= ")
+                valueArguments[1]!!.emit()
+                return@with
+            }
+            AstIntrinsics.GreaterThanEqual -> {
+                valueArguments[0]!!.emit()
+                emit(" >= ")
+                valueArguments[1]!!.emit()
+                return@with
+            }
+            AstIntrinsics.StructuralEqual -> {
+                valueArguments[0]!!.emit()
+                emit(" == ")
+                valueArguments[1]!!.emit()
+                return@with
+            }
+            AstIntrinsics.StructuralNotEqual -> {
+                valueArguments[0]!!.emit()
+                emit(" != ")
+                valueArguments[1]!!.emit()
+                return@with
+            }
+            AstIntrinsics.IdentityEqual -> {
+                valueArguments[0]!!.emit()
+                emit(" === ")
+                valueArguments[1]!!.emit()
+                return@with
+            }
+            AstIntrinsics.IdentityNotEqual -> {
+                valueArguments[0]!!.emit()
+                emit(" !== ")
+                valueArguments[1]!!.emit()
+                return@with
+            }
+            AstIntrinsics.LazyAnd -> {
+                valueArguments[0]!!.emit()
+                emit(" && ")
+                valueArguments[1]!!.emit()
+                return@with
+            }
+            AstIntrinsics.LazyOr -> {
+                valueArguments[0]!!.emit()
+                emit(" || ")
+                valueArguments[1]!!.emit()
+                return@with
+            }
+            AstIntrinsics.IsType -> {
+                valueArguments.single()!!.emit()
+                emit(" is ")
+                type.emit()
+                return@with
+            }
+            AstIntrinsics.IsNotType -> {
+                valueArguments.single()!!.emit()
+                emit(" !is ")
+                type.emit()
+                return@with
+            }
+            AstIntrinsics.AsType -> {
+                valueArguments.single()!!.emit()
+                emit(" as ")
+                type.emit()
+                return@with
+            }
+            AstIntrinsics.SafeAsType -> {
+                valueArguments.single()!!.emit()
+                emit(" as? ")
+                type.emit()
+                return@with
+            }
+        }
+
+
+        val explicitReceiver = getExplicitReceiver()
 
         if (explicitReceiver != null) {
             explicitReceiver.emit()
             emit(".")
         }
 
-        val callee = qualifiedAccess.callee
-        if (callee is AstFunction && callee.kind == AstFunction.Kind.CONSTRUCTOR) {
-            emit(callee.returnType.classOrFail.name)
-        } else if (callee is AstDeclarationWithName) {
-            if (callee is AstProperty && callee.visibility == AstVisibility.LOCAL) {
-                emit(callee.uniqueName())
-            } else if ((callee is AstProperty || callee is AstFunction)
-                && explicitReceiver == null
-            ) {
-                emit(callee.fqName)
-            } else {
-                emit(callee.name)
-            }
+        if (callee is AstConstructor) {
+            emit(callee.returnType.regularClassOrFail.owner.name)
+        } else if (callee is AstNamedFunction && callee.dispatchReceiverType == null) {
+            emit(callee.symbol.callableId.fqName)
+        } else if (callee is AstNamedFunction) {
+            emit(callee.name)
+        } else {
+            error("Wtf $callee")
         }
-        if (qualifiedAccess.typeArguments.isNotEmpty()) {
+        if (typeArguments.isNotEmpty()) {
             emit("<")
-            qualifiedAccess.typeArguments.forEachIndexed { index, typeArgument ->
+            typeArguments.forEachIndexed { index, typeArgument ->
                 typeArgument.emit()
-                if (index != qualifiedAccess.typeArguments.lastIndex) emit(", ")
+                if (index != typeArguments.lastIndex) emit(", ")
             }
             emit(">")
         }
-        if (callee is AstFunction) {
-            emit("(")
-            val hasAllValueArguments = callee.valueParameters.size ==
-                    qualifiedAccess.valueArguments.size &&
-                    qualifiedAccess.valueArguments.none { it == null }
-            qualifiedAccess.valueArguments.forEachIndexed { index, valueArgument ->
-                if (valueArgument != null) {
-                    if (!hasAllValueArguments)
-                        emit("${callee.valueParameters[index].name} = ")
-                    valueArgument.emit()
-                    if (index != qualifiedAccess.valueArguments.lastIndex &&
-                        qualifiedAccess.valueArguments[index + 1] != null
-                    ) emit(", ")
-                }
+        emit("(")
+        emitValueArguments()
+        emit(")")
+    }
+
+    override fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess) = with(qualifiedAccess) {
+        val explicitReceiver = getExplicitReceiver()
+
+        if (explicitReceiver != null) {
+            explicitReceiver.emit()
+            emit(".")
+        }
+
+        val callee = callee.owner
+        if (callee is AstNamedDeclaration) {
+            if (callee is AstProperty && callee.visibility == Visibilities.Local) {
+                emit(callee.uniqueName())
+            } else if (callee is AstProperty && callee.dispatchReceiverType == null) {
+                emit(callee.symbol.callableId.fqName)
+            } else {
+                emit(callee.name)
             }
-            emit(")")
+        } else {
+            error("Wtf $callee")
         }
     }
+
+    override fun visitVariableAssignment(variableAssignment: AstVariableAssignment) = with(variableAssignment) {
+        val explicitReceiver = getExplicitReceiver()
+
+        if (explicitReceiver != null) {
+            explicitReceiver.emit()
+            emit(".")
+        }
+
+        val callee = callee.owner
+        if (callee is AstProperty && callee.visibility == Visibilities.Local) {
+            emit(callee.uniqueName())
+        } else if (callee is AstProperty && callee.dispatchReceiverType == null) {
+            emit(callee.symbol.callableId.fqName)
+        } else {
+            emit(callee.name)
+        }
+
+        emit(" = ")
+        value.emit()
+    }
+
+    /*
 
     override fun visitAnonymousObjectExpression(
         expression: AstAnonymousObjectExpression,
@@ -681,15 +810,15 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
             emitLine()
         }
         emitLine("}")
+    }*/
+
+    override fun visitReturn(returnExpression: AstReturn) = with(returnExpression) {
+        emit("return ")
+        // todo label
+        result.emit()
     }
 
-    override fun visitReturn(astReturn: AstReturn) {
-        emit("return")
-        /*astReturn.target?.let {
-            emit("@$")
-        } ?:*/ emitSpace()
-        astReturn.expression.emit()
-    }
+    /*
 
     override fun visitThrow(astThrow: AstThrow) {
         emit("throw ")
@@ -774,5 +903,11 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
             else -> error("Unexpected type argument $this")
         }
     }
+
+    private fun AstBaseQualifiedAccess.getExplicitReceiver(): AstExpression? =
+        if (extensionReceiver != null)
+            extensionReceiver
+        else dispatchReceiver
+            ?.takeIf { it !is AstThisReference } // todo
 
 }
