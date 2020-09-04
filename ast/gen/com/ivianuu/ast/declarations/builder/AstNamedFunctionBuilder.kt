@@ -1,9 +1,11 @@
 package com.ivianuu.ast.declarations.builder
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstImplementationDetail
 import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.Visibilities
 import com.ivianuu.ast.Visibility
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
@@ -18,6 +20,7 @@ import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.symbols.impl.AstNamedFunctionSymbol
 import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.utils.lazyVar
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 import org.jetbrains.kotlin.descriptors.Modality
@@ -29,15 +32,15 @@ import org.jetbrains.kotlin.name.Name
  */
 
 @AstBuilderDsl
-open class AstNamedFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwnerBuilder {
+open class AstNamedFunctionBuilder(override val context: AstContext) : AstFunctionBuilder, AstTypeParametersOwnerBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     open var dispatchReceiverType: AstType? = null
     open var extensionReceiverType: AstType? = null
-    override lateinit var returnType: AstType
+    override var returnType: AstType = context.builtIns.unitType
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
     override var body: AstBlock? = null
-    open lateinit var name: Name
+    open var name: Name by lazyVar { symbol.callableId.callableName }
     open var visibility: Visibility = Visibilities.Public
     open var modality: Modality = Modality.FINAL
     open var platformStatus: PlatformStatus = PlatformStatus.DEFAULT
@@ -53,6 +56,7 @@ open class AstNamedFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwnerB
     @OptIn(AstImplementationDetail::class)
     override fun build(): AstNamedFunction {
         return AstNamedFunctionImpl(
+            context,
             annotations,
             origin,
             dispatchReceiverType,
@@ -85,13 +89,13 @@ open class AstNamedFunctionBuilder : AstFunctionBuilder, AstTypeParametersOwnerB
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildNamedFunction(init: AstNamedFunctionBuilder.() -> Unit): AstNamedFunction {
-    return AstNamedFunctionBuilder().apply(init).build()
+inline fun AstBuilder.buildNamedFunction(init: AstNamedFunctionBuilder.() -> Unit): AstNamedFunction {
+    return AstNamedFunctionBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstNamedFunction.copy(init: AstNamedFunctionBuilder.() -> Unit = {}): AstNamedFunction {
-    val copyBuilder = AstNamedFunctionBuilder()
+    val copyBuilder = AstNamedFunctionBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
     copyBuilder.dispatchReceiverType = dispatchReceiverType

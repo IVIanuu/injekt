@@ -1,5 +1,7 @@
 package com.ivianuu.ast.declarations.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstAnonymousInitializer
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
@@ -9,6 +11,7 @@ import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.symbols.impl.AstAnonymousInitializerSymbol
+import com.ivianuu.ast.utils.lazyVar
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 
@@ -18,14 +21,15 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstAnonymousInitializerBuilder {
+class AstAnonymousInitializerBuilder(override val context: AstContext) : AstBuilder {
     val annotations: MutableList<AstFunctionCall> = mutableListOf()
     var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     var body: AstBlock? = null
-    lateinit var symbol: AstAnonymousInitializerSymbol
+    var symbol: AstAnonymousInitializerSymbol by lazyVar { AstAnonymousInitializerSymbol() }
 
     fun build(): AstAnonymousInitializer {
         return AstAnonymousInitializerImpl(
+            context,
             annotations,
             origin,
             body,
@@ -36,13 +40,13 @@ class AstAnonymousInitializerBuilder {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildAnonymousInitializer(init: AstAnonymousInitializerBuilder.() -> Unit): AstAnonymousInitializer {
-    return AstAnonymousInitializerBuilder().apply(init).build()
+inline fun AstBuilder.buildAnonymousInitializer(init: AstAnonymousInitializerBuilder.() -> Unit = {}): AstAnonymousInitializer {
+    return AstAnonymousInitializerBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstAnonymousInitializer.copy(init: AstAnonymousInitializerBuilder.() -> Unit = {}): AstAnonymousInitializer {
-    val copyBuilder = AstAnonymousInitializerBuilder()
+    val copyBuilder = AstAnonymousInitializerBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
     copyBuilder.body = body

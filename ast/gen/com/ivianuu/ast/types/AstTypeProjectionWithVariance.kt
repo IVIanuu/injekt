@@ -1,5 +1,6 @@
 package com.ivianuu.ast.types
 
+import com.ivianuu.ast.AstContext
 import org.jetbrains.kotlin.types.Variance
 import com.ivianuu.ast.visitors.*
 
@@ -9,6 +10,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstTypeProjectionWithVariance : AstTypeProjection() {
+    abstract override val context: AstContext
     abstract val type: AstType
     abstract val variance: Variance
 

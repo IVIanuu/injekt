@@ -1,5 +1,6 @@
 package com.ivianuu.ast.expressions.impl
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstPropertyBackingFieldReference
 import com.ivianuu.ast.symbols.impl.AstPropertySymbol
@@ -12,6 +13,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstPropertyBackingFieldReferenceImpl(
+    override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
     override var type: AstType,
     override var property: AstPropertySymbol,

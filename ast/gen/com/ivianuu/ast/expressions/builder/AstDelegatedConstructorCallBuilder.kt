@@ -1,5 +1,7 @@
 package com.ivianuu.ast.expressions.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCallKind
@@ -21,7 +23,7 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstDelegatedConstructorCallBuilder : AstCallBuilder, AstExpressionBuilder {
+class AstDelegatedConstructorCallBuilder(override val context: AstContext) : AstCallBuilder, AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var type: AstType
     override val valueArguments: MutableList<AstExpression?> = mutableListOf()
@@ -31,6 +33,7 @@ class AstDelegatedConstructorCallBuilder : AstCallBuilder, AstExpressionBuilder 
 
     override fun build(): AstDelegatedConstructorCall {
         return AstDelegatedConstructorCallImpl(
+            context,
             annotations,
             type,
             valueArguments,
@@ -43,13 +46,13 @@ class AstDelegatedConstructorCallBuilder : AstCallBuilder, AstExpressionBuilder 
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildDelegatedConstructorCall(init: AstDelegatedConstructorCallBuilder.() -> Unit): AstDelegatedConstructorCall {
-    return AstDelegatedConstructorCallBuilder().apply(init).build()
+inline fun AstBuilder.buildDelegatedConstructorCall(init: AstDelegatedConstructorCallBuilder.() -> Unit): AstDelegatedConstructorCall {
+    return AstDelegatedConstructorCallBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstDelegatedConstructorCall.copy(init: AstDelegatedConstructorCallBuilder.() -> Unit = {}): AstDelegatedConstructorCall {
-    val copyBuilder = AstDelegatedConstructorCallBuilder()
+    val copyBuilder = AstDelegatedConstructorCallBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.type = type
     copyBuilder.valueArguments.addAll(valueArguments)

@@ -1,5 +1,7 @@
 package com.ivianuu.ast.declarations.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstFile
 import com.ivianuu.ast.declarations.AstModuleFragment
@@ -14,12 +16,13 @@ import org.jetbrains.kotlin.name.Name
  */
 
 @AstBuilderDsl
-class AstModuleFragmentBuilder {
+class AstModuleFragmentBuilder(override val context: AstContext) : AstBuilder {
     lateinit var name: Name
     val files: MutableList<AstFile> = mutableListOf()
 
     fun build(): AstModuleFragment {
         return AstModuleFragmentImpl(
+            context,
             name,
             files,
         )
@@ -27,13 +30,13 @@ class AstModuleFragmentBuilder {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildModuleFragment(init: AstModuleFragmentBuilder.() -> Unit): AstModuleFragment {
-    return AstModuleFragmentBuilder().apply(init).build()
+inline fun AstBuilder.buildModuleFragment(init: AstModuleFragmentBuilder.() -> Unit): AstModuleFragment {
+    return AstModuleFragmentBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstModuleFragment.copy(init: AstModuleFragmentBuilder.() -> Unit = {}): AstModuleFragment {
-    val copyBuilder = AstModuleFragmentBuilder()
+    val copyBuilder = AstModuleFragmentBuilder(context)
     copyBuilder.name = name
     copyBuilder.files.addAll(files)
     return copyBuilder.apply(init).build()

@@ -1,6 +1,7 @@
 package com.ivianuu.ast.expressions
 
-import com.ivianuu.ast.AstPureAbstractElement
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.AstTarget
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -9,10 +10,11 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstLoopJump : AstPureAbstractElement(), AstExpression {
+abstract class AstLoopJump : AstJump<AstLoop>() {
+    abstract override val context: AstContext
     abstract override val annotations: List<AstFunctionCall>
     abstract override val type: AstType
-    abstract val target: AstLoop
+    abstract override val target: AstTarget<AstLoop>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitLoopJump(this, data)
 
@@ -20,5 +22,5 @@ abstract class AstLoopJump : AstPureAbstractElement(), AstExpression {
 
     abstract override fun replaceType(newType: AstType)
 
-    abstract fun replaceTarget(newTarget: AstLoop)
+    abstract override fun replaceTarget(newTarget: AstTarget<AstLoop>)
 }

@@ -33,6 +33,7 @@ import com.ivianuu.ast.declarations.AstPackageFragment
 import com.ivianuu.ast.declarations.AstFile
 import com.ivianuu.ast.declarations.AstAnonymousFunction
 import com.ivianuu.ast.declarations.AstAnonymousObject
+import com.ivianuu.ast.expressions.AstJump
 import com.ivianuu.ast.expressions.AstLoop
 import com.ivianuu.ast.expressions.AstDoWhileLoop
 import com.ivianuu.ast.expressions.AstWhileLoop
@@ -139,6 +140,8 @@ abstract class AstVisitor<out R, in D> {
 
     open fun visitAnonymousObject(anonymousObject: AstAnonymousObject, data: D): R  = visitClass(anonymousObject, data)
 
+    open fun <E : AstTargetElement> visitJump(jump: AstJump<E>, data: D): R  = visitExpression(jump, data)
+
     open fun visitLoop(loop: AstLoop, data: D): R  = visitExpression(loop, data)
 
     open fun visitDoWhileLoop(doWhileLoop: AstDoWhileLoop, data: D): R  = visitLoop(doWhileLoop, data)
@@ -147,7 +150,7 @@ abstract class AstVisitor<out R, in D> {
 
     open fun visitBlock(block: AstBlock, data: D): R  = visitExpression(block, data)
 
-    open fun visitLoopJump(loopJump: AstLoopJump, data: D): R  = visitExpression(loopJump, data)
+    open fun visitLoopJump(loopJump: AstLoopJump, data: D): R  = visitJump(loopJump, data)
 
     open fun visitBreak(breakExpression: AstBreak, data: D): R  = visitLoopJump(breakExpression, data)
 
@@ -189,7 +192,7 @@ abstract class AstVisitor<out R, in D> {
 
     open fun visitSpreadElement(spreadElement: AstSpreadElement, data: D): R  = visitVarargElement(spreadElement, data)
 
-    open fun visitReturn(returnExpression: AstReturn, data: D): R  = visitExpression(returnExpression, data)
+    open fun visitReturn(returnExpression: AstReturn, data: D): R  = visitJump(returnExpression, data)
 
     open fun visitThrow(throwExpression: AstThrow, data: D): R  = visitExpression(throwExpression, data)
 

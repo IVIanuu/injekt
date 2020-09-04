@@ -1,8 +1,10 @@
 package com.ivianuu.ast.declarations.builder
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.Visibilities
 import com.ivianuu.ast.Visibility
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
@@ -16,6 +18,7 @@ import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.symbols.impl.AstPropertyAccessorSymbol
 import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.utils.lazyVar
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 import org.jetbrains.kotlin.descriptors.Modality
@@ -27,13 +30,13 @@ import org.jetbrains.kotlin.name.Name
  */
 
 @AstBuilderDsl
-class AstPropertyAccessorBuilder : AstFunctionBuilder {
+class AstPropertyAccessorBuilder(override val context: AstContext) : AstFunctionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     override lateinit var returnType: AstType
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
     override var body: AstBlock? = null
-    lateinit var name: Name
+    var name: Name by lazyVar { if (isSetter) Name.special("<setter>") else Name.special("<getter>") }
     var visibility: Visibility = Visibilities.Public
     var modality: Modality = Modality.FINAL
     lateinit var symbol: AstPropertyAccessorSymbol
@@ -41,6 +44,7 @@ class AstPropertyAccessorBuilder : AstFunctionBuilder {
 
     override fun build(): AstPropertyAccessor {
         return AstPropertyAccessorImpl(
+            context,
             annotations,
             origin,
             returnType,
@@ -64,13 +68,13 @@ class AstPropertyAccessorBuilder : AstFunctionBuilder {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildPropertyAccessor(init: AstPropertyAccessorBuilder.() -> Unit): AstPropertyAccessor {
-    return AstPropertyAccessorBuilder().apply(init).build()
+inline fun AstBuilder.buildPropertyAccessor(init: AstPropertyAccessorBuilder.() -> Unit): AstPropertyAccessor {
+    return AstPropertyAccessorBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstPropertyAccessor.copy(init: AstPropertyAccessorBuilder.() -> Unit = {}): AstPropertyAccessor {
-    val copyBuilder = AstPropertyAccessorBuilder()
+    val copyBuilder = AstPropertyAccessorBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
     copyBuilder.returnType = returnType

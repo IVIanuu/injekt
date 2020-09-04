@@ -1,5 +1,6 @@
 package com.ivianuu.ast.expressions.impl
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstStatement
@@ -12,6 +13,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstBlockImpl(
+    override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
     override val statements: MutableList<AstStatement>,
     override var type: AstType,

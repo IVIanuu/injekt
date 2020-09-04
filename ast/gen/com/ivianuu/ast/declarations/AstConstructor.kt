@@ -1,6 +1,8 @@
 package com.ivianuu.ast.declarations
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstPureAbstractElement
+import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
 import com.ivianuu.ast.expressions.AstFunctionCall
@@ -15,6 +17,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstConstructor : AstPureAbstractElement(), AstFunction<AstConstructor>, AstCallableDeclaration<AstConstructor> {
+    abstract override val context: AstContext
     abstract override val annotations: List<AstFunctionCall>
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
@@ -25,6 +28,7 @@ abstract class AstConstructor : AstPureAbstractElement(), AstFunction<AstConstru
     abstract override val symbol: AstConstructorSymbol
     abstract val delegatedConstructor: AstDelegatedConstructorCall?
     abstract override val body: AstBlock?
+    abstract val visibility: Visibility
     abstract val isPrimary: Boolean
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitConstructor(this, data)
@@ -42,6 +46,8 @@ abstract class AstConstructor : AstPureAbstractElement(), AstFunction<AstConstru
     abstract fun replaceDelegatedConstructor(newDelegatedConstructor: AstDelegatedConstructorCall?)
 
     abstract override fun replaceBody(newBody: AstBlock?)
+
+    abstract fun replaceVisibility(newVisibility: Visibility)
 
     abstract fun replaceIsPrimary(newIsPrimary: Boolean)
 }

@@ -1,5 +1,6 @@
 package com.ivianuu.ast.declarations
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.expressions.AstFunctionCall
@@ -16,6 +17,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstTypeParameter : AstPureAbstractElement(), AstNamedDeclaration, AstSymbolOwner<AstTypeParameter> {
+    abstract override val context: AstContext
     abstract override val annotations: List<AstFunctionCall>
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes

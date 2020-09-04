@@ -1,6 +1,7 @@
 package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstAnnotationContainer
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.visitors.*
@@ -11,6 +12,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 interface AstDeclaration : AstStatement, AstAnnotationContainer {
+    override val context: AstContext
     override val annotations: List<AstFunctionCall>
     val origin: AstDeclarationOrigin
     val attributes: AstDeclarationAttributes

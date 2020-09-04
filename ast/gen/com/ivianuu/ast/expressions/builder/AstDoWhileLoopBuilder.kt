@@ -1,5 +1,7 @@
 package com.ivianuu.ast.expressions.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstDoWhileLoop
 import com.ivianuu.ast.expressions.AstExpression
@@ -17,35 +19,40 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstDoWhileLoopBuilder : AstLoopBuilder, AstExpressionBuilder {
+class AstDoWhileLoopBuilder(override val context: AstContext) : AstLoopBuilder, AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
-    override lateinit var type: AstType
     override lateinit var body: AstExpression
     override lateinit var condition: AstExpression
     override var label: String? = null
 
     override fun build(): AstDoWhileLoop {
         return AstDoWhileLoopImpl(
+            context,
             annotations,
-            type,
             body,
             condition,
             label,
         )
     }
 
+
+    @Deprecated("Modification of 'type' has no impact for AstDoWhileLoopBuilder", level = DeprecationLevel.HIDDEN)
+    override var type: AstType
+        get() = throw IllegalStateException()
+        set(value) {
+            throw IllegalStateException()
+        }
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildDoWhileLoop(init: AstDoWhileLoopBuilder.() -> Unit): AstDoWhileLoop {
-    return AstDoWhileLoopBuilder().apply(init).build()
+inline fun AstBuilder.buildDoWhileLoop(init: AstDoWhileLoopBuilder.() -> Unit): AstDoWhileLoop {
+    return AstDoWhileLoopBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstDoWhileLoop.copy(init: AstDoWhileLoopBuilder.() -> Unit = {}): AstDoWhileLoop {
-    val copyBuilder = AstDoWhileLoopBuilder()
+    val copyBuilder = AstDoWhileLoopBuilder(context)
     copyBuilder.annotations.addAll(annotations)
-    copyBuilder.type = type
     copyBuilder.body = body
     copyBuilder.condition = condition
     copyBuilder.label = label

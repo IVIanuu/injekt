@@ -1,8 +1,10 @@
 package com.ivianuu.ast.declarations.builder
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.Visibilities
 import com.ivianuu.ast.Visibility
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclaration
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
@@ -17,6 +19,7 @@ import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstClassSymbol
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.utils.lazyVar
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -29,10 +32,10 @@ import org.jetbrains.kotlin.name.Name
  */
 
 @AstBuilderDsl
-open class AstRegularClassBuilder : AstClassBuilder, AstTypeParametersOwnerBuilder, AstDeclarationContainerBuilder {
+open class AstRegularClassBuilder(override val context: AstContext) : AstClassBuilder, AstTypeParametersOwnerBuilder, AstDeclarationContainerBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
-    open lateinit var name: Name
+    open var name: Name by lazyVar { symbol.classId.shortClassName }
     open var visibility: Visibility = Visibilities.Public
     open var modality: Modality = Modality.FINAL
     open var platformStatus: PlatformStatus = PlatformStatus.DEFAULT
@@ -50,6 +53,7 @@ open class AstRegularClassBuilder : AstClassBuilder, AstTypeParametersOwnerBuild
 
     override fun build(): AstRegularClass {
         return AstRegularClassImpl(
+            context,
             annotations,
             origin,
             name,
@@ -79,13 +83,13 @@ open class AstRegularClassBuilder : AstClassBuilder, AstTypeParametersOwnerBuild
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildRegularClass(init: AstRegularClassBuilder.() -> Unit): AstRegularClass {
-    return AstRegularClassBuilder().apply(init).build()
+inline fun AstBuilder.buildRegularClass(init: AstRegularClassBuilder.() -> Unit): AstRegularClass {
+    return AstRegularClassBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstRegularClass.copy(init: AstRegularClassBuilder.() -> Unit = {}): AstRegularClass {
-    val copyBuilder = AstRegularClassBuilder()
+    val copyBuilder = AstRegularClassBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
     copyBuilder.name = name

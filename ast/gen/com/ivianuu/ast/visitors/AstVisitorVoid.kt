@@ -33,6 +33,7 @@ import com.ivianuu.ast.declarations.AstPackageFragment
 import com.ivianuu.ast.declarations.AstFile
 import com.ivianuu.ast.declarations.AstAnonymousFunction
 import com.ivianuu.ast.declarations.AstAnonymousObject
+import com.ivianuu.ast.expressions.AstJump
 import com.ivianuu.ast.expressions.AstLoop
 import com.ivianuu.ast.expressions.AstDoWhileLoop
 import com.ivianuu.ast.expressions.AstWhileLoop
@@ -201,6 +202,10 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     open fun visitAnonymousObject(anonymousObject: AstAnonymousObject) {
         visitElement(anonymousObject)
+    }
+
+    open fun <E : AstTargetElement> visitJump(jump: AstJump<E>) {
+        visitElement(jump)
     }
 
     open fun visitLoop(loop: AstLoop) {
@@ -465,6 +470,10 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     final override fun visitAnonymousObject(anonymousObject: AstAnonymousObject, data: Nothing?) {
         visitAnonymousObject(anonymousObject)
+    }
+
+    final override fun <E : AstTargetElement> visitJump(jump: AstJump<E>, data: Nothing?) {
+        visitJump(jump)
     }
 
     final override fun visitLoop(loop: AstLoop, data: Nothing?) {

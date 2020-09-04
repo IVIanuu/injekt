@@ -1,5 +1,7 @@
 package com.ivianuu.ast.expressions.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstVariable
 import com.ivianuu.ast.expressions.AstExpression
@@ -18,7 +20,7 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstWhenBuilder : AstExpressionBuilder {
+class AstWhenBuilder(override val context: AstContext) : AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var type: AstType
     var subject: AstExpression? = null
@@ -27,6 +29,7 @@ class AstWhenBuilder : AstExpressionBuilder {
 
     override fun build(): AstWhen {
         return AstWhenImpl(
+            context,
             annotations,
             type,
             subject,
@@ -38,13 +41,13 @@ class AstWhenBuilder : AstExpressionBuilder {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildWhen(init: AstWhenBuilder.() -> Unit): AstWhen {
-    return AstWhenBuilder().apply(init).build()
+inline fun AstBuilder.buildWhen(init: AstWhenBuilder.() -> Unit): AstWhen {
+    return AstWhenBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstWhen.copy(init: AstWhenBuilder.() -> Unit = {}): AstWhen {
-    val copyBuilder = AstWhenBuilder()
+    val copyBuilder = AstWhenBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.type = type
     copyBuilder.subject = subject

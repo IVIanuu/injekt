@@ -62,8 +62,20 @@ abstract class AbstractBuilderConfigurator<T : AbstractAstTreeBuilder>(val astTr
             DefaultValueContext(getField(field)).apply(init).applyConfiguration()
         }
 
+        fun defaultLazy(field: String, value: String) {
+            default(field) {
+                this.value = value
+                lazy()
+                useTypes(type("ast.utils", "lazyVar"))
+            }
+        }
+
         inner class DefaultValueContext(private val field: FieldWithDefault) {
             var value: String? = null
+
+            fun lazy() {
+                field.lazyDefault = true
+            }
 
             fun applyConfiguration() {
                 if (value != null) field.defaultValueInBuilder = value

@@ -1,5 +1,7 @@
 package com.ivianuu.ast.expressions.impl
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.AstTarget
 import com.ivianuu.ast.expressions.AstBreak
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstLoop
@@ -12,20 +14,18 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstBreakImpl(
+    override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
-    override var type: AstType,
-    override var target: AstLoop,
+    override var target: AstTarget<AstLoop>,
 ) : AstBreak() {
+    override val type: AstType get() = context.builtIns.nothingType
+
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
-        type.accept(visitor, data)
-        target.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstBreakImpl {
         annotations.transformInplace(transformer, data)
-        type = type.transformSingle(transformer, data)
-        target = target.transformSingle(transformer, data)
         return this
     }
 
@@ -34,11 +34,9 @@ internal class AstBreakImpl(
         annotations.addAll(newAnnotations)
     }
 
-    override fun replaceType(newType: AstType) {
-        type = newType
-    }
+    override fun replaceType(newType: AstType) {}
 
-    override fun replaceTarget(newTarget: AstLoop) {
+    override fun replaceTarget(newTarget: AstTarget<AstLoop>) {
         target = newTarget
     }
 }

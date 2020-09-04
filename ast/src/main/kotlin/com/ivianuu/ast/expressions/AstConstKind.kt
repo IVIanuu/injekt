@@ -11,21 +11,18 @@ sealed class AstConstKind<T>(val asString: kotlin.String) {
     object Char : AstConstKind<kotlin.Char>("Char")
 
     object Byte : AstConstKind<kotlin.Byte>("Byte")
-    object UnsignedByte : AstConstKind<kotlin.Byte>("UByte")
+    object UByte : AstConstKind<kotlin.UByte>("UByte")
     object Short : AstConstKind<kotlin.Short>("Short")
-    object UnsignedShort : AstConstKind<kotlin.Short>("UShort")
+    object UShort : AstConstKind<kotlin.UShort>("UShort")
     object Int : AstConstKind<kotlin.Int>("Int")
-    object UnsignedInt : AstConstKind<kotlin.Int>("UInt")
+    object UInt : AstConstKind<kotlin.UInt>("UInt")
     object Long : AstConstKind<kotlin.Long>("Long")
-    object UnsignedLong : AstConstKind<kotlin.Long>("ULong")
+    object ULong : AstConstKind<kotlin.ULong>("ULong")
 
     object String : AstConstKind<kotlin.String>("String")
 
     object Float : AstConstKind<kotlin.Float>("Float")
     object Double : AstConstKind<kotlin.Double>("Double")
-
-    object IntegerLiteral : AstConstKind<kotlin.Long>("IntegerLiteral")
-    object UnsignedIntegerLiteral : AstConstKind<kotlin.Long>("UnsignedIntegerLiteral")
 
     override fun toString() = asString
 }

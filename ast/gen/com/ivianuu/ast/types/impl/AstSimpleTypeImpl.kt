@@ -1,5 +1,6 @@
 package com.ivianuu.ast.types.impl
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstClassifierSymbol
 import com.ivianuu.ast.types.AstSimpleType
@@ -12,6 +13,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstSimpleTypeImpl(
+    override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
     override var isMarkedNullable: Boolean,
     override var classifier: AstClassifierSymbol<*>,

@@ -1,8 +1,10 @@
 package com.ivianuu.ast.declarations.builder
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.Visibilities
 import com.ivianuu.ast.Visibility
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
@@ -17,6 +19,7 @@ import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstPropertySymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.utils.lazyVar
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 import org.jetbrains.kotlin.descriptors.Modality
@@ -28,13 +31,13 @@ import org.jetbrains.kotlin.name.Name
  */
 
 @AstBuilderDsl
-class AstPropertyBuilder : AstMemberDeclarationBuilder, AstTypeParametersOwnerBuilder {
+class AstPropertyBuilder(override val context: AstContext) : AstMemberDeclarationBuilder, AstTypeParametersOwnerBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     var dispatchReceiverType: AstType? = null
     var extensionReceiverType: AstType? = null
     lateinit var returnType: AstType
-    override lateinit var name: Name
+    override var name: Name by lazyVar { symbol.callableId.callableName }
     var initializer: AstExpression? = null
     var delegate: AstExpression? = null
     var isVar: Boolean = false
@@ -53,6 +56,7 @@ class AstPropertyBuilder : AstMemberDeclarationBuilder, AstTypeParametersOwnerBu
 
     override fun build(): AstProperty {
         return AstPropertyImpl(
+            context,
             annotations,
             origin,
             dispatchReceiverType,
@@ -87,13 +91,13 @@ class AstPropertyBuilder : AstMemberDeclarationBuilder, AstTypeParametersOwnerBu
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildProperty(init: AstPropertyBuilder.() -> Unit): AstProperty {
-    return AstPropertyBuilder().apply(init).build()
+inline fun AstBuilder.buildProperty(init: AstPropertyBuilder.() -> Unit): AstProperty {
+    return AstPropertyBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstProperty.copy(init: AstPropertyBuilder.() -> Unit = {}): AstProperty {
-    val copyBuilder = AstPropertyBuilder()
+    val copyBuilder = AstPropertyBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
     copyBuilder.dispatchReceiverType = dispatchReceiverType

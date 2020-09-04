@@ -1,5 +1,7 @@
 package com.ivianuu.ast.expressions.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstExpression
@@ -13,7 +15,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 @AstBuilderDsl
-interface AstCallBuilder {
+interface AstCallBuilder : AstBuilder {
     abstract val annotations: MutableList<AstFunctionCall>
     abstract var type: AstType
     abstract val valueArguments: MutableList<AstExpression?>

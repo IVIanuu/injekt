@@ -1,5 +1,6 @@
 package com.ivianuu.ast.expressions
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.declarations.AstVariable
 import com.ivianuu.ast.types.AstType
@@ -11,6 +12,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstWhen : AstPureAbstractElement(), AstExpression {
+    abstract override val context: AstContext
     abstract override val annotations: List<AstFunctionCall>
     abstract override val type: AstType
     abstract val subject: AstExpression?

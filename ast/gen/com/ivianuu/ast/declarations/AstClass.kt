@@ -1,5 +1,6 @@
 package com.ivianuu.ast.declarations
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstClassLikeSymbol
 import com.ivianuu.ast.symbols.impl.AstClassSymbol
@@ -13,6 +14,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 interface AstClass<F : AstClass<F>> : AstClassLikeDeclaration<F>, AstDeclarationContainer {
+    override val context: AstContext
     override val annotations: List<AstFunctionCall>
     override val origin: AstDeclarationOrigin
     override val attributes: AstDeclarationAttributes

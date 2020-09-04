@@ -1,6 +1,8 @@
 package com.ivianuu.ast.declarations.builder
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstImplementationDetail
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
@@ -13,6 +15,7 @@ import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstValueParameterSymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.utils.lazyVar
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 import org.jetbrains.kotlin.name.Name
@@ -23,11 +26,11 @@ import org.jetbrains.kotlin.name.Name
  */
 
 @AstBuilderDsl
-open class AstValueParameterBuilder : AstNamedDeclarationBuilder {
+open class AstValueParameterBuilder(override val context: AstContext) : AstNamedDeclarationBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     open lateinit var returnType: AstType
-    override lateinit var name: Name
+    override var name: Name by lazyVar { symbol.callableId.callableName }
     open lateinit var symbol: AstValueParameterSymbol
     open var defaultValue: AstExpression? = null
     open var isCrossinline: Boolean = false
@@ -37,6 +40,7 @@ open class AstValueParameterBuilder : AstNamedDeclarationBuilder {
     @OptIn(AstImplementationDetail::class)
     override fun build(): AstValueParameter {
         return AstValueParameterImpl(
+            context,
             annotations,
             origin,
             returnType,
@@ -59,13 +63,13 @@ open class AstValueParameterBuilder : AstNamedDeclarationBuilder {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildValueParameter(init: AstValueParameterBuilder.() -> Unit): AstValueParameter {
-    return AstValueParameterBuilder().apply(init).build()
+inline fun AstBuilder.buildValueParameter(init: AstValueParameterBuilder.() -> Unit): AstValueParameter {
+    return AstValueParameterBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstValueParameter.copy(init: AstValueParameterBuilder.() -> Unit = {}): AstValueParameter {
-    val copyBuilder = AstValueParameterBuilder()
+    val copyBuilder = AstValueParameterBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
     copyBuilder.returnType = returnType

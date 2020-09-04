@@ -1,5 +1,7 @@
 package com.ivianuu.ast.declarations.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstAnonymousFunction
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
@@ -22,20 +24,21 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstAnonymousFunctionBuilder : AstFunctionBuilder, AstExpressionBuilder {
+class AstAnonymousFunctionBuilder(override val context: AstContext) : AstFunctionBuilder, AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     var dispatchReceiverType: AstType? = null
     var extensionReceiverType: AstType? = null
-    override lateinit var returnType: AstType
+    override var returnType: AstType = context.builtIns.unitType
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
     override var body: AstBlock? = null
     override lateinit var type: AstType
-    lateinit var symbol: AstAnonymousFunctionSymbol
     var label: String? = null
+    lateinit var symbol: AstAnonymousFunctionSymbol
 
     override fun build(): AstAnonymousFunction {
         return AstAnonymousFunctionImpl(
+            context,
             annotations,
             origin,
             dispatchReceiverType,
@@ -44,8 +47,8 @@ class AstAnonymousFunctionBuilder : AstFunctionBuilder, AstExpressionBuilder {
             valueParameters,
             body,
             type,
-            symbol,
             label,
+            symbol,
         )
     }
 
@@ -59,13 +62,13 @@ class AstAnonymousFunctionBuilder : AstFunctionBuilder, AstExpressionBuilder {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildAnonymousFunction(init: AstAnonymousFunctionBuilder.() -> Unit): AstAnonymousFunction {
-    return AstAnonymousFunctionBuilder().apply(init).build()
+inline fun AstBuilder.buildAnonymousFunction(init: AstAnonymousFunctionBuilder.() -> Unit): AstAnonymousFunction {
+    return AstAnonymousFunctionBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstAnonymousFunction.copy(init: AstAnonymousFunctionBuilder.() -> Unit = {}): AstAnonymousFunction {
-    val copyBuilder = AstAnonymousFunctionBuilder()
+    val copyBuilder = AstAnonymousFunctionBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
     copyBuilder.dispatchReceiverType = dispatchReceiverType
@@ -74,7 +77,7 @@ inline fun AstAnonymousFunction.copy(init: AstAnonymousFunctionBuilder.() -> Uni
     copyBuilder.valueParameters.addAll(valueParameters)
     copyBuilder.body = body
     copyBuilder.type = type
-    copyBuilder.symbol = symbol
     copyBuilder.label = label
+    copyBuilder.symbol = symbol
     return copyBuilder.apply(init).build()
 }

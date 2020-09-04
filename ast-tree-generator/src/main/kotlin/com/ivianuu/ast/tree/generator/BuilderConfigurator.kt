@@ -47,6 +47,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             parents + memberDeclarationBuilder
             parents += typeParametersOwnerBuilder
             parents += declarationContainerBuilder
+            defaultLazy("name", "symbol.classId.shortClassName")
             default("classKind", "ClassKind.CLASS")
             defaultFalse("isInline")
             defaultFalse("isCompanion")
@@ -103,6 +104,10 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             defaultFalse("isPrimary")
         }
 
+        builder(anonymousInitializer) {
+            defaultLazy("symbol", "AstAnonymousInitializerSymbol()")
+        }
+
         builder(anonymousObject) {
             parents += classBuilder
             default("classKind", "ClassKind.CLASS")
@@ -111,6 +116,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         builder(typeAlias) {
             parents + memberDeclarationBuilder
             parents += typeParametersOwnerBuilder
+            defaultLazy("name", "symbol.classId.shortClassName")
         }
 
         builder(callableReference) {
@@ -121,12 +127,10 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
 
         builder(whileLoop) {
             parents += loopBuilder
-            defaultNull("label")
         }
 
         builder(doWhileLoop) {
             parents += loopBuilder
-            defaultNull("label")
         }
 
         builder(delegatedConstructorCall) {
@@ -146,9 +150,14 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             defaultNoReceivers()
         }
 
+        builder(enumEntry) {
+            defaultLazy("name", "symbol.callableId.callableName")
+        }
+
         builder(property) {
             parents += memberDeclarationBuilder
             parents += typeParametersOwnerBuilder
+            defaultLazy("name", "symbol.callableId.callableName")
             defaultNull("getter", "setter")
             defaultFalse("isVar")
             defaultFalse("isLocal")
@@ -165,12 +174,14 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         builder(anonymousFunction) {
             parents += functionBuilder
             defaultNull("label", "body")
+            default("returnType", "context.builtIns.unitType")
         }
 
         builder(propertyAccessor) {
             parents += functionBuilder
             defaultNull("body")
             defaultFalse("isSetter")
+            defaultLazy("name", "if (isSetter) Name.special(\"<setter>\") else Name.special(\"<getter>\")")
         }
 
         builder(breakExpression) {
@@ -185,24 +196,32 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             parents += namedDeclarationBuilder
             openBuilder()
             defaultFalse("isCrossinline", "isNoinline", "isVararg")
+            defaultLazy("name", "symbol.callableId.callableName")
         }
 
         builder(namedFunction) {
             parents += functionBuilder
             parents + memberDeclarationBuilder
             parents += typeParametersOwnerBuilder
+            defaultLazy("name", "symbol.callableId.callableName")
             defaultNull("body")
             defaultFalse("isSuspend")
             defaultFalse("isOperator")
             defaultFalse("isInfix")
             defaultFalse("isInline")
             defaultFalse("isTailrec")
+            default("returnType", "context.builtIns.unitType")
             openBuilder()
         }
 
         builder(typeParameter) {
             parents += namedDeclarationBuilder
             defaultFalse("isReified")
+            default("variance", "Variance.INVARIANT")
+            defaultLazy("symbol", "AstTypeParameterSymbol()")
+        }
+
+        builder(typeProjectionWithVariance) {
             default("variance", "Variance.INVARIANT")
         }
 

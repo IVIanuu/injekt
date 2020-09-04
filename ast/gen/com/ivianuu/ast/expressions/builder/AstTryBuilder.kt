@@ -1,5 +1,7 @@
 package com.ivianuu.ast.expressions.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstCatch
 import com.ivianuu.ast.expressions.AstExpression
@@ -17,7 +19,7 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstTryBuilder : AstExpressionBuilder {
+class AstTryBuilder(override val context: AstContext) : AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var type: AstType
     lateinit var tryBody: AstExpression
@@ -26,6 +28,7 @@ class AstTryBuilder : AstExpressionBuilder {
 
     override fun build(): AstTry {
         return AstTryImpl(
+            context,
             annotations,
             type,
             tryBody,
@@ -37,13 +40,13 @@ class AstTryBuilder : AstExpressionBuilder {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildTry(init: AstTryBuilder.() -> Unit): AstTry {
-    return AstTryBuilder().apply(init).build()
+inline fun AstBuilder.buildTry(init: AstTryBuilder.() -> Unit): AstTry {
+    return AstTryBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstTry.copy(init: AstTryBuilder.() -> Unit = {}): AstTry {
-    val copyBuilder = AstTryBuilder()
+    val copyBuilder = AstTryBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.type = type
     copyBuilder.tryBody = tryBody

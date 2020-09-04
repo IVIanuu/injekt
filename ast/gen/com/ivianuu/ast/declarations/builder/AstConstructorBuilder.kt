@@ -1,5 +1,9 @@
 package com.ivianuu.ast.declarations.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.Visibilities
+import com.ivianuu.ast.Visibility
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
@@ -22,7 +26,7 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstConstructorBuilder : AstAbstractConstructorBuilder {
+class AstConstructorBuilder(override val context: AstContext) : AstAbstractConstructorBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     override var dispatchReceiverType: AstType? = null
@@ -32,10 +36,12 @@ class AstConstructorBuilder : AstAbstractConstructorBuilder {
     override lateinit var symbol: AstConstructorSymbol
     override var delegatedConstructor: AstDelegatedConstructorCall? = null
     override var body: AstBlock? = null
+    override var visibility: Visibility = Visibilities.Public
     var isPrimary: Boolean = false
 
     override fun build(): AstConstructor {
         return AstConstructorImpl(
+            context,
             annotations,
             origin,
             dispatchReceiverType,
@@ -45,6 +51,7 @@ class AstConstructorBuilder : AstAbstractConstructorBuilder {
             symbol,
             delegatedConstructor,
             body,
+            visibility,
             isPrimary,
         )
     }
@@ -59,13 +66,13 @@ class AstConstructorBuilder : AstAbstractConstructorBuilder {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildConstructor(init: AstConstructorBuilder.() -> Unit): AstConstructor {
-    return AstConstructorBuilder().apply(init).build()
+inline fun AstBuilder.buildConstructor(init: AstConstructorBuilder.() -> Unit): AstConstructor {
+    return AstConstructorBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstConstructor.copy(init: AstConstructorBuilder.() -> Unit = {}): AstConstructor {
-    val copyBuilder = AstConstructorBuilder()
+    val copyBuilder = AstConstructorBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
     copyBuilder.dispatchReceiverType = dispatchReceiverType
@@ -75,6 +82,7 @@ inline fun AstConstructor.copy(init: AstConstructorBuilder.() -> Unit = {}): Ast
     copyBuilder.symbol = symbol
     copyBuilder.delegatedConstructor = delegatedConstructor
     copyBuilder.body = body
+    copyBuilder.visibility = visibility
     copyBuilder.isPrimary = isPrimary
     return copyBuilder.apply(init).build()
 }

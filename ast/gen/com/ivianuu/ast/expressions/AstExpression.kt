@@ -1,5 +1,6 @@
 package com.ivianuu.ast.expressions
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstVarargElement
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -10,6 +11,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 interface AstExpression : AstStatement, AstVarargElement {
+    override val context: AstContext
     override val annotations: List<AstFunctionCall>
     val type: AstType
 

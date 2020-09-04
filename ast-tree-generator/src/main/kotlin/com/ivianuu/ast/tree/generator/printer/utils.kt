@@ -26,17 +26,20 @@ enum class ImportKind(val postfix: String) {
 
 fun Builder.collectImports(): List<String> {
     val parents = parents.mapNotNull { it.fullQualifiedName }
-    val builderDsl = "com.ivianuu.ast.builder.AstBuilderDsl"
+    val baseImports = listOf(
+        "com.ivianuu.ast.builder.AstBuilderDsl",
+        "com.ivianuu.ast.builder.AstBuilder"
+    )
     return when (this) {
         is LeafBuilder -> implementation.collectImports(
             parents,
             ImportKind.Builder,
-        ) + implementation.fullQualifiedName!! + usedTypes.mapNotNull { it.fullQualifiedName } + builderDsl + "kotlin.contracts.*"
+        ) + implementation.fullQualifiedName!! + usedTypes.mapNotNull { it.fullQualifiedName } + baseImports + "kotlin.contracts.*"
         is IntermediateBuilder -> {
             val fqns = parents + allFields.mapNotNull { it.fullQualifiedName } + allFields.flatMap {
                 it.arguments.mapNotNull { it.fullQualifiedName }
             } + (materializedElement?.fullQualifiedName
-                ?: throw IllegalStateException(type)) + builderDsl
+                ?: throw IllegalStateException(type)) + baseImports
             fqns.filterRedundantImports(packageName, ImportKind.Builder)
         }
     }.sorted()

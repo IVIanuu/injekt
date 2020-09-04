@@ -1,5 +1,8 @@
 package com.ivianuu.ast.expressions.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.AstTarget
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstContinue
 import com.ivianuu.ast.expressions.AstFunctionCall
@@ -17,30 +20,35 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstContinueBuilder : AstLoopJumpBuilder, AstExpressionBuilder {
+class AstContinueBuilder(override val context: AstContext) : AstLoopJumpBuilder, AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
-    override lateinit var type: AstType
-    override lateinit var target: AstLoop
+    override lateinit var target: AstTarget<AstLoop>
 
     override fun build(): AstContinue {
         return AstContinueImpl(
+            context,
             annotations,
-            type,
             target,
         )
     }
+
+    @Deprecated("Modification of 'type' has no impact for AstContinueBuilder", level = DeprecationLevel.HIDDEN)
+    override var type: AstType
+        get() = throw IllegalStateException()
+        set(value) {
+            throw IllegalStateException()
+        }
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildContinue(init: AstContinueBuilder.() -> Unit): AstContinue {
-    return AstContinueBuilder().apply(init).build()
+inline fun AstBuilder.buildContinue(init: AstContinueBuilder.() -> Unit): AstContinue {
+    return AstContinueBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstContinue.copy(init: AstContinueBuilder.() -> Unit = {}): AstContinue {
-    val copyBuilder = AstContinueBuilder()
+    val copyBuilder = AstContinueBuilder(context)
     copyBuilder.annotations.addAll(annotations)
-    copyBuilder.type = type
     copyBuilder.target = target
     return copyBuilder.apply(init).build()
 }

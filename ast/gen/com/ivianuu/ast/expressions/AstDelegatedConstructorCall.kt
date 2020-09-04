@@ -1,5 +1,6 @@
 package com.ivianuu.ast.expressions
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
@@ -12,6 +13,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstDelegatedConstructorCall : AstCall() {
+    abstract override val context: AstContext
     abstract override val annotations: List<AstFunctionCall>
     abstract override val type: AstType
     abstract override val valueArguments: List<AstExpression?>

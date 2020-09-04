@@ -1,5 +1,7 @@
 package com.ivianuu.ast.expressions.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstSuperReference
@@ -15,7 +17,7 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstSuperReferenceBuilder : AstExpressionBuilder {
+class AstSuperReferenceBuilder(override val context: AstContext) : AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var type: AstType
     var labelName: String? = null
@@ -23,6 +25,7 @@ class AstSuperReferenceBuilder : AstExpressionBuilder {
 
     override fun build(): AstSuperReference {
         return AstSuperReferenceImpl(
+            context,
             annotations,
             type,
             labelName,
@@ -33,13 +36,13 @@ class AstSuperReferenceBuilder : AstExpressionBuilder {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildSuperReference(init: AstSuperReferenceBuilder.() -> Unit): AstSuperReference {
-    return AstSuperReferenceBuilder().apply(init).build()
+inline fun AstBuilder.buildSuperReference(init: AstSuperReferenceBuilder.() -> Unit): AstSuperReference {
+    return AstSuperReferenceBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstSuperReference.copy(init: AstSuperReferenceBuilder.() -> Unit = {}): AstSuperReference {
-    val copyBuilder = AstSuperReferenceBuilder()
+    val copyBuilder = AstSuperReferenceBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.type = type
     copyBuilder.labelName = labelName

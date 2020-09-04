@@ -1,6 +1,7 @@
 package com.ivianuu.ast.types
 
 import com.ivianuu.ast.AstAnnotationContainer
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.visitors.*
 
@@ -10,6 +11,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 interface AstType : AstAnnotationContainer {
+    override val context: AstContext
     override val annotations: List<AstFunctionCall>
     val isMarkedNullable: Boolean
 

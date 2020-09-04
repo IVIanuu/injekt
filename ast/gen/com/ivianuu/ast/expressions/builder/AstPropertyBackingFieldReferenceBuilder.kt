@@ -1,5 +1,7 @@
 package com.ivianuu.ast.expressions.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstPropertyBackingFieldReference
@@ -16,13 +18,14 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstPropertyBackingFieldReferenceBuilder : AstExpressionBuilder {
+class AstPropertyBackingFieldReferenceBuilder(override val context: AstContext) : AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var type: AstType
     lateinit var property: AstPropertySymbol
 
     override fun build(): AstPropertyBackingFieldReference {
         return AstPropertyBackingFieldReferenceImpl(
+            context,
             annotations,
             type,
             property,
@@ -31,13 +34,13 @@ class AstPropertyBackingFieldReferenceBuilder : AstExpressionBuilder {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildPropertyBackingFieldReference(init: AstPropertyBackingFieldReferenceBuilder.() -> Unit): AstPropertyBackingFieldReference {
-    return AstPropertyBackingFieldReferenceBuilder().apply(init).build()
+inline fun AstBuilder.buildPropertyBackingFieldReference(init: AstPropertyBackingFieldReferenceBuilder.() -> Unit): AstPropertyBackingFieldReference {
+    return AstPropertyBackingFieldReferenceBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstPropertyBackingFieldReference.copy(init: AstPropertyBackingFieldReferenceBuilder.() -> Unit = {}): AstPropertyBackingFieldReference {
-    val copyBuilder = AstPropertyBackingFieldReferenceBuilder()
+    val copyBuilder = AstPropertyBackingFieldReferenceBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.type = type
     copyBuilder.property = property

@@ -1,5 +1,7 @@
 package com.ivianuu.ast.expressions.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
@@ -16,30 +18,35 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstThrowBuilder : AstExpressionBuilder {
+class AstThrowBuilder(override val context: AstContext) : AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
-    override lateinit var type: AstType
     lateinit var exception: AstExpression
 
     override fun build(): AstThrow {
         return AstThrowImpl(
+            context,
             annotations,
-            type,
             exception,
         )
     }
+
+    @Deprecated("Modification of 'type' has no impact for AstThrowBuilder", level = DeprecationLevel.HIDDEN)
+    override var type: AstType
+        get() = throw IllegalStateException()
+        set(value) {
+            throw IllegalStateException()
+        }
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildThrow(init: AstThrowBuilder.() -> Unit): AstThrow {
-    return AstThrowBuilder().apply(init).build()
+inline fun AstBuilder.buildThrow(init: AstThrowBuilder.() -> Unit): AstThrow {
+    return AstThrowBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstThrow.copy(init: AstThrowBuilder.() -> Unit = {}): AstThrow {
-    val copyBuilder = AstThrowBuilder()
+    val copyBuilder = AstThrowBuilder(context)
     copyBuilder.annotations.addAll(annotations)
-    copyBuilder.type = type
     copyBuilder.exception = exception
     return copyBuilder.apply(init).build()
 }

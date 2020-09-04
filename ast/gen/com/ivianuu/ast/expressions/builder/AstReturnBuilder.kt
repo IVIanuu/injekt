@@ -1,12 +1,15 @@
 package com.ivianuu.ast.expressions.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.AstTarget
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
+import com.ivianuu.ast.declarations.AstFunction
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstReturn
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.impl.AstReturnImpl
-import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
@@ -17,33 +20,38 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstReturnBuilder : AstExpressionBuilder {
+class AstReturnBuilder(override val context: AstContext) : AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
-    override lateinit var type: AstType
+    lateinit var target: AstTarget<AstFunction<*>>
     lateinit var result: AstExpression
-    lateinit var target: AstFunctionSymbol<*>
 
     override fun build(): AstReturn {
         return AstReturnImpl(
+            context,
             annotations,
-            type,
-            result,
             target,
+            result,
         )
     }
+
+    @Deprecated("Modification of 'type' has no impact for AstReturnBuilder", level = DeprecationLevel.HIDDEN)
+    override var type: AstType
+        get() = throw IllegalStateException()
+        set(value) {
+            throw IllegalStateException()
+        }
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildReturn(init: AstReturnBuilder.() -> Unit): AstReturn {
-    return AstReturnBuilder().apply(init).build()
+inline fun AstBuilder.buildReturn(init: AstReturnBuilder.() -> Unit): AstReturn {
+    return AstReturnBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstReturn.copy(init: AstReturnBuilder.() -> Unit = {}): AstReturn {
-    val copyBuilder = AstReturnBuilder()
+    val copyBuilder = AstReturnBuilder(context)
     copyBuilder.annotations.addAll(annotations)
-    copyBuilder.type = type
-    copyBuilder.result = result
     copyBuilder.target = target
+    copyBuilder.result = result
     return copyBuilder.apply(init).build()
 }

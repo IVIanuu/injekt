@@ -1,5 +1,6 @@
 package com.ivianuu.ast.declarations.impl
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.declarations.AstFile
 import com.ivianuu.ast.declarations.AstModuleFragment
 import org.jetbrains.kotlin.name.Name
@@ -11,6 +12,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstModuleFragmentImpl(
+    override val context: AstContext,
     override var name: Name,
     override val files: MutableList<AstFile>,
 ) : AstModuleFragment() {

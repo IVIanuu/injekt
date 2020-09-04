@@ -29,7 +29,6 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         visitorSuperType = baseAstElement
         transformerType = this
     }
-
     val targetElement = element("TargetElement", Other) {
         visitorSuperType = baseAstElement
         transformerType = this
@@ -199,7 +198,10 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
             visitorSuperType = klass
             transformerType = statement
         }
-
+    val jump = element("Jump", Expression, expression) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
     val loop = element("Loop", Expression, expression, targetElement) {
         visitorSuperType = expression
         transformerType = statement
@@ -217,8 +219,8 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         visitorSuperType = expression
         transformerType = statement
     }
-    val loopJump = element("LoopJump", Expression, expression) {
-        visitorSuperType = expression
+    val loopJump = element("LoopJump", Expression, jump) {
+        visitorSuperType = jump
         transformerType = statement
     }
     val breakExpression = element("Break", Expression, loopJump) {
@@ -309,8 +311,8 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         transformerType = varargElement
     }
 
-    val returnExpression = element("Return", Expression, expression) {
-        visitorSuperType = expression
+    val returnExpression = element("Return", Expression, jump) {
+        visitorSuperType = jump
         transformerType = statement
     }
     val throwExpression = element("Throw", Expression, expression) {

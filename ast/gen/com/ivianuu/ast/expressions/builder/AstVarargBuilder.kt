@@ -1,6 +1,8 @@
 package com.ivianuu.ast.expressions.builder
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstVarargElement
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstVararg
@@ -16,13 +18,14 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstVarargBuilder : AstExpressionBuilder {
+class AstVarargBuilder(override val context: AstContext) : AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var type: AstType
     val elements: MutableList<AstVarargElement> = mutableListOf()
 
     override fun build(): AstVararg {
         return AstVarargImpl(
+            context,
             annotations,
             type,
             elements,
@@ -31,13 +34,13 @@ class AstVarargBuilder : AstExpressionBuilder {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildVararg(init: AstVarargBuilder.() -> Unit): AstVararg {
-    return AstVarargBuilder().apply(init).build()
+inline fun AstBuilder.buildVararg(init: AstVarargBuilder.() -> Unit): AstVararg {
+    return AstVarargBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstVararg.copy(init: AstVarargBuilder.() -> Unit = {}): AstVararg {
-    val copyBuilder = AstVarargBuilder()
+    val copyBuilder = AstVarargBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.type = type
     copyBuilder.elements.addAll(elements)

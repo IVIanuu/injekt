@@ -1,5 +1,6 @@
 package com.ivianuu.ast.declarations.impl
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.declarations.AstDeclaration
 import com.ivianuu.ast.declarations.AstFile
 import com.ivianuu.ast.expressions.AstFunctionCall
@@ -12,6 +13,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstFileImpl(
+    override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
     override val declarations: MutableList<AstDeclaration>,
     override var name: String,

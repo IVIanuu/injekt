@@ -1,5 +1,6 @@
 package com.ivianuu.ast
 
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.declarations.builder.buildNamedFunction
 import com.ivianuu.ast.declarations.builder.buildValueParameter
 import com.ivianuu.ast.psi2ast.DescriptorSymbolTable
@@ -12,7 +13,10 @@ import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.builder.copy
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.fir.lightTree.converter.nameAsSafeName
+import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi2ir.findSingleFunction
 import org.jetbrains.kotlin.types.KotlinType
 
 class AstBuiltIns(
@@ -20,13 +24,17 @@ class AstBuiltIns(
     private val typeConverter: TypeConverter,
     private val symbolTable: DescriptorSymbolTable
 ) {
-
+    
     val anyType = kotlinBuiltIns.anyType.toAstType()
     val anySymbol = kotlinBuiltIns.any.toAstRegularClassSymbol()
     val anyNType = anyType.copy { isMarkedNullable = true }
 
     val booleanType = kotlinBuiltIns.booleanType.toAstType()
     val booleanSymbol = kotlinBuiltIns.boolean.toAstRegularClassSymbol()
+    val booleanNotSymbol = symbolTable.getNamedFunctionSymbol(
+        kotlinBuiltIns.boolean.unsubstitutedMemberScope
+            .findSingleFunction(Name.identifier("not")) as SimpleFunctionDescriptor
+    )
 
     val charType = kotlinBuiltIns.charType.toAstType()
     val charSymbol = kotlinBuiltIns.char.toAstRegularClassSymbol()
@@ -72,43 +80,46 @@ class AstBuiltIns(
         callableId: CallableId,
         returnType: AstType,
         valueParameterCount: Int
-    ): AstNamedFunctionSymbol {
-        return buildNamedFunction {
-            symbol = AstNamedFunctionSymbol(callableId)
-            name = callableId.callableName
-            this.returnType = returnType
-            valueParameters += (0 until valueParameterCount)
-                .map { index ->
-                    buildValueParameter {
-                        symbol = AstValueParameterSymbol(
-                            CallableId("p$index".nameAsSafeName())
-                        )
-                        name = symbol.callableId.callableName
-                        this.returnType = anyNType
+    ): Lazy<AstNamedFunctionSymbol> {
+        return lazy {
+            builder.buildNamedFunction {
+                symbol = AstNamedFunctionSymbol(callableId)
+                this.returnType = returnType
+                valueParameters += (0 until valueParameterCount)
+                    .map { index ->
+                        buildValueParameter {
+                            symbol = AstValueParameterSymbol(
+                                CallableId("p$index".nameAsSafeName())
+                            )
+                            this.returnType = anyNType
+                        }
                     }
-                }
-        }.symbol
+            }.symbol
+        }
     }
 
-    val lessThan = intrinsicFunction(AstIntrinsics.LessThan, booleanType, 2)
-    val greaterThan = intrinsicFunction(AstIntrinsics.GreaterThan, booleanType, 2)
-    val lessThanEqual = intrinsicFunction(AstIntrinsics.LessThanEqual, booleanType, 2)
-    val greaterThanEqual = intrinsicFunction(AstIntrinsics.GreaterThanEqual, booleanType, 2)
+    val lessThanSymbol by intrinsicFunction(AstIntrinsics.LessThan, booleanType, 2)
+    val greaterThanSymbol by intrinsicFunction(AstIntrinsics.GreaterThan, booleanType, 2)
+    val lessThanEqualSymbol by intrinsicFunction(AstIntrinsics.LessThanEqual, booleanType, 2)
+    val greaterThanEqualSymbol by intrinsicFunction(AstIntrinsics.GreaterThanEqual, booleanType, 2)
 
-    val structuralEqual = intrinsicFunction(AstIntrinsics.StructuralEqual, booleanType, 2)
-    val structuralNotEqual = intrinsicFunction(AstIntrinsics.StructuralNotEqual, booleanType, 2)
-    val identityEqual = intrinsicFunction(AstIntrinsics.IdentityEqual, booleanType, 2)
-    val identityNotEqual = intrinsicFunction(AstIntrinsics.IdentityNotEqual, booleanType, 2)
+    val structuralEqualSymbol by intrinsicFunction(AstIntrinsics.StructuralEqual, booleanType, 2)
+    val structuralNotEqualSymbol by intrinsicFunction(AstIntrinsics.StructuralNotEqual, booleanType, 2)
+    val identityEqualSymbol by intrinsicFunction(AstIntrinsics.IdentityEqual, booleanType, 2)
+    val identityNotEqualSymbol by intrinsicFunction(AstIntrinsics.IdentityNotEqual, booleanType, 2)
 
-    val lazyAnd = intrinsicFunction(AstIntrinsics.LazyAnd, booleanType, 2)
-    val lazyOr = intrinsicFunction(AstIntrinsics.LazyOr, booleanType, 2)
+    val lazyAndSymbol by intrinsicFunction(AstIntrinsics.LazyAnd, booleanType, 2)
+    val lazyOrSymbol by intrinsicFunction(AstIntrinsics.LazyOr, booleanType, 2)
 
-    val isType = intrinsicFunction(AstIntrinsics.IsType, booleanType, 1)
-    val isNotType = intrinsicFunction(AstIntrinsics.IsNotType, booleanType, 1)
-    fun asType(type: AstType) = intrinsicFunction(AstIntrinsics.AsType, type, 1)
-    fun safeAsType(type: AstType) = intrinsicFunction(AstIntrinsics.SafeAsType,
+    val isTypeSymbol by intrinsicFunction(AstIntrinsics.IsType, booleanType, 1)
+    val isNotTypeSymbol by intrinsicFunction(AstIntrinsics.IsNotType, booleanType, 1)
+    fun asTypeSymbol(type: AstType) = intrinsicFunction(AstIntrinsics.AsType, type, 1).value
+    fun safeAsTypeSymbol(type: AstType) = intrinsicFunction(AstIntrinsics.SafeAsType,
         (type as AstSimpleType).copy { isMarkedNullable = true }, 1)
+        .value
 
+    internal lateinit var builder: AstBuilder
+    
     private fun ClassDescriptor.toAstRegularClassSymbol() = symbolTable.getClassSymbol(this)
     private fun KotlinType.toAstType() = typeConverter.convert(this)
 

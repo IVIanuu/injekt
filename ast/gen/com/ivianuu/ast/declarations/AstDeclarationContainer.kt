@@ -1,5 +1,6 @@
 package com.ivianuu.ast.declarations
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstElement
 import com.ivianuu.ast.visitors.*
 
@@ -9,6 +10,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 interface AstDeclarationContainer : AstElement {
+    override val context: AstContext
     val declarations: List<AstDeclaration>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitDeclarationContainer(this, data)

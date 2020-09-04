@@ -1,5 +1,6 @@
 package com.ivianuu.ast.declarations
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.expressions.AstBlock
@@ -17,6 +18,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstNamedFunction : AstFunction<AstNamedFunction>, AstMemberDeclaration(), AstCallableDeclaration<AstNamedFunction>, AstTypeParametersOwner {
+    abstract override val context: AstContext
     abstract override val annotations: List<AstFunctionCall>
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes

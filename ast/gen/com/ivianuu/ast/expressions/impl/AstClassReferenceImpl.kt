@@ -1,5 +1,6 @@
 package com.ivianuu.ast.expressions.impl
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.expressions.AstClassReference
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.types.AstType
@@ -11,6 +12,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstClassReferenceImpl(
+    override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
     override var type: AstType,
     override var classType: AstType,

@@ -43,6 +43,7 @@ import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstTypeProjectionWithVariance
 import com.ivianuu.ast.visitors.AstVisitorVoid
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.utils.Printer
@@ -134,6 +135,8 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
     }
 
     override fun visitFile(file: AstFile) = with(file) {
+        emitAnnotations(AnnotationUseSiteTarget.FILE)
+
         if (packageFqName != FqName.ROOT) emitLine("package $packageFqName")
 
         val imports = mutableSetOf<FqName>()
@@ -195,7 +198,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
                 emit("object ")
             }
         }.let { }
-        if (!name.isSpecial) emit("${name}")
+        emit("$name")
 
         if (typeParameters.isNotEmpty()) {
             typeParameters.emitList()
@@ -303,7 +306,8 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
 
     override fun visitConstructor(constructor: AstConstructor) = with(constructor) {
         emitAnnotations()
-        // todo emitVisibility()
+        emit(visibility.name.toLowerCase())
+        emitSpace()
         emit("constructor(")
         valueParameters.forEachIndexed { index, valueParameter ->
             valueParameter.emit()
@@ -444,29 +448,41 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         }
     }
 
-    override fun visitValueParameter(valueParameter: AstValueParameter) = with(valueParameter) {
+    override fun visitValueParameter(valueParameter: AstValueParameter) {
+        valueParameter.emit()
+    }
+
+    private fun AstValueParameter.emit(property: AstProperty? = null) {
         emitAnnotations()
-        if (valueParameter.isVararg) {
+        if (property != null) {
+            property.emitVisibility()
+            if (property.isVar) {
+                emit("var ")
+            } else {
+                emit("val ")
+            }
+        }
+        if (isVararg) {
             emit("vararg ")
         }
-        if (valueParameter.isNoinline) {
+        if (isNoinline) {
             emit("noinline ")
         }
-        if (valueParameter.isCrossinline) {
+        if (isCrossinline) {
             emit("crossinline ")
         }
-        emit("${valueParameter.name}: ")
-        if (valueParameter.isVararg) {
+        emit("${name}: ")
+        if (isVararg) {
             (returnType as AstSimpleType).arguments.single()
                 .let { it as AstTypeProjectionWithVariance }
                 .type
                 .emit()
         } else {
-            valueParameter.returnType.emit()
+            returnType.emit()
         }
-        if (valueParameter.defaultValue != null) {
+        if (defaultValue != null) {
             emit(" = ")
-            valueParameter.defaultValue!!.emit()
+            defaultValue!!.emit()
         }
     }
 
@@ -492,12 +508,10 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
                 AstConstKind.String -> "\"${value}\""
                 AstConstKind.Float -> "${value}f"
                 AstConstKind.Double -> value.toString()
-                AstConstKind.UnsignedByte -> "${value}u"
-                AstConstKind.UnsignedShort -> "${value}u"
-                AstConstKind.UnsignedInt -> "${value}u"
-                AstConstKind.UnsignedLong -> "${value}uL"
-                AstConstKind.IntegerLiteral -> TODO()
-                AstConstKind.UnsignedIntegerLiteral -> TODO()
+                AstConstKind.UByte -> "${value}u"
+                AstConstKind.UShort -> "${value}u"
+                AstConstKind.UInt -> "${value}u"
+                AstConstKind.ULong -> "${value}uL"
             }
         )
     }
@@ -850,9 +864,11 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         }
     }
 
-    private fun AstAnnotationContainer.emitAnnotations() {
+    private fun AstAnnotationContainer.emitAnnotations(
+        target: AnnotationUseSiteTarget? = null
+    ) {
         annotations.forEach { annotation ->
-            emit("@")
+            emit("@${target?.renderName?.let { "$it:" }.orEmpty()}")
             annotation.emit()
             emitLine()
         }

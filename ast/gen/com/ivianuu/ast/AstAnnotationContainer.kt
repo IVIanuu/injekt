@@ -9,6 +9,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 interface AstAnnotationContainer : AstElement {
+    override val context: AstContext
     val annotations: List<AstFunctionCall>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitAnnotationContainer(this, data)

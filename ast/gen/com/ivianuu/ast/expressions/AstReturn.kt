@@ -1,7 +1,8 @@
 package com.ivianuu.ast.expressions
 
-import com.ivianuu.ast.AstPureAbstractElement
-import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.AstTarget
+import com.ivianuu.ast.declarations.AstFunction
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -10,11 +11,12 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstReturn : AstPureAbstractElement(), AstExpression {
+abstract class AstReturn : AstJump<AstFunction<*>>() {
+    abstract override val context: AstContext
     abstract override val annotations: List<AstFunctionCall>
     abstract override val type: AstType
+    abstract override val target: AstTarget<AstFunction<*>>
     abstract val result: AstExpression
-    abstract val target: AstFunctionSymbol<*>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitReturn(this, data)
 
@@ -22,7 +24,7 @@ abstract class AstReturn : AstPureAbstractElement(), AstExpression {
 
     abstract override fun replaceType(newType: AstType)
 
-    abstract fun replaceResult(newResult: AstExpression)
+    abstract override fun replaceTarget(newTarget: AstTarget<AstFunction<*>>)
 
-    abstract fun replaceTarget(newTarget: AstFunctionSymbol<*>)
+    abstract fun replaceResult(newResult: AstExpression)
 }

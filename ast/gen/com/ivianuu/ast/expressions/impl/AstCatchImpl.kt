@@ -1,5 +1,6 @@
 package com.ivianuu.ast.expressions.impl
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.expressions.AstCatch
 import com.ivianuu.ast.expressions.AstExpression
@@ -11,6 +12,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstCatchImpl(
+    override val context: AstContext,
     override var parameter: AstValueParameter,
     override var body: AstExpression,
 ) : AstCatch() {

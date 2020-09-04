@@ -1,5 +1,7 @@
 package com.ivianuu.ast.declarations.impl
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
@@ -18,6 +20,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstConstructorImpl(
+    override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
     override val origin: AstDeclarationOrigin,
     override var dispatchReceiverType: AstType?,
@@ -27,6 +30,7 @@ internal class AstConstructorImpl(
     override var symbol: AstConstructorSymbol,
     override var delegatedConstructor: AstDelegatedConstructorCall?,
     override var body: AstBlock?,
+    override var visibility: Visibility,
     override var isPrimary: Boolean,
 ) : AstConstructor() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
@@ -84,6 +88,10 @@ internal class AstConstructorImpl(
 
     override fun replaceBody(newBody: AstBlock?) {
         body = newBody
+    }
+
+    override fun replaceVisibility(newVisibility: Visibility) {
+        visibility = newVisibility
     }
 
     override fun replaceIsPrimary(newIsPrimary: Boolean) {

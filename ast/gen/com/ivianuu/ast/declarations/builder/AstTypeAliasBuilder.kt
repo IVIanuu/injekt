@@ -1,8 +1,10 @@
 package com.ivianuu.ast.declarations.builder
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.Visibilities
 import com.ivianuu.ast.Visibility
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
@@ -14,6 +16,7 @@ import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstClassLikeSymbol
 import com.ivianuu.ast.symbols.impl.AstTypeAliasSymbol
 import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.utils.lazyVar
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 import org.jetbrains.kotlin.descriptors.Modality
@@ -25,10 +28,10 @@ import org.jetbrains.kotlin.name.Name
  */
 
 @AstBuilderDsl
-class AstTypeAliasBuilder : AstTypeParametersOwnerBuilder {
+class AstTypeAliasBuilder(override val context: AstContext) : AstTypeParametersOwnerBuilder {
     val annotations: MutableList<AstFunctionCall> = mutableListOf()
     var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
-    lateinit var name: Name
+    var name: Name by lazyVar { symbol.classId.shortClassName }
     var visibility: Visibility = Visibilities.Public
     var modality: Modality = Modality.FINAL
     var platformStatus: PlatformStatus = PlatformStatus.DEFAULT
@@ -38,6 +41,7 @@ class AstTypeAliasBuilder : AstTypeParametersOwnerBuilder {
 
     override fun build(): AstTypeAlias {
         return AstTypeAliasImpl(
+            context,
             annotations,
             origin,
             name,
@@ -52,13 +56,13 @@ class AstTypeAliasBuilder : AstTypeParametersOwnerBuilder {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildTypeAlias(init: AstTypeAliasBuilder.() -> Unit): AstTypeAlias {
-    return AstTypeAliasBuilder().apply(init).build()
+inline fun AstBuilder.buildTypeAlias(init: AstTypeAliasBuilder.() -> Unit): AstTypeAlias {
+    return AstTypeAliasBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstTypeAlias.copy(init: AstTypeAliasBuilder.() -> Unit = {}): AstTypeAlias {
-    val copyBuilder = AstTypeAliasBuilder()
+    val copyBuilder = AstTypeAliasBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
     copyBuilder.name = name

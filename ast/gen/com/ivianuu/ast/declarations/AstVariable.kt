@@ -1,5 +1,6 @@
 package com.ivianuu.ast.declarations
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstCallableSymbol
@@ -14,6 +15,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 interface AstVariable<F : AstVariable<F>> : AstCallableDeclaration<F>, AstNamedDeclaration {
+    override val context: AstContext
     override val annotations: List<AstFunctionCall>
     override val origin: AstDeclarationOrigin
     override val attributes: AstDeclarationAttributes

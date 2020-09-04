@@ -1,5 +1,6 @@
 package com.ivianuu.ast.declarations
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstExpression
@@ -15,6 +16,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstAnonymousFunction : AstPureAbstractElement(), AstFunction<AstAnonymousFunction>, AstExpression {
+    abstract override val context: AstContext
     abstract override val annotations: List<AstFunctionCall>
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
@@ -24,8 +26,8 @@ abstract class AstAnonymousFunction : AstPureAbstractElement(), AstFunction<AstA
     abstract override val valueParameters: List<AstValueParameter>
     abstract override val body: AstBlock?
     abstract override val type: AstType
-    abstract override val symbol: AstAnonymousFunctionSymbol
     abstract val label: String?
+    abstract override val symbol: AstAnonymousFunctionSymbol
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitAnonymousFunction(this, data)
 

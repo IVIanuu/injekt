@@ -1,5 +1,6 @@
 package com.ivianuu.ast.declarations.impl
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
@@ -20,6 +21,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstTypeAliasImpl(
+    override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
     override val origin: AstDeclarationOrigin,
     override var name: Name,

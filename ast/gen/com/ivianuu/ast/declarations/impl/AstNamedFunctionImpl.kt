@@ -1,5 +1,6 @@
 package com.ivianuu.ast.declarations.impl
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstImplementationDetail
 import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.Visibility
@@ -23,6 +24,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 open class AstNamedFunctionImpl @AstImplementationDetail constructor(
+    override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
     override val origin: AstDeclarationOrigin,
     override var dispatchReceiverType: AstType?,

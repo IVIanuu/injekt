@@ -1,5 +1,6 @@
 package com.ivianuu.ast.declarations.impl
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.declarations.AstAnonymousFunction
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
@@ -17,6 +18,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstAnonymousFunctionImpl(
+    override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
     override val origin: AstDeclarationOrigin,
     override var dispatchReceiverType: AstType?,
@@ -25,8 +27,8 @@ internal class AstAnonymousFunctionImpl(
     override val valueParameters: MutableList<AstValueParameter>,
     override var body: AstBlock?,
     override var type: AstType,
-    override var symbol: AstAnonymousFunctionSymbol,
     override var label: String?,
+    override var symbol: AstAnonymousFunctionSymbol,
 ) : AstAnonymousFunction() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
 

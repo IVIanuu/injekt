@@ -1,5 +1,6 @@
 package com.ivianuu.ast.types.impl
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.types.AstDelegatedType
@@ -12,6 +13,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstDelegatedTypeImpl(
+    override val context: AstContext,
     override var type: AstType,
     override var expression: AstExpression,
 ) : AstDelegatedType() {

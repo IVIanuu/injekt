@@ -1,5 +1,6 @@
 package com.ivianuu.ast.declarations
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.expressions.AstFunctionCall
 import org.jetbrains.kotlin.name.Name
 import com.ivianuu.ast.visitors.*
@@ -10,6 +11,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 interface AstNamedDeclaration : AstDeclaration {
+    override val context: AstContext
     override val annotations: List<AstFunctionCall>
     override val origin: AstDeclarationOrigin
     override val attributes: AstDeclarationAttributes

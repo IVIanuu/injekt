@@ -1,5 +1,7 @@
 package com.ivianuu.ast.expressions.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
@@ -19,7 +21,7 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstQualifiedAccessBuilder : AstBaseQualifiedAccessBuilder, AstExpressionBuilder {
+class AstQualifiedAccessBuilder(override val context: AstContext) : AstBaseQualifiedAccessBuilder, AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var type: AstType
     override val typeArguments: MutableList<AstTypeProjection> = mutableListOf()
@@ -29,6 +31,7 @@ class AstQualifiedAccessBuilder : AstBaseQualifiedAccessBuilder, AstExpressionBu
 
     override fun build(): AstQualifiedAccess {
         return AstQualifiedAccessImpl(
+            context,
             annotations,
             type,
             typeArguments,
@@ -41,13 +44,13 @@ class AstQualifiedAccessBuilder : AstBaseQualifiedAccessBuilder, AstExpressionBu
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildQualifiedAccess(init: AstQualifiedAccessBuilder.() -> Unit): AstQualifiedAccess {
-    return AstQualifiedAccessBuilder().apply(init).build()
+inline fun AstBuilder.buildQualifiedAccess(init: AstQualifiedAccessBuilder.() -> Unit): AstQualifiedAccess {
+    return AstQualifiedAccessBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstQualifiedAccess.copy(init: AstQualifiedAccessBuilder.() -> Unit = {}): AstQualifiedAccess {
-    val copyBuilder = AstQualifiedAccessBuilder()
+    val copyBuilder = AstQualifiedAccessBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.type = type
     copyBuilder.typeArguments.addAll(typeArguments)

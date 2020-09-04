@@ -5,9 +5,11 @@
 
 package com.ivianuu.ast.tree.generator.context
 
+import com.ivianuu.ast.tree.generator.contextType
 import com.ivianuu.ast.tree.generator.model.Element
 import com.ivianuu.ast.tree.generator.model.IntermediateBuilder
 import com.ivianuu.ast.tree.generator.model.Type
+import com.ivianuu.ast.tree.generator.model.field
 import com.ivianuu.ast.tree.generator.printer.BASE_PACKAGE
 import kotlin.reflect.KClass
 
@@ -19,6 +21,11 @@ abstract class AbstractAstTreeBuilder {
         ).apply {
             visitorSuperType = null
             transformerType = this
+            fields += field("context", contextType)
+                .also {
+                    it.withReplace = false
+                    it.isMutable = false
+                }
         }
 
         const val string = "String"

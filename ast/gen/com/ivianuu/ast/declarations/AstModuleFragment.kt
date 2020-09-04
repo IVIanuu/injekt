@@ -1,5 +1,6 @@
 package com.ivianuu.ast.declarations
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstElement
 import com.ivianuu.ast.AstPureAbstractElement
 import org.jetbrains.kotlin.name.Name
@@ -11,6 +12,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstModuleFragment : AstPureAbstractElement(), AstElement {
+    abstract override val context: AstContext
     abstract val name: Name
     abstract val files: List<AstFile>
 

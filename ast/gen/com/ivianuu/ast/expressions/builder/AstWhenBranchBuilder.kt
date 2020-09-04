@@ -1,5 +1,7 @@
 package com.ivianuu.ast.expressions.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstWhenBranch
@@ -13,12 +15,13 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstWhenBranchBuilder {
+class AstWhenBranchBuilder(override val context: AstContext) : AstBuilder {
     lateinit var condition: AstExpression
     lateinit var result: AstExpression
 
     fun build(): AstWhenBranch {
         return AstWhenBranchImpl(
+            context,
             condition,
             result,
         )
@@ -26,13 +29,13 @@ class AstWhenBranchBuilder {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildWhenBranch(init: AstWhenBranchBuilder.() -> Unit): AstWhenBranch {
-    return AstWhenBranchBuilder().apply(init).build()
+inline fun AstBuilder.buildWhenBranch(init: AstWhenBranchBuilder.() -> Unit): AstWhenBranch {
+    return AstWhenBranchBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstWhenBranch.copy(init: AstWhenBranchBuilder.() -> Unit = {}): AstWhenBranch {
-    val copyBuilder = AstWhenBranchBuilder()
+    val copyBuilder = AstWhenBranchBuilder(context)
     copyBuilder.condition = condition
     copyBuilder.result = result
     return copyBuilder.apply(init).build()

@@ -8,5 +8,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 interface AstTargetElement : AstElement {
+    override val context: AstContext
+
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitTargetElement(this, data)
 }

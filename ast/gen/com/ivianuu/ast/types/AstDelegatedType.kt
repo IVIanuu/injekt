@@ -1,5 +1,6 @@
 package com.ivianuu.ast.types
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
@@ -11,6 +12,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstDelegatedType : AstPureAbstractElement(), AstType {
+    abstract override val context: AstContext
     abstract override val annotations: List<AstFunctionCall>
     abstract override val isMarkedNullable: Boolean
     abstract val type: AstType

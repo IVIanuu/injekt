@@ -1,5 +1,7 @@
 package com.ivianuu.ast.expressions.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
@@ -19,7 +21,7 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstVariableAssignmentBuilder : AstBaseQualifiedAccessBuilder, AstExpressionBuilder {
+class AstVariableAssignmentBuilder(override val context: AstContext) : AstBaseQualifiedAccessBuilder, AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var type: AstType
     override val typeArguments: MutableList<AstTypeProjection> = mutableListOf()
@@ -30,6 +32,7 @@ class AstVariableAssignmentBuilder : AstBaseQualifiedAccessBuilder, AstExpressio
 
     override fun build(): AstVariableAssignment {
         return AstVariableAssignmentImpl(
+            context,
             annotations,
             type,
             typeArguments,
@@ -43,13 +46,13 @@ class AstVariableAssignmentBuilder : AstBaseQualifiedAccessBuilder, AstExpressio
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildVariableAssignment(init: AstVariableAssignmentBuilder.() -> Unit): AstVariableAssignment {
-    return AstVariableAssignmentBuilder().apply(init).build()
+inline fun AstBuilder.buildVariableAssignment(init: AstVariableAssignmentBuilder.() -> Unit): AstVariableAssignment {
+    return AstVariableAssignmentBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstVariableAssignment.copy(init: AstVariableAssignmentBuilder.() -> Unit = {}): AstVariableAssignment {
-    val copyBuilder = AstVariableAssignmentBuilder()
+    val copyBuilder = AstVariableAssignmentBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.type = type
     copyBuilder.typeArguments.addAll(typeArguments)

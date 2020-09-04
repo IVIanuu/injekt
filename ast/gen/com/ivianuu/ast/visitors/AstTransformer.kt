@@ -33,6 +33,7 @@ import com.ivianuu.ast.declarations.AstPackageFragment
 import com.ivianuu.ast.declarations.AstFile
 import com.ivianuu.ast.declarations.AstAnonymousFunction
 import com.ivianuu.ast.declarations.AstAnonymousObject
+import com.ivianuu.ast.expressions.AstJump
 import com.ivianuu.ast.expressions.AstLoop
 import com.ivianuu.ast.expressions.AstDoWhileLoop
 import com.ivianuu.ast.expressions.AstWhileLoop
@@ -205,6 +206,10 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformClass(anonymousObject, data)
     }
 
+    open fun <E : AstTargetElement> transformJump(jump: AstJump<E>, data: D): CompositeTransformResult<AstStatement> {
+        return transformExpression(jump, data)
+    }
+
     open fun transformLoop(loop: AstLoop, data: D): CompositeTransformResult<AstStatement> {
         return transformExpression(loop, data)
     }
@@ -222,7 +227,7 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
     }
 
     open fun transformLoopJump(loopJump: AstLoopJump, data: D): CompositeTransformResult<AstStatement> {
-        return transformExpression(loopJump, data)
+        return transformJump(loopJump, data)
     }
 
     open fun transformBreak(breakExpression: AstBreak, data: D): CompositeTransformResult<AstStatement> {
@@ -306,7 +311,7 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
     }
 
     open fun transformReturn(returnExpression: AstReturn, data: D): CompositeTransformResult<AstStatement> {
-        return transformExpression(returnExpression, data)
+        return transformJump(returnExpression, data)
     }
 
     open fun transformThrow(throwExpression: AstThrow, data: D): CompositeTransformResult<AstStatement> {
@@ -467,6 +472,10 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     final override fun visitAnonymousObject(anonymousObject: AstAnonymousObject, data: D): CompositeTransformResult<AstStatement> {
         return transformAnonymousObject(anonymousObject, data)
+    }
+
+    final override fun <E : AstTargetElement> visitJump(jump: AstJump<E>, data: D): CompositeTransformResult<AstStatement> {
+        return transformJump(jump, data)
     }
 
     final override fun visitLoop(loop: AstLoop, data: D): CompositeTransformResult<AstStatement> {

@@ -1,5 +1,8 @@
 package com.ivianuu.ast.declarations.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.Visibility
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
@@ -30,5 +33,6 @@ interface AstAbstractConstructorBuilder : AstFunctionBuilder {
     abstract var extensionReceiverType: AstType?
     abstract var symbol: AstConstructorSymbol
     abstract var delegatedConstructor: AstDelegatedConstructorCall?
+    abstract var visibility: Visibility
     override fun build(): AstConstructor
 }

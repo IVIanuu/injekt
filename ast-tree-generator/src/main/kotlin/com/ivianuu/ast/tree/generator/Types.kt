@@ -25,6 +25,7 @@ val modalityType = type(Modality::class)
 val fqNameType = type(FqName::class)
 val classIdType = type(ClassId::class)
 val platformStatusType = type("ast", "PlatformStatus")
+val targetType = type("ast", "AstTarget")
 
 val compositeTransformResultType = type("ast.visitors", "CompositeTransformResult")
 
@@ -46,3 +47,6 @@ val pureAbstractElementType = generatedType("AstPureAbstractElement")
 val astImplementationDetailType = generatedType("AstImplementationDetail")
 val declarationOriginType = generatedType("declarations", "AstDeclarationOrigin")
 val declarationAttributesType = generatedType("declarations", "AstDeclarationAttributes")
+
+val builderType = type("builder", "AstBuilder")
+val contextType = type("ast", "AstContext")

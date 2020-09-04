@@ -1,5 +1,7 @@
 package com.ivianuu.ast.declarations.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclaration
 import com.ivianuu.ast.declarations.AstFile
@@ -16,7 +18,7 @@ import org.jetbrains.kotlin.name.FqName
  */
 
 @AstBuilderDsl
-class AstFileBuilder : AstPackageFragmentBuilder {
+class AstFileBuilder(override val context: AstContext) : AstPackageFragmentBuilder {
     val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override val declarations: MutableList<AstDeclaration> = mutableListOf()
     lateinit var name: String
@@ -24,6 +26,7 @@ class AstFileBuilder : AstPackageFragmentBuilder {
 
     override fun build(): AstFile {
         return AstFileImpl(
+            context,
             annotations,
             declarations,
             name,
@@ -33,13 +36,13 @@ class AstFileBuilder : AstPackageFragmentBuilder {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildFile(init: AstFileBuilder.() -> Unit): AstFile {
-    return AstFileBuilder().apply(init).build()
+inline fun AstBuilder.buildFile(init: AstFileBuilder.() -> Unit): AstFile {
+    return AstFileBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstFile.copy(init: AstFileBuilder.() -> Unit = {}): AstFile {
-    val copyBuilder = AstFileBuilder()
+    val copyBuilder = AstFileBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.declarations.addAll(declarations)
     copyBuilder.name = name

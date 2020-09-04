@@ -1,5 +1,6 @@
 package com.ivianuu.ast.declarations
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstTargetElement
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstFunctionCall
@@ -14,6 +15,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 interface AstFunction<F : AstFunction<F>> : AstCallableDeclaration<F>, AstTargetElement {
+    override val context: AstContext
     override val annotations: List<AstFunctionCall>
     override val origin: AstDeclarationOrigin
     override val attributes: AstDeclarationAttributes

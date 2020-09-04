@@ -1,5 +1,6 @@
 package com.ivianuu.ast.expressions
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
@@ -12,6 +13,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstVariableAssignment : AstPureAbstractElement(), AstBaseQualifiedAccess {
+    abstract override val context: AstContext
     abstract override val annotations: List<AstFunctionCall>
     abstract override val type: AstType
     abstract override val typeArguments: List<AstTypeProjection>

@@ -9,6 +9,8 @@ import com.ivianuu.ast.visitors.*
  */
 
 interface AstElement {
+    val context: AstContext
+
     fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitElement(this, data)
 
     fun accept(visitor: AstVisitorVoid) = accept(visitor, null)

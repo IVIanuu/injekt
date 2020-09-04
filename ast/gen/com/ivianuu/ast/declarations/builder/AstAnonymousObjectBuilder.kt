@@ -1,5 +1,7 @@
 package com.ivianuu.ast.declarations.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstAnonymousObject
 import com.ivianuu.ast.declarations.AstDeclaration
@@ -22,7 +24,7 @@ import org.jetbrains.kotlin.descriptors.ClassKind
  */
 
 @AstBuilderDsl
-class AstAnonymousObjectBuilder : AstClassBuilder, AstExpressionBuilder {
+class AstAnonymousObjectBuilder(override val context: AstContext) : AstClassBuilder, AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     override val declarations: MutableList<AstDeclaration> = mutableListOf()
@@ -33,6 +35,7 @@ class AstAnonymousObjectBuilder : AstClassBuilder, AstExpressionBuilder {
 
     override fun build(): AstAnonymousObject {
         return AstAnonymousObjectImpl(
+            context,
             annotations,
             origin,
             declarations,
@@ -52,13 +55,13 @@ class AstAnonymousObjectBuilder : AstClassBuilder, AstExpressionBuilder {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildAnonymousObject(init: AstAnonymousObjectBuilder.() -> Unit): AstAnonymousObject {
-    return AstAnonymousObjectBuilder().apply(init).build()
+inline fun AstBuilder.buildAnonymousObject(init: AstAnonymousObjectBuilder.() -> Unit): AstAnonymousObject {
+    return AstAnonymousObjectBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstAnonymousObject.copy(init: AstAnonymousObjectBuilder.() -> Unit = {}): AstAnonymousObject {
-    val copyBuilder = AstAnonymousObjectBuilder()
+    val copyBuilder = AstAnonymousObjectBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
     copyBuilder.declarations.addAll(declarations)

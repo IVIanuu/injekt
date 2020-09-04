@@ -1,5 +1,8 @@
 package com.ivianuu.ast.expressions.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.AstTarget
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstLoop
@@ -12,8 +15,8 @@ import com.ivianuu.ast.visitors.*
  */
 
 @AstBuilderDsl
-interface AstLoopJumpBuilder {
+interface AstLoopJumpBuilder : AstBuilder {
     abstract val annotations: MutableList<AstFunctionCall>
-    abstract var target: AstLoop
+    abstract var target: AstTarget<AstLoop>
     fun build(): AstLoopJump
 }

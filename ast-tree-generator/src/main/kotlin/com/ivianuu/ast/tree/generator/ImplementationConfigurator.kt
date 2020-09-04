@@ -92,10 +92,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             kind = OpenClass
         }
 
-        impl(starProjection) {
-            kind = Object
-        }
-
         impl(delegatedType) {
             default("isMarkedNullable") {
                 value = "type.isMarkedNullable"
@@ -104,6 +100,36 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             default("annotations") {
                 value = "type.annotations"
                 withGetter = true
+            }
+        }
+
+        val unitTypeExpressions = listOf(
+            doWhileLoop,
+            whileLoop
+        )
+
+        unitTypeExpressions.forEach {
+            impl(it) {
+                default("type") {
+                    value = "context.builtIns.unitType"
+                    withGetter = true
+                }
+            }
+        }
+
+        val nothingTypeExpressions = listOf(
+            breakExpression,
+            continueExpression,
+            returnExpression,
+            throwExpression
+        )
+
+        nothingTypeExpressions.forEach {
+            impl(it) {
+                default("type") {
+                    value = "context.builtIns.nothingType"
+                    withGetter = true
+                }
             }
         }
     }

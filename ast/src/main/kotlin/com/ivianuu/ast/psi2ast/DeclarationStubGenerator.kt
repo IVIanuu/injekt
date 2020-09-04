@@ -1,5 +1,6 @@
 package com.ivianuu.ast.psi2ast
 
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.declarations.AstDeclaration
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.builder.buildConstructor
@@ -43,6 +44,8 @@ class DeclarationStubGenerator(
     private val typeConverter: TypeConverter
 ) {
 
+    lateinit var builder: AstBuilder
+
     fun getDeclaration(
         symbol: AstSymbol<*>,
         descriptor: DeclarationDescriptor
@@ -66,10 +69,9 @@ class DeclarationStubGenerator(
 
     private fun ClassDescriptor.toClassStub(
         symbol: AstRegularClassSymbol = AstRegularClassSymbol(classId!!)
-    ) = buildRegularClass {
+    ) = builder.buildRegularClass {
         this.symbol = symbol
         this.origin = AstDeclarationOrigin.Library
-        this.name = this@toClassStub.name
 
         /*this += descriptor.constructors.map { stubGenerator.get(it) as AstFunction }
         this += descriptor.defaultType.memberScope.getContributedDescriptors()
@@ -79,10 +81,9 @@ class DeclarationStubGenerator(
             .map { stubGenerator.get(it) as AstDeclaration }*/
     }
 
-    private fun SimpleFunctionDescriptor.toNamedFunctionStub(symbol: AstNamedFunctionSymbol) = buildNamedFunction {
+    private fun SimpleFunctionDescriptor.toNamedFunctionStub(symbol: AstNamedFunctionSymbol) = builder.buildNamedFunction {
         this.symbol = symbol
         this.origin = AstDeclarationOrigin.Library
-        this.name = this@toNamedFunctionStub.name
         this.returnType = this@toNamedFunctionStub.returnType!!.toAstType()
         visibility = this@toNamedFunctionStub.visibility.toAstVisibility()
         platformStatus = this@toNamedFunctionStub.platformStatus
@@ -105,7 +106,7 @@ class DeclarationStubGenerator(
 
     private fun ConstructorDescriptor.toConstructorStub(
         symbol: AstConstructorSymbol = AstConstructorSymbol(CallableId(fqNameSafe))
-    ) = buildConstructor {
+    ) = builder.buildConstructor {
         this.symbol = symbol
         this.origin = AstDeclarationOrigin.Library
         this.returnType = this@toConstructorStub.returnType.toAstType()
@@ -118,10 +119,9 @@ class DeclarationStubGenerator(
         }
     }
 
-    private fun VariableDescriptor.toPropertyStub(symbol: AstPropertySymbol) = buildProperty {
+    private fun VariableDescriptor.toPropertyStub(symbol: AstPropertySymbol) = builder.buildProperty {
         this.symbol = symbol
         this.origin = AstDeclarationOrigin.Library
-        this.name = this@toPropertyStub.name
         this.returnType = this@toPropertyStub.type.toAstType()
         this.dispatchReceiverType = this@toPropertyStub.dispatchReceiverParameter?.type?.toAstType()
         this.extensionReceiverType = this@toPropertyStub.extensionReceiverParameter?.type?.toAstType()
@@ -138,7 +138,7 @@ class DeclarationStubGenerator(
         }
     }
 
-    private fun TypeParameterDescriptor.toTypeParameterStub(symbol: AstTypeParameterSymbol) = buildTypeParameter {
+    private fun TypeParameterDescriptor.toTypeParameterStub(symbol: AstTypeParameterSymbol) = builder.buildTypeParameter {
         this.symbol = symbol
         this.origin = AstDeclarationOrigin.Library
         this.name = this@toTypeParameterStub.name
@@ -150,10 +150,9 @@ class DeclarationStubGenerator(
         }
     }
 
-    private fun ParameterDescriptor.toValueParameterStub(symbol: AstValueParameterSymbol) = buildValueParameter {
+    private fun ParameterDescriptor.toValueParameterStub(symbol: AstValueParameterSymbol) = builder.buildValueParameter {
         this.symbol = symbol
         this.origin = AstDeclarationOrigin.Library
-        this.name = this@toValueParameterStub.name
         this.returnType = this@toValueParameterStub.type.toAstType()
         if (this@toValueParameterStub is ValueParameterDescriptor) {
             this.defaultValue = if (this@toValueParameterStub.declaresDefaultValue())
@@ -168,10 +167,9 @@ class DeclarationStubGenerator(
         }
     }
 
-    private fun TypeAliasDescriptor.toTypeAliasStub(symbol: AstTypeAliasSymbol) = buildTypeAlias {
+    private fun TypeAliasDescriptor.toTypeAliasStub(symbol: AstTypeAliasSymbol) = builder.buildTypeAlias {
         this.symbol = symbol
         this.origin = AstDeclarationOrigin.Library
-        this.name = this@toTypeAliasStub.name
         this.expandedType = this@toTypeAliasStub.expandedType.toAstType()
         this.visibility = this@toTypeAliasStub.visibility.toAstVisibility()
         this.platformStatus = this@toTypeAliasStub.platformStatus

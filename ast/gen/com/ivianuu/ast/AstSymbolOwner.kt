@@ -10,6 +10,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 interface AstSymbolOwner<E> : AstElement where E : AstSymbolOwner<E>, E : AstDeclaration {
+    override val context: AstContext
     val symbol: AstSymbol<E>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitSymbolOwner(this, data)

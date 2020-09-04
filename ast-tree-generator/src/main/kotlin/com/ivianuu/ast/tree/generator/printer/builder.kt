@@ -43,14 +43,18 @@ private fun SmartPrinter.printBuilder(builder: Builder) {
         }
     }
     print(builder.typeWithArguments)
+    if (builder is LeafBuilder) print("(override val context: AstContext)")
     if (builder.parents.isNotEmpty()) {
         print(builder.parents.joinToString(separator = ", ", prefix = " : ") { it.type })
+    } else {
+        print(" : AstBuilder")
     }
     var hasRequiredFields = false
     println(" {")
     withIndent {
         var needNewLine = false
         for (field in builder.allFields) {
+            if (field.name == "context") continue
             val (newLine, requiredFields) = printFieldInBuilder(
                 field,
                 builder,
@@ -201,6 +205,10 @@ private fun SmartPrinter.printFieldInBuilder(
             hasRequiredFields = true
             true
         }
+        field.lazyDefault -> {
+            println(" by lazyVar { $defaultValue }")
+            true
+        }
         else -> {
             println(" = $defaultValue")
             true
@@ -268,7 +276,7 @@ private fun SmartPrinter.printDslBuildFunction(
     val builderType = builder.typeWithArguments
     val name =
         builder.implementation.name?.replaceFirst("Ast", "") ?: builder.implementation.element.name
-    print("build${name}(")
+    print("AstBuilder.build${name}(")
     if (!isEmpty) {
         print("init: $builderType.() -> Unit")
         if (!hasRequiredFields) {
@@ -281,7 +289,7 @@ private fun SmartPrinter.printDslBuildFunction(
         if (isEmpty) {
             println("${builder.implementation.type}()")
         } else {
-            println("$builderType().apply(init).build()")
+            println("$builderType(context).apply(init).build()")
         }
     }
     println("}")
@@ -300,8 +308,9 @@ private fun SmartPrinter.printDslBuildCopyFunction(builder: LeafBuilder) {
     print("Ast$name.copy(init: $builderType.() -> Unit = {}")
     println("): ${builder.implementation.element.typeWithArguments} {")
     withIndent {
-        println("val copyBuilder = $builderType()")
+        println("val copyBuilder = $builderType(context)")
         for (field in builder.allFields) {
+            if (field.name == "context") continue
             when (field.origin) {
                 is FieldList -> println("copyBuilder.${field.name}.addAll(${field.name})")
                 else -> println("copyBuilder.${field.name} = ${field.name}")

@@ -1,5 +1,7 @@
 package com.ivianuu.ast.expressions.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstCallableReference
 import com.ivianuu.ast.expressions.AstExpression
@@ -19,7 +21,7 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstCallableReferenceBuilder : AstBaseQualifiedAccessBuilder, AstExpressionBuilder {
+class AstCallableReferenceBuilder(override val context: AstContext) : AstBaseQualifiedAccessBuilder, AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var type: AstType
     override val typeArguments: MutableList<AstTypeProjection> = mutableListOf()
@@ -30,6 +32,7 @@ class AstCallableReferenceBuilder : AstBaseQualifiedAccessBuilder, AstExpression
 
     override fun build(): AstCallableReference {
         return AstCallableReferenceImpl(
+            context,
             annotations,
             type,
             typeArguments,
@@ -43,13 +46,13 @@ class AstCallableReferenceBuilder : AstBaseQualifiedAccessBuilder, AstExpression
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildCallableReference(init: AstCallableReferenceBuilder.() -> Unit): AstCallableReference {
-    return AstCallableReferenceBuilder().apply(init).build()
+inline fun AstBuilder.buildCallableReference(init: AstCallableReferenceBuilder.() -> Unit): AstCallableReference {
+    return AstCallableReferenceBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstCallableReference.copy(init: AstCallableReferenceBuilder.() -> Unit = {}): AstCallableReference {
-    val copyBuilder = AstCallableReferenceBuilder()
+    val copyBuilder = AstCallableReferenceBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.type = type
     copyBuilder.typeArguments.addAll(typeArguments)

@@ -1,5 +1,7 @@
 package com.ivianuu.ast.types.builder
 
+import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjectionWithVariance
@@ -14,12 +16,13 @@ import org.jetbrains.kotlin.types.Variance
  */
 
 @AstBuilderDsl
-class AstTypeProjectionWithVarianceBuilder {
+class AstTypeProjectionWithVarianceBuilder(override val context: AstContext) : AstBuilder {
     lateinit var type: AstType
-    lateinit var variance: Variance
+    var variance: Variance = Variance.INVARIANT
 
     fun build(): AstTypeProjectionWithVariance {
         return AstTypeProjectionWithVarianceImpl(
+            context,
             type,
             variance,
         )
@@ -27,13 +30,13 @@ class AstTypeProjectionWithVarianceBuilder {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun buildTypeProjectionWithVariance(init: AstTypeProjectionWithVarianceBuilder.() -> Unit): AstTypeProjectionWithVariance {
-    return AstTypeProjectionWithVarianceBuilder().apply(init).build()
+inline fun AstBuilder.buildTypeProjectionWithVariance(init: AstTypeProjectionWithVarianceBuilder.() -> Unit): AstTypeProjectionWithVariance {
+    return AstTypeProjectionWithVarianceBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
 inline fun AstTypeProjectionWithVariance.copy(init: AstTypeProjectionWithVarianceBuilder.() -> Unit = {}): AstTypeProjectionWithVariance {
-    val copyBuilder = AstTypeProjectionWithVarianceBuilder()
+    val copyBuilder = AstTypeProjectionWithVarianceBuilder(context)
     copyBuilder.type = type
     copyBuilder.variance = variance
     return copyBuilder.apply(init).build()

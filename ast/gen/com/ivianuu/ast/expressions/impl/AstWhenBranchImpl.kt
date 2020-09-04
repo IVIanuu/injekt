@@ -1,5 +1,6 @@
 package com.ivianuu.ast.expressions.impl
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstWhenBranch
 import com.ivianuu.ast.visitors.*
@@ -10,6 +11,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstWhenBranchImpl(
+    override val context: AstContext,
     override var condition: AstExpression,
     override var result: AstExpression,
 ) : AstWhenBranch() {

@@ -9,6 +9,7 @@ import com.ivianuu.ast.visitors.*
  */
 
 abstract class AstSpreadElement : AstPureAbstractElement(), AstVarargElement {
+    abstract override val context: AstContext
     abstract val expression: AstExpression
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitSpreadElement(this, data)

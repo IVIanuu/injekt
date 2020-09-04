@@ -128,13 +128,18 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +typeField
         }
 
+        jump.configure {
+            withArg("E", targetElement)
+            +field("target", targetType.withArgs("E"))
+        }
+
         loopJump.configure {
-            +field("target", loop)
+            parentArg(jump, "E", loop)
         }
 
         returnExpression.configure {
+            parentArg(jump, "E", function.withArgs("F" to "*"))
             +field("result", expression)
-            +field("target", functionSymbolType, "*")
         }
 
         loop.configure {
@@ -215,8 +220,8 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         anonymousFunction.configure {
             parentArg(function, "F", anonymousFunction)
-            +symbol("AstAnonymousFunctionSymbol")
             +stringField("label", nullable = true)
+            +symbol("AstAnonymousFunctionSymbol")
         }
 
         typeParameter.configure {
@@ -267,6 +272,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
                 nullable = true
             )
             +body(nullable = true)
+            +visibility
             +booleanField("isPrimary")
         }
 

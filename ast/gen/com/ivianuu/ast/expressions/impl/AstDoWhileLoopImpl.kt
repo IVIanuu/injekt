@@ -1,5 +1,6 @@
 package com.ivianuu.ast.expressions.impl
 
+import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.expressions.AstDoWhileLoop
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
@@ -12,22 +13,22 @@ import com.ivianuu.ast.visitors.*
  */
 
 internal class AstDoWhileLoopImpl(
+    override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
-    override var type: AstType,
     override var body: AstExpression,
     override var condition: AstExpression,
     override var label: String?,
 ) : AstDoWhileLoop() {
+    override val type: AstType get() = context.builtIns.unitType
+
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
-        type.accept(visitor, data)
         body.accept(visitor, data)
         condition.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstDoWhileLoopImpl {
         annotations.transformInplace(transformer, data)
-        type = type.transformSingle(transformer, data)
         body = body.transformSingle(transformer, data)
         condition = condition.transformSingle(transformer, data)
         return this
@@ -38,9 +39,7 @@ internal class AstDoWhileLoopImpl(
         annotations.addAll(newAnnotations)
     }
 
-    override fun replaceType(newType: AstType) {
-        type = newType
-    }
+    override fun replaceType(newType: AstType) {}
 
     override fun replaceBody(newBody: AstExpression) {
         body = newBody

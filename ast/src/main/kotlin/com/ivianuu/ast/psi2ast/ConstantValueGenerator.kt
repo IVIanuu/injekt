@@ -1,9 +1,23 @@
 package com.ivianuu.ast.psi2ast
 
+import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.expressions.AstConstKind
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
-import com.ivianuu.ast.expressions.builder.buildConst
+import com.ivianuu.ast.expressions.buildConstBoolean
+import com.ivianuu.ast.expressions.buildConstByte
+import com.ivianuu.ast.expressions.buildConstChar
+import com.ivianuu.ast.expressions.buildConstDouble
+import com.ivianuu.ast.expressions.buildConstFloat
+import com.ivianuu.ast.expressions.buildConstInt
+import com.ivianuu.ast.expressions.buildConstLong
+import com.ivianuu.ast.expressions.buildConstNull
+import com.ivianuu.ast.expressions.buildConstShort
+import com.ivianuu.ast.expressions.buildConstString
+import com.ivianuu.ast.expressions.buildConstUByte
+import com.ivianuu.ast.expressions.buildConstUInt
+import com.ivianuu.ast.expressions.buildConstULong
+import com.ivianuu.ast.expressions.buildConstUShort
 import com.ivianuu.ast.expressions.builder.buildFunctionCall
 import com.ivianuu.ast.expressions.builder.buildVararg
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -37,6 +51,8 @@ class ConstantValueGenerator(
     private val typeConverter: TypeConverter
 ) {
 
+    lateinit var builder: AstBuilder
+
     fun generateConstantValueAsExpression(
         constantValue: ConstantValue<*>
     ): AstExpression =
@@ -50,21 +66,21 @@ class ConstantValueGenerator(
         val constantType = typeConverter.convert(constantKtType)
 
         return when (constantValue) {
-            is StringValue -> buildConst(constantType, AstConstKind.String, constantValue.value)
-            is IntValue -> buildConst(constantType, AstConstKind.Int, constantValue.value)
-            is UIntValue -> buildConst(constantType, AstConstKind.Int, constantValue.value)
-            is NullValue -> buildConst(constantType, AstConstKind.Null, null)
-            is BooleanValue -> buildConst(constantType, AstConstKind.Boolean, constantValue.value)
-            is LongValue -> buildConst(constantType, AstConstKind.Long, constantValue.value)
-            is ULongValue -> buildConst(constantType, AstConstKind.Long, constantValue.value)
-            is DoubleValue -> buildConst(constantType, AstConstKind.Double, constantValue.value)
-            is FloatValue -> buildConst(constantType, AstConstKind.Float, constantValue.value)
-            is CharValue -> buildConst(constantType, AstConstKind.Char, constantValue.value)
-            is ByteValue -> buildConst(constantType, AstConstKind.Byte, constantValue.value)
-            is UByteValue -> buildConst(constantType, AstConstKind.Byte, constantValue.value)
-            is ShortValue -> buildConst(constantType, AstConstKind.Short, constantValue.value)
-            is UShortValue -> buildConst(constantType, AstConstKind.Short, constantValue.value)
-            is ArrayValue -> buildVararg {
+            is StringValue -> builder.buildConstString(constantValue.value)
+            is IntValue -> builder.buildConstInt(constantValue.value)
+            is UIntValue -> builder.buildConstUInt(constantValue.value.toUInt())
+            is NullValue -> builder.buildConstNull()
+            is BooleanValue -> builder.buildConstBoolean(constantValue.value)
+            is LongValue -> builder.buildConstLong(constantValue.value)
+            is ULongValue -> builder.buildConstULong(constantValue.value.toULong())
+            is DoubleValue -> builder.buildConstDouble(constantValue.value)
+            is FloatValue -> builder.buildConstFloat(constantValue.value)
+            is CharValue -> builder.buildConstChar(constantValue.value)
+            is ByteValue -> builder.buildConstByte(constantValue.value)
+            is UByteValue -> builder.buildConstUByte(constantValue.value.toUByte())
+            is ShortValue -> builder.buildConstShort(constantValue.value)
+            is UShortValue -> builder.buildConstUShort(constantValue.value.toUShort())
+            is ArrayValue -> builder.buildVararg {
                 type = constantType
                 elements += constantValue.value.mapNotNull {
                     generateConstantOrAnnotationValueAsExpression(it)
@@ -115,7 +131,7 @@ class ConstantValueGenerator(
             ?: annotationClassDescriptor.constructors.singleOrNull()
             ?: throw AssertionError("No constructor for annotation class $annotationClassDescriptor")
 
-        return buildFunctionCall {
+        return builder.buildFunctionCall {
             type = typeConverter.convert(annotationType)
             callee = symbolTable.getConstructorSymbol(primaryConstructorDescriptor)
             valueArguments += primaryConstructorDescriptor.valueParameters
