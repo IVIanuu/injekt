@@ -89,7 +89,6 @@ class AstAnalysisHandlerExtension(
         val typeConverter = TypeConverter(symbolTable)
         val constantValueGenerator = ConstantValueGenerator(module, symbolTable, typeConverter)
         typeConverter.constantValueGenerator = constantValueGenerator
-        val builtIns = AstBuiltIns(module.builtIns, typeConverter, symbolTable)
         val stubGenerator = DeclarationStubGenerator(constantValueGenerator, symbolTable, typeConverter)
         val context = Psi2AstGeneratorContext(
             module,
@@ -98,13 +97,12 @@ class AstAnalysisHandlerExtension(
             typeConverter,
             symbolTable,
             constantValueGenerator,
-            stubGenerator,
-            builtIns
+            stubGenerator
         )
-        builtIns.builder = context
         constantValueGenerator.builder = context
         stubGenerator.builder = context
         typeConverter.builder = context
+        val builtIns = AstBuiltIns(module.builtIns, typeConverter, symbolTable, context)
         val builder = Psi2AstBuilder(context)
 
         val moduleFragment = builder.buildModule(files)

@@ -11,7 +11,6 @@ import com.ivianuu.ast.declarations.builder.buildFile
 import com.ivianuu.ast.declarations.builder.buildRegularClass
 import com.ivianuu.ast.declarations.classId
 import com.ivianuu.ast.extension.AstGenerationExtension
-import com.ivianuu.ast.extension.AstGeneratorContext
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.visitors.AstTransformer
 import com.ivianuu.ast.visitors.AstVisitorVoid
@@ -282,7 +281,6 @@ class AstTest {
                                                                             .child("${regularClass.name}Context".asNameId())
                                                                     )
                                                                 )
-                                                                name = symbol.classId.shortClassName
                                                             }
                                                         }
                                                     )
