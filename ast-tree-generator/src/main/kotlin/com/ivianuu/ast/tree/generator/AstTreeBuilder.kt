@@ -285,7 +285,7 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         visitorSuperType = expression
         transformerType = statement
     }
-    val qualifiedAccess = element("QualifiedAccess", Expression, baseQualifiedAccess, calleeReference) {
+    val qualifiedAccess = element("QualifiedAccess", Expression, calleeReference, baseQualifiedAccess) {
         visitorSuperType = baseQualifiedAccess
         transformerType = statement
     }

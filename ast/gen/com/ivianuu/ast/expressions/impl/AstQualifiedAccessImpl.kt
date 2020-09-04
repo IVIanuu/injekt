@@ -18,10 +18,10 @@ internal class AstQualifiedAccessImpl(
     override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
     override var type: AstType,
+    override var callee: AstSymbol<*>,
     override val typeArguments: MutableList<AstTypeProjection>,
     override var dispatchReceiver: AstExpression?,
     override var extensionReceiver: AstExpression?,
-    override var callee: AstSymbol<*>,
 ) : AstQualifiedAccess() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
@@ -45,6 +45,10 @@ internal class AstQualifiedAccessImpl(
         type = newType
     }
 
+    override fun replaceCallee(newCallee: AstSymbol<*>) {
+        callee = newCallee
+    }
+
     override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>) {
         typeArguments.clear()
         typeArguments.addAll(newTypeArguments)
@@ -56,9 +60,5 @@ internal class AstQualifiedAccessImpl(
 
     override fun replaceExtensionReceiver(newExtensionReceiver: AstExpression?) {
         extensionReceiver = newExtensionReceiver
-    }
-
-    override fun replaceCallee(newCallee: AstSymbol<*>) {
-        callee = newCallee
     }
 }

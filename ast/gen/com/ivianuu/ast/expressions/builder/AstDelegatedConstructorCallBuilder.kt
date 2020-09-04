@@ -14,6 +14,7 @@ import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.utils.lazyVar
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 
@@ -25,7 +26,7 @@ import kotlin.contracts.*
 @AstBuilderDsl
 class AstDelegatedConstructorCallBuilder(override val context: AstContext) : AstCallBuilder, AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
-    override lateinit var type: AstType
+    override var type: AstType by lazyVar { callee.owner.returnType }
     override val valueArguments: MutableList<AstExpression?> = mutableListOf()
     lateinit var callee: AstConstructorSymbol
     var dispatchReceiver: AstExpression? = null

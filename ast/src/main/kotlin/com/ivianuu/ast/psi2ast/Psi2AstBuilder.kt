@@ -191,7 +191,6 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                             visibility = propertyDescriptor.visibility.toAstVisibility()
                             dispatchReceiverType = propertyDescriptor.dispatchReceiverParameter!!.type.toAstType()
                             initializer = buildQualifiedAccess {
-                                type = propertyDescriptor.type.toAstType()
                                 callee = primaryConstructor.valueParameters
                                     .single { it.name == propertyDescriptor.name }
                                     .symbol
@@ -489,7 +488,6 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                         .filterIsInstance<AstNamedFunction>()
                         .first { it.name.asString() == "toString" }
                     buildFunctionCall {
-                        type = builtIns.stringType
                         callee = toString.symbol
                         dispatchReceiver = entry
                     }
@@ -503,7 +501,6 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                     .first { it.name.asString() == "plus" }
                 entries.reduce { acc, entry ->
                     buildFunctionCall {
-                        type = builtIns.stringType
                         callee = stringPlus.symbol
                         dispatchReceiver = acc
                         valueArguments += entry
@@ -692,7 +689,7 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                 valueArguments += lazyLeft
                 valueArguments += right
             }
-            KtTokens.ANDAND -> buildFunctionCall {
+            KtTokens.OROR -> buildFunctionCall {
                 type = builtIns.booleanType
                 callee = builtIns.lazyOrSymbol
                 valueArguments += lazyLeft
@@ -714,7 +711,6 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
             KtTokens.IN_KEYWORD, KtTokens.NOT_IN -> {
                 val containsCall = expression.right!!.getResolvedCall()!!
                 val astContainsCall = buildFunctionCall {
-                    type = builtIns.booleanType
                     callee = symbolTable.getNamedFunctionSymbol(containsCall.resultingDescriptor as SimpleFunctionDescriptor)
                 }
                 if (ktOperator == KtTokens.IN_KEYWORD) {
@@ -727,6 +723,7 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                     }
                 }
             }
+
             KtTokens.ELVIS -> {
                 buildBlock {
                     val tmp = buildTemporaryVariable(lazyLeft)

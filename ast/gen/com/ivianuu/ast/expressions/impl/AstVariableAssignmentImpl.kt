@@ -17,23 +17,22 @@ import com.ivianuu.ast.visitors.*
 internal class AstVariableAssignmentImpl(
     override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
-    override var type: AstType,
     override val typeArguments: MutableList<AstTypeProjection>,
     override var dispatchReceiver: AstExpression?,
     override var extensionReceiver: AstExpression?,
     override var callee: AstVariableSymbol<*>,
     override var value: AstExpression,
 ) : AstVariableAssignment() {
+    override val type: AstType get() = context.builtIns.unitType
+
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
-        type.accept(visitor, data)
         typeArguments.forEach { it.accept(visitor, data) }
         value.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstVariableAssignmentImpl {
         annotations.transformInplace(transformer, data)
-        type = type.transformSingle(transformer, data)
         typeArguments.transformInplace(transformer, data)
         value = value.transformSingle(transformer, data)
         return this
@@ -44,9 +43,7 @@ internal class AstVariableAssignmentImpl(
         annotations.addAll(newAnnotations)
     }
 
-    override fun replaceType(newType: AstType) {
-        type = newType
-    }
+    override fun replaceType(newType: AstType) {}
 
     override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>) {
         typeArguments.clear()

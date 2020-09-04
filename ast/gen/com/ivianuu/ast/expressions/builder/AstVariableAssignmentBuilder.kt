@@ -23,7 +23,6 @@ import kotlin.contracts.*
 @AstBuilderDsl
 class AstVariableAssignmentBuilder(override val context: AstContext) : AstBaseQualifiedAccessBuilder, AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
-    override lateinit var type: AstType
     override val typeArguments: MutableList<AstTypeProjection> = mutableListOf()
     override var dispatchReceiver: AstExpression? = null
     override var extensionReceiver: AstExpression? = null
@@ -34,7 +33,6 @@ class AstVariableAssignmentBuilder(override val context: AstContext) : AstBaseQu
         return AstVariableAssignmentImpl(
             context,
             annotations,
-            type,
             typeArguments,
             dispatchReceiver,
             extensionReceiver,
@@ -43,6 +41,13 @@ class AstVariableAssignmentBuilder(override val context: AstContext) : AstBaseQu
         )
     }
 
+
+    @Deprecated("Modification of 'type' has no impact for AstVariableAssignmentBuilder", level = DeprecationLevel.HIDDEN)
+    override var type: AstType
+        get() = throw IllegalStateException()
+        set(value) {
+            throw IllegalStateException()
+        }
 }
 
 @OptIn(ExperimentalContracts::class)
@@ -54,7 +59,6 @@ inline fun AstBuilder.buildVariableAssignment(init: AstVariableAssignmentBuilder
 inline fun AstVariableAssignment.copy(init: AstVariableAssignmentBuilder.() -> Unit = {}): AstVariableAssignment {
     val copyBuilder = AstVariableAssignmentBuilder(context)
     copyBuilder.annotations.addAll(annotations)
-    copyBuilder.type = type
     copyBuilder.typeArguments.addAll(typeArguments)
     copyBuilder.dispatchReceiver = dispatchReceiver
     copyBuilder.extensionReceiver = extensionReceiver

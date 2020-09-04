@@ -140,18 +140,22 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
 
         builder(delegatedConstructorCall) {
             parents += callBuilder
+            defaultLazy("type", "callee.owner.returnType")
             defaultNull("dispatchReceiver")
         }
 
         builder(functionCall) {
             parents += baseQualifiedAccessBuilder
             parents += callBuilder
+            defaultLazy("type", "callee.owner.returnType")
             defaultNoReceivers()
             openBuilder()
         }
 
         builder(qualifiedAccess) {
             parents += baseQualifiedAccessBuilder
+            defaultLazy("type", "(callee as? AstCallableSymbol<*>)?.owner?.returnType ?: error(\"type must be specified\")")
+            useTypes(callableSymbolType)
             defaultNoReceivers()
         }
 
