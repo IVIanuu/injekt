@@ -119,6 +119,11 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             defaultLazy("name", "symbol.classId.shortClassName")
         }
 
+        builder(block) {
+            defaultLazy("type", "(statements.lastOrNull() as? AstExpression)?.type ?: context.builtIns.unitType")
+            useTypes(expression)
+        }
+
         builder(callableReference) {
             parents += baseQualifiedAccessBuilder
             defaultNoReceivers()

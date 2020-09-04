@@ -4,11 +4,13 @@ import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstBlock
+import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.impl.AstBlockImpl
 import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.utils.lazyVar
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 
@@ -21,7 +23,7 @@ import kotlin.contracts.*
 class AstBlockBuilder(override val context: AstContext) : AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     val statements: MutableList<AstStatement> = mutableListOf()
-    override lateinit var type: AstType
+    override var type: AstType by lazyVar { (statements.lastOrNull() as? AstExpression)?.type ?: context.builtIns.unitType }
 
     override fun build(): AstBlock {
         return AstBlockImpl(
@@ -34,7 +36,7 @@ class AstBlockBuilder(override val context: AstContext) : AstExpressionBuilder {
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun AstBuilder.buildBlock(init: AstBlockBuilder.() -> Unit): AstBlock {
+inline fun AstBuilder.buildBlock(init: AstBlockBuilder.() -> Unit = {}): AstBlock {
     return AstBlockBuilder(context).apply(init).build()
 }
 
