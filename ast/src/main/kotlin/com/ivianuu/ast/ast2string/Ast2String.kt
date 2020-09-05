@@ -7,6 +7,7 @@ import com.ivianuu.ast.AstSpreadElement
 import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.Visibilities
 import com.ivianuu.ast.declarations.AstAnonymousInitializer
+import com.ivianuu.ast.declarations.AstCallableDeclaration
 import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstDeclarationContainer
 import com.ivianuu.ast.declarations.AstEnumEntry
@@ -22,7 +23,6 @@ import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.declarations.regularClassOrFail
 import com.ivianuu.ast.declarations.regularClassOrNull
-import com.ivianuu.ast.expressions.AstBaseQualifiedAccess
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstCall
 import com.ivianuu.ast.expressions.AstConst
@@ -79,8 +79,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
 
     private val printer = Printer(out, "%tab%")
 
-    private val uniqueNameByElement =
-        mutableMapOf<AstElement, String>()
+    private val uniqueNameByElement = mutableMapOf<AstElement, String>()
     private val existingNames = mutableSetOf<String>()
     private fun AstElement.uniqueName(): String {
         return uniqueNameByElement.getOrPut(this) {
@@ -617,11 +616,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
                     dispatchReceiverArgument = dispatchReceiver,
                     extensionReceiverArgument = extensionReceiver
                 ) {
-                    if (callee.dispatchReceiverType == null && callee.extensionReceiverType == null) {
-                        emit(callee.symbol.callableId.fqName)
-                    } else {
-                        emit(callee.name)
-                    }
+                    callee.emitCallableName()
                     emitArguments()
                 }
             }
@@ -630,42 +625,34 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
     }
 
     override fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess) = with(qualifiedAccess) {
-        val explicitReceiver = getExplicitReceiver()
+        val callee = callee.owner
+        callee as AstNamedDeclaration
 
-        if (explicitReceiver != null) {
-            explicitReceiver.emit()
-            emit(".")
+        val (dispatchReceiverType, extensionReceiverType) = when (callee) {
+            is AstCallableDeclaration<*> -> callee.dispatchReceiverType to callee.extensionReceiverType
+            else -> null to null
         }
 
-        val callee = callee.owner
-        if (callee is AstNamedDeclaration) {
-            if (callee is AstProperty && callee.visibility == Visibilities.Local) {
-                emit(callee.uniqueName())
-            } else if (callee is AstProperty && callee.dispatchReceiverType == null) {
-                emit(callee.symbol.callableId.fqName)
-            } else {
-                emit(callee.name)
-            }
-        } else {
-            error("Wtf $callee")
+        withReceivers(
+            dispatchReceiverType = dispatchReceiverType,
+            extensionReceiverType = extensionReceiverType,
+            dispatchReceiverArgument = dispatchReceiver,
+            extensionReceiverArgument = extensionReceiver
+        ) {
+            callee.emitCallableName()
         }
     }
 
     override fun visitVariableAssignment(variableAssignment: AstVariableAssignment) = with(variableAssignment) {
-        val explicitReceiver = getExplicitReceiver()
-
-        if (explicitReceiver != null) {
-            explicitReceiver.emit()
-            emit(".")
-        }
-
         val callee = callee.owner
-        if (callee is AstProperty && callee.visibility == Visibilities.Local) {
-            emit(callee.uniqueName())
-        } else if (callee is AstProperty && callee.dispatchReceiverType == null) {
-            emit(callee.symbol.callableId.fqName)
-        } else {
-            emit(callee.name)
+
+        withReceivers(
+            dispatchReceiverType = callee.dispatchReceiverType,
+            extensionReceiverType = callee.extensionReceiverType,
+            dispatchReceiverArgument = dispatchReceiver,
+            extensionReceiverArgument = extensionReceiver
+        ) {
+            callee.emitCallableName()
         }
 
         emit(" = ")
@@ -906,11 +893,6 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         }
     }
 
-    private fun AstBaseQualifiedAccess.getExplicitReceiver(): AstExpression? =
-        if (extensionReceiver != null) extensionReceiver
-        else dispatchReceiver
-            ?.takeIf { it !is AstThisReference } // todo
-
     private fun withReceivers(
         dispatchReceiverType: AstType?,
         extensionReceiverType: AstType?,
@@ -946,6 +928,16 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
                 block()
                 emit(" })")
             }
+        }
+    }
+
+    private fun AstNamedDeclaration.emitCallableName() {
+        when {
+            this is AstProperty && isLocal -> emit(uniqueName())
+            this is AstCallableDeclaration<*> &&
+                    dispatchReceiverType == null &&
+                    extensionReceiverType == null -> emit(symbol.callableId.fqName)
+            else -> emit(name)
         }
     }
 
