@@ -19,12 +19,12 @@ abstract class AstAnonymousInitializer : AstPureAbstractElement(), AstDeclaratio
     abstract override val annotations: List<AstFunctionCall>
     abstract override val origin: AstDeclarationOrigin
     abstract override val attributes: AstDeclarationAttributes
-    abstract val body: AstBlock?
+    abstract val body: AstBlock
     abstract override val symbol: AstAnonymousInitializerSymbol
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitAnonymousInitializer(this, data)
 
     abstract override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
 
-    abstract fun replaceBody(newBody: AstBlock?)
+    abstract fun replaceBody(newBody: AstBlock)
 }

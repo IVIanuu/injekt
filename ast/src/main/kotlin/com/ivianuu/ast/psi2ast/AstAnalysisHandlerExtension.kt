@@ -16,12 +16,14 @@ import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.BindingTraceContext
 import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
 import org.jetbrains.kotlin.resolve.TopDownAnalysisMode
+import org.jetbrains.kotlin.resolve.diagnostics.MutableDiagnosticsWithSuppression
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.util.slicedMap.SlicedMapImpl
 import java.io.File
@@ -35,6 +37,8 @@ class AstAnalysisHandlerExtension(
 ) : AnalysisHandlerExtension {
 
     private var generatedCode = false
+    private var firstAnalysisCompleted = false
+    private val userCodeDiagnostics = mutableListOf<Diagnostic>()
 
     override fun doAnalysis(
         project: Project,
@@ -46,7 +50,6 @@ class AstAnalysisHandlerExtension(
     ): AnalysisResult? {
         if (!astEnabled) return null
         if (generatedCode) return null
-        generatedCode = true
 
         val extensions = AstGenerationExtension.getInstances(project)
         //if (extensions.isEmpty()) return null
@@ -68,7 +71,10 @@ class AstAnalysisHandlerExtension(
 
         files.forEach { println("transformed file ${it.name}:\n${it.text}") }
 
+        saveUserCodeDiagnostics(bindingTrace)
         resetBindingTrace(bindingTrace)
+
+        generatedCode = true
 
         return AnalysisResult.RetryWithAdditionalRoots(
             bindingTrace.bindingContext,
@@ -76,6 +82,23 @@ class AstAnalysisHandlerExtension(
             emptyList(),
             emptyList()
         )
+    }
+
+    override fun analysisCompleted(
+        project: Project,
+        module: ModuleDescriptor,
+        bindingTrace: BindingTrace,
+        files: Collection<KtFile>
+    ): AnalysisResult? {
+        if (generatedCode && firstAnalysisCompleted) {
+            // we clear the diagnostics here because our ast2kt generated code might cause warnings
+            // all user code warnings should have been signaled in the first round
+            (bindingTrace.bindingContext.diagnostics as MutableDiagnosticsWithSuppression)
+                .clear()
+            userCodeDiagnostics.forEach { bindingTrace.report(it) }
+        }
+        if (!firstAnalysisCompleted) firstAnalysisCompleted = true
+        return super.analysisCompleted(project, module, bindingTrace, files)
     }
 
     private fun transformModule(
@@ -178,9 +201,13 @@ class AstAnalysisHandlerExtension(
             .set(map, true)
     }
 
+    private fun saveUserCodeDiagnostics(bindingTrace: BindingTrace) {
+        userCodeDiagnostics += bindingTrace.bindingContext.diagnostics.all()
+        (bindingTrace.bindingContext.diagnostics as MutableDiagnosticsWithSuppression)
+            .clear()
+    }
+
     private fun resetBindingTrace(bindingTrace: BindingTrace) {
-        (bindingTrace as BindingTraceContext)
-            .clearDiagnostics()
         val map = BindingTraceContext::class.java
             .declaredFields
             .single { it.name == "map" }

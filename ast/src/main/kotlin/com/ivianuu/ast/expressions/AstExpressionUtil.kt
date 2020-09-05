@@ -7,6 +7,7 @@ import com.ivianuu.ast.declarations.builder.buildProperty
 import com.ivianuu.ast.expressions.builder.AstFunctionCallBuilder
 import com.ivianuu.ast.expressions.builder.buildFunctionCall
 import com.ivianuu.ast.expressions.builder.buildQualifiedAccess
+import com.ivianuu.ast.expressions.builder.buildTypeOperation
 import com.ivianuu.ast.expressions.impl.AstConstImpl
 import com.ivianuu.ast.symbols.CallableId
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
@@ -86,7 +87,7 @@ fun AstBuilder.buildFunctionCall(
     init(this)
 }
 
-fun AstBuilder.buildUnit() = buildQualifiedAccess {
+fun AstBuilder.buildUnitExpression() = buildQualifiedAccess {
     type = context.builtIns.unitType
     callee = context.builtIns.unitSymbol
 }

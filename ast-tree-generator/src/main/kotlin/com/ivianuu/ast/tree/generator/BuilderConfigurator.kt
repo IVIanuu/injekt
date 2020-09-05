@@ -1,6 +1,7 @@
 package com.ivianuu.ast.tree.generator
 
 import com.ivianuu.ast.tree.generator.context.AbstractBuilderConfigurator
+import com.ivianuu.ast.tree.generator.context.generatedType
 import com.ivianuu.ast.tree.generator.model.Element
 import com.ivianuu.ast.tree.generator.model.Field
 import com.ivianuu.ast.tree.generator.model.Implementation
@@ -178,6 +179,19 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         builder(variableAssignment) {
             parents += baseQualifiedAccessBuilder
             defaultNoReceivers()
+        }
+
+        builder(typeOperation) {
+            defaultLazy("type",
+                """
+                    when (operator) {
+                        AstTypeOperator.AS -> typeOperand
+                        AstTypeOperator.SAFE_AS -> typeOperand.makeNullable()
+                        else -> context.builtIns.booleanType
+                    }
+                """
+            )
+            useTypes(generatedType("types", "makeNullable"))
         }
 
         builder(anonymousFunction) {

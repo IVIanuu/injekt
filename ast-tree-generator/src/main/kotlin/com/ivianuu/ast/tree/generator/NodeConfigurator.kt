@@ -45,6 +45,10 @@ import com.ivianuu.ast.tree.generator.model.booleanField
 import com.ivianuu.ast.tree.generator.model.field
 import com.ivianuu.ast.tree.generator.model.fieldList
 import com.ivianuu.ast.tree.generator.model.stringField
+import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrTypeOperator
+import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
+import org.jetbrains.kotlin.ir.types.IrType
 
 object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuilder) {
     fun configureFields() = configure {
@@ -310,7 +314,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         anonymousInitializer.configure {
             parentArg(symbolOwner, "E", anonymousInitializer)
-            +body(nullable = true)
+            +body()
             +symbol(anonymousInitializerSymbolType.type)
         }
 
@@ -398,6 +402,12 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         typeProjectionWithVariance.configure {
             +field(type)
             +field(varianceType)
+        }
+
+        typeOperation.configure {
+            +field("operator", typeOperatorType)
+            +field("argument", expression)
+            +field("typeOperand", type)
         }
     }
 }

@@ -341,49 +341,6 @@ class Psi2AstVisitor(
         )
     }
 
-
-    override fun visitBreakExpression(expression: KtBreakExpression, data: Nothing?): AstElement {
-        val parentLoop = findParentLoop(expression)
-            ?: error("No loop found for ${expression.text}")
-        return AstBreak(
-            type = context.builtIns.nothingType,
-            loop = parentLoop
-        )
-    }
-
-    override fun visitContinueExpression(
-        expression: KtContinueExpression,
-        data: Nothing?
-    ): AstElement {
-        val parentLoop = findParentLoop(expression)
-            ?: error("No loop found for ${expression.text}")
-        return AstContinue(
-            type = context.builtIns.nothingType,
-            loop = parentLoop
-        )
-    }
-
-    override fun visitParenthesizedExpression(
-        expression: KtParenthesizedExpression,
-        data: Nothing?
-    ): AstElement = expression.expression?.accept(this, null)
-        ?: error("$expression ${expression.text}")
-
-    override fun visitAnnotatedExpression(
-        expression: KtAnnotatedExpression,
-        data: Nothing?
-    ): AstElement {
-        return expression.baseExpression?.accept(this, null)
-            ?.also {
-                (it as AstAnnotationContainer)
-                    .replaceAnnotations(
-                        expression.annotationEntries
-                            .map { it.convert() }
-                    )
-            }
-            ?: error("$expression ${expression.text}")
-    }
-
      /*
     override fun visitDotQualifiedExpression(
         expression: KtDotQualifiedExpression,
@@ -402,30 +359,5 @@ class Psi2AstVisitor(
             it.safe = true
         }
     }*/
-
-    fun ReceiverValue.toAstExpression(): AstExpression {
-        return when (this) {
-            is ImplicitClassReceiver -> buildThisReference {
-                type = this@toAstExpression.type.toAstType()
-            }
-            is ThisClassReceiver -> buildThisReference {
-                type = this@toAstExpression.type.toAstType()
-            }
-            is SuperCallReceiverValue -> buildSuperReference {
-                type = this@toAstExpression.type.toAstType()
-            }
-            is ExpressionReceiver -> expression.convert()
-            is ClassValueReceiver -> buildThisReference {
-                type = this@toAstExpression.type.toAstType()
-            }
-            is ExtensionReceiver -> buildQualifiedAccess {
-                type = this@toAstExpression.type.toAstType()
-                callee = context.symbolTable.getValueParameterSymbol(
-                    declarationDescriptor.extensionReceiverParameter!!
-                )
-            }
-            else -> error("Unexpected receiver value $this")
-        }
-    }
 */
 }

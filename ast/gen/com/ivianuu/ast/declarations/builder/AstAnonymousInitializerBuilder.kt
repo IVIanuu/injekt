@@ -24,7 +24,7 @@ import kotlin.contracts.*
 class AstAnonymousInitializerBuilder(override val context: AstContext) : AstBuilder {
     val annotations: MutableList<AstFunctionCall> = mutableListOf()
     var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
-    var body: AstBlock? = null
+    lateinit var body: AstBlock
     var symbol: AstAnonymousInitializerSymbol by lazyVar { AstAnonymousInitializerSymbol() }
 
     fun build(): AstAnonymousInitializer {
@@ -36,11 +36,10 @@ class AstAnonymousInitializerBuilder(override val context: AstContext) : AstBuil
             symbol,
         )
     }
-
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun AstBuilder.buildAnonymousInitializer(init: AstAnonymousInitializerBuilder.() -> Unit = {}): AstAnonymousInitializer {
+inline fun AstBuilder.buildAnonymousInitializer(init: AstAnonymousInitializerBuilder.() -> Unit): AstAnonymousInitializer {
     return AstAnonymousInitializerBuilder(context).apply(init).build()
 }
 

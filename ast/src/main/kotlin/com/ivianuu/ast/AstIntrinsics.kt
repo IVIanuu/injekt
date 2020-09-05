@@ -20,8 +20,4 @@ object AstIntrinsics {
     val LazyAnd = CallableId(Package, "lazyAnd".nameAsSafeName())
     val LazyOr = CallableId(Package, "lazyOr".nameAsSafeName())
 
-    val IsType = CallableId(Package, "isType".nameAsSafeName())
-    val IsNotType = CallableId(Package, "isNotType".nameAsSafeName())
-    val AsType = CallableId(Package, "asType".nameAsSafeName())
-    val SafeAsType = CallableId(Package, "safeAsType".nameAsSafeName())
 }

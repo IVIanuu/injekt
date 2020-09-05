@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.Variance
 
 val constKindType = generatedType("expressions", "AstConstKind")
+val typeOperatorType = generatedType("expressions", "AstTypeOperator")
 val delegatedConstructorCallKindType = generatedType("expressions", "AstDelegatedConstructorCallKind")
 val classKindType = type(ClassKind::class)
 val varianceType = type(Variance::class)

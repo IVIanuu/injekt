@@ -65,6 +65,7 @@ import com.ivianuu.ast.expressions.AstVariableAssignment
 import com.ivianuu.ast.expressions.AstSuperReference
 import com.ivianuu.ast.expressions.AstThisReference
 import com.ivianuu.ast.expressions.AstPropertyBackingFieldReference
+import com.ivianuu.ast.expressions.AstTypeOperation
 import com.ivianuu.ast.types.AstSimpleType
 import com.ivianuu.ast.types.AstDelegatedType
 import com.ivianuu.ast.visitors.CompositeTransformResult
@@ -334,6 +335,10 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformExpression(propertyBackingFieldReference, data)
     }
 
+    open fun transformTypeOperation(typeOperation: AstTypeOperation, data: D): CompositeTransformResult<AstStatement> {
+        return transformExpression(typeOperation, data)
+    }
+
     open fun transformSimpleType(simpleType: AstSimpleType, data: D): CompositeTransformResult<AstType> {
         return transformType(simpleType, data)
     }
@@ -600,6 +605,10 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     final override fun visitPropertyBackingFieldReference(propertyBackingFieldReference: AstPropertyBackingFieldReference, data: D): CompositeTransformResult<AstStatement> {
         return transformPropertyBackingFieldReference(propertyBackingFieldReference, data)
+    }
+
+    final override fun visitTypeOperation(typeOperation: AstTypeOperation, data: D): CompositeTransformResult<AstStatement> {
+        return transformTypeOperation(typeOperation, data)
     }
 
     final override fun visitSimpleType(simpleType: AstSimpleType, data: D): CompositeTransformResult<AstType> {

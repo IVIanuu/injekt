@@ -65,6 +65,7 @@ import com.ivianuu.ast.expressions.AstVariableAssignment
 import com.ivianuu.ast.expressions.AstSuperReference
 import com.ivianuu.ast.expressions.AstThisReference
 import com.ivianuu.ast.expressions.AstPropertyBackingFieldReference
+import com.ivianuu.ast.expressions.AstTypeOperation
 import com.ivianuu.ast.types.AstSimpleType
 import com.ivianuu.ast.types.AstDelegatedType
 
@@ -330,6 +331,10 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     open fun visitPropertyBackingFieldReference(propertyBackingFieldReference: AstPropertyBackingFieldReference) {
         visitElement(propertyBackingFieldReference)
+    }
+
+    open fun visitTypeOperation(typeOperation: AstTypeOperation) {
+        visitElement(typeOperation)
     }
 
     open fun visitSimpleType(simpleType: AstSimpleType) {
@@ -598,6 +603,10 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     final override fun visitPropertyBackingFieldReference(propertyBackingFieldReference: AstPropertyBackingFieldReference, data: Nothing?) {
         visitPropertyBackingFieldReference(propertyBackingFieldReference)
+    }
+
+    final override fun visitTypeOperation(typeOperation: AstTypeOperation, data: Nothing?) {
+        visitTypeOperation(typeOperation)
     }
 
     final override fun visitSimpleType(simpleType: AstSimpleType, data: Nothing?) {

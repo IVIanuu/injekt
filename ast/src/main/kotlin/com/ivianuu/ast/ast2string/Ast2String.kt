@@ -6,6 +6,7 @@ import com.ivianuu.ast.AstIntrinsics
 import com.ivianuu.ast.AstSpreadElement
 import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.Visibilities
+import com.ivianuu.ast.declarations.AstAnonymousInitializer
 import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstDeclarationContainer
 import com.ivianuu.ast.declarations.AstEnumEntry
@@ -31,8 +32,11 @@ import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstQualifiedAccess
 import com.ivianuu.ast.expressions.AstReturn
 import com.ivianuu.ast.expressions.AstThisReference
+import com.ivianuu.ast.expressions.AstThrow
+import com.ivianuu.ast.expressions.AstTypeOperation
 import com.ivianuu.ast.expressions.AstVararg
 import com.ivianuu.ast.expressions.AstVariableAssignment
+import com.ivianuu.ast.expressions.AstWhen
 import com.ivianuu.ast.symbols.fqName
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.symbols.impl.AstTypeParameterSymbol
@@ -74,43 +78,6 @@ private fun String.format() =
 private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
 
     private val printer = Printer(out, "%tab%")
-    private fun emit(value: Any?) {
-        check(value !is Unit)
-        printer.print(value)
-    }
-
-    private fun emitLine(value: Any?) {
-        check(value !is Unit)
-        printer.println(value)
-    }
-
-    private fun emitLine() {
-        printer.println()
-    }
-
-    private fun emitSpace() {
-        emit(" ")
-    }
-
-    private fun AstElement.emit() {
-        accept(this@Ast2KotlinSourceWriter, null)
-    }
-
-    private inline fun indented(body: () -> Unit) {
-        printer.pushIndent()
-        body()
-        printer.popIndent()
-    }
-
-    private inline fun bracedBlock(
-        header: String? = null,
-        body: () -> Unit
-    ) {
-        emitLine("${header?.let { "$it " }.orEmpty()}{")
-        indented(body)
-        emitLine()
-        emitLine("}")
-    }
 
     private val uniqueNameByElement =
         mutableMapOf<AstElement, String>()
@@ -276,10 +243,17 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         }
 
         emit("fun ")
+
         if (typeParameters.isNotEmpty()) {
             typeParameters.emitList()
             emitSpace()
         }
+
+        if (extensionReceiverType != null) {
+            extensionReceiverType!!.emit()
+            emit(".")
+        }
+
         emit(name)
 
         emit("(")
@@ -396,15 +370,11 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         } ?: emitLine()
     }
 
-    /*
-    override fun visitAnonymousInitializer(
-        anonymousInitializer: AstAnonymousInitializer,
-        data: Nothing?
-    ) {
+    override fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer) = with(anonymousInitializer) {
         bracedBlock(header = "init") {
-            anonymousInitializer.body.emit()
+            body!!.emit()
         }
-    }*/
+    }
 
     override fun visitTypeParameter(typeParameter: AstTypeParameter) {
         typeParameter.emit(null)
@@ -540,119 +510,123 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
 
         when (callee.symbol.callableId) {
             AstIntrinsics.LessThan -> {
+                emit("(")
                 valueArguments[0]!!.emit()
                 emit(" < ")
                 valueArguments[1]!!.emit()
+                emit(")")
                 return@with
             }
             AstIntrinsics.GreaterThan -> {
+                emit("(")
                 valueArguments[0]!!.emit()
                 emit(" > ")
                 valueArguments[1]!!.emit()
+                emit(")")
                 return@with
             }
             AstIntrinsics.LessThanEqual -> {
+                emit("(")
                 valueArguments[0]!!.emit()
                 emit(" <= ")
                 valueArguments[1]!!.emit()
+                emit(")")
                 return@with
             }
             AstIntrinsics.GreaterThanEqual -> {
+                emit("(")
                 valueArguments[0]!!.emit()
                 emit(" >= ")
                 valueArguments[1]!!.emit()
+                emit(")")
                 return@with
             }
             AstIntrinsics.StructuralEqual -> {
+                emit("(")
                 valueArguments[0]!!.emit()
                 emit(" == ")
                 valueArguments[1]!!.emit()
+                emit(")")
                 return@with
             }
             AstIntrinsics.StructuralNotEqual -> {
+                emit("(")
                 valueArguments[0]!!.emit()
                 emit(" != ")
                 valueArguments[1]!!.emit()
+                emit(")")
                 return@with
             }
             AstIntrinsics.IdentityEqual -> {
+                emit("(")
                 valueArguments[0]!!.emit()
                 emit(" === ")
                 valueArguments[1]!!.emit()
+                emit(")")
                 return@with
             }
             AstIntrinsics.IdentityNotEqual -> {
+                emit("(")
                 valueArguments[0]!!.emit()
                 emit(" !== ")
                 valueArguments[1]!!.emit()
+                emit(")")
                 return@with
             }
             AstIntrinsics.LazyAnd -> {
+                emit("(")
                 valueArguments[0]!!.emit()
                 emit(" && ")
                 valueArguments[1]!!.emit()
+                emit(")")
                 return@with
             }
             AstIntrinsics.LazyOr -> {
+                emit("(")
                 valueArguments[0]!!.emit()
                 emit(" || ")
                 valueArguments[1]!!.emit()
-                return@with
-            }
-            AstIntrinsics.IsType -> {
-                valueArguments.single()!!.emit()
-                emit(" is ")
-                type.emit()
-                return@with
-            }
-            AstIntrinsics.IsNotType -> {
-                valueArguments.single()!!.emit()
-                emit(" !is ")
-                type.emit()
-                return@with
-            }
-            AstIntrinsics.AsType -> {
-                valueArguments.single()!!.emit()
-                emit(" as ")
-                type.emit()
-                return@with
-            }
-            AstIntrinsics.SafeAsType -> {
-                valueArguments.single()!!.emit()
-                emit(" as? ")
-                type.emit()
+                emit(")")
                 return@with
             }
         }
 
-
-        val explicitReceiver = getExplicitReceiver()
-
-        if (explicitReceiver != null) {
-            explicitReceiver.emit()
-            emit(".")
-        }
-
-        if (callee is AstConstructor) {
-            emit(callee.returnType.regularClassOrFail.owner.name)
-        } else if (callee is AstNamedFunction && callee.dispatchReceiverType == null) {
-            emit(callee.symbol.callableId.fqName)
-        } else if (callee is AstNamedFunction) {
-            emit(callee.name)
-        } else {
-            error("Wtf $callee")
-        }
-        if (typeArguments.isNotEmpty()) {
-            emit("<")
-            typeArguments.forEachIndexed { index, typeArgument ->
-                typeArgument.emit()
-                if (index != typeArguments.lastIndex) emit(", ")
+        fun emitArguments() {
+            if (typeArguments.isNotEmpty()) {
+                emit("<")
+                typeArguments.forEachIndexed { index, typeArgument ->
+                    typeArgument.emit()
+                    if (index != typeArguments.lastIndex) emit(", ")
+                }
+                emit(">")
             }
-            emit(">")
+            emit("(")
+            emitValueArguments()
+            emit(")")
         }
-        emit("(")
-        emitValueArguments()
-        emit(")")
+
+        when (callee) {
+            is AstConstructor -> {
+                emit(callee.returnType.regularClassOrFail.owner.name)
+                emitArguments()
+            }
+            is AstNamedFunction -> {
+                withReceivers(
+                    dispatchReceiverType = callee.dispatchReceiverType,
+                    extensionReceiverType = callee.extensionReceiverType,
+                    dispatchReceiverArgument = dispatchReceiver,
+                    extensionReceiverArgument = extensionReceiver
+                ) {
+                    if (callee.dispatchReceiverType == null && callee.extensionReceiverType == null) {
+                        emit(callee.symbol.callableId.fqName)
+                    } else {
+                        emit(callee.name)
+                    }
+                    emitArguments()
+                }
+            }
+            else -> error("Unexpected callee $callee")
+        }
     }
 
     override fun visitQualifiedAccess(qualifiedAccess: AstQualifiedAccess) = with(qualifiedAccess) {
@@ -739,24 +713,30 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
             AstLogicOperation.Kind.OR -> emit(" || ")
         }.let {}
         logicOperation.right.emit()
+    }*/
+
+    override fun visitTypeOperation(typeOperation: AstTypeOperation) = with(typeOperation) {
+        emit("(")
+        argument.emit()
+        emit(" ${operator.keyword} ")
+        typeOperand.emit()
+        emit(")")
     }
 
-    override fun visitWhen(astWhen: AstWhen) {
+    override fun visitWhen(whenExpression: AstWhen) = with(whenExpression) {
         emitLine("when {")
         indented {
-            astWhen.branches.forEach { branch ->
-                when (branch) {
-                    is AstConditionBranch -> {
-                        branch.condition.emit()
-                        emitLine(" -> {")
-                    }
-                    is AstElseBranch -> {
-                        emitLine("else -> {")
-                    }
-                    else -> error("Unexpected branch $branch")
-                }.let {}
+            branches.forEach { branch ->
+                val condition = branch.condition
+                if (condition is AstConst<*> && condition.value == true) {
+                    emit("else")
+                } else {
+                    condition.emit()
+                }
+                emitLine(" -> {")
                 indented {
                     branch.result.emit()
+                    emitLine()
                 }
                 emitLine("}")
             }
@@ -764,6 +744,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         emitLine("}")
     }
 
+    /*
     override fun visitWhileLoop(whileLoop: AstWhileLoop) {
         when (whileLoop.kind) {
             AstWhileLoop.Kind.WHILE -> {
@@ -827,18 +808,23 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
     }*/
 
     override fun visitReturn(returnExpression: AstReturn) = with(returnExpression) {
-        emit("return ")
-        // todo label
+        emit("return")
+        val targetLabel = returnExpression.target.labelName
+        if (targetLabel != null)
+            emit("@$targetLabel")
+        else emitSpace()
         result.emit()
     }
 
-    /*
-
-    override fun visitThrow(astThrow: AstThrow) {
+    override fun visitThrow(throwExpression: AstThrow) = with(throwExpression) {
         emit("throw ")
-        astThrow.expression.emit()
+        exception.emit()
     }
-     */
+
+    override fun visitThisReference(thisReference: AstThisReference) = with(thisReference) {
+        emit("this")
+        if (labelName != null) emit("@$labelName")
+    }
 
     private fun AstMemberDeclaration.emitVisibility(emitSpace: Boolean = true) {
         emit(visibility.name.toLowerCase())
@@ -921,9 +907,84 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
     }
 
     private fun AstBaseQualifiedAccess.getExplicitReceiver(): AstExpression? =
-        if (extensionReceiver != null)
-            extensionReceiver
+        if (extensionReceiver != null) extensionReceiver
         else dispatchReceiver
             ?.takeIf { it !is AstThisReference } // todo
+
+    private fun withReceivers(
+        dispatchReceiverType: AstType?,
+        extensionReceiverType: AstType?,
+        dispatchReceiverArgument: AstExpression?,
+        extensionReceiverArgument: AstExpression?,
+        block: () -> Unit
+    ) {
+        when {
+            dispatchReceiverType == null && extensionReceiverType == null -> block()
+            dispatchReceiverType != null && extensionReceiverType == null-> {
+                dispatchReceiverArgument!!.emit()
+                block()
+            }
+            dispatchReceiverType == null && extensionReceiverType != null -> {
+                emit("(")
+                extensionReceiverArgument!!.emit()
+                emit(" as ")
+                extensionReceiverType.emit()
+                emit(")")
+                emit(".")
+                block()
+            }
+            dispatchReceiverType != null && extensionReceiverType != null -> {
+                emit("(with(")
+                dispatchReceiverArgument!!.emit()
+                emit(") { ")
+                emit("(")
+                extensionReceiverArgument!!.emit()
+                emit(" as ")
+                extensionReceiverType.emit()
+                emit(")")
+                emit(".")
+                block()
+                emit(" })")
+            }
+        }
+    }
+
+    private fun emit(value: Any?) {
+        check(value !is Unit)
+        printer.print(value)
+    }
+
+    private fun emitLine(value: Any?) {
+        check(value !is Unit)
+        printer.println(value)
+    }
+
+    private fun emitLine() {
+        printer.println()
+    }
+
+    private fun emitSpace() {
+        emit(" ")
+    }
+
+    private fun AstElement.emit() {
+        accept(this@Ast2KotlinSourceWriter, null)
+    }
+
+    private inline fun indented(body: () -> Unit) {
+        printer.pushIndent()
+        body()
+        printer.popIndent()
+    }
+
+    private inline fun bracedBlock(
+        header: String? = null,
+        body: () -> Unit
+    ) {
+        emitLine("${header?.let { "$it " }.orEmpty()}{")
+        indented(body)
+        emitLine()
+        emitLine("}")
+    }
 
 }

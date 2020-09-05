@@ -114,12 +114,6 @@ class AstBuiltIns(
     val lazyAndSymbol = intrinsicFunction(AstIntrinsics.LazyAnd, booleanType, 2)
     val lazyOrSymbol = intrinsicFunction(AstIntrinsics.LazyOr, booleanType, 2)
 
-    val isTypeSymbol = intrinsicFunction(AstIntrinsics.IsType, booleanType, 1)
-    val isNotTypeSymbol = intrinsicFunction(AstIntrinsics.IsNotType, booleanType, 1)
-    fun asTypeSymbol(type: AstType) = intrinsicFunction(AstIntrinsics.AsType, type, 1)
-    fun safeAsTypeSymbol(type: AstType) = intrinsicFunction(AstIntrinsics.SafeAsType,
-        (type as AstSimpleType).copy { isMarkedNullable = true }, 1)
-
     private fun ClassDescriptor.toAstRegularClassSymbol() = symbolTable.getClassSymbol(this)
     private fun KotlinType.toAstType() = typeConverter.convert(this)
 

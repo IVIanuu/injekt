@@ -19,7 +19,7 @@ internal class AstAnonymousInitializerImpl(
     override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
     override val origin: AstDeclarationOrigin,
-    override var body: AstBlock?,
+    override var body: AstBlock,
     override var symbol: AstAnonymousInitializerSymbol,
 ) : AstAnonymousInitializer() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
@@ -30,12 +30,12 @@ internal class AstAnonymousInitializerImpl(
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
-        body?.accept(visitor, data)
+        body.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstAnonymousInitializerImpl {
         annotations.transformInplace(transformer, data)
-        body = body?.transformSingle(transformer, data)
+        body = body.transformSingle(transformer, data)
         return this
     }
 
@@ -44,7 +44,7 @@ internal class AstAnonymousInitializerImpl(
         annotations.addAll(newAnnotations)
     }
 
-    override fun replaceBody(newBody: AstBlock?) {
+    override fun replaceBody(newBody: AstBlock) {
         body = newBody
     }
 }

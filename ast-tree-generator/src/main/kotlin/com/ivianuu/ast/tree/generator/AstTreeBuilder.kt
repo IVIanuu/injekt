@@ -336,6 +336,10 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         visitorSuperType = expression
         transformerType = statement
     }
+    val typeOperation = element("TypeOperation", Expression, expression) {
+        visitorSuperType = expression
+        transformerType = statement
+    }
 
     val simpleType = element("SimpleType", Type, type) {
         visitorSuperType = this@AstTreeBuilder.type

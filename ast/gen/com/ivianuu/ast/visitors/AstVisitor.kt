@@ -65,6 +65,7 @@ import com.ivianuu.ast.expressions.AstVariableAssignment
 import com.ivianuu.ast.expressions.AstSuperReference
 import com.ivianuu.ast.expressions.AstThisReference
 import com.ivianuu.ast.expressions.AstPropertyBackingFieldReference
+import com.ivianuu.ast.expressions.AstTypeOperation
 import com.ivianuu.ast.types.AstSimpleType
 import com.ivianuu.ast.types.AstDelegatedType
 
@@ -203,6 +204,8 @@ abstract class AstVisitor<out R, in D> {
     open fun visitThisReference(thisReference: AstThisReference, data: D): R  = visitExpression(thisReference, data)
 
     open fun visitPropertyBackingFieldReference(propertyBackingFieldReference: AstPropertyBackingFieldReference, data: D): R  = visitExpression(propertyBackingFieldReference, data)
+
+    open fun visitTypeOperation(typeOperation: AstTypeOperation, data: D): R  = visitExpression(typeOperation, data)
 
     open fun visitSimpleType(simpleType: AstSimpleType, data: D): R  = visitType(simpleType, data)
 

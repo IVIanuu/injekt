@@ -11,6 +11,7 @@ import com.ivianuu.ast.declarations.builder.buildFile
 import com.ivianuu.ast.declarations.builder.buildRegularClass
 import com.ivianuu.ast.declarations.classId
 import com.ivianuu.ast.extension.AstGenerationExtension
+import com.ivianuu.ast.psi2ast.astEnabled
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.visitors.AstTransformer
 import com.ivianuu.ast.visitors.AstVisitorVoid
@@ -32,7 +33,33 @@ class AstTest {
     val DOLLAR_SIGN = "$"
 
     @Test
+    fun lol() {
+        astEnabled = true
+        codegen(
+            source(
+                """
+                //val lol = ("lol" as String).toInt()
+                
+                class MyClass {
+                
+                    init {
+                        ("" as String).test()
+                    }
+                
+                    fun String.test() {
+                        
+                    }
+                }
+            """,
+                injektImports = false,
+                initializeInjekt = false
+            )
+        )
+    }
+
+    @Test
     fun testSimple() {
+        astEnabled = true
         codegen(
             sources = arrayOf(
                 source(
