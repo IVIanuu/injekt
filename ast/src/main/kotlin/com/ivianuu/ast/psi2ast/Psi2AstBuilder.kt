@@ -22,6 +22,7 @@ import com.ivianuu.ast.declarations.builder.AstFunctionBuilder
 import com.ivianuu.ast.declarations.builder.AstNamedFunctionBuilder
 import com.ivianuu.ast.declarations.builder.buildAnonymousFunction
 import com.ivianuu.ast.declarations.builder.buildAnonymousInitializer
+import com.ivianuu.ast.declarations.builder.buildAnonymousObject
 import com.ivianuu.ast.declarations.builder.buildEnumEntry
 import com.ivianuu.ast.declarations.builder.buildPropertyAccessor
 import com.ivianuu.ast.declarations.builder.buildTypeAlias
@@ -50,6 +51,7 @@ import com.ivianuu.ast.expressions.builder.AstQualifiedAccessBuilder
 import com.ivianuu.ast.expressions.builder.AstWhileLoopBuilder
 import com.ivianuu.ast.expressions.builder.buildBlock
 import com.ivianuu.ast.expressions.builder.buildCatch
+import com.ivianuu.ast.expressions.builder.buildDelegateInitializer
 import com.ivianuu.ast.expressions.builder.buildDelegatedConstructorCall
 import com.ivianuu.ast.expressions.builder.buildFunctionCall
 import com.ivianuu.ast.expressions.builder.buildQualifiedAccess
@@ -65,6 +67,7 @@ import com.ivianuu.ast.expressions.builder.buildWhenBranch
 import com.ivianuu.ast.symbols.CallableId
 import com.ivianuu.ast.symbols.impl.AstAnonymousFunctionSymbol
 import com.ivianuu.ast.symbols.impl.AstAnonymousInitializerSymbol
+import com.ivianuu.ast.symbols.impl.AstAnonymousObjectSymbol
 import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.symbols.impl.AstValueParameterSymbol
@@ -105,6 +108,7 @@ import org.jetbrains.kotlin.psi.KtConstantExpression
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtConstructorDelegationCall
 import org.jetbrains.kotlin.psi.KtContinueExpression
+import org.jetbrains.kotlin.psi.KtDelegatedSuperTypeEntry
 import org.jetbrains.kotlin.psi.KtDestructuringDeclaration
 import org.jetbrains.kotlin.psi.KtDoWhileExpression
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
@@ -120,6 +124,7 @@ import org.jetbrains.kotlin.psi.KtLabeledExpression
 import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.psi.KtLiteralStringTemplateEntry
 import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtObjectLiteralExpression
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtParenthesizedExpression
 import org.jetbrains.kotlin.psi.KtPrefixExpression
@@ -132,6 +137,7 @@ import org.jetbrains.kotlin.psi.KtReturnExpression
 import org.jetbrains.kotlin.psi.KtSecondaryConstructor
 import org.jetbrains.kotlin.psi.KtStringTemplateEntryWithExpression
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
+import org.jetbrains.kotlin.psi.KtSuperTypeCallEntry
 import org.jetbrains.kotlin.psi.KtThisExpression
 import org.jetbrains.kotlin.psi.KtThrowExpression
 import org.jetbrains.kotlin.psi.KtTryExpression
@@ -142,12 +148,14 @@ import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtUnaryExpression
 import org.jetbrains.kotlin.psi.KtVisitor
 import org.jetbrains.kotlin.psi.KtWhileExpression
+import org.jetbrains.kotlin.psi.psiUtil.getAnnotationEntries
 import org.jetbrains.kotlin.psi2ir.deparenthesize
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.ImportedFromObjectCallableDescriptor
 import org.jetbrains.kotlin.resolve.calls.components.isVararg
 import org.jetbrains.kotlin.resolve.constants.evaluate.ConstantExpressionEvaluator
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.getAllSuperClassifiers
 import org.jetbrains.kotlin.resolve.scopes.receivers.ClassValueReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ExtensionReceiver
@@ -199,7 +207,15 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
             isData = descriptor.isData
             isInner = descriptor.isInner
             isExternal = descriptor.isExternal
-
+            superTypes += descriptor.typeConstructor.supertypes.map { it.toAstType() }
+            delegateInitializers += classOrObject.superTypeListEntries
+                .filterIsInstance<KtDelegatedSuperTypeEntry>()
+                .map {
+                    buildDelegateInitializer {
+                        delegatedSuperType = it.typeReference!!.toAstType()
+                        expression = it.delegateExpression!!.convert()
+                    }
+                }
             annotations += classOrObject.annotationEntries.map { it.convert() }
             typeParameters += classOrObject.typeParameters.map { it.convert() }
 
@@ -212,6 +228,22 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                             symbol = symbolTable.getConstructorSymbol(primaryConstructorDescriptor)
                             isPrimary = true
                             returnType = primaryConstructorDescriptor.returnType.toAstType()
+                            delegatedConstructor = classOrObject.superTypeListEntries
+                                .filterIsInstance<KtSuperTypeCallEntry>()
+                                .singleOrNull()
+                                ?.let { superType ->
+                                    val resolvedCall = superType.getResolvedCall()!!
+                                    buildDelegatedConstructorCall {
+                                        type = superType.typeReference!!.toAstType()
+                                        callee = symbolTable.getConstructorSymbol(
+                                            resolvedCall.resultingDescriptor as ConstructorDescriptor
+                                        )
+                                        kind = AstDelegatedConstructorCallKind.SUPER
+                                        valueArguments += superType.valueArguments.map {
+                                            it.getArgumentExpression()!!.convert()
+                                        }
+                                    }
+                                }
                         }
                     }
             if (primaryConstructor != null) {
@@ -273,6 +305,9 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                 typeParameters += function.typeParameters.map { it.convert() }
                 dispatchReceiverType = descriptor.dispatchReceiverParameter?.type?.toAstType()
                 extensionReceiverType = descriptor.extensionReceiverParameter?.type?.toAstType()
+                overriddenFunctions += descriptor.overriddenDescriptors.map {
+                    symbolTable.getNamedFunctionSymbol(it as SimpleFunctionDescriptor)
+                }
             }
         }
 
@@ -325,6 +360,9 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
             extensionReceiverType = descriptor.extensionReceiverParameter?.type?.toAstType()
             annotations += property.annotationEntries.map { it.convert() }
             typeParameters += property.typeParameters.map { it.convert() }
+            overriddenProperties += descriptor.overriddenDescriptors.map {
+                symbolTable.getPropertySymbol(it as VariableDescriptor)
+            }
             isVar = property.isVar
             initializer = property.initializer?.convert()
             delegate = property.delegate?.expression?.convert()
@@ -463,6 +501,41 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
             functionTargets.pop()
         }.also {
             target.bind(it)
+        }
+    }
+
+    override fun visitObjectLiteralExpression(expression: KtObjectLiteralExpression, data: Nothing?): AstElement {
+        val objectDeclaration = expression.objectDeclaration
+        val descriptor = objectDeclaration.descriptor<ClassDescriptor>()
+        return buildAnonymousObject {
+            symbol = symbolTable.getAnonymousObjectSymbol(descriptor)
+            type = expression.getExpressionTypeWithCoercionToUnitOrFail().toAstType()
+            superTypes += descriptor.typeConstructor.supertypes.map { it.toAstType() }
+
+            val primaryConstructorDescriptor = descriptor.unsubstitutedPrimaryConstructor!!
+            declarations += buildConstructor {
+                symbol = symbolTable.getConstructorSymbol(primaryConstructorDescriptor)
+                isPrimary = true
+                returnType = primaryConstructorDescriptor.returnType.toAstType()
+                delegatedConstructor = objectDeclaration.superTypeListEntries
+                    .filterIsInstance<KtSuperTypeCallEntry>()
+                    .singleOrNull()
+                    ?.let { superType ->
+                        val resolvedCall = superType.getResolvedCall()!!
+                        buildDelegatedConstructorCall {
+                            type = superType.typeReference!!.toAstType()
+                            callee = symbolTable.getConstructorSymbol(
+                                resolvedCall.resultingDescriptor as ConstructorDescriptor
+                            )
+                            kind = AstDelegatedConstructorCallKind.SUPER
+                            valueArguments += superType.valueArguments.map {
+                                it.getArgumentExpression()!!.convert()
+                            }
+                        }
+                    }
+            }
+
+            declarations += objectDeclaration.declarations.map { it.convert() }
         }
     }
 

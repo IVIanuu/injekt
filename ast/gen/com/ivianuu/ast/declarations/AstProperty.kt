@@ -41,6 +41,7 @@ abstract class AstProperty : AstVariable<AstProperty>, AstTypeParametersOwner, A
     abstract val isConst: Boolean
     abstract val isLateinit: Boolean
     abstract val isExternal: Boolean
+    abstract val overriddenProperties: List<AstPropertySymbol>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitProperty(this, data)
 
@@ -79,4 +80,6 @@ abstract class AstProperty : AstVariable<AstProperty>, AstTypeParametersOwner, A
     abstract fun replaceIsLateinit(newIsLateinit: Boolean)
 
     abstract fun replaceIsExternal(newIsExternal: Boolean)
+
+    abstract fun replaceOverriddenProperties(newOverriddenProperties: List<AstPropertySymbol>)
 }

@@ -5,6 +5,7 @@ import com.ivianuu.ast.declarations.AstAnonymousObject
 import com.ivianuu.ast.declarations.AstDeclaration
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
+import com.ivianuu.ast.expressions.AstDelegateInitializer
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstAnonymousObjectSymbol
 import com.ivianuu.ast.symbols.impl.AstClassSymbol
@@ -22,12 +23,13 @@ internal class AstAnonymousObjectImpl(
     override val annotations: MutableList<AstFunctionCall>,
     override val origin: AstDeclarationOrigin,
     override val declarations: MutableList<AstDeclaration>,
-    override var classKind: ClassKind,
     override val superTypes: MutableList<AstType>,
+    override val delegateInitializers: MutableList<AstDelegateInitializer>,
     override var type: AstType,
     override var symbol: AstAnonymousObjectSymbol,
 ) : AstAnonymousObject() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
+    override val classKind: ClassKind get() = ClassKind.CLASS
 
     init {
         symbol.bind(this)
@@ -37,6 +39,7 @@ internal class AstAnonymousObjectImpl(
         annotations.forEach { it.accept(visitor, data) }
         declarations.forEach { it.accept(visitor, data) }
         superTypes.forEach { it.accept(visitor, data) }
+        delegateInitializers.forEach { it.accept(visitor, data) }
         type.accept(visitor, data)
     }
 
@@ -44,6 +47,7 @@ internal class AstAnonymousObjectImpl(
         annotations.transformInplace(transformer, data)
         declarations.transformInplace(transformer, data)
         superTypes.transformInplace(transformer, data)
+        delegateInitializers.transformInplace(transformer, data)
         type = type.transformSingle(transformer, data)
         return this
     }
@@ -58,13 +62,16 @@ internal class AstAnonymousObjectImpl(
         declarations.addAll(newDeclarations)
     }
 
-    override fun replaceClassKind(newClassKind: ClassKind) {
-        classKind = newClassKind
-    }
+    override fun replaceClassKind(newClassKind: ClassKind) {}
 
     override fun replaceSuperTypes(newSuperTypes: List<AstType>) {
         superTypes.clear()
         superTypes.addAll(newSuperTypes)
+    }
+
+    override fun replaceDelegateInitializers(newDelegateInitializers: List<AstDelegateInitializer>) {
+        delegateInitializers.clear()
+        delegateInitializers.addAll(newDelegateInitializers)
     }
 
     override fun replaceType(newType: AstType) {

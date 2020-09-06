@@ -6,6 +6,7 @@
 package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstAnnotationContainer
+import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.symbols.impl.AstClassifierSymbol
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.types.AstSimpleType

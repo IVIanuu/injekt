@@ -53,6 +53,7 @@ class AstPropertyBuilder(override val context: AstContext) : AstMemberDeclaratio
     var isConst: Boolean = false
     var isLateinit: Boolean = false
     var isExternal: Boolean = false
+    val overriddenProperties: MutableList<AstPropertySymbol> = mutableListOf()
 
     override fun build(): AstProperty {
         return AstPropertyImpl(
@@ -78,6 +79,7 @@ class AstPropertyBuilder(override val context: AstContext) : AstMemberDeclaratio
             isConst,
             isLateinit,
             isExternal,
+            overriddenProperties,
         )
     }
 
@@ -119,5 +121,6 @@ inline fun AstProperty.copy(init: AstPropertyBuilder.() -> Unit = {}): AstProper
     copyBuilder.isConst = isConst
     copyBuilder.isLateinit = isLateinit
     copyBuilder.isExternal = isExternal
+    copyBuilder.overriddenProperties.addAll(overriddenProperties)
     return copyBuilder.apply(init).build()
 }

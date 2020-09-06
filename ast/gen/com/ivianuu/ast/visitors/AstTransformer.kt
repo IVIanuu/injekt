@@ -56,6 +56,7 @@ import com.ivianuu.ast.expressions.AstBaseQualifiedAccess
 import com.ivianuu.ast.expressions.AstQualifiedAccess
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
+import com.ivianuu.ast.expressions.AstDelegateInitializer
 import com.ivianuu.ast.expressions.AstCallableReference
 import com.ivianuu.ast.expressions.AstVararg
 import com.ivianuu.ast.AstSpreadElement
@@ -297,6 +298,10 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     open fun transformDelegatedConstructorCall(delegatedConstructorCall: AstDelegatedConstructorCall, data: D): CompositeTransformResult<AstStatement> {
         return transformCall(delegatedConstructorCall, data)
+    }
+
+    open fun transformDelegateInitializer(delegateInitializer: AstDelegateInitializer, data: D): CompositeTransformResult<AstElement> {
+        return transformElement(delegateInitializer, data)
     }
 
     open fun transformCallableReference(callableReference: AstCallableReference, data: D): CompositeTransformResult<AstStatement> {
@@ -569,6 +574,10 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     final override fun visitDelegatedConstructorCall(delegatedConstructorCall: AstDelegatedConstructorCall, data: D): CompositeTransformResult<AstStatement> {
         return transformDelegatedConstructorCall(delegatedConstructorCall, data)
+    }
+
+    final override fun visitDelegateInitializer(delegateInitializer: AstDelegateInitializer, data: D): CompositeTransformResult<AstElement> {
+        return transformDelegateInitializer(delegateInitializer, data)
     }
 
     final override fun visitCallableReference(callableReference: AstCallableReference, data: D): CompositeTransformResult<AstStatement> {

@@ -51,6 +51,7 @@ open class AstNamedFunctionBuilder(override val context: AstContext) : AstFuncti
     open var isInfix: Boolean = false
     open var isInline: Boolean = false
     open var isTailrec: Boolean = false
+    open val overriddenFunctions: MutableList<AstNamedFunctionSymbol> = mutableListOf()
     open lateinit var symbol: AstNamedFunctionSymbol
 
     @OptIn(AstImplementationDetail::class)
@@ -75,6 +76,7 @@ open class AstNamedFunctionBuilder(override val context: AstContext) : AstFuncti
             isInfix,
             isInline,
             isTailrec,
+            overriddenFunctions,
             symbol,
         )
     }
@@ -114,6 +116,7 @@ inline fun AstNamedFunction.copy(init: AstNamedFunctionBuilder.() -> Unit = {}):
     copyBuilder.isInfix = isInfix
     copyBuilder.isInline = isInline
     copyBuilder.isTailrec = isTailrec
+    copyBuilder.overriddenFunctions.addAll(overriddenFunctions)
     copyBuilder.symbol = symbol
     return copyBuilder.apply(init).build()
 }

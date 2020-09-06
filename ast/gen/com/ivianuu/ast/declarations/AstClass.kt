@@ -1,6 +1,7 @@
 package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.expressions.AstDelegateInitializer
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstClassLikeSymbol
 import com.ivianuu.ast.symbols.impl.AstClassSymbol
@@ -22,6 +23,7 @@ interface AstClass<F : AstClass<F>> : AstClassLikeDeclaration<F>, AstDeclaration
     override val symbol: AstClassSymbol<F>
     val classKind: ClassKind
     val superTypes: List<AstType>
+    val delegateInitializers: List<AstDelegateInitializer>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitClass(this, data)
 
@@ -32,4 +34,6 @@ interface AstClass<F : AstClass<F>> : AstClassLikeDeclaration<F>, AstDeclaration
     fun replaceClassKind(newClassKind: ClassKind)
 
     fun replaceSuperTypes(newSuperTypes: List<AstType>)
+
+    fun replaceDelegateInitializers(newDelegateInitializers: List<AstDelegateInitializer>)
 }

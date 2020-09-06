@@ -45,6 +45,7 @@ internal class AstPropertyImpl(
     override var isConst: Boolean,
     override var isLateinit: Boolean,
     override var isExternal: Boolean,
+    override val overriddenProperties: MutableList<AstPropertySymbol>,
 ) : AstProperty() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
 
@@ -149,5 +150,10 @@ internal class AstPropertyImpl(
 
     override fun replaceIsExternal(newIsExternal: Boolean) {
         isExternal = newIsExternal
+    }
+
+    override fun replaceOverriddenProperties(newOverriddenProperties: List<AstPropertySymbol>) {
+        overriddenProperties.clear()
+        overriddenProperties.addAll(newOverriddenProperties)
     }
 }

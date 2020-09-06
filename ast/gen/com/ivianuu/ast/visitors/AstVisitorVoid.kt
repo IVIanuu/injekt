@@ -56,6 +56,7 @@ import com.ivianuu.ast.expressions.AstBaseQualifiedAccess
 import com.ivianuu.ast.expressions.AstQualifiedAccess
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
+import com.ivianuu.ast.expressions.AstDelegateInitializer
 import com.ivianuu.ast.expressions.AstCallableReference
 import com.ivianuu.ast.expressions.AstVararg
 import com.ivianuu.ast.AstSpreadElement
@@ -295,6 +296,10 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     open fun visitDelegatedConstructorCall(delegatedConstructorCall: AstDelegatedConstructorCall) {
         visitElement(delegatedConstructorCall)
+    }
+
+    open fun visitDelegateInitializer(delegateInitializer: AstDelegateInitializer) {
+        visitElement(delegateInitializer)
     }
 
     open fun visitCallableReference(callableReference: AstCallableReference) {
@@ -567,6 +572,10 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     final override fun visitDelegatedConstructorCall(delegatedConstructorCall: AstDelegatedConstructorCall, data: Nothing?) {
         visitDelegatedConstructorCall(delegatedConstructorCall)
+    }
+
+    final override fun visitDelegateInitializer(delegateInitializer: AstDelegateInitializer, data: Nothing?) {
+        visitDelegateInitializer(delegateInitializer)
     }
 
     final override fun visitCallableReference(callableReference: AstCallableReference, data: Nothing?) {

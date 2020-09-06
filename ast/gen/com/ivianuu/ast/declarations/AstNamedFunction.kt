@@ -38,6 +38,7 @@ abstract class AstNamedFunction : AstFunction<AstNamedFunction>, AstMemberDeclar
     abstract val isInfix: Boolean
     abstract val isInline: Boolean
     abstract val isTailrec: Boolean
+    abstract val overriddenFunctions: List<AstNamedFunctionSymbol>
     abstract override val symbol: AstNamedFunctionSymbol
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitNamedFunction(this, data)
@@ -73,4 +74,6 @@ abstract class AstNamedFunction : AstFunction<AstNamedFunction>, AstMemberDeclar
     abstract fun replaceIsInline(newIsInline: Boolean)
 
     abstract fun replaceIsTailrec(newIsTailrec: Boolean)
+
+    abstract fun replaceOverriddenFunctions(newOverriddenFunctions: List<AstNamedFunctionSymbol>)
 }

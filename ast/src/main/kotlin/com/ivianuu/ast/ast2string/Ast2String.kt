@@ -9,7 +9,9 @@ import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.Visibilities
 import com.ivianuu.ast.declarations.AstAnonymousFunction
 import com.ivianuu.ast.declarations.AstAnonymousInitializer
+import com.ivianuu.ast.declarations.AstAnonymousObject
 import com.ivianuu.ast.declarations.AstCallableDeclaration
+import com.ivianuu.ast.declarations.AstClass
 import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstDeclarationContainer
 import com.ivianuu.ast.declarations.AstEnumEntry
@@ -23,6 +25,7 @@ import com.ivianuu.ast.declarations.AstRegularClass
 import com.ivianuu.ast.declarations.AstTypeAlias
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.AstValueParameter
+import com.ivianuu.ast.declarations.classifierOrNull
 import com.ivianuu.ast.declarations.regularClassOrFail
 import com.ivianuu.ast.declarations.regularClassOrNull
 import com.ivianuu.ast.expressions.AstBlock
@@ -201,6 +204,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
             emit(") ")
         }
 
+        renderSuperTypes()
         typeParameters.emitWhere()
 
         val declarationsExceptPrimaryConstructor = declarations
@@ -230,12 +234,44 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         emitLine()
     }
 
+    private fun AstClass<*>.renderSuperTypes(appendSpace: Boolean = true) {
+        val superTypesToRender = superTypes
+            .filterNot { it.classifierOrNull == context.builtIns.anySymbol } // todo compare types once possible
+        if (superTypesToRender.isEmpty()) return
+        emit(": ")
+        superTypesToRender
+            .forEachIndexed { index, superType ->
+                superType.emit()
+
+                declarations
+                    .filterIsInstance<AstConstructor>()
+                    .singleOrNull { it.isPrimary }
+                    ?.delegatedConstructor
+                    ?.let {
+                        emit("(")
+                        it.emitValueArguments()
+                        emit(")")
+                    }
+
+                delegateInitializers
+                    .filter { it.delegatedSuperType.classifierOrNull == superType.classifierOrNull } // todo compare types once possible
+                    .singleOrNull()
+                    ?.let {
+                        emit("by ")
+                        it.expression.emit()
+                    }
+
+                if (index != superTypesToRender.lastIndex) emit(", ")
+            }
+        if (appendSpace) emitSpace()
+    }
+
     override fun visitNamedFunction(namedFunction: AstNamedFunction): Unit = with(namedFunction) {
         emitAnnotations()
         if (visibility != Visibilities.Local) emitVisibility()
         emitPlatformStatus()
         if (symbol.callableId.className != null) emitModality()
-        // todo if (overriddenDeclarations.isNotEmpty()) { emit("override ") }
+        if (overriddenFunctions.isNotEmpty()) emit("override ")
         if (isInline) {
             emit("inline ")
         }
@@ -320,7 +356,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         if (!isLocal) emitVisibility()
         emitPlatformStatus()
         if (symbol.callableId.className != null) emitModality()
-        // todo if (overriddenDeclarations.isNotEmpty()) { emit("override ") }
+        if (overriddenProperties.isNotEmpty()) emit("override ")
         if (isInline) {
             emit("inline ")
         }
@@ -706,48 +742,13 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         emitLine("}")
     }
 
-    /*
-
-    override fun visitAnonymousObjectExpression(
-        expression: AstAnonymousObjectExpression,
-        data: Nothing?
-    ) {
-        expression.anonymousObject.emit()
+    override fun visitAnonymousObject(anonymousObject: AstAnonymousObject) = with(anonymousObject) {
+        emit("object ")
+        renderSuperTypes()
+        bracedBlock {
+            emitDeclarations()
+        }
     }
-
-    override fun visitComparisonOperation(
-        comparisonOperation: AstComparisonOperation,
-        data: Nothing?
-    ) {
-        comparisonOperation.left.emit()
-        when (comparisonOperation.kind) {
-            AstComparisonOperation.Kind.LESS_THAN -> emit(" < ")
-            AstComparisonOperation.Kind.GREATER_THAN -> emit(" > ")
-            AstComparisonOperation.Kind.LESS_THEN_EQUALS -> emit(" <= ")
-            AstComparisonOperation.Kind.GREATER_THEN_EQUALS -> emit(" >= ")
-        }.let {}
-        comparisonOperation.right.emit()
-    }
-
-    override fun visitEqualityOperation(equalityOperation: AstEqualityOperation) {
-        equalityOperation.left.emit()
-        when (equalityOperation.kind) {
-            AstEqualityOperation.Kind.EQUALS -> emit(" == ")
-            AstEqualityOperation.Kind.NOT_EQUALS -> emit(" != ")
-            AstEqualityOperation.Kind.IDENTITY -> emit(" === ")
-            AstEqualityOperation.Kind.NOT_IDENTITY -> emit(" !== ")
-        }.let {}
-        equalityOperation.right.emit()
-    }
-
-    override fun visitLogicOperation(logicOperation: AstLogicOperation) {
-        logicOperation.left.emit()
-        when (logicOperation.kind) {
-            AstLogicOperation.Kind.AND -> emit(" && ")
-            AstLogicOperation.Kind.OR -> emit(" || ")
-        }.let {}
-        logicOperation.right.emit()
-    }*/
 
     override fun visitTypeOperation(typeOperation: AstTypeOperation) = with(typeOperation) {
         emit("(")
@@ -863,11 +864,15 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         if (emitSpace) emitSpace()
     }
 
-    private fun AstDeclarationContainer.emitDeclarations() {
-        declarations.forEachIndexed { index, declaration ->
-            declaration.emit()
-            if (index != declarations.lastIndex) emitLine()
-        }
+    private fun AstDeclarationContainer.emitDeclarations(
+        delimiter: String = "\n"
+    ) {
+        declarations
+            .filter { it !is AstConstructor || !it.isPrimary }
+            .forEachIndexed { index, declaration ->
+                declaration.emit()
+                if (index != declarations.lastIndex) emit(delimiter)
+            }
     }
 
     private fun AstAnnotationContainer.emitAnnotations(

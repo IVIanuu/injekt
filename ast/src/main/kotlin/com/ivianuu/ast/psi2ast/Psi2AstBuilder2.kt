@@ -417,39 +417,6 @@ class Psi2AstBuilder2(override val context: Psi2AstGeneratorContext) : Generator
         }
     }
 
-    override fun visitObjectLiteralExpression(expression: KtObjectLiteralExpression, data: Nothing?): AstElement {
-        val objectDeclaration = expression.objectDeclaration
-        return withChildClassName(ANONYMOUS_OBJECT_NAME) {
-            buildAnonymousObject {
-                classKind = ClassKind.OBJECT
-                scopeProvider = baseScopeProvider
-                symbol = AstAnonymousObjectSymbol()
-                val delegatedSelfType = objectDeclaration.toDelegatedSelfType(this)
-                objectDeclaration.extractAnnotationsTo(this)
-                val delegatedSuperType = objectDeclaration.extractSuperTypeListEntriesTo(
-                    this,
-                    delegatedSelfType,
-                    null,
-                    ClassKind.CLASS,
-                    containerTypeParameters = emptyList(),
-                    symbol
-                )
-                typeRef = delegatedSelfType
-
-
-                for (declaration in objectDeclaration.declarations) {
-                    declarations += declaration.toAstDeclaration(
-                        delegatedSuperType,
-                        delegatedSelfType,
-                        owner = objectDeclaration,
-                        ownerClassBuilder = this,
-                        ownerTypeParameters = emptyList()
-                    )
-                }
-            }
-        }
-    }
-
     private fun KtSecondaryConstructor.toAstConstructor(
         delegatedSuperTypeRef: AstType,
         delegatedSelfTypeRef: AstType,

@@ -8,6 +8,7 @@ import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstEnumEntry
 import com.ivianuu.ast.declarations.impl.AstEnumEntryImpl
+import com.ivianuu.ast.expressions.AstDelegateInitializer
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstClassSymbol
 import com.ivianuu.ast.symbols.impl.AstEnumEntrySymbol
@@ -28,6 +29,7 @@ class AstEnumEntryBuilder(override val context: AstContext) : AstBuilder {
     val annotations: MutableList<AstFunctionCall> = mutableListOf()
     var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     val declarations: MutableList<AstDeclaration> = mutableListOf()
+    val delegateInitializers: MutableList<AstDelegateInitializer> = mutableListOf()
     var name: Name by lazyVar { symbol.classId.shortClassName }
     lateinit var symbol: AstEnumEntrySymbol
 
@@ -37,6 +39,7 @@ class AstEnumEntryBuilder(override val context: AstContext) : AstBuilder {
             annotations,
             origin,
             declarations,
+            delegateInitializers,
             name,
             symbol,
         )
@@ -54,6 +57,7 @@ inline fun AstEnumEntry.copy(init: AstEnumEntryBuilder.() -> Unit = {}): AstEnum
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
     copyBuilder.declarations.addAll(declarations)
+    copyBuilder.delegateInitializers.addAll(delegateInitializers)
     copyBuilder.name = name
     copyBuilder.symbol = symbol
     return copyBuilder.apply(init).build()

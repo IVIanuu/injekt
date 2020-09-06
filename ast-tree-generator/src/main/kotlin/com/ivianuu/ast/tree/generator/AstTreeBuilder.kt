@@ -297,6 +297,10 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         visitorSuperType = call
         transformerType = statement
     }
+    val delegateInitializer = element("DelegateInitializer", Expression) {
+        visitorSuperType = baseAstElement
+        transformerType = baseAstElement
+    }
     val callableReference = element("CallableReference", Expression, baseQualifiedAccess) {
         visitorSuperType = baseQualifiedAccess
         transformerType = statement

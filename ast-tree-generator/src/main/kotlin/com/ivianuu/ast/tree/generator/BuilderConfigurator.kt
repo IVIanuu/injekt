@@ -115,7 +115,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
 
         builder(anonymousObject) {
             parents += classBuilder
-            default("classKind", "ClassKind.CLASS")
         }
 
         builder(typeAlias) {

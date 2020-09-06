@@ -56,6 +56,7 @@ import com.ivianuu.ast.expressions.AstBaseQualifiedAccess
 import com.ivianuu.ast.expressions.AstQualifiedAccess
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCall
+import com.ivianuu.ast.expressions.AstDelegateInitializer
 import com.ivianuu.ast.expressions.AstCallableReference
 import com.ivianuu.ast.expressions.AstVararg
 import com.ivianuu.ast.AstSpreadElement
@@ -186,6 +187,8 @@ abstract class AstVisitor<out R, in D> {
     open fun visitFunctionCall(functionCall: AstFunctionCall, data: D): R  = visitBaseQualifiedAccess(functionCall, data)
 
     open fun visitDelegatedConstructorCall(delegatedConstructorCall: AstDelegatedConstructorCall, data: D): R  = visitCall(delegatedConstructorCall, data)
+
+    open fun visitDelegateInitializer(delegateInitializer: AstDelegateInitializer, data: D): R  = visitElement(delegateInitializer, data)
 
     open fun visitCallableReference(callableReference: AstCallableReference, data: D): R  = visitBaseQualifiedAccess(callableReference, data)
 

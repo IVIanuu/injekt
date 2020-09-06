@@ -8,6 +8,7 @@ import com.ivianuu.ast.types.builder.buildTypeProjectionWithVariance
 import com.ivianuu.ast.types.impl.AstStarProjectionImpl
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.upperIfFlexible
@@ -25,7 +26,14 @@ class TypeConverter(private val symbolTable: DescriptorSymbolTable) {
                 constantValueGenerator.generateAnnotationConstructorCall(it)!!
             }
             classifier = when (val classifierDescriptor = approximatedType.constructor.declarationDescriptor) {
-                is ClassDescriptor -> symbolTable.getClassSymbol(classifierDescriptor)
+                is ClassDescriptor -> {
+                    if (classifierDescriptor.visibility == Visibilities.LOCAL &&
+                            classifierDescriptor.name.isSpecial) {
+                        symbolTable.getAnonymousObjectSymbol(classifierDescriptor)
+                    } else {
+                        symbolTable.getClassSymbol(classifierDescriptor)
+                    }
+                }
                 is TypeParameterDescriptor -> symbolTable.getTypeParameterSymbol(classifierDescriptor)
                 else -> error("Unexpected classifier $classifierDescriptor $approximatedType")
             }

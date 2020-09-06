@@ -69,7 +69,7 @@ object FieldSets {
 
     val initializer = field("initializer", expression, nullable = true)
 
-    fun superTypes() = fieldList("superTypes", type)
+    val superTypes = fieldList("superTypes", type)
 
     val classKind = field(classKindType)
 

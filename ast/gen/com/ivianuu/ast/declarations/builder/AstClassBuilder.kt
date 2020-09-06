@@ -8,6 +8,7 @@ import com.ivianuu.ast.declarations.AstClass
 import com.ivianuu.ast.declarations.AstDeclaration
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
+import com.ivianuu.ast.expressions.AstDelegateInitializer
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -26,6 +27,7 @@ interface AstClassBuilder : AstAnnotationContainerBuilder {
     abstract val declarations: MutableList<AstDeclaration>
     abstract var classKind: ClassKind
     abstract val superTypes: MutableList<AstType>
+    abstract val delegateInitializers: MutableList<AstDelegateInitializer>
 
     override fun build(): AstClass<*>
 }

@@ -3,6 +3,7 @@ package com.ivianuu.ast.declarations
 import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.Visibility
+import com.ivianuu.ast.expressions.AstDelegateInitializer
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstClassSymbol
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
@@ -29,6 +30,7 @@ abstract class AstRegularClass : AstMemberDeclaration(), AstTypeParametersOwner,
     abstract override val typeParameters: List<AstTypeParameter>
     abstract override val declarations: List<AstDeclaration>
     abstract override val classKind: ClassKind
+    abstract override val delegateInitializers: List<AstDelegateInitializer>
     abstract override val symbol: AstRegularClassSymbol
     abstract override val superTypes: List<AstType>
     abstract val isInline: Boolean
@@ -53,6 +55,8 @@ abstract class AstRegularClass : AstMemberDeclaration(), AstTypeParametersOwner,
     abstract override fun replaceDeclarations(newDeclarations: List<AstDeclaration>)
 
     abstract override fun replaceClassKind(newClassKind: ClassKind)
+
+    abstract override fun replaceDelegateInitializers(newDelegateInitializers: List<AstDelegateInitializer>)
 
     abstract override fun replaceSuperTypes(newSuperTypes: List<AstType>)
 

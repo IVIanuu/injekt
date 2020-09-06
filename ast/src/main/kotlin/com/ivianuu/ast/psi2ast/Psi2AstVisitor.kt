@@ -100,17 +100,6 @@ class Psi2AstVisitor(
 
     /**
 
-    override fun visitObjectLiteralExpression(
-        expression: KtObjectLiteralExpression,
-        data: Nothing?
-    ): AstElement {
-        // important to compute the ast declaration before asking for it's type
-        val anonymousObject = expression.objectDeclaration.accept<AstClass>(mode)
-        return AstAnonymousObjectExpression(
-            expression.getTypeInferredByFrontendOrFail().toAstType(),
-            anonymousObject
-        )
-    }
 
     /*override fun visitWhenExpression(expression: KtWhenExpression, data: Nothing?): AstElement {
         val subjectVariable = expression.subjectVariable

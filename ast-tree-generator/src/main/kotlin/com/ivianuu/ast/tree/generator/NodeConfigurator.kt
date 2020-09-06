@@ -195,13 +195,14 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             parentArg(classLikeDeclaration, "F", "F")
             +symbol("AstClassSymbol", "F")
             +classKind
-            +superTypes()
+            +superTypes
+            +fieldList("delegateInitializers", delegateInitializer)
         }
 
         regularClass.configure {
             parentArg(klass, "F", regularClass)
             +symbol("AstRegularClassSymbol")
-            +superTypes()
+            +superTypes
             +isInline
             +isCompanion
             +isFun
@@ -251,6 +252,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +isInfix
             +isInline
             +isTailrec
+            +fieldList("overriddenFunctions", namedFunctionSymbolType)
             +symbol("AstNamedFunctionSymbol")
         }
 
@@ -263,6 +265,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +isConst
             +isLateinit
             +isExternal
+            +fieldList("overriddenProperties", propertySymbolType)
         }
 
         propertyAccessor.configure {
@@ -292,6 +295,11 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
                 }
             +field("dispatchReceiver", expression, nullable = true)
             +field("kind", delegatedConstructorCallKindType)
+        }
+
+        delegateInitializer.configure {
+            +field("delegatedSuperType", type)
+            +field("expression", expression)
         }
 
         valueParameter.configure {

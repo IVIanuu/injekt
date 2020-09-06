@@ -43,6 +43,7 @@ open class AstNamedFunctionImpl @AstImplementationDetail constructor(
     override var isInfix: Boolean,
     override var isInline: Boolean,
     override var isTailrec: Boolean,
+    override val overriddenFunctions: MutableList<AstNamedFunctionSymbol>,
     override var symbol: AstNamedFunctionSymbol,
 ) : AstNamedFunction() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
@@ -137,5 +138,10 @@ open class AstNamedFunctionImpl @AstImplementationDetail constructor(
 
     override fun replaceIsTailrec(newIsTailrec: Boolean) {
         isTailrec = newIsTailrec
+    }
+
+    override fun replaceOverriddenFunctions(newOverriddenFunctions: List<AstNamedFunctionSymbol>) {
+        overriddenFunctions.clear()
+        overriddenFunctions.addAll(newOverriddenFunctions)
     }
 }

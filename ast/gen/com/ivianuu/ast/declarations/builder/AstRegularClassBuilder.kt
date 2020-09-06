@@ -15,6 +15,7 @@ import com.ivianuu.ast.declarations.builder.AstClassBuilder
 import com.ivianuu.ast.declarations.builder.AstDeclarationContainerBuilder
 import com.ivianuu.ast.declarations.builder.AstTypeParametersOwnerBuilder
 import com.ivianuu.ast.declarations.impl.AstRegularClassImpl
+import com.ivianuu.ast.expressions.AstDelegateInitializer
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstClassSymbol
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
@@ -42,6 +43,7 @@ open class AstRegularClassBuilder(override val context: AstContext) : AstClassBu
     override val typeParameters: MutableList<AstTypeParameter> = mutableListOf()
     override val declarations: MutableList<AstDeclaration> = mutableListOf()
     override var classKind: ClassKind = ClassKind.CLASS
+    override val delegateInitializers: MutableList<AstDelegateInitializer> = mutableListOf()
     open lateinit var symbol: AstRegularClassSymbol
     override val superTypes: MutableList<AstType> = mutableListOf()
     open var isInline: Boolean = false
@@ -63,6 +65,7 @@ open class AstRegularClassBuilder(override val context: AstContext) : AstClassBu
             typeParameters,
             declarations,
             classKind,
+            delegateInitializers,
             symbol,
             superTypes,
             isInline,
@@ -99,6 +102,7 @@ inline fun AstRegularClass.copy(init: AstRegularClassBuilder.() -> Unit = {}): A
     copyBuilder.typeParameters.addAll(typeParameters)
     copyBuilder.declarations.addAll(declarations)
     copyBuilder.classKind = classKind
+    copyBuilder.delegateInitializers.addAll(delegateInitializers)
     copyBuilder.symbol = symbol
     copyBuilder.superTypes.addAll(superTypes)
     copyBuilder.isInline = isInline

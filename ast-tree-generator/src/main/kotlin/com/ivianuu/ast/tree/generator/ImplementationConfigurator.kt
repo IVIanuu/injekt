@@ -14,7 +14,12 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
     private fun configure() = with(AstTreeBuilder) {
         impl(regularClass)
 
-        impl(anonymousObject)
+        impl(anonymousObject) {
+            default("classKind") {
+                value = "ClassKind.CLASS"
+                withGetter = true
+            }
+        }
 
         impl(anonymousFunction) {
             defaultNull("dispatchReceiverType", withGetter = true)

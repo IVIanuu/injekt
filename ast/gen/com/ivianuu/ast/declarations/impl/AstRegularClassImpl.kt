@@ -8,6 +8,7 @@ import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstRegularClass
 import com.ivianuu.ast.declarations.AstTypeParameter
+import com.ivianuu.ast.expressions.AstDelegateInitializer
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstClassSymbol
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
@@ -33,6 +34,7 @@ internal class AstRegularClassImpl(
     override val typeParameters: MutableList<AstTypeParameter>,
     override val declarations: MutableList<AstDeclaration>,
     override var classKind: ClassKind,
+    override val delegateInitializers: MutableList<AstDelegateInitializer>,
     override var symbol: AstRegularClassSymbol,
     override val superTypes: MutableList<AstType>,
     override var isInline: Boolean,
@@ -52,6 +54,7 @@ internal class AstRegularClassImpl(
         annotations.forEach { it.accept(visitor, data) }
         typeParameters.forEach { it.accept(visitor, data) }
         declarations.forEach { it.accept(visitor, data) }
+        delegateInitializers.forEach { it.accept(visitor, data) }
         superTypes.forEach { it.accept(visitor, data) }
     }
 
@@ -59,6 +62,7 @@ internal class AstRegularClassImpl(
         annotations.transformInplace(transformer, data)
         typeParameters.transformInplace(transformer, data)
         declarations.transformInplace(transformer, data)
+        delegateInitializers.transformInplace(transformer, data)
         superTypes.transformInplace(transformer, data)
         return this
     }
@@ -92,6 +96,11 @@ internal class AstRegularClassImpl(
 
     override fun replaceClassKind(newClassKind: ClassKind) {
         classKind = newClassKind
+    }
+
+    override fun replaceDelegateInitializers(newDelegateInitializers: List<AstDelegateInitializer>) {
+        delegateInitializers.clear()
+        delegateInitializers.addAll(newDelegateInitializers)
     }
 
     override fun replaceSuperTypes(newSuperTypes: List<AstType>) {

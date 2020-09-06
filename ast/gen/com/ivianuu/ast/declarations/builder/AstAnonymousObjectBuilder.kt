@@ -9,6 +9,7 @@ import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.builder.AstClassBuilder
 import com.ivianuu.ast.declarations.impl.AstAnonymousObjectImpl
+import com.ivianuu.ast.expressions.AstDelegateInitializer
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.symbols.impl.AstAnonymousObjectSymbol
@@ -28,8 +29,8 @@ class AstAnonymousObjectBuilder(override val context: AstContext) : AstClassBuil
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     override val declarations: MutableList<AstDeclaration> = mutableListOf()
-    override var classKind: ClassKind = ClassKind.CLASS
     override val superTypes: MutableList<AstType> = mutableListOf()
+    override val delegateInitializers: MutableList<AstDelegateInitializer> = mutableListOf()
     override lateinit var type: AstType
     lateinit var symbol: AstAnonymousObjectSymbol
 
@@ -39,8 +40,8 @@ class AstAnonymousObjectBuilder(override val context: AstContext) : AstClassBuil
             annotations,
             origin,
             declarations,
-            classKind,
             superTypes,
+            delegateInitializers,
             type,
             symbol,
         )
@@ -48,6 +49,13 @@ class AstAnonymousObjectBuilder(override val context: AstContext) : AstClassBuil
 
     @Deprecated("Modification of 'attributes' has no impact for AstAnonymousObjectBuilder", level = DeprecationLevel.HIDDEN)
     override var attributes: AstDeclarationAttributes
+        get() = throw IllegalStateException()
+        set(value) {
+            throw IllegalStateException()
+        }
+
+    @Deprecated("Modification of 'classKind' has no impact for AstAnonymousObjectBuilder", level = DeprecationLevel.HIDDEN)
+    override var classKind: ClassKind
         get() = throw IllegalStateException()
         set(value) {
             throw IllegalStateException()
@@ -65,8 +73,8 @@ inline fun AstAnonymousObject.copy(init: AstAnonymousObjectBuilder.() -> Unit = 
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
     copyBuilder.declarations.addAll(declarations)
-    copyBuilder.classKind = classKind
     copyBuilder.superTypes.addAll(superTypes)
+    copyBuilder.delegateInitializers.addAll(delegateInitializers)
     copyBuilder.type = type
     copyBuilder.symbol = symbol
     return copyBuilder.apply(init).build()

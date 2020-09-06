@@ -2,6 +2,7 @@ package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstPureAbstractElement
+import com.ivianuu.ast.expressions.AstDelegateInitializer
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstAnonymousObjectSymbol
@@ -23,6 +24,7 @@ abstract class AstAnonymousObject : AstPureAbstractElement(), AstClass<AstAnonym
     abstract override val declarations: List<AstDeclaration>
     abstract override val classKind: ClassKind
     abstract override val superTypes: List<AstType>
+    abstract override val delegateInitializers: List<AstDelegateInitializer>
     abstract override val type: AstType
     abstract override val symbol: AstAnonymousObjectSymbol
 
@@ -35,6 +37,8 @@ abstract class AstAnonymousObject : AstPureAbstractElement(), AstClass<AstAnonym
     abstract override fun replaceClassKind(newClassKind: ClassKind)
 
     abstract override fun replaceSuperTypes(newSuperTypes: List<AstType>)
+
+    abstract override fun replaceDelegateInitializers(newDelegateInitializers: List<AstDelegateInitializer>)
 
     abstract override fun replaceType(newType: AstType)
 }

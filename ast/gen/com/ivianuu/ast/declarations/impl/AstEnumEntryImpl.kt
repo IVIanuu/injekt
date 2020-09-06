@@ -5,6 +5,7 @@ import com.ivianuu.ast.declarations.AstDeclaration
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstEnumEntry
+import com.ivianuu.ast.expressions.AstDelegateInitializer
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstClassSymbol
 import com.ivianuu.ast.symbols.impl.AstEnumEntrySymbol
@@ -23,6 +24,7 @@ internal class AstEnumEntryImpl(
     override val annotations: MutableList<AstFunctionCall>,
     override val origin: AstDeclarationOrigin,
     override val declarations: MutableList<AstDeclaration>,
+    override val delegateInitializers: MutableList<AstDelegateInitializer>,
     override var name: Name,
     override var symbol: AstEnumEntrySymbol,
 ) : AstEnumEntry() {
@@ -37,11 +39,13 @@ internal class AstEnumEntryImpl(
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
         declarations.forEach { it.accept(visitor, data) }
+        delegateInitializers.forEach { it.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
         annotations.transformInplace(transformer, data)
         declarations.transformInplace(transformer, data)
+        delegateInitializers.transformInplace(transformer, data)
         return this
     }
 
@@ -58,4 +62,9 @@ internal class AstEnumEntryImpl(
     override fun replaceClassKind(newClassKind: ClassKind) {}
 
     override fun replaceSuperTypes(newSuperTypes: List<AstType>) {}
+
+    override fun replaceDelegateInitializers(newDelegateInitializers: List<AstDelegateInitializer>) {
+        delegateInitializers.clear()
+        delegateInitializers.addAll(newDelegateInitializers)
+    }
 }
