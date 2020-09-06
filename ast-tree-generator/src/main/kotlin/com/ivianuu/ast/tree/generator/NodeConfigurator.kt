@@ -222,6 +222,11 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +field("expandedType", type)
         }
 
+        enumEntry.configure {
+            parentArg(klass, "F", enumEntry)
+            +symbol("AstEnumEntrySymbol")
+        }
+
         anonymousFunction.configure {
             parentArg(function, "F", anonymousFunction)
             +stringField("label", nullable = true)
@@ -305,11 +310,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             generateBooleanFields("var")
             +field("getter", propertyAccessor, nullable = true)
             +field("setter", propertyAccessor, nullable = true)
-        }
-
-        enumEntry.configure {
-            parentArg(variable, "F", enumEntry)
-            parentArg(callableDeclaration, "F", enumEntry)
         }
 
         anonymousInitializer.configure {

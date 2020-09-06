@@ -90,7 +90,8 @@ class AstAnalysisHandlerExtension(
         bindingTrace: BindingTrace,
         files: Collection<KtFile>
     ): AnalysisResult? {
-        if (generatedCode && firstAnalysisCompleted) {
+        if (generatedCode && firstAnalysisCompleted &&
+                bindingTrace.bindingContext.diagnostics.none { it.severity == Severity.ERROR }) {
             // we clear the diagnostics here because our ast2kt generated code might cause warnings
             // all user code warnings should have been signaled in the first round
             (bindingTrace.bindingContext.diagnostics as MutableDiagnosticsWithSuppression)
@@ -129,6 +130,10 @@ class AstAnalysisHandlerExtension(
         val builder = Psi2AstBuilder(context)
 
         val moduleFragment = builder.buildModule(files)
+
+        files.forEach {
+            println("${it.text}")
+        }
 
         println("generated module $moduleFragment for ${files.map { it.name }}")
 

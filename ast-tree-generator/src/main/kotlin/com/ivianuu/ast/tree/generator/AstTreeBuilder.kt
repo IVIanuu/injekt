@@ -104,10 +104,6 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         visitorSuperType = variable
         transformerType = statement
     }
-    val enumEntry = element("EnumEntry", Declaration, variable, callableDeclaration) {
-        visitorSuperType = variable
-        transformerType = statement
-    }
 
     val classLikeDeclaration =
         element("ClassLikeDeclaration", Declaration, declaration, symbolOwner) {
@@ -137,6 +133,10 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         typeParametersOwner
     ) {
         visitorSuperType = classLikeDeclaration
+        transformerType = statement
+    }
+    val enumEntry = element("EnumEntry", Declaration, klass, namedDeclaration) {
+        visitorSuperType = klass
         transformerType = statement
     }
 

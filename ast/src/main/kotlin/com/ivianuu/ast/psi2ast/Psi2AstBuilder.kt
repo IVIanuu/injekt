@@ -15,14 +15,19 @@ import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstConstKind
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.declarations.AstNamedFunction
+import com.ivianuu.ast.declarations.AstValueParameter
+import com.ivianuu.ast.declarations.AstVariable
 import com.ivianuu.ast.declarations.builder.AstAnonymousFunctionBuilder
 import com.ivianuu.ast.declarations.builder.AstFunctionBuilder
 import com.ivianuu.ast.declarations.builder.AstNamedFunctionBuilder
+import com.ivianuu.ast.declarations.builder.buildAnonymousFunction
 import com.ivianuu.ast.declarations.builder.buildAnonymousInitializer
+import com.ivianuu.ast.declarations.builder.buildEnumEntry
 import com.ivianuu.ast.declarations.builder.buildPropertyAccessor
 import com.ivianuu.ast.declarations.builder.buildTypeAlias
 import com.ivianuu.ast.declarations.builder.buildTypeParameter
 import com.ivianuu.ast.declarations.builder.buildValueParameter
+import com.ivianuu.ast.declarations.typeWith
 import com.ivianuu.ast.expressions.AstConst
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCallKind
 import com.ivianuu.ast.expressions.AstLoop
@@ -30,6 +35,7 @@ import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.expressions.AstTypeOperator
 import com.ivianuu.ast.expressions.buildConstBoolean
 import com.ivianuu.ast.expressions.buildConstString
+import com.ivianuu.ast.expressions.buildElvisExpression
 import com.ivianuu.ast.expressions.buildTemporaryVariable
 import com.ivianuu.ast.expressions.buildUnitExpression
 import com.ivianuu.ast.expressions.builder.AstBaseQualifiedAccessBuilder
@@ -61,6 +67,10 @@ import com.ivianuu.ast.symbols.impl.AstAnonymousFunctionSymbol
 import com.ivianuu.ast.symbols.impl.AstAnonymousInitializerSymbol
 import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
+import com.ivianuu.ast.symbols.impl.AstValueParameterSymbol
+import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.types.builder.buildStarProjection
+import com.ivianuu.ast.types.builder.buildTypeProjectionWithVariance
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
@@ -75,6 +85,7 @@ import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.impl.LocalVariableDescriptor
 import org.jetbrains.kotlin.js.translate.callTranslator.getReturnType
 import org.jetbrains.kotlin.lexer.KtTokens
@@ -94,9 +105,11 @@ import org.jetbrains.kotlin.psi.KtConstantExpression
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtConstructorDelegationCall
 import org.jetbrains.kotlin.psi.KtContinueExpression
+import org.jetbrains.kotlin.psi.KtDestructuringDeclaration
 import org.jetbrains.kotlin.psi.KtDoWhileExpression
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.KtEnumEntry
 import org.jetbrains.kotlin.psi.KtEscapeStringTemplateEntry
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtExpressionWithLabel
@@ -104,12 +117,14 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtIfExpression
 import org.jetbrains.kotlin.psi.KtIsExpression
 import org.jetbrains.kotlin.psi.KtLabeledExpression
+import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.psi.KtLiteralStringTemplateEntry
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtParenthesizedExpression
 import org.jetbrains.kotlin.psi.KtPrefixExpression
 import org.jetbrains.kotlin.psi.KtPrimaryConstructor
+import org.jetbrains.kotlin.psi.KtProjectionKind
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.KtReferenceExpression
@@ -117,15 +132,19 @@ import org.jetbrains.kotlin.psi.KtReturnExpression
 import org.jetbrains.kotlin.psi.KtSecondaryConstructor
 import org.jetbrains.kotlin.psi.KtStringTemplateEntryWithExpression
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
+import org.jetbrains.kotlin.psi.KtThisExpression
 import org.jetbrains.kotlin.psi.KtThrowExpression
 import org.jetbrains.kotlin.psi.KtTryExpression
 import org.jetbrains.kotlin.psi.KtTypeAlias
 import org.jetbrains.kotlin.psi.KtTypeParameter
+import org.jetbrains.kotlin.psi.KtTypeProjection
+import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtUnaryExpression
 import org.jetbrains.kotlin.psi.KtVisitor
 import org.jetbrains.kotlin.psi.KtWhileExpression
 import org.jetbrains.kotlin.psi2ir.deparenthesize
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.ImportedFromObjectCallableDescriptor
 import org.jetbrains.kotlin.resolve.calls.components.isVararg
 import org.jetbrains.kotlin.resolve.constants.evaluate.ConstantExpressionEvaluator
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -136,6 +155,7 @@ import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
 import org.jetbrains.kotlin.resolve.scopes.receivers.SuperCallReceiverValue
 import org.jetbrains.kotlin.resolve.scopes.receivers.ThisClassReceiver
+import org.jetbrains.kotlin.types.Variance
 
 class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator, KtVisitor<AstElement, Nothing?>() {
 
@@ -229,6 +249,16 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
             AstAnonymousFunctionBuilder(context).apply {
                 symbol = AstAnonymousFunctionSymbol()
                 extensionReceiverType = descriptor.extensionReceiverParameter?.type?.toAstType()
+                type = (if (descriptor.isSuspend) context.builtIns.suspendFunction(descriptor.valueParameters.size)
+                else context.builtIns.function(descriptor.valueParameters.size))
+                    .owner.typeWith(
+                        listOfNotNull(
+                            extensionReceiverType,
+                            *descriptor.valueParameters
+                                .map { it.type.toAstType() }
+                                .toTypedArray()
+                        )
+                    ) // todo extract
             }
         } else {
             AstNamedFunctionBuilder(context).apply {
@@ -381,83 +411,68 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
         }
     }
 
-    /*override fun visitLambdaExpression(expression: KtLambdaExpression, data: Nothing?): AstElement {
-    return AstAnonymousFunctionExpression(
-        type = expression.getTypeInferredByFrontendOrFail().toAstType(),
-        anonymousFunction = visitFunction(
-            function = expression.functionLiteral,
-            mode = mode,
-            body = expression.bodyExpression
-        )
-    )
-}*/
+    override fun visitEnumEntry(enumEntry: KtEnumEntry, data: Nothing?): AstElement {
+        val descriptor = enumEntry.descriptor<ClassDescriptor>()
+        return buildEnumEntry {
+            symbol = symbolTable.getEnumEntrySymbol(descriptor)
+            annotations += enumEntry.annotationEntries.map { it.convert() }
+            declarations += enumEntry.declarations.map { it.convert() }
+        }
+    }
 
-    /*override fun visitLambdaExpression(expression: KtLambdaExpression, data: Nothing?): AstElement {
-        val descriptor = expression.functionLiteral.descriptor<AnonymousFunctionDescriptor>()
+    override fun visitLambdaExpression(expression: KtLambdaExpression, data: Nothing?): AstElement {
         val label = if (labels.isNotEmpty()) labels.pop() else calleeNamesForLambda.lastOrNull()
         val target = AstFunctionTarget(label, true)
+        val descriptor = expression.functionLiteral.descriptor<AnonymousFunctionDescriptor>()
         return buildAnonymousFunction {
             symbol = AstAnonymousFunctionSymbol()
-
             var destructuringBlock: AstExpression? = null
-            for (valueParameter in expression.functionLiteral.valueParameters) {
-                val multiDeclaration = valueParameter.destructuringDeclaration
-                valueParameters += if (multiDeclaration != null) {
-                    val name = Name.special("<destruct>")
-                    val multiParameter = buildValueParameter {
-                        returnType = buildImplicitTypeRef {
+            valueParameters += expression.functionLiteral.valueParameters
+                .map { valueParameter ->
+                    val multiDeclaration = valueParameter.destructuringDeclaration
+                    if (multiDeclaration != null) {
+                        val containerParameter = buildValueParameter {
+                            symbol = AstValueParameterSymbol(Name.special("<destruct>"))
                         }
-                        this.name = name
-                        symbol = AstVariableSymbol(name)
-                        isCrossinline = false
-                        isNoinline = false
-                        isVararg = false
+                        destructuringBlock = multiDeclaration.toAstDestructuringBlock(containerParameter)
+                        containerParameter
+                    } else {
+                        valueParameter.convert()
                     }
-                    destructuringBlock = generateDestructuringBlock(
-                        baseSession,
-                        multiDeclaration,
-                        multiParameter,
-                        tmpVariable = false,
-                        extractAnnotationsTo = { extractAnnotationsTo(it) },
-                    ) { toAstOrImplicitType() }
-                    multiParameter
-                } else {
-                    val typeRef = buildImplicitTypeRef {
-                    }
-                    valueParameter.toAstValueParameter(typeRef)
+                }
+            if (valueParameters.isEmpty() && descriptor.valueParameters.isNotEmpty()) {
+                val itParameterDescriptor = descriptor.valueParameters.single()
+                valueParameters += buildValueParameter {
+                    symbol = AstValueParameterSymbol(Name.identifier("it"))
+                    returnType = itParameterDescriptor.type.toAstType()
                 }
             }
+
+            type = expression.getTypeInferredByFrontendOrFail().toAstType()
             this.label = label
             functionTargets.push(target)
-            val ktBody = expression.functionLiteral.bodyExpression!!
-            body = ktBody.toAstBlockBuilder().apply {
+            body = buildBlock {
+                if (destructuringBlock != null) statements += destructuringBlock!!
+                expression.functionLiteral.bodyExpression!!.statements.forEach {
+                    statements += it.convert<AstStatement>()
+                }
                 if (statements.isEmpty()) {
-                    statements += buildReturn {
-                        result =
-                    }
-                    statements.add(
-                        buildReturnExpression {
-                            this.target = target
-                            result = buildUnitExpression {
-                            }
-                        }
-                    )
+                    statements += buildUnitExpression()
                 }
-                if (destructuringBlock is AstBlock) {
-                    for ((index, statement) in destructuringBlock.statements.withIndex()) {
-                        statements.add(index, statement)
-                    }
-                }
-            }.build()
+            }
             functionTargets.pop()
         }.also {
             target.bind(it)
         }
-    }*/
-
-    override fun visitBlockExpression(expression: KtBlockExpression, data: Nothing?): AstElement {
-        return expression.toAstBlockBuilder().build()
     }
+
+    override fun visitDestructuringDeclaration(
+        multiDeclaration: KtDestructuringDeclaration,
+        data: Nothing?
+    ): AstElement = multiDeclaration.toAstDestructuringBlock()
+
+    override fun visitBlockExpression(expression: KtBlockExpression, data: Nothing?): AstElement =
+        expression.toAstBlockBuilder().build()
 
     private fun KtBlockExpression.toAstBlockBuilder(): AstBlockBuilder {
         return AstBlockBuilder(this@Psi2AstBuilder.context).apply {
@@ -467,20 +482,22 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
     }
 
     private fun KtExpression?.toAstBlock(): AstBlock {
-        return if (this is KtBlockExpression) convert()
-        else if (this == null) buildBlock()
-        else {
-            val astExpression = convert<AstExpression>()
-            val type = getTypeInferredByFrontendOrFail().toAstType()
-            buildBlock {
-                this.type = type
-                statements += if (functionTargets.isNotEmpty()) {
-                    buildReturn {
-                        target = functionTargets.last()
-                        result = astExpression
+        return when {
+            this is KtBlockExpression -> convert()
+            this == null -> buildBlock()
+            else -> {
+                val astExpression = convert<AstExpression>()
+                val type = getTypeInferredByFrontendOrFail().toAstType()
+                buildBlock {
+                    this.type = type
+                    statements += if (functionTargets.isNotEmpty()) {
+                        buildReturn {
+                            target = functionTargets.last()
+                            result = astExpression
+                        }
+                    } else {
+                        astExpression
                     }
-                } else {
-                    astExpression
                 }
             }
         }
@@ -566,6 +583,9 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
             is SimpleFunctionDescriptor -> symbolTable.getNamedFunctionSymbol(calleeDescriptor)
             is ConstructorDescriptor -> symbolTable.getConstructorSymbol(calleeDescriptor)
             is PropertyDescriptor -> symbolTable.getPropertySymbol(calleeDescriptor)
+            is ImportedFromObjectCallableDescriptor<*> -> symbolTable.getNamedFunctionSymbol(
+                calleeDescriptor.callableFromObject as SimpleFunctionDescriptor
+            )
             is LocalVariableDescriptor -> symbolTable.getPropertySymbol(calleeDescriptor)
             is ValueParameterDescriptor -> symbolTable.getValueParameterSymbol(calleeDescriptor)
             else -> error("Unexpected callee $calleeDescriptor for ${expression.text}")
@@ -665,7 +685,7 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
             calleeNamesForLambda.push(expression.operationReference.getReferencedName())
         }
 
-        val lazyLeft by lazy { expression.left!!.convert<AstExpression>() }
+        val left = expression.left!!.convert<AstExpression>()
         val right = expression.right!!.convert<AstExpression>()
 
         if (ktOperator == KtTokens.IDENTIFIER) {
@@ -679,66 +699,68 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                     is PropertyDescriptor -> symbolTable.getPropertySymbol(callee)
                     else -> error("Unexpected callee $callee")
                 }
+                dispatchReceiver = resolvedCall.dispatchReceiver?.toAstExpression()
+                extensionReceiver = resolvedCall.extensionReceiver?.toAstExpression()
                 value = right
             }
             KtTokens.LT -> buildFunctionCall {
                 callee = builtIns.lessThanSymbol
-                valueArguments += lazyLeft
+                valueArguments += left
                 valueArguments += right
             }
             KtTokens.LTEQ -> buildFunctionCall {
                 callee = builtIns.lessThanEqualSymbol
-                valueArguments += lazyLeft
+                valueArguments += left
                 valueArguments += right
             }
             KtTokens.GT -> buildFunctionCall {
                 callee = builtIns.greaterThanSymbol
-                valueArguments += lazyLeft
+                valueArguments += left
                 valueArguments += right
             }
             KtTokens.GTEQ -> buildFunctionCall {
                 callee = builtIns.greaterThanEqualSymbol
-                valueArguments += lazyLeft
+                valueArguments += left
                 valueArguments += right
             }
             KtTokens.EQEQ -> buildFunctionCall {
                 callee = builtIns.structuralEqualSymbol
-                valueArguments += lazyLeft
+                valueArguments += left
                 valueArguments += right
             }
             KtTokens.EXCLEQ -> buildFunctionCall {
                 callee = builtIns.structuralNotEqualSymbol
-                valueArguments += lazyLeft
+                valueArguments += left
                 valueArguments += right
             }
             KtTokens.EXCLEQ -> buildFunctionCall {
                 callee = builtIns.identityEqualSymbol
-                valueArguments += lazyLeft
+                valueArguments += left
                 valueArguments += right
             }
             KtTokens.EXCLEQEQEQ -> buildFunctionCall {
                 callee = builtIns.identityNotEqualSymbol
-                valueArguments += lazyLeft
+                valueArguments += left
                 valueArguments += right
             }
             KtTokens.ANDAND -> buildFunctionCall {
                 callee = builtIns.lazyAndSymbol
-                valueArguments += lazyLeft
+                valueArguments += left
                 valueArguments += right
             }
             KtTokens.EXCLEQEQEQ -> buildFunctionCall {
                 callee = builtIns.identityNotEqualSymbol
-                valueArguments += lazyLeft
+                valueArguments += left
                 valueArguments += right
             }
             KtTokens.ANDAND -> buildFunctionCall {
                 callee = builtIns.lazyAndSymbol
-                valueArguments += lazyLeft
+                valueArguments += left
                 valueArguments += right
             }
             KtTokens.OROR -> buildFunctionCall {
                 callee = builtIns.lazyOrSymbol
-                valueArguments += lazyLeft
+                valueArguments += left
                 valueArguments += right
             }
 
@@ -769,20 +791,11 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                 }
             }
 
-            KtTokens.ELVIS -> {
-                buildBlock {
-                    val tmp = buildTemporaryVariable(lazyLeft)
-                        .also { statements += it }
-
-
-                    /*+irIfNull(
-                        resultType,
-                        irGet(temporary.type, temporary.symbol),
-                        irArgument1,
-                        irGet(temporary.type, temporary.symbol)
-                    )*/
-                }
-            }
+            KtTokens.ELVIS -> buildElvisExpression(
+                type = expression.getTypeInferredByFrontendOrFail().toAstType(),
+                left = left,
+                right = right
+            )
             else -> error("Unexpected token $ktOperator ${expression.text}")
         }
     }
@@ -805,7 +818,7 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
 
     override fun visitIsExpression(expression: KtIsExpression, data: Nothing?): AstElement {
         return buildTypeOperation {
-            operator = if (expression.isNegated) AstTypeOperator.SAFE_AS else AstTypeOperator.AS
+            operator = if (expression.isNegated) AstTypeOperator.IS_NOT else AstTypeOperator.IS
             argument = expression.leftHandSide.convert()
             typeOperand = expression.typeReference!!.toAstType()
         }
@@ -915,6 +928,13 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
         }
     }
 
+    override fun visitThisExpression(expression: KtThisExpression, data: Nothing?): AstElement {
+        return buildThisReference {
+            type = expression.getTypeInferredByFrontendOrFail().toAstType()
+            labelName = expression.getLabelName()
+        }
+    }
+
     override fun visitDotQualifiedExpression(
         expression: KtDotQualifiedExpression,
         data: Nothing?
@@ -948,6 +968,24 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
         return context.constantValueGenerator.generateAnnotationConstructorCall(descriptor)!!
     }
 
+    override fun visitTypeReference(typeReference: KtTypeReference, data: Nothing?): AstElement =
+        typeReference.toAstType()
+
+    override fun visitTypeProjection(typeProjection: KtTypeProjection, data: Nothing?): AstElement {
+        return when (typeProjection.projectionKind) {
+            KtProjectionKind.STAR -> buildStarProjection()
+            else -> buildTypeProjectionWithVariance {
+                type = typeProjection.typeReference!!.convert()
+                variance = when (typeProjection.projectionKind) {
+                    KtProjectionKind.IN -> Variance.IN_VARIANCE
+                    KtProjectionKind.OUT -> Variance.OUT_VARIANCE
+                    KtProjectionKind.NONE -> Variance.INVARIANT
+                    else -> error("Unexpected projection kind ${typeProjection.text}")
+                }
+            }
+        }
+    }
+
     override fun visitElement(element: PsiElement?) {
         error("Unhandled element $element ${element?.javaClass} ${element?.text}")
     }
@@ -978,6 +1016,29 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                 labelName = this@toAstExpression.declarationDescriptor.name.asString()
             }
             else -> error("Unexpected receiver value $this")
+        }
+    }
+
+    private fun KtDestructuringDeclaration.toAstDestructuringBlock(
+        container: AstVariable<*> = buildTemporaryVariable(initializer!!.convert<AstExpression>())
+    ): AstExpression {
+        return buildBlock {
+            statements += container
+            statements += entries
+                .mapNotNull { ktEntry ->
+                    val componentVariable = getOrFail(BindingContext.VARIABLE, ktEntry)
+                    // componentN for '_' SHOULD NOT be evaluated
+                    if (componentVariable.name.isSpecial) return@mapNotNull null
+                    val componentResolvedCall =
+                        getOrFail(BindingContext.COMPONENT_RESOLVED_CALL, ktEntry)
+                    buildTemporaryVariable(
+                        value = buildQualifiedAccess {
+                            callee = symbolTable.getNamedFunctionSymbol(
+                                componentResolvedCall.resultingDescriptor as SimpleFunctionDescriptor)
+                            dispatchReceiver = buildQualifiedAccess { callee = container.symbol }
+                        }
+                    )
+                }
         }
     }
 

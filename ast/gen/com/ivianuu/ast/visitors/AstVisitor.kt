@@ -19,11 +19,11 @@ import com.ivianuu.ast.declarations.AstTypeParametersOwner
 import com.ivianuu.ast.declarations.AstVariable
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.declarations.AstProperty
-import com.ivianuu.ast.declarations.AstEnumEntry
 import com.ivianuu.ast.declarations.AstClassLikeDeclaration
 import com.ivianuu.ast.declarations.AstClass
 import com.ivianuu.ast.declarations.AstRegularClass
 import com.ivianuu.ast.declarations.AstTypeAlias
+import com.ivianuu.ast.declarations.AstEnumEntry
 import com.ivianuu.ast.declarations.AstFunction
 import com.ivianuu.ast.declarations.AstNamedFunction
 import com.ivianuu.ast.declarations.AstPropertyAccessor
@@ -113,8 +113,6 @@ abstract class AstVisitor<out R, in D> {
 
     open fun visitProperty(property: AstProperty, data: D): R  = visitVariable(property, data)
 
-    open fun visitEnumEntry(enumEntry: AstEnumEntry, data: D): R  = visitVariable(enumEntry, data)
-
     open fun <F : AstClassLikeDeclaration<F>> visitClassLikeDeclaration(classLikeDeclaration: AstClassLikeDeclaration<F>, data: D): R  = visitDeclaration(classLikeDeclaration, data)
 
     open fun <F : AstClass<F>> visitClass(klass: AstClass<F>, data: D): R  = visitClassLikeDeclaration(klass, data)
@@ -122,6 +120,8 @@ abstract class AstVisitor<out R, in D> {
     open fun visitRegularClass(regularClass: AstRegularClass, data: D): R  = visitClass(regularClass, data)
 
     open fun visitTypeAlias(typeAlias: AstTypeAlias, data: D): R  = visitClassLikeDeclaration(typeAlias, data)
+
+    open fun visitEnumEntry(enumEntry: AstEnumEntry, data: D): R  = visitClass(enumEntry, data)
 
     open fun <F : AstFunction<F>> visitFunction(function: AstFunction<F>, data: D): R  = visitDeclaration(function, data)
 

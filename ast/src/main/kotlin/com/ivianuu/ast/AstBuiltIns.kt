@@ -8,7 +8,6 @@ import com.ivianuu.ast.psi2ast.TypeConverter
 import com.ivianuu.ast.symbols.CallableId
 import com.ivianuu.ast.symbols.impl.AstNamedFunctionSymbol
 import com.ivianuu.ast.symbols.impl.AstValueParameterSymbol
-import com.ivianuu.ast.types.AstSimpleType
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.builder.copy
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
@@ -23,11 +22,11 @@ class AstBuiltIns(
     private val kotlinBuiltIns: KotlinBuiltIns,
     private val typeConverter: TypeConverter,
     private val symbolTable: DescriptorSymbolTable,
-    private val builder: Psi2AstGeneratorContext
+    private val context: Psi2AstGeneratorContext
 ) {
 
     init {
-        builder.builtIns = this
+        context.builtIns = this
     }
     
     val anyType = kotlinBuiltIns.anyType.toAstType()
@@ -86,7 +85,7 @@ class AstBuiltIns(
         returnType: AstType,
         valueParameterCount: Int
     ): AstNamedFunctionSymbol {
-        return builder.buildNamedFunction {
+        return context.buildNamedFunction {
             symbol = AstNamedFunctionSymbol(callableId)
             this.returnType = returnType
             valueParameters += (0 until valueParameterCount)
@@ -115,6 +114,7 @@ class AstBuiltIns(
     val lazyOrSymbol = intrinsicFunction(AstIntrinsics.LazyOr, booleanType, 2)
 
     private fun ClassDescriptor.toAstRegularClassSymbol() = symbolTable.getClassSymbol(this)
+        .also { context.stubGenerator.getDeclaration(it, this) }
     private fun KotlinType.toAstType() = typeConverter.convert(this)
 
 }

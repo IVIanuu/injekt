@@ -27,7 +27,7 @@ class TypeConverter(private val symbolTable: DescriptorSymbolTable) {
             classifier = when (val classifierDescriptor = approximatedType.constructor.declarationDescriptor) {
                 is ClassDescriptor -> symbolTable.getClassSymbol(classifierDescriptor)
                 is TypeParameterDescriptor -> symbolTable.getTypeParameterSymbol(classifierDescriptor)
-                else -> error("Unexpected classifier $classifierDescriptor")
+                else -> error("Unexpected classifier $classifierDescriptor $approximatedType")
             }
             isMarkedNullable = approximatedType.isMarkedNullable
             arguments += approximatedType.arguments.map { argument ->

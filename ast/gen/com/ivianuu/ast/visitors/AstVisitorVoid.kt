@@ -19,11 +19,11 @@ import com.ivianuu.ast.declarations.AstTypeParametersOwner
 import com.ivianuu.ast.declarations.AstVariable
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.declarations.AstProperty
-import com.ivianuu.ast.declarations.AstEnumEntry
 import com.ivianuu.ast.declarations.AstClassLikeDeclaration
 import com.ivianuu.ast.declarations.AstClass
 import com.ivianuu.ast.declarations.AstRegularClass
 import com.ivianuu.ast.declarations.AstTypeAlias
+import com.ivianuu.ast.declarations.AstEnumEntry
 import com.ivianuu.ast.declarations.AstFunction
 import com.ivianuu.ast.declarations.AstNamedFunction
 import com.ivianuu.ast.declarations.AstPropertyAccessor
@@ -149,10 +149,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(property)
     }
 
-    open fun visitEnumEntry(enumEntry: AstEnumEntry) {
-        visitElement(enumEntry)
-    }
-
     open fun <F : AstClassLikeDeclaration<F>> visitClassLikeDeclaration(classLikeDeclaration: AstClassLikeDeclaration<F>) {
         visitElement(classLikeDeclaration)
     }
@@ -167,6 +163,10 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     open fun visitTypeAlias(typeAlias: AstTypeAlias) {
         visitElement(typeAlias)
+    }
+
+    open fun visitEnumEntry(enumEntry: AstEnumEntry) {
+        visitElement(enumEntry)
     }
 
     open fun <F : AstFunction<F>> visitFunction(function: AstFunction<F>) {
@@ -421,10 +421,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitProperty(property)
     }
 
-    final override fun visitEnumEntry(enumEntry: AstEnumEntry, data: Nothing?) {
-        visitEnumEntry(enumEntry)
-    }
-
     final override fun <F : AstClassLikeDeclaration<F>> visitClassLikeDeclaration(classLikeDeclaration: AstClassLikeDeclaration<F>, data: Nothing?) {
         visitClassLikeDeclaration(classLikeDeclaration)
     }
@@ -439,6 +435,10 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     final override fun visitTypeAlias(typeAlias: AstTypeAlias, data: Nothing?) {
         visitTypeAlias(typeAlias)
+    }
+
+    final override fun visitEnumEntry(enumEntry: AstEnumEntry, data: Nothing?) {
+        visitEnumEntry(enumEntry)
     }
 
     final override fun <F : AstFunction<F>> visitFunction(function: AstFunction<F>, data: Nothing?) {

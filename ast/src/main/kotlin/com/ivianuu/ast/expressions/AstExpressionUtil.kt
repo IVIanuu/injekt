@@ -5,9 +5,12 @@ import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.declarations.builder.AstFunctionBuilder
 import com.ivianuu.ast.declarations.builder.buildProperty
 import com.ivianuu.ast.expressions.builder.AstFunctionCallBuilder
+import com.ivianuu.ast.expressions.builder.buildBlock
 import com.ivianuu.ast.expressions.builder.buildFunctionCall
 import com.ivianuu.ast.expressions.builder.buildQualifiedAccess
 import com.ivianuu.ast.expressions.builder.buildTypeOperation
+import com.ivianuu.ast.expressions.builder.buildWhen
+import com.ivianuu.ast.expressions.builder.buildWhenBranch
 import com.ivianuu.ast.expressions.impl.AstConstImpl
 import com.ivianuu.ast.symbols.CallableId
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
@@ -69,7 +72,7 @@ fun AstBuilder.buildTemporaryVariable(
     delegate: AstExpression? = null,
     isVar: Boolean = false
 ) = buildProperty {
-    symbol = AstPropertySymbol(CallableId(name))
+    symbol = AstPropertySymbol(name)
     returnType = type
     this.isVar = isVar
     visibility = Visibilities.Local
@@ -90,4 +93,31 @@ fun AstBuilder.buildFunctionCall(
 fun AstBuilder.buildUnitExpression() = buildQualifiedAccess {
     type = context.builtIns.unitType
     callee = context.builtIns.unitSymbol
+}
+
+fun AstBuilder.buildElvisExpression(
+    type: AstType,
+    left: AstExpression,
+    right: AstExpression
+) = buildBlock {
+    val tmp = buildTemporaryVariable(left)
+        .also { statements += it }
+
+    statements += buildWhen {
+        this.type = type
+        branches += buildWhenBranch {
+            condition = buildFunctionCall {
+                callee = context.builtIns.structuralNotEqualSymbol
+                valueArguments += buildQualifiedAccess { callee = tmp.symbol }
+                valueArguments += buildConstNull()
+            }
+            result = buildQualifiedAccess { callee = tmp.symbol }
+        }
+        branches += buildElseBranch(right)
+    }
+}
+
+fun AstBuilder.buildElseBranch(result: AstExpression) = buildWhenBranch {
+    condition = buildConstBoolean(true)
+    this.result = result
 }

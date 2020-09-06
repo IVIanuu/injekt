@@ -58,6 +58,10 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             openBuilder()
         }
 
+        builder(enumEntry) {
+            defaultLazy("name", "symbol.classId.shortClassName")
+        }
+
         val baseQualifiedAccessBuilder by builder {
             fields from baseQualifiedAccess without listOf("callee")
         }
@@ -158,10 +162,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             defaultLazy("type", "(callee as? AstCallableSymbol<*>)?.owner?.returnType ?: error(\"type must be specified\")")
             useTypes(callableSymbolType)
             defaultNoReceivers()
-        }
-
-        builder(enumEntry) {
-            defaultLazy("name", "symbol.callableId.callableName")
         }
 
         builder(property) {

@@ -9,6 +9,7 @@ import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.declarations.AstAnonymousObject
 import com.ivianuu.ast.declarations.AstClass
 import com.ivianuu.ast.declarations.AstClassLikeDeclaration
+import com.ivianuu.ast.declarations.AstEnumEntry
 import com.ivianuu.ast.declarations.AstRegularClass
 import com.ivianuu.ast.declarations.AstTypeAlias
 import org.jetbrains.kotlin.name.ClassId
@@ -28,3 +29,7 @@ val ANONYMOUS_CLASS_ID = ClassId(FqName.ROOT, FqName.topLevel(Name.special("<ano
 class AstAnonymousObjectSymbol : AstClassSymbol<AstAnonymousObject>(ANONYMOUS_CLASS_ID)
 
 class AstTypeAliasSymbol(classId: ClassId) : AstClassLikeSymbol<AstTypeAlias>(classId)
+
+class AstEnumEntrySymbol(name: Name) : AstClassSymbol<AstEnumEntry>(
+    ClassId(FqName.ROOT, FqName.topLevel(name), false)
+)

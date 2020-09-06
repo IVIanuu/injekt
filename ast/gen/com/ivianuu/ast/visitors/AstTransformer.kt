@@ -19,11 +19,11 @@ import com.ivianuu.ast.declarations.AstTypeParametersOwner
 import com.ivianuu.ast.declarations.AstVariable
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.declarations.AstProperty
-import com.ivianuu.ast.declarations.AstEnumEntry
 import com.ivianuu.ast.declarations.AstClassLikeDeclaration
 import com.ivianuu.ast.declarations.AstClass
 import com.ivianuu.ast.declarations.AstRegularClass
 import com.ivianuu.ast.declarations.AstTypeAlias
+import com.ivianuu.ast.declarations.AstEnumEntry
 import com.ivianuu.ast.declarations.AstFunction
 import com.ivianuu.ast.declarations.AstNamedFunction
 import com.ivianuu.ast.declarations.AstPropertyAccessor
@@ -151,10 +151,6 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformVariable(property, data)
     }
 
-    open fun transformEnumEntry(enumEntry: AstEnumEntry, data: D): CompositeTransformResult<AstStatement> {
-        return transformVariable(enumEntry, data)
-    }
-
     open fun <F : AstClassLikeDeclaration<F>> transformClassLikeDeclaration(classLikeDeclaration: AstClassLikeDeclaration<F>, data: D): CompositeTransformResult<AstStatement> {
         return transformDeclaration(classLikeDeclaration, data)
     }
@@ -169,6 +165,10 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     open fun transformTypeAlias(typeAlias: AstTypeAlias, data: D): CompositeTransformResult<AstStatement> {
         return transformClassLikeDeclaration(typeAlias, data)
+    }
+
+    open fun transformEnumEntry(enumEntry: AstEnumEntry, data: D): CompositeTransformResult<AstStatement> {
+        return transformClass(enumEntry, data)
     }
 
     open fun <F : AstFunction<F>> transformFunction(function: AstFunction<F>, data: D): CompositeTransformResult<AstStatement> {
@@ -423,10 +423,6 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
         return transformProperty(property, data)
     }
 
-    final override fun visitEnumEntry(enumEntry: AstEnumEntry, data: D): CompositeTransformResult<AstStatement> {
-        return transformEnumEntry(enumEntry, data)
-    }
-
     final override fun <F : AstClassLikeDeclaration<F>> visitClassLikeDeclaration(classLikeDeclaration: AstClassLikeDeclaration<F>, data: D): CompositeTransformResult<AstStatement> {
         return transformClassLikeDeclaration(classLikeDeclaration, data)
     }
@@ -441,6 +437,10 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     final override fun visitTypeAlias(typeAlias: AstTypeAlias, data: D): CompositeTransformResult<AstStatement> {
         return transformTypeAlias(typeAlias, data)
+    }
+
+    final override fun visitEnumEntry(enumEntry: AstEnumEntry, data: D): CompositeTransformResult<AstStatement> {
+        return transformEnumEntry(enumEntry, data)
     }
 
     final override fun <F : AstFunction<F>> visitFunction(function: AstFunction<F>, data: D): CompositeTransformResult<AstStatement> {

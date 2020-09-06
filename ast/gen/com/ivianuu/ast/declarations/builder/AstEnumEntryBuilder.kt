@@ -3,19 +3,19 @@ package com.ivianuu.ast.declarations.builder
 import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
+import com.ivianuu.ast.declarations.AstDeclaration
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstEnumEntry
-import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.impl.AstEnumEntryImpl
-import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
-import com.ivianuu.ast.symbols.impl.AstCallableSymbol
-import com.ivianuu.ast.symbols.impl.AstVariableSymbol
+import com.ivianuu.ast.symbols.impl.AstClassSymbol
+import com.ivianuu.ast.symbols.impl.AstEnumEntrySymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.utils.lazyVar
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.name.Name
 
 /*
@@ -27,23 +27,20 @@ import org.jetbrains.kotlin.name.Name
 class AstEnumEntryBuilder(override val context: AstContext) : AstBuilder {
     val annotations: MutableList<AstFunctionCall> = mutableListOf()
     var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
-    lateinit var returnType: AstType
-    var name: Name by lazyVar { symbol.callableId.callableName }
-    lateinit var symbol: AstVariableSymbol<AstEnumEntry>
-    var initializer: AstExpression? = null
+    val declarations: MutableList<AstDeclaration> = mutableListOf()
+    var name: Name by lazyVar { symbol.classId.shortClassName }
+    lateinit var symbol: AstEnumEntrySymbol
 
     fun build(): AstEnumEntry {
         return AstEnumEntryImpl(
             context,
             annotations,
             origin,
-            returnType,
+            declarations,
             name,
             symbol,
-            initializer,
         )
     }
-
 }
 
 @OptIn(ExperimentalContracts::class)
@@ -56,9 +53,8 @@ inline fun AstEnumEntry.copy(init: AstEnumEntryBuilder.() -> Unit = {}): AstEnum
     val copyBuilder = AstEnumEntryBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
-    copyBuilder.returnType = returnType
+    copyBuilder.declarations.addAll(declarations)
     copyBuilder.name = name
     copyBuilder.symbol = symbol
-    copyBuilder.initializer = initializer
     return copyBuilder.apply(init).build()
 }

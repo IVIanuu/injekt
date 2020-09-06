@@ -16,6 +16,10 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
 
         impl(anonymousObject)
 
+        impl(anonymousFunction) {
+            defaultNull("dispatchReceiverType", withGetter = true)
+        }
+
         impl(typeAlias)
 
         impl(callableReference)
@@ -35,15 +39,11 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         impl(property)
 
         impl(enumEntry) {
-            defaultFalse("isVar", withGetter = true)
-            defaultNull(
-                "dispatchReceiverType",
-                "extensionReceiverType",
-                "delegate",
-                "getter",
-                "setter",
+            default("classKind") {
+                value = "ClassKind.ENUM_ENTRY"
                 withGetter = true
-            )
+            }
+            defaultEmptyList("superTypes")
         }
 
         impl(propertyAccessor) {

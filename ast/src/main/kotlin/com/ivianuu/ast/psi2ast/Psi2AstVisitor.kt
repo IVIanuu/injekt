@@ -98,7 +98,7 @@ class Psi2AstVisitor(
     override val context: Psi2AstGeneratorContext
 ) : KtVisitor<AstElement, Nothing?>(), Generator {
 
-    /*
+    /**
 
     override fun visitObjectLiteralExpression(
         expression: KtObjectLiteralExpression,
@@ -111,70 +111,6 @@ class Psi2AstVisitor(
             anonymousObject
         )
     }
-
-    override fun visitLambdaExpression(expression: KtLambdaExpression, data: Nothing?): AstElement {
-        return AstAnonymousFunctionExpression(
-            type = expression.getTypeInferredByFrontendOrFail().toAstType(),
-            anonymousFunction = visitFunction(
-                function = expression.functionLiteral,
-                mode = mode,
-                body = expression.bodyExpression
-            )
-        )
-    }*/
-
-    /*
-    override fun visitDestructuringDeclaration(
-        multiDeclaration: KtDestructuringDeclaration,
-        data: Nothing?
-    ): AstElement {
-        return AstBlock(context.builtIns.unitType).apply {
-            val ktInitializer = multiDeclaration.initializer!!
-            val containerProperty = AstProperty(
-                name = Name.special("<destructuring container>"),
-                type = ktInitializer.getTypeInferredByFrontendOrFail().toAstType(),
-                visibility = AstVisibility.LOCAL
-            ).apply {
-                applyParentFromStack()
-                initializer = ktInitializer.accept(mode)
-            }
-
-            statements += containerProperty
-
-            statements += multiDeclaration.entries
-                .mapNotNull { ktEntry ->
-                    val componentVariable = getOrFail(BindingContext.VARIABLE, ktEntry)
-                    // componentN for '_' SHOULD NOT be evaluated
-                    if (componentVariable.name.isSpecial) return@mapNotNull null
-                    val componentResolvedCall =
-                        getOrFail(BindingContext.COMPONENT_RESOLVED_CALL, ktEntry)
-                    componentResolvedCall.getReturnType()
-
-                    AstProperty(
-                        name = componentVariable.name,
-                        type = componentVariable.type.toAstType(),
-                        visibility = AstVisibility.LOCAL
-                    ).apply {
-                        applyParentFromStack()
-                        initializer = AstQualifiedAccess(
-                            callee = context.provider.get(componentResolvedCall.resultingDescriptor),
-                            type = componentVariable.type.toAstType()
-                        ).apply {
-                            dispatchReceiver = AstQualifiedAccess(
-                                callee = containerProperty,
-                                type = containerProperty.type
-                            )
-                        }
-                    }
-                }
-        }
-    }
-
-    override fun visitThisExpression(expression: KtThisExpression, data: Nothing?): AstElement {
-        val referenceTarget =
-            getOrFail(BindingContext.REFERENCE_TARGET, expression.instanceReference)
-        TODO("What $referenceTarget")
-    }*/
 
     /*override fun visitWhenExpression(expression: KtWhenExpression, data: Nothing?): AstElement {
         val subjectVariable = expression.subjectVariable
@@ -341,7 +277,6 @@ class Psi2AstVisitor(
         )
     }
 
-     /*
     override fun visitDotQualifiedExpression(
         expression: KtDotQualifiedExpression,
         data: Nothing?
@@ -359,5 +294,5 @@ class Psi2AstVisitor(
             it.safe = true
         }
     }*/
-*/
+    */
 }

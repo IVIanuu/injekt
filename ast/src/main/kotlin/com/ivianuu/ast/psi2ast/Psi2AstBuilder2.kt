@@ -813,22 +813,6 @@ class Psi2AstBuilder2(override val context: Psi2AstGeneratorContext) : Generator
         }
     }
 
-    override fun visitDestructuringDeclaration(multiDeclaration: KtDestructuringDeclaration, data: Nothing?): AstElement {
-        val baseVariable = generateTemporaryVariable(
-            baseSession, multiDeclaration.toAstSourceElement(), "destruct",
-            multiDeclaration.initializer.toAstExpression("Destructuring declaration without initializer"),
-        )
-        return generateDestructuringBlock(
-            baseSession,
-            multiDeclaration,
-            baseVariable,
-            tmpVariable = true,
-            extractAnnotationsTo = { extractAnnotationsTo(it) },
-        ) {
-            toAstOrImplicitType()
-        }
-    }
-
     override fun visitClassLiteralExpression(expression: KtClassLiteralExpression, data: Nothing?): AstElement {
         return buildGetClassCall {
             argumentList = buildUnaryArgumentList(expression.receiverExpression.toAstExpression("No receiver in class literal"))
@@ -1437,36 +1421,6 @@ class Psi2AstBuilder2(override val context: Psi2AstGeneratorContext) : Generator
         }
         return astCondition!!
     }
-
-    private fun generateDestructuringBlock(
-        multiDeclaration: KtDestructuringDeclaration,
-        container: AstVariable<*>,
-        tmpVariable: Boolean,
-        extractAnnotationsTo: KtAnnotated.(AstAnnotationContainerBuilder) -> Unit,
-        toAstOrImplicitTypeRef: KtTypeReference?.() -> AstType,
-    ): AstExpression {
-        return buildBlock {
-            if (tmpVariable) {
-                statements += container
-            }
-            val isVar = multiDeclaration.isVar
-            for ((index, entry) in multiDeclaration.entries.withIndex()) {
-                val name = entry.nameAsSafeName
-                statements += buildProperty {
-                    returnType = entry.typeReference.toAstOrImplicitTypeRef()
-                    this.name = name
-                    initializer = buildComponentCall {
-                        explicitReceiver = generateResolvedAccessExpression(container)
-                        componentIndex = index + 1
-                    }
-                    this.isVar = isVar
-                    isLocal = true
-                    status = AstDeclarationStatusImpl(Visibilities.Local, Modality.FINAL)
-                    symbol = AstPropertySymbol(name)
-                    entry.extractAnnotationsTo(this)
-                }
-            }
-        }
-    }*/
+     */
 
 }

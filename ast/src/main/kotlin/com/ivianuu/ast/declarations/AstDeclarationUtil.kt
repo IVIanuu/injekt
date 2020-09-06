@@ -10,8 +10,10 @@ import com.ivianuu.ast.symbols.impl.AstClassifierSymbol
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.types.AstSimpleType
 import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.builder.buildSimpleType
 import com.ivianuu.ast.types.builder.buildTypeProjectionWithVariance
+import com.ivianuu.ast.types.typeWith
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.name.ClassId
 
@@ -21,6 +23,13 @@ val AstClass<*>.defaultType: AstType get() = context.buildSimpleType {
         arguments += typeParameters.map { it.defaultType.toTypeProjection() }
     }
 }
+
+fun AstClass<*>.typeWith(arguments: List<AstTypeProjection>) =
+    defaultType.typeWith(arguments)
+
+@JvmName("typeWithTypes")
+fun AstClass<*>.typeWith(arguments: List<AstType>) =
+    defaultType.typeWith(arguments)
 
 fun AstType.toTypeProjection() = context.buildTypeProjectionWithVariance {
     type = this@toTypeProjection

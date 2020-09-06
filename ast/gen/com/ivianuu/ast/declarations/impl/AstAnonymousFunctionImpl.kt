@@ -21,7 +21,6 @@ internal class AstAnonymousFunctionImpl(
     override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
     override val origin: AstDeclarationOrigin,
-    override var dispatchReceiverType: AstType?,
     override var extensionReceiverType: AstType?,
     override var returnType: AstType,
     override val valueParameters: MutableList<AstValueParameter>,
@@ -31,6 +30,7 @@ internal class AstAnonymousFunctionImpl(
     override var symbol: AstAnonymousFunctionSymbol,
 ) : AstAnonymousFunction() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
+    override val dispatchReceiverType: AstType? get() = null
 
     init {
         symbol.bind(this)
@@ -38,7 +38,6 @@ internal class AstAnonymousFunctionImpl(
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
-        dispatchReceiverType?.accept(visitor, data)
         extensionReceiverType?.accept(visitor, data)
         returnType.accept(visitor, data)
         valueParameters.forEach { it.accept(visitor, data) }
@@ -48,7 +47,6 @@ internal class AstAnonymousFunctionImpl(
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstAnonymousFunctionImpl {
         annotations.transformInplace(transformer, data)
-        dispatchReceiverType = dispatchReceiverType?.transformSingle(transformer, data)
         extensionReceiverType = extensionReceiverType?.transformSingle(transformer, data)
         returnType = returnType.transformSingle(transformer, data)
         valueParameters.transformInplace(transformer, data)
@@ -62,9 +60,7 @@ internal class AstAnonymousFunctionImpl(
         annotations.addAll(newAnnotations)
     }
 
-    override fun replaceDispatchReceiverType(newDispatchReceiverType: AstType?) {
-        dispatchReceiverType = newDispatchReceiverType
-    }
+    override fun replaceDispatchReceiverType(newDispatchReceiverType: AstType?) {}
 
     override fun replaceExtensionReceiverType(newExtensionReceiverType: AstType?) {
         extensionReceiverType = newExtensionReceiverType

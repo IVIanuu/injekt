@@ -6,6 +6,7 @@ import com.ivianuu.ast.symbols.impl.AstTypeParameterSymbol
 import com.ivianuu.ast.types.builder.buildSimpleType
 import com.ivianuu.ast.types.builder.buildTypeProjectionWithVariance
 import com.ivianuu.ast.types.builder.copy
+import org.jetbrains.kotlin.types.Variance
 
 fun AstType.makeNullable(): AstType {
     if (isMarkedNullable) return this
@@ -18,6 +19,25 @@ fun AstType.makeNotNull(): AstType {
     check(this is AstSimpleType)
     return copy { isMarkedNullable = false }
 }
+
+fun AstType.typeWith(arguments: List<AstTypeProjection>): AstType {
+    check(this is AstSimpleType)
+    return copy {
+        this.arguments.clear()
+        this.arguments += arguments
+    }
+}
+
+@JvmName("typeWithTypes")
+fun AstType.typeWith(arguments: List<AstType>): AstType = typeWith(
+    arguments.map { it.toTypeProjection() }
+)
+
+fun AstType.toTypeProjection(variance: Variance = Variance.INVARIANT): AstTypeProjectionWithVariance =
+    context.buildTypeProjectionWithVariance {
+        this.type = this@toTypeProjection
+        this.variance = variance
+    }
 
 fun AstType.substitute(params: List<AstTypeParameterSymbol>, arguments: List<AstType>): AstType =
     substitute(params.zip(arguments).toMap())

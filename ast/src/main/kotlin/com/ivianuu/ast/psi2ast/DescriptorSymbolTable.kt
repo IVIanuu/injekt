@@ -3,6 +3,7 @@ package com.ivianuu.ast.psi2ast
 import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.symbols.CallableId
 import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
+import com.ivianuu.ast.symbols.impl.AstEnumEntrySymbol
 import com.ivianuu.ast.symbols.impl.AstNamedFunctionSymbol
 import com.ivianuu.ast.symbols.impl.AstPropertyAccessorSymbol
 import com.ivianuu.ast.symbols.impl.AstPropertySymbol
@@ -38,6 +39,7 @@ class DescriptorSymbolTable {
 
     private val classes = mutableMapOf<ClassDescriptor, AstRegularClassSymbol>()
     private val constructors = mutableMapOf<ConstructorDescriptor, AstConstructorSymbol>()
+    private val enumEntries = mutableMapOf<ClassDescriptor, AstEnumEntrySymbol>()
     private val namedFunctions = mutableMapOf<SimpleFunctionDescriptor, AstNamedFunctionSymbol>()
     private val properties = mutableMapOf<VariableDescriptor, AstPropertySymbol>()
     private val propertyAccessors = mutableMapOf<PropertyAccessorDescriptor, AstPropertyAccessorSymbol>()
@@ -95,6 +97,11 @@ class DescriptorSymbolTable {
     fun getTypeAliasSymbol(descriptor: TypeAliasDescriptor): AstTypeAliasSymbol =
         typeAliases.getOrPut(descriptor) {
             AstTypeAliasSymbol(descriptor.classId!!)
+        }
+
+    fun getEnumEntrySymbol(descriptor: ClassDescriptor): AstEnumEntrySymbol =
+        enumEntries.getOrPut(descriptor) {
+            AstEnumEntrySymbol(descriptor.name)
         }
 
 }
