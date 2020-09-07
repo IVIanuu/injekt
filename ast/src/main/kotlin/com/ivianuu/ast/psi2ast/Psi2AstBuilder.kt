@@ -1228,10 +1228,31 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                             componentResolvedCall.resultingDescriptor as SimpleFunctionDescriptor)
                         dispatchReceiver = componentResolvedCall.dispatchReceiver?.toAstExpression()
                         extensionReceiver = componentResolvedCall.extensionReceiver?.toAstExpression()
+                        if (extensionReceiver != null) {
+                            extensionReceiver = buildQualifiedAccess { callee = container.symbol }
+                        } else {
+                            dispatchReceiver = buildQualifiedAccess { callee = container.symbol }
+                        }
                     },
                     symbol = symbolTable.getPropertySymbol(componentVariable)
                 )
             }
+    }
+
+}
+
+class MyClass {
+
+    init {
+        val (a, b) = ""
+    }
+
+    operator fun Any.component1(): Unit {
+
+    }
+
+    operator fun Any.component2(): Unit {
+
     }
 
 }
