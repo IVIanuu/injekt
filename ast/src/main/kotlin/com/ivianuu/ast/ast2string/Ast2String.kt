@@ -590,85 +590,53 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
     override fun visitFunctionCall(functionCall: AstFunctionCall) = with(functionCall) {
         val callee = callee.owner
 
+        fun emitBinaryExpression(operatorToken: String) {
+            emit("(")
+            valueArguments[0]!!.emit()
+            emit(" $operatorToken ")
+            valueArguments[1]!!.emit()
+            emit(")")
+        }
+
         when (callee.symbol.callableId) {
             AstIntrinsics.LessThan -> {
-                emit("(")
-                valueArguments[0]!!.emit()
-                emit(" < ")
-                valueArguments[1]!!.emit()
-                emit(")")
+                emitBinaryExpression("<")
                 return@with
             }
             AstIntrinsics.GreaterThan -> {
-                emit("(")
-                valueArguments[0]!!.emit()
-                emit(" > ")
-                valueArguments[1]!!.emit()
-                emit(")")
+                emitBinaryExpression(">")
                 return@with
             }
             AstIntrinsics.LessThanEqual -> {
-                emit("(")
-                valueArguments[0]!!.emit()
-                emit(" <= ")
-                valueArguments[1]!!.emit()
-                emit(")")
+                emitBinaryExpression("<=")
                 return@with
             }
             AstIntrinsics.GreaterThanEqual -> {
-                emit("(")
-                valueArguments[0]!!.emit()
-                emit(" >= ")
-                valueArguments[1]!!.emit()
-                emit(")")
+                emitBinaryExpression(">=")
                 return@with
             }
             AstIntrinsics.StructuralEqual -> {
-                emit("(")
-                valueArguments[0]!!.emit()
-                emit(" == ")
-                valueArguments[1]!!.emit()
-                emit(")")
+                emitBinaryExpression("==")
                 return@with
             }
             AstIntrinsics.StructuralNotEqual -> {
-                emit("(")
-                valueArguments[0]!!.emit()
-                emit(" != ")
-                valueArguments[1]!!.emit()
-                emit(")")
+                emitBinaryExpression("!=")
                 return@with
             }
             AstIntrinsics.IdentityEqual -> {
-                emit("(")
-                valueArguments[0]!!.emit()
-                emit(" === ")
-                valueArguments[1]!!.emit()
-                emit(")")
+                emitBinaryExpression("===")
                 return@with
             }
             AstIntrinsics.IdentityNotEqual -> {
-                emit("(")
-                valueArguments[0]!!.emit()
-                emit(" !== ")
-                valueArguments[1]!!.emit()
-                emit(")")
+                emitBinaryExpression("!==")
                 return@with
             }
             AstIntrinsics.LazyAnd -> {
-                emit("(")
-                valueArguments[0]!!.emit()
-                emit(" && ")
-                valueArguments[1]!!.emit()
-                emit(")")
+                emitBinaryExpression("&&")
                 return@with
             }
             AstIntrinsics.LazyOr -> {
-                emit("(")
-                valueArguments[0]!!.emit()
-                emit(" || ")
-                valueArguments[1]!!.emit()
-                emit(")")
+                emitBinaryExpression("||")
                 return@with
             }
         }
