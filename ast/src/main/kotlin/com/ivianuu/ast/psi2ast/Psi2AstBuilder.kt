@@ -754,47 +754,41 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
             }
             KtTokens.PLUSPLUS, KtTokens.MINUSMINUS -> {
                 buildBlock {
-                    /*
+                    val variableResolvedCall = argument.getResolvedCall()!!
 
-                    val resultVariable = buildTemporaryVariable(
-                        buildFunctionCall {
-                            this.callee = symbolTable.getClassSymbol(resolvedCall.resultingDescriptor as ClassDescriptor)
+                    val variableSymbol = when (val variableDescriptor = variableResolvedCall.resultingDescriptor) {
+                        is PropertyDescriptor -> symbolTable.getPropertySymbol(variableDescriptor)
+                        is LocalVariableDescriptor -> symbolTable.getPropertySymbol(variableDescriptor)
+                        else -> error("Unexpected callee $variableDescriptor")
+                    }
+
+                    val getVariable = buildQualifiedAccess {
+                        this.callee = variableSymbol
+                        dispatchReceiver = variableResolvedCall.dispatchReceiver?.toAstExpression()
+                        extensionReceiver = variableResolvedCall.extensionReceiver?.toAstExpression()
+                    }
+
+                    val incrementVariable = buildVariableAssignment {
+                        callee = variableSymbol
+                        dispatchReceiver = variableResolvedCall.dispatchReceiver?.toAstExpression()
+                        extensionReceiver = variableResolvedCall.extensionReceiver?.toAstExpression()
+                        value = buildFunctionCall {
+                            type = expression.getExpressionTypeWithCoercionToUnitOrFail().toAstType()
+                            this.callee = symbolTable.getNamedFunctionSymbol(
+                                resolvedCall!!.resultingDescriptor as SimpleFunctionDescriptor)
                             dispatchReceiver = resolvedCall.dispatchReceiver?.toAstExpression()
                             extensionReceiver = resolvedCall.extensionReceiver?.toAstExpression()
                         }
-                    )
-                    val assignment = buildVariableAssignment {
-                        this.
                     }
-
-                    val assignment = buildVariableAssignment {
-                        callee = resultVariable.symbol
-                        value = if (prefix && argument.elementType != KtNodeTypes.REFERENCE_EXPRESSION)
-                            generateResolvedAccessExpression(resultVariable)
-                        else
-                            resultInitializer
-                    }
-
-                        argument.generateAssignment(
-                        argument,
-                        ,
-                        AstOperation.ASSIGN,
-                        convert
-                    )
 
                     if (prefix) {
-                        if (argument.elementType != KtNodeTypes.REFERENCE_EXPRESSION) {
-                            statements += resultVariable
-                            statements += assignment
-                            statements += generateResolvedAccessExpression(resultVariable)
-                        } else {
-                            statements += assignment
-                            statements += generateAccessExpression(argument.getReferencedNameAsName())
-                        }
+                        statements += incrementVariable
+                        statements += getVariable
                     } else {
-                        statements += assignment
-                        statements += generateResolvedAccessExpression(temporaryVariable)
-                    }*/
+                        val tmp = buildTemporaryVariable(getVariable).also { statements += it }
+                        statements += incrementVariable
+                        statements += buildQualifiedAccess { callee = tmp.symbol }
+                    }
                 }
             }
             else -> error("Unexpected token $ktOperator ${expression.text}")

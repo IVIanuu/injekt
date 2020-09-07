@@ -261,6 +261,14 @@ class AstTest {
                             "a" to "b"
                         }
                         
+                        fun incDec() {
+                            var base = 0
+                            val incPrefix = ++base
+                            val decPrefix = --base
+                            val incPostfix = base++
+                            val decPostfix = base--
+                        }
+                        
                         /*fun whenBasic() {
                             when {
                                 "a" == "b" -> {
