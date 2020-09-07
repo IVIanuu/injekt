@@ -853,20 +853,6 @@ class GeneratedAstTests {
 
 
     @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_badBreakContinuekt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/expressions/badBreakContinue.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
     fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_dotQualifiedkt() {
         compile {
             sources += source(
@@ -3013,20 +2999,6 @@ class GeneratedAstTests {
         compile {
             sources += source(
                 source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/firProblems/putIfAbsent.kt").readText(),
-                injektImports = false,
-                initializeInjekt = false
-            )
-        }.apply {
-            assertOk()
-        }
-    }
-
-
-    @Test
-    fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_errors_unresolvedReferencekt() {
-        compile {
-            sources += source(
-                source = File("/home/ivianuu/other-projects/kotlin/compiler/testData/ir/irText/errors/unresolvedReference.kt").readText(),
                 injektImports = false,
                 initializeInjekt = false
             )

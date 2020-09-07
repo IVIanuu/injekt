@@ -33,31 +33,6 @@ class AstTest {
     val DOLLAR_SIGN = "$"
 
     @Test
-    fun lol() {
-        astEnabled = true
-        codegen(
-            source(
-                """
-                //val lol = ("lol" as String).toInt()
-                
-                class MyClass {
-                
-                    init {
-                        ("" as String).test()
-                    }
-                
-                    fun String.test() {
-                        
-                    }
-                }
-            """,
-                injektImports = false,
-                initializeInjekt = false
-            )
-        )
-    }
-
-    @Test
     fun testSimple() {
         astEnabled = true
         codegen(
@@ -255,6 +230,15 @@ class AstTest {
                             val ab = a + b
                             val a2 = ab - b
                             val b2 = ab - a
+                        }
+                        
+                        fun arrayAccess() {
+                            val list = mutableListOf<Int>()
+                            list += 1
+                            list += 2
+                            list += 3
+                            val a = list[0]
+                            list[0] = a
                         }
                         
                         fun infix() {

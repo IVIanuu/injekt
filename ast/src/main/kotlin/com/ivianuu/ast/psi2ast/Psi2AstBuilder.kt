@@ -95,6 +95,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtAnnotatedExpression
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtAnonymousInitializer
+import org.jetbrains.kotlin.psi.KtArrayAccessExpression
 import org.jetbrains.kotlin.psi.KtBinaryExpression
 import org.jetbrains.kotlin.psi.KtBinaryExpressionWithTypeRHS
 import org.jetbrains.kotlin.psi.KtBlockExpression
@@ -739,6 +740,21 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                 ?.toAstExpression()
             extensionReceiver = resolvedCall.extensionReceiver
                 ?.toAstExpression()
+        }
+    }
+
+    override fun visitArrayAccessExpression(
+        expression: KtArrayAccessExpression,
+        data: Nothing?
+    ): AstElement {
+        val resolvedCall = expression.getResolvedCall()!!
+        return buildFunctionCall {
+            type = resolvedCall.getReturnType().toAstType()
+            callee = symbolTable.getNamedFunctionSymbol(resolvedCall.resultingDescriptor as SimpleFunctionDescriptor)
+            dispatchReceiver = resolvedCall.dispatchReceiver?.toAstExpression()
+            extensionReceiver = resolvedCall.extensionReceiver?.toAstExpression()
+            valueArguments += expression.indexExpressions.map { it.convert() }
+            expression.arrayExpression?.convert<AstExpression>()?.let { valueArguments += it }
         }
     }
 
