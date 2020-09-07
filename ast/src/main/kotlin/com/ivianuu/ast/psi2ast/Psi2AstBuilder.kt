@@ -855,53 +855,21 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                     else -> error("Unexpected callee $assignmentDescriptor")
                 }
             }
-            KtTokens.LT -> buildFunctionCall {
-                callee = builtIns.lessThanSymbol
-                valueArguments += left
-                valueArguments += right
-            }
-            KtTokens.LTEQ -> buildFunctionCall {
-                callee = builtIns.lessThanEqualSymbol
-                valueArguments += left
-                valueArguments += right
-            }
-            KtTokens.GT -> buildFunctionCall {
-                callee = builtIns.greaterThanSymbol
-                valueArguments += left
-                valueArguments += right
-            }
-            KtTokens.GTEQ -> buildFunctionCall {
-                callee = builtIns.greaterThanEqualSymbol
-                valueArguments += left
-                valueArguments += right
-            }
-            KtTokens.EQEQ -> buildFunctionCall {
-                callee = builtIns.structuralEqualSymbol
-                valueArguments += left
-                valueArguments += right
-            }
-            KtTokens.EXCLEQ -> buildFunctionCall {
-                callee = builtIns.structuralNotEqualSymbol
-                valueArguments += left
-                valueArguments += right
-            }
-            KtTokens.EQEQEQ -> buildFunctionCall {
-                callee = builtIns.identityEqualSymbol
-                valueArguments += left
-                valueArguments += right
-            }
-            KtTokens.EXCLEQEQEQ -> buildFunctionCall {
-                callee = builtIns.identityNotEqualSymbol
-                valueArguments += left
-                valueArguments += right
-            }
-            KtTokens.ANDAND -> buildFunctionCall {
-                callee = builtIns.lazyAndSymbol
-                valueArguments += left
-                valueArguments += right
-            }
-            KtTokens.OROR -> buildFunctionCall {
-                callee = builtIns.lazyOrSymbol
+            KtTokens.LT, KtTokens.LTEQ, KtTokens.GT, KtTokens.GTEQ, KtTokens.EQEQ,
+                KtTokens.EXCLEQ, KtTokens.EXCLEQEQEQ, KtTokens.EQEQEQ, KtTokens.ANDAND, KtTokens.OROR -> buildFunctionCall {
+                callee = when(ktOperator) {
+                    KtTokens.LT -> builtIns.lessThanSymbol
+                    KtTokens.LTEQ -> builtIns.lessThanEqualSymbol
+                    KtTokens.GT -> builtIns.greaterThanSymbol
+                    KtTokens.GTEQ -> builtIns.greaterThanEqualSymbol
+                    KtTokens.EQEQ -> builtIns.structuralEqualSymbol
+                    KtTokens.EXCLEQ -> builtIns.structuralNotEqualSymbol
+                    KtTokens.EQEQEQ -> builtIns.identityEqualSymbol
+                    KtTokens.EXCLEQEQEQ -> builtIns.identityNotEqualSymbol
+                    KtTokens.ANDAND -> builtIns.lazyAndSymbol
+                    KtTokens.OROR -> builtIns.lazyOrSymbol
+                    else -> error("Unexpected token $ktOperator")
+                }
                 valueArguments += left
                 valueArguments += right
             }
@@ -936,7 +904,15 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                 left = left,
                 right = right
             )
-            else -> error("Unexpected token $ktOperator ${expression.text}")
+            else -> buildFunctionCall {
+                type = expression.getTypeInferredByFrontendOrFail().toAstType()
+                val resolvedCall = expression.getResolvedCall()!!
+                callee = symbolTable.getNamedFunctionSymbol(
+                    resolvedCall.resultingDescriptor as SimpleFunctionDescriptor)
+                dispatchReceiver = resolvedCall.dispatchReceiver?.toAstExpression()
+                extensionReceiver = resolvedCall.extensionReceiver?.toAstExpression()
+                valueArguments += right
+            }
         }
     }
 

@@ -257,6 +257,10 @@ class AstTest {
                             val b2 = ab - a
                         }
                         
+                        fun infix() {
+                            "a" to "b"
+                        }
+                        
                         /*fun whenBasic() {
                             when {
                                 "a" == "b" -> {

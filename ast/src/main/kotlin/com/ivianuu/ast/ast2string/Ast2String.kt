@@ -61,6 +61,7 @@ import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstTypeProjectionWithVariance
 import com.ivianuu.ast.visitors.AstVisitorVoid
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.types.Variance
@@ -166,7 +167,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         if (visibility != Visibilities.Local) emitVisibility()
         emitPlatformStatus()
         if (classKind != ClassKind.ANNOTATION_CLASS &&
-                visibility != Visibilities.Local) emitModality()
+            (visibility != Visibilities.Local || modality == Modality.ABSTRACT)) emitModality()
         if (isFun) {
             emit("fun ")
         }
@@ -1010,7 +1011,9 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
             this is AstCallableDeclaration<*> &&
                     this !is AstValueParameter &&
                     dispatchReceiverType == null &&
-                    extensionReceiverType == null -> emit(symbol.callableId.fqName)
+                    extensionReceiverType == null &&
+                    (this !is AstNamedFunction ||
+                            this.visibility != Visibilities.Local) -> emit(symbol.callableId.fqName)
             else -> emit(name)
         }
     }
