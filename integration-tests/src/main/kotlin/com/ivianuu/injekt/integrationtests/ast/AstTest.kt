@@ -240,6 +240,15 @@ class AstTest {
                             }
                         }
                         
+                        fun augmentedAssignment() {
+                            var i = 0
+                            i = 1
+                            i += 1
+                            i /= 1
+                            i -= 1
+                            i *= 1
+                        }
+                        
                         /*fun whenBasic() {
                             when {
                                 "a" == "b" -> {

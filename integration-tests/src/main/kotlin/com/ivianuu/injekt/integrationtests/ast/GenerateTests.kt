@@ -33,7 +33,8 @@ fun main() {
                 .forEach { filePath ->
                     val fileContent = filePath.toFile().readText()
                     if (fileContent.contains("// FILE:") ||
-                            fileContent.contains("!LANGUAGE")) return@forEach
+                            fileContent.contains("!LANGUAGE") ||
+                            fileContent.contains("!IGNORE_ERRORS")) return@forEach
 
                     appendLine(
                         """
@@ -52,7 +53,6 @@ fun main() {
                                 }
                         """
                     )
-
                 }
 
             appendLine("}")

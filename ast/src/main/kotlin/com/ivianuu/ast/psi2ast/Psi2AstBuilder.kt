@@ -67,11 +67,11 @@ import com.ivianuu.ast.expressions.builder.buildVariableAssignment
 import com.ivianuu.ast.expressions.builder.buildWhen
 import com.ivianuu.ast.expressions.builder.buildWhenBranch
 import com.ivianuu.ast.symbols.CallableId
-import com.ivianuu.ast.symbols.impl.AstAnonymousFunctionSymbol
 import com.ivianuu.ast.symbols.impl.AstAnonymousInitializerSymbol
 import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.symbols.impl.AstValueParameterSymbol
+import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.builder.buildStarProjection
 import com.ivianuu.ast.types.builder.buildTypeProjectionWithVariance
 import org.jetbrains.kotlin.backend.common.pop
@@ -816,16 +816,44 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
         }
 
         return when (ktOperator) {
-            KtTokens.EQ -> buildVariableAssignment {
-                val resolvedCall = expression.left!!.getResolvedCall()!!
-                callee = when (val calleeDescriptor = resolvedCall.resultingDescriptor) {
-                    is PropertyDescriptor -> symbolTable.getPropertySymbol(calleeDescriptor)
-                    is LocalVariableDescriptor -> symbolTable.getPropertySymbol(calleeDescriptor)
-                    else -> error("Unexpected callee $calleeDescriptor")
+            KtTokens.EQ, KtTokens.PLUSEQ, KtTokens.MINUSEQ, KtTokens.MULTEQ,
+            KtTokens.DIVEQ, KtTokens.PERCEQ -> {
+                val variableResolvedCall = expression.left!!.getResolvedCall()!!
+                val assignmentDescriptor = variableResolvedCall.resultingDescriptor
+                val assignmentCallee = when (assignmentDescriptor) {
+                    is SimpleFunctionDescriptor -> symbolTable.getNamedFunctionSymbol(assignmentDescriptor)
+                    is PropertyDescriptor -> symbolTable.getPropertySymbol(assignmentDescriptor)
+                    is LocalVariableDescriptor -> symbolTable.getPropertySymbol(assignmentDescriptor)
+                    else -> error("Unexpected callee $assignmentDescriptor")
                 }
-                dispatchReceiver = resolvedCall.dispatchReceiver?.toAstExpression()
-                extensionReceiver = resolvedCall.extensionReceiver?.toAstExpression()
-                value = right
+                val opResolvedCall = expression.getResolvedCall()
+                val opDescriptor = opResolvedCall?.resultingDescriptor as? SimpleFunctionDescriptor
+                val opCallee = opDescriptor?.let { symbolTable.getNamedFunctionSymbol(it) }
+                val opCall = opCallee?.let {
+                    buildFunctionCall {
+                        type = builtIns.unitType
+                        callee = opCallee
+                        dispatchReceiver = opResolvedCall.dispatchReceiver?.toAstExpression()
+                        extensionReceiver = opResolvedCall.extensionReceiver?.toAstExpression()
+                        valueArguments += right
+                    }
+                } ?: right
+                when (assignmentCallee) {
+                    is AstVariableSymbol<*> -> buildVariableAssignment {
+                        this.callee = assignmentCallee
+                        dispatchReceiver = variableResolvedCall.dispatchReceiver?.toAstExpression()
+                        extensionReceiver = variableResolvedCall.extensionReceiver?.toAstExpression()
+                        value = opCall
+                    }
+                    is AstFunctionSymbol<*> -> buildFunctionCall {
+                        type = builtIns.unitType
+                        this.callee = assignmentCallee
+                        dispatchReceiver = variableResolvedCall.dispatchReceiver?.toAstExpression()
+                        extensionReceiver = variableResolvedCall.extensionReceiver?.toAstExpression()
+                        valueArguments += opCall
+                    }
+                    else -> error("Unexpected callee $assignmentDescriptor")
+                }
             }
             KtTokens.LT -> buildFunctionCall {
                 callee = builtIns.lessThanSymbol
@@ -878,11 +906,6 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                 valueArguments += right
             }
 
-            KtTokens.PLUSEQ -> TODO()
-            KtTokens.MINUSEQ -> TODO()
-            KtTokens.MULTEQ -> TODO()
-            KtTokens.DIVEQ -> TODO()
-            KtTokens.PERCEQ -> TODO()
             KtTokens.PLUS -> TODO()
             KtTokens.MINUS -> TODO()
             KtTokens.MUL -> TODO()
@@ -893,6 +916,7 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
             KtTokens.IN_KEYWORD, KtTokens.NOT_IN -> {
                 val containsCall = expression.right!!.getResolvedCall()!!
                 val astContainsCall = buildFunctionCall {
+                    type = context.builtIns.booleanType
                     callee = symbolTable.getNamedFunctionSymbol(containsCall.resultingDescriptor as SimpleFunctionDescriptor)
                 }
                 if (ktOperator == KtTokens.IN_KEYWORD) {
