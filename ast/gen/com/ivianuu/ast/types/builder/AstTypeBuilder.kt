@@ -5,9 +5,9 @@ import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstClassifierSymbol
-import com.ivianuu.ast.types.AstSimpleType
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
-import com.ivianuu.ast.types.impl.AstSimpleTypeImpl
+import com.ivianuu.ast.types.impl.AstTypeImpl
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 
@@ -17,34 +17,34 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstSimpleTypeBuilder(override val context: AstContext) : AstBuilder {
+class AstTypeBuilder(override val context: AstContext) : AstBuilder {
     val annotations: MutableList<AstFunctionCall> = mutableListOf()
-    var isMarkedNullable: Boolean = false
     lateinit var classifier: AstClassifierSymbol<*>
     val arguments: MutableList<AstTypeProjection> = mutableListOf()
+    var isMarkedNullable: Boolean = false
 
-    fun build(): AstSimpleType {
-        return AstSimpleTypeImpl(
+    fun build(): AstType {
+        return AstTypeImpl(
             context,
             annotations,
-            isMarkedNullable,
             classifier,
             arguments,
+            isMarkedNullable,
         )
     }
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun AstBuilder.buildSimpleType(init: AstSimpleTypeBuilder.() -> Unit): AstSimpleType {
-    return AstSimpleTypeBuilder(context).apply(init).build()
+inline fun AstBuilder.buildType(init: AstTypeBuilder.() -> Unit): AstType {
+    return AstTypeBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun AstSimpleType.copy(init: AstSimpleTypeBuilder.() -> Unit = {}): AstSimpleType {
-    val copyBuilder = AstSimpleTypeBuilder(context)
+inline fun AstType.copy(init: AstTypeBuilder.() -> Unit = {}): AstType {
+    val copyBuilder = AstTypeBuilder(context)
     copyBuilder.annotations.addAll(annotations)
-    copyBuilder.isMarkedNullable = isMarkedNullable
     copyBuilder.classifier = classifier
     copyBuilder.arguments.addAll(arguments)
+    copyBuilder.isMarkedNullable = isMarkedNullable
     return copyBuilder.apply(init).build()
 }

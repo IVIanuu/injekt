@@ -164,8 +164,8 @@ class AstTest {
                             withVararg(*arrayOf("a", "b"), "c")
                         }*/
                         
-                        fun safeCall(name: String?) {
-                            //name?.toList()?.size?.minus(1)
+                        fun safeCall(name: String?) { 
+                            name?.toList()?.size?.minus(1)
                         }
                         
                         fun comparisonOperations() {
@@ -232,14 +232,14 @@ class AstTest {
                             val b2 = ab - a
                         }
                         
-                        fun arrayAccess() {
+                        /*fun arrayAccess() {
                             val list = mutableListOf<Int>()
                             list += 1
                             list += 2
                             list += 3
                             val a = list[0]
                             list[0] = a
-                        }
+                        }*/
                         
                         fun infix() {
                             "a" to "b"

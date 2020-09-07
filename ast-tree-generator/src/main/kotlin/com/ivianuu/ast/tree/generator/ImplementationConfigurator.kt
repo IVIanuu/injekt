@@ -97,17 +97,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             kind = OpenClass
         }
 
-        impl(delegatedType) {
-            default("isMarkedNullable") {
-                value = "type.isMarkedNullable"
-                withGetter = true
-            }
-            default("annotations") {
-                value = "type.annotations"
-                withGetter = true
-            }
-        }
-
         val unitTypeExpressions = listOf(
             doWhileLoop,
             whileLoop,

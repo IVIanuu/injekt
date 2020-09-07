@@ -3,25 +3,22 @@ package com.ivianuu.ast.types
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.expressions.builder.copy
 import com.ivianuu.ast.symbols.impl.AstTypeParameterSymbol
-import com.ivianuu.ast.types.builder.buildSimpleType
+import com.ivianuu.ast.types.builder.buildType
 import com.ivianuu.ast.types.builder.buildTypeProjectionWithVariance
 import com.ivianuu.ast.types.builder.copy
 import org.jetbrains.kotlin.types.Variance
 
 fun AstType.makeNullable(): AstType {
     if (isMarkedNullable) return this
-    check(this is AstSimpleType)
     return copy { isMarkedNullable = true }
 }
 
 fun AstType.makeNotNull(): AstType {
     if (!isMarkedNullable) return this
-    check(this is AstSimpleType)
     return copy { isMarkedNullable = false }
 }
 
 fun AstType.typeWith(arguments: List<AstTypeProjection>): AstType {
-    check(this is AstSimpleType)
     return copy {
         this.arguments.clear()
         this.arguments += arguments
@@ -43,9 +40,8 @@ fun AstType.substitute(params: List<AstTypeParameterSymbol>, arguments: List<Ast
     substitute(params.zip(arguments).toMap())
 
 fun AstType.substitute(substitutionMap: Map<AstTypeParameterSymbol, AstType>): AstType {
-    if (this !is AstSimpleType) return this
     substitutionMap[classifier]?.let { return it }
-    return context.buildSimpleType {
+    return context.buildType {
         this.classifier = this@substitute.classifier
         this.isMarkedNullable = this@substitute.isMarkedNullable
         this.arguments += arguments.map { argument ->

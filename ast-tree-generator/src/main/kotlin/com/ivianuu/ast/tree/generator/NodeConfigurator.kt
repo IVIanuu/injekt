@@ -397,18 +397,9 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         type.configure {
-            +booleanField("isMarkedNullable")
-            shouldBeAnInterface()
-        }
-
-        simpleType.configure {
             +field("classifier", classifierSymbolType, "*")
             +fieldList("arguments", typeProjection)
-        }
-
-        delegatedType.configure {
-            +field("type", type)
-            +field("expression", expression)
+            +booleanField("isMarkedNullable")
         }
 
         whenExpression.configure {

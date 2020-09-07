@@ -68,8 +68,6 @@ import com.ivianuu.ast.expressions.AstSuperReference
 import com.ivianuu.ast.expressions.AstThisReference
 import com.ivianuu.ast.expressions.AstPropertyBackingFieldReference
 import com.ivianuu.ast.expressions.AstTypeOperation
-import com.ivianuu.ast.types.AstSimpleType
-import com.ivianuu.ast.types.AstDelegatedType
 
 /*
  * This file was generated automatically
@@ -212,9 +210,5 @@ abstract class AstVisitor<out R, in D> {
     open fun visitPropertyBackingFieldReference(propertyBackingFieldReference: AstPropertyBackingFieldReference, data: D): R  = visitExpression(propertyBackingFieldReference, data)
 
     open fun visitTypeOperation(typeOperation: AstTypeOperation, data: D): R  = visitExpression(typeOperation, data)
-
-    open fun visitSimpleType(simpleType: AstSimpleType, data: D): R  = visitType(simpleType, data)
-
-    open fun visitDelegatedType(delegatedType: AstDelegatedType, data: D): R  = visitType(delegatedType, data)
 
 }

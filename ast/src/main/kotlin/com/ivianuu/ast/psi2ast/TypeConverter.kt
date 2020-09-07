@@ -1,11 +1,10 @@
 package com.ivianuu.ast.psi2ast
 
 import com.ivianuu.ast.builder.AstBuilder
-import com.ivianuu.ast.types.AstSimpleType
-import com.ivianuu.ast.types.builder.buildSimpleType
+import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.builder.buildStarProjection
+import com.ivianuu.ast.types.builder.buildType
 import com.ivianuu.ast.types.builder.buildTypeProjectionWithVariance
-import com.ivianuu.ast.types.impl.AstStarProjectionImpl
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -18,10 +17,10 @@ class TypeConverter(private val symbolTable: DescriptorSymbolTable) {
     lateinit var builder: AstBuilder
     lateinit var constantValueGenerator: ConstantValueGenerator
 
-    fun convert(kotlinType: KotlinType): AstSimpleType {
+    fun convert(kotlinType: KotlinType): AstType {
         val approximatedType = kotlinType.upperIfFlexible()
 
-        return builder.buildSimpleType {
+        return builder.buildType {
             annotations += approximatedType.annotations.map {
                 constantValueGenerator.generateAnnotationConstructorCall(it)!!
             }

@@ -25,7 +25,6 @@ import com.ivianuu.ast.declarations.AstRegularClass
 import com.ivianuu.ast.declarations.AstTypeAlias
 import com.ivianuu.ast.declarations.AstTypeParameter
 import com.ivianuu.ast.declarations.AstValueParameter
-import com.ivianuu.ast.declarations.classifierOrNull
 import com.ivianuu.ast.declarations.regularClassOrFail
 import com.ivianuu.ast.declarations.regularClassOrNull
 import com.ivianuu.ast.expressions.AstBlock
@@ -54,7 +53,6 @@ import com.ivianuu.ast.expressions.AstWhileLoop
 import com.ivianuu.ast.symbols.impl.AstClassifierSymbol
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.symbols.impl.AstTypeParameterSymbol
-import com.ivianuu.ast.types.AstSimpleType
 import com.ivianuu.ast.types.AstStarProjection
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
@@ -250,9 +248,9 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         val superTypesToRender = superTypes
             .filterNot {
                 // todo compare types once possible
-                it.classifierOrNull == context.builtIns.anySymbol ||
-                        it.classifierOrNull == context.builtIns.annotationSymbol ||
-                        it.classifierOrNull == context.builtIns.enumSymbol
+                it.classifier == context.builtIns.anySymbol ||
+                        it.classifier == context.builtIns.annotationSymbol ||
+                        it.classifier == context.builtIns.enumSymbol
             }
         if (superTypesToRender.isEmpty()) return
         emit(": ")
@@ -271,7 +269,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
                     }
 
                 delegateInitializers
-                    .filter { it.delegatedSuperType.classifierOrNull == superType.classifierOrNull } // todo compare types once possible
+                    .filter { it.delegatedSuperType.classifier == superType.classifier } // todo compare types once possible
                     .singleOrNull()
                     ?.let {
                         emit(" by ")
@@ -463,7 +461,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
                     boundToRender = typeParameter.bounds.singleOrNull()
                         ?.takeIf {
                             !it.isMarkedNullable ||
-                                    it.classifierOrNull != it.context.builtIns.anyType.classifierOrNull
+                                    it.classifier != it.context.builtIns.anyType.classifier
                         },
                     forWhere = false
                 )
@@ -941,7 +939,6 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
 
     private fun AstType.emit() {
         emitAnnotations()
-        check(this is AstSimpleType)
         classifier.emit()
         if (arguments.isNotEmpty()) {
             emit("<")

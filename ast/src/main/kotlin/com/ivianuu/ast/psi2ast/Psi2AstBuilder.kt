@@ -28,13 +28,16 @@ import com.ivianuu.ast.declarations.builder.buildTypeAlias
 import com.ivianuu.ast.declarations.builder.buildTypeParameter
 import com.ivianuu.ast.declarations.builder.buildValueParameter
 import com.ivianuu.ast.declarations.typeWith
+import com.ivianuu.ast.expressions.AstBaseQualifiedAccess
 import com.ivianuu.ast.expressions.AstConst
 import com.ivianuu.ast.expressions.AstDelegatedConstructorCallKind
 import com.ivianuu.ast.expressions.AstLoop
 import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.expressions.AstTypeOperator
 import com.ivianuu.ast.expressions.buildConstBoolean
+import com.ivianuu.ast.expressions.buildConstNull
 import com.ivianuu.ast.expressions.buildConstString
+import com.ivianuu.ast.expressions.buildElseBranch
 import com.ivianuu.ast.expressions.buildElvisExpression
 import com.ivianuu.ast.expressions.buildTemporaryVariable
 import com.ivianuu.ast.expressions.buildUnitExpression
@@ -74,6 +77,7 @@ import com.ivianuu.ast.symbols.impl.AstValueParameterSymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.builder.buildStarProjection
 import com.ivianuu.ast.types.builder.buildTypeProjectionWithVariance
+import com.ivianuu.ast.types.makeNullable
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
@@ -137,6 +141,7 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtReturnExpression
+import org.jetbrains.kotlin.psi.KtSafeQualifiedExpression
 import org.jetbrains.kotlin.psi.KtSecondaryConstructor
 import org.jetbrains.kotlin.psi.KtStringTemplateEntryWithExpression
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
@@ -1097,6 +1102,31 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
         expression: KtDotQualifiedExpression,
         data: Nothing?
     ): AstElement = expression.selectorExpression!!.convert()
+
+    override fun visitSafeQualifiedExpression(
+        expression: KtSafeQualifiedExpression,
+        data: Nothing?
+    ): AstElement {
+        return buildBlock {
+            val tmp = buildTemporaryVariable(expression.receiverExpression.convert<AstExpression>())
+                .also { statements += it }
+            statements += buildWhen {
+                val right = expression.selectorExpression!!.convert<AstBaseQualifiedAccess>()
+                this.type = right.type.makeNullable()
+                branches += buildWhenBranch {
+                    condition = buildFunctionCall {
+                        callee = context.builtIns.structuralNotEqualSymbol
+                        valueArguments += buildQualifiedAccess { callee = tmp.symbol }
+                        valueArguments += buildConstNull()
+                    }
+                    result = right.apply {
+
+                    }
+                }
+                branches += buildElseBranch(buildConstNull())
+            }
+        }
+    }
 
     override fun visitParenthesizedExpression(expression: KtParenthesizedExpression, data: Nothing?): AstElement =
         expression.expression!!.convert()

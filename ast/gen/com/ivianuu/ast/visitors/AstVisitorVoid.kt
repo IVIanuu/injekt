@@ -68,8 +68,6 @@ import com.ivianuu.ast.expressions.AstSuperReference
 import com.ivianuu.ast.expressions.AstThisReference
 import com.ivianuu.ast.expressions.AstPropertyBackingFieldReference
 import com.ivianuu.ast.expressions.AstTypeOperation
-import com.ivianuu.ast.types.AstSimpleType
-import com.ivianuu.ast.types.AstDelegatedType
 
 /*
  * This file was generated automatically
@@ -347,14 +345,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
         visitElement(typeOperation)
     }
 
-    open fun visitSimpleType(simpleType: AstSimpleType) {
-        visitElement(simpleType)
-    }
-
-    open fun visitDelegatedType(delegatedType: AstDelegatedType) {
-        visitElement(delegatedType)
-    }
-
     final override fun visitElement(element: AstElement, data: Nothing?) {
         visitElement(element)
     }
@@ -625,14 +615,6 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     final override fun visitTypeOperation(typeOperation: AstTypeOperation, data: Nothing?) {
         visitTypeOperation(typeOperation)
-    }
-
-    final override fun visitSimpleType(simpleType: AstSimpleType, data: Nothing?) {
-        visitSimpleType(simpleType)
-    }
-
-    final override fun visitDelegatedType(delegatedType: AstDelegatedType, data: Nothing?) {
-        visitDelegatedType(delegatedType)
     }
 
 }

@@ -2,7 +2,9 @@ package com.ivianuu.ast.types
 
 import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.expressions.AstFunctionCall
+import com.ivianuu.ast.symbols.impl.AstClassifierSymbol
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -10,14 +12,20 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-interface AstType : AstAnnotationContainer {
-    override val context: AstContext
-    override val annotations: List<AstFunctionCall>
-    val isMarkedNullable: Boolean
+abstract class AstType : AstPureAbstractElement(), AstAnnotationContainer {
+    abstract override val context: AstContext
+    abstract override val annotations: List<AstFunctionCall>
+    abstract val classifier: AstClassifierSymbol<*>
+    abstract val arguments: List<AstTypeProjection>
+    abstract val isMarkedNullable: Boolean
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitType(this, data)
 
-    override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
+    abstract override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
 
-    fun replaceIsMarkedNullable(newIsMarkedNullable: Boolean)
+    abstract fun replaceClassifier(newClassifier: AstClassifierSymbol<*>)
+
+    abstract fun replaceArguments(newArguments: List<AstTypeProjection>)
+
+    abstract fun replaceIsMarkedNullable(newIsMarkedNullable: Boolean)
 }
