@@ -138,11 +138,10 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
 
                 override fun visitType(type: AstType) {
                     super.visitType(type)
-                    type.regularClassOrNull?.let {
-                        if (!it.owner.name.isSpecial) {
-                            imports += it.classId.fqName
-                        }
-                    }
+                    type.regularClassOrNull
+                        ?.takeUnless { it.owner.name.isSpecial }
+                        ?.takeUnless { it.owner.visibility == Visibilities.Local }
+                        ?.let { imports += it.classId.fqName }
                 }
             },
             null
