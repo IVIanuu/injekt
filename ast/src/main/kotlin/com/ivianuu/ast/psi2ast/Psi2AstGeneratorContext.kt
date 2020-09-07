@@ -40,7 +40,7 @@ class Psi2AstGeneratorContext(
             ?.let { it as ClassDescriptor }
             ?.let { descriptor ->
                 symbolTable.getClassSymbol(descriptor)
-                    .also { stubGenerator.getDeclaration(it, descriptor) }
+                    .also { stubGenerator.getDeclaration(descriptor) }
             }
     }
 
@@ -50,7 +50,7 @@ class Psi2AstGeneratorContext(
             scope?.getContributedFunctions(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
                 ?.map { descriptor ->
                     symbolTable.getNamedFunctionSymbol(descriptor)
-                        .also { stubGenerator.getDeclaration(it, descriptor) }
+                        .also { stubGenerator.getDeclaration(descriptor) }
                 }
                 ?: emptyList()
         }
@@ -63,7 +63,7 @@ class Psi2AstGeneratorContext(
                 ?.constructors
                 ?.map { descriptor ->
                     symbolTable.getConstructorSymbol(descriptor)
-                        .also { stubGenerator.getDeclaration(it, descriptor) }
+                        .also { stubGenerator.getDeclaration(descriptor) }
                 }
                 ?: emptyList()
         }
@@ -73,7 +73,7 @@ class Psi2AstGeneratorContext(
             ?.getContributedVariables(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
             ?.map { descriptor ->
                 symbolTable.getPropertySymbol(descriptor)
-                    .also { stubGenerator.getDeclaration(it, descriptor) }
+                    .also { stubGenerator.getDeclaration(descriptor) }
             }
             ?: emptyList()
     }

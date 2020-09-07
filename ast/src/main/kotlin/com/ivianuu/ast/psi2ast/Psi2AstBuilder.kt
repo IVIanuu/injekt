@@ -80,7 +80,6 @@ import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
@@ -183,7 +182,7 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
             symbolTable.unboundSymbols
                 .forEach { (descriptor, symbol) ->
                     if (!symbol.isBound) {
-                        stubGenerator.getDeclaration(symbol, descriptor)
+                        stubGenerator.getDeclaration(descriptor)
                     }
                 }
         }
@@ -509,9 +508,9 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
         }
     }
 
-    private fun AstBlockBuilder.addStatementFlatten(expression: AstExpression) {
-        if (expression is AstBlock) statements += expression.statements
-        else statements += expression
+    private fun AstBlockBuilder.addStatementFlatten(statement: AstStatement) {
+        if (statement is AstBlock) statements += statement.statements
+        else statements += statement
     }
 
     override fun visitObjectLiteralExpression(expression: KtObjectLiteralExpression, data: Nothing?): AstElement {
@@ -858,18 +857,8 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                 valueArguments += left
                 valueArguments += right
             }
-            KtTokens.EXCLEQ -> buildFunctionCall {
+            KtTokens.EQEQEQ -> buildFunctionCall {
                 callee = builtIns.identityEqualSymbol
-                valueArguments += left
-                valueArguments += right
-            }
-            KtTokens.EXCLEQEQEQ -> buildFunctionCall {
-                callee = builtIns.identityNotEqualSymbol
-                valueArguments += left
-                valueArguments += right
-            }
-            KtTokens.ANDAND -> buildFunctionCall {
-                callee = builtIns.lazyAndSymbol
                 valueArguments += left
                 valueArguments += right
             }

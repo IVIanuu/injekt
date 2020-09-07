@@ -124,7 +124,7 @@ class AstBuiltIns(
     val lazyOrSymbol = intrinsicFunction(AstIntrinsics.LazyOr, booleanType, 2)
 
     private fun ClassDescriptor.toAstRegularClassSymbol() = symbolTable.getClassSymbol(this)
-        .also { context.stubGenerator.getDeclaration(it, this) }
+        .also { context.stubGenerator.getDeclaration(this) }
     private fun KotlinType.toAstType() = typeConverter.convert(this)
 
 }

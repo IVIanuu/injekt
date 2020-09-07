@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -30,14 +31,20 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class DescriptorSymbolTable {
 
     val unboundSymbols: Map<DeclarationDescriptor, AstSymbol<*>>
-        get() = (classes +
+        get() = allSymbols
+            .filterNot { it.value.isBound }
+
+    val allSymbols: Map<DeclarationDescriptor, AstSymbol<*>>
+        get() = (anonymousObjects +
+                classes +
                 constructors +
+                enumEntries +
                 namedFunctions +
                 properties +
                 propertyAccessors +
                 typeParameters +
-                valueParameters)
-            .filterNot { it.value.isBound }
+                valueParameters +
+                typeAliases)
 
     private val anonymousObjects = mutableMapOf<ClassDescriptor, AstAnonymousObjectSymbol>()
     private val classes = mutableMapOf<ClassDescriptor, AstRegularClassSymbol>()
@@ -57,7 +64,14 @@ class DescriptorSymbolTable {
 
     fun getClassSymbol(descriptor: ClassDescriptor): AstRegularClassSymbol =
         classes.getOrPut(descriptor) {
-            AstRegularClassSymbol(descriptor.classId!!)
+            descriptor.classId
+            AstRegularClassSymbol(
+                descriptor.classId ?: ClassId.fromString(
+                    descriptor.fqNameSafe.asString()
+                        .replace(".", "/"),
+                    true
+                )
+            )
         }
 
     fun getConstructorSymbol(descriptor: ConstructorDescriptor): AstConstructorSymbol =

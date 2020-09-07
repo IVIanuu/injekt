@@ -2,7 +2,6 @@ package com.ivianuu.ast.psi2ast
 
 import com.ivianuu.ast.AstBuiltIns
 import com.ivianuu.ast.ast2string.toKotlinSourceString
-import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.extension.AstGenerationExtension
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.editor.Document
@@ -124,7 +123,7 @@ class AstAnalysisHandlerExtension(
             stubGenerator
         )
         constantValueGenerator.builder = context
-        stubGenerator.builder = context
+        stubGenerator.context = context
         typeConverter.builder = context
         val builtIns = AstBuiltIns(module.builtIns, typeConverter, symbolTable, context)
         val builder = Psi2AstBuilder(context)

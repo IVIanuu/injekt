@@ -1,18 +1,15 @@
 package com.ivianuu.ast.psi2ast
 
-import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.declarations.AstDeclaration
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.builder.buildConstructor
 import com.ivianuu.ast.declarations.builder.buildNamedFunction
 import com.ivianuu.ast.declarations.builder.buildProperty
-import com.ivianuu.ast.declarations.builder.buildRegularClass
 import com.ivianuu.ast.declarations.builder.buildTypeAlias
 import com.ivianuu.ast.declarations.builder.buildTypeParameter
 import com.ivianuu.ast.declarations.builder.buildValueParameter
-import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.builder.buildBlock
-import com.ivianuu.ast.symbols.AstSymbol
+import com.ivianuu.ast.psi2ast.lazy.AstLazyRegularClass
 import com.ivianuu.ast.symbols.CallableId
 import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
 import com.ivianuu.ast.symbols.impl.AstNamedFunctionSymbol
@@ -21,11 +18,9 @@ import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.symbols.impl.AstTypeAliasSymbol
 import com.ivianuu.ast.symbols.impl.AstTypeParameterSymbol
 import com.ivianuu.ast.symbols.impl.AstValueParameterSymbol
-import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
@@ -44,44 +39,35 @@ class DeclarationStubGenerator(
     private val typeConverter: TypeConverter
 ) {
 
-    lateinit var builder: AstBuilder
+    lateinit var context: Psi2AstGeneratorContext
 
-    fun getDeclaration(
-        symbol: AstSymbol<*>,
-        descriptor: DeclarationDescriptor
-    ): AstDeclaration? = when {
-        descriptor is ClassDescriptor && symbol is AstRegularClassSymbol ->
-            descriptor.toClassStub(symbol)
-        descriptor is SimpleFunctionDescriptor && symbol is AstNamedFunctionSymbol ->
-            descriptor.toNamedFunctionStub(symbol)
-        descriptor is ConstructorDescriptor && symbol is AstConstructorSymbol ->
-            descriptor.toConstructorStub(symbol)
-        descriptor is VariableDescriptor && symbol is AstPropertySymbol ->
-            descriptor.toPropertyStub(symbol)
-        descriptor is TypeParameterDescriptor && symbol is AstTypeParameterSymbol ->
-            descriptor.toTypeParameterStub(symbol)
-        descriptor is ParameterDescriptor && symbol is AstValueParameterSymbol ->
-            descriptor.toValueParameterStub(symbol)
-        descriptor is TypeAliasDescriptor && symbol is AstTypeAliasSymbol ->
-            descriptor.toTypeAliasStub(symbol)
-        else -> error("Unexpected declaration $descriptor $symbol")
+    fun getDeclaration(descriptor: DeclarationDescriptor): AstDeclaration? {
+        val symbol = symbolTable.allSymbols[descriptor]!!
+        if (symbol.isBound) return symbol.owner as AstDeclaration
+        return when {
+            descriptor is ClassDescriptor && symbol is AstRegularClassSymbol ->
+                descriptor.toClassStub(symbol)
+            descriptor is SimpleFunctionDescriptor && symbol is AstNamedFunctionSymbol ->
+                descriptor.toNamedFunctionStub(symbol)
+            descriptor is ConstructorDescriptor && symbol is AstConstructorSymbol ->
+                descriptor.toConstructorStub(symbol)
+            descriptor is VariableDescriptor && symbol is AstPropertySymbol ->
+                descriptor.toPropertyStub(symbol)
+            descriptor is TypeParameterDescriptor && symbol is AstTypeParameterSymbol ->
+                descriptor.toTypeParameterStub(symbol)
+            descriptor is ParameterDescriptor && symbol is AstValueParameterSymbol ->
+                descriptor.toValueParameterStub(symbol)
+            descriptor is TypeAliasDescriptor && symbol is AstTypeAliasSymbol ->
+                descriptor.toTypeAliasStub(symbol)
+            else -> error("Unexpected declaration $descriptor $symbol")
+        }
     }
 
     private fun ClassDescriptor.toClassStub(
         symbol: AstRegularClassSymbol = AstRegularClassSymbol(classId!!)
-    ) = builder.buildRegularClass {
-        this.symbol = symbol
-        this.origin = AstDeclarationOrigin.Library
+    ) = AstLazyRegularClass(symbol, this, context)
 
-        /*this += descriptor.constructors.map { stubGenerator.get(it) as AstFunction }
-        this += descriptor.defaultType.memberScope.getContributedDescriptors()
-            .filterNot { it is PropertyAccessorDescriptor }
-            .map { stubGenerator.get(it) as AstDeclaration }
-        this += descriptor.staticScope.getContributedDescriptors()
-            .map { stubGenerator.get(it) as AstDeclaration }*/
-    }
-
-    private fun SimpleFunctionDescriptor.toNamedFunctionStub(symbol: AstNamedFunctionSymbol) = builder.buildNamedFunction {
+    private fun SimpleFunctionDescriptor.toNamedFunctionStub(symbol: AstNamedFunctionSymbol) = context.buildNamedFunction {
         this.symbol = symbol
         this.origin = AstDeclarationOrigin.Library
         this.returnType = this@toNamedFunctionStub.returnType!!.toAstType()
@@ -106,7 +92,7 @@ class DeclarationStubGenerator(
 
     private fun ConstructorDescriptor.toConstructorStub(
         symbol: AstConstructorSymbol = AstConstructorSymbol(CallableId(fqNameSafe))
-    ) = builder.buildConstructor {
+    ) = context.buildConstructor {
         this.symbol = symbol
         this.origin = AstDeclarationOrigin.Library
         this.returnType = this@toConstructorStub.returnType.toAstType()
@@ -119,7 +105,7 @@ class DeclarationStubGenerator(
         }
     }
 
-    private fun VariableDescriptor.toPropertyStub(symbol: AstPropertySymbol) = builder.buildProperty {
+    private fun VariableDescriptor.toPropertyStub(symbol: AstPropertySymbol) = context.buildProperty {
         this.symbol = symbol
         this.origin = AstDeclarationOrigin.Library
         this.returnType = this@toPropertyStub.type.toAstType()
@@ -138,7 +124,7 @@ class DeclarationStubGenerator(
         }
     }
 
-    private fun TypeParameterDescriptor.toTypeParameterStub(symbol: AstTypeParameterSymbol) = builder.buildTypeParameter {
+    private fun TypeParameterDescriptor.toTypeParameterStub(symbol: AstTypeParameterSymbol) = context.buildTypeParameter {
         this.symbol = symbol
         this.origin = AstDeclarationOrigin.Library
         this.name = this@toTypeParameterStub.name
@@ -150,7 +136,7 @@ class DeclarationStubGenerator(
         }
     }
 
-    private fun ParameterDescriptor.toValueParameterStub(symbol: AstValueParameterSymbol) = builder.buildValueParameter {
+    private fun ParameterDescriptor.toValueParameterStub(symbol: AstValueParameterSymbol) = context.buildValueParameter {
         this.symbol = symbol
         this.origin = AstDeclarationOrigin.Library
         this.returnType = this@toValueParameterStub.type.toAstType()
@@ -167,7 +153,7 @@ class DeclarationStubGenerator(
         }
     }
 
-    private fun TypeAliasDescriptor.toTypeAliasStub(symbol: AstTypeAliasSymbol) = builder.buildTypeAlias {
+    private fun TypeAliasDescriptor.toTypeAliasStub(symbol: AstTypeAliasSymbol) = context.buildTypeAlias {
         this.symbol = symbol
         this.origin = AstDeclarationOrigin.Library
         this.expandedType = this@toTypeAliasStub.expandedType.toAstType()
