@@ -16,7 +16,7 @@ import com.ivianuu.ast.types.builder.buildSimpleType
 import com.ivianuu.ast.types.builder.buildTypeProjectionWithVariance
 import com.ivianuu.ast.types.typeWith
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
-import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.FqName
 
 val AstClass<*>.defaultType: AstType get() = context.buildSimpleType {
     classifier = symbol
@@ -52,8 +52,8 @@ val AstType.classifierOrFail: AstClassifierSymbol<*>
 val AstType.classifierOrNull: AstClassifierSymbol<*>?
     get() = (this as? AstSimpleType)?.classifier as? AstClassifierSymbol
 
-fun AstAnnotationContainer.hasAnnotation(classId: ClassId): Boolean {
-    return annotations.any { it.callee.callableId.classId == classId }
+fun AstAnnotationContainer.hasAnnotation(fqName: FqName): Boolean {
+    return annotations.any { it.callee.callableId.fqName == fqName }
 }
 
 fun AstModuleFragment.addFile(file: AstFile) {

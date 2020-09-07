@@ -40,7 +40,7 @@ open class AstNamedFunctionBuilder(override val context: AstContext) : AstFuncti
     override var returnType: AstType = context.builtIns.unitType
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
     override var body: AstBlock? = null
-    open var name: Name by lazyVar { symbol.callableId.callableName }
+    open var name: Name by lazyVar { symbol.callableId.fqName.shortName() }
     open var visibility: Visibility = Visibilities.Public
     open var modality: Modality = Modality.FINAL
     open var platformStatus: PlatformStatus = PlatformStatus.DEFAULT

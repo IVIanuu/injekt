@@ -24,7 +24,7 @@ val visibilityType = type("ast", "Visibility")
 val visibilitiesType = type("ast", "Visibilities")
 val modalityType = type(Modality::class)
 val fqNameType = type(FqName::class)
-val classIdType = type(ClassId::class)
+val classIdType = type("ast.symbols", "ClassId")
 val platformStatusType = type("ast", "PlatformStatus")
 val targetType = type("ast", "AstTarget")
 

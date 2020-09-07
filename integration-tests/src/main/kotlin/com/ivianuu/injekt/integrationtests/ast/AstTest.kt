@@ -82,6 +82,7 @@ class AstTest {
                             fun member() {
                                 var lol = ""
                                 val (a, _, c) = Triple("a", "b", "c")
+                                println(a.toString().plus(c))
                             }
                             
                             fun anonymous() {
@@ -180,16 +181,16 @@ class AstTest {
                             }
                         }
                         
-                        fun withVararg(vararg params: String) {
+                        /*fun withVararg(vararg params: String) {
                         }
                         
                         fun callWithVararg() {
                             withVararg("a", "b", "c")
                             withVararg(*arrayOf("a", "b"), "c")
-                        }
+                        }*/
                         
                         fun safeCall(name: String?) {
-                            name?.toList()?.size?.minus(1)
+                            //name?.toList()?.size?.minus(1)
                         }
                         
                         fun comparisonOperations() {
@@ -300,13 +301,11 @@ class AstTest {
                                                                 .removeIllegalChars() + "Context.kt")
                                                             declarations += buildRegularClass {
                                                                 symbol = AstRegularClassSymbol(
-                                                                    ClassId.topLevel(
-                                                                        regularClass
-                                                                            .classId
-                                                                            .asSingleFqName()
-                                                                            .parent()
-                                                                            .child("${regularClass.name}Context".asNameId())
-                                                                    )
+                                                                    regularClass
+                                                                        .classId
+                                                                        .fqName
+                                                                        .parent()
+                                                                        .child("${regularClass.name}Context".asNameId())
                                                                 )
                                                             }
                                                         }

@@ -282,7 +282,7 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
         val isAnonymousFunction = function.name == null && !function.parent.let { it is KtFile || it is KtClassBody }
         val functionBuilder: AstFunctionBuilder = if (isAnonymousFunction) {
             AstAnonymousFunctionBuilder(context).apply {
-                symbol = AstAnonymousFunctionSymbol()
+                symbol = symbolTable.getAnonymousFunctionSymbol(descriptor)
                 extensionReceiverType = descriptor.extensionReceiverParameter?.type?.toAstType()
                 type = (if (descriptor.isSuspend) context.builtIns.suspendFunction(descriptor.valueParameters.size)
                 else context.builtIns.function(descriptor.valueParameters.size))
@@ -428,6 +428,7 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
 
     override fun visitParameter(parameter: KtParameter, data: Nothing?): AstElement {
         val descriptor = parameter.descriptor<VariableDescriptor>()
+        println("${parameter.text} $descriptor ${descriptor.javaClass}")
         return buildValueParameter {
             symbol = symbolTable.getValueParameterSymbol(descriptor)
             returnType = descriptor.type.toAstType()
@@ -469,7 +470,7 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
         val target = AstFunctionTarget(label, true)
         val descriptor = expression.functionLiteral.descriptor<AnonymousFunctionDescriptor>()
         return buildAnonymousFunction {
-            symbol = AstAnonymousFunctionSymbol()
+            symbol = symbolTable.getAnonymousFunctionSymbol(descriptor)
             var destructuringBlock: AstBlock? = null
             valueParameters += expression.functionLiteral.valueParameters
                 .map { valueParameter ->
@@ -673,12 +674,12 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
             is FakeCallableDescriptorForObject -> symbolTable.getClassSymbol(calleeDescriptor.classDescriptor)
             is SimpleFunctionDescriptor -> symbolTable.getNamedFunctionSymbol(calleeDescriptor)
             is ConstructorDescriptor -> symbolTable.getConstructorSymbol(calleeDescriptor)
-            is PropertyDescriptor -> symbolTable.getPropertySymbol(calleeDescriptor)
             is ImportedFromObjectCallableDescriptor<*> -> symbolTable.getNamedFunctionSymbol(
                 calleeDescriptor.callableFromObject.original as SimpleFunctionDescriptor
             )
-            is LocalVariableDescriptor -> symbolTable.getPropertySymbol(calleeDescriptor)
+            is LocalVariableDescriptor -> symbolTable.allSymbols[calleeDescriptor]!!
             is ValueParameterDescriptor -> symbolTable.getValueParameterSymbol(calleeDescriptor)
+            is PropertyDescriptor -> symbolTable.getPropertySymbol(calleeDescriptor)
             else -> error("Unexpected callee $calleeDescriptor for ${expression.text} ${calleeDescriptor?.javaClass}")
         }
         val result: AstBaseQualifiedAccessBuilder = if (expression is KtCallExpression) {
@@ -1181,12 +1182,13 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                 val componentResolvedCall =
                     getOrFail(BindingContext.COMPONENT_RESOLVED_CALL, ktEntry)
                 buildTemporaryVariable(
-                    value = buildQualifiedAccess {
+                    value = buildFunctionCall {
                         type = componentResolvedCall.getReturnType().toAstType()
                         callee = symbolTable.getNamedFunctionSymbol(
                             componentResolvedCall.resultingDescriptor as SimpleFunctionDescriptor)
                         dispatchReceiver = buildQualifiedAccess { callee = container.symbol }
-                    }
+                    },
+                    symbol = symbolTable.getPropertySymbol(componentVariable)
                 )
             }
     }

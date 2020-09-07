@@ -12,7 +12,7 @@ import com.ivianuu.ast.declarations.AstClassLikeDeclaration
 import com.ivianuu.ast.declarations.AstEnumEntry
 import com.ivianuu.ast.declarations.AstRegularClass
 import com.ivianuu.ast.declarations.AstTypeAlias
-import org.jetbrains.kotlin.name.ClassId
+import com.ivianuu.ast.symbols.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -22,14 +22,16 @@ sealed class AstClassLikeSymbol<D>(
 
 sealed class AstClassSymbol<C : AstClass<C>>(classId: ClassId) : AstClassLikeSymbol<C>(classId)
 
-class AstRegularClassSymbol(classId: ClassId) : AstClassSymbol<AstRegularClass>(classId)
+class AstRegularClassSymbol(classId: ClassId) : AstClassSymbol<AstRegularClass>(classId) {
+    constructor(fqName: FqName) : this(ClassId(fqName))
+}
 
-val ANONYMOUS_CLASS_ID = ClassId(FqName.ROOT, FqName.topLevel(Name.special("<anonymous>")), true)
+val ANONYMOUS_CLASS_ID = ClassId(Name.special("<anonymous>"))
 
 class AstAnonymousObjectSymbol : AstClassSymbol<AstAnonymousObject>(ANONYMOUS_CLASS_ID)
 
-class AstTypeAliasSymbol(classId: ClassId) : AstClassLikeSymbol<AstTypeAlias>(classId)
+class AstTypeAliasSymbol(classId: ClassId) : AstClassLikeSymbol<AstTypeAlias>(classId) {
+    constructor(fqName: FqName) : this(ClassId(fqName))
+}
 
-class AstEnumEntrySymbol(name: Name) : AstClassSymbol<AstEnumEntry>(
-    ClassId(FqName.ROOT, FqName.topLevel(name), false)
-)
+class AstEnumEntrySymbol(name: Name) : AstClassSymbol<AstEnumEntry>(ClassId(name))

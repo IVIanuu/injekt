@@ -37,7 +37,7 @@ class AstPropertyBuilder(override val context: AstContext) : AstMemberDeclaratio
     var dispatchReceiverType: AstType? = null
     var extensionReceiverType: AstType? = null
     lateinit var returnType: AstType
-    override var name: Name by lazyVar { symbol.callableId.callableName }
+    override var name: Name by lazyVar { symbol.callableId.fqName.shortName() }
     var initializer: AstExpression? = null
     var delegate: AstExpression? = null
     var isVar: Boolean = false

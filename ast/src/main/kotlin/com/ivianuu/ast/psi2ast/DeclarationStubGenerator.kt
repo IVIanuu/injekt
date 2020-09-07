@@ -64,7 +64,7 @@ class DeclarationStubGenerator(
     }
 
     private fun ClassDescriptor.toClassStub(
-        symbol: AstRegularClassSymbol = AstRegularClassSymbol(classId!!)
+        symbol: AstRegularClassSymbol = AstRegularClassSymbol(fqNameSafe)
     ) = AstLazyRegularClass(symbol, this, context)
 
     private fun SimpleFunctionDescriptor.toNamedFunctionStub(symbol: AstNamedFunctionSymbol) = context.buildNamedFunction {

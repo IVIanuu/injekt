@@ -30,7 +30,7 @@ class AstEnumEntryBuilder(override val context: AstContext) : AstBuilder {
     var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     val declarations: MutableList<AstDeclaration> = mutableListOf()
     val delegateInitializers: MutableList<AstDelegateInitializer> = mutableListOf()
-    var name: Name by lazyVar { symbol.classId.shortClassName }
+    var name: Name by lazyVar { symbol.classId.fqName.shortName() }
     lateinit var symbol: AstEnumEntrySymbol
 
     fun build(): AstEnumEntry {

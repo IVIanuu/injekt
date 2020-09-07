@@ -57,12 +57,14 @@ fun AstBuilder.buildTemporaryVariable(
     value: AstExpression,
     type: AstType = value.type,
     name: Name = Name.special("<tmp>"),
-    isVar: Boolean = false
+    isVar: Boolean = false,
+    symbol: AstPropertySymbol = AstPropertySymbol(name)
 ) = buildTemporaryVariable(
     type = type,
     name = name,
     initializer = value,
-    isVar = isVar
+    isVar = isVar,
+    symbol = symbol
 )
 
 fun AstBuilder.buildTemporaryVariable(
@@ -70,9 +72,10 @@ fun AstBuilder.buildTemporaryVariable(
     name: Name = Name.special("<tmp>"),
     initializer: AstExpression? = null,
     delegate: AstExpression? = null,
-    isVar: Boolean = false
+    isVar: Boolean = false,
+    symbol: AstPropertySymbol = AstPropertySymbol(name)
 ) = buildProperty {
-    symbol = AstPropertySymbol(name)
+    this.symbol = symbol
     returnType = type
     this.isVar = isVar
     visibility = Visibilities.Local

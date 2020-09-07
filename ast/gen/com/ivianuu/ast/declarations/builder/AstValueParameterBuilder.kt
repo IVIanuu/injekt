@@ -31,7 +31,7 @@ open class AstValueParameterBuilder(override val context: AstContext) : AstNamed
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
     open lateinit var returnType: AstType
-    override var name: Name by lazyVar { symbol.callableId.callableName }
+    override var name: Name by lazyVar { symbol.callableId.fqName.shortName() }
     open lateinit var symbol: AstValueParameterSymbol
     open var defaultValue: AstExpression? = null
     open var isCrossinline: Boolean = false

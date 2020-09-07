@@ -51,7 +51,6 @@ import com.ivianuu.ast.expressions.AstVararg
 import com.ivianuu.ast.expressions.AstVariableAssignment
 import com.ivianuu.ast.expressions.AstWhen
 import com.ivianuu.ast.expressions.AstWhileLoop
-import com.ivianuu.ast.symbols.fqName
 import com.ivianuu.ast.symbols.impl.AstClassifierSymbol
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.symbols.impl.AstTypeParameterSymbol
@@ -142,7 +141,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
                     super.visitType(type)
                     type.regularClassOrNull?.let {
                         if (!it.owner.name.isSpecial) {
-                            imports += it.classId.asSingleFqName()
+                            imports += it.classId.fqName
                         }
                     }
                 }
@@ -164,9 +163,10 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
 
     override fun visitRegularClass(regularClass: AstRegularClass) = with(regularClass) {
         emitAnnotations()
-        emitVisibility()
+        if (visibility != Visibilities.Local) emitVisibility()
         emitPlatformStatus()
-        if (classKind != ClassKind.ANNOTATION_CLASS) emitModality()
+        if (classKind != ClassKind.ANNOTATION_CLASS &&
+                visibility != Visibilities.Local) emitModality()
         if (isFun) {
             emit("fun ")
         }
@@ -286,7 +286,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         emitAnnotations()
         if (visibility != Visibilities.Local) emitVisibility()
         emitPlatformStatus()
-        if (symbol.callableId.className != null) emitModality()
+        if (dispatchReceiverType != null) emitModality()
         if (overriddenFunctions.isNotEmpty()) emit("override ")
         if (isInline) emit("inline ")
         if (isExternal) {
@@ -369,7 +369,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         emitAnnotations()
         if (!isLocal) emitVisibility()
         emitPlatformStatus()
-        if (symbol.callableId.className != null) emitModality()
+        if (dispatchReceiverType != null) emitModality()
         if (overriddenProperties.isNotEmpty()) emit("override ")
         if (isInline) {
             emit("inline ")
@@ -458,7 +458,14 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         if (isNotEmpty()) {
             emit("<")
             forEachIndexed { index, typeParameter ->
-                typeParameter.emit(boundToRender = typeParameter.bounds.singleOrNull(), forWhere = false)
+                typeParameter.emit(
+                    boundToRender = typeParameter.bounds.singleOrNull()
+                        ?.takeIf {
+                            !it.isMarkedNullable ||
+                                    it.classifierOrNull != it.context.builtIns.anyType.classifierOrNull
+                        },
+                    forWhere = false
+                )
                 if (index != lastIndex) emit(", ")
             }
             emit(">")
@@ -657,7 +664,11 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
 
         when (callee) {
             is AstConstructor -> {
-                emit(callee.returnType.regularClassOrFail.owner.name)
+                if (callee.visibility == Visibilities.Local) {
+                    emit(callee.returnType.regularClassOrFail.owner.name)
+                } else {
+                    emit(callee.returnType.regularClassOrFail.owner.symbol.classId.fqName)
+                }
                 emitArguments()
             }
             is AstNamedFunction -> {
@@ -921,7 +932,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
 
     private fun AstClassifierSymbol<*>.emit() {
         when (this) {
-            is AstRegularClassSymbol -> emit(classId.asSingleFqName())
+            is AstRegularClassSymbol -> emit(classId.fqName)
             is AstTypeParameterSymbol -> emit(owner.name)
             else -> error("Unexpected classifier $this")
         }

@@ -36,7 +36,7 @@ import org.jetbrains.kotlin.name.Name
 open class AstRegularClassBuilder(override val context: AstContext) : AstClassBuilder, AstTypeParametersOwnerBuilder, AstDeclarationContainerBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
-    open var name: Name by lazyVar { symbol.classId.shortClassName }
+    open var name: Name by lazyVar { symbol.classId.fqName.shortName() }
     open var visibility: Visibility = Visibilities.Public
     open var modality: Modality = Modality.FINAL
     open var platformStatus: PlatformStatus = PlatformStatus.DEFAULT

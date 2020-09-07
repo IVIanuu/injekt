@@ -7,17 +7,18 @@ import org.jetbrains.kotlin.name.FqName
 object AstIntrinsics {
     val Package = FqName("ast.intrinsics")
 
-    val LessThan = CallableId(Package, "lessThan".nameAsSafeName())
-    val GreaterThan = CallableId(Package, "greaterThan".nameAsSafeName())
-    val LessThanEqual = CallableId(Package, "lessThanEqual".nameAsSafeName())
-    val GreaterThanEqual = CallableId(Package, "greaterThanEqual".nameAsSafeName())
+    val LessThan = CallableId(Package.child("lessThan".nameAsSafeName()))
+    val GreaterThan = CallableId(Package.child("greaterThan".nameAsSafeName()))
+    val LessThanEqual = CallableId(Package.child("lessThanEqual".nameAsSafeName()))
+    val GreaterThanEqual = CallableId(Package.child("greaterThanEqual".nameAsSafeName()))
 
-    val StructuralEqual = CallableId(Package, "structuralEqual".nameAsSafeName())
-    val StructuralNotEqual = CallableId(Package, "structuralNotEqual".nameAsSafeName())
-    val IdentityEqual = CallableId(Package, "identityEqual".nameAsSafeName())
-    val IdentityNotEqual = CallableId(Package, "identityNotEqual".nameAsSafeName())
+    val StructuralEqual = CallableId(Package.child("structuralEqual".nameAsSafeName()))
+    val StructuralNotEqual = CallableId(Package.child("structuralNotEqual".nameAsSafeName()))
+    val IdentityEqual = CallableId(Package.child("identityEqual".nameAsSafeName()))
+    val IdentityNotEqual = CallableId(Package.child("identityNotEqual".nameAsSafeName()))
 
-    val LazyAnd = CallableId(Package, "lazyAnd".nameAsSafeName())
-    val LazyOr = CallableId(Package, "lazyOr".nameAsSafeName())
+    val LazyAnd = CallableId(Package.child("lazyAnd".nameAsSafeName()))
+    val LazyOr = CallableId(Package.child("lazyOr".nameAsSafeName()))
+
 
 }

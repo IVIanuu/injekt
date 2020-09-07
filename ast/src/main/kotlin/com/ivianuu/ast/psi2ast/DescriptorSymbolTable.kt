@@ -2,6 +2,7 @@ package com.ivianuu.ast.psi2ast
 
 import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.symbols.CallableId
+import com.ivianuu.ast.symbols.impl.AstAnonymousFunctionSymbol
 import com.ivianuu.ast.symbols.impl.AstAnonymousObjectSymbol
 import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
 import com.ivianuu.ast.symbols.impl.AstEnumEntrySymbol
@@ -16,6 +17,7 @@ import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
@@ -23,7 +25,7 @@ import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
-import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -47,6 +49,7 @@ class DescriptorSymbolTable {
                 typeAliases)
 
     private val anonymousObjects = mutableMapOf<ClassDescriptor, AstAnonymousObjectSymbol>()
+    private val anonymousFunctions = mutableMapOf<FunctionDescriptor, AstAnonymousFunctionSymbol>()
     private val classes = mutableMapOf<ClassDescriptor, AstRegularClassSymbol>()
     private val constructors = mutableMapOf<ConstructorDescriptor, AstConstructorSymbol>()
     private val enumEntries = mutableMapOf<ClassDescriptor, AstEnumEntrySymbol>()
@@ -62,17 +65,13 @@ class DescriptorSymbolTable {
             AstAnonymousObjectSymbol()
         }
 
-    fun getClassSymbol(descriptor: ClassDescriptor): AstRegularClassSymbol =
-        classes.getOrPut(descriptor) {
-            descriptor.classId
-            AstRegularClassSymbol(
-                descriptor.classId ?: ClassId.fromString(
-                    descriptor.fqNameSafe.asString()
-                        .replace(".", "/"),
-                    true
-                )
-            )
+    fun getAnonymousFunctionSymbol(descriptor: FunctionDescriptor): AstAnonymousFunctionSymbol =
+        anonymousFunctions.getOrPut(descriptor) {
+            AstAnonymousFunctionSymbol()
         }
+
+    fun getClassSymbol(descriptor: ClassDescriptor): AstRegularClassSymbol =
+        classes.getOrPut(descriptor) { AstRegularClassSymbol(descriptor.fqNameSafe) }
 
     fun getConstructorSymbol(descriptor: ConstructorDescriptor): AstConstructorSymbol =
         constructors.getOrPut(descriptor) {
@@ -83,9 +82,7 @@ class DescriptorSymbolTable {
         namedFunctions.getOrPut(descriptor) {
             AstNamedFunctionSymbol(
                 CallableId(
-                    descriptor.findPackageOrNull()?.fqName ?: FqName.ROOT,
-                    (descriptor.containingDeclaration as? ClassDescriptor)?.fqNameSafe,
-                    descriptor.name
+                    descriptor.fqNameSafe
                 )
             )
         }
@@ -94,9 +91,7 @@ class DescriptorSymbolTable {
         properties.getOrPut(descriptor) {
             AstPropertySymbol(
                 CallableId(
-                    descriptor.findPackageOrNull()?.fqName ?: FqName.ROOT,
-                    (descriptor.containingDeclaration as? ClassDescriptor)?.fqNameSafe,
-                    descriptor.name
+                    descriptor.fqNameSafe
                 )
             )
         }
@@ -113,23 +108,15 @@ class DescriptorSymbolTable {
 
     fun getValueParameterSymbol(descriptor: VariableDescriptor): AstValueParameterSymbol =
         valueParameters.getOrPut(descriptor) {
-            AstValueParameterSymbol(CallableId(descriptor.name))
+            AstValueParameterSymbol(CallableId(descriptor.fqNameSafe))
         }
 
     fun getTypeAliasSymbol(descriptor: TypeAliasDescriptor): AstTypeAliasSymbol =
-        typeAliases.getOrPut(descriptor) {
-            AstTypeAliasSymbol(descriptor.classId!!)
-        }
+        typeAliases.getOrPut(descriptor) { AstTypeAliasSymbol(descriptor.fqNameSafe) }
 
     fun getEnumEntrySymbol(descriptor: ClassDescriptor): AstEnumEntrySymbol =
         enumEntries.getOrPut(descriptor) {
             AstEnumEntrySymbol(descriptor.name)
         }
-
-    private fun DeclarationDescriptor.findPackageOrNull() = try {
-        findPackage()
-    } catch (e: Throwable) {
-        null
-    }
 
 }
