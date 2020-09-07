@@ -27,7 +27,7 @@ object FieldSets {
         field("extensionReceiver", expression, nullable = true)
     )
 
-    val typeArguments = fieldList("typeArguments", typeProjection)
+    val typeArguments = fieldList("typeArguments", type)
 
     val valueArguments =
         fieldList("valueArguments", expression, nullableBaseType = true)

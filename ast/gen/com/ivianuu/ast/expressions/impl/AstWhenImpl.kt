@@ -1,8 +1,6 @@
 package com.ivianuu.ast.expressions.impl
 
 import com.ivianuu.ast.AstContext
-import com.ivianuu.ast.declarations.AstVariable
-import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstWhen
 import com.ivianuu.ast.expressions.AstWhenBranch
@@ -18,22 +16,17 @@ internal class AstWhenImpl(
     override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
     override var type: AstType,
-    override var subject: AstExpression?,
-    override var subjectVariable: AstVariable<*>?,
     override val branches: MutableList<AstWhenBranch>,
 ) : AstWhen() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
         type.accept(visitor, data)
-        subject?.accept(visitor, data)
         branches.forEach { it.accept(visitor, data) }
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstWhenImpl {
         annotations.transformInplace(transformer, data)
         type = type.transformSingle(transformer, data)
-        subject = subject?.transformSingle(transformer, data)
-        subjectVariable = subjectVariable?.transformSingle(transformer, data)
         branches.transformInplace(transformer, data)
         return this
     }
@@ -45,14 +38,6 @@ internal class AstWhenImpl(
 
     override fun replaceType(newType: AstType) {
         type = newType
-    }
-
-    override fun replaceSubject(newSubject: AstExpression?) {
-        subject = newSubject
-    }
-
-    override fun replaceSubjectVariable(newSubjectVariable: AstVariable<*>?) {
-        subjectVariable = newSubjectVariable
     }
 
     override fun replaceBranches(newBranches: List<AstWhenBranch>) {

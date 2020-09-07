@@ -6,7 +6,6 @@ import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstQualifiedAccess
 import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -19,7 +18,7 @@ internal class AstQualifiedAccessImpl(
     override val annotations: MutableList<AstFunctionCall>,
     override var type: AstType,
     override var callee: AstSymbol<*>,
-    override val typeArguments: MutableList<AstTypeProjection>,
+    override val typeArguments: MutableList<AstType>,
     override var dispatchReceiver: AstExpression?,
     override var extensionReceiver: AstExpression?,
 ) : AstQualifiedAccess() {
@@ -49,7 +48,7 @@ internal class AstQualifiedAccessImpl(
         callee = newCallee
     }
 
-    override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>) {
+    override fun replaceTypeArguments(newTypeArguments: List<AstType>) {
         typeArguments.clear()
         typeArguments.addAll(newTypeArguments)
     }

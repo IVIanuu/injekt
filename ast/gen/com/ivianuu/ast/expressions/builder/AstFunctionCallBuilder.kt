@@ -13,7 +13,6 @@ import com.ivianuu.ast.expressions.impl.AstFunctionCallImpl
 import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.utils.lazyVar
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
@@ -27,7 +26,7 @@ import kotlin.contracts.*
 open class AstFunctionCallBuilder(override val context: AstContext) : AstBaseQualifiedAccessBuilder, AstCallBuilder, AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var type: AstType by lazyVar { callee.owner.returnType }
-    override val typeArguments: MutableList<AstTypeProjection> = mutableListOf()
+    override val typeArguments: MutableList<AstType> = mutableListOf()
     override var dispatchReceiver: AstExpression? = null
     override var extensionReceiver: AstExpression? = null
     open lateinit var callee: AstFunctionSymbol<*>

@@ -2,7 +2,6 @@ package com.ivianuu.ast.expressions
 
 import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -14,7 +13,7 @@ interface AstBaseQualifiedAccess : AstExpression {
     override val context: AstContext
     override val annotations: List<AstFunctionCall>
     override val type: AstType
-    val typeArguments: List<AstTypeProjection>
+    val typeArguments: List<AstType>
     val dispatchReceiver: AstExpression?
     val extensionReceiver: AstExpression?
 
@@ -24,7 +23,7 @@ interface AstBaseQualifiedAccess : AstExpression {
 
     override fun replaceType(newType: AstType)
 
-    fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>)
+    fun replaceTypeArguments(newTypeArguments: List<AstType>)
 
     fun replaceDispatchReceiver(newDispatchReceiver: AstExpression?)
 

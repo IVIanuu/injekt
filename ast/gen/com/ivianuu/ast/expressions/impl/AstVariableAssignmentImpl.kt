@@ -6,7 +6,6 @@ import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstVariableAssignment
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -17,7 +16,7 @@ import com.ivianuu.ast.visitors.*
 internal class AstVariableAssignmentImpl(
     override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
-    override val typeArguments: MutableList<AstTypeProjection>,
+    override val typeArguments: MutableList<AstType>,
     override var dispatchReceiver: AstExpression?,
     override var extensionReceiver: AstExpression?,
     override var callee: AstVariableSymbol<*>,
@@ -45,7 +44,7 @@ internal class AstVariableAssignmentImpl(
 
     override fun replaceType(newType: AstType) {}
 
-    override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>) {
+    override fun replaceTypeArguments(newTypeArguments: List<AstType>) {
         typeArguments.clear()
         typeArguments.addAll(newTypeArguments)
     }

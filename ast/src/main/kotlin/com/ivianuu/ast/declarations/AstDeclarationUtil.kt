@@ -6,6 +6,8 @@
 package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstAnnotationContainer
+import com.ivianuu.ast.expressions.AstBaseQualifiedAccess
+import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.symbols.impl.AstClassifierSymbol
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
@@ -56,4 +58,12 @@ fun AstModuleFragment.addFile(file: AstFile) {
 
 fun AstDeclarationContainer.addDeclaration(declaration: AstDeclaration) {
     replaceDeclarations(declarations + declaration)
+}
+
+fun AstBaseQualifiedAccess.replaceExplicitReceiver(newReceiver: AstExpression) {
+    if (extensionReceiver != null) {
+        replaceExtensionReceiver(newReceiver)
+    } else {
+        replaceDispatchReceiver(newReceiver)
+    }
 }

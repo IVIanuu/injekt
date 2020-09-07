@@ -3,7 +3,6 @@ package com.ivianuu.ast.expressions
 import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -16,7 +15,7 @@ abstract class AstQualifiedAccess : AstCalleeReference(), AstBaseQualifiedAccess
     abstract override val annotations: List<AstFunctionCall>
     abstract override val type: AstType
     abstract override val callee: AstSymbol<*>
-    abstract override val typeArguments: List<AstTypeProjection>
+    abstract override val typeArguments: List<AstType>
     abstract override val dispatchReceiver: AstExpression?
     abstract override val extensionReceiver: AstExpression?
 
@@ -28,7 +27,7 @@ abstract class AstQualifiedAccess : AstCalleeReference(), AstBaseQualifiedAccess
 
     abstract override fun replaceCallee(newCallee: AstSymbol<*>)
 
-    abstract override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>)
+    abstract override fun replaceTypeArguments(newTypeArguments: List<AstType>)
 
     abstract override fun replaceDispatchReceiver(newDispatchReceiver: AstExpression?)
 

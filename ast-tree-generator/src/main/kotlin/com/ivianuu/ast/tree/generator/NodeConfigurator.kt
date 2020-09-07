@@ -403,8 +403,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         whenExpression.configure {
-            +field("subject", expression, nullable = true)
-            +field("subjectVariable", variable.withArgs("F" to "*"), nullable = true)
             +fieldList("branches", whenBranch)
         }
 

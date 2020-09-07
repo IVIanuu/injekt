@@ -12,7 +12,6 @@ import com.ivianuu.ast.expressions.impl.AstQualifiedAccessImpl
 import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.symbols.impl.AstCallableSymbol
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.utils.lazyVar
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
@@ -27,7 +26,7 @@ class AstQualifiedAccessBuilder(override val context: AstContext) : AstBaseQuali
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var type: AstType by lazyVar { (callee as? AstCallableSymbol<*>)?.owner?.returnType ?: error("type must be specified") }
     lateinit var callee: AstSymbol<*>
-    override val typeArguments: MutableList<AstTypeProjection> = mutableListOf()
+    override val typeArguments: MutableList<AstType> = mutableListOf()
     override var dispatchReceiver: AstExpression? = null
     override var extensionReceiver: AstExpression? = null
 

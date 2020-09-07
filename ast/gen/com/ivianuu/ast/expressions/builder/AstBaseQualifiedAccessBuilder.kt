@@ -7,7 +7,6 @@ import com.ivianuu.ast.expressions.AstBaseQualifiedAccess
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -19,7 +18,7 @@ import com.ivianuu.ast.visitors.*
 interface AstBaseQualifiedAccessBuilder : AstBuilder {
     abstract val annotations: MutableList<AstFunctionCall>
     abstract var type: AstType
-    abstract val typeArguments: MutableList<AstTypeProjection>
+    abstract val typeArguments: MutableList<AstType>
     abstract var dispatchReceiver: AstExpression?
     abstract var extensionReceiver: AstExpression?
     fun build(): AstBaseQualifiedAccess

@@ -4,7 +4,6 @@ import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -16,7 +15,7 @@ abstract class AstVariableAssignment : AstPureAbstractElement(), AstBaseQualifie
     abstract override val context: AstContext
     abstract override val annotations: List<AstFunctionCall>
     abstract override val type: AstType
-    abstract override val typeArguments: List<AstTypeProjection>
+    abstract override val typeArguments: List<AstType>
     abstract override val dispatchReceiver: AstExpression?
     abstract override val extensionReceiver: AstExpression?
     abstract val callee: AstVariableSymbol<*>
@@ -28,7 +27,7 @@ abstract class AstVariableAssignment : AstPureAbstractElement(), AstBaseQualifie
 
     abstract override fun replaceType(newType: AstType)
 
-    abstract override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>)
+    abstract override fun replaceTypeArguments(newTypeArguments: List<AstType>)
 
     abstract override fun replaceDispatchReceiver(newDispatchReceiver: AstExpression?)
 

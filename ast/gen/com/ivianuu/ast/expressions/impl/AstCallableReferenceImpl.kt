@@ -6,7 +6,6 @@ import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.impl.AstCallableSymbol
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -18,7 +17,7 @@ internal class AstCallableReferenceImpl(
     override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
     override var type: AstType,
-    override val typeArguments: MutableList<AstTypeProjection>,
+    override val typeArguments: MutableList<AstType>,
     override var dispatchReceiver: AstExpression?,
     override var extensionReceiver: AstExpression?,
     override var callee: AstCallableSymbol<*>,
@@ -46,7 +45,7 @@ internal class AstCallableReferenceImpl(
         type = newType
     }
 
-    override fun replaceTypeArguments(newTypeArguments: List<AstTypeProjection>) {
+    override fun replaceTypeArguments(newTypeArguments: List<AstType>) {
         typeArguments.clear()
         typeArguments.addAll(newTypeArguments)
     }
