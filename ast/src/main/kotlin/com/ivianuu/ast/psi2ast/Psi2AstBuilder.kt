@@ -905,14 +905,16 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                 valueArguments += left
                 valueArguments += right
             }
-
-            KtTokens.PLUS -> TODO()
-            KtTokens.MINUS -> TODO()
-            KtTokens.MUL -> TODO()
-            KtTokens.DIV -> TODO()
-            KtTokens.PERC -> TODO()
-            KtTokens.RANGE -> TODO()
-
+            KtTokens.PLUS, KtTokens.MINUS, KtTokens.MUL, KtTokens.DIV, KtTokens.PERC, KtTokens.RANGE -> {
+                val resolvedCall = expression.getResolvedCall()!!
+                buildFunctionCall {
+                    type = expression.getTypeInferredByFrontendOrFail().toAstType()
+                    callee = symbolTable.getNamedFunctionSymbol(resolvedCall.resultingDescriptor as SimpleFunctionDescriptor)
+                    dispatchReceiver = resolvedCall.dispatchReceiver?.toAstExpression()
+                    extensionReceiver = resolvedCall.extensionReceiver?.toAstExpression()
+                    valueArguments += right
+                }
+            }
             KtTokens.IN_KEYWORD, KtTokens.NOT_IN -> {
                 val containsCall = expression.right!!.getResolvedCall()!!
                 val astContainsCall = buildFunctionCall {

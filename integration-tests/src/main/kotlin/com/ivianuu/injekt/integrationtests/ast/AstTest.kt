@@ -249,6 +249,14 @@ class AstTest {
                             i *= 1
                         }
                         
+                        fun lol() {
+                            val a = listOf("a")
+                            val b = listOf("b")
+                            val ab = a + b
+                            val a2 = ab - b
+                            val b2 = ab - a
+                        }
+                        
                         /*fun whenBasic() {
                             when {
                                 "a" == "b" -> {
