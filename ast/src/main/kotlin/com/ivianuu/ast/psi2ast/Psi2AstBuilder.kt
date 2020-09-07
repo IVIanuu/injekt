@@ -428,7 +428,6 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
 
     override fun visitParameter(parameter: KtParameter, data: Nothing?): AstElement {
         val descriptor = parameter.descriptor<VariableDescriptor>()
-        println("${parameter.text} $descriptor ${descriptor.javaClass}")
         return buildValueParameter {
             symbol = symbolTable.getValueParameterSymbol(descriptor)
             returnType = descriptor.type.toAstType()
@@ -755,7 +754,7 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
             }
             KtTokens.PLUSPLUS, KtTokens.MINUSMINUS -> {
                 buildBlock {
-                    /*println("resolved call ${resolvedCall.resultingDescriptor} arg ${expression.text} $expression prefix $prefix")
+                    /*
 
                     val resultVariable = buildTemporaryVariable(
                         buildFunctionCall {
@@ -1105,7 +1104,6 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
         val result = expression.baseExpression!!.convert<AstStatement>()
         if (size != labels.size) {
             labels.removeLast()
-            println("Unused label: ${expression.text}")
         }
         return result
     }
@@ -1183,10 +1181,11 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                     getOrFail(BindingContext.COMPONENT_RESOLVED_CALL, ktEntry)
                 buildTemporaryVariable(
                     value = buildFunctionCall {
-                        type = componentResolvedCall.getReturnType().toAstType()
+                        type = componentVariable.type.toAstType()
                         callee = symbolTable.getNamedFunctionSymbol(
                             componentResolvedCall.resultingDescriptor as SimpleFunctionDescriptor)
-                        dispatchReceiver = buildQualifiedAccess { callee = container.symbol }
+                        dispatchReceiver = componentResolvedCall.dispatchReceiver?.toAstExpression()
+                        extensionReceiver = componentResolvedCall.extensionReceiver?.toAstExpression()
                     },
                     symbol = symbolTable.getPropertySymbol(componentVariable)
                 )
