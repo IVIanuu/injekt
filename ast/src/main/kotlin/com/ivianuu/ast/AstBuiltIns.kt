@@ -14,6 +14,7 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.fir.lightTree.converter.nameAsSafeName
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi2ir.findSingleFunction
 import org.jetbrains.kotlin.types.KotlinType
@@ -32,6 +33,12 @@ class AstBuiltIns(
     val anyType = kotlinBuiltIns.anyType.toAstType()
     val anySymbol = kotlinBuiltIns.any.toAstRegularClassSymbol()
     val anyNType = anyType.copy { isMarkedNullable = true }
+
+    val annotationType = kotlinBuiltIns.annotationType.toAstType()
+    val annotationSymbol = kotlinBuiltIns.annotation.toAstRegularClassSymbol()
+
+    val enumType = kotlinBuiltIns.enum.defaultType.toAstType()
+    val enumSymbol = kotlinBuiltIns.enum.toAstRegularClassSymbol()
 
     val booleanType = kotlinBuiltIns.booleanType.toAstType()
     val booleanSymbol = kotlinBuiltIns.boolean.toAstRegularClassSymbol()
@@ -79,6 +86,9 @@ class AstBuiltIns(
 
     fun kFunction(n: Int) = kotlinBuiltIns.getKFunction(n).toAstRegularClassSymbol()
     fun kSuspendFunction(n: Int) = kotlinBuiltIns.getKSuspendFunction(n).toAstRegularClassSymbol()
+
+    val checkNotNull = context.referenceFunctions(FqName("kotlin.checkNotNull"))
+        .single { it.owner.valueParameters.size == 1 }
 
     private fun intrinsicFunction(
         callableId: CallableId,

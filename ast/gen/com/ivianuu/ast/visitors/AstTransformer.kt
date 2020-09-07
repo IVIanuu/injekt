@@ -37,6 +37,7 @@ import com.ivianuu.ast.expressions.AstJump
 import com.ivianuu.ast.expressions.AstLoop
 import com.ivianuu.ast.expressions.AstDoWhileLoop
 import com.ivianuu.ast.expressions.AstWhileLoop
+import com.ivianuu.ast.expressions.AstForLoop
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstLoopJump
 import com.ivianuu.ast.expressions.AstBreak
@@ -222,6 +223,10 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     open fun transformWhileLoop(whileLoop: AstWhileLoop, data: D): CompositeTransformResult<AstStatement> {
         return transformLoop(whileLoop, data)
+    }
+
+    open fun transformForLoop(forLoop: AstForLoop, data: D): CompositeTransformResult<AstStatement> {
+        return transformLoop(forLoop, data)
     }
 
     open fun transformBlock(block: AstBlock, data: D): CompositeTransformResult<AstStatement> {
@@ -498,6 +503,10 @@ abstract class AstTransformer<in D> : AstVisitor<CompositeTransformResult<AstEle
 
     final override fun visitWhileLoop(whileLoop: AstWhileLoop, data: D): CompositeTransformResult<AstStatement> {
         return transformWhileLoop(whileLoop, data)
+    }
+
+    final override fun visitForLoop(forLoop: AstForLoop, data: D): CompositeTransformResult<AstStatement> {
+        return transformForLoop(forLoop, data)
     }
 
     final override fun visitBlock(block: AstBlock, data: D): CompositeTransformResult<AstStatement> {

@@ -14,8 +14,7 @@ abstract class AstSuperReference : AstPureAbstractElement(), AstExpression {
     abstract override val context: AstContext
     abstract override val annotations: List<AstFunctionCall>
     abstract override val type: AstType
-    abstract val labelName: String?
-    abstract val superType: AstType
+    abstract val superType: AstType?
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitSuperReference(this, data)
 
@@ -23,7 +22,5 @@ abstract class AstSuperReference : AstPureAbstractElement(), AstExpression {
 
     abstract override fun replaceType(newType: AstType)
 
-    abstract fun replaceLabelName(newLabelName: String?)
-
-    abstract fun replaceSuperType(newSuperType: AstType)
+    abstract fun replaceSuperType(newSuperType: AstType?)
 }

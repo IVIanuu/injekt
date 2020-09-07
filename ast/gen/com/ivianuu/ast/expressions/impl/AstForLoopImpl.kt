@@ -1,8 +1,9 @@
 package com.ivianuu.ast.expressions.impl
 
 import com.ivianuu.ast.AstContext
-import com.ivianuu.ast.expressions.AstDoWhileLoop
+import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.expressions.AstForLoop
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
@@ -12,25 +13,28 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-internal class AstDoWhileLoopImpl(
+internal class AstForLoopImpl(
     override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
     override var label: String?,
-    override var condition: AstExpression,
     override var body: AstExpression,
-) : AstDoWhileLoop() {
+    override var loopRange: AstExpression,
+    override var loopParameter: AstValueParameter,
+) : AstForLoop() {
     override val type: AstType get() = context.builtIns.unitType
 
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
-        condition.accept(visitor, data)
         body.accept(visitor, data)
+        loopRange.accept(visitor, data)
+        loopParameter.accept(visitor, data)
     }
 
-    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstDoWhileLoopImpl {
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstForLoopImpl {
         annotations.transformInplace(transformer, data)
-        condition = condition.transformSingle(transformer, data)
         body = body.transformSingle(transformer, data)
+        loopRange = loopRange.transformSingle(transformer, data)
+        loopParameter = loopParameter.transformSingle(transformer, data)
         return this
     }
 
@@ -45,11 +49,15 @@ internal class AstDoWhileLoopImpl(
         label = newLabel
     }
 
-    override fun replaceCondition(newCondition: AstExpression) {
-        condition = newCondition
-    }
-
     override fun replaceBody(newBody: AstExpression) {
         body = newBody
+    }
+
+    override fun replaceLoopRange(newLoopRange: AstExpression) {
+        loopRange = newLoopRange
+    }
+
+    override fun replaceLoopParameter(newLoopParameter: AstValueParameter) {
+        loopParameter = newLoopParameter
     }
 }

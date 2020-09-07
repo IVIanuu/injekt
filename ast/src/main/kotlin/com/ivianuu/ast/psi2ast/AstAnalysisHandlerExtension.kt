@@ -129,11 +129,11 @@ class AstAnalysisHandlerExtension(
         val builtIns = AstBuiltIns(module.builtIns, typeConverter, symbolTable, context)
         val builder = Psi2AstBuilder(context)
 
-        val moduleFragment = builder.buildModule(files)
-
         files.forEach {
             println("${it.text}")
         }
+
+        val moduleFragment = builder.buildModule(files)
 
         println("generated module $moduleFragment for ${files.map { it.name }}")
 

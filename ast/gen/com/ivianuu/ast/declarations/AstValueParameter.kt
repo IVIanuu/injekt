@@ -4,6 +4,7 @@ import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstPureAbstractElement
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
+import com.ivianuu.ast.symbols.impl.AstPropertySymbol
 import com.ivianuu.ast.symbols.impl.AstValueParameterSymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
@@ -34,6 +35,7 @@ abstract class AstValueParameter : AstPureAbstractElement(), AstVariable<AstValu
     abstract val isCrossinline: Boolean
     abstract val isNoinline: Boolean
     abstract val isVararg: Boolean
+    abstract val correspondingProperty: AstPropertySymbol?
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitValueParameter(this, data)
 
@@ -62,4 +64,6 @@ abstract class AstValueParameter : AstPureAbstractElement(), AstVariable<AstValu
     abstract fun replaceIsNoinline(newIsNoinline: Boolean)
 
     abstract fun replaceIsVararg(newIsVararg: Boolean)
+
+    abstract fun replaceCorrespondingProperty(newCorrespondingProperty: AstPropertySymbol?)
 }

@@ -18,6 +18,7 @@ import com.ivianuu.ast.expressions.buildConstUByte
 import com.ivianuu.ast.expressions.buildConstUInt
 import com.ivianuu.ast.expressions.buildConstULong
 import com.ivianuu.ast.expressions.buildConstUShort
+import com.ivianuu.ast.expressions.builder.buildClassReference
 import com.ivianuu.ast.expressions.builder.buildFunctionCall
 import com.ivianuu.ast.expressions.builder.buildVararg
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -44,6 +45,7 @@ import org.jetbrains.kotlin.resolve.constants.UByteValue
 import org.jetbrains.kotlin.resolve.constants.UIntValue
 import org.jetbrains.kotlin.resolve.constants.ULongValue
 import org.jetbrains.kotlin.resolve.constants.UShortValue
+import org.jetbrains.kotlin.types.isError
 
 class ConstantValueGenerator(
     private val module: ModuleDescriptor,
@@ -103,18 +105,16 @@ class ConstantValueGenerator(
             }
             is AnnotationValue -> generateAnnotationConstructorCall(constantValue.value)
             is KClassValue -> {
-                /*val classifierKtType = constantValue.getArgumentType(moduleDescriptor)
+                val classifierKtType = constantValue.getArgumentType(module)
                 if (classifierKtType.isError) null
                 else {
                     val classifierDescriptor = classifierKtType.constructor.declarationDescriptor
                         ?: throw AssertionError("Unexpected KClassValue: $classifierKtType")
-                    IrClassReferenceImpl(
-                        startOffset, endOffset,
-                        constantValue.getType(moduleDescriptor).toIrType(),
-                        symbolTable.referenceClassifier(classifierDescriptor),
-                        classifierKtType.toIrType()
-                    )
-                }*/ TODO()
+                    builder.buildClassReference {
+                        type = constantValue.getType(module).let { typeConverter.convert(it) }
+                        classifier = symbolTable.getClassSymbol(classifierDescriptor as ClassDescriptor)
+                    }
+                }
             }
             is ErrorValue -> null
             else -> error("Unexpected constant value: ${constantValue.javaClass.simpleName} $constantValue")

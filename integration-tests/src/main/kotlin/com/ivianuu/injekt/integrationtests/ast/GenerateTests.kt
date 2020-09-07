@@ -32,7 +32,8 @@ fun main() {
                 .filter { it.toString().endsWith(".kt") }
                 .forEach { filePath ->
                     val fileContent = filePath.toFile().readText()
-                    if (fileContent.contains("// FILE:")) return@forEach
+                    if (fileContent.contains("// FILE:") ||
+                            fileContent.contains("!LANGUAGE")) return@forEach
 
                     appendLine(
                         """

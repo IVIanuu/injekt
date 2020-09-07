@@ -37,6 +37,7 @@ import com.ivianuu.ast.expressions.AstJump
 import com.ivianuu.ast.expressions.AstLoop
 import com.ivianuu.ast.expressions.AstDoWhileLoop
 import com.ivianuu.ast.expressions.AstWhileLoop
+import com.ivianuu.ast.expressions.AstForLoop
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstLoopJump
 import com.ivianuu.ast.expressions.AstBreak
@@ -149,6 +150,8 @@ abstract class AstVisitor<out R, in D> {
     open fun visitDoWhileLoop(doWhileLoop: AstDoWhileLoop, data: D): R  = visitLoop(doWhileLoop, data)
 
     open fun visitWhileLoop(whileLoop: AstWhileLoop, data: D): R  = visitLoop(whileLoop, data)
+
+    open fun visitForLoop(forLoop: AstForLoop, data: D): R  = visitLoop(forLoop, data)
 
     open fun visitBlock(block: AstBlock, data: D): R  = visitExpression(block, data)
 

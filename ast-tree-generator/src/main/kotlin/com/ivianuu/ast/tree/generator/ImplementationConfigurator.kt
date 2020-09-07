@@ -111,6 +111,7 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         val unitTypeExpressions = listOf(
             doWhileLoop,
             whileLoop,
+            forLoop,
             variableAssignment
         )
 

@@ -148,13 +148,23 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         loop.configure {
             +field("body", expression)
-            +field("condition", expression)
             +stringField("label", nullable = true)
         }
 
         whileLoop.configure {
             +field("condition", expression)
             +field("body", expression)
+        }
+
+        doWhileLoop.configure {
+            +field("condition", expression)
+            +field("body", expression)
+        }
+
+        forLoop.configure {
+            +field("body", expression)
+            +field("loopRange", expression)
+            +field("loopParameter", valueParameter)
         }
 
         catchClause.configure {
@@ -307,6 +317,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +symbol("AstValueParameterSymbol")
             +field("defaultValue", expression, nullable = true)
             generateBooleanFields("crossinline", "noinline", "vararg")
+            +field("correspondingProperty", propertySymbolType, nullable = true)
         }
 
         variable.configure {
@@ -342,7 +353,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         classReference.configure {
-            +field("classType", type)
+            +field("classifier", classifierSymbolType, "*")
         }
 
         callableReference.configure {
@@ -372,8 +383,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         superReference.configure {
-            +stringField("labelName", nullable = true)
-            +field("superType", type)
+            +field("superType", type, nullable = true)
         }
 
         thisReference.configure {

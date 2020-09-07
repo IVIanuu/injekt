@@ -3,6 +3,7 @@ package com.ivianuu.ast.expressions.impl
 import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.expressions.AstClassReference
 import com.ivianuu.ast.expressions.AstFunctionCall
+import com.ivianuu.ast.symbols.impl.AstClassifierSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -15,18 +16,16 @@ internal class AstClassReferenceImpl(
     override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
     override var type: AstType,
-    override var classType: AstType,
+    override var classifier: AstClassifierSymbol<*>,
 ) : AstClassReference() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
         type.accept(visitor, data)
-        classType.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstClassReferenceImpl {
         annotations.transformInplace(transformer, data)
         type = type.transformSingle(transformer, data)
-        classType = classType.transformSingle(transformer, data)
         return this
     }
 
@@ -39,7 +38,7 @@ internal class AstClassReferenceImpl(
         type = newType
     }
 
-    override fun replaceClassType(newClassType: AstType) {
-        classType = newClassType
+    override fun replaceClassifier(newClassifier: AstClassifierSymbol<*>) {
+        classifier = newClassifier
     }
 }

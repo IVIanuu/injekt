@@ -8,6 +8,7 @@ import com.ivianuu.ast.declarations.AstPropertyAccessor
 import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
+import com.ivianuu.ast.symbols.impl.AstPropertySymbol
 import com.ivianuu.ast.symbols.impl.AstValueParameterSymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
@@ -30,6 +31,7 @@ open class AstValueParameterImpl @AstImplementationDetail constructor(
     override var isCrossinline: Boolean,
     override var isNoinline: Boolean,
     override var isVararg: Boolean,
+    override var correspondingProperty: AstPropertySymbol?,
 ) : AstValueParameter() {
     override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override val dispatchReceiverType: AstType? get() = null
@@ -96,5 +98,9 @@ open class AstValueParameterImpl @AstImplementationDetail constructor(
 
     override fun replaceIsVararg(newIsVararg: Boolean) {
         isVararg = newIsVararg
+    }
+
+    override fun replaceCorrespondingProperty(newCorrespondingProperty: AstPropertySymbol?) {
+        correspondingProperty = newCorrespondingProperty
     }
 }

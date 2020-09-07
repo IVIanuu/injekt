@@ -12,6 +12,7 @@ import com.ivianuu.ast.declarations.builder.AstNamedDeclarationBuilder
 import com.ivianuu.ast.declarations.impl.AstValueParameterImpl
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstFunctionCall
+import com.ivianuu.ast.symbols.impl.AstPropertySymbol
 import com.ivianuu.ast.symbols.impl.AstValueParameterSymbol
 import com.ivianuu.ast.symbols.impl.AstVariableSymbol
 import com.ivianuu.ast.types.AstType
@@ -36,6 +37,7 @@ open class AstValueParameterBuilder(override val context: AstContext) : AstNamed
     open var isCrossinline: Boolean = false
     open var isNoinline: Boolean = false
     open var isVararg: Boolean = false
+    open var correspondingProperty: AstPropertySymbol? = null
 
     @OptIn(AstImplementationDetail::class)
     override fun build(): AstValueParameter {
@@ -50,6 +52,7 @@ open class AstValueParameterBuilder(override val context: AstContext) : AstNamed
             isCrossinline,
             isNoinline,
             isVararg,
+            correspondingProperty,
         )
     }
 
@@ -79,5 +82,6 @@ inline fun AstValueParameter.copy(init: AstValueParameterBuilder.() -> Unit = {}
     copyBuilder.isCrossinline = isCrossinline
     copyBuilder.isNoinline = isNoinline
     copyBuilder.isVararg = isVararg
+    copyBuilder.correspondingProperty = correspondingProperty
     return copyBuilder.apply(init).build()
 }

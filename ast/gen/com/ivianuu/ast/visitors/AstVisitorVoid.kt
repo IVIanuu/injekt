@@ -37,6 +37,7 @@ import com.ivianuu.ast.expressions.AstJump
 import com.ivianuu.ast.expressions.AstLoop
 import com.ivianuu.ast.expressions.AstDoWhileLoop
 import com.ivianuu.ast.expressions.AstWhileLoop
+import com.ivianuu.ast.expressions.AstForLoop
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstLoopJump
 import com.ivianuu.ast.expressions.AstBreak
@@ -220,6 +221,10 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     open fun visitWhileLoop(whileLoop: AstWhileLoop) {
         visitElement(whileLoop)
+    }
+
+    open fun visitForLoop(forLoop: AstForLoop) {
+        visitElement(forLoop)
     }
 
     open fun visitBlock(block: AstBlock) {
@@ -496,6 +501,10 @@ abstract class AstVisitorVoid : AstVisitor<Unit, Nothing?>() {
 
     final override fun visitWhileLoop(whileLoop: AstWhileLoop, data: Nothing?) {
         visitWhileLoop(whileLoop)
+    }
+
+    final override fun visitForLoop(forLoop: AstForLoop, data: Nothing?) {
+        visitForLoop(forLoop)
     }
 
     final override fun visitBlock(block: AstBlock, data: Nothing?) {

@@ -2,6 +2,7 @@ package com.ivianuu.ast.expressions
 
 import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstPureAbstractElement
+import com.ivianuu.ast.symbols.impl.AstClassifierSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -14,7 +15,7 @@ abstract class AstClassReference : AstPureAbstractElement(), AstExpression {
     abstract override val context: AstContext
     abstract override val annotations: List<AstFunctionCall>
     abstract override val type: AstType
-    abstract val classType: AstType
+    abstract val classifier: AstClassifierSymbol<*>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitClassReference(this, data)
 
@@ -22,5 +23,5 @@ abstract class AstClassReference : AstPureAbstractElement(), AstExpression {
 
     abstract override fun replaceType(newType: AstType)
 
-    abstract fun replaceClassType(newClassType: AstType)
+    abstract fun replaceClassifier(newClassifier: AstClassifierSymbol<*>)
 }

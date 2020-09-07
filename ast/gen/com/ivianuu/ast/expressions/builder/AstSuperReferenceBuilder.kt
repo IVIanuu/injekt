@@ -20,15 +20,13 @@ import kotlin.contracts.*
 class AstSuperReferenceBuilder(override val context: AstContext) : AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var type: AstType
-    var labelName: String? = null
-    lateinit var superType: AstType
+    var superType: AstType? = null
 
     override fun build(): AstSuperReference {
         return AstSuperReferenceImpl(
             context,
             annotations,
             type,
-            labelName,
             superType,
         )
     }
@@ -45,7 +43,6 @@ inline fun AstSuperReference.copy(init: AstSuperReferenceBuilder.() -> Unit = {}
     val copyBuilder = AstSuperReferenceBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.type = type
-    copyBuilder.labelName = labelName
     copyBuilder.superType = superType
     return copyBuilder.apply(init).build()
 }

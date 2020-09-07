@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -46,7 +47,7 @@ class DescriptorSymbolTable {
     private val properties = mutableMapOf<VariableDescriptor, AstPropertySymbol>()
     private val propertyAccessors = mutableMapOf<PropertyAccessorDescriptor, AstPropertyAccessorSymbol>()
     private val typeParameters = mutableMapOf<TypeParameterDescriptor, AstTypeParameterSymbol>()
-    private val valueParameters = mutableMapOf<ParameterDescriptor, AstValueParameterSymbol>()
+    private val valueParameters = mutableMapOf<VariableDescriptor, AstValueParameterSymbol>()
     private val typeAliases = mutableMapOf<TypeAliasDescriptor, AstTypeAliasSymbol>()
 
     fun getAnonymousObjectSymbol(descriptor: ClassDescriptor): AstAnonymousObjectSymbol =
@@ -68,7 +69,7 @@ class DescriptorSymbolTable {
         namedFunctions.getOrPut(descriptor) {
             AstNamedFunctionSymbol(
                 CallableId(
-                    descriptor.findPackage().fqName,
+                    descriptor.findPackageOrNull()?.fqName ?: FqName.ROOT,
                     (descriptor.containingDeclaration as? ClassDescriptor)?.fqNameSafe,
                     descriptor.name
                 )
@@ -79,7 +80,7 @@ class DescriptorSymbolTable {
         properties.getOrPut(descriptor) {
             AstPropertySymbol(
                 CallableId(
-                    descriptor.findPackage().fqName,
+                    descriptor.findPackageOrNull()?.fqName ?: FqName.ROOT,
                     (descriptor.containingDeclaration as? ClassDescriptor)?.fqNameSafe,
                     descriptor.name
                 )
@@ -96,7 +97,7 @@ class DescriptorSymbolTable {
             AstTypeParameterSymbol()
         }
 
-    fun getValueParameterSymbol(descriptor: ParameterDescriptor): AstValueParameterSymbol =
+    fun getValueParameterSymbol(descriptor: VariableDescriptor): AstValueParameterSymbol =
         valueParameters.getOrPut(descriptor) {
             AstValueParameterSymbol(CallableId(descriptor.name))
         }
@@ -110,5 +111,11 @@ class DescriptorSymbolTable {
         enumEntries.getOrPut(descriptor) {
             AstEnumEntrySymbol(descriptor.name)
         }
+
+    private fun DeclarationDescriptor.findPackageOrNull() = try {
+        findPackage()
+    } catch (e: Throwable) {
+        null
+    }
 
 }

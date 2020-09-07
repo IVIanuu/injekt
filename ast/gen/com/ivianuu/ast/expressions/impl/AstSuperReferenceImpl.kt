@@ -15,19 +15,18 @@ internal class AstSuperReferenceImpl(
     override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
     override var type: AstType,
-    override var labelName: String?,
-    override var superType: AstType,
+    override var superType: AstType?,
 ) : AstSuperReference() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
         type.accept(visitor, data)
-        superType.accept(visitor, data)
+        superType?.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstSuperReferenceImpl {
         annotations.transformInplace(transformer, data)
         type = type.transformSingle(transformer, data)
-        superType = superType.transformSingle(transformer, data)
+        superType = superType?.transformSingle(transformer, data)
         return this
     }
 
@@ -40,11 +39,7 @@ internal class AstSuperReferenceImpl(
         type = newType
     }
 
-    override fun replaceLabelName(newLabelName: String?) {
-        labelName = newLabelName
-    }
-
-    override fun replaceSuperType(newSuperType: AstType) {
+    override fun replaceSuperType(newSuperType: AstType?) {
         superType = newSuperType
     }
 }

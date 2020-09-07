@@ -142,6 +142,10 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             parents += loopBuilder
         }
 
+        builder(forLoop) {
+            parents += loopBuilder
+        }
+
         builder(delegatedConstructorCall) {
             parents += callBuilder
             defaultLazy("type", "callee.owner.returnType")
@@ -218,6 +222,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             parents += namedDeclarationBuilder
             openBuilder()
             defaultFalse("isCrossinline", "isNoinline", "isVararg")
+            defaultNull("correspondingProperty")
             defaultLazy("name", "symbol.callableId.callableName")
         }
 

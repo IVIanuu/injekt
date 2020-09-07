@@ -21,17 +21,17 @@ import kotlin.contracts.*
 @AstBuilderDsl
 class AstDoWhileLoopBuilder(override val context: AstContext) : AstLoopBuilder, AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
-    override lateinit var body: AstExpression
-    override lateinit var condition: AstExpression
     override var label: String? = null
+    lateinit var condition: AstExpression
+    override lateinit var body: AstExpression
 
     override fun build(): AstDoWhileLoop {
         return AstDoWhileLoopImpl(
             context,
             annotations,
-            body,
-            condition,
             label,
+            condition,
+            body,
         )
     }
 
@@ -53,8 +53,8 @@ inline fun AstBuilder.buildDoWhileLoop(init: AstDoWhileLoopBuilder.() -> Unit): 
 inline fun AstDoWhileLoop.copy(init: AstDoWhileLoopBuilder.() -> Unit = {}): AstDoWhileLoop {
     val copyBuilder = AstDoWhileLoopBuilder(context)
     copyBuilder.annotations.addAll(annotations)
-    copyBuilder.body = body
-    copyBuilder.condition = condition
     copyBuilder.label = label
+    copyBuilder.condition = condition
+    copyBuilder.body = body
     return copyBuilder.apply(init).build()
 }

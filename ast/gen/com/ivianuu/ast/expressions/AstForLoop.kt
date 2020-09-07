@@ -1,6 +1,7 @@
 package com.ivianuu.ast.expressions
 
 import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -9,15 +10,16 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstDoWhileLoop : AstLoop() {
+abstract class AstForLoop : AstLoop() {
     abstract override val context: AstContext
     abstract override val annotations: List<AstFunctionCall>
     abstract override val type: AstType
     abstract override val label: String?
-    abstract val condition: AstExpression
     abstract override val body: AstExpression
+    abstract val loopRange: AstExpression
+    abstract val loopParameter: AstValueParameter
 
-    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitDoWhileLoop(this, data)
+    override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitForLoop(this, data)
 
     abstract override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
 
@@ -25,7 +27,9 @@ abstract class AstDoWhileLoop : AstLoop() {
 
     abstract override fun replaceLabel(newLabel: String?)
 
-    abstract fun replaceCondition(newCondition: AstExpression)
-
     abstract override fun replaceBody(newBody: AstExpression)
+
+    abstract fun replaceLoopRange(newLoopRange: AstExpression)
+
+    abstract fun replaceLoopParameter(newLoopParameter: AstValueParameter)
 }

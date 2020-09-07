@@ -7,6 +7,7 @@ import com.ivianuu.ast.expressions.AstClassReference
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.impl.AstClassReferenceImpl
+import com.ivianuu.ast.symbols.impl.AstClassifierSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
@@ -20,14 +21,14 @@ import kotlin.contracts.*
 class AstClassReferenceBuilder(override val context: AstContext) : AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var type: AstType
-    lateinit var classType: AstType
+    lateinit var classifier: AstClassifierSymbol<*>
 
     override fun build(): AstClassReference {
         return AstClassReferenceImpl(
             context,
             annotations,
             type,
-            classType,
+            classifier,
         )
     }
 }
@@ -42,6 +43,6 @@ inline fun AstClassReference.copy(init: AstClassReferenceBuilder.() -> Unit = {}
     val copyBuilder = AstClassReferenceBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.type = type
-    copyBuilder.classType = classType
+    copyBuilder.classifier = classifier
     return copyBuilder.apply(init).build()
 }

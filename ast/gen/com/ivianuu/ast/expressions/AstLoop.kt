@@ -16,7 +16,6 @@ abstract class AstLoop : AstPureAbstractElement(), AstExpression, AstTargetEleme
     abstract override val annotations: List<AstFunctionCall>
     abstract override val type: AstType
     abstract val body: AstExpression
-    abstract val condition: AstExpression
     abstract val label: String?
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitLoop(this, data)
@@ -26,8 +25,6 @@ abstract class AstLoop : AstPureAbstractElement(), AstExpression, AstTargetEleme
     abstract override fun replaceType(newType: AstType)
 
     abstract fun replaceBody(newBody: AstExpression)
-
-    abstract fun replaceCondition(newCondition: AstExpression)
 
     abstract fun replaceLabel(newLabel: String?)
 }

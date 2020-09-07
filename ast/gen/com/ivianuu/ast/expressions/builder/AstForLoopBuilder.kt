@@ -3,12 +3,13 @@ package com.ivianuu.ast.expressions.builder
 import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
+import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.expressions.AstExpression
+import com.ivianuu.ast.expressions.AstForLoop
 import com.ivianuu.ast.expressions.AstFunctionCall
-import com.ivianuu.ast.expressions.AstWhileLoop
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.builder.AstLoopBuilder
-import com.ivianuu.ast.expressions.impl.AstWhileLoopImpl
+import com.ivianuu.ast.expressions.impl.AstForLoopImpl
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
@@ -19,24 +20,26 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstWhileLoopBuilder(override val context: AstContext) : AstLoopBuilder, AstExpressionBuilder {
+class AstForLoopBuilder(override val context: AstContext) : AstLoopBuilder, AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var label: String? = null
-    lateinit var condition: AstExpression
     override lateinit var body: AstExpression
+    lateinit var loopRange: AstExpression
+    lateinit var loopParameter: AstValueParameter
 
-    override fun build(): AstWhileLoop {
-        return AstWhileLoopImpl(
+    override fun build(): AstForLoop {
+        return AstForLoopImpl(
             context,
             annotations,
             label,
-            condition,
             body,
+            loopRange,
+            loopParameter,
         )
     }
 
 
-    @Deprecated("Modification of 'type' has no impact for AstWhileLoopBuilder", level = DeprecationLevel.HIDDEN)
+    @Deprecated("Modification of 'type' has no impact for AstForLoopBuilder", level = DeprecationLevel.HIDDEN)
     override var type: AstType
         get() = throw IllegalStateException()
         set(value) {
@@ -45,16 +48,17 @@ class AstWhileLoopBuilder(override val context: AstContext) : AstLoopBuilder, As
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun AstBuilder.buildWhileLoop(init: AstWhileLoopBuilder.() -> Unit): AstWhileLoop {
-    return AstWhileLoopBuilder(context).apply(init).build()
+inline fun AstBuilder.buildForLoop(init: AstForLoopBuilder.() -> Unit): AstForLoop {
+    return AstForLoopBuilder(context).apply(init).build()
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun AstWhileLoop.copy(init: AstWhileLoopBuilder.() -> Unit = {}): AstWhileLoop {
-    val copyBuilder = AstWhileLoopBuilder(context)
+inline fun AstForLoop.copy(init: AstForLoopBuilder.() -> Unit = {}): AstForLoop {
+    val copyBuilder = AstForLoopBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.label = label
-    copyBuilder.condition = condition
     copyBuilder.body = body
+    copyBuilder.loopRange = loopRange
+    copyBuilder.loopParameter = loopParameter
     return copyBuilder.apply(init).build()
 }

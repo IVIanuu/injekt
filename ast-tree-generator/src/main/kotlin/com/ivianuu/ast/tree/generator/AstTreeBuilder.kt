@@ -214,6 +214,10 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         visitorSuperType = loop
         transformerType = statement
     }
+    val forLoop = element("ForLoop", Expression, loop) {
+        visitorSuperType = loop
+        transformerType = statement
+    }
 
     val block = element("Block", Expression, expression) {
         visitorSuperType = expression
