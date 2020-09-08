@@ -26,7 +26,8 @@ import com.ivianuu.ast.visitors.*
 internal class AstRegularClassImpl(
     override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
-    override val origin: AstDeclarationOrigin,
+    override var origin: AstDeclarationOrigin,
+    override var attributes: AstDeclarationAttributes,
     override var name: Name,
     override var visibility: Visibility,
     override var modality: Modality,
@@ -44,8 +45,6 @@ internal class AstRegularClassImpl(
     override var isInner: Boolean,
     override var isExternal: Boolean,
 ) : AstRegularClass() {
-    override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
-
     init {
         symbol.bind(this)
     }
@@ -70,6 +69,14 @@ internal class AstRegularClassImpl(
     override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>) {
         annotations.clear()
         annotations.addAll(newAnnotations)
+    }
+
+    override fun replaceOrigin(newOrigin: AstDeclarationOrigin) {
+        origin = newOrigin
+    }
+
+    override fun replaceAttributes(newAttributes: AstDeclarationAttributes) {
+        attributes = newAttributes
     }
 
     override fun replaceVisibility(newVisibility: Visibility) {

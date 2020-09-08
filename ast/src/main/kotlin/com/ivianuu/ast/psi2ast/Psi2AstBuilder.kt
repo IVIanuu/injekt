@@ -715,23 +715,21 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
             is PropertyDescriptor -> symbolTable.getPropertySymbol(calleeDescriptor)
             else -> error("Unexpected callee $calleeDescriptor for ${expression.text} ${calleeDescriptor?.javaClass}")
         }
-        val result: AstBaseQualifiedAccessBuilder = if (expression is KtCallExpression) {
-            AstFunctionCallBuilder(context).apply {
-                this.callee = callee as AstFunctionSymbol<*>
-                valueArguments += expression.valueArguments.map {
-                    it.getArgumentExpression()!!.convert()
+        return buildCallFrom(
+            resolvedCall = resolvedCall!!,
+            create = {
+                if (expression is KtCallExpression) {
+                    AstFunctionCallBuilder(context).apply {
+                        type = expression.getExpressionTypeWithCoercionToUnitOrFail().toAstType()
+                        this.callee = callee as AstFunctionSymbol<*>
+                    }
+                } else {
+                    AstQualifiedAccessBuilder(context).apply {
+                        this.callee = callee
+                    }
                 }
             }
-        } else {
-            AstQualifiedAccessBuilder(context).apply {
-                this.callee = callee
-            }
-        }
-
-        return result.apply {
-            type = expression.getExpressionTypeWithCoercionToUnitOrFail().toAstType()
-            resolvedCall?.let { fillReceiversAndTypeArgumentsFrom(it) }
-        }.build()
+        )
     }
 
     override fun visitConstantExpression(
@@ -1367,10 +1365,9 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
     private fun <T : AstExpressionBuilder> buildCallFrom(
         resolvedCall: ResolvedCall<*>,
         create: () -> T,
-        init: T.() -> Unit
+        init: T.() -> Unit = {}
     ): AstExpression {
-        val accessBuilder = create()
-            .apply(init)
+        val accessBuilder = create().apply(init)
         if (accessBuilder is AstBaseQualifiedAccessBuilder) {
             accessBuilder.fillReceiversAndTypeArgumentsFrom(resolvedCall)
         }
@@ -1400,17 +1397,18 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                 astArgumentValues[valueParameter] = finalAstArgument
             }
 
-            resolvedCall.valueArgumentsByIndex!!.forEachIndexed { index, _ ->
-                val valueParameter = valueParameters[index]
-                when (accessBuilder) {
-                    is AstCallBuilder -> {
-                        accessBuilder.valueArguments.add(index, astArgumentValues[valueParameter])
-                    }
-                    is AstVariableAssignmentBuilder -> {
-                        accessBuilder.value = astArgumentValues[valueParameter]!!
+            resolvedCall.valueArgumentsByIndex!!
+                .forEachIndexed { index, _ ->
+                    val valueParameter = valueParameters[index]
+                    when (accessBuilder) {
+                        is AstCallBuilder -> {
+                            accessBuilder.valueArguments.add(index, astArgumentValues[valueParameter])
+                        }
+                        is AstVariableAssignmentBuilder -> {
+                            accessBuilder.value = astArgumentValues[valueParameter]!!
+                        }
                     }
                 }
-            }
 
             block.statements.add(accessBuilder.build())
             block.build()
@@ -1438,32 +1436,28 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                 this is AstConst<*> ||
                 (this is AstQualifiedAccess && callee is AstVariable<*>)
 
-    private fun VarargValueArgument.toAstVararg(
-        valueParameter: ValueParameterDescriptor
-    ): AstVararg? {
-        if (arguments.isEmpty()) return null
-        return buildVararg {
-            type = valueParameter.type.toAstType()
-            elements += arguments
-                .map { argument ->
-                    val argumentExpression = argument.getArgumentExpression()!!
-                        .convert<AstExpression>()
-                    if (argument.getSpreadElement() != null) {
-                        buildSpreadElement { expression = argumentExpression }
-                    } else {
-                        argumentExpression
-                    }
-                }
-        }
-    }
-
     private fun ResolvedValueArgument.toAstExpression(
         valueParameter: ValueParameterDescriptor
     ): AstExpression? =
         when (this) {
             is DefaultValueArgument -> null
             is ExpressionValueArgument -> valueArgument!!.getArgumentExpression()!!.convert()
-            is VarargValueArgument -> toAstVararg(valueParameter)
+            is VarargValueArgument -> {
+                if (arguments.isEmpty()) null
+                else buildVararg {
+                    type = valueParameter.type.toAstType()
+                    elements += arguments
+                        .map { argument ->
+                            val argumentExpression = argument.getArgumentExpression()!!
+                                .convert<AstExpression>()
+                            if (argument.getSpreadElement() != null) {
+                                buildSpreadElement { expression = argumentExpression }
+                            } else {
+                                argumentExpression
+                            }
+                        }
+                }
+            }
             else -> error("Unexpected valueArgument ${this::class.java.simpleName}")
         }
 

@@ -70,7 +70,7 @@ fun AstElement.toKotlinSourceString(): String {
         try {
             accept(Ast2KotlinSourceWriter(this), null)
         } catch (e: Exception) {
-            throw RuntimeException("${this.toString().format()}", e)
+            throw RuntimeException(toString().format(), e)
         }
     }.format()
 }
@@ -518,14 +518,14 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
             emit("crossinline ")
         }
         emit("${name}: ")
-        /*if (isVararg) {
-            (returnType as AstSimpleType).arguments.single()
+        if (isVararg) {
+            returnType.arguments.single()
                 .let { it as AstTypeProjectionWithVariance }
                 .type
                 .emit()
-        } else {*/
-        returnType.emit()
-        //}
+        } else {
+            returnType.emit()
+        }
         if (defaultValue != null) {
             emit(" = ")
             defaultValue!!.emit()

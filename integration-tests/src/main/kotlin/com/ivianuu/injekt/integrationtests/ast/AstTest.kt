@@ -34,7 +34,7 @@ class AstTest {
             sources = arrayOf(
                 source(
                     """ 
-                        class NotTransformed(val param: String) {
+                        /*class NotTransformed(val param: String) {
                             var lol: String = "hello world"
                             
                             /*var lol2: String 
@@ -149,17 +149,17 @@ class AstTest {
                             } finally {
                                 println("finally")
                             }
-                        }
+                        }*/
                         
-                        /*fun withVararg(vararg params: String) {
+                        fun withVararg(vararg params: String) {
                         }
                         
                         fun callWithVararg() {
                             withVararg("a", "b", "c")
                             withVararg(*arrayOf("a", "b"), "c")
-                        }*/
+                        }
                         
-                        fun safeCall(name: String?) { 
+                        /*fun safeCall(name: String?) { 
                             name?.toList()?.size?.minus(1)
                         }
                         
@@ -273,7 +273,7 @@ class AstTest {
                         typealias MyTypeAlias2<T> = () -> String
                         
                         val prop = "hello world ${DOLLAR_SIGN}{aFunction()}lol${DOLLAR_SIGN}{returningString(0f)}"
-                        //val prop2 by lazy { "lol" }
+                        //val prop2 by lazy { "lol" }*/
                         """,
                     injektImports = false,
                     initializeInjekt = false
