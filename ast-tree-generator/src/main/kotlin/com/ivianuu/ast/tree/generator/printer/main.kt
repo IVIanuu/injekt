@@ -22,6 +22,7 @@ fun printElements(builder: AbstractAstTreeBuilder, generationPath: File) {
     printVisitor(builder.elements, generationPath)
     printVisitorVoid(builder.elements, generationPath)
     printTransformer(builder.elements, generationPath)
+    printTransformerVoid(builder.elements, generationPath)
 }
 
 fun SmartPrinter.printGeneratedMessage() {

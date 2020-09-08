@@ -49,15 +49,15 @@ internal class AstTypeImpl(
     }
     override fun equals(other: Any?): Boolean {
         return this === other || (other is AstType &&
-                classifier == other.classifier &&
-                isMarkedNullable == other.isMarkedNullable &&
-                arguments.size == other.arguments.size &&
-                arguments.zip(other.arguments).all { it.first == it.second })
+classifier == other.classifier &&
+isMarkedNullable == other.isMarkedNullable &&
+arguments.size == other.arguments.size &&
+arguments.zip(other.arguments).all { it.first == it.second })
     }
     override fun hashCode(): Int {
         var result = classifier.hashCode()
-        result += 31 * result + isMarkedNullable.hashCode()
-        result += 31 * result + arguments.hashCode()
-        return result
+result += 31 * result + isMarkedNullable.hashCode()
+result += 31 * result + arguments.hashCode()
+return result
     }
 }
