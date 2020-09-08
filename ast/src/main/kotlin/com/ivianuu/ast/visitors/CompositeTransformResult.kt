@@ -38,3 +38,6 @@ sealed class CompositeTransformResult<out T : Any> {
 
 @Suppress("NOTHING_TO_INLINE")
 inline fun <T : AstElement> T.compose() = CompositeTransformResult.single(this)
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun <T : AstElement> List<T>.compose() = CompositeTransformResult.many(this)
