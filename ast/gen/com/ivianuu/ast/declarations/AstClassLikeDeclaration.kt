@@ -22,4 +22,8 @@ interface AstClassLikeDeclaration<F : AstClassLikeDeclaration<F>> : AstDeclarati
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitClassLikeDeclaration(this, data)
 
     override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
+
+    override fun replaceOrigin(newOrigin: AstDeclarationOrigin)
+
+    override fun replaceAttributes(newAttributes: AstDeclarationAttributes)
 }

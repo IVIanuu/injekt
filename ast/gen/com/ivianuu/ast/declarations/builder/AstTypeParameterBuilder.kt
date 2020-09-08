@@ -12,7 +12,6 @@ import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.symbols.impl.AstTypeParameterSymbol
 import com.ivianuu.ast.types.AstType
-import com.ivianuu.ast.utils.lazyVar
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 import org.jetbrains.kotlin.name.Name
@@ -27,8 +26,9 @@ import org.jetbrains.kotlin.types.Variance
 class AstTypeParameterBuilder(override val context: AstContext) : AstNamedDeclarationBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
+    override var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override lateinit var name: Name
-    var symbol: AstTypeParameterSymbol by lazyVar { AstTypeParameterSymbol() }
+    lateinit var symbol: AstTypeParameterSymbol
     var variance: Variance = Variance.INVARIANT
     var isReified: Boolean = false
     val bounds: MutableList<AstType> = mutableListOf()
@@ -38,6 +38,7 @@ class AstTypeParameterBuilder(override val context: AstContext) : AstNamedDeclar
             context,
             annotations,
             origin,
+            attributes,
             name,
             symbol,
             variance,
@@ -45,13 +46,6 @@ class AstTypeParameterBuilder(override val context: AstContext) : AstNamedDeclar
             bounds,
         )
     }
-
-    @Deprecated("Modification of 'attributes' has no impact for AstTypeParameterBuilder", level = DeprecationLevel.HIDDEN)
-    override var attributes: AstDeclarationAttributes
-        get() = throw IllegalStateException()
-        set(value) {
-            throw IllegalStateException()
-        }
 }
 
 @OptIn(ExperimentalContracts::class)
@@ -64,6 +58,7 @@ inline fun AstTypeParameter.copy(init: AstTypeParameterBuilder.() -> Unit = {}):
     val copyBuilder = AstTypeParameterBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
+    copyBuilder.attributes = attributes
     copyBuilder.name = name
     copyBuilder.symbol = symbol
     copyBuilder.variance = variance

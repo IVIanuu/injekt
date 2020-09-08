@@ -12,26 +12,38 @@ import com.ivianuu.ast.declarations.AstClassLikeDeclaration
 import com.ivianuu.ast.declarations.AstEnumEntry
 import com.ivianuu.ast.declarations.AstRegularClass
 import com.ivianuu.ast.declarations.AstTypeAlias
-import com.ivianuu.ast.symbols.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
-sealed class AstClassLikeSymbol<D>(
-    val classId: ClassId
-) : AstClassifierSymbol<D>() where D : AstClassLikeDeclaration<D>, D : AstSymbolOwner<D>
+sealed class AstClassLikeSymbol<D> : AstClassifierSymbol<D>() where D : AstClassLikeDeclaration<D>, D : AstSymbolOwner<D>
 
-sealed class AstClassSymbol<C : AstClass<C>>(classId: ClassId) : AstClassLikeSymbol<C>(classId)
+sealed class AstClassSymbol<C : AstClass<C>> : AstClassLikeSymbol<C>()
 
-class AstRegularClassSymbol(classId: ClassId) : AstClassSymbol<AstRegularClass>(classId) {
-    constructor(fqName: FqName) : this(ClassId(fqName))
+class AstRegularClassSymbol(
+    override val fqName: FqName
+) : AstClassSymbol<AstRegularClass>() {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as AstRegularClassSymbol
+
+        if (fqName != other.fqName) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return fqName.hashCode()
+    }
 }
 
-val ANONYMOUS_CLASS_ID = ClassId(Name.special("<anonymous>"))
+val ANONYMOUS_CLASS_ID = Name.special("<anonymous>")
 
-class AstAnonymousObjectSymbol : AstClassSymbol<AstAnonymousObject>(ANONYMOUS_CLASS_ID)
-
-class AstTypeAliasSymbol(classId: ClassId) : AstClassLikeSymbol<AstTypeAlias>(classId) {
-    constructor(fqName: FqName) : this(ClassId(fqName))
+class AstAnonymousObjectSymbol : AstClassSymbol<AstAnonymousObject>() {
+    override val fqName: FqName = FqName(ANONYMOUS_CLASS_ID.asString())
 }
 
-class AstEnumEntrySymbol(name: Name) : AstClassSymbol<AstEnumEntry>(ClassId(name))
+class AstTypeAliasSymbol(override val fqName: FqName) : AstClassLikeSymbol<AstTypeAlias>()
+
+class AstEnumEntrySymbol(override val fqName: FqName) : AstClassSymbol<AstEnumEntry>()

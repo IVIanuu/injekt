@@ -12,7 +12,6 @@ import com.ivianuu.ast.expressions.builder.buildTypeOperation
 import com.ivianuu.ast.expressions.builder.buildWhen
 import com.ivianuu.ast.expressions.builder.buildWhenBranch
 import com.ivianuu.ast.expressions.impl.AstConstImpl
-import com.ivianuu.ast.symbols.CallableId
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.symbols.impl.AstPropertySymbol
 import com.ivianuu.ast.types.AstType

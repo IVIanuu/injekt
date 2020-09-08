@@ -6,5 +6,6 @@
 package com.ivianuu.ast.symbols.impl
 
 import com.ivianuu.ast.declarations.AstTypeParameter
+import org.jetbrains.kotlin.name.FqName
 
-class AstTypeParameterSymbol : AstClassifierSymbol<AstTypeParameter>()
+class AstTypeParameterSymbol(override val fqName: FqName) : AstClassifierSymbol<AstTypeParameter>()

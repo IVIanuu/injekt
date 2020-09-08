@@ -20,4 +20,8 @@ interface AstDeclaration : AstStatement, AstAnnotationContainer {
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitDeclaration(this, data)
 
     override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
+
+    fun replaceOrigin(newOrigin: AstDeclarationOrigin)
+
+    fun replaceAttributes(newAttributes: AstDeclarationAttributes)
 }

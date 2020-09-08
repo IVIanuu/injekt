@@ -34,10 +34,11 @@ import org.jetbrains.kotlin.name.Name
 class AstPropertyBuilder(override val context: AstContext) : AstMemberDeclarationBuilder, AstTypeParametersOwnerBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
+    override var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     var dispatchReceiverType: AstType? = null
     var extensionReceiverType: AstType? = null
     lateinit var returnType: AstType
-    override var name: Name by lazyVar { symbol.callableId.fqName.shortName() }
+    override var name: Name by lazyVar { symbol.fqName.shortName() }
     var initializer: AstExpression? = null
     var delegate: AstExpression? = null
     var isVar: Boolean = false
@@ -60,6 +61,7 @@ class AstPropertyBuilder(override val context: AstContext) : AstMemberDeclaratio
             context,
             annotations,
             origin,
+            attributes,
             dispatchReceiverType,
             extensionReceiverType,
             returnType,
@@ -83,13 +85,6 @@ class AstPropertyBuilder(override val context: AstContext) : AstMemberDeclaratio
         )
     }
 
-
-    @Deprecated("Modification of 'attributes' has no impact for AstPropertyBuilder", level = DeprecationLevel.HIDDEN)
-    override var attributes: AstDeclarationAttributes
-        get() = throw IllegalStateException()
-        set(value) {
-            throw IllegalStateException()
-        }
 }
 
 @OptIn(ExperimentalContracts::class)
@@ -102,6 +97,7 @@ inline fun AstProperty.copy(init: AstPropertyBuilder.() -> Unit = {}): AstProper
     val copyBuilder = AstPropertyBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
+    copyBuilder.attributes = attributes
     copyBuilder.dispatchReceiverType = dispatchReceiverType
     copyBuilder.extensionReceiverType = extensionReceiverType
     copyBuilder.returnType = returnType

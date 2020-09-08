@@ -1,7 +1,6 @@
 package com.ivianuu.ast.psi2ast
 
 import com.ivianuu.ast.symbols.AstSymbol
-import com.ivianuu.ast.symbols.CallableId
 import com.ivianuu.ast.symbols.impl.AstAnonymousFunctionSymbol
 import com.ivianuu.ast.symbols.impl.AstAnonymousObjectSymbol
 import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
@@ -23,11 +22,7 @@ import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
-import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
-import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class DescriptorSymbolTable {
@@ -75,24 +70,18 @@ class DescriptorSymbolTable {
 
     fun getConstructorSymbol(descriptor: ConstructorDescriptor): AstConstructorSymbol =
         constructors.getOrPut(descriptor) {
-            AstConstructorSymbol(CallableId(descriptor.fqNameSafe))
+            AstConstructorSymbol(descriptor.fqNameSafe)
         }
 
     fun getNamedFunctionSymbol(descriptor: SimpleFunctionDescriptor): AstNamedFunctionSymbol =
         namedFunctions.getOrPut(descriptor) {
-            AstNamedFunctionSymbol(
-                CallableId(
-                    descriptor.fqNameSafe
-                )
-            )
+            AstNamedFunctionSymbol(descriptor.fqNameSafe)
         }
 
     fun getPropertySymbol(descriptor: VariableDescriptor): AstPropertySymbol =
         properties.getOrPut(descriptor) {
             AstPropertySymbol(
-                CallableId(
-                    descriptor.fqNameSafe
-                )
+                descriptor.fqNameSafe
             )
         }
 
@@ -103,12 +92,12 @@ class DescriptorSymbolTable {
 
     fun getTypeParameterSymbol(descriptor: TypeParameterDescriptor): AstTypeParameterSymbol =
         typeParameters.getOrPut(descriptor) {
-            AstTypeParameterSymbol()
+            AstTypeParameterSymbol(descriptor.fqNameSafe)
         }
 
     fun getValueParameterSymbol(descriptor: VariableDescriptor): AstValueParameterSymbol =
         valueParameters.getOrPut(descriptor) {
-            AstValueParameterSymbol(CallableId(descriptor.fqNameSafe))
+            AstValueParameterSymbol(descriptor.fqNameSafe)
         }
 
     fun getTypeAliasSymbol(descriptor: TypeAliasDescriptor): AstTypeAliasSymbol =
@@ -116,7 +105,7 @@ class DescriptorSymbolTable {
 
     fun getEnumEntrySymbol(descriptor: ClassDescriptor): AstEnumEntrySymbol =
         enumEntries.getOrPut(descriptor) {
-            AstEnumEntrySymbol(descriptor.name)
+            AstEnumEntrySymbol(descriptor.fqNameSafe)
         }
 
 }

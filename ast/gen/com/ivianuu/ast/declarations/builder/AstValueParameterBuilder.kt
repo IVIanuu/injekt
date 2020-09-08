@@ -30,8 +30,9 @@ import org.jetbrains.kotlin.name.Name
 open class AstValueParameterBuilder(override val context: AstContext) : AstNamedDeclarationBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
+    override var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     open lateinit var returnType: AstType
-    override var name: Name by lazyVar { symbol.callableId.fqName.shortName() }
+    override var name: Name by lazyVar { symbol.fqName.shortName() }
     open lateinit var symbol: AstValueParameterSymbol
     open var defaultValue: AstExpression? = null
     open var isCrossinline: Boolean = false
@@ -45,6 +46,7 @@ open class AstValueParameterBuilder(override val context: AstContext) : AstNamed
             context,
             annotations,
             origin,
+            attributes,
             returnType,
             name,
             symbol,
@@ -56,13 +58,6 @@ open class AstValueParameterBuilder(override val context: AstContext) : AstNamed
         )
     }
 
-
-    @Deprecated("Modification of 'attributes' has no impact for AstValueParameterBuilder", level = DeprecationLevel.HIDDEN)
-    override var attributes: AstDeclarationAttributes
-        get() = throw IllegalStateException()
-        set(value) {
-            throw IllegalStateException()
-        }
 }
 
 @OptIn(ExperimentalContracts::class)
@@ -75,6 +70,7 @@ inline fun AstValueParameter.copy(init: AstValueParameterBuilder.() -> Unit = {}
     val copyBuilder = AstValueParameterBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
+    copyBuilder.attributes = attributes
     copyBuilder.returnType = returnType
     copyBuilder.name = name
     copyBuilder.symbol = symbol

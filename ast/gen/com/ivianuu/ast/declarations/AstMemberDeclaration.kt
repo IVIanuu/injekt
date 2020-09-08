@@ -28,6 +28,10 @@ abstract class AstMemberDeclaration : AstPureAbstractElement(), AstNamedDeclarat
 
     abstract override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
 
+    abstract override fun replaceOrigin(newOrigin: AstDeclarationOrigin)
+
+    abstract override fun replaceAttributes(newAttributes: AstDeclarationAttributes)
+
     abstract fun replaceVisibility(newVisibility: Visibility)
 
     abstract fun replaceModality(newModality: Modality)

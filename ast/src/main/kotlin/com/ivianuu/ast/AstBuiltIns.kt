@@ -5,7 +5,6 @@ import com.ivianuu.ast.declarations.builder.buildValueParameter
 import com.ivianuu.ast.psi2ast.DescriptorSymbolTable
 import com.ivianuu.ast.psi2ast.Psi2AstGeneratorContext
 import com.ivianuu.ast.psi2ast.TypeConverter
-import com.ivianuu.ast.symbols.CallableId
 import com.ivianuu.ast.symbols.impl.AstNamedFunctionSymbol
 import com.ivianuu.ast.symbols.impl.AstValueParameterSymbol
 import com.ivianuu.ast.types.AstType
@@ -91,19 +90,17 @@ class AstBuiltIns(
         .single { it.owner.valueParameters.size == 1 }
 
     private fun intrinsicFunction(
-        callableId: CallableId,
+        fqName: FqName,
         returnType: AstType,
         valueParameterCount: Int
     ): AstNamedFunctionSymbol {
         return context.buildNamedFunction {
-            symbol = AstNamedFunctionSymbol(callableId)
+            symbol = AstNamedFunctionSymbol(fqName)
             this.returnType = returnType
             valueParameters += (0 until valueParameterCount)
                 .map { index ->
                     buildValueParameter {
-                        symbol = AstValueParameterSymbol(
-                            CallableId("p$index".nameAsSafeName())
-                        )
+                        symbol = AstValueParameterSymbol("p$index".nameAsSafeName())
                         this.returnType = anyNType
                     }
                 }

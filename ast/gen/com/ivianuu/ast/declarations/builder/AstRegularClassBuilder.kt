@@ -36,7 +36,8 @@ import org.jetbrains.kotlin.name.Name
 open class AstRegularClassBuilder(override val context: AstContext) : AstClassBuilder, AstTypeParametersOwnerBuilder, AstDeclarationContainerBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
-    open var name: Name by lazyVar { symbol.classId.fqName.shortName() }
+    override var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
+    open var name: Name by lazyVar { symbol.fqName.shortName() }
     open var visibility: Visibility = Visibilities.Public
     open var modality: Modality = Modality.FINAL
     open var platformStatus: PlatformStatus = PlatformStatus.DEFAULT
@@ -58,6 +59,7 @@ open class AstRegularClassBuilder(override val context: AstContext) : AstClassBu
             context,
             annotations,
             origin,
+            attributes,
             name,
             visibility,
             modality,
@@ -76,13 +78,6 @@ open class AstRegularClassBuilder(override val context: AstContext) : AstClassBu
             isExternal,
         )
     }
-
-    @Deprecated("Modification of 'attributes' has no impact for AstRegularClassBuilder", level = DeprecationLevel.HIDDEN)
-    override var attributes: AstDeclarationAttributes
-        get() = throw IllegalStateException()
-        set(value) {
-            throw IllegalStateException()
-        }
 }
 
 @OptIn(ExperimentalContracts::class)
@@ -95,6 +90,7 @@ inline fun AstRegularClass.copy(init: AstRegularClassBuilder.() -> Unit = {}): A
     val copyBuilder = AstRegularClassBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
+    copyBuilder.attributes = attributes
     copyBuilder.name = name
     copyBuilder.visibility = visibility
     copyBuilder.modality = modality

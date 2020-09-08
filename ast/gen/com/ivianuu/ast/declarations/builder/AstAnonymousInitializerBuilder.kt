@@ -11,7 +11,6 @@ import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.symbols.impl.AstAnonymousInitializerSymbol
-import com.ivianuu.ast.utils.lazyVar
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
 
@@ -24,14 +23,16 @@ import kotlin.contracts.*
 class AstAnonymousInitializerBuilder(override val context: AstContext) : AstBuilder {
     val annotations: MutableList<AstFunctionCall> = mutableListOf()
     var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
+    var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     lateinit var body: AstBlock
-    var symbol: AstAnonymousInitializerSymbol by lazyVar { AstAnonymousInitializerSymbol() }
+    lateinit var symbol: AstAnonymousInitializerSymbol
 
     fun build(): AstAnonymousInitializer {
         return AstAnonymousInitializerImpl(
             context,
             annotations,
             origin,
+            attributes,
             body,
             symbol,
         )
@@ -48,6 +49,7 @@ inline fun AstAnonymousInitializer.copy(init: AstAnonymousInitializerBuilder.() 
     val copyBuilder = AstAnonymousInitializerBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
+    copyBuilder.attributes = attributes
     copyBuilder.body = body
     copyBuilder.symbol = symbol
     return copyBuilder.apply(init).build()

@@ -32,4 +32,12 @@ internal class AstTypeProjectionWithVarianceImpl(
     override fun replaceVariance(newVariance: Variance) {
         variance = newVariance
     }
+    override fun equals(other: Any?): Boolean {
+        return this === other || (other is AstTypeProjectionWithVariance && type == other.type && variance == other.variance)
+    }
+    override fun hashCode(): Int {
+        var result = type.hashCode()
+result += 31 * result + variance.hashCode()
+return result
+    }
 }

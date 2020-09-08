@@ -3,20 +3,16 @@ package com.ivianuu.injekt.integrationtests.ast
 import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstElement
 import com.ivianuu.ast.builder.AstBuilder
-import com.ivianuu.ast.declarations.AstClass
 import com.ivianuu.ast.declarations.AstModuleFragment
 import com.ivianuu.ast.declarations.AstRegularClass
 import com.ivianuu.ast.declarations.addFile
 import com.ivianuu.ast.declarations.builder.buildFile
 import com.ivianuu.ast.declarations.builder.buildRegularClass
-import com.ivianuu.ast.declarations.classId
+import com.ivianuu.ast.declarations.fqName
 import com.ivianuu.ast.extension.AstGenerationExtension
 import com.ivianuu.ast.psi2ast.astEnabled
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
-import com.ivianuu.ast.visitors.AstTransformer
 import com.ivianuu.ast.visitors.AstVisitorVoid
-import com.ivianuu.ast.visitors.CompositeTransformResult
-import com.ivianuu.ast.visitors.compose
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.test.codegen
@@ -25,7 +21,6 @@ import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.ExtensionPoint
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.name.ClassId
 import org.junit.Test
 
 class AstTest {
@@ -182,6 +177,10 @@ class AstTest {
                             "b" === "a"
                         }
                         
+                        fun notNullCheck(name: String?) {
+                            name!!
+                        }
+                        
                         fun logicOperations() {
                             val result =  "a" == "b" && "b" == "a"
                             val result2 = "a" != "b" || "b" != "a"
@@ -315,7 +314,6 @@ class AstTest {
                                                             declarations += buildRegularClass {
                                                                 symbol = AstRegularClassSymbol(
                                                                     regularClass
-                                                                        .classId
                                                                         .fqName
                                                                         .parent()
                                                                         .child("${regularClass.name}Context".asNameId())

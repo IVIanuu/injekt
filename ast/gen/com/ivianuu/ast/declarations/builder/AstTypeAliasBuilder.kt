@@ -31,7 +31,8 @@ import org.jetbrains.kotlin.name.Name
 class AstTypeAliasBuilder(override val context: AstContext) : AstTypeParametersOwnerBuilder {
     val annotations: MutableList<AstFunctionCall> = mutableListOf()
     var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
-    var name: Name by lazyVar { symbol.classId.fqName.shortName() }
+    var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
+    var name: Name by lazyVar { symbol.fqName.shortName() }
     var visibility: Visibility = Visibilities.Public
     var modality: Modality = Modality.FINAL
     var platformStatus: PlatformStatus = PlatformStatus.DEFAULT
@@ -44,6 +45,7 @@ class AstTypeAliasBuilder(override val context: AstContext) : AstTypeParametersO
             context,
             annotations,
             origin,
+            attributes,
             name,
             visibility,
             modality,
@@ -65,6 +67,7 @@ inline fun AstTypeAlias.copy(init: AstTypeAliasBuilder.() -> Unit = {}): AstType
     val copyBuilder = AstTypeAliasBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
+    copyBuilder.attributes = attributes
     copyBuilder.name = name
     copyBuilder.visibility = visibility
     copyBuilder.modality = modality

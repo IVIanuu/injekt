@@ -20,4 +20,8 @@ interface AstNamedDeclaration : AstDeclaration {
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitNamedDeclaration(this, data)
 
     override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
+
+    override fun replaceOrigin(newOrigin: AstDeclarationOrigin)
+
+    override fun replaceAttributes(newAttributes: AstDeclarationAttributes)
 }

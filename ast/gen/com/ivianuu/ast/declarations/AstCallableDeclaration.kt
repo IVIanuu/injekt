@@ -27,6 +27,10 @@ interface AstCallableDeclaration<F : AstCallableDeclaration<F>> : AstDeclaration
 
     override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
 
+    override fun replaceOrigin(newOrigin: AstDeclarationOrigin)
+
+    override fun replaceAttributes(newAttributes: AstDeclarationAttributes)
+
     fun replaceDispatchReceiverType(newDispatchReceiverType: AstType?)
 
     fun replaceExtensionReceiverType(newExtensionReceiverType: AstType?)

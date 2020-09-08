@@ -28,9 +28,10 @@ import org.jetbrains.kotlin.name.Name
 class AstEnumEntryBuilder(override val context: AstContext) : AstBuilder {
     val annotations: MutableList<AstFunctionCall> = mutableListOf()
     var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
+    var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     val declarations: MutableList<AstDeclaration> = mutableListOf()
     val delegateInitializers: MutableList<AstDelegateInitializer> = mutableListOf()
-    var name: Name by lazyVar { symbol.classId.fqName.shortName() }
+    var name: Name by lazyVar { symbol.fqName.shortName() }
     lateinit var symbol: AstEnumEntrySymbol
 
     fun build(): AstEnumEntry {
@@ -38,6 +39,7 @@ class AstEnumEntryBuilder(override val context: AstContext) : AstBuilder {
             context,
             annotations,
             origin,
+            attributes,
             declarations,
             delegateInitializers,
             name,
@@ -56,6 +58,7 @@ inline fun AstEnumEntry.copy(init: AstEnumEntryBuilder.() -> Unit = {}): AstEnum
     val copyBuilder = AstEnumEntryBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
+    copyBuilder.attributes = attributes
     copyBuilder.declarations.addAll(declarations)
     copyBuilder.delegateInitializers.addAll(delegateInitializers)
     copyBuilder.name = name

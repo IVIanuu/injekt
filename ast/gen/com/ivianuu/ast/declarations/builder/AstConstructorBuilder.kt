@@ -29,6 +29,7 @@ import kotlin.contracts.*
 class AstConstructorBuilder(override val context: AstContext) : AstAbstractConstructorBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
+    override var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override var dispatchReceiverType: AstType? = null
     override var extensionReceiverType: AstType? = null
     override lateinit var returnType: AstType
@@ -44,6 +45,7 @@ class AstConstructorBuilder(override val context: AstContext) : AstAbstractConst
             context,
             annotations,
             origin,
+            attributes,
             dispatchReceiverType,
             extensionReceiverType,
             returnType,
@@ -56,13 +58,6 @@ class AstConstructorBuilder(override val context: AstContext) : AstAbstractConst
         )
     }
 
-
-    @Deprecated("Modification of 'attributes' has no impact for AstConstructorBuilder", level = DeprecationLevel.HIDDEN)
-    override var attributes: AstDeclarationAttributes
-        get() = throw IllegalStateException()
-        set(value) {
-            throw IllegalStateException()
-        }
 }
 
 @OptIn(ExperimentalContracts::class)
@@ -75,6 +70,7 @@ inline fun AstConstructor.copy(init: AstConstructorBuilder.() -> Unit = {}): Ast
     val copyBuilder = AstConstructorBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
+    copyBuilder.attributes = attributes
     copyBuilder.dispatchReceiverType = dispatchReceiverType
     copyBuilder.extensionReceiverType = extensionReceiverType
     copyBuilder.returnType = returnType

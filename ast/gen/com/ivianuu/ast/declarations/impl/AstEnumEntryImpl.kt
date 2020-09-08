@@ -22,13 +22,13 @@ import com.ivianuu.ast.visitors.*
 internal class AstEnumEntryImpl(
     override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
-    override val origin: AstDeclarationOrigin,
+    override var origin: AstDeclarationOrigin,
+    override var attributes: AstDeclarationAttributes,
     override val declarations: MutableList<AstDeclaration>,
     override val delegateInitializers: MutableList<AstDelegateInitializer>,
     override var name: Name,
     override var symbol: AstEnumEntrySymbol,
 ) : AstEnumEntry() {
-    override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override val classKind: ClassKind get() = ClassKind.ENUM_ENTRY
     override val superTypes: List<AstType> get() = emptyList()
 
@@ -52,6 +52,14 @@ internal class AstEnumEntryImpl(
     override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>) {
         annotations.clear()
         annotations.addAll(newAnnotations)
+    }
+
+    override fun replaceOrigin(newOrigin: AstDeclarationOrigin) {
+        origin = newOrigin
+    }
+
+    override fun replaceAttributes(newAttributes: AstDeclarationAttributes) {
+        attributes = newAttributes
     }
 
     override fun replaceDeclarations(newDeclarations: List<AstDeclaration>) {

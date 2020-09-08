@@ -8,6 +8,8 @@ package com.ivianuu.ast.symbols.impl
 import com.ivianuu.ast.AstSymbolOwner
 import com.ivianuu.ast.declarations.AstDeclaration
 import com.ivianuu.ast.symbols.AbstractAstSymbol
+import org.jetbrains.kotlin.name.FqName
 
-abstract class AstClassifierSymbol<E> : AbstractAstSymbol<E>()
-        where E : AstSymbolOwner<E>, E : AstDeclaration
+abstract class AstClassifierSymbol<E> : AbstractAstSymbol<E>() where E : AstSymbolOwner<E>, E : AstDeclaration {
+    abstract val fqName: FqName
+}

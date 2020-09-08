@@ -29,6 +29,10 @@ interface AstClass<F : AstClass<F>> : AstClassLikeDeclaration<F>, AstDeclaration
 
     override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
 
+    override fun replaceOrigin(newOrigin: AstDeclarationOrigin)
+
+    override fun replaceAttributes(newAttributes: AstDeclarationAttributes)
+
     override fun replaceDeclarations(newDeclarations: List<AstDeclaration>)
 
     fun replaceClassKind(newClassKind: ClassKind)

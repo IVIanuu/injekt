@@ -32,6 +32,10 @@ abstract class AstAnonymousObject : AstPureAbstractElement(), AstClass<AstAnonym
 
     abstract override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
 
+    abstract override fun replaceOrigin(newOrigin: AstDeclarationOrigin)
+
+    abstract override fun replaceAttributes(newAttributes: AstDeclarationAttributes)
+
     abstract override fun replaceDeclarations(newDeclarations: List<AstDeclaration>)
 
     abstract override fun replaceClassKind(newClassKind: ClassKind)

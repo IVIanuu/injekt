@@ -5,27 +5,24 @@ import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstFunction
 import com.ivianuu.ast.declarations.AstNamedFunction
 import com.ivianuu.ast.declarations.AstPropertyAccessor
-import com.ivianuu.ast.symbols.CallableId
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
-sealed class AstFunctionSymbol<D : AstFunction<D>>(
-    override val callableId: CallableId
-) : AstCallableSymbol<D>()
+sealed class AstFunctionSymbol<D : AstFunction<D>> : AstCallableSymbol<D>()
 
-open class AstNamedFunctionSymbol(
-    callableId: CallableId
-) : AstFunctionSymbol<AstNamedFunction>(callableId)
+open class AstNamedFunctionSymbol(override val fqName: FqName) : AstFunctionSymbol<AstNamedFunction>()
 
-class AstConstructorSymbol(
-    callableId: CallableId
-) : AstFunctionSymbol<AstConstructor>(callableId)
+class AstConstructorSymbol(override val fqName: FqName) : AstFunctionSymbol<AstConstructor>()
 
 sealed class AstFunctionWithoutNameSymbol<F : AstFunction<F>>(
     stubName: Name
-) : AstFunctionSymbol<F>(CallableId(stubName))
+) : AstFunctionSymbol<F>() {
+    override val fqName: FqName = FqName(stubName.asString())
+}
 
-class AstAnonymousFunctionSymbol :
-    AstFunctionWithoutNameSymbol<AstAnonymousFunction>(Name.identifier("anonymous"))
+class AstAnonymousFunctionSymbol : AstFunctionWithoutNameSymbol<AstAnonymousFunction>(
+    Name.identifier("anonymous")
+)
 
 class AstPropertyAccessorSymbol :
     AstFunctionWithoutNameSymbol<AstPropertyAccessor>(Name.identifier("accessor"))

@@ -10,7 +10,6 @@ import com.ivianuu.ast.declarations.builder.buildTypeParameter
 import com.ivianuu.ast.declarations.builder.buildValueParameter
 import com.ivianuu.ast.expressions.builder.buildBlock
 import com.ivianuu.ast.psi2ast.lazy.AstLazyRegularClass
-import com.ivianuu.ast.symbols.CallableId
 import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
 import com.ivianuu.ast.symbols.impl.AstNamedFunctionSymbol
 import com.ivianuu.ast.symbols.impl.AstPropertySymbol
@@ -91,7 +90,7 @@ class DeclarationStubGenerator(
     }
 
     private fun ConstructorDescriptor.toConstructorStub(
-        symbol: AstConstructorSymbol = AstConstructorSymbol(CallableId(fqNameSafe))
+        symbol: AstConstructorSymbol = AstConstructorSymbol(fqNameSafe)
     ) = context.buildConstructor {
         this.symbol = symbol
         this.origin = AstDeclarationOrigin.Library

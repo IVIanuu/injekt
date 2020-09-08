@@ -21,14 +21,14 @@ import com.ivianuu.ast.visitors.*
 internal class AstAnonymousObjectImpl(
     override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
-    override val origin: AstDeclarationOrigin,
+    override var origin: AstDeclarationOrigin,
+    override var attributes: AstDeclarationAttributes,
     override val declarations: MutableList<AstDeclaration>,
     override val superTypes: MutableList<AstType>,
     override val delegateInitializers: MutableList<AstDelegateInitializer>,
     override var type: AstType,
     override var symbol: AstAnonymousObjectSymbol,
 ) : AstAnonymousObject() {
-    override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override val classKind: ClassKind get() = ClassKind.CLASS
 
     init {
@@ -55,6 +55,14 @@ internal class AstAnonymousObjectImpl(
     override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>) {
         annotations.clear()
         annotations.addAll(newAnnotations)
+    }
+
+    override fun replaceOrigin(newOrigin: AstDeclarationOrigin) {
+        origin = newOrigin
+    }
+
+    override fun replaceAttributes(newAttributes: AstDeclarationAttributes) {
+        attributes = newAttributes
     }
 
     override fun replaceDeclarations(newDeclarations: List<AstDeclaration>) {

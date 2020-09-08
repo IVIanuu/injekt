@@ -8,7 +8,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
     fun configureImplementations() {
         configure()
         generateDefaultImplementations(AstTreeBuilder)
-        configureAllImplementations()
     }
 
     private fun configure() = with(AstTreeBuilder) {
@@ -130,12 +129,4 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
         }
     }
 
-    private fun configureAllImplementations() {
-        configureFieldInAllImplementations(
-            field = "attributes",
-            fieldPredicate = { it.type == declarationAttributesType.type }
-        ) {
-            default(it, "${declarationAttributesType.type}()")
-        }
-    }
 }

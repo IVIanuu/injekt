@@ -48,7 +48,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             parents + memberDeclarationBuilder
             parents += typeParametersOwnerBuilder
             parents += declarationContainerBuilder
-            defaultLazy("name", "symbol.classId.fqName.shortName()")
+            defaultLazy("name", "symbol.fqName.shortName()")
             default("classKind", "ClassKind.CLASS")
             defaultFalse("isInline")
             defaultFalse("isCompanion")
@@ -59,7 +59,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         }
 
         builder(enumEntry) {
-            defaultLazy("name", "symbol.classId.fqName.shortName()")
+            defaultLazy("name", "symbol.fqName.shortName()")
         }
 
         val baseQualifiedAccessBuilder by builder {
@@ -90,7 +90,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
 
         val abstractConstructorBuilder by builder {
             parents += functionBuilder
-            fields from constructor without listOf("isPrimary", "attributes")
+            fields from constructor without listOf("isPrimary")
         }
 
         val packageFragmentBuilder by builder {
@@ -109,10 +109,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             defaultFalse("isPrimary")
         }
 
-        builder(anonymousInitializer) {
-            defaultLazy("symbol", "AstAnonymousInitializerSymbol()")
-        }
-
         builder(anonymousObject) {
             parents += classBuilder
         }
@@ -120,7 +116,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         builder(typeAlias) {
             parents + memberDeclarationBuilder
             parents += typeParametersOwnerBuilder
-            defaultLazy("name", "symbol.classId.fqName.shortName()")
+            defaultLazy("name", "symbol.fqName.shortName()")
         }
 
         builder(block) {
@@ -170,7 +166,7 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
         builder(property) {
             parents += memberDeclarationBuilder
             parents += typeParametersOwnerBuilder
-            defaultLazy("name", "symbol.callableId.fqName.shortName()")
+            defaultLazy("name", "symbol.fqName.shortName()")
             defaultNull("getter", "setter")
             defaultFalse("isVar")
             defaultFalse("isLocal")
@@ -223,14 +219,14 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             openBuilder()
             defaultFalse("isCrossinline", "isNoinline", "isVararg")
             defaultNull("correspondingProperty")
-            defaultLazy("name", "symbol.callableId.fqName.shortName()")
+            defaultLazy("name", "symbol.fqName.shortName()")
         }
 
         builder(namedFunction) {
             parents += functionBuilder
             parents + memberDeclarationBuilder
             parents += typeParametersOwnerBuilder
-            defaultLazy("name", "symbol.callableId.fqName.shortName()")
+            defaultLazy("name", "symbol.fqName.shortName()")
             defaultNull("body")
             defaultFalse("isSuspend")
             defaultFalse("isOperator")
@@ -245,7 +241,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             parents += namedDeclarationBuilder
             defaultFalse("isReified")
             default("variance", "Variance.INVARIANT")
-            defaultLazy("symbol", "AstTypeParameterSymbol()")
         }
 
         builder(typeProjectionWithVariance) {
@@ -264,6 +259,9 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
 
         configureFieldInAllLeafBuilders(field = "origin") {
             default(it, "AstDeclarationOrigin.Source")
+        }
+        configureFieldInAllLeafBuilders(field = "attributes") {
+            default(it, "AstDeclarationAttributes()")
         }
 
         configureFieldInAllLeafBuilders(field = "visibility") {

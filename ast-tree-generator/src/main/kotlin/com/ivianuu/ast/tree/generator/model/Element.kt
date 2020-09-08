@@ -30,6 +30,8 @@ interface AbstractElement : FieldContainer, KindOwner {
     val customImplementations: List<Implementation>
     val overriddenFields: Map<Field, Map<Importable, Boolean>>
     val useNullableForReplace: Set<Field>
+    val equalsExpression: String?
+    val hashCodeExpression: String?
 
     override val allParents: List<KindOwner> get() = parents
 }
@@ -124,6 +126,9 @@ class Element(
         }
         result.toList()
     }
+
+    override var equalsExpression: String? = null
+    override var hashCodeExpression: String? = null
 
     override val allAstFields: List<Field> by lazy {
         allFields.filter { it.isAstType }

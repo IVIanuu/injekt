@@ -17,4 +17,7 @@ internal class AstStarProjectionImpl(
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstStarProjectionImpl {
         return this
     }
+    override fun equals(other: Any?): Boolean {
+        return other is AstStarProjection
+    }
 }

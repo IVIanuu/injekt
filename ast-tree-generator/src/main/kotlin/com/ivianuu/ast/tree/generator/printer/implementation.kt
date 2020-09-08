@@ -306,6 +306,27 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
                 }
             }
         }
+
+        if (element.equalsExpression != null) {
+            pushIndent()
+            println("override fun equals(other: Any?): Boolean {")
+            pushIndent()
+            println(element.equalsExpression!!)
+            popIndent()
+            println("}")
+            popIndent()
+        }
+
+        if (element.hashCodeExpression != null) {
+            pushIndent()
+            println("override fun hashCode(): Int {")
+            pushIndent()
+            println(element.hashCodeExpression!!)
+            popIndent()
+            println("}")
+            popIndent()
+        }
+
         println("}")
     }
 }

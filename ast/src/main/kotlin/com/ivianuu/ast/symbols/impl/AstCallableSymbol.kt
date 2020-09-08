@@ -7,8 +7,8 @@ package com.ivianuu.ast.symbols.impl
 
 import com.ivianuu.ast.declarations.AstCallableDeclaration
 import com.ivianuu.ast.symbols.AbstractAstSymbol
-import com.ivianuu.ast.symbols.CallableId
+import org.jetbrains.kotlin.name.FqName
 
 abstract class AstCallableSymbol<D : AstCallableDeclaration<D>> : AbstractAstSymbol<D>() {
-    abstract val callableId: CallableId
+    abstract val fqName: FqName
 }

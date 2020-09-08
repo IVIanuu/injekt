@@ -45,10 +45,6 @@ import com.ivianuu.ast.tree.generator.model.booleanField
 import com.ivianuu.ast.tree.generator.model.field
 import com.ivianuu.ast.tree.generator.model.fieldList
 import com.ivianuu.ast.tree.generator.model.stringField
-import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.IrTypeOperator
-import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
-import org.jetbrains.kotlin.ir.types.IrType
 
 object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuilder) {
     fun configureFields() = configure {
@@ -71,15 +67,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         declaration.configure {
             +field("origin", declarationOriginType)
-                .also {
-                    it.withReplace = false
-                    it.isMutable = false
-                }
             +field("attributes", declarationAttributesType)
-                .also {
-                    it.withReplace = false
-                    it.isMutable = false
-                }
         }
         declarationContainer.configure {
             +declarations
@@ -396,19 +384,38 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             )
         }
 
+        whenExpression.configure {
+            +fieldList("branches", whenBranch)
+        }
+
         type.configure {
             +field("classifier", classifierSymbolType, "*")
             +fieldList("arguments", typeProjection)
             +booleanField("isMarkedNullable")
-        }
-
-        whenExpression.configure {
-            +fieldList("branches", whenBranch)
+            element.equalsExpression = "return this === other || (other is AstType &&\n" +
+                    "classifier == other.classifier &&\n" +
+                    "isMarkedNullable == other.isMarkedNullable &&\n" +
+                    "arguments.size == other.arguments.size &&\n" +
+                    "arguments.zip(other.arguments).all { it.first == it.second })"
+            element.hashCodeExpression = "var result = classifier.hashCode()\n" +
+                    "result += 31 * result + isMarkedNullable.hashCode()\n" +
+                    "result += 31 * result + arguments.hashCode()\n" +
+                    "return result"
         }
 
         typeProjectionWithVariance.configure {
             +field(type)
             +field(varianceType)
+            element.equalsExpression = "return this === other || (other is AstTypeProjectionWithVariance && " +
+                    "type == other.type && " +
+                    "variance == other.variance)"
+            element.hashCodeExpression = "var result = type.hashCode()\n" +
+                    "result += 31 * result + variance.hashCode()\n" +
+                    "return result"
+        }
+
+        starProjection.configure {
+            element.equalsExpression = "return other is AstStarProjection"
         }
 
         typeOperation.configure {

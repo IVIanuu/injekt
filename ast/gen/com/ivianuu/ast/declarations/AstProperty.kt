@@ -47,6 +47,10 @@ abstract class AstProperty : AstVariable<AstProperty>, AstTypeParametersOwner, A
 
     abstract override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
 
+    abstract override fun replaceOrigin(newOrigin: AstDeclarationOrigin)
+
+    abstract override fun replaceAttributes(newAttributes: AstDeclarationAttributes)
+
     abstract override fun replaceDispatchReceiverType(newDispatchReceiverType: AstType?)
 
     abstract override fun replaceExtensionReceiverType(newExtensionReceiverType: AstType?)

@@ -33,6 +33,10 @@ abstract class AstTypeAlias : AstClassLikeDeclaration<AstTypeAlias>, AstMemberDe
 
     abstract override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
 
+    abstract override fun replaceOrigin(newOrigin: AstDeclarationOrigin)
+
+    abstract override fun replaceAttributes(newAttributes: AstDeclarationAttributes)
+
     abstract override fun replaceVisibility(newVisibility: Visibility)
 
     abstract override fun replaceModality(newModality: Modality)

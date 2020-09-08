@@ -26,7 +26,8 @@ import com.ivianuu.ast.visitors.*
 open class AstNamedFunctionImpl @AstImplementationDetail constructor(
     override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
-    override val origin: AstDeclarationOrigin,
+    override var origin: AstDeclarationOrigin,
+    override var attributes: AstDeclarationAttributes,
     override var dispatchReceiverType: AstType?,
     override var extensionReceiverType: AstType?,
     override var returnType: AstType,
@@ -46,8 +47,6 @@ open class AstNamedFunctionImpl @AstImplementationDetail constructor(
     override val overriddenFunctions: MutableList<AstNamedFunctionSymbol>,
     override var symbol: AstNamedFunctionSymbol,
 ) : AstNamedFunction() {
-    override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
-
     init {
         symbol.bind(this)
     }
@@ -76,6 +75,14 @@ open class AstNamedFunctionImpl @AstImplementationDetail constructor(
     override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>) {
         annotations.clear()
         annotations.addAll(newAnnotations)
+    }
+
+    override fun replaceOrigin(newOrigin: AstDeclarationOrigin) {
+        origin = newOrigin
+    }
+
+    override fun replaceAttributes(newAttributes: AstDeclarationAttributes) {
+        attributes = newAttributes
     }
 
     override fun replaceDispatchReceiverType(newDispatchReceiverType: AstType?) {

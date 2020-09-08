@@ -64,7 +64,6 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.utils.Printer
-import kotlin.jvm.internal.Intrinsics
 
 fun AstElement.toKotlinSourceString(): String {
     return buildString {
@@ -141,7 +140,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
                     type.regularClassOrNull
                         ?.takeUnless { it.owner.name.isSpecial }
                         ?.takeUnless { it.owner.visibility == Visibilities.Local }
-                        ?.let { imports += it.classId.fqName }
+                        ?.let { imports += it.fqName }
                 }
             },
             null
@@ -246,10 +245,9 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
     private fun AstClass<*>.renderSuperTypes(appendSpace: Boolean = true) {
         val superTypesToRender = superTypes
             .filterNot {
-                // todo compare types once possible
-                it.classifier == context.builtIns.anySymbol ||
-                        it.classifier == context.builtIns.annotationSymbol ||
-                        it.classifier == context.builtIns.enumSymbol
+                it == context.builtIns.anyType ||
+                        it == context.builtIns.annotationType ||
+                        it == context.builtIns.enumType
             }
         if (superTypesToRender.isEmpty()) return
         emit(": ")
@@ -268,7 +266,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
                     }
 
                 delegateInitializers
-                    .filter { it.delegatedSuperType.classifier == superType.classifier } // todo compare types once possible
+                    .filter { it.delegatedSuperType == superType }
                     .singleOrNull()
                     ?.let {
                         emit(" by ")
@@ -585,11 +583,14 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
 
     override fun visitBlock(block: AstBlock) = with(block) {
         runBlock {
-           statements.forEach { statement ->
-               statement.emit()
-               emitLine()
-           }
-       }
+            statements.forEach { statement ->
+                statement.emit()
+                emitLine()
+            }
+            if (block.type == context.builtIns.unitType) {
+                emitLine("Unit")
+            }
+        }
     }
 
     override fun visitFunctionCall(functionCall: AstFunctionCall) = with(functionCall) {
@@ -603,7 +604,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
             emit(")")
         }
 
-        when (callee.symbol.callableId) {
+        when (callee.symbol.fqName) {
             AstIntrinsics.LessThan -> {
                 emitBinaryExpression("<")
                 return@with
@@ -665,7 +666,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
                 if (callee.visibility == Visibilities.Local) {
                     emit(callee.returnType.regularClassOrFail.owner.name)
                 } else {
-                    emit(callee.returnType.regularClassOrFail.owner.symbol.classId.fqName)
+                    emit(callee.returnType.regularClassOrFail.owner.symbol.fqName)
                 }
                 emitArguments()
             }
@@ -930,7 +931,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
 
     private fun AstClassifierSymbol<*>.emit() {
         when (this) {
-            is AstRegularClassSymbol -> emit(classId.fqName)
+            is AstRegularClassSymbol -> emit(fqName)
             is AstTypeParameterSymbol -> emit(owner.name)
             else -> error("Unexpected classifier $this")
         }
@@ -1009,7 +1010,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
                     dispatchReceiverType == null &&
                     extensionReceiverType == null &&
                     (this !is AstNamedFunction ||
-                            this.visibility != Visibilities.Local) -> emit(symbol.callableId.fqName)
+                            this.visibility != Visibilities.Local) -> emit(symbol.fqName)
             else -> emit(name)
         }
     }

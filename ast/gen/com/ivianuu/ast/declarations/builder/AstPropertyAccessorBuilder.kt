@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.name.Name
 class AstPropertyAccessorBuilder(override val context: AstContext) : AstFunctionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
+    override var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override lateinit var returnType: AstType
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
     override var body: AstBlock? = null
@@ -47,6 +48,7 @@ class AstPropertyAccessorBuilder(override val context: AstContext) : AstFunction
             context,
             annotations,
             origin,
+            attributes,
             returnType,
             valueParameters,
             body,
@@ -58,13 +60,6 @@ class AstPropertyAccessorBuilder(override val context: AstContext) : AstFunction
         )
     }
 
-
-    @Deprecated("Modification of 'attributes' has no impact for AstPropertyAccessorBuilder", level = DeprecationLevel.HIDDEN)
-    override var attributes: AstDeclarationAttributes
-        get() = throw IllegalStateException()
-        set(value) {
-            throw IllegalStateException()
-        }
 }
 
 @OptIn(ExperimentalContracts::class)
@@ -77,6 +72,7 @@ inline fun AstPropertyAccessor.copy(init: AstPropertyAccessorBuilder.() -> Unit 
     val copyBuilder = AstPropertyAccessorBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
+    copyBuilder.attributes = attributes
     copyBuilder.returnType = returnType
     copyBuilder.valueParameters.addAll(valueParameters)
     copyBuilder.body = body

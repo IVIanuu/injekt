@@ -41,7 +41,7 @@ val AstTypeParameter.defaultType: AstType get() = context.buildType {
     classifier = symbol
 }
 
-val AstClass<*>.classId get() = symbol.classId
+val AstClass<*>.fqName get() = symbol.fqName
 
 val AstType.regularClassOrFail: AstRegularClassSymbol
     get() = regularClassOrNull ?: error("Could not get regular class for $this")
@@ -49,7 +49,7 @@ val AstType.regularClassOrNull: AstRegularClassSymbol?
     get() = classifier as? AstRegularClassSymbol
 
 fun AstAnnotationContainer.hasAnnotation(fqName: FqName): Boolean {
-    return annotations.any { it.callee.callableId.fqName == fqName }
+    return annotations.any { it.callee.fqName == fqName }
 }
 
 fun AstModuleFragment.addFile(file: AstFile) {

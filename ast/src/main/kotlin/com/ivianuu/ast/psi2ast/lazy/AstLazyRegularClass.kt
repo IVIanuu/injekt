@@ -86,6 +86,31 @@ class AstLazyRegularClass(
         symbol.bind(this)
     }
 
+    override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
+        annotations.forEach { it.accept(visitor, data) }
+        typeParameters.forEach { it.accept(visitor, data) }
+        declarations.forEach { it.accept(visitor, data) }
+        delegateInitializers.forEach { it.accept(visitor, data) }
+        superTypes.forEach { it.accept(visitor, data) }
+    }
+
+    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstLazyRegularClass {
+        annotations.transformInplace(transformer, data)
+        typeParameters.transformInplace(transformer, data)
+        declarations.transformInplace(transformer, data)
+        delegateInitializers.transformInplace(transformer, data)
+        superTypes.transformInplace(transformer, data)
+        return this
+    }
+
+    override fun replaceOrigin(newOrigin: AstDeclarationOrigin) {
+        origin = newOrigin
+    }
+
+    override fun replaceAttributes(newAttributes: AstDeclarationAttributes) {
+        attributes = newAttributes
+    }
+
     override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>) {
         annotations.clear()
         annotations += newAnnotations
@@ -149,23 +174,6 @@ class AstLazyRegularClass(
 
     override fun replaceIsExternal(newIsExternal: Boolean) {
         isExternal = newIsExternal
-    }
-
-    override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
-        annotations.forEach { it.accept(visitor, data) }
-        typeParameters.forEach { it.accept(visitor, data) }
-        declarations.forEach { it.accept(visitor, data) }
-        delegateInitializers.forEach { it.accept(visitor, data) }
-        superTypes.forEach { it.accept(visitor, data) }
-    }
-
-    override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstLazyRegularClass {
-        annotations.transformInplace(transformer, data)
-        typeParameters.transformInplace(transformer, data)
-        declarations.transformInplace(transformer, data)
-        delegateInitializers.transformInplace(transformer, data)
-        superTypes.transformInplace(transformer, data)
-        return this
     }
 
 }

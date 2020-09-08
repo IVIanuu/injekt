@@ -35,12 +35,13 @@ import org.jetbrains.kotlin.name.Name
 open class AstNamedFunctionBuilder(override val context: AstContext) : AstFunctionBuilder, AstTypeParametersOwnerBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
+    override var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     open var dispatchReceiverType: AstType? = null
     open var extensionReceiverType: AstType? = null
     override var returnType: AstType = context.builtIns.unitType
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
     override var body: AstBlock? = null
-    open var name: Name by lazyVar { symbol.callableId.fqName.shortName() }
+    open var name: Name by lazyVar { symbol.fqName.shortName() }
     open var visibility: Visibility = Visibilities.Public
     open var modality: Modality = Modality.FINAL
     open var platformStatus: PlatformStatus = PlatformStatus.DEFAULT
@@ -60,6 +61,7 @@ open class AstNamedFunctionBuilder(override val context: AstContext) : AstFuncti
             context,
             annotations,
             origin,
+            attributes,
             dispatchReceiverType,
             extensionReceiverType,
             returnType,
@@ -81,13 +83,6 @@ open class AstNamedFunctionBuilder(override val context: AstContext) : AstFuncti
         )
     }
 
-
-    @Deprecated("Modification of 'attributes' has no impact for AstNamedFunctionBuilder", level = DeprecationLevel.HIDDEN)
-    override var attributes: AstDeclarationAttributes
-        get() = throw IllegalStateException()
-        set(value) {
-            throw IllegalStateException()
-        }
 }
 
 @OptIn(ExperimentalContracts::class)
@@ -100,6 +95,7 @@ inline fun AstNamedFunction.copy(init: AstNamedFunctionBuilder.() -> Unit = {}):
     val copyBuilder = AstNamedFunctionBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
+    copyBuilder.attributes = attributes
     copyBuilder.dispatchReceiverType = dispatchReceiverType
     copyBuilder.extensionReceiverType = extensionReceiverType
     copyBuilder.returnType = returnType

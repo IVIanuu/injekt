@@ -20,7 +20,8 @@ import com.ivianuu.ast.visitors.*
 internal class AstAnonymousFunctionImpl(
     override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
-    override val origin: AstDeclarationOrigin,
+    override var origin: AstDeclarationOrigin,
+    override var attributes: AstDeclarationAttributes,
     override var extensionReceiverType: AstType?,
     override var returnType: AstType,
     override val valueParameters: MutableList<AstValueParameter>,
@@ -29,7 +30,6 @@ internal class AstAnonymousFunctionImpl(
     override var label: String?,
     override var symbol: AstAnonymousFunctionSymbol,
 ) : AstAnonymousFunction() {
-    override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override val dispatchReceiverType: AstType? get() = null
 
     init {
@@ -58,6 +58,14 @@ internal class AstAnonymousFunctionImpl(
     override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>) {
         annotations.clear()
         annotations.addAll(newAnnotations)
+    }
+
+    override fun replaceOrigin(newOrigin: AstDeclarationOrigin) {
+        origin = newOrigin
+    }
+
+    override fun replaceAttributes(newAttributes: AstDeclarationAttributes) {
+        attributes = newAttributes
     }
 
     override fun replaceDispatchReceiverType(newDispatchReceiverType: AstType?) {}

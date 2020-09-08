@@ -23,7 +23,8 @@ import com.ivianuu.ast.visitors.*
 open class AstValueParameterImpl @AstImplementationDetail constructor(
     override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
-    override val origin: AstDeclarationOrigin,
+    override var origin: AstDeclarationOrigin,
+    override var attributes: AstDeclarationAttributes,
     override var returnType: AstType,
     override var name: Name,
     override var symbol: AstValueParameterSymbol,
@@ -33,7 +34,6 @@ open class AstValueParameterImpl @AstImplementationDetail constructor(
     override var isVararg: Boolean,
     override var correspondingProperty: AstPropertySymbol?,
 ) : AstValueParameter() {
-    override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override val dispatchReceiverType: AstType? get() = null
     override val extensionReceiverType: AstType? get() = null
     override val initializer: AstExpression? get() = null
@@ -62,6 +62,14 @@ open class AstValueParameterImpl @AstImplementationDetail constructor(
     override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>) {
         annotations.clear()
         annotations.addAll(newAnnotations)
+    }
+
+    override fun replaceOrigin(newOrigin: AstDeclarationOrigin) {
+        origin = newOrigin
+    }
+
+    override fun replaceAttributes(newAttributes: AstDeclarationAttributes) {
+        attributes = newAttributes
     }
 
     override fun replaceDispatchReceiverType(newDispatchReceiverType: AstType?) {}

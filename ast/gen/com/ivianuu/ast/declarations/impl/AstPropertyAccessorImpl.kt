@@ -25,7 +25,8 @@ import com.ivianuu.ast.visitors.*
 internal class AstPropertyAccessorImpl(
     override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
-    override val origin: AstDeclarationOrigin,
+    override var origin: AstDeclarationOrigin,
+    override var attributes: AstDeclarationAttributes,
     override var returnType: AstType,
     override val valueParameters: MutableList<AstValueParameter>,
     override var body: AstBlock?,
@@ -35,7 +36,6 @@ internal class AstPropertyAccessorImpl(
     override var symbol: AstPropertyAccessorSymbol,
     override var isSetter: Boolean,
 ) : AstPropertyAccessor() {
-    override val attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override val dispatchReceiverType: AstType? get() = null
     override val extensionReceiverType: AstType? get() = null
     override val platformStatus: PlatformStatus get() = PlatformStatus.DEFAULT
@@ -63,6 +63,14 @@ internal class AstPropertyAccessorImpl(
     override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>) {
         annotations.clear()
         annotations.addAll(newAnnotations)
+    }
+
+    override fun replaceOrigin(newOrigin: AstDeclarationOrigin) {
+        origin = newOrigin
+    }
+
+    override fun replaceAttributes(newAttributes: AstDeclarationAttributes) {
+        attributes = newAttributes
     }
 
     override fun replaceDispatchReceiverType(newDispatchReceiverType: AstType?) {}

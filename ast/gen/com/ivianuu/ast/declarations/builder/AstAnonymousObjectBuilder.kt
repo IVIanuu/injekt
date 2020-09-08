@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 class AstAnonymousObjectBuilder(override val context: AstContext) : AstClassBuilder, AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
+    override var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     override val declarations: MutableList<AstDeclaration> = mutableListOf()
     override val superTypes: MutableList<AstType> = mutableListOf()
     override val delegateInitializers: MutableList<AstDelegateInitializer> = mutableListOf()
@@ -39,6 +40,7 @@ class AstAnonymousObjectBuilder(override val context: AstContext) : AstClassBuil
             context,
             annotations,
             origin,
+            attributes,
             declarations,
             superTypes,
             delegateInitializers,
@@ -46,13 +48,6 @@ class AstAnonymousObjectBuilder(override val context: AstContext) : AstClassBuil
             symbol,
         )
     }
-
-    @Deprecated("Modification of 'attributes' has no impact for AstAnonymousObjectBuilder", level = DeprecationLevel.HIDDEN)
-    override var attributes: AstDeclarationAttributes
-        get() = throw IllegalStateException()
-        set(value) {
-            throw IllegalStateException()
-        }
 
     @Deprecated("Modification of 'classKind' has no impact for AstAnonymousObjectBuilder", level = DeprecationLevel.HIDDEN)
     override var classKind: ClassKind
@@ -72,6 +67,7 @@ inline fun AstAnonymousObject.copy(init: AstAnonymousObjectBuilder.() -> Unit = 
     val copyBuilder = AstAnonymousObjectBuilder(context)
     copyBuilder.annotations.addAll(annotations)
     copyBuilder.origin = origin
+    copyBuilder.attributes = attributes
     copyBuilder.declarations.addAll(declarations)
     copyBuilder.superTypes.addAll(superTypes)
     copyBuilder.delegateInitializers.addAll(delegateInitializers)
