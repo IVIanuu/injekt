@@ -30,7 +30,6 @@ fun <T : AstElement, D> MutableList<T>.transformInplace(transformer: AstTransfor
                 iterator.add(resultIterator.next())
             }
         }
-
     }
 }
 
