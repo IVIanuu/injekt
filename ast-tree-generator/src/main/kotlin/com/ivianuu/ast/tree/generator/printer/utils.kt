@@ -108,7 +108,7 @@ fun Field.transformFunctionDeclaration(returnType: String): String {
 }
 
 fun transformFunctionDeclaration(transformName: String, returnType: String): String {
-    return "fun <D> transform$transformName(transformer: FirTransformer<D>, data: D): $returnType"
+    return "fun <D> transform$transformName(transformer: AstTransformer<D>, data: D): $returnType"
 }
 
 fun Field.replaceFunctionDeclaration(
