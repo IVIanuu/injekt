@@ -4,9 +4,9 @@ import com.ivianuu.ast.AstElement
 
 sealed class CompositeTransformResult<out T : Any> {
 
-    class Single<out T : Any>(val _single: T) : CompositeTransformResult<T>()
+    class Single<out T : Any>(val _element: T) : CompositeTransformResult<T>()
 
-    class Multiple<out T : Any>(val _list: List<T>) : CompositeTransformResult<T>()
+    class Multiple<out T : Any>(val _elements: List<T>) : CompositeTransformResult<T>()
 
     companion object {
         fun <T : Any> empty() = Multiple(emptyList<T>())
@@ -15,25 +15,25 @@ sealed class CompositeTransformResult<out T : Any> {
     }
 
     @Suppress("UNCHECKED_CAST")
-    val list: List<T>
+    val elements: List<T>
         get() = when (this) {
-            is Multiple<*> -> _list as List<T>
-            else -> error("!")
+            is Multiple<*> -> _elements as List<T>
+            is Single<*> -> listOf(_element) as List<T>
         }
 
 
     @Suppress("UNCHECKED_CAST")
     val single: T
         get() = when (this) {
-            is Single<*> -> _single as T
-            else -> error("!")
+            is Multiple<*> -> _elements.single() as T
+            is Single<*> -> _element as T
         }
 
     val isSingle
-        get() = this is Single<*>
+        get() = this is Single<*> || this.elements.size == 1
 
     val isEmpty
-        get() = this is Multiple<*> && this.list.isEmpty()
+        get() = this is Multiple<*> && this.elements.isEmpty()
 }
 
 @Suppress("NOTHING_TO_INLINE")

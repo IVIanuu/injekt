@@ -33,6 +33,7 @@ class AstEnumEntryBuilder(override val context: AstContext) : AstBuilder {
     val delegateInitializers: MutableList<AstDelegateInitializer> = mutableListOf()
     var name: Name by lazyVar { symbol.fqName.shortName() }
     lateinit var symbol: AstEnumEntrySymbol
+    lateinit var initializer: AstFunctionCall
 
     fun build(): AstEnumEntry {
         return AstEnumEntryImpl(
@@ -44,6 +45,7 @@ class AstEnumEntryBuilder(override val context: AstContext) : AstBuilder {
             delegateInitializers,
             name,
             symbol,
+            initializer,
         )
     }
 }
@@ -63,5 +65,6 @@ inline fun AstEnumEntry.copy(init: AstEnumEntryBuilder.() -> Unit = {}): AstEnum
     copyBuilder.delegateInitializers.addAll(delegateInitializers)
     copyBuilder.name = name
     copyBuilder.symbol = symbol
+    copyBuilder.initializer = initializer
     return copyBuilder.apply(init).build()
 }

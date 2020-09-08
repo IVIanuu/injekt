@@ -41,6 +41,7 @@ import com.ivianuu.ast.expressions.AstForLoop
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstQualifiedAccess
 import com.ivianuu.ast.expressions.AstReturn
+import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.expressions.AstSuperReference
 import com.ivianuu.ast.expressions.AstThisReference
 import com.ivianuu.ast.expressions.AstThrow
@@ -50,6 +51,8 @@ import com.ivianuu.ast.expressions.AstVararg
 import com.ivianuu.ast.expressions.AstVariableAssignment
 import com.ivianuu.ast.expressions.AstWhen
 import com.ivianuu.ast.expressions.AstWhileLoop
+import com.ivianuu.ast.printing.AstPrintingVisitor
+import com.ivianuu.ast.printing.formatPrintedString
 import com.ivianuu.ast.symbols.impl.AstClassifierSymbol
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.symbols.impl.AstTypeParameterSymbol
@@ -57,7 +60,10 @@ import com.ivianuu.ast.types.AstStarProjection
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstTypeProjectionWithVariance
+import com.ivianuu.ast.visitors.AstTransformerVoid
 import com.ivianuu.ast.visitors.AstVisitorVoid
+import com.ivianuu.ast.visitors.CompositeTransformResult
+import com.ivianuu.ast.visitors.transformSingle
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget
@@ -70,27 +76,12 @@ fun AstElement.toKotlinSourceString(): String {
         try {
             accept(Ast2KotlinSourceWriter(this), null)
         } catch (e: Exception) {
-            throw RuntimeException(toString().format(), e)
+            throw RuntimeException(toString().formatPrintedString(), e)
         }
-    }.format()
+    }.formatPrintedString()
 }
 
-private fun String.format() =
-    // replace tabs at beginning of line with white space
-    replace(Regex("\\n(%tab%)+", RegexOption.MULTILINE)) {
-        val size = it.range.last - it.range.first - 1
-        "\n" + (0..(size / 5)).joinToString("") { "    " }
-    }
-        // tabs that are inserted in the middle of lines should be replaced with empty strings
-        .replace(Regex("%tab%", RegexOption.MULTILINE), "")
-        // remove empty lines
-        .replace(Regex("\\n(\\s)*$", RegexOption.MULTILINE), "")
-        // brackets with comma on new line
-        .replace(Regex("}\\n(\\s)*,", RegexOption.MULTILINE), "},")
-
-private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
-
-    private val printer = Printer(out, "%tab%")
+private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) {
 
     private val uniqueNameByElement = mutableMapOf<AstElement, String>()
     private val existingNames = mutableSetOf<String>()
@@ -117,10 +108,6 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
         }
         existingNames += name
         return name
-    }
-
-    override fun visitElement(element: AstElement) {
-        error("Unhandled $element")
     }
 
     override fun visitFile(file: AstFile) = with(file) {
@@ -247,7 +234,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
             .filterNot {
                 it == context.builtIns.anyType ||
                         it == context.builtIns.annotationType ||
-                        it == context.builtIns.enumType
+                        it.classifier == context.builtIns.enumType.classifier
             }
         if (superTypesToRender.isEmpty()) return
         emit(": ")
@@ -265,9 +252,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
                         emit(")")
                     }
 
-                delegateInitializers
-                    .filter { it.delegatedSuperType == superType }
-                    .singleOrNull()
+                delegateInitializers.singleOrNull { it.delegatedSuperType == superType }
                     ?.let {
                         emit(" by ")
                         it.expression.emit()
@@ -441,6 +426,9 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
     override fun visitEnumEntry(enumEntry: AstEnumEntry) = with(enumEntry) {
         emitAnnotations()
         emit(name)
+        emit("(")
+        enumEntry.initializer.emitValueArguments()
+        emit(")")
         bracedBlock {
             emitDeclarations()
         }
@@ -1013,34 +1001,6 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstVisitorVoid() {
                             this.visibility != Visibilities.Local) -> emit(symbol.fqName)
             else -> emit(name)
         }
-    }
-
-    private fun emit(value: Any?) {
-        check(value !is Unit)
-        printer.print(value)
-    }
-
-    private fun emitLine(value: Any?) {
-        check(value !is Unit)
-        printer.println(value)
-    }
-
-    private fun emitLine() {
-        printer.println()
-    }
-
-    private fun emitSpace() {
-        emit(" ")
-    }
-
-    private fun AstElement.emit() {
-        accept(this@Ast2KotlinSourceWriter, null)
-    }
-
-    private inline fun indented(body: () -> Unit) {
-        printer.pushIndent()
-        body()
-        printer.popIndent()
     }
 
     private inline fun bracedBlock(

@@ -20,7 +20,7 @@ fun <T : AstElement, D> MutableList<T>.transformInplace(transformer: AstTransfor
         if (result.isSingle) {
             iterator.set(result.single)
         } else {
-            val resultIterator = result.list.listIterator()
+            val resultIterator = result.elements.listIterator()
             if (!resultIterator.hasNext()) {
                 iterator.remove()
             } else {
@@ -42,7 +42,7 @@ fun <T : AstElement, D> MutableList<T?>.transformInplaceNullable(transformer: As
         if (result.isSingle) {
             iterator.set(result.single)
         } else {
-            val resultIterator = result.list.listIterator()
+            val resultIterator = result.elements.listIterator()
             if (!resultIterator.hasNext()) {
                 iterator.remove()
             } else {

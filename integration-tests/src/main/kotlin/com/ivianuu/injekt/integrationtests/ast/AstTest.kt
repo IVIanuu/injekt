@@ -34,19 +34,18 @@ class AstTest {
             sources = arrayOf(
                 source(
                     """ 
-                        /*class NotTransformed(val param: String) {
+                        class NotTransformed(val param: String) {
                             var lol: String = "hello world"
                             
-                            /*var lol2: String 
+                            var lol2: String 
                                 get() = "hello world"
-                                set(value) {  }*/
+                                set(value) {  }
                         
                             init {
-                                //param
-                                //member()
-                                //this.member()
-                                //param.plus("lol")
-                                //com.ivianuu.injekt.given<String>()
+                                param
+                                member()
+                                this.member()
+                                param.plus("lol")
                             }
                             
                             fun member() {
@@ -104,20 +103,20 @@ class AstTest {
                         
                         interface AInterface
                         
-                        //enum class AEnum(val value: String) {
-                        //    A("a"), B("b")
-                        //}
+                        enum class AEnum(val value: String) {
+                            A("a"), B("b")
+                        }
                         
                         sealed class ASealed {
                             class AInner : ASealed()
                         }
                         
                         abstract class SuperClass {
-                            //abstract fun abstractFun(): String
+                            abstract fun abstractFun(): String
                         }
                         
                         class ImplementingClass : SuperClass() {
-                            //override fun abstractFun(): String = ""
+                            override fun abstractFun(): String = ""
                         }
                         
                         fun aFunction() {
@@ -149,7 +148,7 @@ class AstTest {
                             } finally {
                                 println("finally")
                             }
-                        }*/
+                        }
                         
                         fun withVararg(vararg params: String) {
                         }
@@ -159,7 +158,7 @@ class AstTest {
                             withVararg(*arrayOf("a", "b"), "c")
                         }
                         
-                        /*fun safeCall(name: String?) { 
+                        fun safeCall(name: String?) { 
                             name?.toList()?.size?.minus(1)
                         }
                         
@@ -231,14 +230,14 @@ class AstTest {
                             val b2 = ab - a
                         }
                         
-                        /*fun arrayAccess() {
+                        fun arrayAccess() {
                             val list = mutableListOf<Int>()
                             list += 1
                             list += 2
                             list += 3
                             val a = list[0]
                             list[0] = a
-                        }*/
+                        }
                         
                         fun infix() {
                             "a" to "b"
@@ -252,7 +251,7 @@ class AstTest {
                             val decPostfix = base--
                         }
                         
-                        /*fun whenBasic() {
+                        fun whenBasic() {
                             when {
                                 "a" == "b" -> {
                                     println("first")
@@ -264,7 +263,7 @@ class AstTest {
                                     println("second")
                                 }
                             }
-                        }*/
+                        }
                         
                         fun returningString(a: Float = 0f, b: Int = 0, c: Long = 0L) = 0
                         
@@ -273,7 +272,7 @@ class AstTest {
                         typealias MyTypeAlias2<T> = () -> String
                         
                         val prop = "hello world ${DOLLAR_SIGN}{aFunction()}lol${DOLLAR_SIGN}{returningString(0f)}"
-                        //val prop2 by lazy { "lol" }*/
+                        val prop2 by lazy { "lol" }
                         """,
                     injektImports = false,
                     initializeInjekt = false

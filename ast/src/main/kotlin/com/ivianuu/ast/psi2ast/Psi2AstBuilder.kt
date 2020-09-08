@@ -179,6 +179,8 @@ import org.jetbrains.kotlin.psi.KtWhenConditionWithExpression
 import org.jetbrains.kotlin.psi.KtWhenExpression
 import org.jetbrains.kotlin.psi.KtWhileExpression
 import org.jetbrains.kotlin.psi2ir.deparenthesize
+import org.jetbrains.kotlin.psi2ir.generators.createBodyGenerator
+import org.jetbrains.kotlin.psi2ir.generators.getOrFail
 import org.jetbrains.kotlin.psi2ir.isValueArgumentReorderingRequired
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.FunctionImportedFromObject
@@ -191,7 +193,6 @@ import org.jetbrains.kotlin.resolve.calls.model.ResolvedValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.VarargValueArgument
 import org.jetbrains.kotlin.resolve.calls.util.FakeCallableDescriptorForObject
 import org.jetbrains.kotlin.resolve.constants.evaluate.ConstantExpressionEvaluator
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.receivers.ClassValueReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ExtensionReceiver
@@ -489,10 +490,25 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
     }
 
     override fun visitEnumEntry(enumEntry: KtEnumEntry, data: Nothing?): AstElement {
-        val descriptor = enumEntry.descriptor<ClassDescriptor>()
+        val descriptor = getOrFail(BindingContext.CLASS, enumEntry)
         return buildEnumEntry {
             symbol = symbolTable.getEnumEntrySymbol(descriptor)
             annotations += enumEntry.annotationEntries.map { it.convert() }
+            val initCall = enumEntry.superTypeListEntries
+                .single()
+                .let { it as KtSuperTypeCallEntry }
+                .calleeExpression
+            val resolvedCall = initCall.getResolvedCall()!!
+            initializer = buildCallFrom(
+                resolvedCall = resolvedCall,
+                create = { AstFunctionCallBuilder(context) }
+            ) {
+                type = resolvedCall.getReturnType().toAstType()
+                callee = symbolTable.getConstructorSymbol(
+                    resolvedCall.resultingDescriptor as ConstructorDescriptor
+                )
+            } as AstFunctionCall
+
             declarations += enumEntry.declarations.map { it.convert() }
         }
     }

@@ -28,6 +28,7 @@ internal class AstEnumEntryImpl(
     override val delegateInitializers: MutableList<AstDelegateInitializer>,
     override var name: Name,
     override var symbol: AstEnumEntrySymbol,
+    override var initializer: AstFunctionCall,
 ) : AstEnumEntry() {
     override val classKind: ClassKind get() = ClassKind.ENUM_ENTRY
     override val superTypes: List<AstType> get() = emptyList()
@@ -40,12 +41,14 @@ internal class AstEnumEntryImpl(
         annotations.forEach { it.accept(visitor, data) }
         declarations.forEach { it.accept(visitor, data) }
         delegateInitializers.forEach { it.accept(visitor, data) }
+        initializer.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstEnumEntryImpl {
         annotations.transformInplace(transformer, data)
         declarations.transformInplace(transformer, data)
         delegateInitializers.transformInplace(transformer, data)
+        initializer = initializer.transformSingle(transformer, data)
         return this
     }
 
@@ -74,5 +77,9 @@ internal class AstEnumEntryImpl(
     override fun replaceDelegateInitializers(newDelegateInitializers: List<AstDelegateInitializer>) {
         delegateInitializers.clear()
         delegateInitializers.addAll(newDelegateInitializers)
+    }
+
+    override fun replaceInitializer(newInitializer: AstFunctionCall) {
+        initializer = newInitializer
     }
 }

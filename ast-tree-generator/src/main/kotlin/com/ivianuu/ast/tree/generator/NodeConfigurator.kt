@@ -224,6 +224,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         enumEntry.configure {
             parentArg(klass, "F", enumEntry)
             +symbol("AstEnumEntrySymbol")
+            +field("initializer", functionCall)
         }
 
         anonymousFunction.configure {
