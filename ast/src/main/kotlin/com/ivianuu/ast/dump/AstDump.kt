@@ -10,7 +10,7 @@ fun AstElement.dump(): String {
     return buildString {
         try {
             accept(AstDumpVisitor(this), null)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             throw RuntimeException(toString().formatPrintedString(), e)
         }
     }.formatPrintedString()

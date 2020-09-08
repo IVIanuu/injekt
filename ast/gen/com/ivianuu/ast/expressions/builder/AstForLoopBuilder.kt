@@ -3,7 +3,7 @@ package com.ivianuu.ast.expressions.builder
 import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
-import com.ivianuu.ast.declarations.AstValueParameter
+import com.ivianuu.ast.declarations.AstProperty
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstForLoop
 import com.ivianuu.ast.expressions.AstFunctionCall
@@ -25,7 +25,7 @@ class AstForLoopBuilder(override val context: AstContext) : AstLoopBuilder, AstE
     override var label: String? = null
     override lateinit var body: AstExpression
     lateinit var loopRange: AstExpression
-    lateinit var loopParameter: AstValueParameter
+    lateinit var loopParameter: AstProperty
 
     override fun build(): AstForLoop {
         return AstForLoopImpl(

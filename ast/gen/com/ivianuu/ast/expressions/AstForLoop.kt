@@ -1,7 +1,7 @@
 package com.ivianuu.ast.expressions
 
 import com.ivianuu.ast.AstContext
-import com.ivianuu.ast.declarations.AstValueParameter
+import com.ivianuu.ast.declarations.AstProperty
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -17,7 +17,7 @@ abstract class AstForLoop : AstLoop() {
     abstract override val label: String?
     abstract override val body: AstExpression
     abstract val loopRange: AstExpression
-    abstract val loopParameter: AstValueParameter
+    abstract val loopParameter: AstProperty
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitForLoop(this, data)
 
@@ -31,5 +31,5 @@ abstract class AstForLoop : AstLoop() {
 
     abstract fun replaceLoopRange(newLoopRange: AstExpression)
 
-    abstract fun replaceLoopParameter(newLoopParameter: AstValueParameter)
+    abstract fun replaceLoopParameter(newLoopParameter: AstProperty)
 }

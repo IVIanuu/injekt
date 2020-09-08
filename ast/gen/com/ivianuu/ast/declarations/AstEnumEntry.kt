@@ -27,7 +27,7 @@ abstract class AstEnumEntry : AstPureAbstractElement(), AstClass<AstEnumEntry>, 
     abstract override val delegateInitializers: List<AstDelegateInitializer>
     abstract override val name: Name
     abstract override val symbol: AstEnumEntrySymbol
-    abstract val initializer: AstFunctionCall
+    abstract val initializer: AstFunctionCall?
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitEnumEntry(this, data)
 
@@ -45,5 +45,5 @@ abstract class AstEnumEntry : AstPureAbstractElement(), AstClass<AstEnumEntry>, 
 
     abstract override fun replaceDelegateInitializers(newDelegateInitializers: List<AstDelegateInitializer>)
 
-    abstract fun replaceInitializer(newInitializer: AstFunctionCall)
+    abstract fun replaceInitializer(newInitializer: AstFunctionCall?)
 }

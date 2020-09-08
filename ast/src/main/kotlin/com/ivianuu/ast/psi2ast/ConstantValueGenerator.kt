@@ -20,11 +20,13 @@ import com.ivianuu.ast.expressions.buildConstULong
 import com.ivianuu.ast.expressions.buildConstUShort
 import com.ivianuu.ast.expressions.builder.buildClassReference
 import com.ivianuu.ast.expressions.builder.buildFunctionCall
+import com.ivianuu.ast.expressions.builder.buildQualifiedAccess
 import com.ivianuu.ast.expressions.builder.buildVararg
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.NotFoundClasses
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.resolve.constants.AnnotationValue
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
@@ -89,19 +91,15 @@ class ConstantValueGenerator(
                 }
             }
             is EnumValue -> {
-                /*val enumEntryDescriptor =
+                val enumEntryDescriptor =
                     constantKtType.memberScope.getContributedClassifier(
                         constantValue.enumEntryName,
                         NoLookupLocation.FROM_BACKEND
                     )!!
-                 {
-                    this.calleeReference
-                }
-                AstQualifiedAccess(
-                    callee = provider.get(enumEntryDescriptor) as AstClass,
+                builder.buildQualifiedAccess {
                     type = constantType
-                )*/
-                TODO()
+                    callee = symbolTable.getSymbol(enumEntryDescriptor)
+                }
             }
             is AnnotationValue -> generateAnnotationConstructorCall(constantValue.value)
             is KClassValue -> {
@@ -112,7 +110,7 @@ class ConstantValueGenerator(
                         ?: throw AssertionError("Unexpected KClassValue: $classifierKtType")
                     builder.buildClassReference {
                         type = constantValue.getType(module).let { typeConverter.convert(it) }
-                        classifier = symbolTable.getClassSymbol(classifierDescriptor as ClassDescriptor)
+                        classifier = symbolTable.getSymbol(classifierDescriptor as ClassDescriptor)
                     }
                 }
             }
@@ -133,7 +131,7 @@ class ConstantValueGenerator(
 
         return builder.buildFunctionCall {
             type = typeConverter.convert(annotationType)
-            callee = symbolTable.getConstructorSymbol(primaryConstructorDescriptor)
+            callee = symbolTable.getSymbol(primaryConstructorDescriptor)
             valueArguments += primaryConstructorDescriptor.valueParameters
                 .map { valueParameter ->
                     annotationDescriptor.allValueArguments[valueParameter.name]
@@ -142,4 +140,7 @@ class ConstantValueGenerator(
         }
     }
 
+}
+
+public annotation class A(public val xs: Array<kotlin.String>)  {
 }

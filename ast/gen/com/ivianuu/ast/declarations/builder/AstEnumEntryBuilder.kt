@@ -33,7 +33,7 @@ class AstEnumEntryBuilder(override val context: AstContext) : AstBuilder {
     val delegateInitializers: MutableList<AstDelegateInitializer> = mutableListOf()
     var name: Name by lazyVar { symbol.fqName.shortName() }
     lateinit var symbol: AstEnumEntrySymbol
-    lateinit var initializer: AstFunctionCall
+    var initializer: AstFunctionCall? = null
 
     fun build(): AstEnumEntry {
         return AstEnumEntryImpl(
@@ -48,6 +48,7 @@ class AstEnumEntryBuilder(override val context: AstContext) : AstBuilder {
             initializer,
         )
     }
+
 }
 
 @OptIn(ExperimentalContracts::class)

@@ -5,6 +5,9 @@ import org.junit.Test
 import com.ivianuu.ast.psi2ast.astEnabled
 import com.ivianuu.injekt.test.assertOk
 import java.io.File
+import kotlin.reflect.KProperty0
+import kotlin.reflect.KProperty1
+
 class GeneratedAstTests {
 
     init {
@@ -1887,6 +1890,21 @@ class GeneratedAstTests {
         }
     }
 
+
+    class A<T> {
+        fun foo() {}
+        val bar = 42
+    }
+
+    val test1 = A<String>::foo
+    val test2 = A<String>::bar
+
+    init {
+        val a = A<String>()
+        val hehe: KProperty0<Int> = a::bar
+        val hehe1: KProperty1<A<String>, Int>
+        hehe1 = A<String>::bar
+    }
 
     @Test
     fun test_home_ivianuu_otherprojects_kotlin_compiler_testData_ir_irText_expressions_callableReferences_boundInlineAdaptedReferencekt() {

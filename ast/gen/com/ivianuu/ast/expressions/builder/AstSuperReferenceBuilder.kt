@@ -7,6 +7,7 @@ import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstSuperReference
 import com.ivianuu.ast.expressions.builder.AstExpressionBuilder
 import com.ivianuu.ast.expressions.impl.AstSuperReferenceImpl
+import com.ivianuu.ast.symbols.impl.AstClassifierSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 import kotlin.contracts.*
@@ -20,7 +21,7 @@ import kotlin.contracts.*
 class AstSuperReferenceBuilder(override val context: AstContext) : AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
     override lateinit var type: AstType
-    var superType: AstType? = null
+    lateinit var superType: AstClassifierSymbol<*>
 
     override fun build(): AstSuperReference {
         return AstSuperReferenceImpl(
@@ -30,7 +31,6 @@ class AstSuperReferenceBuilder(override val context: AstContext) : AstExpression
             superType,
         )
     }
-
 }
 
 @OptIn(ExperimentalContracts::class)

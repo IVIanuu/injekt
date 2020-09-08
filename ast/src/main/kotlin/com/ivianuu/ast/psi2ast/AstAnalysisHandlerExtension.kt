@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalFileSystem
 import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalVirtualFile
 import org.jetbrains.kotlin.com.intellij.psi.PsiManager
 import org.jetbrains.kotlin.com.intellij.psi.SingleRootFileViewProvider
+import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
@@ -32,6 +33,7 @@ import java.lang.reflect.Modifier
 var astEnabled = false
 
 class AstAnalysisHandlerExtension(
+    private val languageVersionSettings: LanguageVersionSettings,
     private val outputDir: String
 ) : AnalysisHandlerExtension {
 
@@ -109,7 +111,7 @@ class AstAnalysisHandlerExtension(
         files: List<KtFile>
     ): List<KtFile> {
         val symbolTable = DescriptorSymbolTable()
-        val typeConverter = TypeConverter(symbolTable)
+        val typeConverter = TypeConverter(module.builtIns, languageVersionSettings, symbolTable)
         val constantValueGenerator = ConstantValueGenerator(module, symbolTable, typeConverter)
         typeConverter.constantValueGenerator = constantValueGenerator
         val stubGenerator = DeclarationStubGenerator(constantValueGenerator, symbolTable, typeConverter)

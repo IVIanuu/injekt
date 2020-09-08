@@ -1,7 +1,7 @@
 package com.ivianuu.ast.expressions.impl
 
 import com.ivianuu.ast.AstContext
-import com.ivianuu.ast.declarations.AstValueParameter
+import com.ivianuu.ast.declarations.AstProperty
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstForLoop
 import com.ivianuu.ast.expressions.AstFunctionCall
@@ -19,7 +19,7 @@ internal class AstForLoopImpl(
     override var label: String?,
     override var body: AstExpression,
     override var loopRange: AstExpression,
-    override var loopParameter: AstValueParameter,
+    override var loopParameter: AstProperty,
 ) : AstForLoop() {
     override val type: AstType get() = context.builtIns.unitType
 
@@ -57,7 +57,7 @@ internal class AstForLoopImpl(
         loopRange = newLoopRange
     }
 
-    override fun replaceLoopParameter(newLoopParameter: AstValueParameter) {
+    override fun replaceLoopParameter(newLoopParameter: AstProperty) {
         loopParameter = newLoopParameter
     }
 }

@@ -1,7 +1,7 @@
 package com.ivianuu.ast.expressions.impl
 
 import com.ivianuu.ast.AstContext
-import com.ivianuu.ast.declarations.AstValueParameter
+import com.ivianuu.ast.declarations.AstProperty
 import com.ivianuu.ast.expressions.AstCatch
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.visitors.*
@@ -13,7 +13,7 @@ import com.ivianuu.ast.visitors.*
 
 internal class AstCatchImpl(
     override val context: AstContext,
-    override var parameter: AstValueParameter,
+    override var parameter: AstProperty,
     override var body: AstExpression,
 ) : AstCatch() {
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
@@ -27,7 +27,7 @@ internal class AstCatchImpl(
         return this
     }
 
-    override fun replaceParameter(newParameter: AstValueParameter) {
+    override fun replaceParameter(newParameter: AstProperty) {
         parameter = newParameter
     }
 

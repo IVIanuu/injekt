@@ -13,7 +13,10 @@ import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.psi2ast.Psi2AstGeneratorContext
 import com.ivianuu.ast.psi2ast.platformStatus
 import com.ivianuu.ast.psi2ast.toAstVisibility
+import com.ivianuu.ast.symbols.AstSymbol
+import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
 import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
+import com.ivianuu.ast.symbols.impl.AstTypeParameterSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.utils.lazyVar
 import com.ivianuu.ast.visitors.AstTransformer
@@ -47,24 +50,18 @@ class AstLazyRegularClass(
     override var platformStatus: PlatformStatus = descriptor.platformStatus
     override val typeParameters: MutableList<AstTypeParameter> by lazyVar {
         descriptor.declaredTypeParameters.mapTo(mutableListOf()) {
-            context.symbolTable.getTypeParameterSymbol(it)
+            context.symbolTable.getSymbol<AstTypeParameterSymbol>(it)
             context.stubGenerator.getDeclaration(it) as AstTypeParameter
         }
     }
     override val declarations: MutableList<AstDeclaration> by lazyVar {
         mutableListOf<AstDeclaration>().apply {
             this += descriptor.constructors
-                .onEach { context.symbolTable.getConstructorSymbol(it) }
+                .onEach { context.symbolTable.getSymbol<AstConstructorSymbol>(it) }
                 .map { context.stubGenerator.getDeclaration(it) as AstConstructor }
             this += (descriptor.defaultType.memberScope.getContributedDescriptors()
                 .filterNot { it is PropertyAccessorDescriptor } + descriptor.staticScope.getContributedDescriptors())
-                .onEach {
-                    when (it) {
-                        is ClassDescriptor -> context.symbolTable.getClassSymbol(it)
-                        is SimpleFunctionDescriptor -> context.symbolTable.getNamedFunctionSymbol(it)
-                        is PropertyDescriptor -> context.symbolTable.getPropertySymbol(it)
-                    }
-                }
+                .onEach { context.symbolTable.getSymbol<AstSymbol<*>>(it) }
                 .map { context.stubGenerator.getDeclaration(it) as AstDeclaration }
         }
     }

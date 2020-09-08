@@ -793,7 +793,7 @@ class KotlinCompilation {
                     ExitCode.OK
                 else
                     ExitCode.COMPILATION_ERROR
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 if (e is RuntimeException || e is IllegalArgumentException) {
                     printDiagnostics()
                     error(e.toString())

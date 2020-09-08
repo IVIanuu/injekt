@@ -143,7 +143,7 @@ class AstTest {
                                 println("do work")
                             } catch (e: RuntimeException) {
                                 println("runtime ${DOLLAR_SIGN}e")
-                            } catch(e: Exception) { 
+                            } catch(e: Throwable) { 
                                 println("exception ${DOLLAR_SIGN}e")
                             } finally {
                                 println("finally")

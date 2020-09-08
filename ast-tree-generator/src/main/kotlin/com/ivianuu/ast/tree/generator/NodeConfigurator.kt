@@ -152,11 +152,11 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         forLoop.configure {
             +field("body", expression)
             +field("loopRange", expression)
-            +field("loopParameter", valueParameter)
+            +field("loopParameter", property)
         }
 
         catchClause.configure {
-            +field("parameter", valueParameter)
+            +field("parameter", property)
             +field("body", expression)
         }
 
@@ -224,7 +224,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         enumEntry.configure {
             parentArg(klass, "F", enumEntry)
             +symbol("AstEnumEntrySymbol")
-            +field("initializer", functionCall)
+            +field("initializer", functionCall, nullable = true)
         }
 
         anonymousFunction.configure {
@@ -307,6 +307,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
             +field("defaultValue", expression, nullable = true)
             generateBooleanFields("crossinline", "noinline", "vararg")
             +field("correspondingProperty", propertySymbolType, nullable = true)
+            +field("varargElementType", type, nullable = true)
         }
 
         variable.configure {
@@ -372,7 +373,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         superReference.configure {
-            +field("superType", type, nullable = true)
+            +field("superType", classifierSymbolType, "*")
         }
 
         thisReference.configure {

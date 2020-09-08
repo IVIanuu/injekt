@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import org.jetbrains.kotlin.descriptors.impl.LocalVariableDescriptor
 import org.jetbrains.kotlin.resolve.calls.components.isVararg
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -59,7 +60,7 @@ class DeclarationStubGenerator(
             descriptor is TypeAliasDescriptor && symbol is AstTypeAliasSymbol ->
                 descriptor.toTypeAliasStub(symbol)
             else -> error("Unexpected declaration $descriptor $symbol")
-        }
+        }.also { symbolTable.generateUnboundSymbols(this) }
     }
 
     private fun ClassDescriptor.toClassStub(
@@ -79,10 +80,10 @@ class DeclarationStubGenerator(
         this.dispatchReceiverType = this@toNamedFunctionStub.dispatchReceiverParameter?.type?.toAstType()
         this.extensionReceiverType = this@toNamedFunctionStub.extensionReceiverParameter?.type?.toAstType()
         this.typeParameters += this@toNamedFunctionStub.typeParameters.map {
-            it.toTypeParameterStub(symbolTable.getTypeParameterSymbol(it))
+            it.toTypeParameterStub(symbolTable.getSymbol(it))
         }
         this.valueParameters += this@toNamedFunctionStub.valueParameters.map {
-            it.toValueParameterStub(symbolTable.getValueParameterSymbol(it))
+            it.toValueParameterStub(symbolTable.getSymbol(it))
         }
         this.annotations += this@toNamedFunctionStub.annotations.mapNotNull {
             constantValueGenerator.generateAnnotationConstructorCall(it)
@@ -97,7 +98,7 @@ class DeclarationStubGenerator(
         this.returnType = this@toConstructorStub.returnType.toAstType()
         this.isPrimary = this@toConstructorStub.isPrimary
         this.valueParameters += this@toConstructorStub.valueParameters.map {
-            it.toValueParameterStub(symbolTable.getValueParameterSymbol(it))
+            it.toValueParameterStub(symbolTable.getSymbol(it))
         }
         this.annotations += this@toConstructorStub.annotations.mapNotNull {
             constantValueGenerator.generateAnnotationConstructorCall(it)

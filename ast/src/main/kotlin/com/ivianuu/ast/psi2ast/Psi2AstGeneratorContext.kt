@@ -6,6 +6,7 @@ import com.ivianuu.ast.declarations.AstConstructor
 import com.ivianuu.ast.declarations.AstNamedFunction
 import com.ivianuu.ast.declarations.AstProperty
 import com.ivianuu.ast.declarations.AstRegularClass
+import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.symbols.impl.AstConstructorSymbol
 import com.ivianuu.ast.symbols.impl.AstNamedFunctionSymbol
 import com.ivianuu.ast.symbols.impl.AstPropertySymbol
@@ -39,7 +40,7 @@ class Psi2AstGeneratorContext(
             ?.getContributedClassifier(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
             ?.let { it as ClassDescriptor }
             ?.let { descriptor ->
-                symbolTable.getClassSymbol(descriptor)
+                symbolTable.getSymbol<AstRegularClassSymbol>(descriptor)
                     .also { stubGenerator.getDeclaration(descriptor) }
             }
     }
@@ -49,7 +50,7 @@ class Psi2AstGeneratorContext(
             val scope = resolveMemberScope(fqName.parent())
             scope?.getContributedFunctions(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
                 ?.map { descriptor ->
-                    symbolTable.getNamedFunctionSymbol(descriptor)
+                    symbolTable.getSymbol<AstNamedFunctionSymbol>(descriptor)
                         .also { stubGenerator.getDeclaration(descriptor) }
                 }
                 ?: emptyList()
@@ -62,7 +63,7 @@ class Psi2AstGeneratorContext(
                 ?.let { it as ClassDescriptor }
                 ?.constructors
                 ?.map { descriptor ->
-                    symbolTable.getConstructorSymbol(descriptor)
+                    symbolTable.getSymbol<AstConstructorSymbol>(descriptor)
                         .also { stubGenerator.getDeclaration(descriptor) }
                 }
                 ?: emptyList()
@@ -72,7 +73,7 @@ class Psi2AstGeneratorContext(
         resolveMemberScope(fqName.parent())
             ?.getContributedVariables(fqName.shortName(), NoLookupLocation.FROM_BACKEND)
             ?.map { descriptor ->
-                symbolTable.getPropertySymbol(descriptor)
+                symbolTable.getSymbol<AstPropertySymbol>(descriptor)
                     .also { stubGenerator.getDeclaration(descriptor) }
             }
             ?: emptyList()

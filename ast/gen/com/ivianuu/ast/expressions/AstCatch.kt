@@ -3,7 +3,7 @@ package com.ivianuu.ast.expressions
 import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstElement
 import com.ivianuu.ast.AstPureAbstractElement
-import com.ivianuu.ast.declarations.AstValueParameter
+import com.ivianuu.ast.declarations.AstProperty
 import com.ivianuu.ast.visitors.*
 
 /*
@@ -13,12 +13,12 @@ import com.ivianuu.ast.visitors.*
 
 abstract class AstCatch : AstPureAbstractElement(), AstElement {
     abstract override val context: AstContext
-    abstract val parameter: AstValueParameter
+    abstract val parameter: AstProperty
     abstract val body: AstExpression
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitCatch(this, data)
 
-    abstract fun replaceParameter(newParameter: AstValueParameter)
+    abstract fun replaceParameter(newParameter: AstProperty)
 
     abstract fun replaceBody(newBody: AstExpression)
 }

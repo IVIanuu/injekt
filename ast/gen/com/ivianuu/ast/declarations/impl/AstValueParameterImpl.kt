@@ -33,6 +33,7 @@ open class AstValueParameterImpl @AstImplementationDetail constructor(
     override var isNoinline: Boolean,
     override var isVararg: Boolean,
     override var correspondingProperty: AstPropertySymbol?,
+    override var varargElementType: AstType?,
 ) : AstValueParameter() {
     override val dispatchReceiverType: AstType? get() = null
     override val extensionReceiverType: AstType? get() = null
@@ -50,12 +51,14 @@ open class AstValueParameterImpl @AstImplementationDetail constructor(
         annotations.forEach { it.accept(visitor, data) }
         returnType.accept(visitor, data)
         defaultValue?.accept(visitor, data)
+        varargElementType?.accept(visitor, data)
     }
 
     override fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstValueParameterImpl {
         annotations.transformInplace(transformer, data)
         returnType = returnType.transformSingle(transformer, data)
         defaultValue = defaultValue?.transformSingle(transformer, data)
+        varargElementType = varargElementType?.transformSingle(transformer, data)
         return this
     }
 
@@ -110,5 +113,9 @@ open class AstValueParameterImpl @AstImplementationDetail constructor(
 
     override fun replaceCorrespondingProperty(newCorrespondingProperty: AstPropertySymbol?) {
         correspondingProperty = newCorrespondingProperty
+    }
+
+    override fun replaceVarargElementType(newVarargElementType: AstType?) {
+        varargElementType = newVarargElementType
     }
 }

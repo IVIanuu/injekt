@@ -39,6 +39,7 @@ open class AstValueParameterBuilder(override val context: AstContext) : AstNamed
     open var isNoinline: Boolean = false
     open var isVararg: Boolean = false
     open var correspondingProperty: AstPropertySymbol? = null
+    open var varargElementType: AstType? = null
 
     @OptIn(AstImplementationDetail::class)
     override fun build(): AstValueParameter {
@@ -55,6 +56,7 @@ open class AstValueParameterBuilder(override val context: AstContext) : AstNamed
             isNoinline,
             isVararg,
             correspondingProperty,
+            varargElementType,
         )
     }
 
@@ -79,5 +81,6 @@ inline fun AstValueParameter.copy(init: AstValueParameterBuilder.() -> Unit = {}
     copyBuilder.isNoinline = isNoinline
     copyBuilder.isVararg = isVararg
     copyBuilder.correspondingProperty = correspondingProperty
+    copyBuilder.varargElementType = varargElementType
     return copyBuilder.apply(init).build()
 }

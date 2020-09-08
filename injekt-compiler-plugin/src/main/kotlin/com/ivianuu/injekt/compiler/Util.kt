@@ -900,7 +900,7 @@ private fun IrDeclarationWithName.isReader(injektContext: InjektContext): Boolea
     if (hasAnnotation(InjektFqNames.Reader)) return true
     return try {
         injektContext.readerChecker.isReader(descriptor, injektContext.bindingTrace)
-    } catch (e: Exception) {
+    } catch (e: Throwable) {
         false
     }
 }

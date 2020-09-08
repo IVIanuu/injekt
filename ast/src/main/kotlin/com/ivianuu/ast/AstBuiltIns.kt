@@ -6,6 +6,7 @@ import com.ivianuu.ast.psi2ast.DescriptorSymbolTable
 import com.ivianuu.ast.psi2ast.Psi2AstGeneratorContext
 import com.ivianuu.ast.psi2ast.TypeConverter
 import com.ivianuu.ast.symbols.impl.AstNamedFunctionSymbol
+import com.ivianuu.ast.symbols.impl.AstRegularClassSymbol
 import com.ivianuu.ast.symbols.impl.AstValueParameterSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.builder.copy
@@ -41,7 +42,7 @@ class AstBuiltIns(
 
     val booleanType = kotlinBuiltIns.booleanType.toAstType()
     val booleanSymbol = kotlinBuiltIns.boolean.toAstRegularClassSymbol()
-    val booleanNotSymbol = symbolTable.getNamedFunctionSymbol(
+    val booleanNotSymbol = symbolTable.getSymbol<AstNamedFunctionSymbol>(
         kotlinBuiltIns.boolean.unsubstitutedMemberScope
             .findSingleFunction(Name.identifier("not")) as SimpleFunctionDescriptor
     )
@@ -79,6 +80,8 @@ class AstBuiltIns(
 
     val stringType = kotlinBuiltIns.stringType.toAstType()
     val stringSymbol = kotlinBuiltIns.string.toAstRegularClassSymbol()
+
+    val arraySymbol = kotlinBuiltIns.array.toAstRegularClassSymbol()
 
     fun function(n: Int) = kotlinBuiltIns.getFunction(n).toAstRegularClassSymbol()
     fun suspendFunction(n: Int) = kotlinBuiltIns.getSuspendFunction(n).toAstRegularClassSymbol()
@@ -120,7 +123,7 @@ class AstBuiltIns(
     val lazyAndSymbol = intrinsicFunction(AstIntrinsics.LazyAnd, booleanType, 2)
     val lazyOrSymbol = intrinsicFunction(AstIntrinsics.LazyOr, booleanType, 2)
 
-    private fun ClassDescriptor.toAstRegularClassSymbol() = symbolTable.getClassSymbol(this)
+    private fun ClassDescriptor.toAstRegularClassSymbol() = symbolTable.getSymbol<AstRegularClassSymbol>(this)
         .also { context.stubGenerator.getDeclaration(this) }
     private fun KotlinType.toAstType() = typeConverter.convert(this)
 

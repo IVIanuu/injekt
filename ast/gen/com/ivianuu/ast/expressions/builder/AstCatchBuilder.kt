@@ -3,7 +3,7 @@ package com.ivianuu.ast.expressions.builder
 import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
-import com.ivianuu.ast.declarations.AstValueParameter
+import com.ivianuu.ast.declarations.AstProperty
 import com.ivianuu.ast.expressions.AstCatch
 import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.impl.AstCatchImpl
@@ -17,7 +17,7 @@ import kotlin.contracts.*
 
 @AstBuilderDsl
 class AstCatchBuilder(override val context: AstContext) : AstBuilder {
-    lateinit var parameter: AstValueParameter
+    lateinit var parameter: AstProperty
     lateinit var body: AstExpression
 
     fun build(): AstCatch {

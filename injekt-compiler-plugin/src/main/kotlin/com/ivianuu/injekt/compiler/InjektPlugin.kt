@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.languageVersionSettings
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.extensions.internal.TypeResolutionInterceptor
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
@@ -71,6 +72,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
         AnalysisHandlerExtension.registerExtension(
             project,
             AstAnalysisHandlerExtension(
+                configuration.languageVersionSettings,
                 Files.createTempDirectory("tmp").toFile()
                     .also { it.mkdirs() }
                     .absolutePath

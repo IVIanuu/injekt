@@ -36,6 +36,7 @@ abstract class AstValueParameter : AstPureAbstractElement(), AstVariable<AstValu
     abstract val isNoinline: Boolean
     abstract val isVararg: Boolean
     abstract val correspondingProperty: AstPropertySymbol?
+    abstract val varargElementType: AstType?
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitValueParameter(this, data)
 
@@ -70,4 +71,6 @@ abstract class AstValueParameter : AstPureAbstractElement(), AstVariable<AstValu
     abstract fun replaceIsVararg(newIsVararg: Boolean)
 
     abstract fun replaceCorrespondingProperty(newCorrespondingProperty: AstPropertySymbol?)
+
+    abstract fun replaceVarargElementType(newVarargElementType: AstType?)
 }
