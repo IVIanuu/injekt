@@ -725,6 +725,7 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
                     }
                 } else {
                     AstQualifiedAccessBuilder(context).apply {
+                        type = expression.getExpressionTypeWithCoercionToUnitOrFail().toAstType()
                         this.callee = callee
                     }
                 }
