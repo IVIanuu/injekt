@@ -231,10 +231,7 @@ class AstTest {
                         }
                         
                         fun arrayAccess() {
-                            val list = mutableListOf<Int>()
-                            list += 1
-                            list += 2
-                            list += 3
+                            val list = mutableListOf(1, 2, 3)
                             val a = list[0]
                             list[0] = a
                         }
