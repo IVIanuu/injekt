@@ -333,7 +333,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
     }
 
     override fun visitProperty(property: AstProperty) = with(property) {
-       emit(skipValVar = false)
+        emit(skipValVar = false)
     }
 
     private fun AstProperty.emit(skipValVar: Boolean) {
@@ -391,27 +391,29 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
         }
     }
 
-    override fun visitPropertyAccessor(propertyAccessor: AstPropertyAccessor): Unit = with(propertyAccessor) {
-        emitVisibility()
-        if (propertyAccessor.isSetter) {
-            emit("set")
-        } else {
-            emit("get")
+    override fun visitPropertyAccessor(propertyAccessor: AstPropertyAccessor): Unit =
+        with(propertyAccessor) {
+            emitVisibility()
+            if (propertyAccessor.isSetter) {
+                emit("set")
+            } else {
+                emit("get")
+            }
+            valueParameters.emit(skipBracesIfEmpty = body == null)
+            body?.let { body ->
+                emitSpace()
+                bracedBlock {
+                    body.emitWithInStatementContainer(true)
+                }
+            }
         }
-        valueParameters.emit(skipBracesIfEmpty = body == null)
-        body?.let { body ->
-            emitSpace()
-            bracedBlock {
+
+    override fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer) =
+        with(anonymousInitializer) {
+            bracedBlock(header = "init") {
                 body.emitWithInStatementContainer(true)
             }
         }
-    }
-
-    override fun visitAnonymousInitializer(anonymousInitializer: AstAnonymousInitializer) = with(anonymousInitializer) {
-        bracedBlock(header = "init") {
-            body.emitWithInStatementContainer(true)
-        }
-    }
 
     override fun visitEnumEntry(enumEntry: AstEnumEntry) = with(enumEntry) {
         emitAnnotations()
@@ -462,7 +464,9 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
         forWhere: Boolean
     ) {
         if (!forWhere) {
-            if (isReified) { emit("reified ") }
+            if (isReified) {
+                emit("reified ")
+            }
             emitAnnotations()
         }
         emit("$name")
@@ -689,32 +693,34 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
         }
     }
 
-    override fun visitVariableAssignment(variableAssignment: AstVariableAssignment) = with(variableAssignment) {
-        val callee = callee.owner
-        withReceivers(
-            dispatchReceiverType = callee.dispatchReceiverType,
-            extensionReceiverType = callee.extensionReceiverType,
-            dispatchReceiverArgument = dispatchReceiver,
-            extensionReceiverArgument = extensionReceiver,
-            callToken = "."
-        ) {
-            callee.emitCallableName()
+    override fun visitVariableAssignment(variableAssignment: AstVariableAssignment) =
+        with(variableAssignment) {
+            val callee = callee.owner
+            withReceivers(
+                dispatchReceiverType = callee.dispatchReceiverType,
+                extensionReceiverType = callee.extensionReceiverType,
+                dispatchReceiverArgument = dispatchReceiver,
+                extensionReceiverArgument = extensionReceiver,
+                callToken = "."
+            ) {
+                callee.emitCallableName()
+            }
+            emit(" = ")
+            value.emitWithInStatementContainer(false)
         }
-        emit(" = ")
-        value.emitWithInStatementContainer(false)
-    }
 
-    override fun visitAnonymousFunction(anonymousFunction: AstAnonymousFunction) = with(anonymousFunction) {
-        emit("${idName()}@ { ")
-        anonymousFunction.valueParameters.forEachIndexed { index, valueParameter ->
-            valueParameter.emit()
-            if (index != anonymousFunction.valueParameters.lastIndex) emit(", ")
+    override fun visitAnonymousFunction(anonymousFunction: AstAnonymousFunction) =
+        with(anonymousFunction) {
+            emit("${idName()}@ { ")
+            anonymousFunction.valueParameters.forEachIndexed { index, valueParameter ->
+                valueParameter.emit()
+                if (index != anonymousFunction.valueParameters.lastIndex) emit(", ")
+            }
+            emitLine(" ->")
+            indented { anonymousFunction.body!!.emitWithInStatementContainer(true) }
+            emitLine()
+            emitLine("}")
         }
-        emitLine(" ->")
-        indented { anonymousFunction.body!!.emitWithInStatementContainer(true) }
-        emitLine()
-        emitLine("}")
-    }
 
     override fun visitAnonymousObject(anonymousObject: AstAnonymousObject) = with(anonymousObject) {
         emit("object ")
@@ -745,7 +751,8 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
         branches.forEachIndexed { index, branch ->
             val condition = branch.condition
             if (index == branches.lastIndex && branches.size > 1 &&
-                condition is AstConst<*> && condition.value == true) {
+                condition is AstConst<*> && condition.value == true
+            ) {
                 emitLine("else {")
             } else {
                 if (index != 0) emit("else ")
@@ -844,21 +851,26 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
         emit("::class")
     }
 
-    override fun visitCallableReference(callableReference: AstCallableReference) = with(callableReference) {
-        val callee = callee.owner
-        withReceivers(
-            dispatchReceiverType = callee.dispatchReceiverType,
-            extensionReceiverType = callee.extensionReceiverType?.takeIf { extensionReceiver != null },
-            dispatchReceiverArgument = dispatchReceiver ?: callee.dispatchReceiverType,
-            extensionReceiverArgument = extensionReceiver ?: callee.extensionReceiverType,
-            callToken = "::"
-        ) {
-            when (callee) {
-                is AstNamedDeclaration -> callee.emitCallableName()
-                is AstConstructor -> callee.returnType.regularClassOrFail.fqName
+    override fun visitCallableReference(callableReference: AstCallableReference) =
+        with(callableReference) {
+            val callee = callee.owner
+            withReceivers(
+                dispatchReceiverType = callee.dispatchReceiverType,
+                extensionReceiverType = callee.extensionReceiverType?.takeIf { extensionReceiver != null },
+                dispatchReceiverArgument = dispatchReceiver ?: callee.dispatchReceiverType,
+                extensionReceiverArgument = extensionReceiver ?: callee.extensionReceiverType,
+                callToken = "::"
+            ) {
+                when (callee) {
+                    is AstNamedDeclaration -> {
+                        if (callee.dispatchReceiverType == null &&
+                                callee.extensionReceiverType == null) emit("::")
+                        callee.emitCallableName()
+                    }
+                    is AstConstructor -> emit("::${callee.returnType.regularClassOrFail.fqName}")
+                }
             }
         }
-    }
 
     override fun visitType(type: AstType) = with(type) { emit() }
 
@@ -875,7 +887,8 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
         }
         val classifier = classifier
         if (isMarkedNullable && (classifier !is AstTypeParameterSymbol ||
-                classifier.owner.bounds.singleOrNull() != context.builtIns.anyNType)) {
+                    classifier.owner.bounds.singleOrNull() != context.builtIns.anyNType)
+        ) {
             emit("?")
         }
     }
@@ -942,7 +955,8 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
             .map { it.first to it.second!! }
             .forEach { (index, valueArgument) ->
                 if (index == valueArguments.lastIndex &&
-                        valueArgument is AstAnonymousFunction) return@forEach
+                    valueArgument is AstAnonymousFunction
+                ) return@forEach
                 val valueParameter = callee.owner.valueParameters[index]
                 if (useNamedArguments) {
                     emit("${valueParameter.name} = ")
@@ -977,7 +991,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
     ) {
         when {
             dispatchReceiverType == null && extensionReceiverType == null -> block()
-            dispatchReceiverType != null && extensionReceiverType == null-> {
+            dispatchReceiverType != null && extensionReceiverType == null -> {
                 dispatchReceiverArgument!!.emitWithInStatementContainer(false)
                 emit(callToken)
                 block()

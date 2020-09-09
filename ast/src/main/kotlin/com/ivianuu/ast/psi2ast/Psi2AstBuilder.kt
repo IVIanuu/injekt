@@ -1439,70 +1439,16 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
         if (accessBuilder is AstBaseQualifiedAccessBuilder) {
             accessBuilder.fillReceiversAndTypeArgumentsFrom(resolvedCall)
         }
-        return if (resolvedCall.isValueArgumentReorderingRequired()) {
-            val valueArgumentsInEvaluationOrder = resolvedCall.valueArguments.values
-            val valueParameters = resolvedCall.resultingDescriptor.valueParameters
-
-            val block = AstBlockBuilder(context).apply { type = accessBuilder.type }
-
-            val valueArgumentsToValueParameters = mutableMapOf<ResolvedValueArgument, ValueParameterDescriptor>()
-            for ((index, valueArgument) in resolvedCall.valueArgumentsByIndex!!.withIndex()) {
-                val valueParameter = valueParameters[index]
-                valueArgumentsToValueParameters[valueArgument] = valueParameter
+        resolvedCall.valueArguments
+            .mapValues { it.value.toAstExpression(it.key) }
+            .forEach { (index, valueArgument) ->
+                when (accessBuilder) {
+                    is AstCallBuilder -> accessBuilder.valueArguments.add(index.index, valueArgument)
+                    is AstVariableAssignmentBuilder -> accessBuilder.value = valueArgument!!
+                }
             }
-
-            val astArgumentValues = mutableMapOf<ValueParameterDescriptor, AstExpression>()
-
-            for (valueArgument in valueArgumentsInEvaluationOrder) {
-                val valueParameter = valueArgumentsToValueParameters[valueArgument]!!
-                val astArgument = valueArgument.toAstExpression(valueParameter) ?: continue
-                val finalAstArgument = when {
-                    astArgument.hasNoSideEffects() -> astArgument
-                    else -> buildTemporaryVariable(astArgument)
-                        .also { block.statements += it }
-                        .let { buildQualifiedAccess { callee = it.symbol } }
-                }
-                astArgumentValues[valueParameter] = finalAstArgument
-            }
-
-            resolvedCall.valueArgumentsByIndex!!
-                .forEachIndexed { index, _ ->
-                    val valueParameter = valueParameters[index]
-                    when (accessBuilder) {
-                        is AstCallBuilder -> {
-                            accessBuilder.valueArguments.add(index, astArgumentValues[valueParameter])
-                        }
-                        is AstVariableAssignmentBuilder -> {
-                            accessBuilder.value = astArgumentValues[valueParameter]!!
-                        }
-                    }
-                }
-
-            block.statements.add(accessBuilder.build())
-            block.build()
-        } else {
-            resolvedCall.valueArguments
-                .map { it.value.toAstExpression(it.key) }
-                .forEachIndexed { index, valueArgument ->
-                    when (accessBuilder) {
-                        is AstCallBuilder -> {
-                            accessBuilder.valueArguments.add(index, valueArgument)
-                        }
-                        is AstVariableAssignmentBuilder -> {
-                            accessBuilder.value = valueArgument!!
-                        }
-                    }
-                }
-            accessBuilder.build()
-        }
+        return accessBuilder.build()
     }
-
-    private fun AstExpression.hasNoSideEffects() =
-        this is AstAnonymousFunction ||
-                (this is AstCallableReference && dispatchReceiver == null && extensionReceiver == null) ||
-                this is AstClassReference ||
-                this is AstConst<*> ||
-                (this is AstQualifiedAccess && callee is AstVariable<*>)
 
     private fun ResolvedValueArgument.toAstExpression(
         valueParameter: ValueParameterDescriptor
