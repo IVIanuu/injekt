@@ -2,7 +2,7 @@ package com.ivianuu.ast.expressions
 
 import com.ivianuu.ast.AstContext
 import com.ivianuu.ast.AstPureAbstractElement
-import com.ivianuu.ast.symbols.AstSymbol
+import com.ivianuu.ast.AstTarget
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -15,8 +15,7 @@ abstract class AstThisReference : AstPureAbstractElement(), AstExpression {
     abstract override val context: AstContext
     abstract override val annotations: List<AstFunctionCall>
     abstract override val type: AstType
-    abstract val labelName: String?
-    abstract val boundSymbol: AstSymbol<*>?
+    abstract val target: AstTarget<*>
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitThisReference(this, data)
 
@@ -24,7 +23,5 @@ abstract class AstThisReference : AstPureAbstractElement(), AstExpression {
 
     abstract override fun replaceType(newType: AstType)
 
-    abstract fun replaceLabelName(newLabelName: String?)
-
-    abstract fun replaceBoundSymbol(newBoundSymbol: AstSymbol<*>?)
+    abstract fun replaceTarget(newTarget: AstTarget<*>)
 }

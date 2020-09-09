@@ -69,13 +69,6 @@ object ImplementationConfigurator : AbstractAstTreeImplementationConfigurator() 
             }
         }
 
-        impl(thisReference) {
-            default("boundSymbol") {
-                value = "null"
-                isMutable = true
-            }
-        }
-
         impl(valueParameter) {
             kind = OpenClass
             default("isVar") {

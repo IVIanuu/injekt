@@ -99,7 +99,8 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
         variable,
         typeParametersOwner,
         callableDeclaration,
-        memberDeclaration
+        memberDeclaration,
+        targetElement
     ) {
         visitorSuperType = variable
         transformerType = statement
@@ -111,7 +112,7 @@ object AstTreeBuilder : AbstractAstTreeBuilder() {
             transformerType = statement
         }
     val klass =
-        element("Class", Declaration, classLikeDeclaration, declarationContainer) {
+        element("Class", Declaration, classLikeDeclaration, declarationContainer, targetElement) {
             visitorSuperType = classLikeDeclaration
             transformerType = statement
         }

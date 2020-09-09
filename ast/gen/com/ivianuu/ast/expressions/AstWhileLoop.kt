@@ -13,7 +13,6 @@ abstract class AstWhileLoop : AstLoop() {
     abstract override val context: AstContext
     abstract override val annotations: List<AstFunctionCall>
     abstract override val type: AstType
-    abstract override val label: String?
     abstract val condition: AstExpression
     abstract override val body: AstExpression
 
@@ -22,8 +21,6 @@ abstract class AstWhileLoop : AstLoop() {
     abstract override fun replaceAnnotations(newAnnotations: List<AstFunctionCall>)
 
     abstract override fun replaceType(newType: AstType)
-
-    abstract override fun replaceLabel(newLabel: String?)
 
     abstract fun replaceCondition(newCondition: AstExpression)
 

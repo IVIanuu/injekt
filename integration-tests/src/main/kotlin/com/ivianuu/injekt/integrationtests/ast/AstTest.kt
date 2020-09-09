@@ -34,7 +34,7 @@ class AstTest {
             sources = arrayOf(
                 source(
                     """
-                        class NotTransformed(val param: String) {
+                        /*class NotTransformed(val param: String) {
                             var lol: String = "hello world"
                             
                             var lol2: String 
@@ -269,7 +269,13 @@ class AstTest {
                         typealias MyTypeAlias2<T> = () -> String
                         
                         val prop = "hello world ${DOLLAR_SIGN}{aFunction()}lol${DOLLAR_SIGN}{returningString(0f)}"
-                        val prop2 by lazy { "lol" }
+                        val prop2 by lazy { "lol" }*/
+                        
+                        class MyClass {
+                            init {
+                                return
+                            }
+                        }
                         """,
                     injektImports = false,
                     initializeInjekt = false

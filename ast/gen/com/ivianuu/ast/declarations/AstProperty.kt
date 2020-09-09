@@ -1,6 +1,7 @@
 package com.ivianuu.ast.declarations
 
 import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.AstTargetElement
 import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.Visibility
 import com.ivianuu.ast.expressions.AstExpression
@@ -17,7 +18,7 @@ import com.ivianuu.ast.visitors.*
  * DO NOT MODIFY IT MANUALLY
  */
 
-abstract class AstProperty : AstVariable<AstProperty>, AstTypeParametersOwner, AstCallableDeclaration<AstProperty>, AstMemberDeclaration() {
+abstract class AstProperty : AstVariable<AstProperty>, AstTypeParametersOwner, AstCallableDeclaration<AstProperty>, AstMemberDeclaration(), AstTargetElement {
     abstract override val context: AstContext
     abstract override val annotations: List<AstFunctionCall>
     abstract override val origin: AstDeclarationOrigin

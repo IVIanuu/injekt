@@ -21,7 +21,6 @@ import kotlin.contracts.*
 @AstBuilderDsl
 class AstDoWhileLoopBuilder(override val context: AstContext) : AstLoopBuilder, AstExpressionBuilder {
     override val annotations: MutableList<AstFunctionCall> = mutableListOf()
-    override var label: String? = null
     lateinit var condition: AstExpression
     override lateinit var body: AstExpression
 
@@ -29,12 +28,10 @@ class AstDoWhileLoopBuilder(override val context: AstContext) : AstLoopBuilder, 
         return AstDoWhileLoopImpl(
             context,
             annotations,
-            label,
             condition,
             body,
         )
     }
-
 
     @Deprecated("Modification of 'type' has no impact for AstDoWhileLoopBuilder", level = DeprecationLevel.HIDDEN)
     override var type: AstType
@@ -53,7 +50,6 @@ inline fun AstBuilder.buildDoWhileLoop(init: AstDoWhileLoopBuilder.() -> Unit): 
 inline fun AstDoWhileLoop.copy(init: AstDoWhileLoopBuilder.() -> Unit = {}): AstDoWhileLoop {
     val copyBuilder = AstDoWhileLoopBuilder(context)
     copyBuilder.annotations.addAll(annotations)
-    copyBuilder.label = label
     copyBuilder.condition = condition
     copyBuilder.body = body
     return copyBuilder.apply(init).build()

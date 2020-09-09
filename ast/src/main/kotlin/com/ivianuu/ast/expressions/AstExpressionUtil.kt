@@ -4,6 +4,7 @@ import com.ivianuu.ast.Visibilities
 import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.declarations.builder.AstFunctionBuilder
 import com.ivianuu.ast.declarations.builder.buildProperty
+import com.ivianuu.ast.declarations.replaceExplicitReceiver
 import com.ivianuu.ast.expressions.builder.AstFunctionCallBuilder
 import com.ivianuu.ast.expressions.builder.buildBlock
 import com.ivianuu.ast.expressions.builder.buildFunctionCall
@@ -15,6 +16,7 @@ import com.ivianuu.ast.expressions.impl.AstConstImpl
 import com.ivianuu.ast.symbols.impl.AstFunctionSymbol
 import com.ivianuu.ast.symbols.impl.AstPropertySymbol
 import com.ivianuu.ast.types.AstType
+import com.ivianuu.ast.types.makeNullable
 import org.jetbrains.kotlin.name.Name
 
 fun AstBuilder.buildConstNull(): AstExpression = buildConst(null, AstConstKind.Null)
@@ -116,6 +118,30 @@ fun AstBuilder.buildElvisExpression(
             result = buildQualifiedAccess { callee = tmp.symbol }
         }
         branches += buildElseBranch(right)
+    }
+}
+
+fun AstBuilder.buildSafeCallExpression(
+    receiver: AstExpression,
+    selector: AstBaseQualifiedAccess
+) = buildBlock {
+    val tmp = buildTemporaryVariable(receiver).also { statements += it }
+    statements += buildWhen {
+        this.type = selector.type.makeNullable()
+        branches += buildWhenBranch {
+            condition = buildFunctionCall {
+                callee = context.builtIns.structuralNotEqualSymbol
+                valueArguments += buildQualifiedAccess { callee = tmp.symbol }
+                valueArguments += buildConstNull()
+            }
+            result = selector
+                .also {
+                    it.replaceExplicitReceiver(
+                        buildQualifiedAccess { callee = tmp.symbol }
+                    )
+                }
+        }
+        branches += buildElseBranch(buildConstNull())
     }
 }
 

@@ -19,6 +19,5 @@ interface AstLoopBuilder : AstBuilder {
     abstract val annotations: MutableList<AstFunctionCall>
     abstract var type: AstType
     abstract var body: AstExpression
-    abstract var label: String?
     fun build(): AstLoop
 }

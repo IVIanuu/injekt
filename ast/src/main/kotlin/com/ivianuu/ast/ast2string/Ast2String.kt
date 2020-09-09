@@ -3,9 +3,7 @@ package com.ivianuu.ast.ast2string
 import com.ivianuu.ast.AstAnnotationContainer
 import com.ivianuu.ast.AstElement
 import com.ivianuu.ast.AstIntrinsics
-import com.ivianuu.ast.AstLoopTarget
 import com.ivianuu.ast.AstSpreadElement
-import com.ivianuu.ast.AstTargetElement
 import com.ivianuu.ast.PlatformStatus
 import com.ivianuu.ast.Visibilities
 import com.ivianuu.ast.declarations.AstAnonymousFunction
@@ -29,7 +27,6 @@ import com.ivianuu.ast.declarations.AstValueParameter
 import com.ivianuu.ast.declarations.fqName
 import com.ivianuu.ast.declarations.regularClassOrFail
 import com.ivianuu.ast.declarations.regularClassOrNull
-import com.ivianuu.ast.deepcopy.deepCopy
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstBreak
 import com.ivianuu.ast.expressions.AstCall
@@ -39,12 +36,10 @@ import com.ivianuu.ast.expressions.AstConst
 import com.ivianuu.ast.expressions.AstConstKind
 import com.ivianuu.ast.expressions.AstContinue
 import com.ivianuu.ast.expressions.AstDoWhileLoop
-import com.ivianuu.ast.expressions.AstExpression
 import com.ivianuu.ast.expressions.AstForLoop
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstQualifiedAccess
 import com.ivianuu.ast.expressions.AstReturn
-import com.ivianuu.ast.expressions.AstStatement
 import com.ivianuu.ast.expressions.AstSuperReference
 import com.ivianuu.ast.expressions.AstThisReference
 import com.ivianuu.ast.expressions.AstThrow
@@ -54,14 +49,6 @@ import com.ivianuu.ast.expressions.AstVararg
 import com.ivianuu.ast.expressions.AstVariableAssignment
 import com.ivianuu.ast.expressions.AstWhen
 import com.ivianuu.ast.expressions.AstWhileLoop
-import com.ivianuu.ast.expressions.buildConstBoolean
-import com.ivianuu.ast.expressions.buildTemporaryVariable
-import com.ivianuu.ast.expressions.builder.buildBlock
-import com.ivianuu.ast.expressions.builder.buildBreak
-import com.ivianuu.ast.expressions.builder.buildFunctionCall
-import com.ivianuu.ast.expressions.builder.buildQualifiedAccess
-import com.ivianuu.ast.expressions.builder.buildWhen
-import com.ivianuu.ast.expressions.builder.buildWhenBranch
 import com.ivianuu.ast.printing.AstPrintingVisitor
 import com.ivianuu.ast.printing.formatPrintedString
 import com.ivianuu.ast.symbols.impl.AstClassifierSymbol
@@ -71,10 +58,7 @@ import com.ivianuu.ast.types.AstStarProjection
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.types.AstTypeProjection
 import com.ivianuu.ast.types.AstTypeProjectionWithVariance
-import com.ivianuu.ast.visitors.AstTransformerVoid
 import com.ivianuu.ast.visitors.AstVisitorVoid
-import com.ivianuu.ast.visitors.CompositeTransformResult
-import com.ivianuu.ast.visitors.compose
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget
@@ -95,19 +79,14 @@ fun AstElement.toKotlinSourceString(): String {
 
 private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) {
 
-    private val uniqueNameByElement = mutableMapOf<AstElement, String>()
-    private val existingNames = mutableSetOf<String>()
-    private fun AstElement.uniqueName(): String {
-        return uniqueNameByElement.getOrPut(this) {
-            if (this is AstNamedDeclaration && !name.isSpecial) name.asString()
+    private val idsByElement = mutableMapOf<AstElement, String>()
+    private val existingIds = mutableSetOf<String>()
+    private fun AstElement.idName(): String {
+        return idsByElement.getOrPut(this) {
+            if (this is AstPropertyAccessor) ""
+            else if (this is AstNamedDeclaration && !name.isSpecial) name.asString()
             else allocateUniqueName()
         }
-    }
-
-    private val uniqueLabelNameByTarget = mutableMapOf<AstTargetElement, String>()
-    private fun AstTargetElement.uniqueLabelName(): String {
-        return if (this is AstNamedDeclaration) name.asString()
-        else uniqueLabelNameByTarget.getOrPut(this) { allocateUniqueName() }
     }
 
     private var inStatementContainer = false
@@ -123,14 +102,14 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
     }
 
     private fun allocateUniqueName(): String {
-        val finalBase = "tmp"
+        val finalBase = "id"
         var name = finalBase
         var differentiator = 2
-        while (name in existingNames) {
+        while (name in existingIds) {
             name = finalBase + differentiator
             differentiator++
         }
-        existingNames += name
+        existingIds += name
         return name
     }
 
@@ -198,7 +177,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
                 emit("object ")
             }
         }.let { }
-        emit(uniqueName())
+        emit(idName())
 
         if (typeParameters.isNotEmpty()) {
             typeParameters.emitList()
@@ -316,7 +295,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
             emit(".")
         }
 
-        emit(uniqueName())
+        emit(idName())
 
         valueParameters.emit()
 
@@ -366,6 +345,8 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
         if (isInline) {
             emit("inline ")
         }
+        if (isLateinit) emit("lateinit ")
+        if (isConst) emit("const ")
         if (!skipValVar) {
             if (isVar) {
                 emit("var ")
@@ -381,7 +362,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
             extensionReceiverType!!.emit()
             emit(".")
         }
-        emit(uniqueName())
+        emit(idName())
         emit(": ")
         returnType.emit()
         if (typeParameters.isNotEmpty()) {
@@ -452,10 +433,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
             forEachIndexed { index, typeParameter ->
                 typeParameter.emit(
                     boundToRender = typeParameter.bounds.singleOrNull()
-                        ?.takeIf {
-                            !it.isMarkedNullable ||
-                                    it.classifier != it.context.builtIns.anyType.classifier
-                        },
+                        ?.takeIf { it != it.context.builtIns.anyNType },
                     forWhere = false
                 )
                 if (index != lastIndex) emit(", ")
@@ -727,7 +705,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
     }
 
     override fun visitAnonymousFunction(anonymousFunction: AstAnonymousFunction) = with(anonymousFunction) {
-        emit("${uniqueLabelName()}@ { ")
+        emit("${idName()}@ { ")
         anonymousFunction.valueParameters.forEachIndexed { index, valueParameter ->
             valueParameter.emit()
             if (index != anonymousFunction.valueParameters.lastIndex) emit(", ")
@@ -785,7 +763,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
     }
 
     override fun visitWhileLoop(whileLoop: AstWhileLoop) = with(whileLoop) {
-        emit("${uniqueLabelName()}@ while (")
+        emit("${idName()}@ while (")
         condition.emitWithInStatementContainer(false)
         emitLine(") {")
         indented { body.emitWithInStatementContainer(true) }
@@ -793,7 +771,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
     }
 
     override fun visitDoWhileLoop(doWhileLoop: AstDoWhileLoop) = with(doWhileLoop) {
-        emitLine("${uniqueLabelName()}@ do {")
+        emitLine("${idName()}@ do {")
         indented { body.emitWithInStatementContainer(true) }
         emit("} while (")
         condition.emitWithInStatementContainer(false)
@@ -801,7 +779,7 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
     }
 
     override fun visitForLoop(forLoop: AstForLoop) = with(forLoop) {
-        emit("${uniqueLabelName()}@ for (")
+        emit("${idName()}@ for (")
         loopParameter.emit(skipValVar = true)
         emit(" in ")
         loopRange.emitWithInStatementContainer(false)
@@ -832,30 +810,26 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
     }
 
     override fun visitBreak(breakExpression: AstBreak) = with(breakExpression) {
-        emit("break@${target.labeledElement.uniqueLabelName()}")
+        emit("break@${target.element.idName()}")
     }
 
     override fun visitContinue(continueExpression: AstContinue) = with(continueExpression) {
-        emit("continue@${target.labeledElement.uniqueLabelName()}")
+        emit("continue@${target.element.idName()}")
     }
 
     override fun visitReturn(returnExpression: AstReturn) = with(returnExpression) {
-        emit("return")
-        val targetLabel = returnExpression.target.labelName
-        if (targetLabel != null)
-            emit("@$targetLabel")
-        else emitSpace()
-        result.emit()
+        val label = returnExpression.target.element.idName()
+        emit("return${if (label.isNotEmpty()) "@$label" else ""} ")
+        result.emitWithInStatementContainer(false)
     }
 
     override fun visitThrow(throwExpression: AstThrow) = with(throwExpression) {
         emit("throw ")
-        exception.emit()
+        exception.emitWithInStatementContainer(false)
     }
 
     override fun visitThisReference(thisReference: AstThisReference) = with(thisReference) {
-        emit("this")
-        if (labelName != null) emit("@$labelName")
+        emit("this@${target.element.idName()}")
     }
 
     override fun visitSuperReference(superReference: AstSuperReference) {
@@ -899,7 +873,11 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
             }
             emit(">")
         }
-        if (isMarkedNullable) emit("?")
+        val classifier = classifier
+        if (isMarkedNullable && (classifier !is AstTypeParameterSymbol ||
+                classifier.owner.bounds.singleOrNull() != context.builtIns.anyNType)) {
+            emit("?")
+        }
     }
 
     override fun visitTypeProjection(typeProjection: AstTypeProjection) = with(typeProjection) {
@@ -1031,14 +1009,15 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
 
     private fun AstNamedDeclaration.emitCallableName() {
         when {
-            this is AstProperty && isLocal -> emit(uniqueName())
+            this is AstProperty && isLocal -> emit(idName())
             this is AstCallableDeclaration<*> &&
                     this !is AstValueParameter &&
                     dispatchReceiverType == null &&
                     extensionReceiverType == null &&
                     (this !is AstNamedFunction ||
                             this.visibility != Visibilities.Local) -> emit(symbol.fqName)
-            else -> emit(uniqueName())
+            this is AstEnumEntry -> emit(symbol.fqName)
+            else -> emit(idName())
         }
     }
 

@@ -27,7 +27,6 @@ internal class AstAnonymousFunctionImpl(
     override val valueParameters: MutableList<AstValueParameter>,
     override var body: AstBlock?,
     override var type: AstType,
-    override var label: String?,
     override var symbol: AstAnonymousFunctionSymbol,
 ) : AstAnonymousFunction() {
     override val dispatchReceiverType: AstType? get() = null
@@ -89,9 +88,5 @@ internal class AstAnonymousFunctionImpl(
 
     override fun replaceType(newType: AstType) {
         type = newType
-    }
-
-    override fun replaceLabel(newLabel: String?) {
-        label = newLabel
     }
 }

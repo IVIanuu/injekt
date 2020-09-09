@@ -15,7 +15,6 @@ import com.ivianuu.ast.visitors.*
 internal class AstWhileLoopImpl(
     override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
-    override var label: String?,
     override var condition: AstExpression,
     override var body: AstExpression,
 ) : AstWhileLoop() {
@@ -40,10 +39,6 @@ internal class AstWhileLoopImpl(
     }
 
     override fun replaceType(newType: AstType) {}
-
-    override fun replaceLabel(newLabel: String?) {
-        label = newLabel
-    }
 
     override fun replaceCondition(newCondition: AstExpression) {
         condition = newCondition

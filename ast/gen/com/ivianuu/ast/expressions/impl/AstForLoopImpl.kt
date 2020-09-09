@@ -16,7 +16,6 @@ import com.ivianuu.ast.visitors.*
 internal class AstForLoopImpl(
     override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
-    override var label: String?,
     override var body: AstExpression,
     override var loopRange: AstExpression,
     override var loopParameter: AstProperty,
@@ -44,10 +43,6 @@ internal class AstForLoopImpl(
     }
 
     override fun replaceType(newType: AstType) {}
-
-    override fun replaceLabel(newLabel: String?) {
-        label = newLabel
-    }
 
     override fun replaceBody(newBody: AstExpression) {
         body = newBody

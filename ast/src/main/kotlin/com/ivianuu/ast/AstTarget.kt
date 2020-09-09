@@ -1,29 +1,28 @@
 package com.ivianuu.ast
 
+import com.ivianuu.ast.declarations.AstClass
+import com.ivianuu.ast.declarations.AstEnumEntry
 import com.ivianuu.ast.declarations.AstFunction
+import com.ivianuu.ast.declarations.AstProperty
 import com.ivianuu.ast.expressions.AstLoop
 
 interface AstTarget<E : AstTargetElement> {
-    val labelName: String?
-    val labeledElement: E
+    val element: E
     fun bind(element: E)
 }
 
-abstract class AstAbstractTarget<E : AstTargetElement>(
-    override val labelName: String?
-) : AstTarget<E> {
-    override lateinit var labeledElement: E
+abstract class AstAbstractTarget<E : AstTargetElement> : AstTarget<E> {
+    override lateinit var element: E
 
     override fun bind(element: E) {
-        labeledElement = element
+        this.element = element
     }
 }
 
-class AstFunctionTarget(
-    labelName: String?,
-    val isLambda: Boolean
-) : AstAbstractTarget<AstFunction<*>>(labelName)
+class AstClassTarget : AstAbstractTarget<AstClass<*>>()
 
-class AstLoopTarget(
-    labelName: String?
-) : AstAbstractTarget<AstLoop>(labelName)
+class AstFunctionTarget : AstAbstractTarget<AstFunction<*>>()
+
+class AstLoopTarget : AstAbstractTarget<AstLoop>()
+
+class AstPropertyTarget : AstAbstractTarget<AstProperty>()

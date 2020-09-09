@@ -33,7 +33,6 @@ class AstAnonymousFunctionBuilder(override val context: AstContext) : AstFunctio
     override val valueParameters: MutableList<AstValueParameter> = mutableListOf()
     override var body: AstBlock? = null
     override lateinit var type: AstType
-    var label: String? = null
     lateinit var symbol: AstAnonymousFunctionSymbol
 
     override fun build(): AstAnonymousFunction {
@@ -47,7 +46,6 @@ class AstAnonymousFunctionBuilder(override val context: AstContext) : AstFunctio
             valueParameters,
             body,
             type,
-            label,
             symbol,
         )
     }
@@ -70,7 +68,6 @@ inline fun AstAnonymousFunction.copy(init: AstAnonymousFunctionBuilder.() -> Uni
     copyBuilder.valueParameters.addAll(valueParameters)
     copyBuilder.body = body
     copyBuilder.type = type
-    copyBuilder.label = label
     copyBuilder.symbol = symbol
     return copyBuilder.apply(init).build()
 }

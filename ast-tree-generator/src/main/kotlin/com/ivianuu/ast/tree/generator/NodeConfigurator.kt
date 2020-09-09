@@ -136,7 +136,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         loop.configure {
             +field("body", expression)
-            +stringField("label", nullable = true)
         }
 
         whileLoop.configure {
@@ -229,7 +228,6 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
 
         anonymousFunction.configure {
             parentArg(function, "F", anonymousFunction)
-            +stringField("label", nullable = true)
             +symbol("AstAnonymousFunctionSymbol")
         }
 
@@ -377,13 +375,7 @@ object NodeConfigurator : AbstractFieldConfigurator<AstTreeBuilder>(AstTreeBuild
         }
 
         thisReference.configure {
-            +stringField("labelName", nullable = true)
-            +field(
-                "boundSymbol",
-                astSymbolType,
-                "*",
-                nullable = true
-            )
+            +field("target", targetType, "*")
         }
 
         whenExpression.configure {

@@ -26,7 +26,6 @@ abstract class AstAnonymousFunction : AstPureAbstractElement(), AstFunction<AstA
     abstract override val valueParameters: List<AstValueParameter>
     abstract override val body: AstBlock?
     abstract override val type: AstType
-    abstract val label: String?
     abstract override val symbol: AstAnonymousFunctionSymbol
 
     override fun <R, D> accept(visitor: AstVisitor<R, D>, data: D): R = visitor.visitAnonymousFunction(this, data)
@@ -48,6 +47,4 @@ abstract class AstAnonymousFunction : AstPureAbstractElement(), AstFunction<AstA
     abstract override fun replaceBody(newBody: AstBlock?)
 
     abstract override fun replaceType(newType: AstType)
-
-    abstract fun replaceLabel(newLabel: String?)
 }

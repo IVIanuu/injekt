@@ -204,7 +204,6 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
 
         builder(anonymousFunction) {
             parents += functionBuilder
-            defaultNull("label", "body")
             default("returnType", "context.builtIns.unitType")
         }
 

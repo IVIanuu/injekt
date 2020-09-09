@@ -335,7 +335,6 @@ class DeepCopyTransformerImpl(symbolRemapper: SymbolRemapper) : DeepCopyTransfor
         copyBuilder.valueParameters.addAll(anonymousFunction.valueParameters.map { it.transform() })
         copyBuilder.body = anonymousFunction.body?.transform()
         copyBuilder.type = anonymousFunction.type.transform()
-        copyBuilder.label = anonymousFunction.label
         copyBuilder.symbol = anonymousFunction.symbol.let { symbolRemapper.getSymbol(it) }
         return copyBuilder.build().compose()
     }
@@ -356,7 +355,6 @@ class DeepCopyTransformerImpl(symbolRemapper: SymbolRemapper) : DeepCopyTransfor
     override fun transformDoWhileLoop(doWhileLoop: AstDoWhileLoop): CompositeTransformResult<AstStatement> {
         val copyBuilder = AstDoWhileLoopBuilder(doWhileLoop.context)
         copyBuilder.annotations.addAll(doWhileLoop.annotations.map { it.transform() })
-        copyBuilder.label = doWhileLoop.label
         copyBuilder.condition = doWhileLoop.condition.transform()
         copyBuilder.body = doWhileLoop.body.transform()
         return copyBuilder.build().compose()
@@ -365,7 +363,6 @@ class DeepCopyTransformerImpl(symbolRemapper: SymbolRemapper) : DeepCopyTransfor
     override fun transformWhileLoop(whileLoop: AstWhileLoop): CompositeTransformResult<AstStatement> {
         val copyBuilder = AstWhileLoopBuilder(whileLoop.context)
         copyBuilder.annotations.addAll(whileLoop.annotations.map { it.transform() })
-        copyBuilder.label = whileLoop.label
         copyBuilder.condition = whileLoop.condition.transform()
         copyBuilder.body = whileLoop.body.transform()
         return copyBuilder.build().compose()
@@ -374,7 +371,6 @@ class DeepCopyTransformerImpl(symbolRemapper: SymbolRemapper) : DeepCopyTransfor
     override fun transformForLoop(forLoop: AstForLoop): CompositeTransformResult<AstStatement> {
         val copyBuilder = AstForLoopBuilder(forLoop.context)
         copyBuilder.annotations.addAll(forLoop.annotations.map { it.transform() })
-        copyBuilder.label = forLoop.label
         copyBuilder.body = forLoop.body.transform()
         copyBuilder.loopRange = forLoop.loopRange.transform()
         copyBuilder.loopParameter = forLoop.loopParameter.transform()
@@ -564,7 +560,7 @@ class DeepCopyTransformerImpl(symbolRemapper: SymbolRemapper) : DeepCopyTransfor
         val copyBuilder = AstThisReferenceBuilder(thisReference.context)
         copyBuilder.annotations.addAll(thisReference.annotations.map { it.transform() })
         copyBuilder.type = thisReference.type.transform()
-        copyBuilder.labelName = thisReference.labelName
+        copyBuilder.target = thisReference.target
         return copyBuilder.build().compose()
     }
 

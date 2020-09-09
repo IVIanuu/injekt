@@ -1,9 +1,9 @@
 package com.ivianuu.ast.expressions.impl
 
 import com.ivianuu.ast.AstContext
+import com.ivianuu.ast.AstTarget
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.expressions.AstThisReference
-import com.ivianuu.ast.symbols.AstSymbol
 import com.ivianuu.ast.types.AstType
 import com.ivianuu.ast.visitors.*
 
@@ -16,10 +16,8 @@ internal class AstThisReferenceImpl(
     override val context: AstContext,
     override val annotations: MutableList<AstFunctionCall>,
     override var type: AstType,
-    override var labelName: String?,
+    override var target: AstTarget<*>,
 ) : AstThisReference() {
-    override var boundSymbol: AstSymbol<*>? = null
-
     override fun <R, D> acceptChildren(visitor: AstVisitor<R, D>, data: D) {
         annotations.forEach { it.accept(visitor, data) }
         type.accept(visitor, data)
@@ -40,11 +38,7 @@ internal class AstThisReferenceImpl(
         type = newType
     }
 
-    override fun replaceLabelName(newLabelName: String?) {
-        labelName = newLabelName
-    }
-
-    override fun replaceBoundSymbol(newBoundSymbol: AstSymbol<*>?) {
-        boundSymbol = newBoundSymbol
+    override fun replaceTarget(newTarget: AstTarget<*>) {
+        target = newTarget
     }
 }
