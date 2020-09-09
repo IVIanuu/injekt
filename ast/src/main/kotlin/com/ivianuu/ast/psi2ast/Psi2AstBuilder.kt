@@ -112,6 +112,7 @@ import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.impl.LocalVariableDescriptor
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.js.translate.callTranslator.getReturnType
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.Name
@@ -381,8 +382,25 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
             visibility = descriptor.visibility.toAstVisibility()
             annotations += constructor.annotationEntries.map { it.convert() }
             valueParameters += constructor.valueParameters.map { it.toAstValueParameter() }
-            if (constructor is KtSecondaryConstructor) {
-                delegatedConstructor = constructor.getDelegationCallOrNull()?.convert()
+            delegatedConstructor = if (constructor is KtSecondaryConstructor) {
+                constructor.getDelegationCallOrNull()?.convert()
+            } else {
+                descriptor.constructedClass.findPsi()
+                    .let { it as KtClassOrObject }
+                    .superTypeListEntries
+                    .filterIsInstance<KtSuperTypeCallEntry>()
+                    .singleOrNull()
+                    ?.let { superType ->
+                        val resolvedCall = superType.getResolvedCall()!!
+                        buildCallFrom(
+                            resolvedCall = resolvedCall,
+                            create = { AstDelegatedConstructorCallBuilder(context) }
+                        ) {
+                            type = superType.typeReference!!.toAstType()
+                            callee = symbolTable.getSymbol(resolvedCall.resultingDescriptor)
+                            kind = AstDelegatedConstructorCallKind.SUPER
+                        } as AstDelegatedConstructorCall
+                    }
             }
             functionTargets.push(target)
             body = constructor.bodyExpression?.toAstBlock()
