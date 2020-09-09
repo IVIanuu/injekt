@@ -166,6 +166,7 @@ import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtReturnExpression
 import org.jetbrains.kotlin.psi.KtSafeQualifiedExpression
 import org.jetbrains.kotlin.psi.KtSecondaryConstructor
+import org.jetbrains.kotlin.psi.KtSimpleNameExpression
 import org.jetbrains.kotlin.psi.KtStringTemplateEntryWithExpression
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 import org.jetbrains.kotlin.psi.KtSuperExpression
@@ -783,12 +784,22 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
         val resolvedCall = expression.getResolvedCall()
 
         if (resolvedCall is VariableAsFunctionResolvedCall) {
-            return buildCallFrom(
-                resolvedCall = resolvedCall.functionCall,
-                create = { AstFunctionCallBuilder(context) }
-            ) {
-                type = resolvedCall.functionCall.getReturnType().toAstType()
-                this.callee = symbolTable.getSymbol(resolvedCall.functionCall.resultingDescriptor)
+            if (expression is KtSimpleNameExpression) {
+                return buildCallFrom(
+                    resolvedCall = resolvedCall.variableCall,
+                    create = { AstQualifiedAccessBuilder(context) }
+                ) {
+                    type = resolvedCall.variableCall.getReturnType().toAstType()
+                    this.callee = symbolTable.getSymbol(resolvedCall.variableCall.resultingDescriptor)
+                }
+            } else if (expression is KtCallExpression) {
+                return buildCallFrom(
+                    resolvedCall = resolvedCall.functionCall,
+                    create = { AstFunctionCallBuilder(context) }
+                ) {
+                    type = resolvedCall.functionCall.getReturnType().toAstType()
+                    this.callee = symbolTable.getSymbol(resolvedCall.functionCall.resultingDescriptor)
+                }
             }
         }
 
@@ -1441,9 +1452,10 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
         }
         resolvedCall.valueArguments
             .mapValues { it.value.toAstExpression(it.key) }
-            .forEach { (index, valueArgument) ->
+            .entries
+            .forEachIndexed { index, (_, valueArgument) ->
                 when (accessBuilder) {
-                    is AstCallBuilder -> accessBuilder.valueArguments.add(index.index, valueArgument)
+                    is AstCallBuilder -> accessBuilder.valueArguments.add(index, valueArgument)
                     is AstVariableAssignmentBuilder -> accessBuilder.value = valueArgument!!
                 }
             }
