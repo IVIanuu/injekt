@@ -17,10 +17,12 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.WeakBindingTrace
 import com.ivianuu.injekt.compiler.analysis.ReaderChecker
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
+import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 
 class InjektContext(
@@ -28,7 +30,13 @@ class InjektContext(
     val module: IrModuleFragment
 ) : IrPluginContext by delegate {
     val injektSymbols = InjektSymbols(this)
-    val irTrace = WeakBindingTrace()
     val readerChecker = ReaderChecker()
     val bindingTrace = DelegatingBindingTrace(bindingContext, "Injekt IR")
+    val symbolRemapper = DeepCopySymbolRemapper()
+
+    override fun referenceFunctions(fqName: FqName): Collection<IrSimpleFunctionSymbol> {
+        return delegate.referenceFunctions(fqName)
+            .map { symbolRemapper.getReferencedSimpleFunction(it) }
+    }
+
 }

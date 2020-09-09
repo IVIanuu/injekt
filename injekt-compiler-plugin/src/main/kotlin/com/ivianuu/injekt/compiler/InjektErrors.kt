@@ -38,46 +38,6 @@ interface InjektErrors {
         )
 
         @JvmField
-        val CONTEXT_MUST_BE_EMPTY = error(
-            "@Context must be an empty interface"
-        )
-
-        @JvmField
-        val CONTEXT_MUST_BE_AN_INTERFACE = error(
-            "@Context must be an interface"
-        )
-
-        @JvmField
-        val NOT_A_CONTEXT = error(
-            "Must be a @Context type"
-        )
-
-        @JvmField
-        val CONTEXT_WITH_TYPE_PARAMETERS = error(
-            "@Context cannot have type parameters"
-        )
-
-        @JvmField
-        val GIVEN_CLASS_CANNOT_BE_ABSTRACT = error(
-            "@Given class cannot be an interface or abstract"
-        )
-
-        @JvmField
-        val EITHER_CLASS_OR_CONSTRUCTOR_GIVEN = error(
-            "Either the class or a constructor may be annotated with @Given"
-        )
-
-        @JvmField
-        val MULTIPLE_GIVEN_ANNOTATED_CONSTRUCTORS = error(
-            "Only 1 one constructor may be annotated with @Given"
-        )
-
-        @JvmField
-        val MULTIPLE_CONSTRUCTORS_ON_GIVEN_CLASS = error(
-            "Can't choose a constructor. Annotate the right one with @Given"
-        )
-
-        @JvmField
         val READER_CLASS_CANNOT_BE_INTERFACE = error(
             "@Reader class cannot be an interface"
         )
@@ -95,41 +55,6 @@ interface InjektErrors {
         @JvmField
         val READER_PROPERTY_VAR = error(
             "@Reader property cannot have be a var"
-        )
-
-        @JvmField
-        val MULTIPLE_READER_ANNOTATIONS = error(
-            "A declaration can only be annotated with one of @Reader, @Given, @GivenMapEntries, @GivenSetElements or @Effect annotated annotations"
-        )
-
-        @JvmField
-        val EFFECT_WITHOUT_COMPANION = error(
-            "@Effect annotated class needs a companion object"
-        )
-
-        @JvmField
-        val EFFECT_FUNCTION_CANNOT_HAVE_VALUE_PARAMETERS = error(
-            "@Effect functions cannot have value parameters"
-        )
-
-        @JvmField
-        val NOT_A_GIVEN_SET = error(
-            "Not a @GivenSet"
-        )
-
-        @JvmField
-        val EFFECT_FUNCTION_NEEDS_ONE_TYPE_PARAMETER = error(
-            "@Effect functions must have 1 type parameter"
-        )
-
-        @JvmField
-        val NOT_IN_EFFECT_BOUNDS = error(
-            "Annotated class is not in @Effect bounds"
-        )
-
-        @JvmField
-        val EFFECT_WITH_TYPE_PARAMETERS = error(
-            "@Effect annotated declaration cannot have type parameters"
         )
 
         init {

@@ -26,3 +26,7 @@ package com.ivianuu.injekt
     AnnotationTarget.TYPE_PARAMETER
 )
 annotation class Reader
+
+inline fun <R> Context.runReader(block: @Reader () -> R): R = error("Intrinsic")
+
+internal inline fun <R> runReaderDummy(context: Context, block: (Context) -> R) = block(context)

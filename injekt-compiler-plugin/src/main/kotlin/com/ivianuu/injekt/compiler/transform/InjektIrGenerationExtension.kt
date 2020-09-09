@@ -16,90 +16,21 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.dumpSrc
-import com.ivianuu.injekt.compiler.transform.readercontextimpl.ReaderContextImplTransformer
-import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
-import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
-import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.ir.util.dump
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        println("compile files ${moduleFragment.files.joinToString("\n") { it.fileEntry.name }}")
-        try {
-            error("compile files ${moduleFragment.files.joinToString("\n") { it.fileEntry.name }}")
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
         val injektContext = InjektContext(pluginContext, moduleFragment)
-        var initializeInjekt = false
-        var initTrigger: IrDeclarationWithName? = null
-
-        moduleFragment.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
-            override fun visitDeclaration(declaration: IrDeclaration): IrStatement {
-                if (declaration.hasAnnotation(InjektFqNames.InitializeInjekt)) {
-                    initializeInjekt = true
-                    initTrigger = declaration as IrDeclarationWithName
-                }
-                return super.visitDeclaration(declaration)
-            }
-        })
-
-        if (injektContext.referenceClass(InjektFqNames.Effect) != null) {
-            EffectTransformer(injektContext).doLower(moduleFragment)
-        }
-
-        val indexer = Indexer(
-            injektContext,
-            moduleFragment,
-            InjektSymbols(injektContext)
-        )
-
-        val readerContextParamTransformer =
-            ReaderContextParamTransformer(injektContext, indexer)
-        readerContextParamTransformer.doLower(moduleFragment)
-
-        ReaderCallTransformer(injektContext, indexer).doLower(moduleFragment)
-
-        ReaderTrackingTransformer(
-            injektContext,
-            indexer,
-            readerContextParamTransformer
-        ).doLower(moduleFragment)
-
-        IndexingTransformer(
-            indexer,
-            injektContext
-        ).doLower(moduleFragment)
-
-        if (initializeInjekt) {
-            val declarationGraph = DeclarationGraph(
-                indexer,
-                moduleFragment,
-                readerContextParamTransformer
-            )
-            ReaderContextImplTransformer(
-                injektContext,
-                declarationGraph,
-                readerContextParamTransformer,
-                initTrigger!!
-            ).doLower(moduleFragment)
-        }
-
+        ReaderContextParamTransformer(injektContext).doLower(moduleFragment)
+        ContextIntrinsicTransformer(injektContext).doLower(moduleFragment)
         generateSymbols(pluginContext)
-
-        println(moduleFragment.dumpSrc())
     }
 
 }

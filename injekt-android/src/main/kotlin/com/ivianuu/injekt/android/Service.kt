@@ -20,9 +20,7 @@ import android.app.Service
 import android.content.res.Resources
 import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.runReader
 
 @Context
 interface ServiceContext

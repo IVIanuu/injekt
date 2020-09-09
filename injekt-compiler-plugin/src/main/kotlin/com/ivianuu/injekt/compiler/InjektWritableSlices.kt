@@ -16,17 +16,10 @@
 
 package com.ivianuu.injekt.compiler
 
-import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
-import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.util.slicedMap.BasicWritableSlice
 import org.jetbrains.kotlin.util.slicedMap.RewritePolicy
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 
 object InjektWritableSlices {
-    val IS_READER: WritableSlice<Any, Boolean> =
-        BasicWritableSlice(RewritePolicy.DO_NOTHING)
-    val IS_READER_LAMBDA_INVOKE: WritableSlice<IrFunctionAccessExpression, Boolean> =
-        BasicWritableSlice(RewritePolicy.DO_NOTHING)
-    val IS_TRANSFORMED_READER_FUNCTION: WritableSlice<IrSimpleFunction, Boolean> =
-        BasicWritableSlice(RewritePolicy.DO_NOTHING)
+    val IS_READER: WritableSlice<Any, Boolean> = BasicWritableSlice(RewritePolicy.DO_NOTHING)
 }

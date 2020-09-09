@@ -1,16 +1,12 @@
 include(
     ":android-integration-tests",
-    ":benchmark",
     ":comparison",
-    ":essentials-android-testing",
     ":injekt-android",
     ":injekt-android-work",
-    ":injekt-common",
     ":injekt-compiler-plugin",
     ":injekt-core",
     ":injekt-gradle-plugin",
     ":integration-tests",
-    ":lol",
     ":sample",
     ":test-util"
 )

@@ -47,7 +47,6 @@ import org.jetbrains.kotlin.resolve.calls.context.ResolutionContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.inline.InlineUtil
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
@@ -70,23 +69,6 @@ class ReaderChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
             is FunctionDescriptor -> checkFunction(declaration, descriptor, context)
             is PropertyDescriptor -> checkProperty(declaration, descriptor, context)
         }
-
-        var readerAnnotations = 0
-        if (descriptor.hasAnnotation(InjektFqNames.Given)) readerAnnotations += 1
-        if (descriptor.hasAnnotation(InjektFqNames.Reader)) readerAnnotations += 1
-        if (descriptor.hasAnnotation(InjektFqNames.GivenMapEntries)) readerAnnotations += 1
-        if (descriptor.hasAnnotation(InjektFqNames.GivenSetElements)) readerAnnotations += 1
-
-        if (readerAnnotations > 1 || (readerAnnotations == 1 &&
-                    descriptor.hasAnnotation(InjektFqNames.Reader) &&
-                    descriptor.getAnnotatedAnnotations(InjektFqNames.Effect, descriptor.module)
-                        .isNotEmpty())
-        ) {
-            context.trace.report(
-                InjektErrors.MULTIPLE_READER_ANNOTATIONS
-                    .on(declaration)
-            )
-        }
     }
 
     private fun checkClass(
@@ -94,8 +76,8 @@ class ReaderChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         descriptor: ClassDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (!descriptor.isMarkedAsReader(descriptor.module) &&
-            descriptor.constructors.none { it.isMarkedAsReader(descriptor.module) }
+        if (!descriptor.annotations.hasAnnotation(InjektFqNames.Reader) &&
+            descriptor.constructors.none { it.annotations.hasAnnotation(InjektFqNames.Reader) }
         ) return
 
         if (descriptor.kind == ClassKind.INTERFACE) {
@@ -120,7 +102,7 @@ class ReaderChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
     ) {
         if (!isReader(descriptor, context.trace) &&
             (descriptor !is ConstructorDescriptor ||
-                    !descriptor.constructedClass.isMarkedAsReader(descriptor.module))
+                    !descriptor.constructedClass.annotations.hasAnnotation(InjektFqNames.Reader))
         ) return
     }
 
@@ -130,7 +112,7 @@ class ReaderChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         context: DeclarationCheckerContext
     ) {
         if (declaration !is KtProperty) return
-        if (!descriptor.hasAnnotation(InjektFqNames.Reader)) return
+        if (!descriptor.annotations.hasAnnotation(InjektFqNames.Reader)) return
 
         if (declaration.initializer != null) {
             context.trace.report(
@@ -161,7 +143,7 @@ class ReaderChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         }
 
         if (resulting is ConstructorDescriptor &&
-            (resulting.constructedClass.isMarkedAsReader(resulting.module))
+            resulting.constructedClass.annotations.hasAnnotation(InjektFqNames.Reader)
         ) {
             checkCalls(reportOn, context, resolvedCall)
         }
@@ -209,21 +191,21 @@ class ReaderChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
             }
         }
 
-        var isReader = descriptor.isMarkedAsReader(descriptor.module)
+        var isReader = descriptor.annotations.hasAnnotation(InjektFqNames.Reader)
 
         if (!isReader && descriptor is PropertyGetterDescriptor) {
-            isReader = descriptor.correspondingProperty.isMarkedAsReader(descriptor.module)
+            isReader = descriptor.correspondingProperty.annotations.hasAnnotation(InjektFqNames.Reader)
         }
 
         if (!isReader && descriptor is ConstructorDescriptor) {
-            isReader = descriptor.constructedClass.isMarkedAsReader(descriptor.module) ||
+            isReader = descriptor.constructedClass.annotations.hasAnnotation(InjektFqNames.Reader) ||
                     descriptor.constructedClass.constructors.any {
-                        it.isMarkedAsReader(descriptor.module)
+                        it.annotations.hasAnnotation(InjektFqNames.Reader)
                     }
         }
 
         if (!isReader && descriptor is ClassDescriptor) {
-            isReader = descriptor.constructors.any { it.isMarkedAsReader(descriptor.module) }
+            isReader = descriptor.constructors.any { it.annotations.hasAnnotation(InjektFqNames.Reader) }
         }
 
         if (!isReader) {
@@ -258,7 +240,7 @@ class ReaderChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         }
 
         if (!isReader) {
-            isReader = type?.hasAnnotation(InjektFqNames.Reader) ?: false
+            isReader = type?.annotations?.hasAnnotation(InjektFqNames.Reader) ?: false
         }
 
         if (!isReader) {
@@ -294,7 +276,7 @@ class ReaderChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
             if (expectedType === TypeUtils.NO_EXPECTED_TYPE) return
             if (expectedType === TypeUtils.UNIT_EXPECTED_TYPE) return
             val expectedIsReader =
-                expectedType.hasAnnotation(InjektFqNames.Reader)
+                expectedType.annotations.hasAnnotation(InjektFqNames.Reader)
             val isReader =
                 isReader(c.trace, expression, c.expectedType)
 
@@ -339,8 +321,8 @@ class ReaderChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
                 expressionTypeWithSmartCast == nullableNothingType
             ) return
 
-            val expectedIsReader = expectedType.hasAnnotation(InjektFqNames.Reader)
-            val isReader = expressionType.hasAnnotation(InjektFqNames.Reader)
+            val expectedIsReader = expectedType.annotations.hasAnnotation(InjektFqNames.Reader)
+            val isReader = expressionType.annotations.hasAnnotation(InjektFqNames.Reader)
 
             if (expectedIsReader != isReader) {
                 val reportOn =

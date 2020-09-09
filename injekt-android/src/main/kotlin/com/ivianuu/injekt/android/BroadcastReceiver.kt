@@ -20,8 +20,6 @@ import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Intent
 import com.ivianuu.injekt.Context
-import com.ivianuu.injekt.childContext
-import com.ivianuu.injekt.runReader
 
 @Context
 interface ReceiverContext

@@ -16,30 +16,11 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.compiler.transform.asNameId
 import org.jetbrains.kotlin.name.FqName
 
 object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
     val Context = InjektPackage.child("Context".asNameId())
-    val Effect = InjektPackage.child("Effect".asNameId())
-    val Given = InjektPackage.child("Given".asNameId())
-    val GivenMapEntries = InjektPackage.child("GivenMapEntries".asNameId())
-    val GivenSet = InjektPackage.child("GivenSet".asNameId())
-    val GivenSetElements = InjektPackage.child("GivenSetElements".asNameId())
-    val InitializeInjekt = InjektPackage.child("InitializeInjekt".asNameId())
     val Reader = InjektPackage.child("Reader".asNameId())
-
-    val InternalPackage = InjektPackage.child("internal".asNameId())
-    val ChildContextFactory = InternalPackage.child("ChildContextFactory".asNameId())
-    val ContextMarker = InternalPackage.child("ContextMarker".asNameId())
-    val Index = InternalPackage.child("Index".asNameId())
-    val Origin = InternalPackage.child("Origin".asNameId())
-    val Qualifier = InternalPackage.child("Qualifier".asNameId())
-    val ReaderCall = InternalPackage.child("ReaderCall".asNameId())
-    val ReaderImpl = InternalPackage.child("ReaderImpl".asNameId())
-    val RootContextFactory = InternalPackage.child("RootContextFactory".asNameId())
-    val RunReaderCall = InternalPackage.child("RunReaderCall".asNameId())
-    val Signature = InternalPackage.child("Signature".asNameId())
-
-    val IndexPackage = InternalPackage.child("index".asNameId())
 }

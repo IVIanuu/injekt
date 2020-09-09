@@ -18,8 +18,6 @@ package com.ivianuu.injekt.android
 
 import androidx.activity.ComponentActivity
 import com.ivianuu.injekt.Context
-import com.ivianuu.injekt.childContext
-import com.ivianuu.injekt.runReader
 
 @Context
 interface RetainedActivityContext

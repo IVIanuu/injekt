@@ -16,23 +16,38 @@
 
 package com.ivianuu.injekt.comparison.injekt
 
-import com.ivianuu.injekt.ApplicationContext
-import com.ivianuu.injekt.InitializeInjekt
+import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.comparison.base.InjectionTest
+import com.ivianuu.injekt.comparison.fibonacci.Fib1
+import com.ivianuu.injekt.comparison.fibonacci.Fib2
+import com.ivianuu.injekt.comparison.fibonacci.Fib3
+import com.ivianuu.injekt.comparison.fibonacci.Fib4
+import com.ivianuu.injekt.comparison.fibonacci.Fib5
+import com.ivianuu.injekt.comparison.fibonacci.Fib6
+import com.ivianuu.injekt.comparison.fibonacci.Fib7
 import com.ivianuu.injekt.comparison.fibonacci.Fib8
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.rootContext
 import com.ivianuu.injekt.runReader
+import com.ivianuu.injekt.unscoped
 
-@InitializeInjekt
 object InjektTest : InjectionTest {
 
     override val name = "Injekt"
 
-    private var context: ApplicationContext? = null
+    private var context: Context? = null
 
     override fun setup() {
-        this.context = rootContext()
+        this.context = rootContext {
+            unscoped { Fib1() }
+            unscoped { Fib2() }
+            unscoped { Fib3(given(), given()) }
+            unscoped { Fib4(given(), given()) }
+            unscoped { Fib5(given(), given()) }
+            unscoped { Fib6(given(), given()) }
+            unscoped { Fib7(given(), given()) }
+            unscoped { Fib8(given(), given()) }
+        }
     }
 
     override fun inject() {
