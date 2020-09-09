@@ -10,7 +10,9 @@ import org.jetbrains.kotlin.name.Name
 
 sealed class AstFunctionSymbol<D : AstFunction<D>> : AstCallableSymbol<D>()
 
-open class AstNamedFunctionSymbol(override val fqName: FqName) : AstFunctionSymbol<AstNamedFunction>()
+class AstNamedFunctionSymbol(override val fqName: FqName) : AstFunctionSymbol<AstNamedFunction>() {
+    constructor(name: Name) : this(FqName(name.asString()))
+}
 
 class AstConstructorSymbol(override val fqName: FqName) : AstFunctionSymbol<AstConstructor>()
 

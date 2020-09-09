@@ -33,7 +33,7 @@ class AstTest {
         codegen(
             sources = arrayOf(
                 source(
-                    """ 
+                    """
                         class NotTransformed(val param: String) {
                             var lol: String = "hello world"
                             

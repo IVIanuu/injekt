@@ -131,7 +131,17 @@ fun SmartPrinter.printElement(element: Element) {
                     println("accept(visitor, data) as CompositeTransformResult<E>")
                 }
                 println()
+                println("fun <E : AstElement> transform(visitor: AstTransformerVoid): CompositeTransformResult<E> =")
+                withIndent {
+                    println("transform(visitor, null)")
+                }
+                println()
                 println("fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstElement")
+                println()
+                println("fun <E : AstElement> transformChildren(visitor: AstTransformerVoid): AstElement =")
+                withIndent {
+                    println("transformChildren(visitor, null)")
+                }
             }
         }
         println("}")

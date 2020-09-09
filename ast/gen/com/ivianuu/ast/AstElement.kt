@@ -23,5 +23,11 @@ interface AstElement {
     fun <E : AstElement, D> transform(visitor: AstTransformer<D>, data: D): CompositeTransformResult<E> =
         accept(visitor, data) as CompositeTransformResult<E>
 
+    fun <E : AstElement> transform(visitor: AstTransformerVoid): CompositeTransformResult<E> =
+        transform(visitor, null)
+
     fun <D> transformChildren(transformer: AstTransformer<D>, data: D): AstElement
+
+    fun <E : AstElement> transformChildren(visitor: AstTransformerVoid): AstElement =
+        transformChildren(visitor, null)
 }

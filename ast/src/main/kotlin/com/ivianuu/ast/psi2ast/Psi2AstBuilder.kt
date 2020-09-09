@@ -221,6 +221,7 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
         return buildModuleFragment {
             name = module.name
             this.files += files.map { it.convert() }
+            this@Psi2AstBuilder.context.stubGenerator.generateUnboundSymbols = true
             symbolTable.generateUnboundSymbols(this@Psi2AstBuilder.context.stubGenerator)
         }
     }

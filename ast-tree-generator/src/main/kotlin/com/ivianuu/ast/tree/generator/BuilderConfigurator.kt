@@ -19,8 +19,13 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             fields from declarationContainer
         }
 
-        val namedDeclarationBuilder by builder {
+        val declarationBuilder by builder {
             parents += annotationContainerBuilder
+            fields from declaration
+        }
+
+        val namedDeclarationBuilder by builder {
+            parents += declarationBuilder
             fields from namedDeclaration
         }
 
@@ -107,6 +112,10 @@ object BuilderConfigurator : AbstractBuilderConfigurator<AstTreeBuilder>(AstTree
             defaultNull("delegatedConstructor")
             defaultNull("body")
             defaultFalse("isPrimary")
+        }
+
+        builder(anonymousInitializer) {
+            parents += declarationBuilder
         }
 
         builder(anonymousObject) {

@@ -1,12 +1,12 @@
 package com.ivianuu.ast.declarations.builder
 
 import com.ivianuu.ast.AstContext
-import com.ivianuu.ast.builder.AstAnnotationContainerBuilder
 import com.ivianuu.ast.builder.AstBuilder
 import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
 import com.ivianuu.ast.declarations.AstNamedDeclaration
+import com.ivianuu.ast.declarations.builder.AstDeclarationBuilder
 import com.ivianuu.ast.expressions.AstFunctionCall
 import com.ivianuu.ast.visitors.*
 import org.jetbrains.kotlin.name.Name
@@ -17,10 +17,10 @@ import org.jetbrains.kotlin.name.Name
  */
 
 @AstBuilderDsl
-interface AstNamedDeclarationBuilder : AstAnnotationContainerBuilder {
+interface AstNamedDeclarationBuilder : AstDeclarationBuilder {
     abstract override val annotations: MutableList<AstFunctionCall>
-    abstract var origin: AstDeclarationOrigin
-    abstract var attributes: AstDeclarationAttributes
+    abstract override var origin: AstDeclarationOrigin
+    abstract override var attributes: AstDeclarationAttributes
     abstract var name: Name
     override fun build(): AstNamedDeclaration
 }

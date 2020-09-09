@@ -40,10 +40,12 @@ class DeclarationStubGenerator(
 ) {
 
     lateinit var context: Psi2AstGeneratorContext
+    var generateUnboundSymbols = false
 
     fun getDeclaration(descriptor: DeclarationDescriptor): AstDeclaration? {
         val symbol = symbolTable.allSymbols[descriptor]!!
         if (symbol.isBound) return symbol.owner as AstDeclaration
+
         return when {
             descriptor is ClassDescriptor && symbol is AstRegularClassSymbol ->
                 descriptor.toClassStub(symbol)
@@ -60,7 +62,7 @@ class DeclarationStubGenerator(
             descriptor is TypeAliasDescriptor && symbol is AstTypeAliasSymbol ->
                 descriptor.toTypeAliasStub(symbol)
             else -> error("Unexpected declaration $descriptor $symbol")
-        }.also { symbolTable.generateUnboundSymbols(this) }
+        }.also { if (generateUnboundSymbols) symbolTable.generateUnboundSymbols(this) }
     }
 
     private fun ClassDescriptor.toClassStub(

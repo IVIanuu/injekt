@@ -26,9 +26,14 @@ import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.impl.LocalVariableDescriptor
 import org.jetbrains.kotlin.descriptors.impl.SyntheticFieldDescriptor
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi.KtClassBody
+import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.resolve.ImportedFromObjectCallableDescriptor
 import org.jetbrains.kotlin.resolve.calls.model.FakeKotlinCallArgumentForCallableReference
 import org.jetbrains.kotlin.resolve.calls.util.FakeCallableDescriptorForObject
@@ -59,10 +64,13 @@ class DescriptorSymbolTable {
                 is TypeAliasDescriptor -> AstTypeAliasSymbol(descriptor.fqNameSafe)
                 is ImportedFromObjectCallableDescriptor<*> -> getSymbol(descriptor.callableFromObject)
                 is FunctionDescriptor -> {
+                    val psi = descriptor.findPsi() as? KtNamedFunction
                     when {
                         descriptor is ConstructorDescriptor -> AstConstructorSymbol(descriptor.fqNameSafe)
                         descriptor is PropertyAccessorDescriptor -> AstPropertyAccessorSymbol()
-                        descriptor.visibility == Visibilities.LOCAL -> AstAnonymousFunctionSymbol()
+                        descriptor is AnonymousFunctionDescriptor || (psi != null &&
+                                psi.name == null && !psi.parent.let { it is KtFile || it is KtClassBody }) ->
+                            AstAnonymousFunctionSymbol()
                         else -> AstNamedFunctionSymbol(descriptor.fqNameSafe)
                     }
                 }

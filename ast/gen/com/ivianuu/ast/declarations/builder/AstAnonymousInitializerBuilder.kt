@@ -6,6 +6,7 @@ import com.ivianuu.ast.builder.AstBuilderDsl
 import com.ivianuu.ast.declarations.AstAnonymousInitializer
 import com.ivianuu.ast.declarations.AstDeclarationAttributes
 import com.ivianuu.ast.declarations.AstDeclarationOrigin
+import com.ivianuu.ast.declarations.builder.AstDeclarationBuilder
 import com.ivianuu.ast.declarations.impl.AstAnonymousInitializerImpl
 import com.ivianuu.ast.expressions.AstBlock
 import com.ivianuu.ast.expressions.AstFunctionCall
@@ -20,14 +21,14 @@ import kotlin.contracts.*
  */
 
 @AstBuilderDsl
-class AstAnonymousInitializerBuilder(override val context: AstContext) : AstBuilder {
-    val annotations: MutableList<AstFunctionCall> = mutableListOf()
-    var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
-    var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
+class AstAnonymousInitializerBuilder(override val context: AstContext) : AstDeclarationBuilder {
+    override val annotations: MutableList<AstFunctionCall> = mutableListOf()
+    override var origin: AstDeclarationOrigin = AstDeclarationOrigin.Source
+    override var attributes: AstDeclarationAttributes = AstDeclarationAttributes()
     lateinit var body: AstBlock
     lateinit var symbol: AstAnonymousInitializerSymbol
 
-    fun build(): AstAnonymousInitializer {
+    override fun build(): AstAnonymousInitializer {
         return AstAnonymousInitializerImpl(
             context,
             annotations,
