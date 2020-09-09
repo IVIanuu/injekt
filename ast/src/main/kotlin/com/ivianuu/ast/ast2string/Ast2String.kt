@@ -188,7 +188,8 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
             .filterIsInstance<AstConstructor>()
             .singleOrNull { it.isPrimary }
 
-        primaryConstructor?.valueParameters?.emit()
+        if (classKind != ClassKind.OBJECT)
+            primaryConstructor?.valueParameters?.emit()
 
         renderSuperTypes()
         typeParameters.emitWhere()

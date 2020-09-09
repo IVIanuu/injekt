@@ -283,7 +283,6 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
             val primaryConstructor = classOrObject.primaryConstructor
                 ?.convert()
                 ?: descriptor.unsubstitutedPrimaryConstructor
-                    ?.takeIf { descriptor.kind != ClassKind.OBJECT }
                     ?.let { primaryConstructorDescriptor ->
                         buildConstructor {
                             symbol = symbolTable.getSymbol(primaryConstructorDescriptor)
