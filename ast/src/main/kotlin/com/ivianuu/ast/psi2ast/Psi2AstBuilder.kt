@@ -1240,20 +1240,6 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
         }
     }
 
-    override fun visitThisExpression(expression: KtThisExpression, data: Nothing?): AstElement {
-        return buildThisReference {
-            type = expression.getTypeInferredByFrontendOrFail().toAstType()
-            labelName = expression.getLabelName()
-        }
-    }
-
-    override fun visitSuperExpression(expression: KtSuperExpression, data: Nothing?): AstElement =
-        buildSuperReference {
-            superType = symbolTable.getSymbol(
-                getOrFail(BindingContext.REFERENCE_TARGET, expression.instanceReference)
-            )
-        }
-
     override fun visitQualifiedExpression(
         expression: KtQualifiedExpression,
         data: Nothing?
@@ -1376,7 +1362,10 @@ class Psi2AstBuilder(override val context: Psi2AstGeneratorContext) : Generator,
             }
             is SuperCallReceiverValue -> buildSuperReference {
                 this.type = this@toAstExpression.type.toAstType()
-                superType = this@toAstExpression.thisType.toAstType().classifier
+                superType = symbolTable.getSymbol(
+                    getOrFail(BindingContext.REFERENCE_TARGET, ((this@toAstExpression as ExpressionReceiver)
+                        .expression as KtSuperExpression).instanceReference)
+                )
             }
             is ExpressionReceiver -> expression.convert()
             is ClassValueReceiver -> buildQualifiedAccess {
