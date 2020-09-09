@@ -755,9 +755,19 @@ private class Ast2KotlinSourceWriter(out: Appendable) : AstPrintingVisitor(out) 
     }
 
     override fun visitWhen(whenExpression: AstWhen) = with(whenExpression) {
+        val singleBranchOrNull = branches.singleOrNull()
+        if (singleBranchOrNull != null) {
+            val condition = singleBranchOrNull.condition
+            if (condition is AstConst<*> && condition.value == true) {
+                singleBranchOrNull.result.emit()
+                return@with
+            }
+        }
+
         branches.forEachIndexed { index, branch ->
             val condition = branch.condition
-            if (index == branches.lastIndex && condition is AstConst<*> && condition.value == true) {
+            if (index == branches.lastIndex && branches.size > 1 &&
+                condition is AstConst<*> && condition.value == true) {
                 emitLine("else {")
             } else {
                 if (index != 0) emit("else ")
