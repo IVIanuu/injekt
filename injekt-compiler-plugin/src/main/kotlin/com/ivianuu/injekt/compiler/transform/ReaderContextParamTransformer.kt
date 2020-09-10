@@ -377,49 +377,6 @@ class ReaderContextParamTransformer(injektContext: InjektContext) : AbstractInje
                 )
                 else result
             }
-
-            /*override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
-                val result = super.visitFunctionAccess(expression) as IrFunctionAccessExpression
-                if (result !is IrCall &&
-                    result !is IrConstructorCall &&
-                    result !is IrDelegatingConstructorCall
-                ) return result
-                val transformed = transformFunctionIfNeeded(result.symbol.owner)
-                return (if (transformed in transformedFunctions.values) transformCall(
-                    transformed,
-                    result
-                )
-                else result)
-                    .also {
-                        if (it.isReaderLambdaInvoke(injektContext)) {
-                            injektContext.irTrace.record(
-                                InjektWritableSlices.IS_READER_LAMBDA_INVOKE,
-                                it,
-                                true
-                            )
-                        }
-                    }
-            }
-
-            override fun visitCall(expression: IrCall): IrExpression {
-                val result = super.visitCall(expression) as IrCall
-                return if (result.symbol.owner.returnType.isTransformedReaderLambda() &&
-                    result.type != result.symbol.owner.returnType
-                ) IrCallImpl(
-                    result.startOffset,
-                    result.endOffset,
-                    result.symbol.owner.returnType,
-                    result.symbol,
-                    result.typeArgumentsCount,
-                    result.valueArgumentsCount,
-                    result.origin,
-                    result.superQualifierSymbol
-                ).apply {
-                    copyTypeAndValueArgumentsFrom(result)
-                    copyAttributes(expression)
-                } else result
-            }*/
-
         })
     }
 

@@ -38,5 +38,4 @@ class InjektContext(
         return delegate.referenceFunctions(fqName)
             .map { symbolRemapper.getReferencedSimpleFunction(it) }
     }
-
 }
