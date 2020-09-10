@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:Suppress("UNCHECKED_CAST")
 
 package com.ivianuu.injekt
 
@@ -45,7 +46,6 @@ class ContextBuilder(private val parent: Context? = null) {
             .block()
     }
 
-    @Suppress("UNCHECKED_CAST")
     fun build(): Context {
         mapBuilders.forEach { (mapKey, mapBuilder) ->
             val keyedMapKey = KeyedMapKey(mapKey as Key<Map<Any?, Any?>>)
@@ -97,7 +97,7 @@ class MapBuilder<K, V>(private val contextBuilder: ContextBuilder) {
     }
 
     fun <T : V> put(entryKey: K, entryValueKey: Key<T>, entryValueProvider: @Reader () -> T) {
-        map[entryKey] = entryValueKey
+        put(entryKey, entryValueKey)
         contextBuilder.given(entryValueKey, entryValueProvider)
     }
 }
