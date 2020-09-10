@@ -57,6 +57,16 @@ interface InjektErrors {
             "@Reader property cannot have be a var"
         )
 
+        @JvmField
+        val MUST_BE_FOR_KEY = error(
+            "Type parameter must have @ForKey annotation if used as a @ForKey type argument"
+        )
+
+        @JvmField
+        val FOR_KEY_TYPE_PARAMETER_INVALID_PARENT = error(
+            "Type parameter with @ForKey can only be declared inside a function or properties"
+        )
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,

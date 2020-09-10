@@ -70,18 +70,18 @@ class ContextBuilder(
 
     fun build(): Context {
         mapBuilders.forEach { (mapKey, mapBuilder) ->
-            val keyedMapKey = KeyedMapKey(mapKey as Key<Map<Any?, Any?>>)
+            val keyedMapKey = Key<Map<Any?, Key<Any?>>>("${mapKey.value}.keys")
             val finalKeyedMap = mutableMapOf<Any?, Key<Any?>>()
             parent?.givenOrNull(keyedMapKey)?.let { finalKeyedMap += it }
             finalKeyedMap += mapBuilder.map as Map<Any?, Key<Any?>>
             providers[keyedMapKey] = { finalKeyedMap }
             providers[mapKey] = {
                 finalKeyedMap
-                    .mapValues { given(it.value) }
+                    .mapValues { given<Any?>(it.value) }
             }
         }
         setBuilders.forEach { (setKey, setBuilder) ->
-            val keyedSetKey = KeyedSetKey(setKey as Key<Set<Any?>>)
+            val keyedSetKey = Key<Set<Key<Any?>>>("${setKey.value}.keys")
             val finalKeyedSet = mutableSetOf<Key<Any?>>()
             parent?.givenOrNull(keyedSetKey)?.let { finalKeyedSet += it }
             finalKeyedSet += setBuilder.set as Set<Key<Any?>>
@@ -95,18 +95,18 @@ class ContextBuilder(
     }
 }
 
-inline fun <reified T> ContextBuilder.given(
+fun <@ForKey T> ContextBuilder.given(
     override: Boolean = false,
-    noinline provider: @Reader () -> T
+    provider: @Reader () -> T
 ) {
     given(keyOf(), override, provider)
 }
 
-inline fun <reified K, reified V> ContextBuilder.map(block: MapBuilder<K, V>.() -> Unit) {
+fun <@ForKey K, @ForKey V> ContextBuilder.map(block: MapBuilder<K, V>.() -> Unit) {
     map(keyOf(), block)
 }
 
-inline fun <reified E> ContextBuilder.set(block: SetBuilder<E>.() -> Unit) {
+fun <@ForKey E> ContextBuilder.set(block: SetBuilder<E>.() -> Unit) {
     set(keyOf(), block)
 }
 
@@ -120,10 +120,10 @@ class MapBuilder<K, V>(private val contextBuilder: ContextBuilder) {
         map[entryKey] = entryValueKey
     }
 
-    inline fun <reified T : V> put(
+    fun <@ForKey T : V> put(
         entryKey: K,
         override: Boolean = false,
-        noinline entryValueProvider: @Reader () -> T
+        entryValueProvider: @Reader () -> T
     ) {
         put(entryKey, keyOf(), override, entryValueProvider)
     }
@@ -139,8 +139,6 @@ class MapBuilder<K, V>(private val contextBuilder: ContextBuilder) {
     }
 }
 
-internal data class KeyedMapKey<K, V>(val mapKey: Key<Map<K, V>>) : Key<Map<K, Key<V>>>
-
 class SetBuilder<E>(private val contextBuilder: ContextBuilder) {
     internal val set = mutableSetOf<Key<out E>>()
 
@@ -151,9 +149,9 @@ class SetBuilder<E>(private val contextBuilder: ContextBuilder) {
         set += elementKey
     }
 
-    inline fun <reified T : E> add(
+    fun <@ForKey T : E> add(
         override: Boolean = false,
-        noinline elementProvider: @Reader () -> T
+        elementProvider: @Reader () -> T
     ) {
         add(keyOf(), override, elementProvider)
     }
@@ -163,9 +161,7 @@ class SetBuilder<E>(private val contextBuilder: ContextBuilder) {
         override: Boolean = false,
         elementProvider: @Reader () -> T
     ) {
-        add(elementKey, override)
+        add<T>(elementKey, override)
         contextBuilder.given(elementKey, override, elementProvider)
     }
 }
-
-internal data class KeyedSetKey<E>(val setKey: Key<Set<E>>) : Key<Set<Key<E>>>

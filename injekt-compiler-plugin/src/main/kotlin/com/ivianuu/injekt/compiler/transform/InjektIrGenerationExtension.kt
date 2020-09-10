@@ -22,15 +22,16 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
-import org.jetbrains.kotlin.ir.util.dump
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val injektContext = InjektContext(pluginContext, moduleFragment)
+        KeyTypeParameterTransformer(injektContext).doLower(moduleFragment)
         ReaderContextParamTransformer(injektContext).doLower(moduleFragment)
-        ContextIntrinsicTransformer(injektContext).doLower(moduleFragment)
+        ReaderIntrinsicTransformer(injektContext).doLower(moduleFragment)
         generateSymbols(pluginContext)
+        //println(moduleFragment.dumpSrc())
     }
 
 }

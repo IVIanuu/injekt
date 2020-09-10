@@ -26,7 +26,7 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ContextIntrinsicTransformer(injektContext: InjektContext) :
+class ReaderIntrinsicTransformer(injektContext: InjektContext) :
     AbstractInjektTransformer(injektContext) {
 
     override fun lower() {

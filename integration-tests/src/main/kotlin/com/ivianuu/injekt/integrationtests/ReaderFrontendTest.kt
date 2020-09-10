@@ -24,101 +24,6 @@ import org.junit.Test
 class ReaderFrontendTest {
 
     @Test
-    fun test() = codegen(
-        """
-            interface Context {
-                fun <T> getProviderOrNull(key: Key<T>): @Reader (() -> T)?
-            }
-            
-            inline fun <reified T> Context.getOrNull(): T? =
-                getOrNull(keyOf())
-            
-            fun <T> Context.getOrNull(key: Key<T>): T? =
-                getProviderOrNull(key)?.invoke()
-            
-            inline fun <reified T> Context.get(): T = get(keyOf())
-            
-            fun <T> Context.get(key: Key<T>): T = getProviderOrNull(key)?.invoke()
-                ?: error("No given found for ''")
-            
-            private class ContextImpl(
-                private val parent: Context?,
-                private val providers: Map<Key<*>, @Reader () -> Any?>
-            ) : Context {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T> getProviderOrNull(key: Key<T>): @Reader (() -> T)? =
-                    providers[key] as? @Reader (() -> T)? ?: parent?.getProviderOrNull(key)
-            }
-            
-            class ContextBuilder(private val parent: Context? = null) {
-                private val providers = mutableMapOf<Key<*>, @Reader () -> Any?>()
-            
-                fun <T> unscoped(key: Key<T>, provider: @Reader () -> T) {
-                    providers[key] = provider
-                }
-            
-                fun build(): Context = ContextImpl(parent, providers)
-            }
-            
-            
-            inline fun <reified T> ContextBuilder.unscoped(noinline provider: @Reader () -> T) {
-                unscoped(keyOf(), provider)
-            }
-            
-            inline fun rootContext(init: ContextBuilder.() -> Unit): Context =
-                ContextBuilder().apply(init).build()
-            
-            inline fun Context.childContext(init: ContextBuilder.() -> Unit): Context =
-                ContextBuilder(this).apply(init).build()
-            
-            @Reader
-            val readerContext: Context
-                get() = error("Intrinsic") 
-                
-            inline fun <reified T> ContextBuilder.scoped(noinline provider: @Reader () -> T) {
-                scoped(keyOf(), provider)
-            }
-            
-            fun <T> ContextBuilder.scoped(
-                key: Key<T>,
-                provider: @Reader () -> T
-            ) {
-                unscoped(key, ScopedProvider(provider))
-            }
-            
-            private class ScopedProvider<T>(
-                provider: @Reader () -> T
-            ) : @Reader () -> T {
-                private var _provider: @Reader (() -> T)? = provider
-                private var _value: Any? = this
-            
-                @Reader
-                override fun invoke(): T {
-                    var value: Any? = _value
-                    if (value === this) {
-                        synchronized(this) {
-                            value = _value
-                            if (value === this) {
-                                value = _provider!!()
-                                _value = value
-                                _provider = null
-                            }
-                        }
-                    }
-                    return value as T
-                }
-            }
-            
-            fun lol() {
-                val context = rootContext {
-                    unscoped { Foo() }
-                    unscoped { Bar(given()) }
-                }
-            }
-        """
-    )
-
-    @Test
     fun testReaderCallInReaderAllowed() =
         codegen(
             """
@@ -221,11 +126,11 @@ class ReaderFrontendTest {
     )
 
     @Test
-    fun testReaderContextOk() = codegen(
+    fun testCurrentContextOk() = codegen(
         """
         @Reader
         fun func() {
-            readerContext
+            currentContext
         }
     """
     )

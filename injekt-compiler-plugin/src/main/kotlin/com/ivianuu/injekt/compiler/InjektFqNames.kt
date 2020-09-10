@@ -22,5 +22,7 @@ import org.jetbrains.kotlin.name.FqName
 object InjektFqNames {
     val InjektPackage = FqName("com.ivianuu.injekt")
     val Context = InjektPackage.child("Context".asNameId())
+    val ForKey = InjektPackage.child("ForKey".asNameId())
+    val Key = InjektPackage.child("Key".asNameId())
     val Reader = InjektPackage.child("Reader".asNameId())
 }

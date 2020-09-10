@@ -16,11 +16,11 @@
 
 package com.ivianuu.injekt
 
-inline fun <reified T> ContextBuilder.scopedGiven(
+fun <@ForKey T> ContextBuilder.scopedGiven(
     override: Boolean = false,
-    noinline provider: @Reader () -> T
+    provider: @Reader () -> T
 ) {
-    scopedGiven(keyOf(), override, provider)
+    scopedGiven(keyOf<T>(), override, provider)
 }
 
 fun <T> ContextBuilder.scopedGiven(

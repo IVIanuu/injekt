@@ -32,6 +32,7 @@ class InjektStorageContainerContributor(
         moduleDescriptor: ModuleDescriptor
     ) {
         container.useInstance(readerChecker)
+        container.useInstance(KeyTypeParameterChecker())
     }
 
 }

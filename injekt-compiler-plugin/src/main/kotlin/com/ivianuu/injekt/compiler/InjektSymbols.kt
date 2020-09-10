@@ -20,5 +20,6 @@ import com.ivianuu.injekt.compiler.transform.InjektContext
 
 class InjektSymbols(injektContext: InjektContext) {
     val context = injektContext.referenceClass(InjektFqNames.Context)!!
+    val key = injektContext.referenceClass(InjektFqNames.Key)!!
     val reader = injektContext.referenceClass(InjektFqNames.Reader)!!
 }

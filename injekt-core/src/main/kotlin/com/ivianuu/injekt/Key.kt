@@ -16,11 +16,9 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KType
-import kotlin.reflect.typeOf
+inline class Key<T>(val value: String)
 
-interface Key<T>
+inline fun <@ForKey T> keyOf(): Key<T> = error("Intrinsic")
 
-inline fun <reified T> keyOf(): Key<T> = KTypeKey(typeOf<T>())
-
-data class KTypeKey<T>(val kType: KType) : Key<T>
+@Target(AnnotationTarget.TYPE_PARAMETER)
+annotation class ForKey
