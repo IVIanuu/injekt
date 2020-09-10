@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/android-integration-tests/android-integration-tests.iml" filepath="$PROJECT_DIR$/.idea/modules/android-integration-tests/android-integration-tests.iml" group="injekt/android-integration-tests" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/comparison/comparison.iml" filepath="$PROJECT_DIR$/.idea/modules/comparison/comparison.iml" group="injekt/comparison" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt.iml" group="injekt" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-android/injekt-android.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-android/injekt-android.iml" group="injekt/injekt-android" />

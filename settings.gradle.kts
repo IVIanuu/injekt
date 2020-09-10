@@ -15,7 +15,6 @@
  */
 
 include(
-    ":android-integration-tests",
     ":comparison",
     ":injekt-android",
     ":injekt-android-work",
