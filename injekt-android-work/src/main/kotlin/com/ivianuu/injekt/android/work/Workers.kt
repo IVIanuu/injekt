@@ -20,25 +20,26 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.Effect
-import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.GivenMapEntries
+import com.ivianuu.injekt.ContextBuilder
+import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
+import com.ivianuu.injekt.scopedGiven
 import kotlin.reflect.KClass
 
-@Effect
-annotation class GivenWorker {
-    companion object {
-        @GivenMapEntries
-        inline operator fun <reified T : ListenableWorker> invoke(): Workers = mapOf(
-            T::class to given<(Context, WorkerParameters) -> T>()
-        )
+inline fun <reified T : ListenableWorker> ContextBuilder.givenWorker(
+    noinline provider: @Reader (Context, WorkerParameters) -> T
+) {
+    map(Workers) {
+        put(T::class) { provider }
     }
 }
 
-internal typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
+fun ContextBuilder.workerInjection() {
+    scopedGiven<WorkerFactory> { InjektWorkerFactory() }
+}
 
-@Given
+@Reader
 internal class InjektWorkerFactory : WorkerFactory() {
 
     override fun createWorker(
@@ -46,14 +47,11 @@ internal class InjektWorkerFactory : WorkerFactory() {
         workerClassName: String,
         workerParameters: WorkerParameters
     ): ListenableWorker? {
-        return given<Workers>()[Class.forName(workerClassName).kotlin]?.invoke(
+        return given(Workers)[Class.forName(workerClassName).kotlin]?.invoke(
             appContext,
             workerParameters
         )
     }
 }
 
-object WorkerInjectionGivens {
-    @Given
-    fun workerFactory(): WorkerFactory = given<InjektWorkerFactory>()
-}
+object Workers : Key<Map<KClass<*>, @Reader (Context, WorkerParameters) -> ListenableWorker>>
