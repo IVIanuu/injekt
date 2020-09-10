@@ -17,20 +17,42 @@
 
 package com.ivianuu.injekt
 
-inline fun rootContext(init: ContextBuilder.() -> Unit = {}): Context =
-    ContextBuilder().apply(init).build()
+import kotlin.reflect.KClass
 
-inline fun Context.childContext(init: ContextBuilder.() -> Unit = {}): Context =
-    ContextBuilder(this).apply(init).build()
+inline fun rootContext(
+    contextName: KClass<out ContextName>? = null,
+    init: ContextBuilder.() -> Unit = {}
+): Context = ContextBuilder(contextName).apply(init).build()
 
-class ContextBuilder(private val parent: Context? = null) {
+inline fun Context.childContext(
+    contextName: KClass<out ContextName>? = null,
+    init: ContextBuilder.() -> Unit = {}
+): Context =
+    ContextBuilder(contextName, this).apply(init).build()
+
+class ContextBuilder(
+    val contextName: KClass<out ContextName>? = null,
+    val parent: Context? = null
+) {
     private val providers = mutableMapOf<Key<*>, @Reader () -> Any?>()
+
     @PublishedApi
     internal val mapBuilders = mutableMapOf<Key<*>, MapBuilder<*, *>>()
+
     @PublishedApi
     internal val setBuilders = mutableMapOf<Key<*>, SetBuilder<*>>()
 
-    fun <T> given(key: Key<T>, provider: @Reader () -> T) {
+    init {
+        ModuleRegistry._modules[AnyContext::class]?.forEach { it() }
+        if (contextName != null) {
+            ModuleRegistry._modules[contextName]?.forEach { it() }
+        }
+    }
+
+    fun <T> given(key: Key<T>, override: Boolean = false, provider: @Reader () -> T) {
+        check(override || key !in providers) {
+            "Already specified given for '$key'"
+        }
         providers[key] = provider
     }
 
@@ -73,8 +95,11 @@ class ContextBuilder(private val parent: Context? = null) {
     }
 }
 
-inline fun <reified T> ContextBuilder.given(noinline provider: @Reader () -> T) {
-    given(keyOf(), provider)
+inline fun <reified T> ContextBuilder.given(
+    override: Boolean = false,
+    noinline provider: @Reader () -> T
+) {
+    given(keyOf(), override, provider)
 }
 
 inline fun <reified K, reified V> ContextBuilder.map(block: MapBuilder<K, V>.() -> Unit) {
@@ -88,17 +113,29 @@ inline fun <reified E> ContextBuilder.set(block: SetBuilder<E>.() -> Unit) {
 class MapBuilder<K, V>(private val contextBuilder: ContextBuilder) {
     internal val map = mutableMapOf<K, Key<out V>>()
 
-    fun <T : V> put(entryKey: K, entryValueKey: Key<T>) {
+    fun <T : V> put(entryKey: K, entryValueKey: Key<T>, override: Boolean = false) {
+        check(override || entryKey !in map) {
+            "Already specified map entry for '$entryKey'"
+        }
         map[entryKey] = entryValueKey
     }
 
-    inline fun <reified T : V> put(entryKey: K, noinline entryValueProvider: @Reader () -> T) {
-        put(entryKey, keyOf(), entryValueProvider)
+    inline fun <reified T : V> put(
+        entryKey: K,
+        override: Boolean = false,
+        noinline entryValueProvider: @Reader () -> T
+    ) {
+        put(entryKey, keyOf(), override, entryValueProvider)
     }
 
-    fun <T : V> put(entryKey: K, entryValueKey: Key<T>, entryValueProvider: @Reader () -> T) {
-        put(entryKey, entryValueKey)
-        contextBuilder.given(entryValueKey, entryValueProvider)
+    fun <T : V> put(
+        entryKey: K,
+        entryValueKey: Key<T>,
+        override: Boolean = false,
+        entryValueProvider: @Reader () -> T
+    ) {
+        put(entryKey, entryValueKey, override)
+        contextBuilder.given(entryValueKey, override, entryValueProvider)
     }
 }
 
@@ -107,17 +144,27 @@ internal data class KeyedMapKey<K, V>(val mapKey: Key<Map<K, V>>) : Key<Map<K, K
 class SetBuilder<E>(private val contextBuilder: ContextBuilder) {
     internal val set = mutableSetOf<Key<out E>>()
 
-    fun <T : E> add(elementKey: Key<T>) {
+    fun <T : E> add(elementKey: Key<T>, override: Boolean = false) {
+        check(override || elementKey !in set) {
+            "Already contains set element for '$elementKey'"
+        }
         set += elementKey
     }
 
-    inline fun <reified T : E> add(noinline elementProvider: @Reader () -> T) {
-        add(keyOf(), elementProvider)
+    inline fun <reified T : E> add(
+        override: Boolean = false,
+        noinline elementProvider: @Reader () -> T
+    ) {
+        add(keyOf(), override, elementProvider)
     }
 
-    fun <T : E> add(elementKey: Key<T>, elementProvider: @Reader () -> T) {
-        set += elementKey
-        contextBuilder.given(elementKey, elementProvider)
+    fun <T : E> add(
+        elementKey: Key<T>,
+        override: Boolean = false,
+        elementProvider: @Reader () -> T
+    ) {
+        add(elementKey, override)
+        contextBuilder.given(elementKey, override, elementProvider)
     }
 }
 

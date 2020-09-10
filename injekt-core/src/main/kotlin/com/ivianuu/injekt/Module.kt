@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.sample
+package com.ivianuu.injekt
 
-import android.app.Application
-import com.ivianuu.injekt.android.applicationReaderContext
-import com.ivianuu.injekt.initializeInjekt
-import com.ivianuu.injekt.runReader
+import kotlin.reflect.KClass
 
-class App : Application() {
+annotation class Module(val contextName: KClass<*> = AnyContext::class)
 
-    override fun onCreate() {
-        initializeInjekt()
-        super.onCreate()
-        applicationReaderContext.runReader {
-            initializeWorkers()
-            startAppServices()
-            refreshRepo()
-        }
+object ModuleRegistry {
+    internal val _modules =
+        mutableMapOf<KClass<out ContextName>, MutableList<ContextBuilder.() -> Unit>>()
+
+    fun module(
+        contextName: KClass<out ContextName>,
+        block: ContextBuilder.() -> Unit
+    ) {
+        _modules.getOrPut(contextName) { mutableListOf() } += block
     }
-
 }

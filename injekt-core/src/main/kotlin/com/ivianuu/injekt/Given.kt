@@ -16,8 +16,12 @@
 
 package com.ivianuu.injekt
 
+import kotlin.reflect.KClass
+
+annotation class Given(val contextName: KClass<*> = AnyContext::class)
+
 inline fun <reified T> Context.givenOrNull(): T? =
-    givenOrNull(keyOf())
+    givenOrNull(keyOf<T>())
 
 fun <T> Context.givenOrNull(key: Key<T>): T? =
     givenProviderOrNull(key)?.let { runReader { it() } }

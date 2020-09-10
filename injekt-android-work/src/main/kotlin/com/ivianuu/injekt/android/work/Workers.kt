@@ -20,8 +20,10 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
+import com.ivianuu.injekt.ApplicationContext
 import com.ivianuu.injekt.ContextBuilder
 import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.scopedGiven
@@ -35,6 +37,7 @@ inline fun <reified T : ListenableWorker> ContextBuilder.givenWorker(
     }
 }
 
+@Module(ApplicationContext::class)
 fun ContextBuilder.workerInjection() {
     scopedGiven<WorkerFactory> { InjektWorkerFactory() }
 }

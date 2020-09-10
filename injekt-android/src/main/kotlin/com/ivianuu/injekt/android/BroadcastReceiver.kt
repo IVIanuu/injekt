@@ -20,21 +20,25 @@ import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Intent
 import com.ivianuu.injekt.Context
+import com.ivianuu.injekt.ContextName
+import com.ivianuu.injekt.childContext
+import com.ivianuu.injekt.given
 
-@Context
-interface ReceiverContext
+object ReceiverContext : ContextName
 
 fun BroadcastReceiver.createReceiverContext(
     context: android.content.Context,
     intent: Intent
-): ReceiverContext =
-    (context.applicationContext as Application).applicationReaderContext.runReader {
-        childContext(
-            this,
-            context as AndroidReceiverContext,
-            intent as ReceiverIntent
-        )
+): Context {
+    return (context.applicationContext as Application).applicationReaderContext.childContext(
+        ReceiverContext::class
+    ) {
+        given { this }
+
+        context as AndroidReceiverContext
+        intent as ReceiverIntent
     }
+}
 
 typealias AndroidReceiverContext = android.content.Context
 

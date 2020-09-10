@@ -22,18 +22,16 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import com.ivianuu.injekt.Context
+import com.ivianuu.injekt.ContextName
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.runReader
 
-@Context
-interface ActivityContext
+object ActivityContext : ContextName
 
-val ComponentActivity.activityContext: ActivityContext
+val ComponentActivity.activityContext: Context
     get() = lifecycle.singleton {
-        retainedActivityContext.runReader {
-            childContext(this)
-        }
+        retainedActivityContext.childContext(ActivityContext::class)
     }
 
 typealias AndroidActivityContext = android.content.Context

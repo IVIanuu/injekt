@@ -16,21 +16,30 @@
 
 package com.ivianuu.injekt
 
-inline fun <reified T> ContextBuilder.scopedGiven(noinline provider: @Reader () -> T) {
-    scopedGiven(keyOf(), provider)
+inline fun <reified T> ContextBuilder.scopedGiven(
+    override: Boolean = false,
+    noinline provider: @Reader () -> T
+) {
+    scopedGiven(keyOf(), override, provider)
 }
 
 fun <T> ContextBuilder.scopedGiven(
     key: Key<T>,
+    override: Boolean = false,
     provider: @Reader () -> T
 ) {
-    given(key, ScopedProvider(provider))
+    given(key, override, provider.scope())
+}
+
+fun <T> (@Reader () -> T).scope(): @Reader () -> T {
+    return if (this is ScopedProvider) this
+    else ScopedProvider(this)
 }
 
 private class ScopedProvider<T>(
     provider: @Reader () -> T
 ) : @Reader () -> T {
-    var _provider: @Reader (() -> T)? = provider
+    private var _provider: @Reader (() -> T)? = provider
     private var _value: Any? = this
 
     @Reader

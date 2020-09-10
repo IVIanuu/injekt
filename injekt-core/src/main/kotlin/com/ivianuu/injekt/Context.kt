@@ -32,3 +32,7 @@ internal class ContextImpl(
 @Reader
 val currentContext: Context
     get() = error("Intrinsic")
+
+interface ContextName
+
+object AnyContext : ContextName

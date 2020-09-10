@@ -18,13 +18,12 @@ package com.ivianuu.injekt.android
 
 import androidx.activity.ComponentActivity
 import com.ivianuu.injekt.Context
+import com.ivianuu.injekt.ContextName
+import com.ivianuu.injekt.childContext
 
-@Context
-interface RetainedActivityContext
+object RetainedActivityContext : ContextName
 
-val ComponentActivity.retainedActivityContext: RetainedActivityContext
+val ComponentActivity.retainedActivityContext: Context
     get() = viewModelStore.singleton {
-        application.applicationReaderContext.runReader {
-            childContext()
-        }
+        application.applicationReaderContext.childContext(RetainedActivityContext::class)
     }
