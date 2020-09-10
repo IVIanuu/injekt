@@ -27,4 +27,5 @@ dependencies {
     implementation(project(":injekt-core"))
     implementation(project(":test-util"))
     kapt(project(":test-util"))
+    kotlinCompilerPluginClasspath(project(":injekt-compiler-plugin"))
 }

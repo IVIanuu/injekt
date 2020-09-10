@@ -38,7 +38,7 @@ class ContextBuilder(private val parent: Context? = null) {
             finalKeyedMap += mapBuilder.map as Map<Any?, Key<Any?>>
             providers[keyedMapKey] = { finalKeyedMap }
             providers[mapKey] = {
-                given(keyedMapKey)
+                finalKeyedMap
                     .mapValues { given(it.value) }
             }
         }
@@ -49,7 +49,7 @@ class ContextBuilder(private val parent: Context? = null) {
             finalKeyedSet += setBuilder.set as Set<Key<Any?>>
             providers[keyedSetKey] = { finalKeyedSet }
             providers[setKey] = {
-                given(keyedSetKey)
+                finalKeyedSet
                     .mapTo(mutableSetOf()) { given(it) }
             }
         }

@@ -29,7 +29,6 @@ import com.ivianuu.injekt.comparison.fibonacci.Fib8
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.rootContext
 import com.ivianuu.injekt.runReader
-import com.ivianuu.injekt.unscoped
 
 object InjektTest : InjectionTest {
 
@@ -39,14 +38,14 @@ object InjektTest : InjectionTest {
 
     override fun setup() {
         this.context = rootContext {
-            unscoped { Fib1() }
-            unscoped { Fib2() }
-            unscoped { Fib3(given(), given()) }
-            unscoped { Fib4(given(), given()) }
-            unscoped { Fib5(given(), given()) }
-            unscoped { Fib6(given(), given()) }
-            unscoped { Fib7(given(), given()) }
-            unscoped { Fib8(given(), given()) }
+            given { Fib1() }
+            given { Fib2() }
+            given { Fib3(given(), given()) }
+            given { Fib4(given(), given()) }
+            given { Fib5(given(), given()) }
+            given { Fib6(given(), given()) }
+            given { Fib7(given(), given()) }
+            given { Fib8(given(), given()) }
         }
     }
 
