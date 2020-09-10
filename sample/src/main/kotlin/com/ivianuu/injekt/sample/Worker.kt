@@ -21,15 +21,10 @@ import androidx.work.Configuration
 import androidx.work.CoroutineWorker
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.ContextBuilder
-import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.android.AndroidApplicationContext
 import com.ivianuu.injekt.android.work.GivenWorker
-import com.ivianuu.injekt.android.work.givenWorker
-import com.ivianuu.injekt.common.ApplicationContext
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.keyOf
 
 @GivenWorker
 class TestWorker(
@@ -43,21 +38,6 @@ class TestWorker(
 
     override suspend fun doWork(): Result = Result.success()
 
-}
-
-@Module(ApplicationContext::class)
-fun ContextBuilder.TestWorkerModule() {
-    with(GivenWorker.Companion) {
-        configure(keyOf<@Reader (Context, WorkerParameters) -> TestWorker>()) {
-            { p1, p2 ->
-                TestWorker(p1, p2)
-            }
-        }
-    }
-}
-
-fun ContextBuilder.workers() {
-    givenWorker { context, workerParams -> TestWorker(context, workerParams) }
 }
 
 @Reader
