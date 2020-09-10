@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt
 
-inline class Key<T>(val value: String)
+inline class Key<out T>(val value: String)
 
 inline fun <@ForKey T> keyOf(): Key<T> = error("Intrinsic")
 

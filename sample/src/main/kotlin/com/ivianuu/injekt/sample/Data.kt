@@ -16,17 +16,24 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.ApplicationContext
+import com.ivianuu.injekt.ContextBuilder
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.android.AndroidApplicationContext
+import com.ivianuu.injekt.common.ApplicationContext
 import com.ivianuu.injekt.given
 import java.io.File
 
 typealias DatabaseFile = File
 
-@Given
+@Given(ApplicationContext::class)
 fun databaseFile(): DatabaseFile = given<AndroidApplicationContext>().cacheDir
+
+@Module(ApplicationContext::class)
+fun ContextBuilder.databaseFileModule() {
+    given(provider = ::databaseFile)
+}
 
 @Given(ApplicationContext::class)
 class Database {

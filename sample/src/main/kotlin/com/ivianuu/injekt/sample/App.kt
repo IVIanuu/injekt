@@ -17,7 +17,10 @@
 package com.ivianuu.injekt.sample
 
 import android.app.Application
+import com.ivianuu.injekt.ContextBuilder
+import com.ivianuu.injekt.ModuleRegistry
 import com.ivianuu.injekt.android.applicationReaderContext
+import com.ivianuu.injekt.common.ApplicationContext
 import com.ivianuu.injekt.initializeInjekt
 import com.ivianuu.injekt.runReader
 
@@ -25,6 +28,7 @@ class App : Application() {
 
     override fun onCreate() {
         initializeInjekt()
+        ModuleRegistry.module(ApplicationContext::class, ContextBuilder::TestWorkerModule)
         super.onCreate()
         applicationReaderContext.runReader {
             initializeWorkers()

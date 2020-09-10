@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.common
 
+import com.ivianuu.injekt.AnyContext
+import com.ivianuu.injekt.ContextBuilder
+import com.ivianuu.injekt.ContextName
+import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.Reader
 import kotlin.reflect.KClass
 
-annotation class Given(val scope: KClass<out ContextName> = AnyContext::class)
-
-fun <@ForKey T> Context.givenOrNull(key: Key<T> = keyOf()): T? =
-    givenProviderOrNull(key)?.let { runReader { it() } }
-
-fun <@ForKey T> Context.given(key: Key<T> = keyOf()): T =
-    givenProviderOrNull(key)?.let { runReader { it() } }
-        ?: error("No given found for '$key'")
-
-@Reader
-fun <@ForKey T> given(key: Key<T> = keyOf()): T = currentContext.given(key)
+annotation class Adapter(val contextName: KClass<out ContextName> = AnyContext::class) {
+    interface Impl<T> {
+        fun ContextBuilder.configure(
+            key: Key<T>,
+            provider: @Reader () -> T
+        )
+    }
+}

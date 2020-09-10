@@ -20,20 +20,38 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.ivianuu.injekt.ApplicationContext
 import com.ivianuu.injekt.ContextBuilder
+import com.ivianuu.injekt.ForKey
+import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.common.Adapter
+import com.ivianuu.injekt.common.ApplicationContext
+import com.ivianuu.injekt.common.toKeyInfo
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.keyOf
 import com.ivianuu.injekt.scopedGiven
 import kotlin.reflect.KClass
 
-inline fun <reified T : ListenableWorker> ContextBuilder.givenWorker(
-    noinline provider: @Reader (Context, WorkerParameters) -> T
+@Adapter(ApplicationContext::class)
+annotation class GivenWorker {
+    companion object : Adapter.Impl<@Reader (Context, WorkerParameters) -> ListenableWorker> {
+        override fun ContextBuilder.configure(
+            key: Key<@Reader (Context, WorkerParameters) -> ListenableWorker>,
+            provider: () -> @Reader (Context, WorkerParameters) -> ListenableWorker
+        ) {
+            @Suppress("UNCHECKED_CAST")
+            givenWorker(key.toKeyInfo().arguments[2].key as Key<ListenableWorker>, provider())
+        }
+    }
+}
+
+fun <@ForKey T : ListenableWorker> ContextBuilder.givenWorker(
+    key: Key<T> = keyOf(),
+    provider: @Reader (Context, WorkerParameters) -> T
 ) {
     map(keyOf<Workers>()) {
-        put(T::class) { provider }
+        put(key.toKeyInfo().classifier) { provider }
     }
 }
 

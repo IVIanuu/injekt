@@ -19,16 +19,15 @@ package com.ivianuu.injekt.android
 import android.app.Service
 import android.content.res.Resources
 import com.ivianuu.injekt.Context
+import com.ivianuu.injekt.ContextName
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.given
 
-@Context
-interface ServiceContext
+object ServiceContext : ContextName
 
-fun Service.createServiceContext(): ServiceContext =
-    application.applicationReaderContext.runReader {
-        childContext(this)
-    }
+fun Service.createServiceContext(): Context =
+    application.applicationReaderContext.childContext(ServiceContext::class)
 
 typealias AndroidServiceContext = android.content.Context
 

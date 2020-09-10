@@ -16,22 +16,28 @@
 
 package com.ivianuu.injekt.sample
 
-import com.ivianuu.injekt.Effect
-import com.ivianuu.injekt.GivenSetElements
+import com.ivianuu.injekt.ContextBuilder
+import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.common.Adapter
 import com.ivianuu.injekt.given
+import com.ivianuu.injekt.keyOf
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 typealias AppServices = Set<suspend () -> Unit>
 
-@Effect
+@GivenAppService
 annotation class GivenAppService {
-    companion object {
-        @GivenSetElements
-        inline operator fun <reified T : suspend () -> Unit> invoke(): AppServices = setOf(
-            given<T>()
-        )
+    companion object : Adapter.Impl<suspend () -> Unit> {
+        override fun ContextBuilder.configure(
+            key: Key<suspend () -> Unit>,
+            provider: () -> suspend () -> Unit
+        ) {
+            set(keyOf<AppServices>()) {
+                add(elementKey = key, elementProvider = provider)
+            }
+        }
     }
 }
 
