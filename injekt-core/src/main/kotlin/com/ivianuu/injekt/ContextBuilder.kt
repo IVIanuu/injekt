@@ -121,4 +121,4 @@ class SetBuilder<E>(private val contextBuilder: ContextBuilder) {
     }
 }
 
-internal data class KeyedSetKey<E>(val setkey: Key<Set<E>>) : Key<Set<Key<E>>>
+internal data class KeyedSetKey<E>(val setKey: Key<Set<E>>) : Key<Set<Key<E>>>
