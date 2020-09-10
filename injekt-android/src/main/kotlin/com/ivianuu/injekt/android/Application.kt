@@ -23,11 +23,12 @@ import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.common.ApplicationContext
 import com.ivianuu.injekt.given
+import com.ivianuu.injekt.keyOf
 import com.ivianuu.injekt.rootContext
 
 val Application.applicationReaderContext: Context
     get() = ProcessLifecycleOwner.get().lifecycle.singleton {
-        rootContext(ApplicationContext::class) {
+        rootContext(keyOf<ApplicationContext>()) {
             given { this@applicationReaderContext }
         }
     }

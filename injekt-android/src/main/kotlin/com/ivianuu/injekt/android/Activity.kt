@@ -26,12 +26,13 @@ import com.ivianuu.injekt.ContextName
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.given
+import com.ivianuu.injekt.keyOf
 
 object ActivityContext : ContextName
 
 val ComponentActivity.activityContext: Context
     get() = lifecycle.singleton {
-        retainedActivityContext.childContext(ActivityContext::class)
+        retainedActivityContext.childContext(keyOf<ActivityContext>())
     }
 
 typealias AndroidActivityContext = android.content.Context

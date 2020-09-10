@@ -23,11 +23,12 @@ import com.ivianuu.injekt.ContextName
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.given
+import com.ivianuu.injekt.keyOf
 
 object ServiceContext : ContextName
 
 fun Service.createServiceContext(): Context =
-    application.applicationReaderContext.childContext(ServiceContext::class)
+    application.applicationReaderContext.childContext(keyOf<ServiceContext>())
 
 typealias AndroidServiceContext = android.content.Context
 

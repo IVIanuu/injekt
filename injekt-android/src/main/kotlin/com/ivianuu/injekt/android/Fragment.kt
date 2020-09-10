@@ -26,12 +26,13 @@ import com.ivianuu.injekt.ContextName
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.given
+import com.ivianuu.injekt.keyOf
 
 object FragmentContext : ContextName
 
 val Fragment.fragmentContext: Context
     get() = lifecycle.singleton {
-        activity!!.activityContext.childContext(FragmentContext::class)
+        activity!!.activityContext.childContext(keyOf<FragmentContext>())
     }
 
 typealias AndroidFragmentContext = android.content.Context

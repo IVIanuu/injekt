@@ -22,12 +22,14 @@ import com.ivianuu.injekt.keyOf
 import kotlin.reflect.KClass
 
 data class KeyInfo<T>(val key: Key<T>) {
-    val classifier: KClass<*> by lazy(LazyThreadSafetyMode.NONE) {
+    val classifierName: String by lazy(LazyThreadSafetyMode.NONE) {
         val withoutAnnotations = if (key.value.startsWith("["))
             key.value.removeRange(0 until key.value.indexOf(']')) else key.value
-        val classifierName = if (withoutAnnotations.contains("<"))
+        if (withoutAnnotations.contains("<"))
             withoutAnnotations.split("<")[0] else withoutAnnotations
             .removeSuffix("?")
+    }
+    val classifier: KClass<*> by lazy(LazyThreadSafetyMode.NONE) {
         Class.forName(classifierName).kotlin
     }
 

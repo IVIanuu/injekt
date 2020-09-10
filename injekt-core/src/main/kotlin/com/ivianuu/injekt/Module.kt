@@ -22,10 +22,10 @@ annotation class Module(val contextName: KClass<*> = AnyContext::class)
 
 object ModuleRegistry {
     internal val _modules =
-        mutableMapOf<KClass<out ContextName>, MutableList<ContextBuilder.() -> Unit>>()
+        mutableMapOf<Key<ContextName>, MutableList<ContextBuilder.() -> Unit>>()
 
     fun module(
-        contextName: KClass<out ContextName>,
+        contextName: Key<ContextName>,
         block: ContextBuilder.() -> Unit
     ) {
         _modules.getOrPut(contextName) { mutableListOf() } += block

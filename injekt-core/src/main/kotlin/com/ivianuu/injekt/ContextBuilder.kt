@@ -17,21 +17,19 @@
 
 package com.ivianuu.injekt
 
-import kotlin.reflect.KClass
-
 inline fun rootContext(
-    contextName: KClass<out ContextName>? = null,
+    contextName: Key<ContextName>? = null,
     init: ContextBuilder.() -> Unit = {}
 ): Context = ContextBuilder(contextName).apply(init).build()
 
 inline fun Context.childContext(
-    contextName: KClass<out ContextName>? = null,
+    contextName: Key<ContextName>? = null,
     init: ContextBuilder.() -> Unit = {}
 ): Context =
     ContextBuilder(contextName, this).apply(init).build()
 
 class ContextBuilder(
-    val contextName: KClass<out ContextName>? = null,
+    val contextName: Key<ContextName>? = null,
     val parent: Context? = null
 ) {
     private val providers = mutableMapOf<Key<*>, @Reader () -> Any?>()
@@ -49,7 +47,7 @@ class ContextBuilder(
         .also { setBuilders = it }
 
     init {
-        ModuleRegistry._modules[AnyContext::class]?.forEach { it() }
+        ModuleRegistry._modules[keyOf<AnyContext>()]?.forEach { it() }
         if (contextName != null) {
             ModuleRegistry._modules[contextName]?.forEach { it() }
         }

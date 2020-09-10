@@ -31,7 +31,6 @@ import com.ivianuu.injekt.common.toKeyInfo
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.keyOf
 import com.ivianuu.injekt.scopedGiven
-import kotlin.reflect.KClass
 
 @Adapter(ApplicationContext::class)
 annotation class GivenWorker {
@@ -51,7 +50,7 @@ fun <@ForKey T : ListenableWorker> ContextBuilder.givenWorker(
     provider: @Reader (Context, WorkerParameters) -> T
 ) {
     map(keyOf<Workers>()) {
-        put(key.toKeyInfo().classifier) { provider }
+        put(key.toKeyInfo().classifierName) { provider }
     }
 }
 
@@ -68,11 +67,11 @@ internal class InjektWorkerFactory : WorkerFactory() {
         workerClassName: String,
         workerParameters: WorkerParameters
     ): ListenableWorker? {
-        return given<Workers>()[Class.forName(workerClassName).kotlin]?.invoke(
+        return given<Workers>()[workerClassName]?.invoke(
             appContext,
             workerParameters
         )
     }
 }
 
-typealias Workers = Map<KClass<*>, @Reader (Context, WorkerParameters) -> ListenableWorker>
+typealias Workers = Map<String, @Reader (Context, WorkerParameters) -> ListenableWorker>
