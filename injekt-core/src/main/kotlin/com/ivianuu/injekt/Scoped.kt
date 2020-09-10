@@ -17,14 +17,7 @@
 package com.ivianuu.injekt
 
 fun <@ForKey T> ContextBuilder.scopedGiven(
-    override: Boolean = false,
-    provider: @Reader () -> T
-) {
-    scopedGiven(keyOf<T>(), override, provider)
-}
-
-fun <T> ContextBuilder.scopedGiven(
-    key: Key<T>,
+    key: Key<T> = keyOf(),
     override: Boolean = false,
     provider: @Reader () -> T
 ) {

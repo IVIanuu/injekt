@@ -49,20 +49,27 @@ class ContextBuilder(
         }
     }
 
-    fun <T> given(key: Key<T>, override: Boolean = false, provider: @Reader () -> T) {
+    fun <@ForKey T> given(
+        key: Key<T> = keyOf(),
+        override: Boolean = false,
+        provider: @Reader () -> T
+    ) {
         check(override || key !in providers) {
             "Already specified given for '$key'"
         }
         providers[key] = provider
     }
 
-    inline fun <K, V> map(mapKey: Key<Map<K, V>>, block: MapBuilder<K, V>.() -> Unit) {
+    inline fun <@ForKey K, @ForKey V> map(
+        mapKey: Key<Map<K, V>> = keyOf(),
+        block: MapBuilder<K, V>.() -> Unit
+    ) {
         mapBuilders.getOrPut(mapKey) { MapBuilder<K, V>(this) }
             .let { it as MapBuilder<K, V> }
             .block()
     }
 
-    inline fun <E> set(setKey: Key<Set<E>>, block: SetBuilder<E>.() -> Unit) {
+    inline fun <@ForKey E> set(setKey: Key<Set<E>> = keyOf(), block: SetBuilder<E>.() -> Unit) {
         setBuilders.getOrPut(setKey) { SetBuilder<E>(this) }
             .let { it as SetBuilder<E> }
             .block()
@@ -77,7 +84,7 @@ class ContextBuilder(
             providers[keyedMapKey] = { finalKeyedMap }
             providers[mapKey] = {
                 finalKeyedMap
-                    .mapValues { given<Any?>(it.value) }
+                    .mapValues { given(it.value) }
             }
         }
         setBuilders.forEach { (setKey, setBuilder) ->
@@ -95,73 +102,37 @@ class ContextBuilder(
     }
 }
 
-fun <@ForKey T> ContextBuilder.given(
-    override: Boolean = false,
-    provider: @Reader () -> T
-) {
-    given(keyOf(), override, provider)
-}
-
-fun <@ForKey K, @ForKey V> ContextBuilder.map(block: MapBuilder<K, V>.() -> Unit) {
-    map(keyOf(), block)
-}
-
-fun <@ForKey E> ContextBuilder.set(block: SetBuilder<E>.() -> Unit) {
-    set(keyOf(), block)
-}
-
 class MapBuilder<K, V>(private val contextBuilder: ContextBuilder) {
     internal val map = mutableMapOf<K, Key<out V>>()
 
-    fun <T : V> put(entryKey: K, entryValueKey: Key<T>, override: Boolean = false) {
+    fun <@ForKey T : V> put(
+        entryKey: K,
+        entryValueKey: Key<T> = keyOf(),
+        override: Boolean = false,
+        entryValueProvider: @Reader (() -> T)? = null
+    ) {
         check(override || entryKey !in map) {
             "Already specified map entry for '$entryKey'"
         }
         map[entryKey] = entryValueKey
-    }
-
-    fun <@ForKey T : V> put(
-        entryKey: K,
-        override: Boolean = false,
-        entryValueProvider: @Reader () -> T
-    ) {
-        put(entryKey, keyOf(), override, entryValueProvider)
-    }
-
-    fun <T : V> put(
-        entryKey: K,
-        entryValueKey: Key<T>,
-        override: Boolean = false,
-        entryValueProvider: @Reader () -> T
-    ) {
-        put(entryKey, entryValueKey, override)
-        contextBuilder.given(entryValueKey, override, entryValueProvider)
+        if (entryValueProvider != null)
+            contextBuilder.given(entryValueKey, override, entryValueProvider)
     }
 }
 
 class SetBuilder<E>(private val contextBuilder: ContextBuilder) {
     internal val set = mutableSetOf<Key<out E>>()
 
-    fun <T : E> add(elementKey: Key<T>, override: Boolean = false) {
+    fun <@ForKey T : E> add(
+        elementKey: Key<T> = keyOf(),
+        override: Boolean = false,
+        elementProvider: @Reader (() -> T)? = null
+    ) {
         check(override || elementKey !in set) {
             "Already contains set element for '$elementKey'"
         }
         set += elementKey
-    }
-
-    fun <@ForKey T : E> add(
-        override: Boolean = false,
-        elementProvider: @Reader () -> T
-    ) {
-        add(keyOf(), override, elementProvider)
-    }
-
-    fun <T : E> add(
-        elementKey: Key<T>,
-        override: Boolean = false,
-        elementProvider: @Reader () -> T
-    ) {
-        add<T>(elementKey, override)
-        contextBuilder.given(elementKey, override, elementProvider)
+        if (elementProvider != null)
+            contextBuilder.given(elementKey, override, elementProvider)
     }
 }

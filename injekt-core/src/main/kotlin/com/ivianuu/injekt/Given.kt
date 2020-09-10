@@ -20,19 +20,12 @@ import kotlin.reflect.KClass
 
 annotation class Given(val contextName: KClass<*> = AnyContext::class)
 
-fun <@ForKey T> Context.givenOrNull(): T? =
-    givenOrNull(keyOf<T>())
-
-fun <T> Context.givenOrNull(key: Key<T>): T? =
+fun <@ForKey T> Context.givenOrNull(key: Key<T> = keyOf()): T? =
     givenProviderOrNull(key)?.let { runReader { it() } }
 
-fun <@ForKey T> Context.given(): T = given(keyOf())
-
-fun <T> Context.given(key: Key<T>): T = givenProviderOrNull(key)?.let { runReader { it() } }
-    ?: error("No given found for '$key'")
-
-@Reader
-fun <@ForKey T> given(): T = currentContext.given(keyOf())
+fun <@ForKey T> Context.given(key: Key<T> = keyOf()): T =
+    givenProviderOrNull(key)?.let { runReader { it() } }
+        ?: error("No given found for '$key'")
 
 @Reader
-fun <T> given(key: Key<T>): T = currentContext.given(key)
+fun <@ForKey T> given(key: Key<T> = keyOf()): T = currentContext.given(key)
