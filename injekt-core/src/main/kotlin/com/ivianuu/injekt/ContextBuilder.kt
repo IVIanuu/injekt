@@ -36,11 +36,17 @@ class ContextBuilder(
 ) {
     private val providers = mutableMapOf<Key<*>, @Reader () -> Any?>()
 
-    @PublishedApi
-    internal val mapBuilders = mutableMapOf<Key<*>, MapBuilder<*, *>>()
+    private var mapBuilders: MutableMap<Key<*>, MapBuilder<*, *>>? = null
 
     @PublishedApi
-    internal val setBuilders = mutableMapOf<Key<*>, SetBuilder<*>>()
+    internal fun mapBuilders() = mapBuilders ?: mutableMapOf<Key<*>, MapBuilder<*, *>>()
+        .also { mapBuilders = it }
+
+    private var setBuilders: MutableMap<Key<*>, SetBuilder<*>>? = null
+
+    @PublishedApi
+    internal fun setBuilders() = setBuilders ?: mutableMapOf<Key<*>, SetBuilder<*>>()
+        .also { setBuilders = it }
 
     init {
         ModuleRegistry._modules[AnyContext::class]?.forEach { it() }
@@ -64,19 +70,19 @@ class ContextBuilder(
         mapKey: Key<Map<K, V>> = keyOf(),
         block: MapBuilder<K, V>.() -> Unit
     ) {
-        mapBuilders.getOrPut(mapKey) { MapBuilder<K, V>(this) }
+        mapBuilders().getOrPut(mapKey) { MapBuilder<K, V>(this) }
             .let { it as MapBuilder<K, V> }
             .block()
     }
 
     inline fun <@ForKey E> set(setKey: Key<Set<E>> = keyOf(), block: SetBuilder<E>.() -> Unit) {
-        setBuilders.getOrPut(setKey) { SetBuilder<E>(this) }
+        setBuilders().getOrPut(setKey) { SetBuilder<E>(this) }
             .let { it as SetBuilder<E> }
             .block()
     }
 
     fun build(): Context {
-        mapBuilders.forEach { (mapKey, mapBuilder) ->
+        mapBuilders?.forEach { (mapKey, mapBuilder) ->
             val keyedMapKey = Key<Map<Any?, Key<Any?>>>("${mapKey.value}.keys")
             val finalKeyedMap = mutableMapOf<Any?, Key<Any?>>()
             parent?.givenOrNull(keyedMapKey)?.let { finalKeyedMap += it }
@@ -87,7 +93,7 @@ class ContextBuilder(
                     .mapValues { given(it.value) }
             }
         }
-        setBuilders.forEach { (setKey, setBuilder) ->
+        setBuilders?.forEach { (setKey, setBuilder) ->
             val keyedSetKey = Key<Set<Key<Any?>>>("${setKey.value}.keys")
             val finalKeyedSet = mutableSetOf<Key<Any?>>()
             parent?.givenOrNull(keyedSetKey)?.let { finalKeyedSet += it }
