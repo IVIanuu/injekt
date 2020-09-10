@@ -20,11 +20,22 @@ import com.ivianuu.injekt.compiler.transform.asNameId
 import org.jetbrains.kotlin.name.FqName
 
 object InjektFqNames {
-    val InjektPackage = FqName("com.ivianuu.injekt")
-    val Context = InjektPackage.child("Context".asNameId())
-    val ForKey = InjektPackage.child("ForKey".asNameId())
-    val Key = InjektPackage.child("Key".asNameId())
-    val Reader = InjektPackage.child("Reader".asNameId())
+    val BasePackage = FqName("com.ivianuu.injekt")
+
+    val AnyContext = BasePackage.child("AnyContext".asNameId())
+    val Context = BasePackage.child("Context".asNameId())
+    val ForKey = BasePackage.child("ForKey".asNameId())
+    val Given = BasePackage.child("Given".asNameId())
+    val Key = BasePackage.child("Key".asNameId())
+    val Module = BasePackage.child("Module".asNameId())
+    val ModuleRegistry = BasePackage.child("ModuleRegistry".asNameId())
+    val Reader = BasePackage.child("Reader".asNameId())
 
     val Composable = FqName("androidx.compose.runtime.Composable")
+
+    val CommonPackage = BasePackage.child("common".asNameId())
+    val Adapter = CommonPackage.child("Adapter".asNameId())
+    val AdapterImpl = Adapter.child("Impl".asNameId())
+
+    val IndexPackage = BasePackage.child("internal".asNameId()).child("index".asNameId())
 }

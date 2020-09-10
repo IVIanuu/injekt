@@ -27,12 +27,12 @@ import kotlinx.coroutines.launch
 
 typealias AppServices = Set<suspend () -> Unit>
 
-@GivenAppService
+@Adapter
 annotation class GivenAppService {
     companion object : Adapter.Impl<suspend () -> Unit> {
         override fun ContextBuilder.configure(
             key: Key<suspend () -> Unit>,
-            provider: () -> suspend () -> Unit
+            provider: @Reader () -> suspend () -> Unit
         ) {
             set(keyOf<AppServices>()) {
                 add(elementKey = key, elementProvider = provider)
@@ -52,4 +52,6 @@ fun startAppServices() {
 @GivenAppService
 suspend fun userAppService() {
     println("run")
+    println()
+    println()
 }

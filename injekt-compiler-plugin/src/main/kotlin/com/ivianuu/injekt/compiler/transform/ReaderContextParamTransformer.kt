@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform
 
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
+import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
@@ -25,9 +26,11 @@ import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrOverridableDeclaration
@@ -123,7 +126,14 @@ class ReaderContextParamTransformer(injektContext: InjektContext) : AbstractInje
             }
         }
 
-        readerConstructor.transformReaderCalls(contextParam)
+        clazz.transformReaderCalls {
+            DeclarationIrBuilder(injektContext, clazz.symbol).run {
+                irGetField(
+                    irGet(it.thisOfClass(clazz)!!),
+                    contextField
+                )
+            }
+        }
 
         return clazz
     }
@@ -145,7 +155,10 @@ class ReaderContextParamTransformer(injektContext: InjektContext) : AbstractInje
         transformedFunctions[function] = transformedFunction
 
         val contextParam = transformedFunction.addContextParameter()
-        transformedFunction.transformReaderCalls(contextParam)
+        transformedFunction.transformReaderCalls {
+            DeclarationIrBuilder(injektContext, transformedFunction.symbol)
+                .irGet(contextParam)
+        }
 
         return transformedFunction
     }
@@ -157,16 +170,17 @@ class ReaderContextParamTransformer(injektContext: InjektContext) : AbstractInje
         )
     }
 
-    private fun IrFunction.transformReaderCalls(
-        contextParam: IrValueParameter
+    private fun IrDeclaration.transformReaderCalls(
+        contextExpression: (List<ScopeWithIr>) -> IrExpression
     ) {
-        transformChildrenVoid(object : IrElementTransformerVoid() {
+        transform(object : IrElementTransformerVoidWithContext() {
             var isNestedScope = false
-            override fun visitFunction(declaration: IrFunction): IrStatement {
+            override fun visitFunctionNew(declaration: IrFunction): IrStatement {
                 val wasNested = isNestedScope
                 try {
-                    isNestedScope = declaration.isReader(injektContext)
-                    return super.visitFunction(declaration)
+                    isNestedScope = this@transformReaderCalls != declaration &&
+                            declaration.isReader(injektContext)
+                    return super.visitFunctionNew(declaration)
                 } finally {
                     isNestedScope = wasNested
                 }
@@ -175,13 +189,12 @@ class ReaderContextParamTransformer(injektContext: InjektContext) : AbstractInje
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
                 val newExpression = if (!isNestedScope) {
                     transformCallIfNeeded(expression) {
-                        DeclarationIrBuilder(injektContext, symbol)
-                            .irGet(contextParam)
+                        contextExpression(allScopes)
                     }
                 } else expression
                 return super.visitFunctionAccess(newExpression)
             }
-        })
+        }, null)
     }
 
     private fun transformCallIfNeeded(

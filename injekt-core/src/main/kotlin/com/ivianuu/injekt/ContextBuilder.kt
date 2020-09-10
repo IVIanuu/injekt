@@ -53,7 +53,7 @@ class ContextBuilder(
         }
     }
 
-    fun <@ForKey T> given(
+    fun <@ForKey T> unscoped(
         key: Key<T> = keyOf(),
         override: Boolean = false,
         provider: @Reader () -> T
@@ -107,7 +107,7 @@ class ContextBuilder(
 }
 
 class MapBuilder<K, V>(private val contextBuilder: ContextBuilder) {
-    internal val map = mutableMapOf<K, Key<out V>>()
+    internal val map = mutableMapOf<K, Key<V>>()
 
     fun <@ForKey T : V> put(
         entryKey: K,
@@ -120,12 +120,12 @@ class MapBuilder<K, V>(private val contextBuilder: ContextBuilder) {
         }
         map[entryKey] = entryValueKey
         if (entryValueProvider != null)
-            contextBuilder.given(entryValueKey, override, entryValueProvider)
+            contextBuilder.unscoped(entryValueKey, override, entryValueProvider)
     }
 }
 
 class SetBuilder<E>(private val contextBuilder: ContextBuilder) {
-    internal val set = mutableSetOf<Key<out E>>()
+    internal val set = mutableSetOf<Key<E>>()
 
     fun <@ForKey T : E> add(
         elementKey: Key<T> = keyOf(),
@@ -137,6 +137,6 @@ class SetBuilder<E>(private val contextBuilder: ContextBuilder) {
         }
         set += elementKey
         if (elementProvider != null)
-            contextBuilder.given(elementKey, override, elementProvider)
+            contextBuilder.unscoped(elementKey, override, elementProvider)
     }
 }

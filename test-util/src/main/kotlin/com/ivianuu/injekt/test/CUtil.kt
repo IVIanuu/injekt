@@ -16,8 +16,11 @@
 
 package com.ivianuu.injekt.test
 
+import com.google.common.io.Files
+import com.ivianuu.injekt.compiler.InjektCommandLineProcessor
 import com.ivianuu.injekt.compiler.InjektComponentRegistrar
 import com.tschuchort.compiletesting.KotlinCompilation
+import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
@@ -95,11 +98,17 @@ fun multiCodegen(
 
 fun compilation(block: KotlinCompilation.() -> Unit = {}) = KotlinCompilation().apply {
     compilerPlugins = listOf(InjektComponentRegistrar())
+    commandLineProcessors = listOf(InjektCommandLineProcessor())
     inheritClassPath = true
     useIR = true
     jvmTarget = "1.8"
     verbose = false
     kotlincArguments += "-XXLanguage:+NewInference"
+    pluginOptions += PluginOption(
+        "com.ivianuu.injekt",
+        "outputDir",
+        Files.createTempDir().absolutePath
+    )
     block()
 }
 

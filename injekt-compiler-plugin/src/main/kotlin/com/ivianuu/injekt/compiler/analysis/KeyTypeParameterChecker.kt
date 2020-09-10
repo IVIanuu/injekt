@@ -39,7 +39,7 @@ class KeyTypeParameterChecker : CallChecker, DeclarationChecker {
         context: DeclarationCheckerContext
     ) {
         if (descriptor is TypeParameterDescriptor &&
-            descriptor.annotations.hasAnnotation(InjektFqNames.ForKey) &&
+            descriptor.hasAnnotation(InjektFqNames.ForKey) &&
             descriptor.containingDeclaration !is FunctionDescriptor &&
             descriptor.containingDeclaration !is PropertyDescriptor
         ) {
@@ -56,9 +56,9 @@ class KeyTypeParameterChecker : CallChecker, DeclarationChecker {
         context: CallCheckerContext
     ) {
         resolvedCall.typeArguments.forEach { (typeParameter, typeArgument) ->
-            if (typeParameter.annotations.hasAnnotation(InjektFqNames.ForKey) &&
+            if (typeParameter.hasAnnotation(InjektFqNames.ForKey) &&
                 typeArgument.isTypeParameter() &&
-                !typeArgument.constructor.declarationDescriptor!!.annotations.hasAnnotation(
+                !typeArgument.constructor.declarationDescriptor!!.hasAnnotation(
                     InjektFqNames.ForKey
                 )
             ) {

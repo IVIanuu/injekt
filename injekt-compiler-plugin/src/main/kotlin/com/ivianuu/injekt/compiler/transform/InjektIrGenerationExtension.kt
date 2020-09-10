@@ -27,11 +27,12 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         val injektContext = InjektContext(pluginContext, moduleFragment)
+        InitializeInjektTransformer(injektContext).doLower(moduleFragment)
         KeyTypeParameterTransformer(injektContext).doLower(moduleFragment)
         ReaderContextParamTransformer(injektContext).doLower(moduleFragment)
         ReaderIntrinsicTransformer(injektContext).doLower(moduleFragment)
-        generateSymbols(pluginContext)
         //println(moduleFragment.dumpSrc())
+        generateSymbols(pluginContext)
     }
 
 }

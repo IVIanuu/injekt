@@ -22,6 +22,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.common.ApplicationContext
+import com.ivianuu.injekt.common.instance
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.keyOf
 import com.ivianuu.injekt.rootContext
@@ -29,7 +30,7 @@ import com.ivianuu.injekt.rootContext
 val Application.applicationReaderContext: Context
     get() = ProcessLifecycleOwner.get().lifecycle.singleton {
         rootContext(keyOf<ApplicationContext>()) {
-            given { this@applicationReaderContext }
+            instance(this@applicationReaderContext)
         }
     }
 

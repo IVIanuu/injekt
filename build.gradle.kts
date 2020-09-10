@@ -39,6 +39,11 @@ allprojects {
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions {
             useIR = true
+            val outputDir =
+                File(project.buildDir, "generated/source/injekt/${name}").absolutePath
+            freeCompilerArgs += listOf(
+                "-P", "plugin:com.ivianuu.injekt:outputDir=$outputDir"
+            )
         }
     }
 

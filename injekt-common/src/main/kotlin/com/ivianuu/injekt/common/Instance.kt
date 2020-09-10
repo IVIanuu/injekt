@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt
+package com.ivianuu.injekt.common
 
-inline class Key<out T>(val value: String) {
-    override fun toString(): String = value
+import com.ivianuu.injekt.ContextBuilder
+import com.ivianuu.injekt.ForKey
+
+fun <@ForKey T> ContextBuilder.instance(instance: T) {
+    unscoped { instance }
 }
-
-inline fun <@ForKey T> keyOf(): Key<T> = error("Intrinsic")
-
-@Target(AnnotationTarget.TYPE_PARAMETER)
-annotation class ForKey

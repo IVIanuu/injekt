@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinGradleSubplugin
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
+import java.io.File
 
 @AutoService(KotlinGradleSubplugin::class)
 open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
@@ -38,7 +39,13 @@ open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
         variantData: Any?,
         androidProjectHandler: Any?,
         kotlinCompilation: KotlinCompilation<KotlinCommonOptions>?
-    ): List<SubpluginOption> = emptyList()
+    ): List<SubpluginOption> = listOf(
+        SubpluginOption(
+            key = "outputDir",
+            value = File(project.buildDir, "generated/source/injekt/${kotlinCompile.name}")
+                .absolutePath
+        )
+    )
 
     override fun getCompilerPluginId(): String = "com.ivianuu.injekt"
 
@@ -47,4 +54,5 @@ open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
         artifactId = BuildConfig.ARTIFACT_ID,
         version = BuildConfig.VERSION
     )
+
 }

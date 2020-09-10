@@ -37,8 +37,8 @@ class ContextTest {
     @Test
     fun testSimple() {
         val context = rootContext {
-            given { Foo() }
-            given { Bar(given()) }
+            unscoped { Foo() }
+            unscoped { Bar(given()) }
         }
 
         context.given<Bar>()
@@ -47,10 +47,10 @@ class ContextTest {
     @Test
     fun testParentChild() {
         val parent = rootContext {
-            given { Foo() }
+            unscoped { Foo() }
         }
         val child = parent.childContext {
-            given { Bar(given()) }
+            unscoped { Bar(given()) }
         }
         child.given<Bar>()
     }
@@ -58,9 +58,9 @@ class ContextTest {
     @Test
     fun testChildOverridesParent() {
         val parentFoo = Foo()
-        val parent = rootContext { given { parentFoo } }
+        val parent = rootContext { unscoped { parentFoo } }
         val childFoo = Foo()
-        val child = parent.childContext { given { childFoo } }
+        val child = parent.childContext { unscoped { childFoo } }
         assertSame(childFoo, child.given<Foo>())
     }
 

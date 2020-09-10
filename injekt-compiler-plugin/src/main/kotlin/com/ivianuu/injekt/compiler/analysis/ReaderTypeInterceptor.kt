@@ -47,7 +47,7 @@ class ReaderTypeInterceptor(
     ): AnonymousFunctionDescriptor {
         if (context.expectedType !== TypeUtils.NO_EXPECTED_TYPE &&
             context.expectedType !== TypeUtils.UNIT_EXPECTED_TYPE &&
-            context.expectedType.annotations.hasAnnotation(InjektFqNames.Reader)
+            context.expectedType.hasAnnotation(InjektFqNames.Reader)
         ) {
             context.trace.record(InjektWritableSlices.IS_READER, descriptor, true)
         }

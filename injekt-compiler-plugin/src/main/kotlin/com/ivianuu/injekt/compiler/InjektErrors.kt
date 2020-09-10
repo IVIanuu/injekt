@@ -67,6 +67,41 @@ interface InjektErrors {
             "Type parameter with @ForKey can only be declared inside a function or properties"
         )
 
+        @JvmField
+        val GIVEN_CLASS_CANNOT_BE_ABSTRACT = error(
+            "@Given class cannot be an interface or abstract"
+        )
+
+        @JvmField
+        val EITHER_CLASS_OR_CONSTRUCTOR_GIVEN = error(
+            "Either the class or a constructor may be annotated with @Given"
+        )
+
+        @JvmField
+        val MULTIPLE_GIVEN_ANNOTATED_CONSTRUCTORS = error(
+            "Only 1 one constructor may be annotated with @Given"
+        )
+
+        @JvmField
+        val MULTIPLE_CONSTRUCTORS_ON_GIVEN_CLASS = error(
+            "Can't choose a constructor. Annotate the right one with @Given"
+        )
+
+        @JvmField
+        val MULTIPLE_READER_ANNOTATIONS = error(
+            "A declaration can only be annotated with one of @Reader, @Given, @GivenMapEntries, @GivenSetElements or @Effect annotated annotations"
+        )
+
+        @JvmField
+        val ADAPTER_WITHOUT_COMPANION = error(
+            "@Adapter annotated class needs a companion object which implements Adapter.Impl"
+        )
+
+        @JvmField
+        val NOT_IN_ADAPTER_BOUNDS = error(
+            "Annotated class is not in @Adapter bounds"
+        )
+
         init {
             Errors.Initializer.initializeFactoryNamesAndDefaultErrorMessages(
                 InjektErrors::class.java,

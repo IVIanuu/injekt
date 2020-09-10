@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.ir.copyBodyTo
@@ -31,11 +32,13 @@ import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irString
+import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.descriptors.WrappedFunctionDescriptorWithContainerSource
 import org.jetbrains.kotlin.ir.descriptors.WrappedPropertyGetterDescriptor
@@ -48,6 +51,7 @@ import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -56,6 +60,7 @@ import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -165,13 +170,27 @@ fun IrFunction.copy(injektContext: InjektContext): IrSimpleFunction {
 }
 
 fun IrDeclarationWithName.isReader(injektContext: InjektContext): Boolean {
-    if (hasAnnotation(InjektFqNames.Reader)) return true
+    if (hasAnnotation(InjektFqNames.Reader) ||
+        hasAnnotation(InjektFqNames.Given) ||
+        hasAnnotatedAnnotations(InjektFqNames.Adapter)
+    ) return true
     return try {
         injektContext.readerChecker.isReader(descriptor, injektContext.bindingTrace)
     } catch (e: Exception) {
         false
     }
 }
+
+fun IrAnnotationContainer.hasAnnotatedAnnotations(
+    annotation: FqName
+): Boolean = annotations.any { it.type.classOrNull!!.owner.hasAnnotation(annotation) }
+
+fun IrAnnotationContainer.getAnnotatedAnnotations(
+    annotation: FqName
+): List<IrConstructorCall> =
+    annotations.filter {
+        it.type.classOrNull!!.owner.hasAnnotation(annotation)
+    }
 
 fun IrFunctionAccessExpression.isReaderLambdaInvoke(): Boolean {
     return symbol.owner.name.asString() == "invoke" &&
@@ -186,4 +205,15 @@ fun IrBuilderWithScope.jvmNameAnnotation(
     return irCall(jvmName.constructors.single()).apply {
         putValueArgument(0, irString(name))
     }
+}
+
+fun List<ScopeWithIr>.thisOfClass(declaration: IrClass): IrValueParameter? {
+    for (scope in reversed()) {
+        when (val element = scope.irElement) {
+            is IrFunction ->
+                element.dispatchReceiverParameter?.let { if (it.type.classOrNull == declaration.symbol) return it }
+            is IrClass -> if (element == declaration) return element.thisReceiver
+        }
+    }
+    return null
 }

@@ -19,7 +19,9 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.compiler.transform.InjektContext
 
 class InjektSymbols(injektContext: InjektContext) {
+    val anyContext = injektContext.referenceClass(InjektFqNames.AnyContext)!!
     val context = injektContext.referenceClass(InjektFqNames.Context)!!
     val key = injektContext.referenceClass(InjektFqNames.Key)!!
+    val moduleRegistry = injektContext.referenceClass(InjektFqNames.ModuleRegistry)!!
     val reader = injektContext.referenceClass(InjektFqNames.Reader)!!
 }
