@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *  
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -14,17 +14,6 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler
+package androidx.compose.runtime
 
-import com.ivianuu.injekt.compiler.transform.asNameId
-import org.jetbrains.kotlin.name.FqName
-
-object InjektFqNames {
-    val InjektPackage = FqName("com.ivianuu.injekt")
-    val Context = InjektPackage.child("Context".asNameId())
-    val ForKey = InjektPackage.child("ForKey".asNameId())
-    val Key = InjektPackage.child("Key".asNameId())
-    val Reader = InjektPackage.child("Reader".asNameId())
-
-    val Composable = FqName("androidx.compose.runtime.Composable")
-}
+annotation class Composable

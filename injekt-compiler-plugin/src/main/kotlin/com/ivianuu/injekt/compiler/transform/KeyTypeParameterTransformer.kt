@@ -44,6 +44,7 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.load.java.JvmAbi
@@ -173,6 +174,24 @@ class KeyTypeParameterTransformer(injektContext: InjektContext) :
         val expressions = mutableListOf<IrExpression>()
         fun IrType.collectExpressions() {
             check(this@collectExpressions is IrSimpleType)
+
+            val typeAnnotations = listOfNotNull(
+                if (hasAnnotation(InjektFqNames.Reader)) "@Reader" else null,
+                if (hasAnnotation(InjektFqNames.Composable)) "@Composable" else null,
+
+                )
+            if (typeAnnotations.isNotEmpty()) {
+                expressions += builder.irString(
+                    buildString {
+                        append("[")
+                        typeAnnotations.forEachIndexed { index, annotation ->
+                            append(annotation)
+                            if (index != typeAnnotations.lastIndex) append(", ")
+                        }
+                        append("]")
+                    }
+                )
+            }
             when {
                 abbreviation != null -> {
                     expressions += builder.irString(abbreviation!!.typeAlias.descriptor.fqNameSafe.asString())
@@ -195,6 +214,8 @@ class KeyTypeParameterTransformer(injektContext: InjektContext) :
                 }
                 expressions += builder.irString(">")
             }
+
+            if (hasQuestionMark) expressions += builder.irString("?")
         }
 
         collectExpressions()
