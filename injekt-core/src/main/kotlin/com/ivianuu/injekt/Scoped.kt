@@ -1,14 +1,14 @@
 package com.ivianuu.injekt
 
-inline fun <reified T> ContextBuilder.scoped(noinline provider: @Reader () -> T) {
-    scoped(keyOf(), provider)
+inline fun <reified T> ContextBuilder.scopedGiven(noinline provider: @Reader () -> T) {
+    scopedGiven(keyOf(), provider)
 }
 
-fun <T> ContextBuilder.scoped(
+fun <T> ContextBuilder.scopedGiven(
     key: Key<T>,
     provider: @Reader () -> T
 ) {
-    unscoped(key, ScopedProvider(provider))
+    given(key, ScopedProvider(provider))
 }
 
 private class ScopedProvider<T>(

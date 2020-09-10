@@ -16,8 +16,9 @@ class ContextIntrinsicTransformer(injektContext: InjektContext) :
     override fun lower() {
         injektContext.module.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
-                if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.<get-readerContext>") {
-                    return expression.getValueArgument(0) ?: error("Expected non-null context argument")
+                if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.<get-currentContext>") {
+                    return expression.getValueArgument(0)
+                        ?: error("Expected non-null context argument")
                 } else if (expression.symbol.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runReader") {
                     return DeclarationIrBuilder(injektContext, expression.symbol)
                         .irCall(
