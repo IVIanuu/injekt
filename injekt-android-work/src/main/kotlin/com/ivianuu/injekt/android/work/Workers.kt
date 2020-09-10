@@ -22,17 +22,17 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.ApplicationContext
 import com.ivianuu.injekt.ContextBuilder
-import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.Module
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
+import com.ivianuu.injekt.keyOf
 import com.ivianuu.injekt.scopedGiven
 import kotlin.reflect.KClass
 
 inline fun <reified T : ListenableWorker> ContextBuilder.givenWorker(
     noinline provider: @Reader (Context, WorkerParameters) -> T
 ) {
-    map(Workers) {
+    map(keyOf<Workers>()) {
         put(T::class) { provider }
     }
 }
@@ -50,11 +50,11 @@ internal class InjektWorkerFactory : WorkerFactory() {
         workerClassName: String,
         workerParameters: WorkerParameters
     ): ListenableWorker? {
-        return given(Workers)[Class.forName(workerClassName).kotlin]?.invoke(
+        return given<Workers>()[Class.forName(workerClassName).kotlin]?.invoke(
             appContext,
             workerParameters
         )
     }
 }
 
-object Workers : Key<Map<KClass<*>, @Reader (Context, WorkerParameters) -> ListenableWorker>>
+typealias Workers = Map<KClass<*>, @Reader (Context, WorkerParameters) -> ListenableWorker>
