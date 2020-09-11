@@ -39,6 +39,8 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.replace
+import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import java.io.File
 
 class InjektAnalysisHandlerExtension(
@@ -97,6 +99,7 @@ class InjektAnalysisHandlerExtension(
                         emitLine("import com.ivianuu.injekt.Module")
                         emitLine("import com.ivianuu.injekt.ContextBuilder")
                         emitLine("import com.ivianuu.injekt.scoped")
+                        emitLine("import com.ivianuu.injekt.Key")
                         emitLine("import com.ivianuu.injekt.keyOf")
                         emitLine()
                         emitLine("@Module($targetContext::class)")
@@ -191,8 +194,33 @@ class InjektAnalysisHandlerExtension(
                                     .annotationClass!!
                                     .companionObjectDescriptor!!
                                 emit("with(${adapterImpl.fqNameSafe}) ")
+                                val assistedParameters = functionDescriptor.valueParameters
+                                val keyType = if (assistedParameters.isNotEmpty() ||
+                                    descriptor is FunctionDescriptor &&
+                                    !descriptor.hasAnnotation(InjektFqNames.Given)
+                                ) {
+                                    if (functionDescriptor.isSuspend) {
+                                        module.builtIns.getSuspendFunction(assistedParameters.size)
+                                    } else {
+                                        module.builtIns.getFunction(assistedParameters.size)
+                                    }
+                                        .defaultType
+                                        .replace(
+                                            newArguments = assistedParameters
+                                                .map { it.returnType!!.asTypeProjection() } +
+                                                    functionDescriptor.returnType!!.asTypeProjection()
+                                        )
+                                } else functionDescriptor.returnType!!
+                                val key = if (descriptor is FunctionDescriptor &&
+                                    !descriptor.hasAnnotation(InjektFqNames.Given)
+                                ) {
+                                    // todo
+                                    "Key<${keyType.render()}>(\"f_${descriptor.fqNameSafe}\")"
+                                } else {
+                                    "keyOf<${keyType.render()}>()"
+                                }
                                 braced {
-                                    emit("configure(keyOf()) ")
+                                    emit("configure($key) ")
                                     emitProvider()
                                 }
                             }

@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
@@ -89,7 +90,12 @@ class InitializeInjektTransformer(injektContext: InjektContext) :
                                             1,
                                             null,
                                             null
-                                        )
+                                        ).apply {
+                                            if (symbol.owner.dispatchReceiverParameter != null) {
+                                                dispatchReceiver =
+                                                    irGetObject(symbol.owner.dispatchReceiverParameter!!.type.classOrNull!!)
+                                            }
+                                        }
                                     )
                                 }
                             }

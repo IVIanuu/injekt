@@ -39,6 +39,7 @@ import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrDelegatingConstructorCall
+import org.jetbrains.kotlin.ir.expressions.IrEnumConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
@@ -233,9 +234,13 @@ class ReaderContextParamTransformer(injektContext: InjektContext) : AbstractInje
                     transformedCallee.valueParameters.size
                 ).apply {
                     copyTypeAndValueArgumentsFrom(expression)
-                    putValueArgument(transformedCallee.valueParameters.lastIndex, contextExpression())
+                    putValueArgument(
+                        transformedCallee.valueParameters.lastIndex,
+                        contextExpression()
+                    )
                 }
             }
+            is IrEnumConstructorCall -> expression
             else -> {
                 expression as IrCall
                 val callee = expression.symbol.owner
