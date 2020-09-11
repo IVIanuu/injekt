@@ -18,9 +18,13 @@ package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.ContextBuilder
 import com.ivianuu.injekt.ForKey
+import com.ivianuu.injekt.Key
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.keyOf
 
-fun <@ForKey T : S, @ForKey S> ContextBuilder.alias() {
-    unscoped(keyOf<S>()) { given<T>() }
+fun <@ForKey T : S, @ForKey S> ContextBuilder.alias(
+    t: Key<T> = keyOf(),
+    s: Key<S> = keyOf()
+) {
+    unscoped(s) { given(t) }
 }

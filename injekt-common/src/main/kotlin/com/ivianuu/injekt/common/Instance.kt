@@ -18,7 +18,12 @@ package com.ivianuu.injekt.common
 
 import com.ivianuu.injekt.ContextBuilder
 import com.ivianuu.injekt.ForKey
+import com.ivianuu.injekt.Key
+import com.ivianuu.injekt.keyOf
 
-fun <@ForKey T> ContextBuilder.instance(instance: T) {
+fun <@ForKey T> ContextBuilder.instance(
+    instance: T,
+    key: Key<T> = keyOf()
+) {
     unscoped { instance }
 }

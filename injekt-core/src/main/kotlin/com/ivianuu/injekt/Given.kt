@@ -29,3 +29,38 @@ fun <@ForKey T> Context.given(key: Key<T> = keyOf()): T =
 
 @Reader
 fun <@ForKey T> given(key: Key<T> = keyOf()): T = currentContext.given(key)
+
+@Reader
+fun <@ForKey P1, @ForKey R> given(
+    p1: P1
+): R = currentContext.given(keyOf<(P1) -> R>())(p1)
+
+@Reader
+fun <@ForKey P1, @ForKey P2, @ForKey R> given(
+    p1: P1,
+    p2: P2
+): R = currentContext.given(keyOf<(P1, P2) -> R>())(p1, p2)
+
+@Reader
+fun <@ForKey P1, @ForKey P2, @ForKey P3, @ForKey R> given(
+    p1: P1,
+    p2: P2,
+    p3: P3
+): R = currentContext.given(keyOf<(P1, P2, P3) -> R>())(p1, p2, p3)
+
+@Reader
+fun <@ForKey P1, @ForKey P2, @ForKey P3, @ForKey P4, @ForKey R> given(
+    p1: P1,
+    p2: P2,
+    p3: P3,
+    p4: P4
+): R = currentContext.given(keyOf<(P1, P2, P3, P4) -> R>())(p1, p2, p3, p4)
+
+@Reader
+fun <@ForKey P1, @ForKey P2, @ForKey P3, @ForKey P4, @ForKey P5, @ForKey R> given(
+    p1: P1,
+    p2: P2,
+    p3: P3,
+    p4: P4,
+    p5: P5
+): R = currentContext.given(keyOf<(P1, P2, P3, P4, P5) -> R>())(p1, p2, p3, p4, p5)
