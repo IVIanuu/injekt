@@ -55,12 +55,13 @@ class ContextBuilder(
 
     fun <@ForKey T> unscoped(
         key: Key<T> = keyOf(),
-        override: Boolean = false,
+        duplicatePolicy: DuplicatePolicy = DuplicatePolicy.Fail,
         provider: @Reader () -> T
     ) {
-        check(override || key !in providers) {
-            "Already specified given for '$key'"
-        }
+        duplicatePolicy.check(
+            existsPredicate = { key in providers },
+            errorMessage = { "Already specified given for '$key'" }
+        )
         providers[key] = provider
     }
 
@@ -112,15 +113,16 @@ class MapBuilder<K, V>(private val contextBuilder: ContextBuilder) {
     fun <@ForKey T : V> put(
         entryKey: K,
         entryValueKey: Key<T> = keyOf(),
-        override: Boolean = false,
+        duplicatePolicy: DuplicatePolicy = DuplicatePolicy.Fail,
         entryValueProvider: @Reader (() -> T)? = null
     ) {
-        check(override || entryKey !in map) {
-            "Already specified map entry for '$entryKey'"
-        }
+        duplicatePolicy.check(
+            existsPredicate = { entryKey in map },
+            errorMessage = { "Already specified map entry for '$entryKey'" }
+        )
         map[entryKey] = entryValueKey
         if (entryValueProvider != null)
-            contextBuilder.unscoped(entryValueKey, override, entryValueProvider)
+            contextBuilder.unscoped(entryValueKey, duplicatePolicy, entryValueProvider)
     }
 }
 
@@ -129,14 +131,15 @@ class SetBuilder<E>(private val contextBuilder: ContextBuilder) {
 
     fun <@ForKey T : E> add(
         elementKey: Key<T> = keyOf(),
-        override: Boolean = false,
+        duplicatePolicy: DuplicatePolicy = DuplicatePolicy.Fail,
         elementProvider: @Reader (() -> T)? = null
     ) {
-        check(override || elementKey !in set) {
-            "Already contains set element for '$elementKey'"
-        }
+        duplicatePolicy.check(
+            existsPredicate = { elementKey in set },
+            errorMessage = { "Already specified map entry for '$elementKey'" }
+        )
         set += elementKey
         if (elementProvider != null)
-            contextBuilder.unscoped(elementKey, override, elementProvider)
+            contextBuilder.unscoped(elementKey, duplicatePolicy, elementProvider)
     }
 }

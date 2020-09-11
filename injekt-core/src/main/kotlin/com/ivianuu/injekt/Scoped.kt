@@ -18,10 +18,10 @@ package com.ivianuu.injekt
 
 fun <@ForKey T> ContextBuilder.scoped(
     key: Key<T> = keyOf(),
-    override: Boolean = false,
+    duplicatePolicy: DuplicatePolicy = DuplicatePolicy.Fail,
     provider: @Reader () -> T
 ) {
-    unscoped(key, override, provider.scope())
+    unscoped(key, duplicatePolicy, provider.scope())
 }
 
 fun <T> (@Reader () -> T).scope(): @Reader () -> T {

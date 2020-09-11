@@ -21,6 +21,7 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.ivianuu.injekt.ContextBuilder
+import com.ivianuu.injekt.DuplicatePolicy
 import com.ivianuu.injekt.ForKey
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Key
@@ -48,10 +49,14 @@ annotation class GivenWorker {
 
 fun <@ForKey T : ListenableWorker> ContextBuilder.worker(
     key: Key<T> = keyOf(),
+    duplicatePolicy: DuplicatePolicy = DuplicatePolicy.Fail,
     provider: @Reader (Context, WorkerParameters) -> T
 ) {
     map(keyOf<Workers>()) {
-        put(key.toKeyInfo().classifierName) { provider }
+        put(
+            entryKey = key.toKeyInfo().classifierName,
+            duplicatePolicy = duplicatePolicy
+        ) { provider }
     }
 }
 

@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.common
+package com.ivianuu.injekt
 
-import com.ivianuu.injekt.ContextBuilder
-import com.ivianuu.injekt.DuplicatePolicy
-import com.ivianuu.injekt.ForKey
-import com.ivianuu.injekt.Key
-import com.ivianuu.injekt.keyOf
+enum class DuplicatePolicy {
+    Override, Fail, Drop;
 
-fun <@ForKey T> ContextBuilder.instance(
-    instance: T,
-    key: Key<T> = keyOf(),
-    duplicatePolicy: DuplicatePolicy = DuplicatePolicy.Fail
-) {
-    unscoped(key = key, duplicatePolicy = duplicatePolicy) { instance }
+    inline fun check(
+        existsPredicate: () -> Boolean,
+        errorMessage: () -> String
+    ): Boolean = when (this) {
+        Override -> true
+        Fail -> check(!existsPredicate(), errorMessage).let { true }
+        Drop -> !existsPredicate()
+    }
 }
