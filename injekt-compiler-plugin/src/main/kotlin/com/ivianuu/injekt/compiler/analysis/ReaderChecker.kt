@@ -94,9 +94,7 @@ class ReaderChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         descriptor: ClassDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (!descriptor.isMarkedAsReader(descriptor.module) &&
-            descriptor.constructors.none { it.isMarkedAsReader(descriptor.module) }
-        ) return
+        if (!isReader(descriptor, context.trace)) return
 
         if (descriptor.kind == ClassKind.INTERFACE) {
             context.trace.report(
@@ -120,7 +118,7 @@ class ReaderChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
     ) {
         if (!isReader(descriptor, context.trace) &&
             (descriptor !is ConstructorDescriptor ||
-                    !descriptor.constructedClass.isMarkedAsReader(descriptor.module))
+                    !isReader(descriptor.constructedClass, context.trace))
         ) return
     }
 
@@ -130,7 +128,7 @@ class ReaderChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         context: DeclarationCheckerContext
     ) {
         if (declaration !is KtProperty) return
-        if (!descriptor.hasAnnotation(InjektFqNames.Reader)) return
+        if (!isReader(descriptor, context.trace)) return
 
         if (declaration.initializer != null) {
             context.trace.report(
@@ -161,7 +159,7 @@ class ReaderChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         }
 
         if (resulting is ConstructorDescriptor &&
-            (resulting.constructedClass.isMarkedAsReader(resulting.module))
+            isReader(resulting.constructedClass, context.trace)
         ) {
             checkCalls(reportOn, context, resolvedCall)
         }
