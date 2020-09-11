@@ -29,8 +29,12 @@ data class KeyInfo<T>(val key: Key<T>) {
             withoutAnnotations.split("<")[0] else withoutAnnotations
             .removeSuffix("?")
     }
-    val classifier: KClass<*> by lazy(LazyThreadSafetyMode.NONE) {
-        Class.forName(classifierName).kotlin
+    val classifier: KClass<*>? by lazy(LazyThreadSafetyMode.NONE) {
+        try {
+            Class.forName(classifierName).kotlin
+        } catch (e: Exception) {
+            null
+        }
     }
 
     val arguments: List<KeyInfo<*>> by lazy(LazyThreadSafetyMode.NONE) {
