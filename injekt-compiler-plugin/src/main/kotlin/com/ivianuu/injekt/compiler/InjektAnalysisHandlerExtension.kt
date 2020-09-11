@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
@@ -39,6 +40,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.getAbbreviatedType
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import java.io.File
@@ -66,7 +68,7 @@ class InjektAnalysisHandlerExtension(
                             ?: return@namedDeclarationRecursiveVisitor
 
                     if (descriptor.hasAnnotation(InjektFqNames.Module)) {
-                        indexFqName(descriptor.fqNameSafe)
+                        indexFqName(descriptor.fqNameSafe, descriptor)
                         return@namedDeclarationRecursiveVisitor
                     }
 
@@ -108,7 +110,8 @@ class InjektAnalysisHandlerExtension(
                         val functionDescriptor = if (targetDescriptor is ClassDescriptor)
                             targetDescriptor.constructors
                                 .singleOrNull { it.hasAnnotation(InjektFqNames.Given) }
-                                ?: targetDescriptor.unsubstitutedPrimaryConstructor!!
+                                ?: targetDescriptor.unsubstitutedPrimaryConstructor
+                                ?: return@buildCodeString
                         else targetDescriptor as FunctionDescriptor
                         val functionName = if (functionDescriptor is ConstructorDescriptor)
                             functionDescriptor.constructedClass.fqNameSafe.asString()
@@ -227,13 +230,14 @@ class InjektAnalysisHandlerExtension(
                         }
                     }
 
-                    outputDir.resolve(packageName.replace(".", "/"))
+                    val moduleFile = outputDir.resolve(packageName.replace(".", "/"))
                         .also { it.mkdirs() }
                         .resolve("$moduleName.kt")
                         .also { it.createNewFile() }
-                        .writeText(moduleCode)
+                    moduleFile.writeText(moduleCode)
+                    recordLookup(moduleFile.absolutePath, descriptor)
 
-                    indexFqName(FqName(packageName).child(moduleName.asNameId()))
+                    indexFqName(FqName(packageName).child(moduleName.asNameId()), descriptor)
                 }
             )
         }
@@ -244,7 +248,8 @@ class InjektAnalysisHandlerExtension(
     }
 
     private fun indexFqName(
-        fqName: FqName
+        fqName: FqName,
+        originatingDescriptor: DeclarationDescriptor
     ) {
         val moduleIndexName = fqName.pathSegments().joinToString("_")
 
@@ -254,16 +259,24 @@ class InjektAnalysisHandlerExtension(
             emitLine("internal val $moduleIndexName = Unit")
         }
 
-        outputDir.resolve(InjektFqNames.IndexPackage.asString().replace(".", "/"))
+        val indexFile = outputDir.resolve(InjektFqNames.IndexPackage.asString().replace(".", "/"))
             .also { it.mkdirs() }
             .resolve("$moduleIndexName.kt")
             .also { it.createNewFile() }
-            .writeText(indexCode)
+        indexFile.writeText(indexCode)
+
+        recordLookup(indexFile.absolutePath, originatingDescriptor)
     }
 
     private fun KotlinType.render() = buildString {
         fun KotlinType.renderInner() {
-            append(constructor.declarationDescriptor!!.fqNameSafe)
+            val abbreviation = getAbbreviatedType()
+            if (abbreviation != null) {
+                append(abbreviation.constructor.declarationDescriptor!!.fqNameSafe)
+            } else {
+                append(constructor.declarationDescriptor!!.fqNameSafe)
+            }
+            val arguments = abbreviation?.arguments ?: arguments
             if (arguments.isNotEmpty()) {
                 append("<")
                 arguments.forEachIndexed { index, argument ->
@@ -273,6 +286,8 @@ class InjektAnalysisHandlerExtension(
                 }
                 append(">")
             }
+
+            if (isMarkedNullable) append("?")
         }
         renderInner()
     }

@@ -56,6 +56,11 @@ class InjektComponentRegistrar : ComponentRegistrar {
 
         AnalysisHandlerExtension.registerExtension(
             project,
+            LookupTrackerInitializer()
+        )
+
+        AnalysisHandlerExtension.registerExtension(
+            project,
             InjektAnalysisHandlerExtension(File(outputDir))
         )
 

@@ -77,9 +77,7 @@ class ReaderChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         descriptor: ClassDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (!descriptor.isReader(descriptor.module) &&
-            descriptor.constructors.none { it.isReader(descriptor.module) }
-        ) return
+        if (!isReader(descriptor, context.trace)) return
 
         if (descriptor.kind == ClassKind.INTERFACE) {
             context.trace.report(
@@ -144,7 +142,7 @@ class ReaderChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
         }
 
         if (resulting is ConstructorDescriptor &&
-            resulting.constructedClass.isReader(resulting.module)
+            isReader(resulting.constructedClass, context.trace)
         ) {
             checkCalls(reportOn, context, resolvedCall)
         }

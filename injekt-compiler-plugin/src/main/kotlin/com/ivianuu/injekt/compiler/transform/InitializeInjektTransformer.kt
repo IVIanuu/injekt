@@ -17,12 +17,15 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.recordLookup
+import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -31,7 +34,6 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
-import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -40,7 +42,7 @@ class InitializeInjektTransformer(injektContext: InjektContext) :
     AbstractInjektTransformer(injektContext) {
 
     override fun lower() {
-        injektContext.module.transformChildrenVoid(object : IrElementTransformerVoid() {
+        injektContext.module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitCall(expression: IrCall): IrExpression {
                 if (expression.symbol.descriptor.fqNameSafe.asString() ==
                     "com.ivianuu.injekt.initializeInjekt"
@@ -56,6 +58,10 @@ class InitializeInjektTransformer(injektContext: InjektContext) :
                     return DeclarationIrBuilder(injektContext, expression.symbol).run {
                         irBlock {
                             modules.forEach { module ->
+                                recordLookup(
+                                    currentFile.path,
+                                    module.descriptor
+                                )
                                 val targetContext = module.getAnnotation(InjektFqNames.Module)
                                     ?.getValueArgument(0)
                                     ?.let { it as IrClassReference }

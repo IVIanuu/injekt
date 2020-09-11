@@ -192,6 +192,7 @@ class KeyTypeParameterTransformer(injektContext: InjektContext) :
                     }
                 )
             }
+
             when {
                 abbreviation != null -> {
                     expressions += builder.irString(abbreviation!!.typeAlias.descriptor.fqNameSafe.asString())
@@ -203,6 +204,8 @@ class KeyTypeParameterTransformer(injektContext: InjektContext) :
                     expressions += builder.irString(classifierOrFail.descriptor.fqNameSafe.asString())
                 }
             }
+
+            val arguments = abbreviation?.arguments ?: arguments
 
             if (arguments.isNotEmpty()) {
                 expressions += builder.irString("<")
