@@ -42,7 +42,7 @@ annotation class GivenWorker {
             provider: () -> @Reader (Context, WorkerParameters) -> ListenableWorker
         ) {
             @Suppress("UNCHECKED_CAST")
-            worker(key.toKeyInfo().arguments[2].key as Key<ListenableWorker>, provider())
+            worker(key.toKeyInfo().arguments[2].key as Key<ListenableWorker>, provider = provider())
         }
     }
 }
