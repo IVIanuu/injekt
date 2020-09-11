@@ -270,6 +270,12 @@ class InjektAnalysisHandlerExtension(
 
     private fun KotlinType.render() = buildString {
         fun KotlinType.renderInner() {
+            if (hasAnnotation(InjektFqNames.Composable)) {
+                append("@${InjektFqNames.Composable} ")
+            }
+            if (hasAnnotation(InjektFqNames.Reader)) {
+                append("@${InjektFqNames.Reader} ")
+            }
             val abbreviation = getAbbreviation()
             if (abbreviation != null) {
                 append(abbreviation.constructor.declarationDescriptor!!.fqNameSafe)
