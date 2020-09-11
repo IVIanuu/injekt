@@ -40,7 +40,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.getAbbreviatedType
+import org.jetbrains.kotlin.types.getAbbreviation
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import java.io.File
@@ -270,7 +270,7 @@ class InjektAnalysisHandlerExtension(
 
     private fun KotlinType.render() = buildString {
         fun KotlinType.renderInner() {
-            val abbreviation = getAbbreviatedType()
+            val abbreviation = getAbbreviation()
             if (abbreviation != null) {
                 append(abbreviation.constructor.declarationDescriptor!!.fqNameSafe)
             } else {
