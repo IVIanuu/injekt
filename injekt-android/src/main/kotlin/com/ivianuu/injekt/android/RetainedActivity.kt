@@ -20,11 +20,10 @@ import androidx.activity.ComponentActivity
 import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.ContextName
 import com.ivianuu.injekt.childContext
-import com.ivianuu.injekt.keyOf
 
 object RetainedActivityContext : ContextName
 
 val ComponentActivity.retainedActivityContext: Context
     get() = viewModelStore.singleton {
-        application.applicationReaderContext.childContext(keyOf<RetainedActivityContext>())
+        application.applicationReaderContext.childContext<RetainedActivityContext>()
     }

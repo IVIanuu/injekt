@@ -23,7 +23,6 @@ import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.ContextName
 import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.common.instance
-import com.ivianuu.injekt.keyOf
 
 object ReceiverContext : ContextName
 
@@ -31,13 +30,12 @@ fun BroadcastReceiver.createReceiverContext(
     context: android.content.Context,
     intent: Intent
 ): Context {
-    return (context.applicationContext as Application).applicationReaderContext.childContext(
-        keyOf<ReceiverContext>()
-    ) {
-        instance(this@createReceiverContext)
-        instance<AndroidReceiverContext>(context)
-        instance<ReceiverIntent>(intent)
-    }
+    return (context.applicationContext as Application).applicationReaderContext
+        .childContext<ReceiverContext> {
+            instance(this@createReceiverContext)
+            instance<AndroidReceiverContext>(context)
+            instance<ReceiverIntent>(intent)
+        }
 }
 
 typealias AndroidReceiverContext = android.content.Context

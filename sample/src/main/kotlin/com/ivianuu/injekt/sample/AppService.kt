@@ -52,6 +52,4 @@ fun startAppServices() {
 @GivenAppService
 suspend fun userAppService() {
     println("run")
-    println()
-    println()
 }

@@ -24,12 +24,11 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.common.instance
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.keyOf
 
 object ServiceContext : ContextName
 
 fun Service.createServiceContext(): Context =
-    application.applicationReaderContext.childContext(keyOf<ServiceContext>()) {
+    application.applicationReaderContext.childContext<ServiceContext> {
         instance(this@createServiceContext)
     }
 

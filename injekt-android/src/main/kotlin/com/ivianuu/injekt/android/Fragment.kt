@@ -27,13 +27,12 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.common.instance
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.keyOf
 
 object FragmentContext : ContextName
 
 val Fragment.fragmentContext: Context
     get() = lifecycle.singleton {
-        activity!!.activityContext.childContext(keyOf<FragmentContext>()) {
+        activity!!.activityContext.childContext<FragmentContext> {
             instance(this@fragmentContext)
         }
     }

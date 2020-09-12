@@ -27,13 +27,12 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.common.instance
 import com.ivianuu.injekt.given
-import com.ivianuu.injekt.keyOf
 
 object ActivityContext : ContextName
 
 val ComponentActivity.activityContext: Context
     get() = lifecycle.singleton {
-        retainedActivityContext.childContext(keyOf<ActivityContext>()) {
+        retainedActivityContext.childContext<ActivityContext> {
             instance(this@activityContext)
         }
     }

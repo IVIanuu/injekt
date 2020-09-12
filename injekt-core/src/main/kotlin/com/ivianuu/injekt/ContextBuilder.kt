@@ -18,15 +18,49 @@
 package com.ivianuu.injekt
 
 inline fun rootContext(
-    contextName: Key<ContextName>? = null,
+    init: ContextBuilder.() -> Unit = {}
+): Context = ContextBuilder().apply(init).build()
+
+@JvmName("rootContextT")
+inline fun <@ForKey T : ContextName> rootContext(
+    init: ContextBuilder.() -> Unit = {}
+): Context = rootContext(keyOf<T>(), init)
+
+inline fun rootContext(
+    contextName: Key<ContextName>,
     init: ContextBuilder.() -> Unit = {}
 ): Context = ContextBuilder(contextName).apply(init).build()
 
 inline fun Context.childContext(
-    contextName: Key<ContextName>? = null,
     init: ContextBuilder.() -> Unit = {}
-): Context =
-    ContextBuilder(contextName, this).apply(init).build()
+): Context = ContextBuilder(null, this).apply(init).build()
+
+@JvmName("childContextT")
+inline fun <@ForKey T : ContextName> Context.childContext(
+    init: ContextBuilder.() -> Unit = {}
+): Context = childContext(keyOf<T>(), init)
+
+inline fun Context.childContext(
+    contextName: Key<ContextName>,
+    init: ContextBuilder.() -> Unit = {}
+): Context = ContextBuilder(contextName, this).apply(init).build()
+
+@Reader
+inline fun childContext(
+    init: ContextBuilder.() -> Unit = {}
+): Context = currentContext.childContext(init)
+
+@JvmName("childContextTyped")
+@Reader
+inline fun <@ForKey T : ContextName> childContext(
+    init: ContextBuilder.() -> Unit = {}
+): Context = currentContext.childContext(init)
+
+@Reader
+inline fun childContext(
+    contextName: Key<ContextName>,
+    init: ContextBuilder.() -> Unit = {}
+): Context = currentContext.childContext(contextName, init)
 
 class ContextBuilder(
     val contextName: Key<ContextName>? = null,

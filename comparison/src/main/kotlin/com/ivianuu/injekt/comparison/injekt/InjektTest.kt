@@ -37,7 +37,7 @@ object InjektTest : InjectionTest {
     private var context: Context? = null
 
     override fun setup() {
-        this.context = rootContext {
+        context = rootContext {
             unscoped { Fib1() }
             unscoped { Fib2() }
             unscoped { Fib3(given(), given()) }
