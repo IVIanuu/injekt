@@ -28,6 +28,10 @@ fun <@ForKey T> Context.given(key: Key<T> = keyOf()): T =
         ?: error("No given found for '$key'")
 
 @Reader
+fun <@ForKey T> givenOrNull(key: Key<T> = keyOf()): T? =
+    currentContext.givenOrNull(key)
+
+@Reader
 fun <@ForKey T> given(key: Key<T> = keyOf()): T = currentContext.given(key)
 
 @Reader
