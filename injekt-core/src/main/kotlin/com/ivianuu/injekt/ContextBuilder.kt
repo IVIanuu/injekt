@@ -54,7 +54,7 @@ inline fun childContext(
 @Reader
 inline fun <@ForKey T : ContextName> childContext(
     init: ContextBuilder.() -> Unit = {}
-): Context = currentContext.childContext(init)
+): Context = currentContext.childContext<T>(init)
 
 @Reader
 inline fun childContext(
