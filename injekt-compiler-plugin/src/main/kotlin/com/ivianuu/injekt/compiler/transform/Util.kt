@@ -194,13 +194,6 @@ fun IrAnnotationContainer.hasAnnotatedAnnotations(
     annotation: FqName
 ): Boolean = annotations.any { it.type.classOrNull!!.owner.hasAnnotation(annotation) }
 
-fun IrAnnotationContainer.getAnnotatedAnnotations(
-    annotation: FqName
-): List<IrConstructorCall> =
-    annotations.filter {
-        it.type.classOrNull!!.owner.hasAnnotation(annotation)
-    }
-
 fun IrFunctionAccessExpression.isReaderLambdaInvoke(): Boolean {
     return symbol.owner.name.asString() == "invoke" &&
             dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Reader) == true

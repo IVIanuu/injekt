@@ -53,7 +53,6 @@ import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.util.constructedClass
-import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.findAnnotation
@@ -189,11 +188,8 @@ class ReaderContextParamTransformer(injektContext: InjektContext) : AbstractInje
                 try {
                     isNestedScope = this@transformReaderCalls != declaration &&
                             declaration.isReader(injektContext) &&
-                            (this@transformReaderCalls !is IrClass &&
-                                    declaration !is IrConstructor) ||
-                            (this@transformReaderCalls is IrClass &&
-                                    declaration is IrConstructor &&
-                                    constructors.none { it == declaration })
+                            (declaration !is IrConstructor ||
+                                    declaration.constructedClass != this@transformReaderCalls)
                     return super.visitFunctionNew(declaration)
                 } finally {
                     isNestedScope = wasNested
@@ -324,22 +320,22 @@ class ReaderContextParamTransformer(injektContext: InjektContext) : AbstractInje
             injektContext
         ).apply {
             val descriptor = descriptor
-            if (descriptor is PropertyGetterDescriptor &&
-                annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
-            ) {
-                val name = JvmAbi.getterName(descriptor.correspondingProperty.name.identifier)
-                annotations += DeclarationIrBuilder(injektContext, symbol)
-                    .jvmNameAnnotation(name, injektContext)
+            if (descriptor is PropertyGetterDescriptor) {
                 correspondingPropertySymbol?.owner?.getter = this
+                if (annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null) {
+                    val name = JvmAbi.getterName(descriptor.correspondingProperty.name.identifier)
+                    annotations += DeclarationIrBuilder(injektContext, symbol)
+                        .jvmNameAnnotation(name, injektContext)
+                }
             }
 
-            if (descriptor is PropertySetterDescriptor &&
-                annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
-            ) {
-                val name = JvmAbi.setterName(descriptor.correspondingProperty.name.identifier)
-                annotations += DeclarationIrBuilder(injektContext, symbol)
-                    .jvmNameAnnotation(name, injektContext)
+            if (descriptor is PropertySetterDescriptor) {
                 correspondingPropertySymbol?.owner?.setter = this
+                if (annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null) {
+                    val name = JvmAbi.setterName(descriptor.correspondingProperty.name.identifier)
+                    annotations += DeclarationIrBuilder(injektContext, symbol)
+                        .jvmNameAnnotation(name, injektContext)
+                }
             }
 
             if (this@copyAsReader is IrOverridableDeclaration<*>) {
