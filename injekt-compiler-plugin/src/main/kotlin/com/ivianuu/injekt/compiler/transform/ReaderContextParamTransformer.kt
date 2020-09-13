@@ -53,6 +53,7 @@ import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.util.constructedClass
+import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.findAnnotation
@@ -127,12 +128,19 @@ class ReaderContextParamTransformer(injektContext: InjektContext) : AbstractInje
             }
         }
 
-        clazz.transformReaderCalls {
+        clazz.transformReaderCalls { scopes ->
             DeclarationIrBuilder(injektContext, clazz.symbol).run {
-                irGetField(
-                    irGet(it.thisOfClass(clazz)!!),
-                    contextField
-                )
+                if (scopes.none { it.irElement == readerConstructor }) {
+                    DeclarationIrBuilder(injektContext, clazz.symbol).run {
+                        irGetField(
+                            irGet(scopes.thisOfClass(clazz)!!),
+                            contextField
+                        )
+                    }
+                } else {
+                    DeclarationIrBuilder(injektContext, readerConstructor.symbol)
+                        .irGet(contextParam)
+                }
             }
         }
 
@@ -180,7 +188,12 @@ class ReaderContextParamTransformer(injektContext: InjektContext) : AbstractInje
                 val wasNested = isNestedScope
                 try {
                     isNestedScope = this@transformReaderCalls != declaration &&
-                            declaration.isReader(injektContext)
+                            declaration.isReader(injektContext) &&
+                            (this@transformReaderCalls !is IrClass &&
+                                    declaration !is IrConstructor) ||
+                            (this@transformReaderCalls is IrClass &&
+                                    declaration is IrConstructor &&
+                                    constructors.none { it == declaration })
                     return super.visitFunctionNew(declaration)
                 } finally {
                     isNestedScope = wasNested

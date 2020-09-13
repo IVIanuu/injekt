@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
@@ -53,6 +54,7 @@ import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.typeWith
+import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
@@ -169,10 +171,17 @@ fun IrFunction.copy(injektContext: InjektContext): IrSimpleFunction {
     }
 }
 
+private fun IrDeclaration.isMarkedAsReader(): Boolean {
+    return hasAnnotation(InjektFqNames.Reader) ||
+            hasAnnotation(InjektFqNames.Given) ||
+            hasAnnotatedAnnotations(InjektFqNames.Adapter)
+}
+
 fun IrDeclarationWithName.isReader(injektContext: InjektContext): Boolean {
-    if (hasAnnotation(InjektFqNames.Reader) ||
-        hasAnnotation(InjektFqNames.Given) ||
-        hasAnnotatedAnnotations(InjektFqNames.Adapter)
+    if (isMarkedAsReader() ||
+        (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsReader() == true) ||
+        (this is IrConstructor && constructedClass.isMarkedAsReader()) ||
+        (this is IrClass && constructors.any { it.isMarkedAsReader() })
     ) return true
     return try {
         injektContext.readerChecker.isReader(descriptor, injektContext.bindingTrace)
