@@ -68,3 +68,49 @@ fun <@ForKey P1, @ForKey P2, @ForKey P3, @ForKey P4, @ForKey P5, @ForKey R> give
     p4: P4,
     p5: P5
 ): R = currentContext.given(keyOf<(P1, P2, P3, P4, P5) -> R>())(p1, p2, p3, p4, p5)
+
+@Reader
+fun <@ForKey P1, @ForKey P2, @ForKey P3, @ForKey P4, @ForKey P5, @ForKey P6, @ForKey R> given(
+    p1: P1,
+    p2: P2,
+    p3: P3,
+    p4: P4,
+    p5: P5,
+    p6: P6
+): R = given(keyOf<(P1, P2, P3, P4, P5, P6) -> R>())(p1, p2, p3, p4, p5, p6)
+
+@Reader
+fun <@ForKey P1, @ForKey P2, @ForKey P3, @ForKey P4, @ForKey P5, @ForKey P6, @ForKey P7, @ForKey R> given(
+    p1: P1,
+    p2: P2,
+    p3: P3,
+    p4: P4,
+    p5: P5,
+    p6: P6,
+    p7: P7
+): R = given(keyOf<(P1, P2, P3, P4, P5, P6, P7) -> R>())(p1, p2, p3, p4, p5, p6, p7)
+
+@Reader
+fun <@ForKey P1, @ForKey P2, @ForKey P3, @ForKey P4, @ForKey P5, @ForKey P6, @ForKey P7, @ForKey P8, @ForKey R> given(
+    p1: P1,
+    p2: P2,
+    p3: P3,
+    p4: P4,
+    p5: P5,
+    p6: P6,
+    p7: P7,
+    p8: P8
+): R = given(keyOf<(P1, P2, P3, P4, P5, P6, P7, P8) -> R>())(p1, p2, p3, p4, p5, p6, p7, p8)
+
+@Reader
+fun <@ForKey P1, @ForKey P2, @ForKey P3, @ForKey P4, @ForKey P5, @ForKey P6, @ForKey P7, @ForKey P8, @ForKey P9, @ForKey R> given(
+    p1: P1,
+    p2: P2,
+    p3: P3,
+    p4: P4,
+    p5: P5,
+    p6: P6,
+    p7: P7,
+    p8: P8,
+    p9: P9
+): R = given(keyOf<(P1, P2, P3, P4, P5, P6, P7, P8, P9) -> R>())(p1, p2, p3, p4, p5, p6, p7, p8, p9)
