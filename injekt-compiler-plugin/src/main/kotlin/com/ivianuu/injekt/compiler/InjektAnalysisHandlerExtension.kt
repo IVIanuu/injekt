@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.analysis.getAnnotatedAnnotations
@@ -23,12 +22,15 @@ import com.ivianuu.injekt.compiler.transform.asNameId
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
+import org.jetbrains.kotlin.container.ComponentProvider
+import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.namedDeclarationRecursiveVisitor
@@ -49,7 +51,27 @@ class InjektAnalysisHandlerExtension(
     private val outputDir: File
 ) : AnalysisHandlerExtension {
 
+    private val incrementalHelper = IncrementalHelper(outputDir.resolve("incremental-cache"))
+
     private var generatedCode = false
+
+    override fun doAnalysis(
+        project: Project,
+        module: ModuleDescriptor,
+        projectContext: ProjectContext,
+        files: Collection<KtFile>,
+        bindingTrace: BindingTrace,
+        componentProvider: ComponentProvider
+    ): AnalysisResult? {
+        if (!generatedCode) {
+            files as ArrayList<KtFile>
+            files.removeAll { it.text.contains("// injekt-generated") }
+            files.forEach {
+                incrementalHelper.deleteDependentFiles(File(it.virtualFilePath))
+            }
+        }
+        return null
+    }
 
     override fun analysisCompleted(
         project: Project,
@@ -57,7 +79,10 @@ class InjektAnalysisHandlerExtension(
         bindingTrace: BindingTrace,
         files: Collection<KtFile>
     ): AnalysisResult? {
-        if (generatedCode) return null
+        if (generatedCode) {
+            incrementalHelper.flush()
+            return null
+        }
         generatedCode = true
 
         files.forEach { file ->
@@ -96,6 +121,7 @@ class InjektAnalysisHandlerExtension(
                     val packageName = targetDescriptor.findPackage().fqName.asString()
 
                     val moduleCode = buildCodeString {
+                        emitLine("// injekt-generated")
                         emitLine("package $packageName")
                         emitLine()
                         emitLine("import com.ivianuu.injekt.Module")
@@ -235,6 +261,13 @@ class InjektAnalysisHandlerExtension(
                         .resolve("$moduleName.kt")
                         .also { it.createNewFile() }
                     moduleFile.writeText(moduleCode)
+                    incrementalHelper.recordDependency(
+                        moduleFile,
+                        File(
+                            (descriptor.findPsi()!!.containingFile as KtFile)
+                                .virtualFilePath
+                        )
+                    )
                     recordLookup(moduleFile.absolutePath, descriptor)
 
                     indexFqName(FqName(packageName).child(moduleName.asNameId()), descriptor)
@@ -254,9 +287,10 @@ class InjektAnalysisHandlerExtension(
         val moduleIndexName = fqName.pathSegments().joinToString("_")
 
         val indexCode = buildCodeString {
+            emitLine("// injekt-generated")
             emitLine("package ${InjektFqNames.IndexPackage}")
             emitLine()
-            emitLine("internal val $moduleIndexName = Unit")
+            emitLine("internal interface $moduleIndexName")
         }
 
         val indexFile = outputDir.resolve(InjektFqNames.IndexPackage.asString().replace(".", "/"))
@@ -265,6 +299,13 @@ class InjektAnalysisHandlerExtension(
             .also { it.createNewFile() }
         indexFile.writeText(indexCode)
 
+        incrementalHelper.recordDependency(
+            indexFile,
+            File(
+                (originatingDescriptor.findPsi()!!.containingFile as KtFile)
+                    .virtualFilePath
+            )
+        )
         recordLookup(indexFile.absolutePath, originatingDescriptor)
     }
 

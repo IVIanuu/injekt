@@ -20,7 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.recordLookup
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -51,7 +51,7 @@ class InitializeInjektTransformer(injektContext: InjektContext) :
                         injektContext.moduleDescriptor.getPackage(InjektFqNames.IndexPackage)
                             .memberScope
                             .getContributedDescriptors()
-                            .filterIsInstance<PropertyDescriptor>()
+                            .filterIsInstance<ClassDescriptor>()
                             .map { FqName(it.name.asString().replace("_", ".")) }
                             .flatMap { injektContext.referenceFunctions(it) }
                             .map { it.owner }
