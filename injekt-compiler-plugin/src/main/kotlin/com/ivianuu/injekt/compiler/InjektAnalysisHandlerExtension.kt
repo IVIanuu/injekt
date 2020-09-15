@@ -121,6 +121,8 @@ class InjektAnalysisHandlerExtension(
                             File((descriptor.findPsi()!!.containingFile as KtFile).virtualFilePath),
                             descriptor.findPackage().fqName,
                             descriptor.fqNameSafe,
+                            (descriptor as FunctionDescriptor).dispatchReceiverParameter
+                                ?.type?.constructor?.declarationDescriptor?.fqNameSafe,
                             descriptor.annotations.findAnnotation(InjektFqNames.Module)!!
                                 .getTargetContextOrAny(descriptor.module),
                             descriptor
@@ -316,6 +318,7 @@ class InjektAnalysisHandlerExtension(
             moduleFile,
             packageName,
             packageName.child(moduleName),
+            null,
             targetContext,
             targetDescriptor
         )
@@ -325,6 +328,7 @@ class InjektAnalysisHandlerExtension(
         moduleFile: File,
         modulePackageName: FqName,
         moduleFqName: FqName,
+        moduleDispatchReceiver: FqName?,
         targetContext: FqName,
         originatingDescriptor: DeclarationDescriptor
     ) {
@@ -349,7 +353,18 @@ class InjektAnalysisHandlerExtension(
             braced {
                 emit("override fun register() ")
                 braced {
-                    emitLine("ModuleRegistry.module(keyOf<$targetContext>(), ContextBuilder::${moduleFqName.shortName()})")
+                    emit("ModuleRegistry.module(keyOf<$targetContext>()")
+                    if (moduleDispatchReceiver != null) {
+                        emit(") ")
+                        braced {
+                            emit("with($moduleDispatchReceiver) ")
+                            braced {
+                                emit("${moduleFqName.shortName()}()")
+                            }
+                        }
+                    } else {
+                        emitLine(", ContextBuilder::${moduleFqName.shortName()})")
+                    }
                 }
             }
         }

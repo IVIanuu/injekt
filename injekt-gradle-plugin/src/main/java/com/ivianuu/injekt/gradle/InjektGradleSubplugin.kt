@@ -55,7 +55,7 @@ open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
         val resourcesDir = (if (variantData != null) {
             project.buildDir.resolve("tmp/kotlin-classes/$sourceSetName")
         } else {
-            kotlinCompilation!!.output.resourcesDir
+            project.buildDir.resolve("classes/kotlin/$sourceSetName")
         }).also { it.mkdirs() }.absolutePath
 
         return listOf(
