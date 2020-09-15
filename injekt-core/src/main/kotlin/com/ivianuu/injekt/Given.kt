@@ -23,9 +23,11 @@ annotation class Given(val scope: KClass<out ContextName> = AnyContext::class)
 fun <@ForKey T> Context.givenOrNull(key: Key<T> = keyOf()): T? =
     givenProviderOrNull(key)?.let { runReader { it() } }
 
-fun <@ForKey T> Context.given(key: Key<T> = keyOf()): T =
-    givenProviderOrNull(key)?.let { runReader { it() } }
-        ?: error("No given found for '$key'")
+fun <@ForKey T> Context.given(key: Key<T> = keyOf()): T {
+    val provider = givenProviderOrNull(key)
+    if (provider != null) return runReader { provider() }
+    error("No given found for '$key'")
+}
 
 @Reader
 fun <@ForKey T> givenOrNull(key: Key<T> = keyOf()): T? =
