@@ -81,9 +81,11 @@ class ContextBuilder(
         .also { setBuilders = it }
 
     init {
-        ModuleRegistry._modules[keyOf<AnyContext>()]?.forEach { it() }
-        if (contextName != null) {
-            ModuleRegistry._modules[contextName]?.forEach { it() }
+        with(ModuleRegistry.modules) {
+            this[keyOf<AnyContext>()]?.forEach { it() }
+            if (contextName != null) {
+                this[contextName]?.forEach { it() }
+            }
         }
     }
 

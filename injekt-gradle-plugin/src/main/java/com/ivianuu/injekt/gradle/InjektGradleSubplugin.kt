@@ -24,7 +24,6 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinGradleSubplugin
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
-import java.io.File
 
 @AutoService(KotlinGradleSubplugin::class)
 open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
@@ -39,13 +38,45 @@ open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
         variantData: Any?,
         androidProjectHandler: Any?,
         kotlinCompilation: KotlinCompilation<KotlinCommonOptions>?
-    ): List<SubpluginOption> = listOf(
-        SubpluginOption(
-            key = "outputDir",
-            value = File(project.buildDir, "generated/source/injekt/${kotlinCompile.name}")
-                .absolutePath
+    ): List<SubpluginOption> {
+        val sourceSetName = if (variantData != null) {
+            // Lol
+            variantData.javaClass.getMethod("getName").run {
+                isAccessible = true
+                invoke(variantData) as String
+            }
+        } else {
+            if (kotlinCompilation == null) error("In non-Android projects, Kotlin compilation should not be null")
+            kotlinCompilation.compilationName
+        }
+
+        val baseSrcDir = project.buildDir.resolve("generated/source/injekt")
+        val cacheDir = project.buildDir.resolve("injekt/cache")
+        val resourcesDir = (if (variantData != null) {
+            project.buildDir.resolve("tmp/kotlin-classes/$sourceSetName")
+        } else {
+            kotlinCompilation!!.output.resourcesDir
+        }).also { it.mkdirs() }.absolutePath
+
+        return listOf(
+            SubpluginOption(
+                key = "srcDir",
+                value = baseSrcDir.resolve(sourceSetName)
+                    .also { it.mkdirs() }
+                    .absolutePath
+            ),
+            SubpluginOption(
+                key = "resourcesDir",
+                value = resourcesDir
+            ),
+            SubpluginOption(
+                key = "cacheDir",
+                value = cacheDir.resolve(sourceSetName)
+                    .also { it.mkdirs() }
+                    .absolutePath
+            )
         )
-    )
+    }
 
     override fun getCompilerPluginId(): String = "com.ivianuu.injekt"
 

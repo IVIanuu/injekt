@@ -16,18 +16,39 @@
 
 package com.ivianuu.injekt
 
+import java.util.ServiceLoader
 import kotlin.reflect.KClass
 
-annotation class Module(val contextName: KClass<*> = AnyContext::class)
+annotation class Module(val contextName: KClass<*> = AnyContext::class) {
+    interface Registrar {
+        fun register()
+    }
+}
 
 object ModuleRegistry {
-    internal val _modules =
-        mutableMapOf<Key<ContextName>, MutableList<ContextBuilder.() -> Unit>>()
+    private val _modules = mutableMapOf<Key<ContextName>, MutableList<ContextBuilder.() -> Unit>>()
+    internal val modules: MutableMap<Key<ContextName>, MutableList<ContextBuilder.() -> Unit>>
+        get() {
+            var initialized = _initialized
+            if (!initialized) {
+                synchronized(this) {
+                    initialized = _initialized
+                    if (!initialized) {
+                        _initialized = true
+                        ServiceLoader.load(Module.Registrar::class.java)
+                            .forEach { it.register() }
+                    }
+                }
+            }
+            return _modules
+        }
+
+    private var _initialized = false
 
     fun module(
         contextName: Key<ContextName>,
         block: ContextBuilder.() -> Unit
     ) {
-        _modules.getOrPut(contextName) { mutableListOf() } += block
+        modules.getOrPut(contextName) { mutableListOf() } += block
     }
 }

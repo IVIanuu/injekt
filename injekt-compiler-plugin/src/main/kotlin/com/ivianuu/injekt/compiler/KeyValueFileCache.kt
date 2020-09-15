@@ -18,14 +18,19 @@ package com.ivianuu.injekt.compiler
 
 import java.io.File
 
-class IncrementalHelper(private val cacheFile: File) {
+class KeyValueFileCache<T>(
+    private val cacheFile: File,
+    private val fromString: (String) -> T,
+    private val toString: (T) -> String,
+    private val onDelete: (T) -> Unit
+) {
 
     private val cache = (if (cacheFile.exists()) cacheFile.readText() else "")
         .split("\n")
         .filter { it.isNotEmpty() }
         .map { entry ->
             val tmp = entry.split("=:=")
-            File(tmp[0]) to File(tmp[1])
+            fromString(tmp[0]) to fromString(tmp[1])
         }
         .groupBy { it.first }
         .mapValues {
@@ -36,33 +41,33 @@ class IncrementalHelper(private val cacheFile: File) {
         .toMutableMap()
 
     fun recordDependency(
-        dependent: File,
-        dependency: File
+        dependent: T,
+        dependency: T
     ) {
         cache.getOrPut(dependency) { mutableSetOf() } += dependent
     }
 
-    fun deleteDependentFiles(dependency: File) {
-        val deleted = mutableListOf<File>()
-        cache.remove(dependency)?.forEach {
-            if (it.exists()) it.delete()
-                .also { _ -> deleted += it }
-        }
+    fun deleteDependents(dependency: T) {
+        cache.remove(dependency)?.forEach(onDelete)
     }
 
     fun flush() {
-        cacheFile.parentFile.mkdirs()
-        cacheFile.createNewFile()
-        cacheFile.writeText(
-            buildString {
-                cache
-                    .forEach { (dependency, dependents) ->
-                        dependents.forEach { dependent ->
-                            appendLine("${dependency.absolutePath}=:=${dependent.absolutePath}")
+        if (cache.isNotEmpty()) {
+            cacheFile.parentFile.mkdirs()
+            cacheFile.createNewFile()
+            cacheFile.writeText(
+                buildString {
+                    cache
+                        .forEach { (dependency, dependents) ->
+                            dependents.forEach { dependent ->
+                                appendLine("${toString(dependency)}=:=${toString(dependent)}")
+                            }
                         }
-                    }
-            }
-        )
+                }
+            )
+        } else {
+            cacheFile.delete()
+        }
     }
 
 }

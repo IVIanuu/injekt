@@ -32,12 +32,14 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.namedDeclarationRecursiveVisitor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
+import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
@@ -48,10 +50,32 @@ import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import java.io.File
 
 class InjektAnalysisHandlerExtension(
-    private val outputDir: File
+    private val srcDir: File,
+    private val resourcesDir: File,
+    private val cacheDir: File
 ) : AnalysisHandlerExtension {
 
-    private val incrementalHelper = IncrementalHelper(outputDir.resolve("incremental-cache"))
+    private val serviceLoaderCache = KeyValueFileCache(
+        cacheFile = cacheDir.resolve("sl-cache"),
+        fromString = { it },
+        toString = { it },
+        onDelete = { moduleRegistrarManager.removeImpl(FqName(it)) }
+    )
+    private val moduleRegistrarManager = ModuleRegistrarManager(
+        resourcesDir.resolve("META-INF/services/com.ivianuu.injekt.Module\$Registrar")
+    )
+    private val fileCache = KeyValueFileCache(
+        cacheFile = cacheDir.resolve("file-cache"),
+        fromString = { File(it) },
+        toString = { it.absolutePath },
+        onDelete = ::fileCacheOnDelete
+    )
+
+    private fun fileCacheOnDelete(file: File) {
+        serviceLoaderCache.deleteDependents(file.absolutePath)
+        fileCache.deleteDependents(file)
+        file.delete()
+    }
 
     private var generatedCode = false
 
@@ -66,9 +90,7 @@ class InjektAnalysisHandlerExtension(
         if (!generatedCode) {
             files as ArrayList<KtFile>
             files.removeAll { it.text.contains("// injekt-generated") }
-            files.forEach {
-                incrementalHelper.deleteDependentFiles(File(it.virtualFilePath))
-            }
+            files.forEach { fileCache.deleteDependents(File(it.virtualFilePath)) }
         }
         return null
     }
@@ -80,7 +102,9 @@ class InjektAnalysisHandlerExtension(
         files: Collection<KtFile>
     ): AnalysisResult? {
         if (generatedCode) {
-            incrementalHelper.flush()
+            fileCache.flush()
+            moduleRegistrarManager.flush()
+            serviceLoaderCache.flush()
             return null
         }
         generatedCode = true
@@ -93,7 +117,14 @@ class InjektAnalysisHandlerExtension(
                             ?: return@namedDeclarationRecursiveVisitor
 
                     if (descriptor.hasAnnotation(InjektFqNames.Module)) {
-                        indexFqName(descriptor.fqNameSafe, descriptor)
+                        generateRegistrarForModule(
+                            File((descriptor.findPsi()!!.containingFile as KtFile).virtualFilePath),
+                            descriptor.findPackage().fqName,
+                            descriptor.fqNameSafe,
+                            descriptor.annotations.findAnnotation(InjektFqNames.Module)!!
+                                .getTargetContextOrAny(descriptor.module),
+                            descriptor
+                        )
                         return@namedDeclarationRecursiveVisitor
                     }
 
@@ -102,211 +133,239 @@ class InjektAnalysisHandlerExtension(
                             InjektFqNames.Adapter,
                             descriptor.module
                         )
-                    )
-                        return@namedDeclarationRecursiveVisitor
-                    val targetDescriptor = if (descriptor is ConstructorDescriptor)
-                        descriptor.constructedClass else descriptor
-                    val moduleName = targetDescriptor.fqNameSafe
-                        .pathSegments().joinToString("") + "Module"
-
-                    val targetContext = if (descriptor.hasAnnotation(InjektFqNames.Given)) {
-                        descriptor.annotations.findAnnotation(InjektFqNames.Given)!!
-                            .getTargetContextOrAny(descriptor.module)
-                    } else {
-                        descriptor.getAnnotatedAnnotations(InjektFqNames.Adapter, descriptor.module)
-                            .single()
-                            .getTargetContextOrAny(descriptor.module)
-                    }
-
-                    val packageName = targetDescriptor.findPackage().fqName.asString()
-
-                    val moduleCode = buildCodeString {
-                        emitLine("// injekt-generated")
-                        emitLine("package $packageName")
-                        emitLine()
-                        emitLine("import com.ivianuu.injekt.Module")
-                        emitLine("import com.ivianuu.injekt.ContextBuilder")
-                        emitLine("import com.ivianuu.injekt.scoped")
-                        emitLine("import com.ivianuu.injekt.Key")
-                        emitLine("import com.ivianuu.injekt.keyOf")
-                        emitLine()
-                        emitLine("@Module($targetContext::class)")
-                        emit("fun ContextBuilder.$moduleName() ")
-
-                        val functionDescriptor = if (targetDescriptor is ClassDescriptor)
-                            targetDescriptor.constructors
-                                .singleOrNull { it.hasAnnotation(InjektFqNames.Given) }
-                                ?: targetDescriptor.unsubstitutedPrimaryConstructor
-                                ?: return@buildCodeString
-                        else targetDescriptor as FunctionDescriptor
-                        val functionName = if (functionDescriptor is ConstructorDescriptor)
-                            functionDescriptor.constructedClass.fqNameSafe.asString()
-                        else functionDescriptor.name.asString()
-                        val dispatchReceiver =
-                            functionDescriptor.dispatchReceiverParameter?.returnType
-
-                        fun emitProvider() {
-                            braced {
-                                if (targetDescriptor.hasAnnotation(InjektFqNames.Given) ||
-                                    descriptor !is FunctionDescriptor
-                                ) {
-                                    val assistedParameters = functionDescriptor.valueParameters
-                                    if (assistedParameters.isEmpty()) {
-                                        emit(
-                                            "${
-                                                dispatchReceiver?.render()?.let { "$it." }.orEmpty()
-                                            }$functionName()"
-                                        )
-                                    } else {
-                                        emit("{ ")
-                                        assistedParameters.forEachIndexed { index, param ->
-                                            emit("p$index: ${param.returnType!!.render()}")
-                                            if (index != assistedParameters.lastIndex) {
-                                                emit(", ")
-                                            } else {
-                                                emitLine(" ->")
-                                            }
-                                        }
-                                        indented {
-                                            emit(
-                                                "${
-                                                    dispatchReceiver?.render()?.let { "$it." }
-                                                        .orEmpty()
-                                                }$functionName("
-                                            )
-                                            assistedParameters.forEachIndexed { index, param ->
-                                                emit("p$index")
-                                                if (index != assistedParameters.lastIndex) emit(", ")
-                                            }
-                                            emitLine(")")
-                                        }
-                                        emit("}")
-                                    }
-                                } else {
-                                    val assistedParameters = functionDescriptor.valueParameters
-                                    emit("{ ")
-                                    assistedParameters.forEachIndexed { index, param ->
-                                        emit("p$index: ${param.returnType!!.render()}")
-                                        if (index != assistedParameters.lastIndex) {
-                                            emit(", ")
-                                        } else {
-                                            emitLine(" ->")
-                                        }
-                                    }
-                                    indented {
-                                        emit(
-                                            "${
-                                                dispatchReceiver?.render()?.let { "$it." }.orEmpty()
-                                            }$functionName("
-                                        )
-                                        assistedParameters.forEachIndexed { index, param ->
-                                            emit("p$index")
-                                            if (index != assistedParameters.lastIndex) emit(", ")
-                                        }
-                                        emitLine(")")
-                                    }
-                                    emit("}")
-                                }
-                            }
-                        }
-                        braced {
-                            if (descriptor.hasAnnotation(InjektFqNames.Given)) {
-                                if (targetContext != InjektFqNames.AnyContext)
-                                    emit("scoped ")
-                                else emit("unscoped ")
-                                emitProvider()
-                            } else {
-                                val adapterImpl = descriptor.getAnnotatedAnnotations(
-                                    InjektFqNames.Adapter, descriptor.module
-                                )
-                                    .single()
-                                    .annotationClass!!
-                                    .companionObjectDescriptor!!
-                                emit("with(${adapterImpl.fqNameSafe}) ")
-                                val assistedParameters = functionDescriptor.valueParameters
-                                val keyType = if (assistedParameters.isNotEmpty() ||
-                                    descriptor is FunctionDescriptor &&
-                                    !descriptor.hasAnnotation(InjektFqNames.Given)
-                                ) {
-                                    if (functionDescriptor.isSuspend) {
-                                        module.builtIns.getSuspendFunction(assistedParameters.size)
-                                    } else {
-                                        module.builtIns.getFunction(assistedParameters.size)
-                                    }
-                                        .defaultType
-                                        .replace(
-                                            newArguments = assistedParameters
-                                                .map { it.returnType!!.asTypeProjection() } +
-                                                    functionDescriptor.returnType!!.asTypeProjection()
-                                        )
-                                } else functionDescriptor.returnType!!
-                                val key = if (descriptor is FunctionDescriptor &&
-                                    !descriptor.hasAnnotation(InjektFqNames.Given)
-                                ) {
-                                    // todo
-                                    "Key<${keyType.render()}>(\"f_${descriptor.fqNameSafe}\")"
-                                } else {
-                                    "keyOf<${keyType.render()}>()"
-                                }
-                                braced {
-                                    emit("configure($key) ")
-                                    emitProvider()
-                                }
-                            }
-                        }
-                    }
-
-                    val moduleFile = outputDir.resolve(packageName.replace(".", "/"))
-                        .also { it.mkdirs() }
-                        .resolve("$moduleName.kt")
-                        .also { it.createNewFile() }
-                    moduleFile.writeText(moduleCode)
-                    incrementalHelper.recordDependency(
-                        moduleFile,
-                        File(
-                            (descriptor.findPsi()!!.containingFile as KtFile)
-                                .virtualFilePath
-                        )
-                    )
-                    recordLookup(moduleFile.absolutePath, descriptor)
-
-                    indexFqName(FqName(packageName).child(moduleName.asNameId()), descriptor)
+                    ) return@namedDeclarationRecursiveVisitor
+                    generateModuleForGiven(descriptor)
                 }
             )
         }
 
         return AnalysisResult.RetryWithAdditionalRoots(
-            bindingTrace.bindingContext, module, emptyList(), listOf(outputDir), true
+            bindingTrace.bindingContext, module, emptyList(), listOf(srcDir), true
         )
     }
 
-    private fun indexFqName(
-        fqName: FqName,
-        originatingDescriptor: DeclarationDescriptor
-    ) {
-        val moduleIndexName = fqName.pathSegments().joinToString("_")
-
-        val indexCode = buildCodeString {
-            emitLine("// injekt-generated")
-            emitLine("package ${InjektFqNames.IndexPackage}")
-            emitLine()
-            emitLine("internal interface $moduleIndexName")
+    private fun generateModuleForGiven(descriptor: DeclarationDescriptor) {
+        val targetDescriptor = if (descriptor is ConstructorDescriptor)
+            descriptor.constructedClass else descriptor
+        val packageName = targetDescriptor.findPackage().fqName
+        val moduleName = getJoinedName(
+            packageName,
+            targetDescriptor.fqNameSafe.child("Module".asNameId())
+        )
+        val targetContext = if (descriptor.hasAnnotation(InjektFqNames.Given)) {
+            descriptor.annotations.findAnnotation(InjektFqNames.Given)!!
+                .getTargetContextOrAny(descriptor.module)
+        } else {
+            descriptor.getAnnotatedAnnotations(InjektFqNames.Adapter, descriptor.module)
+                .single()
+                .getTargetContextOrAny(descriptor.module)
         }
 
-        val indexFile = outputDir.resolve(InjektFqNames.IndexPackage.asString().replace(".", "/"))
-            .also { it.mkdirs() }
-            .resolve("$moduleIndexName.kt")
-            .also { it.createNewFile() }
-        indexFile.writeText(indexCode)
+        val moduleCode = buildCodeString {
+            emitLine("// injekt-generated")
+            emitLine("package $packageName")
+            emitLine()
+            emitLine("import com.ivianuu.injekt.Module")
+            emitLine("import com.ivianuu.injekt.ModuleRegistry")
+            emitLine("import com.ivianuu.injekt.ContextBuilder")
+            emitLine("import com.ivianuu.injekt.scoped")
+            emitLine("import com.ivianuu.injekt.Key")
+            emitLine("import com.ivianuu.injekt.keyOf")
+            emitLine()
+            emitLine("@Module($targetContext::class)")
+            emit("fun ContextBuilder.$moduleName() ")
 
-        incrementalHelper.recordDependency(
-            indexFile,
+            val functionDescriptor = if (targetDescriptor is ClassDescriptor)
+                targetDescriptor.constructors
+                    .singleOrNull { it.hasAnnotation(InjektFqNames.Given) }
+                    ?: targetDescriptor.unsubstitutedPrimaryConstructor
+                    ?: return@buildCodeString
+            else targetDescriptor as FunctionDescriptor
+            val functionName = if (functionDescriptor is ConstructorDescriptor)
+                functionDescriptor.constructedClass.fqNameSafe.asString()
+            else functionDescriptor.name.asString()
+            val dispatchReceiver =
+                functionDescriptor.dispatchReceiverParameter?.returnType
+
+            fun emitProvider() {
+                braced {
+                    if (targetDescriptor.hasAnnotation(InjektFqNames.Given) ||
+                        descriptor !is FunctionDescriptor
+                    ) {
+                        val assistedParameters = functionDescriptor.valueParameters
+                        if (assistedParameters.isEmpty()) {
+                            emit(
+                                "${
+                                    dispatchReceiver?.render()?.let { "$it." }.orEmpty()
+                                }$functionName()"
+                            )
+                        } else {
+                            emit("{ ")
+                            assistedParameters.forEachIndexed { index, param ->
+                                emit("p$index: ${param.returnType!!.render()}")
+                                if (index != assistedParameters.lastIndex) {
+                                    emit(", ")
+                                } else {
+                                    emitLine(" ->")
+                                }
+                            }
+                            indented {
+                                emit(
+                                    "${
+                                        dispatchReceiver?.render()?.let { "$it." }
+                                            .orEmpty()
+                                    }$functionName("
+                                )
+                                assistedParameters.forEachIndexed { index, param ->
+                                    emit("p$index")
+                                    if (index != assistedParameters.lastIndex) emit(", ")
+                                }
+                                emitLine(")")
+                            }
+                            emit("}")
+                        }
+                    } else {
+                        val assistedParameters = functionDescriptor.valueParameters
+                        emit("{ ")
+                        assistedParameters.forEachIndexed { index, param ->
+                            emit("p$index: ${param.returnType!!.render()}")
+                            if (index != assistedParameters.lastIndex) {
+                                emit(", ")
+                            } else {
+                                emitLine(" ->")
+                            }
+                        }
+                        indented {
+                            emit(
+                                "${
+                                    dispatchReceiver?.render()?.let { "$it." }.orEmpty()
+                                }$functionName("
+                            )
+                            assistedParameters.forEachIndexed { index, param ->
+                                emit("p$index")
+                                if (index != assistedParameters.lastIndex) emit(", ")
+                            }
+                            emitLine(")")
+                        }
+                        emit("}")
+                    }
+                }
+            }
+            braced {
+                if (descriptor.hasAnnotation(InjektFqNames.Given)) {
+                    if (targetContext != InjektFqNames.AnyContext)
+                        emit("scoped ")
+                    else emit("unscoped ")
+                    emitProvider()
+                } else {
+                    val adapterImpl = descriptor.getAnnotatedAnnotations(
+                        InjektFqNames.Adapter, descriptor.module
+                    )
+                        .single()
+                        .annotationClass!!
+                        .companionObjectDescriptor!!
+                    emit("with(${adapterImpl.fqNameSafe}) ")
+                    val assistedParameters = functionDescriptor.valueParameters
+                    val keyType = if (assistedParameters.isNotEmpty() ||
+                        descriptor is FunctionDescriptor &&
+                        !descriptor.hasAnnotation(InjektFqNames.Given)
+                    ) {
+                        if (functionDescriptor.isSuspend) {
+                            descriptor.builtIns.getSuspendFunction(assistedParameters.size)
+                        } else {
+                            descriptor.builtIns.getFunction(assistedParameters.size)
+                        }
+                            .defaultType
+                            .replace(
+                                newArguments = assistedParameters
+                                    .map { it.returnType!!.asTypeProjection() } +
+                                        functionDescriptor.returnType!!.asTypeProjection()
+                            )
+                    } else functionDescriptor.returnType!!
+                    val key = if (descriptor is FunctionDescriptor &&
+                        !descriptor.hasAnnotation(InjektFqNames.Given)
+                    ) {
+                        // todo
+                        "Key<${keyType.render()}>(\"f_${descriptor.fqNameSafe}\")"
+                    } else {
+                        "keyOf<${keyType.render()}>()"
+                    }
+                    braced {
+                        emit("configure($key) ")
+                        emitProvider()
+                    }
+                }
+            }
+        }
+
+        val moduleFile = srcDir.resolve(packageName.asString().replace(".", "/"))
+            .also { it.mkdirs() }
+            .resolve("$moduleName.kt")
+            .also { it.createNewFile() }
+        moduleFile.writeText(moduleCode)
+        fileCache.recordDependency(
+            moduleFile,
             File(
-                (originatingDescriptor.findPsi()!!.containingFile as KtFile)
+                (descriptor.findPsi()!!.containingFile as KtFile)
                     .virtualFilePath
             )
         )
-        recordLookup(indexFile.absolutePath, originatingDescriptor)
+        recordLookup(moduleFile.absolutePath, descriptor)
+
+        generateRegistrarForModule(
+            moduleFile,
+            packageName,
+            packageName.child(moduleName),
+            targetContext,
+            targetDescriptor
+        )
+    }
+
+    private fun generateRegistrarForModule(
+        moduleFile: File,
+        modulePackageName: FqName,
+        moduleFqName: FqName,
+        targetContext: FqName,
+        originatingDescriptor: DeclarationDescriptor
+    ) {
+        val moduleRegistrarName = getJoinedName(
+            modulePackageName,
+            moduleFqName.child("Registrar".asNameId())
+        )
+        val moduleRegistrarFqName = modulePackageName
+            .child(moduleRegistrarName)
+        val registrarCode = buildCodeString {
+            emitLine("// injekt-generated")
+            emitLine("package $modulePackageName")
+            emitLine()
+            emitLine("import com.ivianuu.injekt.Module")
+            emitLine("import com.ivianuu.injekt.ModuleRegistry")
+            emitLine("import com.ivianuu.injekt.ContextBuilder")
+            emitLine("import com.ivianuu.injekt.scoped")
+            emitLine("import com.ivianuu.injekt.Key")
+            emitLine("import com.ivianuu.injekt.keyOf")
+
+            emit("class $moduleRegistrarName : Module.Registrar ")
+            braced {
+                emit("override fun register() ")
+                braced {
+                    emitLine("ModuleRegistry.module(keyOf<$targetContext>(), ContextBuilder::${moduleFqName.shortName()})")
+                }
+            }
+        }
+
+        val registrarFile = srcDir.resolve(modulePackageName.asString().replace(".", "/"))
+            .also { it.mkdirs() }
+            .resolve("$moduleRegistrarName.kt")
+            .also { it.createNewFile() }
+        registrarFile.writeText(registrarCode)
+        fileCache.recordDependency(registrarFile, moduleFile)
+        serviceLoaderCache.recordDependency(
+            moduleRegistrarFqName.asString(),
+            registrarFile.absolutePath
+        )
+        recordLookup(registrarFile.absolutePath, originatingDescriptor)
+        moduleRegistrarManager.addImpl(moduleRegistrarFqName)
     }
 
     private fun KotlinType.render() = buildString {
@@ -347,6 +406,17 @@ class InjektAnalysisHandlerExtension(
             ?.declarationDescriptor
             ?.fqNameSafe
             ?: InjektFqNames.AnyContext
+    }
+
+
+    private fun getJoinedName(
+        packageFqName: FqName,
+        fqName: FqName
+    ): Name {
+        val joinedSegments = fqName.asString()
+            .removePrefix(packageFqName.asString() + ".")
+            .split(".")
+        return joinedSegments.joinToString("_").asNameId()
     }
 
 }

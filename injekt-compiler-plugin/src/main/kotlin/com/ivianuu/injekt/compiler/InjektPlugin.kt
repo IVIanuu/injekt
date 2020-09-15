@@ -52,16 +52,22 @@ class InjektComponentRegistrar : ComponentRegistrar {
             ReaderTypeInterceptor(readerChecker)
         )
 
-        val outputDir = configuration.getNotNull(OutputDirKey)
-
         AnalysisHandlerExtension.registerExtension(
             project,
             LookupTrackerInitializer()
         )
 
+        val srcDir = File(configuration.getNotNull(SrcDirKey))
+        val resourcesDir = File(configuration.getNotNull(ResourcesDirKey))
+        val cacheDir = File(configuration.getNotNull(CacheDirKey))
+
         AnalysisHandlerExtension.registerExtension(
             project,
-            InjektAnalysisHandlerExtension(File(outputDir))
+            InjektAnalysisHandlerExtension(
+                srcDir,
+                resourcesDir,
+                cacheDir
+            )
         )
 
         // make sure that our plugin always runs before the Compose plugin
@@ -93,9 +99,19 @@ class InjektCommandLineProcessor : CommandLineProcessor {
 
     override val pluginOptions = listOf(
         CliOption(
-            optionName = "outputDir",
-            valueDescription = "generated src dir",
-            description = "generated src"
+            optionName = "srcDir",
+            valueDescription = "srcDir",
+            description = "srcDir"
+        ),
+        CliOption(
+            optionName = "resourcesDir",
+            valueDescription = "resourcesDir",
+            description = "resourcesDir"
+        ),
+        CliOption(
+            optionName = "cacheDir",
+            valueDescription = "cacheDir",
+            description = "cacheDir"
         )
     )
 
@@ -105,9 +121,13 @@ class InjektCommandLineProcessor : CommandLineProcessor {
         configuration: CompilerConfiguration
     ) {
         when (option.optionName) {
-            "outputDir" -> configuration.put(OutputDirKey, value)
+            "srcDir" -> configuration.put(SrcDirKey, value)
+            "resourcesDir" -> configuration.put(ResourcesDirKey, value)
+            "cacheDir" -> configuration.put(CacheDirKey, value)
         }
     }
 }
 
-val OutputDirKey = CompilerConfigurationKey<String>("outputDir")
+val SrcDirKey = CompilerConfigurationKey<String>("srcDir")
+val ResourcesDirKey = CompilerConfigurationKey<String>("resourcesDir")
+val CacheDirKey = CompilerConfigurationKey<String>("cacheDir")

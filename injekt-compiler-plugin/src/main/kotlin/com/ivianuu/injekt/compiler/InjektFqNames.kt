@@ -36,6 +36,4 @@ object InjektFqNames {
     val CommonPackage = BasePackage.child("common".asNameId())
     val Adapter = CommonPackage.child("Adapter".asNameId())
     val AdapterImpl = Adapter.child("Impl".asNameId())
-
-    val IndexPackage = BasePackage.child("internal".asNameId()).child("index".asNameId())
 }
