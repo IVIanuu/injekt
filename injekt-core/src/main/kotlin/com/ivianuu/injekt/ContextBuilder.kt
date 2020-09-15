@@ -103,14 +103,17 @@ class ContextBuilder(
 
     inline fun <@ForKey K, @ForKey V> map(
         mapKey: Key<Map<K, V>> = keyOf(),
-        block: MapBuilder<K, V>.() -> Unit
+        block: MapBuilder<K, V>.() -> Unit = {}
     ) {
         mapBuilders().getOrPut(mapKey) { MapBuilder<K, V>(this) }
             .let { it as MapBuilder<K, V> }
             .block()
     }
 
-    inline fun <@ForKey E> set(setKey: Key<Set<E>> = keyOf(), block: SetBuilder<E>.() -> Unit) {
+    inline fun <@ForKey E> set(
+        setKey: Key<Set<E>> = keyOf(),
+        block: SetBuilder<E>.() -> Unit = {}
+    ) {
         setBuilders().getOrPut(setKey) { SetBuilder<E>(this) }
             .let { it as SetBuilder<E> }
             .block()

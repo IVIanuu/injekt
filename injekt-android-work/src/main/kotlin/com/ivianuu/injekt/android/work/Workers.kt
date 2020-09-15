@@ -63,6 +63,7 @@ fun <@ForKey T : ListenableWorker> ContextBuilder.worker(
 @Module(ApplicationContext::class)
 fun ContextBuilder.workerInjection() {
     alias<InjektWorkerFactory, WorkerFactory>()
+    map(keyOf<Workers>())
 }
 
 @Given
