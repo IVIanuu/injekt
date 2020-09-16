@@ -147,38 +147,6 @@ class ReaderCallTransformer(
             if ((declaration as IrDeclarationWithVisibility).visibility == Visibilities.LOCAL && declaration.parent is IrFunction)
                 declaration.parent as IrFunction else null
 
-        fun contextExpression(
-            contextType: IrType,
-            startOffset: Int,
-            contextExpression: () -> IrExpression
-        ): IrExpression {
-            val factory = createContextFactory(
-                contextType = contextType,
-                startOffset = startOffset,
-                typeParametersContainer = declaration as IrTypeParametersContainer,
-                file = declaration.file,
-                inputTypes = emptyList(),
-                pluginContext = pluginContext,
-                isChild = true,
-                module = module,
-                injektSymbols = injektSymbols
-            )
-
-            return DeclarationIrBuilder(pluginContext, factory.symbol).run {
-                irCall(factory.functions.first {
-                    it.name.asString().startsWith("create")
-                }).apply {
-                    dispatchReceiver = givenExpressionForType(
-                        factory.typeWith(
-                            declaration.typeParameters
-                                .map { it.defaultType }
-                        ),
-                        contextExpression
-                    )
-                }
-            }
-        }
-
         fun givenExpressionForType(
             type: IrType,
             contextExpression: () -> IrExpression
@@ -530,14 +498,12 @@ class ReaderCallTransformer(
             }
         }
 
-        val contextArgument =
-            scope.contextExpression(
-                transformedCall.symbol.owner
-                    .getContext()!!
-                    .typeWith(transformedCall.typeArguments),
-                transformedCall.startOffset,
-                contextExpression
-            )
+        val contextArgument = scope.givenExpressionForType(
+            transformedCall.symbol.owner
+                .getContext()!!
+                .typeWith(transformedCall.typeArguments),
+            contextExpression
+        )
 
         transformedCall.putValueArgument(transformedCall.valueArgumentsCount - 1, contextArgument)
 

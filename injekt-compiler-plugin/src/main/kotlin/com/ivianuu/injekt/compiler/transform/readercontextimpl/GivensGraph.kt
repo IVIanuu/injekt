@@ -18,6 +18,7 @@ package com.ivianuu.injekt.compiler.transform.readercontextimpl
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
@@ -29,22 +30,39 @@ import com.ivianuu.injekt.compiler.transform.ReaderContextParamTransformer
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import com.ivianuu.injekt.compiler.visitAllFunctionsWithSubstitutionMap
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.addChild
+import org.jetbrains.kotlin.backend.common.ir.copyTo
+import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
+import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
+import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
+import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
+import org.jetbrains.kotlin.ir.builders.declarations.addField
+import org.jetbrains.kotlin.ir.builders.declarations.addFunction
+import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
+import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
+import org.jetbrains.kotlin.ir.builders.irExprBody
+import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
+import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.types.isNothing
 import org.jetbrains.kotlin.ir.util.constructedClass
+import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
@@ -359,6 +377,124 @@ class GivensGraph(
         instanceNodes[key]?.let { this += it }
 
         inputFunctionNodes[key]?.let { this += it }
+
+        if (key.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.ContextMarker)) {
+            val contexts = mutableListOf<IrType>()
+            val childContextImpl = if (key.type.classOrNull!!.owner.typeParameters.isNotEmpty()) {
+                val childContextImpl = buildClass {
+                    this.name = (key.type.uniqueTypeName().asString() + "Impl").asNameId()
+                    visibility = Visibilities.PRIVATE
+                }.apply clazz@{
+                    parent = contextImpl
+                    contextImpl.addChild(this)
+                    createImplicitParameterDeclarationWithWrappedDescriptor()
+                }
+
+                val parentField = childContextImpl.addField(
+                    "parent",
+                    contextImpl.defaultType
+                )
+
+                childContextImpl.addConstructor {
+                    returnType = childContextImpl.defaultType
+                    isPrimary = true
+                    visibility = Visibilities.PUBLIC
+                }.apply {
+                    val parentValueParameter = addValueParameter(
+                        "parent",
+                        contextImpl.defaultType
+                    )
+                    body = DeclarationIrBuilder(
+                        pluginContext,
+                        symbol
+                    ).irBlockBody {
+                        +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
+                        +IrInstanceInitializerCallImpl(
+                            UNDEFINED_OFFSET,
+                            UNDEFINED_OFFSET,
+                            childContextImpl.symbol,
+                            context.irBuiltIns.unitType
+                        )
+                        +irSetField(
+                            irGet(childContextImpl.thisReceiver!!),
+                            parentField,
+                            irGet(parentValueParameter)
+                        )
+                    }
+                }
+
+                key.type.visitAllFunctionsWithSubstitutionMap(
+                    pluginContext = pluginContext,
+                    declarationGraph = declarationGraph,
+                    enterType = { childContextImpl.superTypes += it },
+                    exitType = {},
+                    visitFunction = { function, substitutionMap ->
+                        val functionKey = function.returnType
+                            .substitute(substitutionMap)
+                            .asKey()
+
+                        val existingDeclaration = childContextImpl.functions.singleOrNull {
+                            it.name == function.name
+                        }
+                        if (existingDeclaration != null) {
+                            existingDeclaration.overriddenSymbols +=
+                                function.symbol as IrSimpleFunctionSymbol
+                            return@visitAllFunctionsWithSubstitutionMap
+                        }
+
+                        val expression =
+                            expressions.getGivenExpression(getGiven(functionKey), function)
+                        childContextImpl.addFunction {
+                            this.name = function.name
+                            returnType = functionKey.type
+                        }.apply {
+                            dispatchReceiverParameter = childContextImpl.thisReceiver!!.copyTo(this)
+                            overriddenSymbols += function.symbol as IrSimpleFunctionSymbol
+                            body = DeclarationIrBuilder(pluginContext, symbol).run {
+                                irExprBody(
+                                    expression(
+                                        this,
+                                        ContextExpressionContext(
+                                            pluginContext = pluginContext,
+                                            thisContext = contextImpl
+                                        ) {
+                                            irGetField(
+                                                irGet(dispatchReceiverParameter!!),
+                                                parentField
+                                            )
+                                        }
+                                    )
+                                )
+                            }
+                        }
+                    }
+                )
+                childContextImpl
+            } else {
+                key.type.visitAllFunctionsWithSubstitutionMap(
+                    pluginContext = pluginContext,
+                    declarationGraph = declarationGraph,
+                    enterType = { contexts += it },
+                    exitType = {},
+                    visitFunction = { function, substitutionMap ->
+                        val functionKey = function.returnType
+                            .substitute(substitutionMap)
+                            .asKey()
+                        expressions.getGivenExpression(getGiven(functionKey), function)
+                    }
+                )
+                null
+            }
+
+            this += GivenCalleeContext(
+                key = key,
+                owner = contextImpl,
+                contexts = contexts,
+                declarations = emptyList(),
+                origin = null,
+                contextImpl = childContextImpl
+            )
+        }
 
         if (key.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.ChildContextFactory)) {
             val existingFactories = mutableSetOf<IrClass>()

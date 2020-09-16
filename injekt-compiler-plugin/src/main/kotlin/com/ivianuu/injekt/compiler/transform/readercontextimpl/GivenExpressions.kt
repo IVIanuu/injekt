@@ -71,6 +71,7 @@ class GivenExpressions(
             parent!!.getGivenExpression(given, null)
         } else {
             when (given) {
+                is GivenCalleeContext -> calleeContextExpression(given)
                 is GivenChildContext -> childContextExpression(given)
                 is GivenFunction -> functionExpression(given)
                 is GivenInstance -> inputExpression(given)
@@ -190,6 +191,17 @@ class GivenExpressions(
             irCall(given.factory.constructors.single()).apply {
                 putValueArgument(0, c[contextImpl])
             }
+        }
+    }
+
+    private fun calleeContextExpression(given: GivenCalleeContext): ContextExpression {
+        return { c ->
+            given.contextImpl?.constructors?.single()
+                ?.let {
+                    irCall(it).apply {
+                        putValueArgument(0, c[contextImpl])
+                    }
+                } ?: c[contextImpl]
         }
     }
 

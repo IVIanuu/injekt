@@ -59,6 +59,15 @@ class GivenChildContext(
     }
 }
 
+class GivenCalleeContext(
+    key: Key,
+    owner: IrClass,
+    contexts: List<IrType>,
+    declarations: List<IrDeclarationWithName>,
+    origin: FqName?,
+    val contextImpl: IrClass?
+) : Given(key, owner, contexts, declarations, origin, false, null, null)
+
 class GivenFunction(
     key: Key,
     owner: IrClass,

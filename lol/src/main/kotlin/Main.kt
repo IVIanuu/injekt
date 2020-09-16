@@ -1,6 +1,6 @@
 package com.ivianuu.injekt.lol
 
-import com.ivianuu.injekt.ApplicationContext
+import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.InitializeInjekt
 import com.ivianuu.injekt.Reader
@@ -11,6 +11,9 @@ import com.ivianuu.injekt.runReader
 class Foo
 class Bar(foo: Foo)
 
+@Context
+interface TestContext
+
 @Given
 fun foo() = Foo()
 
@@ -19,5 +22,5 @@ fun <T> provide() = given<T>()
 
 @InitializeInjekt
 fun invoke(): Foo {
-    return rootContext<ApplicationContext>().runReader { provide() }
+    return rootContext<TestContext>().runReader { provide() }
 }

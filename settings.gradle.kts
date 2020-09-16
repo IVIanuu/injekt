@@ -1,6 +1,5 @@
 include(
     ":android-integration-tests",
-    ":benchmark",
     ":comparison",
     ":essentials-android-testing",
     ":injekt-android",
