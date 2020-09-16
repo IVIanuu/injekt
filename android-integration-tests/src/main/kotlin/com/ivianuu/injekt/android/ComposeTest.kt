@@ -18,7 +18,6 @@ package com.ivianuu.injekt.android
 
 import androidx.compose.compiler.plugins.kotlin.ComposeComponentRegistrar
 import com.ivianuu.injekt.compiler.InjektComponentRegistrar
-import com.ivianuu.injekt.test.assertOk
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
 import com.ivianuu.injekt.test.multiCodegen
@@ -99,43 +98,4 @@ class ComposeTest {
         it.last().invokeSingleFile()
     }
 
-    // todo @Test
-    fun testComposableReaderLambda() = codegen(
-        """
-        @Given
-        fun foo() = Foo()
-        
-        @Reader 
-        @androidx.compose.runtime.Composable
-        fun func(foo: Foo = given()): Foo {
-            androidx.compose.currentComposer
-            return foo
-        }
-        
-        @Reader 
-        @androidx.compose.runtime.Composable
-        fun other() { 
-            androidx.compose.currentComposer
-        }
-        
-        @Reader
-        @androidx.compose.runtime.Composable
-        fun <R> withFoo(block: @Reader @androidx.compose.runtime.Composable (Foo) -> R): R = block(func())
-
-        @androidx.compose.runtime.Composable
-        fun invoke(): Foo {
-            return runTestReader {
-                withFoo { 
-                    other()
-                    it
-                }
-            }
-        }
-    """,
-        config = {
-            compilerPlugins = listOf(InjektComponentRegistrar(), ComposeComponentRegistrar())
-        }
-    ) {
-        assertOk()
-    }
 }

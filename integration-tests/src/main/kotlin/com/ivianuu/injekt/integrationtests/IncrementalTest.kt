@@ -1,38 +1,6 @@
 package com.ivianuu.injekt.integrationtests
 
-import com.ivianuu.injekt.test.compilation
-import com.ivianuu.injekt.test.source
-import com.tschuchort.compiletesting.MainComponentRegistrar
-import com.tschuchort.compiletesting.SourceFile
-import org.jetbrains.kotlin.base.kapt3.KaptOptions
-import org.jetbrains.kotlin.build.DEFAULT_KOTLIN_SOURCE_FILES_EXTENSIONS
-import org.jetbrains.kotlin.cli.common.ExitCode
-import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
-import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSourceLocation
-import org.jetbrains.kotlin.cli.common.messages.MessageCollector
-import org.jetbrains.kotlin.config.IncrementalCompilation
-import org.jetbrains.kotlin.incremental.ChangedFiles
-import org.jetbrains.kotlin.incremental.ICReporterBase
-import org.jetbrains.kotlin.incremental.IncrementalJvmCompilerRunner
-import org.jetbrains.kotlin.incremental.IncrementalModuleEntry
-import org.jetbrains.kotlin.incremental.IncrementalModuleInfo
-import org.jetbrains.kotlin.incremental.multiproject.ModulesApiHistoryJvm
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
-import org.junit.Test
-import java.io.BufferedInputStream
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.io.InputStream
-import java.io.OutputStream
-import java.net.URLClassLoader
-import java.nio.file.Files
-import java.util.jar.Attributes
-import java.util.jar.JarEntry
-import java.util.jar.JarOutputStream
-import java.util.jar.Manifest
-
+/**
 class IncrementalTest {
 
     @Test
@@ -635,3 +603,4 @@ private fun createJar(jarFile: String, srcDir: String) {
     copyFilesRecursively(srcDirFile, jarOutputStream, prefLen)
     jarOutputStream.close()
 }
+ */

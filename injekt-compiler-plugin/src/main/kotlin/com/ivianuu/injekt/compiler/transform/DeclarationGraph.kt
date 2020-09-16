@@ -18,12 +18,10 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
-import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -76,71 +74,7 @@ class DeclarationGraph(
             .mapNotNull { it.getClassFromAnnotation(InjektFqNames.RunReaderCall, 0) }
     }
 
-    private val implementationsByContext = mutableMapOf<IrClass, Set<IrClass>>()
-    fun getAllContextImplementations(
-        context: IrClass
-    ): Set<IrClass> = implementationsByContext.getOrPut(context) {
-        val contexts = mutableSetOf<IrClass>()
-
-        contexts += context
-
-        val processedClasses = mutableSetOf<IrClass>()
-
-        fun collectImplementations(context: IrClass) {
-            if (context in processedClasses) return
-            processedClasses += context
-
-            indexer.classIndices(
-                listOf(
-                    READER_IMPL_PATH,
-                    context.descriptor.fqNameSafe.asString()
-                )
-            )
-                .map {
-                    it.getClassFromAnnotation(
-                        InjektFqNames.ReaderImpl,
-                        0
-                    )!!
-                }
-                .forEach {
-                    contexts += it
-                    collectImplementations(it)
-                }
-
-            indexer.classIndices(
-                listOf(
-                    READER_CALL_PATH,
-                    context.descriptor.fqNameSafe.asString()
-                )
-            )
-                .filter {
-                    it.getConstantFromAnnotationOrNull<Boolean>(
-                        InjektFqNames.ReaderCall,
-                        1
-                    )!!
-                }
-                .map { it.getClassFromAnnotation(InjektFqNames.ReaderCall, 0)!! }
-                .forEach {
-                    contexts += it
-                    collectImplementations(it)
-                }
-
-            context.superTypes
-                .map { it.classOrNull!!.owner }
-                .forEach {
-                    contexts += it
-                    collectImplementations(it)
-                }
-        }
-
-        collectImplementations(context)
-
-        contexts
-    }
-
     companion object {
-        const val READER_CALL_PATH = "reader_call"
-        const val READER_IMPL_PATH = "reader_impl"
         const val ROOT_CONTEXT_FACTORY_PATH = "root_context_factory"
         const val RUN_READER_CALL_PATH = "run_reader_call"
         const val GIVEN_PATH = "given"

@@ -4,9 +4,9 @@ import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.tmpFunction
-import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueTypeName
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -41,7 +41,7 @@ import org.jetbrains.kotlin.name.FqName
 
 class GivenExpressions(
     private val parent: GivenExpressions?,
-    private val injektContext: InjektContext,
+    private val pluginContext: IrPluginContext,
     private val contextImpl: IrClass,
     private val initTrigger: IrDeclarationWithName
 ) {
@@ -83,7 +83,7 @@ class GivenExpressions(
         val finalExpression = if (given.targetContext == null ||
             given.owner != contextImpl
         ) rawExpression else ({ c ->
-            val lazy = injektContext.referenceFunctions(FqName("kotlin.lazy"))
+            val lazy = pluginContext.referenceFunctions(FqName("kotlin.lazy"))
                 .single { it.owner.valueParameters.size == 1 }
                 .owner
 
@@ -96,15 +96,15 @@ class GivenExpressions(
                         putTypeArgument(0, given.key.type)
                         putValueArgument(
                             0,
-                            DeclarationIrBuilder(injektContext, symbol)
+                            DeclarationIrBuilder(pluginContext, symbol)
                                 .irLambda(
-                                    injektContext.tmpFunction(0)
+                                    pluginContext.tmpFunction(0)
                                         .owner
                                         .typeWith(listOf(given.key.type))
                                 ) {
                                     rawExpression(
                                         ContextExpressionContext(
-                                            injektContext,
+                                            pluginContext,
                                             contextImpl
                                         ) {
                                             irGet(contextImpl.thisReceiver!!)
@@ -152,11 +152,11 @@ class GivenExpressions(
         givenExpressions[given.key] = expression
 
         functionByType.body =
-            DeclarationIrBuilder(injektContext, functionByType.symbol).run {
+            DeclarationIrBuilder(pluginContext, functionByType.symbol).run {
                 irExprBody(
                     finalExpression(
                         this,
-                        ContextExpressionContext(injektContext, contextImpl) {
+                        ContextExpressionContext(pluginContext, contextImpl) {
                             irGet(functionByType.dispatchReceiverParameter!!)
                         }
                     )
@@ -172,7 +172,7 @@ class GivenExpressions(
                 this.parent = contextImpl
                 contextImpl.addChild(this)
                 overriddenSymbols += superFunction.symbol
-                body = DeclarationIrBuilder(injektContext, symbol).run {
+                body = DeclarationIrBuilder(pluginContext, symbol).run {
                     irExprBody(
                         irCall(functionByType).apply {
                             dispatchReceiver = irGet(dispatchReceiverParameter!!)
@@ -202,11 +202,11 @@ class GivenExpressions(
             irBlock {
                 val tmpMap = irTemporary(
                     irCall(
-                        injektContext.referenceFunctions(
+                        pluginContext.referenceFunctions(
                             FqName("kotlin.collections.mutableMapOf")
                         ).first { it.owner.valueParameters.isEmpty() })
                 )
-                val mapType = injektContext.referenceClass(
+                val mapType = pluginContext.referenceClass(
                     FqName("kotlin.collections.Map")
                 )!!
                 given.functions.forEach { function ->
@@ -242,11 +242,11 @@ class GivenExpressions(
             irBlock {
                 val tmpSet = irTemporary(
                     irCall(
-                        injektContext.referenceFunctions(
+                        pluginContext.referenceFunctions(
                             FqName("kotlin.collections.mutableSetOf")
                         ).first { it.owner.valueParameters.isEmpty() })
                 )
-                val collectionType = injektContext.referenceClass(
+                val collectionType = pluginContext.referenceClass(
                     FqName("kotlin.collections.Collection")
                 )
                 given.functions.forEach { function ->
@@ -355,7 +355,7 @@ class ContextExpressionContext(
 
     companion object {
         operator fun invoke(
-            injektContext: InjektContext,
+            pluginContext: IrPluginContext,
             thisContext: IrClass,
             thisExpression: () -> IrExpression
         ): ContextExpressionContext {
@@ -371,7 +371,7 @@ class ContextExpressionContext(
                 current = if (parentField != null) {
                     val parentClass = parentField.type.classOrNull!!.owner
                     parentClass to {
-                        DeclarationIrBuilder(injektContext, currentContext.symbol)
+                        DeclarationIrBuilder(pluginContext, currentContext.symbol)
                             .irGetField(currentExpression(), parentField)
                     }
                 } else {

@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transformFiles
 import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueTypeName
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
@@ -37,11 +38,11 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 
 class IndexingTransformer(
     private val indexer: Indexer,
-    injektContext: InjektContext
-) : AbstractInjektTransformer(injektContext) {
+    pluginContext: IrPluginContext
+) : AbstractInjektTransformer(pluginContext) {
 
     override fun lower() {
-        injektContext.module.transformFiles(object : IrElementTransformerVoid() {
+        module.transformFiles(object : IrElementTransformerVoid() {
             override fun visitConstructor(declaration: IrConstructor): IrStatement {
                 if (declaration.hasAnnotation(InjektFqNames.Given) ||
                     declaration.hasAnnotatedAnnotations(InjektFqNames.Effect)
@@ -66,7 +67,7 @@ class IndexingTransformer(
                             val typePath =
                                 if (explicitParameters.isEmpty()) declaration.returnType.uniqueTypeName()
                                     .asString()
-                                else injektContext.tmpFunction(explicitParameters.size)
+                                else pluginContext.tmpFunction(explicitParameters.size)
                                     .owner
                                     .typeWith(explicitParameters.map { it.type } + declaration.returnType)
                                     .uniqueTypeName()
@@ -107,13 +108,13 @@ class IndexingTransformer(
                     declaration.hasAnnotation(InjektFqNames.Given) ||
                             declaration.hasAnnotatedAnnotations(InjektFqNames.Effect) -> {
                         val readerConstructor =
-                            declaration.getReaderConstructor(injektContext)!!
+                            declaration.getReaderConstructor(pluginContext)!!
                         val explicitParameters = readerConstructor.valueParameters
                             .filter { it != readerConstructor.getContextValueParameter() }
                         val typePath =
                             if (explicitParameters.isEmpty()) readerConstructor.returnType.uniqueTypeName()
                                 .asString()
-                            else injektContext.tmpFunction(explicitParameters.size)
+                            else pluginContext.tmpFunction(explicitParameters.size)
                                 .owner
                                 .typeWith(explicitParameters.map { it.type } + readerConstructor.returnType)
                                 .uniqueTypeName()

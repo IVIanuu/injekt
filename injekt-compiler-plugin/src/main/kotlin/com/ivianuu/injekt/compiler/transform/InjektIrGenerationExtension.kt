@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.transform.readercontextimpl.ReaderContextImplTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -36,13 +35,6 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        println("compile files ${moduleFragment.files.joinToString("\n") { it.fileEntry.name }}")
-        try {
-            error("compile files ${moduleFragment.files.joinToString("\n") { it.fileEntry.name }}")
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        val injektContext = InjektContext(pluginContext, moduleFragment)
         var initializeInjekt = false
         var initTrigger: IrDeclarationWithName? = null
 
@@ -56,31 +48,25 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             }
         })
 
-        if (injektContext.referenceClass(InjektFqNames.Effect) != null) {
-            EffectTransformer(injektContext).doLower(moduleFragment)
+        if (pluginContext.referenceClass(InjektFqNames.Effect) != null) {
+            EffectTransformer(pluginContext).doLower(moduleFragment)
         }
 
         val indexer = Indexer(
-            injektContext,
+            pluginContext,
             moduleFragment,
-            InjektSymbols(injektContext)
+            InjektSymbols(pluginContext)
         )
 
         val readerContextParamTransformer =
-            ReaderContextParamTransformer(injektContext, indexer)
+            ReaderContextParamTransformer(pluginContext, indexer)
         readerContextParamTransformer.doLower(moduleFragment)
 
-        ReaderCallTransformer(injektContext, indexer).doLower(moduleFragment)
-
-        ReaderTrackingTransformer(
-            injektContext,
-            indexer,
-            readerContextParamTransformer
-        ).doLower(moduleFragment)
+        ReaderCallTransformer(pluginContext, indexer).doLower(moduleFragment)
 
         IndexingTransformer(
             indexer,
-            injektContext
+            pluginContext
         ).doLower(moduleFragment)
 
         if (initializeInjekt) {
@@ -90,7 +76,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
                 readerContextParamTransformer
             )
             ReaderContextImplTransformer(
-                injektContext,
+                pluginContext,
                 declarationGraph,
                 readerContextParamTransformer,
                 initTrigger!!
@@ -99,7 +85,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         generateSymbols(pluginContext)
 
-        println(moduleFragment.dumpSrc())
+        // println(moduleFragment.dumpSrc())
     }
 
 }

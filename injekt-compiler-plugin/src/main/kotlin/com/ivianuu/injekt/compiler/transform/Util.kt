@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.compiler.addChildAndUpdateMetadata
 import com.ivianuu.injekt.compiler.addFile
@@ -27,10 +27,9 @@ import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.remapTypeParametersByName
 import com.ivianuu.injekt.compiler.removeIllegalChars
-import com.ivianuu.injekt.compiler.typeArguments
-import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.injekt.compiler.uniqueTypeName
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
@@ -44,15 +43,12 @@ import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFile
+import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.getPackageFragment
-import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.isFunctionOrKFunction
-import org.jetbrains.kotlin.ir.util.isSuspendFunctionOrKFunction
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -60,7 +56,9 @@ fun createContext(
     owner: IrDeclarationWithName,
     origin: FqName,
     parentTypeParametersContainer: IrTypeParametersContainer?,
-    injektContext: InjektContext
+    pluginContext: IrPluginContext,
+    module: IrModuleFragment,
+    injektSymbols: InjektSymbols
 ) = buildClass {
     kind = ClassKind.INTERFACE
     name = (getJoinedName(
@@ -72,8 +70,8 @@ fun createContext(
         .asNameId()
     visibility = Visibilities.INTERNAL
 }.apply {
-    injektContext.module.addFile(
-        injektContext,
+    module.addFile(
+        pluginContext,
         owner.getPackageFragment()!!.fqName
             .child(name)
     ).also { it.addChildAndUpdateMetadata(this) }
@@ -83,10 +81,10 @@ fun createContext(
     parentTypeParametersContainer?.let { copyTypeParametersFrom(it) }
     recordLookup(parent, owner)
 
-    annotations += DeclarationIrBuilder(injektContext, symbol)
-        .irCall(injektContext.injektSymbols.contextMarker.constructors.single())
-    annotations += DeclarationIrBuilder(injektContext, symbol).run {
-        irCall(injektContext.injektSymbols.origin.constructors.single()).apply {
+    annotations += DeclarationIrBuilder(pluginContext, symbol)
+        .irCall(injektSymbols.contextMarker.constructors.single())
+    annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+        irCall(injektSymbols.origin.constructors.single()).apply {
             putValueArgument(0, irString(origin.asString()))
         }
     }
@@ -98,7 +96,9 @@ fun createContextFactory(
     file: IrFile,
     inputTypes: List<IrType>,
     startOffset: Int,
-    injektContext: InjektContext,
+    pluginContext: IrPluginContext,
+    module: IrModuleFragment,
+    injektSymbols: InjektSymbols,
     isChild: Boolean
 ) = buildClass {
     name = "${contextType.classOrNull!!.owner.name}${startOffset}Factory"
@@ -106,8 +106,8 @@ fun createContextFactory(
     kind = ClassKind.INTERFACE
     visibility = Visibilities.INTERNAL
 }.apply clazz@{
-    injektContext.module.addFile(
-        injektContext,
+    module.addFile(
+        pluginContext,
         file.fqName
             .child(name)
     ).also { it.addChildAndUpdateMetadata(this) }
@@ -138,9 +138,9 @@ fun createContextFactory(
             }
     }
 
-    annotations += DeclarationIrBuilder(injektContext, symbol).run {
+    annotations += DeclarationIrBuilder(pluginContext, symbol).run {
         if (!isChild) {
-            irCall(injektContext.injektSymbols.rootContextFactory.constructors.single()).apply {
+            irCall(injektSymbols.rootContextFactory.constructors.single()).apply {
                 putValueArgument(
                     0,
                     irString(
@@ -149,21 +149,7 @@ fun createContextFactory(
                 )
             }
         } else {
-            irCall(injektContext.injektSymbols.childContextFactory.constructors.single())
+            irCall(injektSymbols.childContextFactory.constructors.single())
         }
     }
 }
-
-fun IrType.isNotTransformedReaderLambda() =
-    (isFunctionOrKFunction() || isSuspendFunctionOrKFunction()) && hasAnnotation(InjektFqNames.Reader)
-
-fun IrType.isTransformedReaderLambda(): Boolean {
-    return (isFunctionOrKFunction() || isSuspendFunctionOrKFunction()) && typeArguments
-        .mapNotNull { it.typeOrNull?.classOrNull?.owner }
-        .any { it.hasAnnotation(InjektFqNames.ContextMarker) }
-}
-
-val IrType.lambdaContext
-    get() = typeArguments.firstOrNull {
-        it.typeOrNull?.classOrNull?.owner?.hasAnnotation(InjektFqNames.ContextMarker) == true
-    }?.typeOrFail?.classOrNull?.owner

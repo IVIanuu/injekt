@@ -16,14 +16,20 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.InjektSymbols
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
 
-abstract class AbstractInjektTransformer(val injektContext: InjektContext) {
+abstract class AbstractInjektTransformer(val pluginContext: IrPluginContext) {
+
+    val injektSymbols = InjektSymbols(pluginContext)
+    lateinit var module: IrModuleFragment
 
     protected abstract fun lower()
 
     fun doLower(module: IrModuleFragment) {
+        this.module = module
         lower()
         module.patchDeclarationParents()
     }

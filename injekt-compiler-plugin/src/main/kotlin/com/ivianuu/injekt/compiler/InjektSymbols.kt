@@ -16,25 +16,23 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.transform.InjektContext
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 
-class InjektSymbols(private val injektContext: InjektContext) {
-    val context = injektContext.referenceClass(InjektFqNames.Context)!!
-    val effect = injektContext.referenceClass(InjektFqNames.Effect)!!
-    val given = injektContext.referenceClass(InjektFqNames.Given)!!
-    val givenMapEntries = injektContext.referenceClass(InjektFqNames.GivenMapEntries)!!
-    val givenSet = injektContext.referenceClass(InjektFqNames.GivenSet)!!
-    val givenSetElements = injektContext.referenceClass(InjektFqNames.GivenSetElements)!!
-    val reader = injektContext.referenceClass(InjektFqNames.Reader)!!
+class InjektSymbols(private val pluginContext: IrPluginContext) {
+    val context = pluginContext.referenceClass(InjektFqNames.Context)!!
+    val effect = pluginContext.referenceClass(InjektFqNames.Effect)!!
+    val given = pluginContext.referenceClass(InjektFqNames.Given)!!
+    val givenMapEntries = pluginContext.referenceClass(InjektFqNames.GivenMapEntries)!!
+    val givenSet = pluginContext.referenceClass(InjektFqNames.GivenSet)!!
+    val givenSetElements = pluginContext.referenceClass(InjektFqNames.GivenSetElements)!!
+    val reader = pluginContext.referenceClass(InjektFqNames.Reader)!!
 
-    val childContextFactory = injektContext.referenceClass(InjektFqNames.ChildContextFactory)!!
-    val contextMarker = injektContext.referenceClass(InjektFqNames.ContextMarker)!!
-    val index = injektContext.referenceClass(InjektFqNames.Index)!!
-    val origin = injektContext.referenceClass(InjektFqNames.Origin)!!
-    val qualifier = injektContext.referenceClass(InjektFqNames.Qualifier)!!
-    val readerCall = injektContext.referenceClass(InjektFqNames.ReaderCall)!!
-    val readerImpl = injektContext.referenceClass(InjektFqNames.ReaderImpl)!!
-    val rootContextFactory = injektContext.referenceClass(InjektFqNames.RootContextFactory)!!
-    val runReaderCall = injektContext.referenceClass(InjektFqNames.RunReaderCall)!!
-    val signature = injektContext.referenceClass(InjektFqNames.Signature)!!
+    val childContextFactory = pluginContext.referenceClass(InjektFqNames.ChildContextFactory)!!
+    val contextMarker = pluginContext.referenceClass(InjektFqNames.ContextMarker)!!
+    val index = pluginContext.referenceClass(InjektFqNames.Index)!!
+    val origin = pluginContext.referenceClass(InjektFqNames.Origin)!!
+    val qualifier = pluginContext.referenceClass(InjektFqNames.Qualifier)!!
+    val rootContextFactory = pluginContext.referenceClass(InjektFqNames.RootContextFactory)!!
+    val runReaderCall = pluginContext.referenceClass(InjektFqNames.RunReaderCall)!!
+    val signature = pluginContext.referenceClass(InjektFqNames.Signature)!!
 }

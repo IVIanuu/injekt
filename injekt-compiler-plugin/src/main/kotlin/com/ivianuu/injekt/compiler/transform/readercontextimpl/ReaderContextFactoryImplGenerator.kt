@@ -6,13 +6,13 @@ import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
-import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.ReaderContextParamTransformer
 import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeOrFail
 import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import com.ivianuu.injekt.compiler.visitAllFunctionsWithSubstitutionMap
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
@@ -46,7 +46,7 @@ import org.jetbrains.kotlin.ir.util.isObject
 import org.jetbrains.kotlin.name.Name
 
 class ReaderContextFactoryImplGenerator(
-    private val injektContext: InjektContext,
+    private val pluginContext: IrPluginContext,
     private val name: Name,
     private val factoryInterface: IrClass,
     private val factoryType: IrType,
@@ -108,7 +108,7 @@ class ReaderContextFactoryImplGenerator(
             } else null
 
             body = DeclarationIrBuilder(
-                injektContext,
+                pluginContext,
                 symbol
             ).irBlockBody {
                 +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
@@ -147,7 +147,7 @@ class ReaderContextFactoryImplGenerator(
                 )
             }
 
-            body = DeclarationIrBuilder(injektContext, symbol).run {
+            body = DeclarationIrBuilder(pluginContext, symbol).run {
                 irExprBody(
                     if (contextImpl.isObject) {
                         irGetObject(contextImpl.symbol)
@@ -227,7 +227,7 @@ class ReaderContextFactoryImplGenerator(
             }
 
             body = DeclarationIrBuilder(
-                injektContext,
+                pluginContext,
                 symbol
             ).irBlockBody {
                 +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
@@ -256,14 +256,14 @@ class ReaderContextFactoryImplGenerator(
 
         val expressions = GivenExpressions(
             parent = parentExpressions,
-            injektContext = injektContext,
+            pluginContext = pluginContext,
             contextImpl = contextImpl,
             initTrigger = initTrigger
         )
 
         val graph = GivensGraph(
             parent = parentGraph,
-            injektContext = injektContext,
+            pluginContext = pluginContext,
             declarationGraph = declarationGraph,
             expressions = expressions,
             contextImpl = contextImpl,
@@ -272,30 +272,25 @@ class ReaderContextFactoryImplGenerator(
             readerContextParamTransformer = readerContextParamTransformer
         )
 
-        val entryPoints = listOf(contextIdType)
-            .flatMap {
-                listOf(it) + declarationGraph.getAllContextImplementations(it.classOrNull!!.owner)
-                    .drop(1)
-                    .map { it.defaultType }
-            } + declarationGraph.getRunReaderContexts(contextIdType.classOrNull!!.owner)
-            .flatMap { declarationGraph.getAllContextImplementations(it) }
-            .map {
-                // this is really naive and probably error prone
-                if (factoryInterface.typeParameters.size == it.typeParameters.size &&
-                    factoryInterface.typeParameters.zip(it.typeParameters).all {
-                        it.first.name == it.second.name
-                    }
-                ) {
-                    it.typeWith(factoryType.typeArguments.map { it.typeOrFail })
-                } else it.defaultType
-            }
+        val entryPoints =
+            listOf(contextIdType) + declarationGraph.getRunReaderContexts(contextIdType.classOrNull!!.owner)
+                .map {
+                    // this is really naive and probably error prone
+                    if (factoryInterface.typeParameters.size == it.typeParameters.size &&
+                        factoryInterface.typeParameters.zip(it.typeParameters).all {
+                            it.first.name == it.second.name
+                        }
+                    ) {
+                        it.typeWith(factoryType.typeArguments.map { it.typeOrFail })
+                    } else it.defaultType
+                }
 
         graph.checkEntryPoints(entryPoints)
 
         (entryPoints + graph.resolvedGivens.flatMap { it.value.contexts })
             .forEach { context ->
                 context.visitAllFunctionsWithSubstitutionMap(
-                    injektContext = injektContext,
+                    pluginContext = pluginContext,
                     declarationGraph = declarationGraph,
                     enterType = {
                         if (it !in contextImpl.superTypes) {

@@ -23,18 +23,18 @@ import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
-import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.ReaderContextParamTransformer
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.name.FqName
 
 class ReaderContextImplTransformer(
-    injektContext: InjektContext,
+    pluginContext: IrPluginContext,
     private val declarationGraph: DeclarationGraph,
     private val readerContextParamTransformer: ReaderContextParamTransformer,
     private val initTrigger: IrDeclarationWithName
-) : AbstractInjektTransformer(injektContext) {
+) : AbstractInjektTransformer(pluginContext) {
 
     override fun lower() {
         declarationGraph.rootContextFactories
@@ -45,10 +45,10 @@ class ReaderContextImplTransformer(
                     )!!
                 )
 
-                val file = injektContext.module.addFile(injektContext, factoryFqName)
+                val file = module.addFile(pluginContext, factoryFqName)
 
                 val factoryImpl = ReaderContextFactoryImplGenerator(
-                    injektContext = injektContext,
+                    pluginContext = pluginContext,
                     name = factoryFqName.shortName(),
                     factoryInterface = rootFactory,
                     factoryType = rootFactory.defaultType,

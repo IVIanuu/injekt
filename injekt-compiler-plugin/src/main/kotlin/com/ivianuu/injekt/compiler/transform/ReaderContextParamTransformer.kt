@@ -16,7 +16,6 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.canUseReaders
@@ -25,19 +24,14 @@ import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isMarkedAsReader
-import com.ivianuu.injekt.compiler.isReaderLambdaInvoke
 import com.ivianuu.injekt.compiler.jvmNameAnnotation
 import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.remapTypeParametersByName
-import com.ivianuu.injekt.compiler.tmpFunction
-import com.ivianuu.injekt.compiler.tmpKFunction
-import com.ivianuu.injekt.compiler.tmpSuspendFunction
-import com.ivianuu.injekt.compiler.tmpSuspendKFunction
 import com.ivianuu.injekt.compiler.transformFiles
-import com.ivianuu.injekt.compiler.typeArguments
 import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -66,72 +60,28 @@ import org.jetbrains.kotlin.ir.declarations.IrOverridableDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
-import org.jetbrains.kotlin.ir.declarations.IrVariable
-import org.jetbrains.kotlin.ir.declarations.copyAttributes
-import org.jetbrains.kotlin.ir.declarations.impl.IrFieldImpl
-import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
-import org.jetbrains.kotlin.ir.declarations.impl.IrVariableImpl
-import org.jetbrains.kotlin.ir.descriptors.WrappedFieldDescriptor
-import org.jetbrains.kotlin.ir.descriptors.WrappedValueParameterDescriptor
-import org.jetbrains.kotlin.ir.descriptors.WrappedVariableDescriptor
-import org.jetbrains.kotlin.ir.expressions.IrBlock
-import org.jetbrains.kotlin.ir.expressions.IrBlockBody
-import org.jetbrains.kotlin.ir.expressions.IrBody
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.IrExpressionBody
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
-import org.jetbrains.kotlin.ir.expressions.IrGetField
-import org.jetbrains.kotlin.ir.expressions.IrGetValue
-import org.jetbrains.kotlin.ir.expressions.IrReturn
-import org.jetbrains.kotlin.ir.expressions.IrReturnableBlock
-import org.jetbrains.kotlin.ir.expressions.IrSetField
-import org.jetbrains.kotlin.ir.expressions.IrTypeOperatorCall
-import org.jetbrains.kotlin.ir.expressions.IrWhen
-import org.jetbrains.kotlin.ir.expressions.impl.IrBlockBodyImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrBlockImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrExpressionBodyImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrGetFieldImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrGetValueImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrReturnImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrReturnableBlockImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrSetFieldImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrWhenImpl
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
-import org.jetbrains.kotlin.ir.symbols.impl.IrFieldSymbolImpl
-import org.jetbrains.kotlin.ir.symbols.impl.IrReturnableBlockSymbolImpl
-import org.jetbrains.kotlin.ir.symbols.impl.IrValueParameterSymbolImpl
-import org.jetbrains.kotlin.ir.symbols.impl.IrVariableSymbolImpl
-import org.jetbrains.kotlin.ir.types.IrSimpleType
-import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.defaultType
-import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
-import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
-import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
-import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.hasDefaultValue
-import org.jetbrains.kotlin.ir.util.isFunction
-import org.jetbrains.kotlin.ir.util.isKFunction
-import org.jetbrains.kotlin.ir.util.isKSuspendFunction
-import org.jetbrains.kotlin.ir.util.isSuspendFunction
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -139,61 +89,52 @@ import org.jetbrains.kotlin.load.java.JvmAbi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.types.Variance
 
 class ReaderContextParamTransformer(
-    injektContext: InjektContext,
+    pluginContext: IrPluginContext,
     private val indexer: Indexer
-) : AbstractInjektTransformer(injektContext) {
+) : AbstractInjektTransformer(pluginContext) {
 
     private val transformedClasses = mutableSetOf<IrClass>()
-    private val transformedFields = mutableMapOf<IrField, IrField>()
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
-    private val transformedValueParameters = mutableMapOf<IrValueParameter, IrValueParameter>()
-    private val transformedVariables = mutableMapOf<IrVariable, IrVariable>()
-    private val transformedWhens = mutableMapOf<IrWhen, IrWhen>()
 
     fun getTransformedFunction(function: IrFunction) =
         transformFunctionIfNeeded(function)
 
     private val transformer = object : IrElementTransformerVoidWithContext() {
-
         override fun visitClassNew(declaration: IrClass): IrStatement =
             super.visitClassNew(transformClassIfNeeded(declaration))
 
-        override fun visitFieldNew(declaration: IrField): IrStatement =
-            super.visitFieldNew(transformFieldIfNeeded(declaration))
-
         override fun visitFunctionNew(declaration: IrFunction): IrStatement =
             super.visitFunctionNew(transformFunctionIfNeeded(declaration))
-
-        override fun visitValueParameterNew(declaration: IrValueParameter): IrStatement =
-            super.visitValueParameterNew(transformValueParameterIfNeeded(declaration))
-
-        override fun visitVariable(declaration: IrVariable): IrStatement =
-            super.visitVariable(transformVariableIfNeeded(declaration))
-
-        override fun visitWhen(expression: IrWhen): IrExpression =
-            super.visitWhen(
-                transformWhenIfNeeded(
-                    expression,
-                    currentScope!!.irElement as IrDeclarationWithName
-                )
-            )
-
     }
 
     override fun lower() {
-        injektContext.module.transformFiles(transformer)
-        injektContext.module.rewriteTransformedReferences()
+        module.transformFiles(
+            object : IrElementTransformerVoidWithContext() {
+                override fun visitCall(expression: IrCall): IrExpression {
+                    if (expression.symbol.descriptor.fqNameSafe.asString() ==
+                        "com.ivianuu.injekt.runReader"
+                    ) {
+                        (expression.getValueArgument(0) as IrFunctionExpression)
+                            .function.annotations += DeclarationIrBuilder(
+                            pluginContext, expression.symbol
+                        ).irCall(injektSymbols.reader.constructors.single())
+                    }
+                    return super.visitCall(expression)
+                }
+            }
+        )
+        module.transformFiles(transformer)
+        module.rewriteTransformedReferences()
     }
 
     private fun transformClassIfNeeded(clazz: IrClass): IrClass {
         if (clazz in transformedClasses) return clazz
 
-        val readerConstructor = clazz.getReaderConstructor(injektContext)
+        val readerConstructor = clazz.getReaderConstructor(pluginContext)
 
-        if (!clazz.isMarkedAsReader(injektContext) && readerConstructor == null) return clazz
+        if (!clazz.isMarkedAsReader(pluginContext) && readerConstructor == null) return clazz
 
         if (readerConstructor == null) return clazz
 
@@ -232,7 +173,7 @@ class ReaderContextParamTransformer(
             addReaderSignature(clazz, readerConstructor, null)
         }
 
-        readerConstructor.body = DeclarationIrBuilder(injektContext, clazz.symbol).run {
+        readerConstructor.body = DeclarationIrBuilder(pluginContext, clazz.symbol).run {
             irBlockBody {
                 readerConstructor.body?.statements?.forEach {
                     +it
@@ -257,7 +198,7 @@ class ReaderContextParamTransformer(
         ) return function
 
         if (function is IrConstructor) {
-            return if (function.canUseReaders(injektContext)) {
+            return if (function.canUseReaders(pluginContext)) {
                 transformClassIfNeeded(function.constructedClass)
                 function
             } else function
@@ -266,21 +207,7 @@ class ReaderContextParamTransformer(
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
 
-        var needsTransform = function.canUseReaders(injektContext)
-
-        if (!needsTransform) {
-            val returnType = function.returnType
-            needsTransform =
-                returnType.isNotTransformedReaderLambda() && !returnType.isTransformedReaderLambda()
-        }
-
-        if (!needsTransform) {
-            needsTransform = function.valueParameters.any {
-                it.type.isNotTransformedReaderLambda() && !it.type.isTransformedReaderLambda()
-            }
-        }
-
-        if (!needsTransform) return function
+        if (!function.canUseReaders(pluginContext)) return function
 
         if (function.isExternalDeclaration()) {
             val existingSignature = getExternalReaderSignature(function)
@@ -298,14 +225,7 @@ class ReaderContextParamTransformer(
             .also { it.transformChildrenVoid(transformer) }
         transformedFunctions[function] = transformedFunction
 
-        if (function.returnType.isNotTransformedReaderLambda() &&
-            !function.returnType.isTransformedReaderLambda()
-        ) {
-            transformedFunction.returnType =
-                createNewReaderFunctionType(transformedFunction.returnType, transformedFunction)
-        }
-
-        if (function.canUseReaders(injektContext)) {
+        if (function.canUseReaders(pluginContext)) {
             transformReaderFunction(
                 owner = transformedFunction,
                 ownerFunction = transformedFunction
@@ -336,162 +256,12 @@ class ReaderContextParamTransformer(
                 owner.parent as IrFunction else null
 
         val context =
-            createContext(owner, ownerFunction.descriptor.fqNameSafe, parentFunction, injektContext)
+            createContext(
+                owner, ownerFunction.descriptor.fqNameSafe, parentFunction,
+                pluginContext, module, injektSymbols
+            )
         val contextParameter = ownerFunction.addContextParameter(context)
         onContextParameterCreated(contextParameter)
-    }
-
-    private fun transformFieldIfNeeded(
-        declaration: IrField
-    ): IrField {
-        val type = declaration.type
-        if (!type.isNotTransformedReaderLambda()) return declaration
-        if (type.isTransformedReaderLambda()) return declaration
-
-        transformedFields[declaration]?.let { return it }
-        if (declaration in transformedFields.values) return declaration
-
-        val newType = createNewReaderFunctionType(declaration.type, declaration)
-
-        return IrFieldImpl(
-            declaration.startOffset,
-            declaration.endOffset,
-            declaration.origin,
-            IrFieldSymbolImpl(WrappedFieldDescriptor()),
-            declaration.name,
-            newType,
-            declaration.visibility,
-            declaration.isFinal,
-            declaration.isExternal,
-            declaration.isStatic,
-            declaration.isFakeOverride
-        ).apply {
-            (descriptor as WrappedFieldDescriptor).bind(this)
-            parent = declaration.parent
-            correspondingPropertySymbol = declaration.correspondingPropertySymbol
-            correspondingPropertySymbol?.owner?.backingField = this
-            annotations += declaration.annotations
-            initializer = declaration.initializer
-            transformedFields[declaration] = this
-        }
-    }
-
-    private fun transformVariableIfNeeded(
-        declaration: IrVariable
-    ): IrVariable {
-        val type = declaration.type
-        if (!type.isNotTransformedReaderLambda()) return declaration
-        if (type.isTransformedReaderLambda()) return declaration
-
-        transformedVariables[declaration]?.let { return it }
-        if (declaration in transformedVariables.values) return declaration
-
-        val newType = createNewReaderFunctionType(declaration.type, declaration)
-
-        return IrVariableImpl(
-            declaration.startOffset,
-            declaration.endOffset,
-            declaration.origin,
-            IrVariableSymbolImpl(WrappedVariableDescriptor()),
-            declaration.name,
-            newType,
-            declaration.isVar,
-            declaration.isConst,
-            declaration.isLateinit
-        ).apply {
-            (descriptor as WrappedVariableDescriptor).bind(this)
-            parent = declaration.parent
-            annotations += declaration.annotations
-            initializer = declaration.initializer
-            transformedVariables[declaration] = this
-        }
-    }
-
-    private fun transformWhenIfNeeded(
-        expression: IrWhen,
-        scopeElement: IrDeclarationWithName
-    ): IrWhen {
-        val type = expression.type
-        if (!type.isNotTransformedReaderLambda()) return expression
-        if (type.isTransformedReaderLambda()) return expression
-
-        transformedWhens[expression]?.let { return it }
-        if (expression in transformedWhens.values) return expression
-
-        val newType = createNewReaderFunctionType(type, scopeElement)
-
-        return IrWhenImpl(
-            expression.startOffset,
-            expression.endOffset,
-            newType,
-            expression.origin,
-            expression.branches
-        ).copyAttributes(expression)
-    }
-
-    private fun transformValueParameterIfNeeded(
-        declaration: IrValueParameter
-    ): IrValueParameter {
-        val type = declaration.type
-        if (!type.isNotTransformedReaderLambda()) return declaration
-        if (type.isTransformedReaderLambda()) return declaration
-
-        transformedValueParameters[declaration]?.let { return it }
-        if (declaration in transformedValueParameters.values) return declaration
-
-        val newType = createNewReaderFunctionType(type, declaration)
-
-        return IrValueParameterImpl(
-            declaration.startOffset, declaration.endOffset,
-            declaration.origin,
-            IrValueParameterSymbolImpl(WrappedValueParameterDescriptor()),
-            declaration.name,
-            declaration.index,
-            newType,
-            declaration.varargElementType,
-            declaration.isCrossinline,
-            declaration.isNoinline
-        ).apply {
-            (descriptor as WrappedValueParameterDescriptor).bind(this)
-            parent = declaration.parent
-            annotations += declaration.annotations
-            defaultValue = declaration.defaultValue
-            transformedValueParameters[declaration] = this
-        }
-    }
-
-    private fun createNewReaderFunctionType(
-        oldType: IrType,
-        declaration: IrDeclarationWithName
-    ): IrType {
-        val context = createContext(
-            declaration,
-            declaration.descriptor.fqNameSafe,
-            null,
-            injektContext
-        )
-
-        val oldTypeArguments = oldType.typeArguments
-
-        return when {
-            oldType.isFunction() -> injektContext.tmpFunction(oldTypeArguments.size)
-            oldType.isKFunction() -> injektContext.tmpKFunction(oldTypeArguments.size)
-            oldType.isSuspendFunction() -> injektContext.tmpSuspendFunction(oldTypeArguments.size)
-            oldType.isKSuspendFunction() -> injektContext.tmpSuspendKFunction(oldTypeArguments.size)
-            else -> error("Unexpected type ${oldType.render()}")
-        }
-            .defaultType
-            .let {
-                IrSimpleTypeImpl(
-                    it.classifierOrFail,
-                    oldType.isMarkedNullable(),
-                    oldTypeArguments.subList(0, oldTypeArguments.size - 1) +
-                            makeTypeProjection(context.defaultType, Variance.INVARIANT) +
-                            oldTypeArguments.last(),
-                    oldType.annotations,
-                    (oldType as? IrSimpleType)?.abbreviation
-                )
-            }
     }
 
     private fun IrFunction.addContextParameter(context: IrClass): IrValueParameter {
@@ -550,20 +320,15 @@ class ReaderContextParamTransformer(
 
     private fun IrFunction.copyAsReader(): IrFunction {
         return copy(
-            injektContext
+            pluginContext
         ).apply {
-            injektContext.irTrace.record(
-                InjektWritableSlices.IS_TRANSFORMED_READER_FUNCTION,
-                this,
-                true
-            )
             val descriptor = descriptor
             if (descriptor is PropertyGetterDescriptor &&
                 annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
             ) {
                 val name = JvmAbi.getterName(descriptor.correspondingProperty.name.identifier)
-                annotations += DeclarationIrBuilder(injektContext, symbol)
-                    .jvmNameAnnotation(name, injektContext)
+                annotations += DeclarationIrBuilder(pluginContext, symbol)
+                    .jvmNameAnnotation(name, pluginContext)
                 correspondingPropertySymbol?.owner?.getter = this
             }
 
@@ -571,8 +336,8 @@ class ReaderContextParamTransformer(
                 annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
             ) {
                 val name = JvmAbi.setterName(descriptor.correspondingProperty.name.identifier)
-                annotations += DeclarationIrBuilder(injektContext, symbol)
-                    .jvmNameAnnotation(name, injektContext)
+                annotations += DeclarationIrBuilder(pluginContext, symbol)
+                    .jvmNameAnnotation(name, pluginContext)
                 correspondingPropertySymbol?.owner?.setter = this
             }
 
@@ -616,8 +381,8 @@ class ReaderContextParamTransformer(
         ownerFunction: IrFunction,
         parentFunction: IrFunction?
     ) {
-        annotations += DeclarationIrBuilder(injektContext, symbol)
-            .irCall(injektContext.injektSymbols.signature.constructors.single())
+        annotations += DeclarationIrBuilder(pluginContext, symbol)
+            .irCall(injektSymbols.signature.constructors.single())
 
         addFunction {
             name = "signature".asNameId()
@@ -655,12 +420,12 @@ class ReaderContextParamTransformer(
                             ) else it
                         },
                     defaultValue = if (it.hasDefaultValue()) DeclarationIrBuilder(
-                        injektContext,
+                        pluginContext,
                         it.symbol
                     ).run {
                         irExprBody(
                             irCall(
-                                injektContext.referenceFunctions(
+                                pluginContext.referenceFunctions(
                                     FqName("com.ivianuu.injekt.internal.injektIntrinsic")
                                 )
                                     .single()
@@ -675,13 +440,6 @@ class ReaderContextParamTransformer(
     }
 
     private fun IrModuleFragment.rewriteTransformedReferences() {
-        val fieldMap = transformedFields
-            .mapKeys { it.key.symbol }
-        val valueParameterMap = transformedValueParameters
-            .mapKeys { it.key.symbol }
-        val variableMap = transformedVariables
-            .mapKeys { it.key.symbol }
-
         transformFiles(object : IrElementTransformerVoid() {
             override fun visitFunctionExpression(expression: IrFunctionExpression): IrExpression {
                 val result = super.visitFunctionExpression(expression) as IrFunctionExpression
@@ -689,7 +447,7 @@ class ReaderContextParamTransformer(
                 return if (transformed in transformedFunctions.values) IrFunctionExpressionImpl(
                     result.startOffset,
                     result.endOffset,
-                    transformed.getFunctionType(injektContext),
+                    transformed.getFunctionType(pluginContext),
                     transformed as IrSimpleFunction,
                     result.origin
                 )
@@ -702,7 +460,7 @@ class ReaderContextParamTransformer(
                 return if (transformed in transformedFunctions.values) IrFunctionReferenceImpl(
                     result.startOffset,
                     result.endOffset,
-                    transformed.getFunctionType(injektContext),
+                    transformed.getFunctionType(pluginContext),
                     transformed.symbol,
                     transformed.typeParameters.size,
                     transformed.valueParameters.size,
@@ -719,155 +477,12 @@ class ReaderContextParamTransformer(
                     result !is IrDelegatingConstructorCall
                 ) return result
                 val transformed = transformFunctionIfNeeded(result.symbol.owner)
-                return (if (transformed in transformedFunctions.values) transformCall(
+                return if (transformed in transformedFunctions.values) transformCall(
                     transformed,
                     result
                 )
-                else result)
-                    .also {
-                        if (it.isReaderLambdaInvoke(injektContext)) {
-                            injektContext.irTrace.record(
-                                InjektWritableSlices.IS_READER_LAMBDA_INVOKE,
-                                it,
-                                true
-                            )
-                        }
-                    }
-            }
-
-            override fun visitReturn(expression: IrReturn): IrExpression {
-                val result = super.visitReturn(expression) as IrReturn
-                return if (result.value.type.isTransformedReaderLambda() &&
-                    result.value.type != result.type
-                ) IrReturnImpl(
-                    expression.startOffset,
-                    expression.endOffset,
-                    result.value.type,
-                    result.returnTargetSymbol,
-                    result.value
-                ).copyAttributes(result)
                 else result
             }
-
-            override fun visitExpressionBody(body: IrExpressionBody): IrBody {
-                val result = super.visitExpressionBody(body) as IrExpressionBody
-                return if (result.expression.type.isTransformedReaderLambda() &&
-                    result.expression.type != body.expression.type
-                ) IrExpressionBodyImpl(
-                    body.startOffset,
-                    body.endOffset,
-                    result.expression
-                )
-                else result
-            }
-
-            override fun visitBlockBody(body: IrBlockBody): IrBody {
-                val lastStatement = body.statements.lastOrNull() as? IrExpression
-                val result = super.visitBlockBody(body) as IrBlockBody
-                val resultLastStatement = result.statements.lastOrNull() as? IrExpression
-                return if (resultLastStatement != null &&
-                    resultLastStatement.type.isTransformedReaderLambda() &&
-                    resultLastStatement.type != lastStatement?.type
-                ) IrBlockBodyImpl(
-                    result.startOffset, result.endOffset,
-                    result.statements
-                )
-                else result
-            }
-
-            override fun visitBlock(expression: IrBlock): IrExpression {
-                val result = super.visitBlock(expression) as IrBlock
-                val lastStatement = result.statements.lastOrNull() as? IrExpression
-                return if (lastStatement != null &&
-                    lastStatement.type.isTransformedReaderLambda()
-                ) if (expression is IrReturnableBlock)
-                    IrReturnableBlockImpl(
-                        result.startOffset, result.endOffset,
-                        lastStatement.type,
-                        IrReturnableBlockSymbolImpl(expression.symbol.descriptor),
-                        result.origin,
-                        result.statements,
-                        expression.inlineFunctionSymbol
-                    ).copyAttributes(expression)
-                else
-                    IrBlockImpl(
-                        result.startOffset, result.endOffset,
-                        lastStatement.type,
-                        result.origin,
-                        result.statements
-                    ).copyAttributes(expression)
-                else result
-            }
-
-            override fun visitTypeOperator(expression: IrTypeOperatorCall): IrExpression {
-                // todo check if this has negative side effects
-                val result = super.visitTypeOperator(expression) as IrTypeOperatorCall
-                return if (result.argument.type.isTransformedReaderLambda()) result.argument else result
-            }
-
-            override fun visitCall(expression: IrCall): IrExpression {
-                val result = super.visitCall(expression) as IrCall
-                return if (result.symbol.owner.returnType.isTransformedReaderLambda() &&
-                    result.type != result.symbol.owner.returnType
-                ) IrCallImpl(
-                    result.startOffset,
-                    result.endOffset,
-                    result.symbol.owner.returnType,
-                    result.symbol,
-                    result.typeArgumentsCount,
-                    result.valueArgumentsCount,
-                    result.origin,
-                    result.superQualifierSymbol
-                ).apply {
-                    copyTypeAndValueArgumentsFrom(result)
-                    copyAttributes(expression)
-                } else result
-            }
-
-            override fun visitGetValue(expression: IrGetValue): IrExpression {
-                return (variableMap[expression.symbol] ?: valueParameterMap[expression.symbol])
-                    ?.let {
-                        IrGetValueImpl(
-                            expression.startOffset,
-                            expression.endOffset,
-                            it.symbol,
-                            expression.origin
-                        )
-                    }
-                    ?: super.visitGetValue(expression)
-            }
-
-            override fun visitGetField(expression: IrGetField): IrExpression {
-                return fieldMap[expression.symbol]
-                    ?.let {
-                        IrGetFieldImpl(
-                            expression.startOffset,
-                            expression.endOffset,
-                            it.symbol,
-                            it.type,
-                            expression.receiver,
-                            expression.origin,
-                            expression.superQualifierSymbol
-                        )
-                    } ?: super.visitGetField(expression)
-            }
-
-            override fun visitSetField(expression: IrSetField): IrExpression {
-                return fieldMap[expression.symbol]
-                    ?.let {
-                        IrSetFieldImpl(
-                            expression.startOffset,
-                            expression.endOffset,
-                            it.symbol,
-                            expression.receiver,
-                            expression.value,
-                            it.type,
-                            expression.origin,
-                            expression.superQualifierSymbol
-                        )
-                    } ?: super.visitSetField(expression)
-            }
-
         })
     }
 

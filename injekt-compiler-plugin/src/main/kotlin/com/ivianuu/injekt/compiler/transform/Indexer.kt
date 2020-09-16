@@ -28,6 +28,7 @@ import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.compiler.uniqueKey
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -50,7 +51,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class Indexer(
-    private val injektContext: InjektContext,
+    private val pluginContext: IrPluginContext,
     private val module: IrModuleFragment,
     private val symbols: InjektSymbols
 ) {
@@ -76,7 +77,7 @@ class Indexer(
                 .filter { it.type == "class" }
                 .mapNotNull { index ->
                     if (index.indexIsDeclaration) index.indexClass
-                    else injektContext.referenceClass(index.fqName)?.owner
+                    else pluginContext.referenceClass(index.fqName)?.owner
                 }
         }
     }
@@ -93,7 +94,7 @@ class Indexer(
             val externalFunctions = externalIndicesByTagAndKey(path)
                 .filter { it.type == "function" }
                 .flatMap { index ->
-                    injektContext.referenceFunctions(index.fqName)
+                    pluginContext.referenceFunctions(index.fqName)
                         .map { it.owner }
                 }
 
@@ -114,7 +115,7 @@ class Indexer(
             val externalProperties = externalIndicesByTagAndKey(path)
                 .filter { it.type == "property" }
                 .flatMap { index ->
-                    injektContext.referenceProperties(index.fqName)
+                    pluginContext.referenceProperties(index.fqName)
                         .map { it.owner }
                 }
 
@@ -137,7 +138,7 @@ class Indexer(
                         NoLookupLocation.FROM_BACKEND
                     )
                 }
-                .mapNotNull { injektContext.referenceClass(it.fqNameSafe)?.owner }
+                .mapNotNull { pluginContext.referenceClass(it.fqNameSafe)?.owner }
                 .map {
                     Index(
                         path,
@@ -184,7 +185,7 @@ class Indexer(
             .asNameId()
 
         module.addFile(
-            injektContext,
+            pluginContext,
             packageFqName
                 .child(name)
         ).apply file@{
@@ -205,7 +206,7 @@ class Indexer(
                         "class",
                         true
                     )
-                    annotations += DeclarationIrBuilder(injektContext, symbol).run {
+                    annotations += DeclarationIrBuilder(pluginContext, symbol).run {
                         irCall(symbols.index.constructors.single()).apply {
                             putValueArgument(
                                 0,
@@ -244,7 +245,7 @@ class Indexer(
         ).asString() + "${declaration.uniqueKey().hashCode()}Index").removeIllegalChars().asNameId()
 
         module.addFile(
-            injektContext,
+            pluginContext,
             packageFqName.child(name)
         ).apply file@{
             recordLookup(this, declaration)
@@ -271,7 +272,7 @@ class Indexer(
 
                     createImplicitParameterDeclarationWithWrappedDescriptor()
                     addMetadataIfNotLocal()
-                    annotations += DeclarationIrBuilder(injektContext, symbol).run {
+                    annotations += DeclarationIrBuilder(pluginContext, symbol).run {
                         irCall(symbols.index.constructors.single()).apply {
                             putValueArgument(
                                 0,

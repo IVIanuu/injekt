@@ -73,6 +73,7 @@ class ReaderContextChecker : CallChecker, DeclarationChecker {
         val declarations = mutableSetOf<DeclarationDescriptor>()
         fun ClassDescriptor.collect() {
             declarations += unsubstitutedMemberScope.getContributedDescriptors()
+
                 .filter {
                     (it is FunctionDescriptor
                             && it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() != true)

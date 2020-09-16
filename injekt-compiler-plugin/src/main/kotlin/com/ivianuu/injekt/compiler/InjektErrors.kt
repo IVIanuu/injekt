@@ -38,11 +38,6 @@ interface InjektErrors {
         )
 
         @JvmField
-        val CONTEXT_MUST_BE_EMPTY = error(
-            "@Context must be an empty interface"
-        )
-
-        @JvmField
         val CONTEXT_MUST_BE_AN_INTERFACE = error(
             "@Context must be an interface"
         )

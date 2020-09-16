@@ -25,10 +25,10 @@ import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
-import com.ivianuu.injekt.compiler.transform.InjektContext
 import com.ivianuu.injekt.compiler.transform.ReaderContextParamTransformer
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import com.ivianuu.injekt.compiler.visitAllFunctionsWithSubstitutionMap
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -56,7 +56,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class GivensGraph(
     private val parent: GivensGraph?,
-    private val injektContext: InjektContext,
+    private val pluginContext: IrPluginContext,
     private val declarationGraph: DeclarationGraph,
     private val contextImpl: IrClass,
     private val initTrigger: IrDeclarationWithName,
@@ -198,7 +198,7 @@ class GivensGraph(
         checkedTypes += context
 
         context.visitAllFunctionsWithSubstitutionMap(
-            injektContext = injektContext,
+            pluginContext = pluginContext,
             declarationGraph = declarationGraph,
             enterType = {
                 val origin = it.classOrNull!!.owner.getConstantFromAnnotationOrNull<String>(
@@ -375,7 +375,7 @@ class GivensGraph(
             if (key.type.classOrNull!!.owner !in existingFactories) {
                 val factory = key.type.classOrNull!!.owner
                 val generator = ReaderContextFactoryImplGenerator(
-                    injektContext = injektContext,
+                    pluginContext = pluginContext,
                     name = expressions.uniqueChildNameProvider("F").asNameId(),
                     factoryInterface = factory,
                     factoryType = key.type,

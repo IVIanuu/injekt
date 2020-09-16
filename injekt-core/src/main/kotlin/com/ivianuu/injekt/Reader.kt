@@ -20,9 +20,6 @@ package com.ivianuu.injekt
     AnnotationTarget.FUNCTION,
     AnnotationTarget.PROPERTY,
     AnnotationTarget.CLASS,
-    AnnotationTarget.CONSTRUCTOR,
-    AnnotationTarget.TYPE,
-    AnnotationTarget.TYPEALIAS,
-    AnnotationTarget.TYPE_PARAMETER
+    AnnotationTarget.CONSTRUCTOR
 )
 annotation class Reader

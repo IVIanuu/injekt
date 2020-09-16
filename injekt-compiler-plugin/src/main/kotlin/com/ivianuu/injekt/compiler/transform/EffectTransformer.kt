@@ -34,6 +34,7 @@ import com.ivianuu.injekt.compiler.transformFiles
 import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.injekt.compiler.withAnnotations
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
@@ -71,10 +72,10 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransformer(injektContext) {
+class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransformer(pluginContext) {
 
     override fun lower() {
-        injektContext.module.transformFiles(object : IrElementTransformerVoid() {
+        module.transformFiles(object : IrElementTransformerVoid() {
             override fun visitClass(declaration: IrClass): IrStatement {
                 if (declaration.hasAnnotatedAnnotations(InjektFqNames.Effect)) {
                     addEffectModuleForDeclaration(declaration)
@@ -112,7 +113,7 @@ class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransforme
                 visibility = Visibilities.PUBLIC
             }.apply {
                 body = DeclarationIrBuilder(
-                    injektContext,
+                    pluginContext,
                     symbol
                 ).irBlockBody {
                     +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
@@ -132,8 +133,8 @@ class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransforme
                         declaration.returnType
                     } else {
                         val parametersSize = declaration.valueParameters.size
-                        (if (declaration.isSuspend) injektContext.tmpSuspendFunction(parametersSize)
-                        else injektContext.tmpFunction(parametersSize))
+                        (if (declaration.isSuspend) pluginContext.tmpSuspendFunction(parametersSize)
+                        else pluginContext.tmpFunction(parametersSize))
                             .owner
                             .typeWith(
                                 declaration.valueParameters
@@ -145,10 +146,10 @@ class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransforme
                                     it.withAnnotations(
                                         listOf(
                                             DeclarationIrBuilder(
-                                                injektContext,
+                                                pluginContext,
                                                 declaration.symbol
                                             ).irCall(
-                                                injektContext.referenceConstructors(FqName("androidx.compose.runtime.Composable"))
+                                                pluginContext.referenceConstructors(FqName("androidx.compose.runtime.Composable"))
                                                     .single()
                                             )
                                         )
@@ -159,10 +160,10 @@ class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransforme
                                 it.withAnnotations(
                                     listOf(
                                         DeclarationIrBuilder(
-                                            injektContext,
+                                            pluginContext,
                                             declaration.symbol
                                         ).run {
-                                            irCall(injektContext.injektSymbols.qualifier.constructors.single()).apply {
+                                            irCall(injektSymbols.qualifier.constructors.single()).apply {
                                                 putValueArgument(
                                                     0,
                                                     irString(declaration.uniqueKey())
@@ -185,11 +186,11 @@ class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransforme
 
                     dispatchReceiverParameter = thisReceiver!!.copyTo(this)
 
-                    DeclarationIrBuilder(injektContext, symbol).run {
-                        annotations += irCall(injektContext.injektSymbols.given.constructors.single())
+                    DeclarationIrBuilder(pluginContext, symbol).run {
+                        annotations += irCall(injektSymbols.given.constructors.single())
                     }
 
-                    body = DeclarationIrBuilder(injektContext, symbol).run {
+                    body = DeclarationIrBuilder(pluginContext, symbol).run {
                         irExprBody(
                             irLambda(givenType) {
                                 irCall(declaration.symbol).apply {
@@ -238,7 +239,7 @@ class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransforme
                         annotations += effectFunction.annotations
                             .map { it.deepCopyWithSymbols() }
 
-                        body = DeclarationIrBuilder(injektContext, symbol).run {
+                        body = DeclarationIrBuilder(pluginContext, symbol).run {
                             irExprBody(
                                 irCall(effectFunction.symbol).apply {
                                     dispatchReceiver =
@@ -251,8 +252,8 @@ class EffectTransformer(injektContext: InjektContext) : AbstractInjektTransforme
                 }
         }
 
-        injektContext.module.addFile(
-            injektContext,
+        module.addFile(
+            pluginContext,
             declaration.file.fqName
                 .child(effectModule.name)
         ).also {

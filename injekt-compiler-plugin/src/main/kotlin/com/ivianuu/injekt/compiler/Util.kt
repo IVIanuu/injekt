@@ -17,7 +17,6 @@
 package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
-import com.ivianuu.injekt.compiler.transform.InjektContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -60,7 +59,6 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
-import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrMetadataSourceOwner
@@ -76,7 +74,6 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrPropertyImpl
-import org.jetbrains.kotlin.ir.declarations.impl.IrVariableImpl
 import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.descriptors.WrappedFunctionDescriptorWithContainerSource
 import org.jetbrains.kotlin.ir.descriptors.WrappedPropertyGetterDescriptor
@@ -89,7 +86,6 @@ import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstKind
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionReference
 import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
@@ -331,7 +327,7 @@ fun IrType.remapTypeParametersByName(
     }
 
 fun IrType.visitAllFunctionsWithSubstitutionMap(
-    injektContext: InjektContext,
+    pluginContext: IrPluginContext,
     declarationGraph: DeclarationGraph,
     enterType: (IrType) -> Unit = {},
     exitType: (IrType) -> Unit = {},
@@ -354,7 +350,7 @@ fun IrType.visitAllFunctionsWithSubstitutionMap(
         for (function in clazz.functions) {
             if (function is IrConstructor) continue
             if (function.dispatchReceiverParameter?.type ==
-                injektContext.irBuiltIns.anyType
+                pluginContext.irBuiltIns.anyType
             ) continue
             if (function.isFakeOverride) continue
             visitFunction(function, substitutionMap)
@@ -371,9 +367,6 @@ fun IrType.visitAllFunctionsWithSubstitutionMap(
                         }
                 )
             }
-        declarationGraph.getAllContextImplementations(clazz)
-            .drop(1)
-            .forEach { visit(it, it.defaultType.typeArguments.map { it.typeOrFail }) }
         exitType(type)
     }
 
@@ -561,12 +554,12 @@ fun <T> T.getClassFromAnnotation(
 
 fun String.asNameId(): Name = Name.identifier(this)
 
-fun IrClass.getReaderConstructor(injektContext: InjektContext): IrConstructor? {
+fun IrClass.getReaderConstructor(pluginContext: IrPluginContext): IrConstructor? {
     constructors
         .firstOrNull {
-            it.isMarkedAsReader(injektContext)
+            it.isMarkedAsReader(pluginContext)
         }?.let { return it }
-    if (!isMarkedAsReader(injektContext)) return null
+    if (!isMarkedAsReader(pluginContext)) return null
     return primaryConstructor
 }
 
@@ -606,9 +599,9 @@ fun IrPluginContext.tmpSuspendFunction(n: Int): IrClassSymbol =
 fun IrPluginContext.tmpSuspendKFunction(n: Int): IrClassSymbol =
     referenceClass(builtIns.getKSuspendFunction(n).fqNameSafe)!!
 
-fun IrFunction.getFunctionType(injektContext: InjektContext): IrType {
-    return (if (isSuspend) injektContext.tmpSuspendFunction(valueParameters.size)
-    else injektContext.tmpFunction(valueParameters.size))
+fun IrFunction.getFunctionType(pluginContext: IrPluginContext): IrType {
+    return (if (isSuspend) pluginContext.tmpSuspendFunction(valueParameters.size)
+    else pluginContext.tmpFunction(valueParameters.size))
         .owner
         .typeWith(valueParameters.map { it.type } + returnType)
 }
@@ -684,7 +677,7 @@ fun wrapDescriptor(descriptor: FunctionDescriptor): WrappedSimpleFunctionDescrip
     }
 }
 
-fun IrFunction.copy(injektContext: InjektContext): IrSimpleFunction {
+fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
     val descriptor = descriptor
     val newDescriptor = wrapDescriptor(descriptor)
 
@@ -730,7 +723,7 @@ fun IrFunction.copy(injektContext: InjektContext): IrSimpleFunction {
                         .mapIndexed { index, valueParameter -> valueParameter to index }
                         .singleOrNull { it.first.symbol == expression.symbol }
                         ?.let { fn.allParameters[it.second] }
-                        ?.let { DeclarationIrBuilder(injektContext, fn.symbol).irGet(it) }
+                        ?.let { DeclarationIrBuilder(pluginContext, fn.symbol).irGet(it) }
                         ?: super.visitGetValue(expression)
                 }
             })
@@ -867,7 +860,6 @@ fun IrDeclarationWithName.uniqueKey() = when (this) {
             descriptor.name.isSpecial
         ) startOffset else ""
     }__class"
-    is IrField -> "${descriptor.fqNameSafe}__field"
     is IrFunction -> "${descriptor.fqNameSafe}${
         if (descriptor.visibility == Visibilities.LOCAL &&
             descriptor.name.isSpecial
@@ -884,43 +876,25 @@ fun IrDeclarationWithName.uniqueKey() = when (this) {
             descriptor.name.isSpecial
         ) startOffset else ""
     }__property"
-    is IrValueParameter -> "${descriptor.fqNameSafe}__valueparameter"
-    is IrVariableImpl -> "${descriptor.fqNameSafe}__variable"
     else -> error("Unsupported declaration ${dump()}")
 }
 
-fun IrDeclarationWithName.isMarkedAsReader(injektContext: InjektContext): Boolean =
-    isReader(injektContext) ||
+fun IrDeclarationWithName.isMarkedAsReader(pluginContext: IrPluginContext): Boolean =
+    hasAnnotation(InjektFqNames.Reader) ||
             hasAnnotation(InjektFqNames.Given) ||
             hasAnnotation(InjektFqNames.GivenMapEntries) ||
             hasAnnotation(InjektFqNames.GivenSetElements) ||
             hasAnnotatedAnnotations(InjektFqNames.Effect)
 
-private fun IrDeclarationWithName.isReader(injektContext: InjektContext): Boolean {
-    if (hasAnnotation(InjektFqNames.Reader)) return true
-    return try {
-        injektContext.readerChecker.isReader(descriptor, injektContext.bindingTrace)
-    } catch (e: Exception) {
-        false
-    }
-}
-
-fun IrFunctionAccessExpression.isReaderLambdaInvoke(
-    injektContext: InjektContext
-): Boolean {
-    return symbol.owner.name.asString() == "invoke" &&
-            (dispatchReceiver?.type?.hasAnnotation(InjektFqNames.Reader) == true ||
-                    injektContext.irTrace[InjektWritableSlices.IS_READER_LAMBDA_INVOKE, this] == true)
-}
-
 fun IrDeclarationWithName.canUseReaders(
-    injektContext: InjektContext
+    pluginContext: IrPluginContext
 ): Boolean =
     (!hasAnnotation(InjektFqNames.Signature) && (this is IrFunction && !isExternalDeclaration() && getContext() != null) ||
-            isMarkedAsReader(injektContext) ||
-            (this is IrConstructor && constructedClass.isMarkedAsReader(injektContext)) ||
+            isMarkedAsReader(pluginContext) ||
+            (this is IrClass && constructors.any { it.isMarkedAsReader(pluginContext) }) ||
+            (this is IrConstructor && constructedClass.isMarkedAsReader(pluginContext)) ||
             (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsReader(
-                injektContext
+                pluginContext
             ) == true))
 
 fun IrBuilderWithScope.irLambda(
@@ -965,9 +939,9 @@ fun IrBuilderWithScope.irLambda(
 
 fun IrBuilderWithScope.jvmNameAnnotation(
     name: String,
-    injektContext: InjektContext
+    pluginContext: IrPluginContext
 ): IrConstructorCall {
-    val jvmName = injektContext.referenceClass(DescriptorUtils.JVM_NAME)!!
+    val jvmName = pluginContext.referenceClass(DescriptorUtils.JVM_NAME)!!
     return irCall(jvmName.constructors.single()).apply {
         putValueArgument(0, irString(name))
     }
@@ -980,7 +954,7 @@ fun IrFunction.getContextValueParameter() = valueParameters.singleOrNull {
 }
 
 fun IrModuleFragment.addFile(
-    injektContext: InjektContext,
+    pluginContext: IrPluginContext,
     fqName: FqName
 ): IrFile {
     val file = IrFileImpl(
@@ -990,7 +964,7 @@ fun IrModuleFragment.addFile(
         ),
         symbol = IrFileSymbolImpl(
             object : PackageFragmentDescriptorImpl(
-                injektContext.moduleDescriptor,
+                pluginContext.moduleDescriptor,
                 fqName.parent()
             ) {
                 override fun getMemberScope(): MemberScope = MemberScope.Empty
