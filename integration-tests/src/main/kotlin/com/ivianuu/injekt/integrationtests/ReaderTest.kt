@@ -34,4 +34,21 @@ class ReaderTest {
         """
     )
 
+    @Test
+    fun testReaderVar() = codegen(
+        """
+            private var _backing = "hello world"
+            @Reader
+            var mutable: String
+                get() = _backing
+                set(value) { _backing = value }
+
+            @Reader
+            fun usage() {
+                println(mutable)
+                mutable = "bye"
+            }
+        """
+    )
+
 }

@@ -119,13 +119,6 @@ class ReaderChecker : CallChecker, DeclarationChecker, AdditionalTypeChecker {
                     .on(declaration)
             )
         }
-
-        if (descriptor.isVar) {
-            context.trace.report(
-                InjektErrors.READER_PROPERTY_VAR
-                    .on(declaration)
-            )
-        }
     }
 
     override fun check(

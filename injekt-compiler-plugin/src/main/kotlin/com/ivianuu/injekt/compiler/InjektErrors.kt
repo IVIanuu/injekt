@@ -53,11 +53,6 @@ interface InjektErrors {
         )
 
         @JvmField
-        val READER_PROPERTY_VAR = error(
-            "@Reader property cannot have be a var"
-        )
-
-        @JvmField
         val MUST_BE_FOR_KEY = error(
             "Type parameter must have @ForKey annotation if used as a @ForKey type argument"
         )
