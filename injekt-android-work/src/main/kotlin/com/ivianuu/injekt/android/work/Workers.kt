@@ -42,19 +42,25 @@ annotation class GivenWorker {
             provider: () -> @Reader (Context, WorkerParameters) -> ListenableWorker
         ) {
             @Suppress("UNCHECKED_CAST")
-            worker(key.toKeyInfo().arguments[2].key as Key<ListenableWorker>, provider = provider())
+            worker(
+                key = key.toKeyInfo().arguments[2].key as Key<ListenableWorker>,
+                factoryKey = key,
+                provider = provider()
+            )
         }
     }
 }
 
 fun <@ForKey T : ListenableWorker> ContextBuilder.worker(
     key: Key<T> = keyOf(),
+    factoryKey: Key<@Reader (Context, WorkerParameters) -> T> = keyOf(),
     duplicatePolicy: DuplicatePolicy = DuplicatePolicy.Fail,
     provider: @Reader (Context, WorkerParameters) -> T
 ) {
     map(keyOf<Workers>()) {
         put(
             entryKey = key.toKeyInfo().classifierName,
+            entryValueKey = factoryKey,
             duplicatePolicy = duplicatePolicy
         ) { provider }
     }
