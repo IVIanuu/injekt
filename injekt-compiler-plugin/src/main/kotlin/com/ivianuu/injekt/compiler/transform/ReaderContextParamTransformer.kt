@@ -134,7 +134,7 @@ class ReaderContextParamTransformer(
 
         val readerConstructor = clazz.getReaderConstructor(pluginContext)
 
-        if (!clazz.isMarkedAsReader(pluginContext) && readerConstructor == null) return clazz
+        if (!clazz.isMarkedAsReader() && readerConstructor == null) return clazz
 
         if (readerConstructor == null) return clazz
 

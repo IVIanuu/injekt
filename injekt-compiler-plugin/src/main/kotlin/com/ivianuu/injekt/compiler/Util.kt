@@ -557,9 +557,9 @@ fun String.asNameId(): Name = Name.identifier(this)
 fun IrClass.getReaderConstructor(pluginContext: IrPluginContext): IrConstructor? {
     constructors
         .firstOrNull {
-            it.isMarkedAsReader(pluginContext)
+            it.isMarkedAsReader()
         }?.let { return it }
-    if (!isMarkedAsReader(pluginContext)) return null
+    if (!isMarkedAsReader()) return null
     return primaryConstructor
 }
 
@@ -879,7 +879,7 @@ fun IrDeclarationWithName.uniqueKey() = when (this) {
     else -> error("Unsupported declaration ${dump()}")
 }
 
-fun IrDeclarationWithName.isMarkedAsReader(pluginContext: IrPluginContext): Boolean =
+fun IrDeclarationWithName.isMarkedAsReader(): Boolean =
     hasAnnotation(InjektFqNames.Reader) ||
             hasAnnotation(InjektFqNames.Given) ||
             hasAnnotation(InjektFqNames.GivenMapEntries) ||
@@ -890,12 +890,10 @@ fun IrDeclarationWithName.canUseReaders(
     pluginContext: IrPluginContext
 ): Boolean =
     (!hasAnnotation(InjektFqNames.Signature) && (this is IrFunction && !isExternalDeclaration() && getContext() != null) ||
-            isMarkedAsReader(pluginContext) ||
-            (this is IrClass && constructors.any { it.isMarkedAsReader(pluginContext) }) ||
-            (this is IrConstructor && constructedClass.isMarkedAsReader(pluginContext)) ||
-            (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsReader(
-                pluginContext
-            ) == true))
+            isMarkedAsReader() ||
+            (this is IrClass && constructors.any { it.isMarkedAsReader() }) ||
+            (this is IrConstructor && constructedClass.isMarkedAsReader()) ||
+            (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsReader() == true))
 
 fun IrBuilderWithScope.irLambda(
     type: IrType,
