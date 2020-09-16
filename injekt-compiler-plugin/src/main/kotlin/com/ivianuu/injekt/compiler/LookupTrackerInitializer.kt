@@ -17,14 +17,77 @@
 package com.ivianuu.injekt.compiler
 
 import org.jetbrains.kotlin.analyzer.AnalysisResult
+import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.incremental.KotlinLookupLocation
+import org.jetbrains.kotlin.incremental.components.LocationInfo
+import org.jetbrains.kotlin.incremental.components.LookupLocation
+import org.jetbrains.kotlin.incremental.components.LookupTracker
+import org.jetbrains.kotlin.incremental.components.Position
+import org.jetbrains.kotlin.incremental.record
+import org.jetbrains.kotlin.ir.IrElement
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
+import org.jetbrains.kotlin.ir.declarations.IrFile
+import org.jetbrains.kotlin.ir.declarations.path
+import org.jetbrains.kotlin.ir.util.file
+import org.jetbrains.kotlin.ir.util.getPackageFragment
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
+
+lateinit var lookupTracker: LookupTracker
+
+fun recordLookup(
+    sourceFilePath: String,
+    lookedUp: DeclarationDescriptor
+) {
+    val location = object : LookupLocation {
+        override val location: LocationInfo?
+            get() = object : LocationInfo {
+                override val filePath: String
+                    get() = sourceFilePath
+                override val position: Position
+                    get() = Position.NO_POSITION
+            }
+    }
+
+    lookupTracker.record(
+        location,
+        lookedUp.findPackage(),
+        lookedUp.name
+    )
+}
+
+fun recordLookup(
+    source: IrElement,
+    lookedUp: IrDeclarationWithName
+) {
+    val sourceKtElement = (source as? IrDeclarationWithName)?.descriptor?.findPsi() as? KtElement
+    val location = sourceKtElement?.let { KotlinLookupLocation(it) }
+        ?: object : LookupLocation {
+            override val location: LocationInfo?
+                get() = object : LocationInfo {
+                    override val filePath: String
+                        get() = (source as? IrFile)?.path
+                            ?: (source as IrDeclarationWithName).file.path
+                    override val position: Position
+                        get() = Position.NO_POSITION
+                }
+        }
+
+    lookupTracker.record(
+        location,
+        lookedUp.getPackageFragment()!!.packageFragmentDescriptor,
+        lookedUp.name
+    )
+}
 
 class LookupTrackerInitializer : AnalysisHandlerExtension {
 

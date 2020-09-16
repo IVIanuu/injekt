@@ -453,7 +453,6 @@ class ReaderCallTransformer(
     ): IrExpression {
         val callee = call.symbol.owner
         transformFunctionIfNeeded(callee)
-        val calleeContext = callee.getContext()!!
 
         // todo remove once kotlin compiler fixed IrConstructorCallImpl constructor
         val transformedCall = when (call) {

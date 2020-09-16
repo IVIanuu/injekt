@@ -38,7 +38,45 @@ open class InjektGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
         variantData: Any?,
         androidProjectHandler: Any?,
         kotlinCompilation: KotlinCompilation<KotlinCommonOptions>?
-    ): List<SubpluginOption> = emptyList()
+    ): List<SubpluginOption> {
+        val sourceSetName = if (variantData != null) {
+            // Lol
+            variantData.javaClass.getMethod("getName").run {
+                isAccessible = true
+                invoke(variantData) as String
+            }
+        } else {
+            if (kotlinCompilation == null) error("In non-Android projects, Kotlin compilation should not be null")
+            kotlinCompilation.compilationName
+        }
+
+        val baseSrcDir = project.buildDir.resolve("generated/source/injekt")
+        val cacheDir = project.buildDir.resolve("injekt/cache")
+        val resourcesDir = (if (variantData != null) {
+            project.buildDir.resolve("tmp/kotlin-classes/$sourceSetName")
+        } else {
+            project.buildDir.resolve("classes/kotlin/$sourceSetName")
+        }).also { it.mkdirs() }.absolutePath
+
+        return listOf(
+            SubpluginOption(
+                key = "srcDir",
+                value = baseSrcDir.resolve(sourceSetName)
+                    .also { it.mkdirs() }
+                    .absolutePath
+            ),
+            SubpluginOption(
+                key = "resourcesDir",
+                value = resourcesDir
+            ),
+            SubpluginOption(
+                key = "cacheDir",
+                value = cacheDir.resolve(sourceSetName)
+                    .also { it.mkdirs() }
+                    .absolutePath
+            )
+        )
+    }
 
     override fun getCompilerPluginId(): String = "com.ivianuu.injekt"
 

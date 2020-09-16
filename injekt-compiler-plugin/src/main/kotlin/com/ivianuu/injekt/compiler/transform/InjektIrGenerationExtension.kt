@@ -16,26 +16,17 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektSymbols
-import com.ivianuu.injekt.compiler.transform.readercontextimpl.ReaderContextImplTransformer
-import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
-import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.declarations.IrDeclaration
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
-import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
 class InjektIrGenerationExtension : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        var initializeInjekt = false
+        /*var initializeInjekt = false
         var initTrigger: IrDeclarationWithName? = null
 
         moduleFragment.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
@@ -47,10 +38,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
                 return super.visitDeclaration(declaration)
             }
         })
-
-        if (pluginContext.referenceClass(InjektFqNames.Effect) != null) {
-            EffectTransformer(pluginContext).doLower(moduleFragment)
-        }
 
         val indexer = Indexer(
             pluginContext,
@@ -85,7 +72,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 
         generateSymbols(pluginContext)
 
-        // println(moduleFragment.dumpSrc())
+        // println(moduleFragment.dumpSrc())*/
     }
 
 }

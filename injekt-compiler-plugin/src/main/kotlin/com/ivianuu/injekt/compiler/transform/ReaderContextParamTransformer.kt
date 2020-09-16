@@ -476,6 +476,7 @@ class ReaderContextParamTransformer(
                     result !is IrConstructorCall &&
                     result !is IrDelegatingConstructorCall
                 ) return result
+                println("vist f ${result.dump()}")
                 val transformed = transformFunctionIfNeeded(result.symbol.owner)
                 return if (transformed in transformedFunctions.values) transformCall(
                     transformed,
