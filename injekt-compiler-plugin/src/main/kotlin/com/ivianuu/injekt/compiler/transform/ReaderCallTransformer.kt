@@ -147,21 +147,11 @@ class ReaderCallTransformer(
             if ((declaration as IrDeclarationWithVisibility).visibility == Visibilities.LOCAL && declaration.parent is IrFunction)
                 declaration.parent as IrFunction else null
 
-        fun inheritContext(type: IrType) {
-            context.superTypes += type
-                .remapTypeParametersByName(declaration as IrTypeParametersContainer, context)
-            recordLookup(context, type.classOrNull!!.owner)
-            recordLookup(declaration, type.classOrNull!!.owner)
-        }
-
-        fun genericContextExpression(
+        fun contextExpression(
             contextType: IrType,
             startOffset: Int,
             contextExpression: () -> IrExpression
         ): IrExpression {
-            recordLookup(context, contextType.classOrNull!!.owner)
-            recordLookup(declaration, contextType.classOrNull!!.owner)
-
             val factory = createContextFactory(
                 contextType = contextType,
                 startOffset = startOffset,
@@ -541,18 +531,13 @@ class ReaderCallTransformer(
         }
 
         val contextArgument =
-            if (transformedCall.typeArgumentsCount == 0) {
-                scope.inheritContext(calleeContext.defaultType)
-                contextExpression()
-            } else {
-                scope.genericContextExpression(
-                    transformedCall.symbol.owner
-                        .getContext()!!
-                        .typeWith(transformedCall.typeArguments),
-                    transformedCall.startOffset,
-                    contextExpression
-                )
-            }
+            scope.contextExpression(
+                transformedCall.symbol.owner
+                    .getContext()!!
+                    .typeWith(transformedCall.typeArguments),
+                transformedCall.startOffset,
+                contextExpression
+            )
 
         transformedCall.putValueArgument(transformedCall.valueArgumentsCount - 1, contextArgument)
 
