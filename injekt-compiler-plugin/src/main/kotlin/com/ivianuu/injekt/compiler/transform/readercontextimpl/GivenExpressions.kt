@@ -313,10 +313,14 @@ class GivenExpressions(
                     }
 
                     parametersMap.values.forEachIndexed { index, expression ->
-                        putValueArgument(
-                            index,
-                            expression()
-                        )
+                        if (index == 0 && given.function.extensionReceiverParameter != null) {
+                            extensionReceiver = expression()
+                        } else {
+                            putValueArgument(
+                                index + if (given.function.extensionReceiverParameter != null) 1 else 0,
+                                expression()
+                            )
+                        }
                     }
 
                     putValueArgument(valueArgumentsCount - 1, c[contextImpl])
@@ -327,11 +331,13 @@ class GivenExpressions(
 
             if (given.explicitParameters.isNotEmpty()) {
                 irLambda(given.key.type) { function ->
+                    var index = 0
                     val parametersMap = given.explicitParameters
                         .associateWith { parameter ->
+                            val paramIndex = index++
                             {
                                 irGet(
-                                    function.valueParameters[parameter.index]
+                                    function.valueParameters[paramIndex]
                                 )
                             }
                         }

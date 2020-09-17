@@ -546,9 +546,6 @@ class GivensGraph(
         }
 
         this += declarationGraph.givens(key.type.uniqueTypeName().asString())
-            .onEach {
-                println("searching for $key it key ${it.returnType.asKey()}")
-            }
             .filter {
                 it.returnType.asKey() == key ||
                         it.getFunctionType(pluginContext, skipContext = true).asKey() == key
@@ -564,8 +561,9 @@ class GivensGraph(
                         ?.owner?.getClassFromAnnotation(InjektFqNames.Given, 0) else null)
                     ?.takeUnless { it.defaultType.isNothing() }
 
-                val explicitParameters = function.valueParameters
-                    .filter { it != function.getContextValueParameter() }
+                val explicitParameters = listOfNotNull(function.extensionReceiverParameter) +
+                        function.valueParameters
+                            .filter { it != function.getContextValueParameter() }
 
                 GivenFunction(
                     key = key,

@@ -678,4 +678,18 @@ class ReaderTest {
         assertTrue(invokeSingleFile() is Bar)
     }
 
+    @Test
+    fun testAssistedGivenAsExtension() = codegen(
+        """
+        @Given
+        fun Foo.bar() = Bar(this)
+        
+        fun invoke(): Bar {
+            return rootContext<TestContext>().runReader { given<Bar>(Foo()) }
+        }
+        """
+    ) {
+        assertTrue(invokeSingleFile() is Bar)
+    }
+
 }

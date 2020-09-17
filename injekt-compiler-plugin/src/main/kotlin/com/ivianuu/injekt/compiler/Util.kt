@@ -566,9 +566,8 @@ fun IrFunction.getFunctionType(
     pluginContext: IrPluginContext,
     skipContext: Boolean = false
 ): IrType {
-    val valueParameters = valueParameters.filter {
-        !skipContext || it.name.asString() != "_context"
-    }
+    val valueParameters = listOfNotNull(extensionReceiverParameter) + valueParameters
+        .filter { !skipContext || it.name.asString() != "_context" }
     return (if (isSuspend) pluginContext.tmpSuspendFunction(valueParameters.size)
     else pluginContext.tmpFunction(valueParameters.size))
         .owner
