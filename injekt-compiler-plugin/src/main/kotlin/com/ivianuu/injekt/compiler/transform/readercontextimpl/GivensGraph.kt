@@ -546,9 +546,15 @@ class GivensGraph(
         }
 
         this += declarationGraph.givens(key.type.uniqueTypeName().asString())
-            .filter {
-                it.returnType.asKey() == key ||
-                        it.getFunctionType(pluginContext, skipContext = true).asKey() == key
+            .filter { function ->
+                if (function.extensionReceiverParameter != null || function.valueParameters
+                        .filter { it.name.asString() != "_context" }
+                        .isNotEmpty()
+                ) {
+                    function.getFunctionType(pluginContext, skipContext = true).asKey() == key
+                } else {
+                    function.returnType.asKey() == key
+                }
             }
             .map { function ->
                 val targetContext = (function.getClassFromAnnotation(
