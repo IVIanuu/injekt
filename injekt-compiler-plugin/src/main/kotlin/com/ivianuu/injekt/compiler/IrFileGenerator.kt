@@ -186,14 +186,6 @@ class IrFileGenerator(
                     descriptor
                 )
             }
-
-            if (rootContexts.isEmpty()) {
-
-            }
-            /*error("Lol ${module.getPackage(InjektFqNames.IndexPackage)
-                .memberScope
-                .getContributedDescriptors()
-                .filterIsInstance<ClassDescriptor>()} $rootContexts ${files.map { it.virtualFilePath }}")*/
         }
 
         return AnalysisResult.RetryWithAdditionalRoots(
