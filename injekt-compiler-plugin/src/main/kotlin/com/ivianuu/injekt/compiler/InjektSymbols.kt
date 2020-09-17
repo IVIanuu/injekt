@@ -34,5 +34,4 @@ class InjektSymbols(private val pluginContext: IrPluginContext) {
     val qualifier = pluginContext.referenceClass(InjektFqNames.Qualifier)!!
     val rootContextFactory = pluginContext.referenceClass(InjektFqNames.RootContextFactory)!!
     val runReaderCall = pluginContext.referenceClass(InjektFqNames.RunReaderCall)!!
-    val signature = pluginContext.referenceClass(InjektFqNames.Signature)!!
 }

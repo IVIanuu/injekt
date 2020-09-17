@@ -63,6 +63,31 @@ class EffectTest {
     }
 
     @Test
+    fun testAssistedEffect() = codegen(
+        """
+        @Effect
+        annotation class Effect1 {
+            companion object {
+                @Given
+                fun <T> bind() = given<(String) -> T>().toString()
+            }
+        }
+        
+        @Effect1
+        class Dep(arg: String)
+        
+        fun invoke() {
+            rootContext<TestContext>().runReader { 
+                given<Dep>("a") 
+                given<String>()
+            }
+        }
+    """
+    ) {
+        invokeSingleFile()
+    }
+
+    @Test
     fun testEffectWithoutCompanion() = codegen(
         """
         @Effect

@@ -18,6 +18,8 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.InjektSymbols
+import com.ivianuu.injekt.compiler.IrFileStore
+import com.ivianuu.injekt.compiler.LookupManager
 import com.ivianuu.injekt.compiler.transform.readercontextimpl.ReaderContextImplTransformer
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -27,14 +29,19 @@ import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.name
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
-class InjektIrGenerationExtension : IrGenerationExtension {
+class InjektIrGenerationExtension(
+    private val irFileStore: IrFileStore,
+    private val lookupManager: LookupManager
+) : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
+        println("compile files ${moduleFragment.files.map { it.name }}")
         var initializeInjekt = false
         var initTrigger: IrDeclarationWithName? = null
 
@@ -49,20 +56,21 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         })
 
         if (pluginContext.referenceClass(InjektFqNames.Effect) != null) {
-            EffectTransformer(pluginContext).doLower(moduleFragment)
+            EffectTransformer(lookupManager, pluginContext).doLower(moduleFragment)
         }
 
         val indexer = Indexer(
             pluginContext,
             moduleFragment,
-            InjektSymbols(pluginContext)
+            InjektSymbols(pluginContext),
+            irFileStore
         )
 
         val readerContextParamTransformer =
             ReaderContextParamTransformer(pluginContext, indexer)
         readerContextParamTransformer.doLower(moduleFragment)
 
-        ReaderCallTransformer(pluginContext, indexer).doLower(moduleFragment)
+        ReaderCallTransformer(pluginContext, indexer, lookupManager).doLower(moduleFragment)
 
         IndexingTransformer(
             indexer,
@@ -78,14 +86,18 @@ class InjektIrGenerationExtension : IrGenerationExtension {
             ReaderContextImplTransformer(
                 pluginContext,
                 declarationGraph,
+                lookupManager,
                 readerContextParamTransformer,
-                initTrigger!!
+                initTrigger!!,
+                irFileStore
             ).doLower(moduleFragment)
         }
 
         generateSymbols(pluginContext)
 
-        // println(moduleFragment.dumpSrc())
+        irFileStore.clear()
+
+        //println(moduleFragment.dumpSrc())
     }
 
 }

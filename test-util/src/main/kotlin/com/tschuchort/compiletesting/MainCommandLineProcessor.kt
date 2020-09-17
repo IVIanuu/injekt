@@ -23,7 +23,7 @@ import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
 import org.jetbrains.kotlin.config.CompilerConfiguration
 
 @AutoService(CommandLineProcessor::class)
-internal class MainCommandLineProcessor : CommandLineProcessor {
+class MainCommandLineProcessor : CommandLineProcessor {
     override val pluginId: String = Companion.pluginId
 
     override val pluginOptions: Collection<AbstractCliOption>

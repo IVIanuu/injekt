@@ -63,6 +63,40 @@ class SetTest {
     }
 
     @Test
+    fun testAssistedSet() = codegen(
+        """
+        @Given 
+        fun commandA(arg: String) = CommandA()
+        
+        @GivenSetElements
+        fun commandAIntoSet(): Set<(String) -> Command> = setOf(given<(String) -> CommandA>())
+        
+        @Given 
+        fun commandB(arg: String) = CommandB()
+        
+        @GivenSetElements
+        fun commandBIntoSet(): Set<(String) -> Command> = setOf(given<(String) -> CommandB>())
+        
+        @Given 
+        fun commandC(arg: String) = CommandC()
+        
+        @GivenSetElements
+        fun commandCIntoSet(): Set<(String) -> Command> = setOf(given<(String) -> CommandC>())
+        
+        fun invoke(): Set<(String) -> Command> {
+            return rootContext<TestContext>().runReader { given<Set<(String) -> Command>>() }
+        }
+        """
+    ) {
+        val set = invokeSingleFile<Set<(String) -> Command>>().toList()
+        assertEquals(3, set.size)
+        assertTrue(set[0]("a") is CommandA)
+        assertTrue(set[1]("b") is CommandB)
+        assertTrue(set[2]("c") is CommandC)
+    }
+
+
+    @Test
     fun testUndeclaredSet() = codegen(
         """
         fun invoke(): Set<Command> {

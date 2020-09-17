@@ -65,6 +65,40 @@ class MapTest {
     }
 
     @Test
+    fun testAssistedMap() = codegen(
+        """
+        @Given 
+        fun commandA(arg: String) = CommandA()
+        
+        @GivenMapEntries
+        fun commandAIntoMap(): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandA::class to given<(String) -> CommandA>())
+        
+        @Given 
+        fun commandB(arg: String) = CommandB()
+
+        @GivenMapEntries 
+        fun commandBIntoMap(): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandB::class to given<(String) -> CommandB>())
+        
+        @Given 
+        fun commandC(arg: String) = CommandC()
+        
+        @GivenMapEntries
+        fun commandCIntoMap(): Map<KClass<out Command>, (String) -> Command> = mapOf(CommandC::class to given<(String) -> CommandC>())
+        
+        fun invoke(): Map<KClass<out Command>, (String) -> Command> {
+            return rootContext<TestContext>().runReader { given<Map<KClass<out Command>, (String) -> Command>>() }
+        }
+        """
+    ) {
+        val map =
+            invokeSingleFile<Map<KClass<out Command>, (String) -> Command>>()
+        assertEquals(3, map.size)
+        assertTrue(map[CommandA::class]!!("a") is CommandA)
+        assertTrue(map[CommandB::class]!!("b") is CommandB)
+        assertTrue(map[CommandC::class]!!("c") is CommandC)
+    }
+
+    @Test
     fun testUndeclaredMap() = codegen(
         """
         fun invoke(): Map<KClass<out Command>, Command> {

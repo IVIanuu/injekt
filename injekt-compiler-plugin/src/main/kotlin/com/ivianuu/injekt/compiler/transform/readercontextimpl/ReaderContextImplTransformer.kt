@@ -17,23 +17,26 @@
 package com.ivianuu.injekt.compiler.transform.readercontextimpl
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.IrFileStore
+import com.ivianuu.injekt.compiler.LookupManager
 import com.ivianuu.injekt.compiler.addChildAndUpdateMetadata
-import com.ivianuu.injekt.compiler.addFile
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
-import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.ReaderContextParamTransformer
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
+import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.name.FqName
 
 class ReaderContextImplTransformer(
     pluginContext: IrPluginContext,
     private val declarationGraph: DeclarationGraph,
+    private val lookupManager: LookupManager,
     private val readerContextParamTransformer: ReaderContextParamTransformer,
-    private val initTrigger: IrDeclarationWithName
+    private val initTrigger: IrDeclarationWithName,
+    private val irFileStore: IrFileStore
 ) : AbstractInjektTransformer(pluginContext) {
 
     override fun lower() {
@@ -45,7 +48,9 @@ class ReaderContextImplTransformer(
                     )!!
                 )
 
-                val file = module.addFile(pluginContext, factoryFqName)
+                val filePath = irFileStore.get(factoryFqName.asString())
+                    ?: error("Null for $factoryFqName ${irFileStore.map}")
+                val file = module.files.single { it.path == filePath }
 
                 val factoryImpl = ReaderContextFactoryImplGenerator(
                     pluginContext = pluginContext,
@@ -55,6 +60,7 @@ class ReaderContextImplTransformer(
                     irParent = file,
                     declarationGraph = declarationGraph,
                     readerContextParamTransformer = readerContextParamTransformer,
+                    lookupManager = lookupManager,
                     parentContext = null,
                     initTrigger = initTrigger,
                     parentGraph = null,
@@ -62,8 +68,6 @@ class ReaderContextImplTransformer(
                 ).generateFactory()
 
                 file.addChildAndUpdateMetadata(factoryImpl)
-
-                recordLookup(initTrigger, factoryImpl)
             }
     }
 

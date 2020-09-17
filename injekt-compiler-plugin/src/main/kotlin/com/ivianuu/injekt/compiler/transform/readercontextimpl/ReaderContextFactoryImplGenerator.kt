@@ -1,9 +1,11 @@
 package com.ivianuu.injekt.compiler.transform.readercontextimpl
 
+import com.ivianuu.injekt.compiler.LookupManager
 import com.ivianuu.injekt.compiler.UniqueNameProvider
+import com.ivianuu.injekt.compiler.addChildAndUpdateMetadata
+import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
 import com.ivianuu.injekt.compiler.transform.ReaderContextParamTransformer
@@ -41,6 +43,7 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.isObject
 import org.jetbrains.kotlin.name.Name
@@ -53,6 +56,7 @@ class ReaderContextFactoryImplGenerator(
     private val irParent: IrDeclarationParent,
     private val initTrigger: IrDeclarationWithName,
     private val declarationGraph: DeclarationGraph,
+    private val lookupManager: LookupManager,
     private val readerContextParamTransformer: ReaderContextParamTransformer,
     private val parentContext: IrClass?,
     private val parentGraph: GivensGraph?,
@@ -90,8 +94,8 @@ class ReaderContextFactoryImplGenerator(
         }.apply clazz@{
             parent = irParent
             createImplicitParameterDeclarationWithWrappedDescriptor()
+            addMetadataIfNotLocal()
             superTypes += factoryType
-            recordLookup(initTrigger, factoryInterface)
         }
 
         val parentField = if (parentContext != null) {
@@ -103,6 +107,7 @@ class ReaderContextFactoryImplGenerator(
             isPrimary = true
             visibility = Visibilities.PUBLIC
         }.apply {
+            addMetadataIfNotLocal()
             val parentValueParameter = if (parentField != null) {
                 addValueParameter(parentField.name.asString(), parentField.type)
             } else null
@@ -135,6 +140,7 @@ class ReaderContextFactoryImplGenerator(
             name = "create".asNameId()
             returnType = contextIdType
         }.apply {
+            addMetadataIfNotLocal()
             dispatchReceiverParameter = factoryImpl.thisReceiver!!.copyTo(this)
 
             overriddenSymbols += createFunction.symbol
@@ -178,6 +184,31 @@ class ReaderContextFactoryImplGenerator(
             }
         }
 
+        val dummy = buildClass {
+            this.name = Name.identifier("${factoryImpl.name}Init")
+            kind = ClassKind.CLASS
+        }.apply clazz@{
+            parent = initTrigger.file
+            createImplicitParameterDeclarationWithWrappedDescriptor()
+            addMetadataIfNotLocal()
+            superTypes += contextImpl.superTypes
+                .onEach { lookupManager.recordLookup(this, it.classOrNull!!.owner) }
+            contextImpl.functions.forEach { function ->
+                addFunction {
+                    name = function.name
+                    returnType = function.returnType
+                }.apply {
+                    dispatchReceiverParameter = this@clazz.thisReceiver!!.copyTo(this)
+                    addMetadataIfNotLocal()
+                    overriddenSymbols += function.symbol
+                    body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody { }
+                }
+            }
+        }
+
+        initTrigger.file.addChildAndUpdateMetadata(dummy)
+        lookupManager.recordLookup(factoryImpl, dummy)
+
         return factoryImpl
     }
 
@@ -194,7 +225,8 @@ class ReaderContextFactoryImplGenerator(
             parent = irParent
             createImplicitParameterDeclarationWithWrappedDescriptor()
             superTypes += contextIdType
-            recordLookup(initTrigger, contextIdType.classOrNull!!.owner)
+            //recordLookup(initTrigger, contextIdType.classOrNull!!.owner)
+            addMetadataIfNotLocal()
         }
 
         val parentField = if (parentContext != null) {
@@ -215,6 +247,7 @@ class ReaderContextFactoryImplGenerator(
             isPrimary = true
             visibility = Visibilities.PUBLIC
         }.apply {
+            addMetadataIfNotLocal()
             val parentValueParameter = if (parentField != null) {
                 addValueParameter(parentField.name.asString(), parentField.type)
             } else null
@@ -267,6 +300,7 @@ class ReaderContextFactoryImplGenerator(
             declarationGraph = declarationGraph,
             expressions = expressions,
             contextImpl = contextImpl,
+            lookupManager = lookupManager,
             initTrigger = initTrigger,
             inputs = inputFields,
             readerContextParamTransformer = readerContextParamTransformer
@@ -291,11 +325,11 @@ class ReaderContextFactoryImplGenerator(
             .forEach { context ->
                 context.visitAllFunctionsWithSubstitutionMap(
                     pluginContext = pluginContext,
-                    declarationGraph = declarationGraph,
+                    readerContextParamTransformer = readerContextParamTransformer,
                     enterType = {
                         if (it !in contextImpl.superTypes) {
                             contextImpl.superTypes += it
-                            recordLookup(initTrigger, it.classOrNull!!.owner)
+                            //recordLookup(initTrigger, it.classOrNull!!.owner)
                         }
                     }
                 ) { function, substitutionMap ->
@@ -304,7 +338,6 @@ class ReaderContextFactoryImplGenerator(
                     }
                     if (existingDeclaration != null) {
                         existingDeclaration.overriddenSymbols += function.symbol as IrSimpleFunctionSymbol
-                        return@visitAllFunctionsWithSubstitutionMap
                     }
 
                     val key = function.returnType

@@ -2,7 +2,6 @@ package com.ivianuu.injekt.compiler.transform.readercontextimpl
 
 import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.compiler.irLambda
-import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueTypeName
@@ -54,18 +53,6 @@ class GivenExpressions(
         superFunction: IrFunction?
     ): ContextExpression {
         givenExpressions[given.key]?.let { return it }
-
-        given.declarations.forEach {
-            recordLookup(initTrigger, it)
-            if (it is IrConstructor) recordLookup(initTrigger, it.constructedClass)
-        }
-        given.contexts.forEach {
-            recordLookup(initTrigger, it.classOrNull!!.owner)
-        }
-        recordLookup(initTrigger, given.owner)
-        if (given.targetContext != null) {
-            recordLookup(initTrigger, given.targetContext)
-        }
 
         val rawExpression = if (given.owner != contextImpl) {
             parent!!.getGivenExpression(given, null)
@@ -326,10 +313,14 @@ class GivenExpressions(
                     }
 
                     parametersMap.values.forEachIndexed { index, expression ->
-                        putValueArgument(
-                            index,
-                            expression()
-                        )
+                        if (index == 0 && given.function.extensionReceiverParameter != null) {
+                            extensionReceiver = expression()
+                        } else {
+                            putValueArgument(
+                                index - if (given.function.extensionReceiverParameter != null) 1 else 0,
+                                expression()
+                            )
+                        }
                     }
 
                     putValueArgument(valueArgumentsCount - 1, c[contextImpl])
@@ -340,11 +331,13 @@ class GivenExpressions(
 
             if (given.explicitParameters.isNotEmpty()) {
                 irLambda(given.key.type) { function ->
+                    var index = 0
                     val parametersMap = given.explicitParameters
                         .associateWith { parameter ->
+                            val paramIndex = index++
                             {
                                 irGet(
-                                    function.valueParameters[parameter.index]
+                                    function.valueParameters[paramIndex]
                                 )
                             }
                         }
