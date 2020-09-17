@@ -317,7 +317,7 @@ class GivenExpressions(
                             extensionReceiver = expression()
                         } else {
                             putValueArgument(
-                                index + if (given.function.extensionReceiverParameter != null) 1 else 0,
+                                index - if (given.function.extensionReceiverParameter != null) 1 else 0,
                                 expression()
                             )
                         }
