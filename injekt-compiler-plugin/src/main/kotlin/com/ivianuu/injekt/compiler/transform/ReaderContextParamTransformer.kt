@@ -16,36 +16,29 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
-import com.ivianuu.injekt.compiler.asNameId
+import com.ivianuu.injekt.compiler.addChildAndUpdateMetadata
 import com.ivianuu.injekt.compiler.canUseReaders
 import com.ivianuu.injekt.compiler.copy
+import com.ivianuu.injekt.compiler.dumpSrc
+import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.isMarkedAsReader
 import com.ivianuu.injekt.compiler.jvmNameAnnotation
-import com.ivianuu.injekt.compiler.recordLookup
-import com.ivianuu.injekt.compiler.remapTypeParametersByName
 import com.ivianuu.injekt.compiler.transformFiles
 import com.ivianuu.injekt.compiler.typeWith
-import com.ivianuu.injekt.compiler.uniqueKey
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.ir.copyTo
-import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
-import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.addField
-import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -54,6 +47,7 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
 import org.jetbrains.kotlin.ir.declarations.IrField
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrOverridableDeclaration
@@ -80,13 +74,11 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.findAnnotation
-import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.hasDefaultValue
+import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.load.java.JvmAbi
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -97,9 +89,17 @@ class ReaderContextParamTransformer(
 
     private val transformedClasses = mutableSetOf<IrClass>()
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
+    private val newContexts = mutableSetOf<IrClass>()
 
     fun getTransformedFunction(function: IrFunction) =
         transformFunctionIfNeeded(function)
+
+    fun getTransformedContext(context: IrClass): IrClass {
+        return if (!context.isExternalDeclaration()) context
+        else newContexts.singleOrNull {
+            it.descriptor.fqNameSafe == context.descriptor.fqNameSafe
+        } ?: context
+    }
 
     private val transformer = object : IrElementTransformerVoidWithContext() {
         override fun visitClassNew(declaration: IrClass): IrStatement =
@@ -127,23 +127,32 @@ class ReaderContextParamTransformer(
         )
         module.transformFiles(transformer)
         module.rewriteTransformedReferences()
+
+        newContexts
+            .filterNot { it.isExternalDeclaration() }
+            .forEach { (it.parent as IrFile).addChildAndUpdateMetadata(it) }
     }
 
     private fun transformClassIfNeeded(clazz: IrClass): IrClass {
         if (clazz in transformedClasses) return clazz
 
-        val readerConstructor = clazz.getReaderConstructor(pluginContext)
+        val readerConstructor = clazz.getReaderConstructor()
 
         if (!clazz.isMarkedAsReader() && readerConstructor == null) return clazz
 
         if (readerConstructor == null) return clazz
 
+        if (readerConstructor.getContext() != null) return clazz
+
         transformedClasses += clazz
 
         if (clazz.isExternalDeclaration()) {
-            val existingSignature = getExternalReaderSignature(clazz)
+            val context = getContextFromExternalDeclaration(clazz)
                 ?: error("Lol ${clazz.dump()}")
-            readerConstructor.copySignatureFrom(existingSignature)
+            readerConstructor.addValueParameter(
+                "_context",
+                context.typeWith(readerConstructor.typeParameters.map { it.defaultType })
+            )
             return clazz
         }
 
@@ -161,17 +170,6 @@ class ReaderContextParamTransformer(
                 )
             }
         )
-
-        indexer.index(
-            originatingDeclaration = clazz,
-            path = listOf(
-                DeclarationGraph.SIGNATURE_PATH,
-                clazz.uniqueKey()
-            )
-        ) {
-            recordLookup(this, clazz)
-            addReaderSignature(clazz, readerConstructor, null)
-        }
 
         readerConstructor.body = DeclarationIrBuilder(pluginContext, clazz.symbol).run {
             irBlockBody {
@@ -209,15 +207,19 @@ class ReaderContextParamTransformer(
 
         if (!function.canUseReaders(pluginContext)) return function
 
-        if (function.isExternalDeclaration()) {
-            val existingSignature = getExternalReaderSignature(function)
-            if (existingSignature == null) {
+        if (function.getContext() != null) return function
 
-                error("Wtf ${function.dump()}")
+        if (function.isExternalDeclaration()) {
+            val context = getContextFromExternalDeclaration(function)
+            if (context == null) {
+                error("Wtf ${function.dump()}\n${module.dumpSrc()}")
             }
             val transformedFunction = function.copyAsReader()
             transformedFunctions[function] = transformedFunction
-            transformedFunction.copySignatureFrom(existingSignature)
+            transformedFunction.addValueParameter(
+                "_context",
+                context.typeWith(transformedFunction.typeParameters.map { it.defaultType })
+            )
             return transformedFunction
         }
 
@@ -225,23 +227,10 @@ class ReaderContextParamTransformer(
             .also { it.transformChildrenVoid(transformer) }
         transformedFunctions[function] = transformedFunction
 
-        if (function.canUseReaders(pluginContext)) {
-            transformReaderFunction(
-                owner = transformedFunction,
-                ownerFunction = transformedFunction
-            )
-        }
-
-        indexer.index(
-            originatingDeclaration = transformedFunction,
-            path = listOf(
-                DeclarationGraph.SIGNATURE_PATH,
-                transformedFunction.uniqueKey()
-            )
-        ) {
-            recordLookup(this, transformedFunction)
-            addReaderSignature(transformedFunction, transformedFunction, null)
-        }
+        transformReaderFunction(
+            owner = transformedFunction,
+            ownerFunction = transformedFunction
+        )
 
         return transformedFunction
     }
@@ -259,7 +248,7 @@ class ReaderContextParamTransformer(
             createContext(
                 owner, ownerFunction.descriptor.fqNameSafe, parentFunction,
                 pluginContext, module, injektSymbols
-            )
+            ).also { newContexts += it }
         val contextParameter = ownerFunction.addContextParameter(context)
         onContextParameterCreated(contextParameter)
     }
@@ -351,92 +340,10 @@ class ReaderContextParamTransformer(
         }
     }
 
-    private fun getExternalReaderSignature(owner: IrDeclarationWithName): IrFunction? {
-        return indexer.externalClassIndices(
-            listOf(
-                DeclarationGraph.SIGNATURE_PATH,
-                owner.uniqueKey()
-            )
-        ).firstOrNull()
-            ?.functions
-            ?.single {
-                // we use startsWith because inline class function names get mangled
-                // to something like signature-dj39
-                it.name.asString().startsWith("signature")
-            }
-    }
-
-    private fun IrFunction.copySignatureFrom(signature: IrFunction) {
-        valueParameters = signature.valueParameters.map {
-            it.copyTo(
-                this,
-                type = it.type,
-                varargElementType = it.varargElementType
-            )
-        }
-    }
-
-    private fun IrClass.addReaderSignature(
-        owner: IrDeclarationWithName,
-        ownerFunction: IrFunction,
-        parentFunction: IrFunction?
-    ) {
-        annotations += DeclarationIrBuilder(pluginContext, symbol)
-            .irCall(injektSymbols.signature.constructors.single())
-
-        addFunction {
-            name = "signature".asNameId()
-            modality = Modality.ABSTRACT
-        }.apply {
-            dispatchReceiverParameter = thisReceiver!!.copyTo(this)
-            addMetadataIfNotLocal()
-
-            copyTypeParametersFrom(owner as IrTypeParametersContainer)
-            parentFunction?.let { copyTypeParametersFrom(it) }
-
-            returnType = ownerFunction.returnType
-                .remapTypeParametersByName(owner, this)
-                .let {
-                    if (parentFunction != null) it.remapTypeParametersByName(
-                        parentFunction, this
-                    ) else it
-                }
-
-            valueParameters = ownerFunction.valueParameters.map {
-                it.copyTo(
-                    this,
-                    type = it.type
-                        .remapTypeParametersByName(owner, this)
-                        .let {
-                            if (parentFunction != null) it.remapTypeParametersByName(
-                                parentFunction, this
-                            ) else it
-                        },
-                    varargElementType = it.varargElementType
-                        ?.remapTypeParametersByName(owner, this)
-                        ?.let {
-                            if (parentFunction != null) it.remapTypeParametersByName(
-                                parentFunction, this
-                            ) else it
-                        },
-                    defaultValue = if (it.hasDefaultValue()) DeclarationIrBuilder(
-                        pluginContext,
-                        it.symbol
-                    ).run {
-                        irExprBody(
-                            irCall(
-                                pluginContext.referenceFunctions(
-                                    FqName("com.ivianuu.injekt.internal.injektIntrinsic")
-                                )
-                                    .single()
-                            ).apply {
-                                putTypeArgument(0, it.type)
-                            }
-                        )
-                    } else null
-                )
-            }
-        }
+    private fun getContextFromExternalDeclaration(owner: IrDeclarationWithName): IrClass? {
+        return pluginContext.referenceClass(
+            owner.getPackageFragment()!!.fqName.child(owner.getContextName())
+        )?.owner
     }
 
     private fun IrModuleFragment.rewriteTransformedReferences() {

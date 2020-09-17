@@ -22,9 +22,7 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.platform.TargetPlatform
 
-class InjektStorageContainerContributor(
-    private val readerChecker: ReaderChecker
-) : StorageComponentContainerContributor {
+class InjektStorageContainerContributor : StorageComponentContainerContributor {
 
     override fun registerModuleComponents(
         container: StorageComponentContainer,
@@ -35,7 +33,7 @@ class InjektStorageContainerContributor(
         container.useInstance(EffectChecker())
         container.useInstance(GivenChecker())
         container.useInstance(GivenSetChecker())
-        container.useInstance(readerChecker)
+        container.useInstance(ReaderChecker())
     }
 
 }

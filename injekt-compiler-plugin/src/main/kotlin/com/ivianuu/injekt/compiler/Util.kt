@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.transform.DeclarationGraph
+import com.ivianuu.injekt.compiler.transform.ReaderContextParamTransformer
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -34,13 +34,6 @@ import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
-import org.jetbrains.kotlin.descriptors.impl.PackageFragmentDescriptorImpl
-import org.jetbrains.kotlin.incremental.KotlinLookupLocation
-import org.jetbrains.kotlin.incremental.components.LocationInfo
-import org.jetbrains.kotlin.incremental.components.LookupLocation
-import org.jetbrains.kotlin.incremental.components.LookupTracker
-import org.jetbrains.kotlin.incremental.components.Position
-import org.jetbrains.kotlin.incremental.record
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
@@ -74,7 +67,6 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFileImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrPropertyImpl
-import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.descriptors.WrappedFunctionDescriptorWithContainerSource
 import org.jetbrains.kotlin.ir.descriptors.WrappedPropertyGetterDescriptor
 import org.jetbrains.kotlin.ir.descriptors.WrappedPropertySetterDescriptor
@@ -101,7 +93,6 @@ import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.IrReturnTargetSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
-import org.jetbrains.kotlin.ir.symbols.impl.IrFileSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrStarProjection
@@ -119,7 +110,6 @@ import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.DeepCopyIrTreeWithSymbols
 import org.jetbrains.kotlin.ir.util.DeepCopySymbolRemapper
-import org.jetbrains.kotlin.ir.util.NaiveSourceBasedFileEntryImpl
 import org.jetbrains.kotlin.ir.util.SymbolRemapper
 import org.jetbrains.kotlin.ir.util.TypeRemapper
 import org.jetbrains.kotlin.ir.util.constructedClass
@@ -127,10 +117,8 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
-import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isSuspend
@@ -142,10 +130,8 @@ import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.AnnotationValue
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
@@ -164,7 +150,6 @@ import org.jetbrains.kotlin.resolve.constants.ShortValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DescriptorWithContainerSource
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.StarProjectionImpl
@@ -186,34 +171,12 @@ fun IrFile.addChildAndUpdateMetadata(
 ) {
     addChild(declaration)
     (this as IrFileImpl).metadata = MetadataSource.File(
-        declarations
+        (metadata?.descriptors ?: emptyList()) + declarations
+            .filter {
+                it.descriptor !in (metadata?.descriptors ?: emptyList()) &&
+                        (it !is IrFunction || it.getContextValueParameter() == null)
+            }
             .map { it.descriptor }
-    )
-}
-
-var lookupTracker: LookupTracker? = null
-
-fun recordLookup(
-    source: IrElement,
-    lookedUp: IrDeclarationWithName
-) {
-    val sourceKtElement = (source as? IrDeclarationWithName)?.descriptor?.findPsi() as? KtElement
-    val location = sourceKtElement?.let { KotlinLookupLocation(it) }
-        ?: object : LookupLocation {
-            override val location: LocationInfo?
-                get() = object : LocationInfo {
-                    override val filePath: String
-                        get() = (source as? IrFile)?.path
-                            ?: (source as IrDeclarationWithName).file.path
-                    override val position: Position
-                        get() = Position.NO_POSITION
-                }
-        }
-
-    lookupTracker!!.record(
-        location,
-        lookedUp.getPackageFragment()!!.packageFragmentDescriptor,
-        lookedUp.name
     )
 }
 
@@ -328,7 +291,7 @@ fun IrType.remapTypeParametersByName(
 
 fun IrType.visitAllFunctionsWithSubstitutionMap(
     pluginContext: IrPluginContext,
-    declarationGraph: DeclarationGraph,
+    readerContextParamTransformer: ReaderContextParamTransformer,
     enterType: (IrType) -> Unit = {},
     exitType: (IrType) -> Unit = {},
     visitFunction: (IrFunction, Map<IrTypeParameterSymbol, IrType>) -> Unit
@@ -359,7 +322,7 @@ fun IrType.visitAllFunctionsWithSubstitutionMap(
         clazz.superTypes
             .forEach { superType ->
                 visit(
-                    superType.classOrNull!!.owner,
+                    readerContextParamTransformer.getTransformedContext(superType.classOrNull!!.owner),
                     superType.typeArguments
                         .map { it.typeOrFail }
                         .map { typeArg ->
@@ -371,7 +334,7 @@ fun IrType.visitAllFunctionsWithSubstitutionMap(
     }
 
     visit(
-        classOrNull!!.owner,
+        readerContextParamTransformer.getTransformedContext(classOrNull!!.owner),
         typeArguments.map { it.typeOrFail }
     )
 }
@@ -554,7 +517,7 @@ fun <T> T.getClassFromAnnotation(
 
 fun String.asNameId(): Name = Name.identifier(this)
 
-fun IrClass.getReaderConstructor(pluginContext: IrPluginContext): IrConstructor? {
+fun IrClass.getReaderConstructor(): IrConstructor? {
     constructors
         .firstOrNull {
             it.isMarkedAsReader()
@@ -599,7 +562,13 @@ fun IrPluginContext.tmpSuspendFunction(n: Int): IrClassSymbol =
 fun IrPluginContext.tmpSuspendKFunction(n: Int): IrClassSymbol =
     referenceClass(builtIns.getKSuspendFunction(n).fqNameSafe)!!
 
-fun IrFunction.getFunctionType(pluginContext: IrPluginContext): IrType {
+fun IrFunction.getFunctionType(
+    pluginContext: IrPluginContext,
+    skipContext: Boolean = false
+): IrType {
+    val valueParameters = valueParameters.filter {
+        !skipContext || it.name.asString() != "_context"
+    }
     return (if (isSuspend) pluginContext.tmpSuspendFunction(valueParameters.size)
     else pluginContext.tmpFunction(valueParameters.size))
         .owner
@@ -889,11 +858,11 @@ fun IrDeclarationWithName.isMarkedAsReader(): Boolean =
 fun IrDeclarationWithName.canUseReaders(
     pluginContext: IrPluginContext
 ): Boolean =
-    (!hasAnnotation(InjektFqNames.Signature) && (this is IrFunction && !isExternalDeclaration() && getContext() != null) ||
+    (this is IrFunction && !isExternalDeclaration() && getContext() != null) ||
             isMarkedAsReader() ||
             (this is IrClass && constructors.any { it.isMarkedAsReader() }) ||
             (this is IrConstructor && constructedClass.isMarkedAsReader()) ||
-            (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsReader() == true))
+            (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsReader() == true)
 
 fun IrBuilderWithScope.irLambda(
     type: IrType,
@@ -948,30 +917,7 @@ fun IrBuilderWithScope.jvmNameAnnotation(
 fun IrFunction.getContext(): IrClass? = getContextValueParameter()?.type?.classOrNull?.owner
 
 fun IrFunction.getContextValueParameter() = valueParameters.singleOrNull {
-    it.type.classOrNull?.owner?.hasAnnotation(InjektFqNames.ContextMarker) == true
+    it.type.classOrNull?.owner?.hasAnnotation(InjektFqNames.ContextMarker) == true ||
+            it.name.asString() == "_context"
 }
 
-fun IrModuleFragment.addFile(
-    pluginContext: IrPluginContext,
-    fqName: FqName
-): IrFile {
-    val file = IrFileImpl(
-        fileEntry = NaiveSourceBasedFileEntryImpl(
-            fqName.shortName().asString() + ".kt",
-            intArrayOf()
-        ),
-        symbol = IrFileSymbolImpl(
-            object : PackageFragmentDescriptorImpl(
-                pluginContext.moduleDescriptor,
-                fqName.parent()
-            ) {
-                override fun getMemberScope(): MemberScope = MemberScope.Empty
-            }
-        ),
-        fqName = fqName.parent()
-    )
-
-    files += file
-
-    return file
-}

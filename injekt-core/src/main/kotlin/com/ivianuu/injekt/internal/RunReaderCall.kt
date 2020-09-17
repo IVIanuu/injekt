@@ -18,4 +18,7 @@ package com.ivianuu.injekt.internal
 
 import kotlin.reflect.KClass
 
-internal annotation class RunReaderCall(val blockContext: KClass<*>)
+internal annotation class RunReaderCall(
+    val calleeContext: KClass<*>,
+    val blockContext: KClass<*>
+)

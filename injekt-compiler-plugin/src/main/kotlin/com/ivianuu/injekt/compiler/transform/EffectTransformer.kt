@@ -17,16 +17,14 @@
 package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.LookupManager
 import com.ivianuu.injekt.compiler.addChildAndUpdateMetadata
-import com.ivianuu.injekt.compiler.addFile
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
-import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.irLambda
-import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.tmpSuspendFunction
@@ -54,8 +52,10 @@ import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrField
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
+import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.companionObject
@@ -72,46 +72,57 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransformer(pluginContext) {
+class EffectTransformer(
+    private val lookupManager: LookupManager,
+    pluginContext: IrPluginContext
+) : AbstractInjektTransformer(pluginContext) {
 
     override fun lower() {
+        val newDeclarations = mutableListOf<IrDeclarationWithName>()
         module.transformFiles(object : IrElementTransformerVoid() {
             override fun visitClass(declaration: IrClass): IrStatement {
                 if (declaration.hasAnnotatedAnnotations(InjektFqNames.Effect)) {
-                    addEffectModuleForDeclaration(declaration)
+                    newDeclarations += createEffectModuleForDeclaration(declaration)
                 }
                 return super.visitClass(declaration)
             }
 
             override fun visitFunction(declaration: IrFunction): IrStatement {
                 if (declaration.hasAnnotatedAnnotations(InjektFqNames.Effect)) {
-                    addEffectModuleForDeclaration(declaration)
+                    newDeclarations += createEffectModuleForDeclaration(declaration)
                 }
                 return super.visitFunction(declaration)
             }
         })
+        newDeclarations.forEach {
+            (it.parent as IrFile).addChildAndUpdateMetadata(it)
+        }
     }
 
-    private fun addEffectModuleForDeclaration(declaration: IrDeclarationWithName) {
+    private fun createEffectModuleForDeclaration(declaration: IrDeclarationWithName): IrClass {
         val effects = declaration
             .getAnnotatedAnnotations(InjektFqNames.Effect)
             .map { it.symbol.owner.constructedClass }
-        val effectModule = buildClass {
-            this.name = "${declaration.name}Effects".asNameId()
+        return buildClass {
+            name = getJoinedName(
+                declaration.file.fqName,
+                FqName(declaration.descriptor.fqNameSafe.asString() + "Effects")
+            )
             kind = ClassKind.OBJECT
             visibility = Visibilities.INTERNAL
         }.apply clazz@{
+            parent = declaration.file
             createImplicitParameterDeclarationWithWrappedDescriptor()
             addMetadataIfNotLocal()
 
-            recordLookup(this, declaration)
-            effects.forEach { recordLookup(declaration, it) }
+            effects.forEach { lookupManager.recordLookup(declaration, it) }
 
             addConstructor {
                 returnType = defaultType
                 isPrimary = true
                 visibility = Visibilities.PUBLIC
             }.apply {
+                addMetadataIfNotLocal()
                 body = DeclarationIrBuilder(
                     pluginContext,
                     symbol
@@ -198,7 +209,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                                         dispatchReceiver =
                                             irGetObject(declaration.dispatchReceiverParameter!!.type.classOrNull!!)
                                     }
-                                    valueParameters.forEachIndexed { index, param ->
+                                    valueParameters.forEachIndexed<IrValueParameter> { index, param ->
                                         putValueArgument(index, irGet(param))
                                     }
                                 }
@@ -234,6 +245,7 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                             ),
                         isSuspend = effectFunction.isSuspend
                     ).apply function@{
+                        addMetadataIfNotLocal()
                         dispatchReceiverParameter = thisReceiver!!.copyTo(this)
 
                         annotations += effectFunction.annotations
@@ -250,14 +262,6 @@ class EffectTransformer(pluginContext: IrPluginContext) : AbstractInjektTransfor
                         }
                     }
                 }
-        }
-
-        module.addFile(
-            pluginContext,
-            declaration.file.fqName
-                .child(effectModule.name)
-        ).also {
-            it.addChildAndUpdateMetadata(effectModule)
         }
     }
 }

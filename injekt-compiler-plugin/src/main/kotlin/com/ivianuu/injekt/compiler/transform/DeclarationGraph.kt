@@ -19,10 +19,18 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getContext
+import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.transform.readercontextimpl.asKey
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.dump
+import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class DeclarationGraph(
@@ -33,33 +41,47 @@ class DeclarationGraph(
 
     val rootContextFactories: List<IrClass> by lazy {
         indexer.classIndices(listOf(ROOT_CONTEXT_FACTORY_PATH))
+            .filter { it.hasAnnotation(InjektFqNames.RootContextFactory) }
     }
 
     private val givensByKey = mutableMapOf<String, List<IrFunction>>()
-    fun givens(key: String) = givensByKey.getOrPut(key) {
+    fun givens(key: String) = givensByKey.getOrPut("") {
         (indexer.functionIndices(listOf(GIVEN_PATH, key)) +
                 indexer.classIndices(listOf(GIVEN_PATH, key))
                     .flatMap { it.constructors.toList() } +
                 indexer.propertyIndices(listOf(GIVEN_PATH, key))
                     .mapNotNull { it.getter }
                 )
+            .filter {
+                println("found ${it.dump()} ${it.returnType.asKey()}")
+                (it.hasAnnotation(InjektFqNames.Given) || it.hasAnnotatedAnnotations(InjektFqNames.Effect)) ||
+                        (it is IrSimpleFunction &&
+                                (it.correspondingPropertySymbol?.owner?.hasAnnotation(InjektFqNames.Given) == true ||
+                                        it.correspondingPropertySymbol?.owner?.hasAnnotatedAnnotations(
+                                            InjektFqNames.Effect
+                                        ) == true)) ||
+                        (it is IrConstructor && (it.constructedClass.hasAnnotation(InjektFqNames.Given) ||
+                                it.constructedClass.hasAnnotatedAnnotations(InjektFqNames.Effect)))
+            }
             .map { readerContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
             .distinct()
     }
 
     private val givenMapEntriesByKey = mutableMapOf<String, List<IrFunction>>()
-    fun givenMapEntries(key: String) = givenMapEntriesByKey.getOrPut(key) {
+    fun givenMapEntries(key: String) = givenMapEntriesByKey.getOrPut("") {
         (indexer.functionIndices(listOf(MAP_ENTRIES_PATH, key)) +
                 indexer.propertyIndices(listOf(MAP_ENTRIES_PATH, key)).mapNotNull { it.getter })
+            .filter { it.hasAnnotation(InjektFqNames.GivenMapEntries) }
             .map { readerContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
     }
 
     private val givenSetElementsByKey = mutableMapOf<String, List<IrFunction>>()
-    fun givenSetElements(key: String) = givenSetElementsByKey.getOrPut(key) {
+    fun givenSetElements(key: String) = givenSetElementsByKey.getOrPut("") {
         (indexer.functionIndices(listOf(SET_ELEMENTS_PATH, key)) +
                 indexer.propertyIndices(listOf(SET_ELEMENTS_PATH, key)).mapNotNull { it.getter })
+            .filter { it.hasAnnotation(InjektFqNames.GivenSetElements) }
             .map { readerContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
     }
@@ -71,7 +93,13 @@ class DeclarationGraph(
                 context.descriptor.fqNameSafe.asString()
             )
         )
-            .mapNotNull { it.getClassFromAnnotation(InjektFqNames.RunReaderCall, 0) }
+            .onEach {
+                println("search indwx for ${context.render()} found ${it.render()}")
+            }
+            .filter {
+                it.getClassFromAnnotation(InjektFqNames.RunReaderCall, 0) == context
+            }
+            .mapNotNull { it.getClassFromAnnotation(InjektFqNames.RunReaderCall, 1) }
     }
 
     companion object {
@@ -80,7 +108,6 @@ class DeclarationGraph(
         const val GIVEN_PATH = "given"
         const val MAP_ENTRIES_PATH = "map_entries"
         const val SET_ELEMENTS_PATH = "set_elements"
-        const val SIGNATURE_PATH = "signature"
     }
 
 }

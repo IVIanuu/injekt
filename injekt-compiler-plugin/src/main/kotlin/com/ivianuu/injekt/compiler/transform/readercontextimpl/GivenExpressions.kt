@@ -2,7 +2,6 @@ package com.ivianuu.injekt.compiler.transform.readercontextimpl
 
 import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.compiler.irLambda
-import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueTypeName
@@ -54,18 +53,6 @@ class GivenExpressions(
         superFunction: IrFunction?
     ): ContextExpression {
         givenExpressions[given.key]?.let { return it }
-
-        given.declarations.forEach {
-            recordLookup(initTrigger, it)
-            if (it is IrConstructor) recordLookup(initTrigger, it.constructedClass)
-        }
-        given.contexts.forEach {
-            recordLookup(initTrigger, it.classOrNull!!.owner)
-        }
-        recordLookup(initTrigger, given.owner)
-        if (given.targetContext != null) {
-            recordLookup(initTrigger, given.targetContext)
-        }
 
         val rawExpression = if (given.owner != contextImpl) {
             parent!!.getGivenExpression(given, null)

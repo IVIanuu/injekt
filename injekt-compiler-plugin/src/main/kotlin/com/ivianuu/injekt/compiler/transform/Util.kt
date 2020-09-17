@@ -18,13 +18,10 @@ package com.ivianuu.injekt.compiler.transform
 
 import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.UniqueNameProvider
-import com.ivianuu.injekt.compiler.addChildAndUpdateMetadata
-import com.ivianuu.injekt.compiler.addFile
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getJoinedName
-import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.remapTypeParametersByName
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.compiler.uniqueKey
@@ -48,9 +45,21 @@ import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+
+fun IrDeclarationWithName.getContextName(): Name {
+    return (getJoinedName(
+        getPackageFragment()!!.fqName,
+        descriptor.fqNameSafe
+            .parent().child(name.asString().asNameId())
+    ).asString().removeIllegalChars() + "${uniqueKey().hashCode()}__Context")
+        .removeIllegalChars()
+        .asNameId()
+}
 
 fun createContext(
     owner: IrDeclarationWithName,
@@ -61,28 +70,18 @@ fun createContext(
     injektSymbols: InjektSymbols
 ) = buildClass {
     kind = ClassKind.INTERFACE
-    name = (getJoinedName(
-        owner.getPackageFragment()!!.fqName,
-        owner.descriptor.fqNameSafe
-            .parent().child(owner.name.asString().asNameId())
-    ).asString().removeIllegalChars() + "${owner.uniqueKey().hashCode()}Context")
-        .removeIllegalChars()
-        .asNameId()
+    name = owner.getContextName()
     visibility = Visibilities.INTERNAL
 }.apply {
-    module.addFile(
-        pluginContext,
-        owner.getPackageFragment()!!.fqName
-            .child(name)
-    ).also { it.addChildAndUpdateMetadata(this) }
+    parent = owner.file
     createImplicitParameterDeclarationWithWrappedDescriptor()
     addMetadataIfNotLocal()
     if (owner is IrTypeParametersContainer) copyTypeParametersFrom(owner)
     parentTypeParametersContainer?.let { copyTypeParametersFrom(it) }
-    recordLookup(parent, owner)
 
-    annotations += DeclarationIrBuilder(pluginContext, symbol)
-        .irCall(injektSymbols.contextMarker.constructors.single())
+    annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+        irCall(injektSymbols.contextMarker.constructors.single())
+    }
     annotations += DeclarationIrBuilder(pluginContext, symbol).run {
         irCall(injektSymbols.origin.constructors.single()).apply {
             putValueArgument(0, irString(origin.asString()))
@@ -106,14 +105,9 @@ fun createContextFactory(
     kind = ClassKind.INTERFACE
     visibility = Visibilities.INTERNAL
 }.apply clazz@{
-    module.addFile(
-        pluginContext,
-        file.fqName
-            .child(name)
-    ).also { it.addChildAndUpdateMetadata(this) }
+    parent = file
     createImplicitParameterDeclarationWithWrappedDescriptor()
     addMetadataIfNotLocal()
-    recordLookup(parent, contextType.classOrNull!!.owner)
 
     if (typeParametersContainer != null)
         copyTypeParametersFrom(typeParametersContainer)

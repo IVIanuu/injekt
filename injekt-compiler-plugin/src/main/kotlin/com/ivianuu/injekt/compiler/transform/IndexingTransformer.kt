@@ -24,6 +24,7 @@ import com.ivianuu.injekt.compiler.tmpFunction
 import com.ivianuu.injekt.compiler.transformFiles
 import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueTypeName
+import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -34,7 +35,6 @@ import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 
 class IndexingTransformer(
     private val indexer: Indexer,
@@ -42,7 +42,7 @@ class IndexingTransformer(
 ) : AbstractInjektTransformer(pluginContext) {
 
     override fun lower() {
-        module.transformFiles(object : IrElementTransformerVoid() {
+        module.transformFiles(object : IrElementTransformerVoidWithContext() {
             override fun visitConstructor(declaration: IrConstructor): IrStatement {
                 if (declaration.hasAnnotation(InjektFqNames.Given) ||
                     declaration.hasAnnotatedAnnotations(InjektFqNames.Effect)
@@ -52,14 +52,15 @@ class IndexingTransformer(
                             DeclarationGraph.GIVEN_PATH,
                             declaration.constructedClass.defaultType.uniqueTypeName().asString()
                         ),
-                        declaration.constructedClass
+                        declaration.constructedClass,
+                        currentFile
                     )
                 }
                 return super.visitConstructor(declaration)
             }
 
-            override fun visitFunction(declaration: IrFunction): IrStatement {
-                if (!declaration.isInModule()) {
+            override fun visitFunctionNew(declaration: IrFunction): IrStatement {
+                if (!declaration.isInGivenSet()) {
                     when {
                         declaration.hasAnnotation(InjektFqNames.Given) -> {
                             val explicitParameters = declaration.valueParameters
@@ -77,7 +78,8 @@ class IndexingTransformer(
                                     DeclarationGraph.GIVEN_PATH,
                                     typePath
                                 ),
-                                declaration
+                                declaration,
+                                currentFile
                             )
                         }
                         declaration.hasAnnotation(InjektFqNames.GivenMapEntries) -> {
@@ -86,7 +88,8 @@ class IndexingTransformer(
                                     DeclarationGraph.MAP_ENTRIES_PATH,
                                     declaration.returnType.uniqueTypeName().asString()
                                 ),
-                                declaration
+                                declaration,
+                                currentFile
                             )
                         }
                         declaration.hasAnnotation(InjektFqNames.GivenSetElements) -> {
@@ -95,20 +98,21 @@ class IndexingTransformer(
                                     DeclarationGraph.SET_ELEMENTS_PATH,
                                     declaration.returnType.uniqueTypeName().asString()
                                 ),
-                                declaration
+                                declaration,
+                                currentFile
                             )
                         }
                     }
                 }
-                return super.visitFunction(declaration)
+                return super.visitFunctionNew(declaration)
             }
 
-            override fun visitClass(declaration: IrClass): IrStatement {
+            override fun visitClassNew(declaration: IrClass): IrStatement {
                 when {
                     declaration.hasAnnotation(InjektFqNames.Given) ||
                             declaration.hasAnnotatedAnnotations(InjektFqNames.Effect) -> {
                         val readerConstructor =
-                            declaration.getReaderConstructor(pluginContext)!!
+                            declaration.getReaderConstructor()!!
                         val explicitParameters = readerConstructor.valueParameters
                             .filter { it != readerConstructor.getContextValueParameter() }
                         val typePath =
@@ -124,31 +128,33 @@ class IndexingTransformer(
                                 DeclarationGraph.GIVEN_PATH,
                                 typePath
                             ),
-                            declaration
+                            declaration,
+                            currentFile
                         )
                     }
                 }
-                return super.visitClass(declaration)
+                return super.visitClassNew(declaration)
             }
 
-            override fun visitProperty(declaration: IrProperty): IrStatement {
+            override fun visitPropertyNew(declaration: IrProperty): IrStatement {
                 if (declaration.hasAnnotation(InjektFqNames.Given) &&
-                    !declaration.isInModule()
+                    !declaration.isInGivenSet()
                 ) {
                     indexer.index(
                         listOf(
                             DeclarationGraph.GIVEN_PATH,
                             declaration.getter!!.returnType.uniqueTypeName().asString()
                         ),
-                        declaration
+                        declaration,
+                        currentFile
                     )
                 }
-                return super.visitProperty(declaration)
+                return super.visitPropertyNew(declaration)
             }
         })
     }
 
-    private fun IrDeclaration.isInModule(): Boolean {
+    private fun IrDeclaration.isInGivenSet(): Boolean {
         var current: IrDeclaration? = parent as? IrDeclaration
 
         while (current != null) {

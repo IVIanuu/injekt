@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.LookupManager
+import com.ivianuu.injekt.compiler.addChildAndUpdateMetadata
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
@@ -24,7 +26,6 @@ import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.irClassReference
-import com.ivianuu.injekt.compiler.recordLookup
 import com.ivianuu.injekt.compiler.remapTypeParametersByName
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.compiler.thisOfClass
@@ -88,10 +89,12 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ReaderCallTransformer(
     pluginContext: IrPluginContext,
-    private val indexer: Indexer
+    private val indexer: Indexer,
+    private val lookupManager: LookupManager
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val transformedDeclarations = mutableListOf<IrDeclaration>()
+    private val newDeclarations = mutableListOf<IrDeclaration>()
 
     override fun lower() {
         module.transformFiles(
@@ -134,6 +137,10 @@ class ReaderCallTransformer(
                 }
             }
         )
+
+        newDeclarations.forEach {
+            (it.parent as IrFile).addChildAndUpdateMetadata(it)
+        }
     }
 
     inner class ReaderScope(
@@ -191,7 +198,7 @@ class ReaderCallTransformer(
     ) {
         if (!declaration.canUseReaders(pluginContext)) return
 
-        val readerConstructor = declaration.getReaderConstructor(pluginContext)!!
+        val readerConstructor = declaration.getReaderConstructor()!!
 
         val context = readerConstructor.getContext()!!
 
@@ -313,10 +320,12 @@ class ReaderCallTransformer(
             module = module,
             injektSymbols = injektSymbols
         ).also {
+            newDeclarations += it
             if (!isChild) {
                 indexer.index(
                     listOf(DeclarationGraph.ROOT_CONTEXT_FACTORY_PATH),
-                    it
+                    it,
+                    it.file
                 )
             }
         }
@@ -371,10 +380,11 @@ class ReaderCallTransformer(
         val lambdaExpression = call.getValueArgument(0)!! as IrFunctionExpression
 
         val scopeDeclaration = (scope?.declaration ?: irScope!!)
-        recordLookup(scopeDeclaration, runReaderCallContextExpression.type.classOrNull!!.owner)
+        //recordLookup(scopeDeclaration, runReaderCallContextExpression.type.classOrNull!!.owner)
 
         indexer.index(
             runReaderCallContextExpression.type.classOrNull!!.owner,
+            scopeDeclaration.file,
             (scopeDeclaration
                 .descriptor.fqNameSafe.asString().hashCode() + call.startOffset)
                 .toString()
@@ -385,11 +395,15 @@ class ReaderCallTransformer(
                 runReaderCallContextExpression.type.classOrNull!!.owner.descriptor.fqNameSafe.asString()
             )
         ) {
-            recordLookup(this, scopeDeclaration as IrDeclarationWithName)
+            //recordLookup(this, scopeDeclaration as IrDeclarationWithName)
             annotations += DeclarationIrBuilder(pluginContext, symbol).run {
                 irCall(injektSymbols.runReaderCall.constructors.single()).apply {
                     putValueArgument(
                         0,
+                        irClassReference(runReaderCallContextExpression.type.classOrNull!!.owner)
+                    )
+                    putValueArgument(
+                        1,
                         irClassReference(lambdaExpression.function.getContext()!!)
                     )
                 }

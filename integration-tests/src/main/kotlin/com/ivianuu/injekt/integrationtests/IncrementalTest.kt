@@ -1,13 +1,46 @@
 package com.ivianuu.injekt.integrationtests
 
-/**
+import com.ivianuu.injekt.test.compilation
+import com.ivianuu.injekt.test.source
+import com.tschuchort.compiletesting.MainCommandLineProcessor
+import com.tschuchort.compiletesting.MainComponentRegistrar
+import com.tschuchort.compiletesting.SourceFile
+import org.jetbrains.kotlin.base.kapt3.KaptOptions
+import org.jetbrains.kotlin.build.DEFAULT_KOTLIN_SOURCE_FILES_EXTENSIONS
+import org.jetbrains.kotlin.cli.common.ExitCode
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSourceLocation
+import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.config.IncrementalCompilation
+import org.jetbrains.kotlin.incremental.ChangedFiles
+import org.jetbrains.kotlin.incremental.ICReporterBase
+import org.jetbrains.kotlin.incremental.IncrementalJvmCompilerRunner
+import org.jetbrains.kotlin.incremental.IncrementalModuleEntry
+import org.jetbrains.kotlin.incremental.IncrementalModuleInfo
+import org.jetbrains.kotlin.incremental.multiproject.ModulesApiHistoryJvm
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.io.BufferedInputStream
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.io.InputStream
+import java.io.OutputStream
+import java.net.URLClassLoader
+import java.nio.file.Files
+import java.util.jar.Attributes
+import java.util.jar.JarEntry
+import java.util.jar.JarOutputStream
+import java.util.jar.Manifest
+
 class IncrementalTest {
 
     @Test
     fun test() {
-        val projectRoot = Files.createTempDirectory("root")
-            .toFile().also { it.mkdirs() }
+        val projectRoot = File("/home/ivianuu/studio-projects/injekt/integration-tests")
         val workingDir = projectRoot.resolve("workingDir")
+            .also { it.deleteRecursively() }
             .also { it.mkdirs() }
         val callerSource = source(
             """
@@ -169,7 +202,7 @@ class IncrementalTest {
             assertTrue("ChangingCallee.kt is marked dirty" in messageOutput)
             assertTrue("NotChangingCallee.kt is marked dirty" !in messageOutput)
             assertTrue("Context.kt is marked dirty" in messageOutput)
-            assertTrue("RunReader.kt is marked dirty" in messageOutput)
+            assertTrue("RunReader.kt is marked dirty" !in messageOutput)
             assertTrue("Unrelated.kt is marked dirty" !in messageOutput)
             classLoader.loadClass("com.ivianuu.injekt.integrationtests.RunReaderKt")
                 .declaredMethods
@@ -435,6 +468,11 @@ class IncrementalTest {
         }
 
         val args = kotlinCompileArgs.commonK2JVMArgs().apply {
+            MainCommandLineProcessor.threadLocalParameters.set(
+                MainCommandLineProcessor.ThreadLocalParameters(
+                    kotlinCompileArgs.commandLineProcessors
+                )
+            )
             MainComponentRegistrar.threadLocalParameters.set(
                 MainComponentRegistrar.ThreadLocalParameters(
                     listOf(),
@@ -515,7 +553,9 @@ class IncrementalTest {
                     location: CompilerMessageSourceLocation?
                 ) {
                     hasErrors = hasErrors || severity.isError
-                    println("$severity $message $location")
+                    if (severity.isError) {
+                        println("$severity $message $location")
+                    }
                 }
 
                 override fun hasErrors(): Boolean = hasErrors
@@ -603,4 +643,3 @@ private fun createJar(jarFile: String, srcDir: String) {
     copyFilesRecursively(srcDirFile, jarOutputStream, prefLen)
     jarOutputStream.close()
 }
-*/

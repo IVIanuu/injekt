@@ -17,12 +17,15 @@
 package com.ivianuu.injekt.compiler.transform.readercontextimpl
 
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.LookupManager
+import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
 import com.ivianuu.injekt.compiler.buildClass
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getContextValueParameter
+import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
@@ -76,6 +79,7 @@ class GivensGraph(
     private val parent: GivensGraph?,
     private val pluginContext: IrPluginContext,
     private val declarationGraph: DeclarationGraph,
+    private val lookupManager: LookupManager,
     private val contextImpl: IrClass,
     private val initTrigger: IrDeclarationWithName,
     private val expressions: GivenExpressions,
@@ -217,7 +221,7 @@ class GivensGraph(
 
         context.visitAllFunctionsWithSubstitutionMap(
             pluginContext = pluginContext,
-            declarationGraph = declarationGraph,
+            readerContextParamTransformer = readerContextParamTransformer,
             enterType = {
                 val origin = it.classOrNull!!.owner.getConstantFromAnnotationOrNull<String>(
                     InjektFqNames.Origin,
@@ -336,7 +340,7 @@ class GivensGraph(
             error(
                 "Multiple internal givens found for '${key}' at:\n${
                     internalGlobalGivens
-                        .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
+                        .joinToString("\n") { "    '${it to it.origin.orUnknown()}'" }
                 }"
             )
         }
@@ -346,6 +350,7 @@ class GivensGraph(
             resolvedGivens[key] = it
             check(it)
             (it as? GivenChildContext)?.factory
+            (it as? GivenCalleeContext)?.contextImpl
             return it
         }
 
@@ -378,121 +383,127 @@ class GivensGraph(
 
         inputFunctionNodes[key]?.let { this += it }
 
-        if (key.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.ContextMarker)) {
+        if (key.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.ContextMarker) ||
+            key.type.classOrNull!!.owner.name.asString().endsWith("__Context")
+        ) {
             val contexts = mutableListOf<IrType>()
-            val childContextImpl = if (key.type.classOrNull!!.owner.typeParameters.isNotEmpty()) {
-                val childContextImpl = buildClass {
-                    this.name = (key.type.uniqueTypeName().asString() + "Impl").asNameId()
-                    visibility = Visibilities.PRIVATE
-                }.apply clazz@{
-                    parent = contextImpl
-                    contextImpl.addChild(this)
-                    createImplicitParameterDeclarationWithWrappedDescriptor()
-                }
-
-                val parentField = childContextImpl.addField(
-                    "parent",
-                    contextImpl.defaultType
-                )
-
-                childContextImpl.addConstructor {
-                    returnType = childContextImpl.defaultType
-                    isPrimary = true
-                    visibility = Visibilities.PUBLIC
-                }.apply {
-                    val parentValueParameter = addValueParameter(
-                        "parent",
-                        contextImpl.defaultType
-                    )
-                    body = DeclarationIrBuilder(
-                        pluginContext,
-                        symbol
-                    ).irBlockBody {
-                        +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
-                        +IrInstanceInitializerCallImpl(
-                            UNDEFINED_OFFSET,
-                            UNDEFINED_OFFSET,
-                            childContextImpl.symbol,
-                            context.irBuiltIns.unitType
-                        )
-                        +irSetField(
-                            irGet(childContextImpl.thisReceiver!!),
-                            parentField,
-                            irGet(parentValueParameter)
-                        )
-                    }
-                }
-
-                key.type.visitAllFunctionsWithSubstitutionMap(
-                    pluginContext = pluginContext,
-                    declarationGraph = declarationGraph,
-                    enterType = { childContextImpl.superTypes += it },
-                    exitType = {},
-                    visitFunction = { function, substitutionMap ->
-                        val functionKey = function.returnType
-                            .substitute(substitutionMap)
-                            .asKey()
-
-                        val existingDeclaration = childContextImpl.functions.singleOrNull {
-                            it.name == function.name
-                        }
-                        if (existingDeclaration != null) {
-                            existingDeclaration.overriddenSymbols +=
-                                function.symbol as IrSimpleFunctionSymbol
-                            return@visitAllFunctionsWithSubstitutionMap
-                        }
-
-                        val expression =
-                            expressions.getGivenExpression(getGiven(functionKey), function)
-                        childContextImpl.addFunction {
-                            this.name = function.name
-                            returnType = functionKey.type
-                        }.apply {
-                            dispatchReceiverParameter = childContextImpl.thisReceiver!!.copyTo(this)
-                            overriddenSymbols += function.symbol as IrSimpleFunctionSymbol
-                            body = DeclarationIrBuilder(pluginContext, symbol).run {
-                                irExprBody(
-                                    expression(
-                                        this,
-                                        ContextExpressionContext(
-                                            pluginContext = pluginContext,
-                                            thisContext = contextImpl
-                                        ) {
-                                            irGetField(
-                                                irGet(dispatchReceiverParameter!!),
-                                                parentField
-                                            )
-                                        }
-                                    )
-                                )
-                            }
-                        }
-                    }
-                )
-                childContextImpl
-            } else {
-                key.type.visitAllFunctionsWithSubstitutionMap(
-                    pluginContext = pluginContext,
-                    declarationGraph = declarationGraph,
-                    enterType = { contexts += it },
-                    exitType = {},
-                    visitFunction = { function, substitutionMap ->
-                        val functionKey = function.returnType
-                            .substitute(substitutionMap)
-                            .asKey()
-                        expressions.getGivenExpression(getGiven(functionKey), function)
-                    }
-                )
-                null
-            }
-
             this += GivenCalleeContext(
                 key = key,
                 owner = contextImpl,
-                contexts = contexts,
                 declarations = emptyList(),
                 origin = null,
-                contextImpl = childContextImpl
+                lazyContexts = { contexts },
+                lazyContextImpl = {
+                    if (key.type.classOrNull!!.owner.typeParameters.isNotEmpty()) {
+                        val childContextImpl = buildClass {
+                            this.name = (key.type.uniqueTypeName().asString() + "Impl").asNameId()
+                            visibility = Visibilities.PRIVATE
+                        }.apply clazz@{
+                            addMetadataIfNotLocal()
+                            parent = contextImpl
+                            contextImpl.addChild(this)
+                            createImplicitParameterDeclarationWithWrappedDescriptor()
+                        }
+
+                        val parentField = childContextImpl.addField(
+                            "parent",
+                            contextImpl.defaultType
+                        )
+
+                        childContextImpl.addConstructor {
+                            returnType = childContextImpl.defaultType
+                            isPrimary = true
+                            visibility = Visibilities.PUBLIC
+                        }.apply {
+                            addMetadataIfNotLocal()
+                            val parentValueParameter = addValueParameter(
+                                "parent",
+                                contextImpl.defaultType
+                            )
+                            body = DeclarationIrBuilder(
+                                pluginContext,
+                                symbol
+                            ).irBlockBody {
+                                +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
+                                +IrInstanceInitializerCallImpl(
+                                    UNDEFINED_OFFSET,
+                                    UNDEFINED_OFFSET,
+                                    childContextImpl.symbol,
+                                    context.irBuiltIns.unitType
+                                )
+                                +irSetField(
+                                    irGet(childContextImpl.thisReceiver!!),
+                                    parentField,
+                                    irGet(parentValueParameter)
+                                )
+                            }
+                        }
+
+                        key.type.visitAllFunctionsWithSubstitutionMap(
+                            pluginContext = pluginContext,
+                            readerContextParamTransformer = readerContextParamTransformer,
+                            enterType = { childContextImpl.superTypes += it },
+                            exitType = {},
+                            visitFunction = { function, substitutionMap ->
+                                val functionKey = function.returnType
+                                    .substitute(substitutionMap)
+                                    .asKey()
+
+                                val existingDeclaration = childContextImpl.functions.singleOrNull {
+                                    it.name == function.name
+                                }
+                                if (existingDeclaration != null) {
+                                    existingDeclaration.overriddenSymbols +=
+                                        function.symbol as IrSimpleFunctionSymbol
+                                    return@visitAllFunctionsWithSubstitutionMap
+                                }
+
+                                val expression =
+                                    expressions.getGivenExpression(getGiven(functionKey), function)
+                                childContextImpl.addFunction {
+                                    this.name = function.name
+                                    returnType = functionKey.type
+                                }.apply {
+                                    addMetadataIfNotLocal()
+                                    dispatchReceiverParameter =
+                                        childContextImpl.thisReceiver!!.copyTo(this)
+                                    overriddenSymbols += function.symbol as IrSimpleFunctionSymbol
+                                    body = DeclarationIrBuilder(pluginContext, symbol).run {
+                                        irExprBody(
+                                            expression(
+                                                this,
+                                                ContextExpressionContext(
+                                                    pluginContext = pluginContext,
+                                                    thisContext = contextImpl
+                                                ) {
+                                                    irGetField(
+                                                        irGet(dispatchReceiverParameter!!),
+                                                        parentField
+                                                    )
+                                                }
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        )
+                        childContextImpl
+                    } else {
+                        key.type.visitAllFunctionsWithSubstitutionMap(
+                            pluginContext = pluginContext,
+                            readerContextParamTransformer = readerContextParamTransformer,
+                            enterType = { contexts += it },
+                            exitType = {},
+                            visitFunction = { function, substitutionMap ->
+                                val functionKey = function.returnType
+                                    .substitute(substitutionMap)
+                                    .asKey()
+                                expressions.getGivenExpression(getGiven(functionKey), function)
+                            }
+                        )
+                        null
+                    }
+                }
             )
         }
 
@@ -518,6 +529,7 @@ class GivensGraph(
                     initTrigger = initTrigger,
                     irParent = contextImpl,
                     declarationGraph = declarationGraph,
+                    lookupManager = lookupManager,
                     readerContextParamTransformer = readerContextParamTransformer,
                     parentContext = contextImpl,
                     parentGraph = this@GivensGraph,
@@ -534,6 +546,13 @@ class GivensGraph(
         }
 
         this += declarationGraph.givens(key.type.uniqueTypeName().asString())
+            .onEach {
+                println("searching for $key it key ${it.returnType.asKey()}")
+            }
+            .filter {
+                it.returnType.asKey() == key ||
+                        it.getFunctionType(pluginContext, skipContext = true).asKey() == key
+            }
             .map { function ->
                 val targetContext = (function.getClassFromAnnotation(
                     InjektFqNames.Given, 0
@@ -564,6 +583,7 @@ class GivensGraph(
 
         (declarationGraph.givenMapEntries(key.type.uniqueTypeName().asString()) +
                 inputGivenMapEntries.getOrElse(key) { emptySet() })
+            .filter { it.returnType.asKey() == key }
             .takeIf { it.isNotEmpty() }
             ?.let { entries ->
                 GivenMap(
@@ -578,6 +598,7 @@ class GivensGraph(
 
         (declarationGraph.givenSetElements(key.type.uniqueTypeName().asString()) +
                 inputGivenSetElements.getOrElse(key) { emptySet() })
+            .filter { it.returnType.asKey() == key }
             .takeIf { it.isNotEmpty() }
             ?.let { elements ->
                 GivenSet(
