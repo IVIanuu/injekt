@@ -31,7 +31,7 @@ import org.junit.Test
 class GivensGraphTest {
 
     @Test
-    fun testMissingBindingFails() = codegen(
+    fun testMissingGivenFails() = codegen(
         """
         class Dep()
         fun invoke() {
@@ -43,7 +43,7 @@ class GivensGraphTest {
     }
 
     @Test
-    fun testDeeplyMissingBindingFails() = codegen(
+    fun testDeeplyMissingGivenFails() = codegen(
         """
     
         @Given
@@ -61,7 +61,7 @@ class GivensGraphTest {
     }
 
     @Test
-    fun testMissingBindingFails2() = codegen(
+    fun testMissingGivenFails2() = codegen(
         """
         @Reader
         fun a() {
@@ -166,7 +166,7 @@ class GivensGraphTest {
     }
 
     @Test
-    fun testReturnsInstanceForNullableBinding() = codegen(
+    fun testReturnsInstanceForNullableGiven() = codegen(
         """
         @Given fun foo(): Foo = Foo()
 
@@ -179,7 +179,7 @@ class GivensGraphTest {
     }
 
     @Test
-    fun testReturnsNullOnMissingNullableBinding() = codegen(
+    fun testReturnsNullOnMissingNullableGiven() = codegen(
         """
         fun invoke(): Foo? { 
             return rootContext<TestContext>().runReader { given<Foo?>() }
@@ -265,7 +265,7 @@ class GivensGraphTest {
     }
 
     @Test
-    fun testDuplicatedInternalBindingsFails() = codegen(
+    fun testDuplicatedInternalGivensFails() = codegen(
         """
         @Given fun foo1() = Foo()
         @Given fun foo2() = Foo()
@@ -279,7 +279,7 @@ class GivensGraphTest {
     }
 
     @Test
-    fun testDuplicatedExternalBindingsFails() = multiCodegen(
+    fun testDuplicatedExternalGivensFails() = multiCodegen(
         listOf(
             source(
                 """

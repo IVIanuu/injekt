@@ -242,7 +242,7 @@ class ReaderContextTest {
     }
 
     @Test
-    fun testScopedBinding() = codegen(
+    fun testScopedGiven() = codegen(
         """
         @Given(TestContext::class)
         fun foo() = Foo()
@@ -261,7 +261,7 @@ class ReaderContextTest {
     }
 
     @Test
-    fun testParentScopedBinding() = codegen(
+    fun testParentScopedGiven() = codegen(
         """
         @Given
         fun foo() = Foo()
@@ -286,7 +286,7 @@ class ReaderContextTest {
     }
 
     @Test
-    fun testParentScopedBinding2() = codegen(
+    fun testParentScopedGiven2() = codegen(
         """
         @Given
         fun foo() = Foo()
