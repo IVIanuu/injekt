@@ -136,16 +136,6 @@ class ReaderFrontendTest {
     }
 
     @Test
-    fun testReaderVarFails() = codegen(
-        """
-            @Reader
-            var property = ""
-    """
-    ) {
-        assertCompileError("var")
-    }
-
-    @Test
     fun testMultipleReaderAnnotationsFails() = codegen(
         """
             @Reader @Given
