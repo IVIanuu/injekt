@@ -38,10 +38,11 @@ class IncrementalTest {
 
     @Test
     fun test() {
-        val projectRoot = File("/home/ivianuu/studio-projects/injekt/integration-tests")
-        val workingDir = projectRoot.resolve("workingDir")
-            .also { it.deleteRecursively() }
+        val projectRoot = Files.createTempDirectory("root")
+            .toFile().also { it.mkdirs() }
+        val workingDir = projectRoot.resolve("workingDirA")
             .also { it.mkdirs() }
+
         val callerSource = source(
             """
                 @Given
