@@ -36,7 +36,7 @@ import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 
-class IndexingTransformer(
+class GivenIndexingTransformer(
     private val indexer: Indexer,
     pluginContext: IrPluginContext
 ) : AbstractInjektTransformer(pluginContext) {
@@ -158,9 +158,7 @@ class IndexingTransformer(
         var current: IrDeclaration? = parent as? IrDeclaration
 
         while (current != null) {
-            if (current.hasAnnotation(InjektFqNames.Effect) ||
-                current.hasAnnotation(InjektFqNames.GivenSet)
-            ) return true
+            if (current.hasAnnotation(InjektFqNames.GivenSet)) return true
             current = current.parent as? IrDeclaration
         }
 

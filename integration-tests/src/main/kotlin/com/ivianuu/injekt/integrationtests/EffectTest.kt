@@ -32,6 +32,7 @@ class EffectTest {
         """
         @Effect
         annotation class Effect1 {
+            @GivenSet
             companion object {
                 @Given
                 fun <T> bind() = given<T>().toString()
@@ -40,6 +41,7 @@ class EffectTest {
         
         @Effect
         annotation class Effect2 {
+            @GivenSet
             companion object {
                 @Given
                 fun <T : Any> bind(): Any = given<T>()
@@ -67,6 +69,7 @@ class EffectTest {
         """
         @Effect
         annotation class Effect1 {
+            @GivenSet
             companion object {
                 @Given
                 fun <T> bind() = given<(String) -> T>().toString()
@@ -102,6 +105,7 @@ class EffectTest {
         """
         @Effect
         annotation class MyEffect {
+            @GivenSet
             companion object {
                 @Given
                 operator fun invoke() {
@@ -118,6 +122,7 @@ class EffectTest {
         """
         @Effect
         annotation class MyEffect {
+            @GivenSet
             companion object {
                 @Given
                 operator fun <A, B> invoke() {
@@ -134,6 +139,7 @@ class EffectTest {
         """
         @Effect
         annotation class MyEffect {
+            @GivenSet 
             companion object {
                 @EffectFunction(MyEffect::class)
                 @Given
@@ -155,6 +161,7 @@ class EffectTest {
         """
         @Effect
         annotation class MyEffect {
+            @GivenSet
             companion object { 
                 @Given
                 fun <T : UpperBound> bind() {
@@ -176,6 +183,7 @@ class EffectTest {
         """
         @Effect
         annotation class MyEffect {
+            @GivenSet
             companion object {
                 @EffectFunction(MyEffect::class)
                 fun <T : () -> Unit> bind() {
@@ -197,6 +205,7 @@ class EffectTest {
         
         @Effect
         annotation class GivenFooFactory {
+            @GivenSet
             companion object {
                 @Given
                 operator fun <T : FooFactory> invoke(): FooFactory = given<T>()
@@ -225,6 +234,7 @@ class EffectTest {
         
                 @Effect
                 annotation class GivenFooFactory {
+                    @GivenSet
                     companion object {
                         @Given
                         operator fun <T : FooFactory> invoke(): FooFactory = given<T>()
@@ -266,6 +276,7 @@ class EffectTest {
         
         @Effect
         annotation class GivenFooFactory {
+            @GivenSet
             companion object {
                 @Given
                 operator fun <T : FooFactory> invoke(): FooFactory = given<T>()

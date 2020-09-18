@@ -98,8 +98,8 @@ interface InjektErrors {
         )
 
         @JvmField
-        val EFFECT_WITHOUT_COMPANION = error(
-            "@Effect annotated class needs a companion object"
+        val EFFECT_WITHOUT_GIVEN_SET_COMPANION = error(
+            "@Effect annotated class needs a @GivenSet companion object"
         )
 
         @JvmField

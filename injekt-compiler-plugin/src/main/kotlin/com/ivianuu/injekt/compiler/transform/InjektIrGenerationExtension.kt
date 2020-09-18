@@ -72,7 +72,7 @@ class InjektIrGenerationExtension(
 
         ReaderCallTransformer(pluginContext, indexer, lookupManager).doLower(moduleFragment)
 
-        IndexingTransformer(
+        GivenIndexingTransformer(
             indexer,
             pluginContext
         ).doLower(moduleFragment)

@@ -47,9 +47,11 @@ class EffectChecker : DeclarationChecker {
         if (!descriptor.hasAnnotation(InjektFqNames.Effect)) return
 
         val companion = descriptor.companionObjectDescriptor
-        if (companion == null) {
+        if (companion == null ||
+            !companion.hasAnnotation(InjektFqNames.GivenSet)
+        ) {
             context.trace.report(
-                InjektErrors.EFFECT_WITHOUT_COMPANION
+                InjektErrors.EFFECT_WITHOUT_GIVEN_SET_COMPANION
                     .on(declaration)
             )
             return
