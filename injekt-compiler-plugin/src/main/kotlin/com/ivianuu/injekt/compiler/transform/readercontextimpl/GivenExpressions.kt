@@ -64,6 +64,7 @@ class GivenExpressions(
                 is GivenInstance -> inputExpression(given)
                 is GivenMap -> mapExpression(given)
                 is GivenNull -> nullExpression()
+                is GivenSelfContext -> selfContextExpression(given)
                 is GivenSet -> setExpression(given)
             }
         }
@@ -348,6 +349,10 @@ class GivenExpressions(
                 createExpression(emptyMap())
             }
         }
+    }
+
+    private fun selfContextExpression(given: GivenSelfContext): ContextExpression {
+        return { c -> c[given.context] }
     }
 
 }

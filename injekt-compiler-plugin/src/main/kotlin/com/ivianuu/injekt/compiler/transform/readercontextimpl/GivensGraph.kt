@@ -87,6 +87,8 @@ class GivensGraph(
     private val readerContextParamTransformer: ReaderContextParamTransformer
 ) {
 
+    private val contextName = contextImpl.superTypes.first().classOrNull!!.owner
+
     private val instanceNodes = inputs
         .map { GivenInstance(it, contextImpl) }
         .groupBy { it.key }
@@ -261,7 +263,7 @@ class GivensGraph(
                 }
                 appendLine(
                     "No given found for '${key}' in '${
-                        contextImpl.superTypes.first().render()
+                        contextName.defaultType.render()
                     }':"
                 )
 
@@ -293,12 +295,12 @@ class GivensGraph(
         if (given != null) return given
 
         fun Given.check(): Given? {
-            if (targetContext != null && targetContext != contextImpl.superTypes.first().classOrNull!!.owner) {
+            if (targetContext != null && targetContext != contextName) {
                 if (parent == null) {
                     error(
                         "Context mismatch, given '${key}' " +
                                 "is scoped to '${targetContext.defaultType.render()}' but actual context is " +
-                                contextImpl.superTypes.first().render()
+                                contextName.defaultType.render()
                     )
                 } else {
                     return null
@@ -382,6 +384,13 @@ class GivensGraph(
         instanceNodes[key]?.let { this += it }
 
         inputFunctionNodes[key]?.let { this += it }
+
+        if (key.type.classOrNull!!.owner == contextName) {
+            this += GivenSelfContext(
+                key = key,
+                context = contextImpl
+            )
+        }
 
         if (key.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.ContextMarker) ||
             key.type.classOrNull!!.owner.name.asString().endsWith("__Context")
@@ -584,10 +593,7 @@ class GivensGraph(
                     givenSetAccessExpression = null
                 )
             }
-            .filter {
-                it.targetContext == null || it.targetContext == contextImpl
-                    .superTypes.first().classOrNull!!.owner
-            }
+            .filter { it.targetContext == null || it.targetContext == contextName }
 
         (declarationGraph.givenMapEntries(key.type.uniqueTypeName().asString()) +
                 inputGivenMapEntries.getOrElse(key) { emptySet() })

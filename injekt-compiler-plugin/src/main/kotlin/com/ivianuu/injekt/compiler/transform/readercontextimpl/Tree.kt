@@ -48,6 +48,14 @@ sealed class Given(
     abstract val contexts: List<IrType>
 }
 
+class GivenSelfContext(
+    key: Key,
+    val context: IrClass
+) : Given(key, context, emptyList(), null, false, null, null) {
+    override val contexts: List<IrType>
+        get() = emptyList()
+}
+
 class GivenChildContext(
     key: Key,
     owner: IrClass,

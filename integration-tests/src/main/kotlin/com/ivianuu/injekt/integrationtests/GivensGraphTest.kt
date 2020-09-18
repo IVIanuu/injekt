@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.integrationtests
 
 import com.ivianuu.injekt.test.Foo
+import com.ivianuu.injekt.test.TestContext
 import com.ivianuu.injekt.test.assertInternalError
 import com.ivianuu.injekt.test.codegen
 import com.ivianuu.injekt.test.invokeSingleFile
@@ -325,4 +326,16 @@ class GivensGraphTest {
         assertNotSame(foo1, foo2)
     }
 
+    @Test
+    fun testInjectingContext() = codegen(
+        """
+            fun invoke(): Pair<TestContext, TestContext> {
+                val context = rootContext<TestContext>()
+                return context to context.runReader { given<TestContext>() }
+            }
+        """
+    ) {
+        val (context1, context2) = invokeSingleFile<Pair<TestContext, TestContext>>()
+        assertSame(context1, context2)
+    }
 }
