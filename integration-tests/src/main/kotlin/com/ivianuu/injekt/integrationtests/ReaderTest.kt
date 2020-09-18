@@ -730,4 +730,54 @@ class ReaderTest {
         assertTrue(invokeSingleFile() is Bar)
     }
 
+    @Test
+    fun testGenericChildContext() = codegen(
+        """
+            @Reader
+            fun <T> getTroughChild(): T {
+                return childContext<TestChildContext>().runReader {
+                    given()
+                }
+            }
+            
+            fun invoke(): Foo {
+                val context = rootContext<TestParentContext>(Foo())
+                return context.runReader { getTroughChild() }
+            }
+        """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
+    fun testComplexGenericChildContext() = codegen(
+        """
+            class Optional<T>(val value: T)
+            
+            @Reader
+            fun <T> getTroughChild(): Optional<T> {
+                return getOptional { 
+                    childContext<TestChildContext>().runReader { 
+                        given()
+                    }
+                 }
+            }
+            
+            @Reader
+            fun <T> getOptional(block: () -> Optional<T>): Optional<T> {
+                return block()
+            }
+            
+            @Given
+            fun optionalFoo() = Optional(given<Foo>())
+            
+            fun invoke(): Optional<Foo> {
+                val context = rootContext<TestParentContext>(Foo())
+                return context.runReader { getTroughChild() }
+            }
+        """
+    ) {
+        invokeSingleFile()
+    }
+
 }

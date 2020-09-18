@@ -28,7 +28,7 @@ import com.ivianuu.injekt.compiler.uniqueKey
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.copyTo
-import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
+import org.jetbrains.kotlin.backend.common.ir.copyTypeParameters
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -41,7 +41,7 @@ import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
+import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
@@ -64,7 +64,7 @@ fun IrDeclarationWithName.getContextName(): Name {
 fun createContext(
     owner: IrDeclarationWithName,
     origin: FqName,
-    parentTypeParametersContainer: IrTypeParametersContainer?,
+    capturedTypeParameters: List<IrTypeParameter>,
     pluginContext: IrPluginContext,
     module: IrModuleFragment,
     injektSymbols: InjektSymbols
@@ -76,8 +76,7 @@ fun createContext(
     parent = owner.file
     createImplicitParameterDeclarationWithWrappedDescriptor()
     addMetadataIfNotLocal()
-    if (owner is IrTypeParametersContainer) copyTypeParametersFrom(owner)
-    parentTypeParametersContainer?.let { copyTypeParametersFrom(it) }
+    copyTypeParameters(capturedTypeParameters)
 
     annotations += DeclarationIrBuilder(pluginContext, symbol).run {
         irCall(injektSymbols.contextMarker.constructors.single())
@@ -91,7 +90,7 @@ fun createContext(
 
 fun createContextFactory(
     contextType: IrType,
-    typeParametersContainer: IrTypeParametersContainer?,
+    capturedTypeParameters: List<IrTypeParameter>,
     file: IrFile,
     inputTypes: List<IrType>,
     startOffset: Int,
@@ -109,13 +108,17 @@ fun createContextFactory(
     createImplicitParameterDeclarationWithWrappedDescriptor()
     addMetadataIfNotLocal()
 
-    if (typeParametersContainer != null)
-        copyTypeParametersFrom(typeParametersContainer)
+    copyTypeParameters(capturedTypeParameters)
 
     addFunction {
         this.name = "create".asNameId()
         returnType = contextType
-            .remapTypeParametersByName(typeParametersContainer ?: this@clazz, this@clazz)
+            .remapTypeParametersByName(
+                capturedTypeParameters
+                    .map { it.descriptor.fqNameSafe }
+                    .zip(typeParameters)
+                    .toMap()
+            )
         modality = Modality.ABSTRACT
     }.apply {
         dispatchReceiverParameter = thisReceiver!!.copyTo(this)
@@ -123,7 +126,14 @@ fun createContextFactory(
         addMetadataIfNotLocal()
         val parameterUniqueNameProvider = UniqueNameProvider()
         inputTypes
-            .map { it.remapTypeParametersByName(typeParametersContainer ?: this@clazz, this@clazz) }
+            .map {
+                it.remapTypeParametersByName(
+                    capturedTypeParameters
+                        .map { it.descriptor.fqNameSafe }
+                        .zip(typeParameters)
+                        .toMap()
+                )
+            }
             .forEach {
                 addValueParameter(
                     parameterUniqueNameProvider(it.uniqueTypeName().asString()),

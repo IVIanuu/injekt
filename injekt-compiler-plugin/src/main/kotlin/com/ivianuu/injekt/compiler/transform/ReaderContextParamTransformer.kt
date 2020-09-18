@@ -16,6 +16,8 @@
 
 package com.ivianuu.injekt.compiler.transform
 
+import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.WeakBindingTrace
 import com.ivianuu.injekt.compiler.addChildAndUpdateMetadata
 import com.ivianuu.injekt.compiler.canUseReaders
 import com.ivianuu.injekt.compiler.copy
@@ -30,10 +32,10 @@ import com.ivianuu.injekt.compiler.transformFiles
 import com.ivianuu.injekt.compiler.typeWith
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.ir.copyTypeParameters
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
-import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
@@ -43,16 +45,13 @@ import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
-import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrOverridableDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
-import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
+import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
@@ -77,19 +76,29 @@ import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.load.java.JvmAbi
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ReaderContextParamTransformer(
-    pluginContext: IrPluginContext,
-    private val indexer: Indexer
+    pluginContext: IrPluginContext
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val transformedClasses = mutableSetOf<IrClass>()
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
     private val newContexts = mutableSetOf<IrClass>()
+    private var capturedTypeParameters = emptyList<IrTypeParameter>()
+    private val typeParametersMap = mutableMapOf<IrTypeParameter, IrTypeParameter>()
+    private inline fun <R> withCapturedTypeParameters(
+        typeParameters: List<IrTypeParameter>,
+        block: () -> R
+    ): R {
+        val prev = capturedTypeParameters
+        capturedTypeParameters = typeParameters
+        val result = block()
+        capturedTypeParameters = prev
+        return result
+    }
 
     fun getTransformedFunction(function: IrFunction) =
         transformFunctionIfNeeded(function)
@@ -102,11 +111,23 @@ class ReaderContextParamTransformer(
     }
 
     private val transformer = object : IrElementTransformerVoidWithContext() {
-        override fun visitClassNew(declaration: IrClass): IrStatement =
-            super.visitClassNew(transformClassIfNeeded(declaration))
+        override fun visitClassNew(declaration: IrClass): IrStatement {
+            val transformed = transformClassIfNeeded(declaration)
+            return withCapturedTypeParameters(
+                if (transformed.canUseReaders(pluginContext)) transformed.typeParameters else capturedTypeParameters
+            ) {
+                super.visitClassNew(transformed)
+            }
+        }
 
-        override fun visitFunctionNew(declaration: IrFunction): IrStatement =
-            super.visitFunctionNew(transformFunctionIfNeeded(declaration))
+        override fun visitFunctionNew(declaration: IrFunction): IrStatement {
+            val transformed = transformFunctionIfNeeded(declaration)
+            return withCapturedTypeParameters(
+                if (transformed.canUseReaders(pluginContext)) transformed.typeParameters else capturedTypeParameters
+            ) {
+                super.visitFunctionNew(transformed)
+            }
+        }
     }
 
     override fun lower() {
@@ -156,19 +177,17 @@ class ReaderContextParamTransformer(
             return clazz
         }
 
-        lateinit var contextField: IrField
-        lateinit var contextParameter: IrValueParameter
-
-        transformReaderFunction(
-            owner = clazz,
-            ownerFunction = readerConstructor,
-            onContextParameterCreated = {
-                contextParameter = it
-                contextField = clazz.addField(
-                    fieldName = "_context",
-                    fieldType = it.type
-                )
-            }
+        val context =
+            createContext(
+                clazz,
+                clazz.descriptor.fqNameSafe,
+                readerConstructor.typeParameters,
+                pluginContext, module, injektSymbols
+            ).also { newContexts += it }
+        val contextParameter = readerConstructor.addContextParameter(context)
+        val contextField = clazz.addField(
+            fieldName = "_context",
+            fieldType = contextParameter.type
         )
 
         readerConstructor.body = DeclarationIrBuilder(pluginContext, clazz.symbol).run {
@@ -224,33 +243,31 @@ class ReaderContextParamTransformer(
         }
 
         val transformedFunction = function.copyAsReader()
-            .also { it.transformChildrenVoid(transformer) }
+        typeParametersMap += transformedFunction.typeParameters
+            .zip(function.typeParameters).toMap()
         transformedFunctions[function] = transformedFunction
 
-        transformReaderFunction(
-            owner = transformedFunction,
-            ownerFunction = transformedFunction
+        transformedFunction.copyTypeParameters(capturedTypeParameters)
+        val parameterMap = capturedTypeParameters
+            .map { typeParametersMap.getOrElse(it) { it } }
+            .zip(transformedFunction.typeParameters.takeLast(capturedTypeParameters.size))
+            .toMap()
+        WeakBindingTrace.record(
+            InjektWritableSlices.TYPE_PARAMETER_MAP,
+            transformedFunction as IrSimpleFunction,
+            parameterMap
         )
-
-        return transformedFunction
-    }
-
-    private fun <T> transformReaderFunction(
-        owner: T,
-        ownerFunction: IrFunction,
-        onContextParameterCreated: (IrValueParameter) -> Unit = {}
-    ) where T : IrDeclarationWithName, T : IrDeclarationWithVisibility, T : IrDeclarationParent, T : IrTypeParametersContainer {
-        val parentFunction =
-            if (owner.visibility == Visibilities.LOCAL && owner.parent is IrFunction)
-                owner.parent as IrFunction else null
 
         val context =
             createContext(
-                owner, ownerFunction.descriptor.fqNameSafe, parentFunction,
+                transformedFunction,
+                transformedFunction.descriptor.fqNameSafe,
+                transformedFunction.typeParameters,
                 pluginContext, module, injektSymbols
             ).also { newContexts += it }
-        val contextParameter = ownerFunction.addContextParameter(context)
-        onContextParameterCreated(contextParameter)
+        transformedFunction.addContextParameter(context)
+
+        return transformedFunction
     }
 
     private fun IrFunction.addContextParameter(context: IrClass): IrValueParameter {

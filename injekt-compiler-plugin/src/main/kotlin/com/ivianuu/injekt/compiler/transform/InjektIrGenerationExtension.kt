@@ -66,10 +66,10 @@ class InjektIrGenerationExtension(
         )
 
         val readerContextParamTransformer =
-            ReaderContextParamTransformer(pluginContext, indexer)
+            ReaderContextParamTransformer(pluginContext)
         readerContextParamTransformer.doLower(moduleFragment)
 
-        ReaderCallTransformer(pluginContext, indexer, lookupManager).doLower(moduleFragment)
+        ReaderCallTransformer(pluginContext, indexer).doLower(moduleFragment)
 
         GivenIndexingTransformer(
             indexer,

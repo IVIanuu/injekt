@@ -224,21 +224,22 @@ fun IrType.copy(
 
 fun IrType.remapTypeParametersByName(
     source: IrTypeParametersContainer,
-    target: IrTypeParametersContainer,
-    srcToDstParameterMap: Map<IrTypeParameter, IrTypeParameter>? = null
+    target: IrTypeParametersContainer
 ): IrType =
+    remapTypeParametersByName(
+        source.typeParameters
+            .map { it.descriptor.fqNameSafe }
+            .zip(target.typeParameters)
+            .toMap()
+    )
+
+fun IrType.remapTypeParametersByName(parametersMap: Map<FqName, IrTypeParameter>): IrType =
     when (this) {
         is IrSimpleType -> {
             when (val classifier = classifier.owner) {
                 is IrTypeParameter -> {
                     val newClassifier =
-                        srcToDstParameterMap?.get(classifier)
-                            ?: if ((classifier.parent as IrDeclarationWithName).descriptor.fqNameSafe ==
-                                (source as IrDeclarationWithName).descriptor.fqNameSafe
-                            )
-                                target.typeParameters[classifier.index]
-                            else
-                                classifier
+                        parametersMap[classifier.descriptor.fqNameSafe] ?: classifier
                     IrSimpleTypeImpl(
                         makeKotlinType(
                             newClassifier.symbol,
@@ -258,11 +259,59 @@ fun IrType.remapTypeParametersByName(
                     val arguments = arguments.map {
                         when (it) {
                             is IrTypeProjection -> makeTypeProjection(
-                                it.type.remapTypeParametersByName(
-                                    source,
-                                    target,
-                                    srcToDstParameterMap
-                                ),
+                                it.type.remapTypeParametersByName(parametersMap),
+                                it.variance
+                            )
+                            else -> it
+                        }
+                    }
+                    IrSimpleTypeImpl(
+                        makeKotlinType(
+                            classifier.symbol,
+                            arguments,
+                            hasQuestionMark,
+                            annotations,
+                            abbreviation
+                        ),
+                        classifier.symbol,
+                        hasQuestionMark,
+                        arguments,
+                        annotations,
+                        abbreviation
+                    )
+                }
+                else -> this
+            }
+        }
+        else -> this
+    }
+
+fun IrType.remapTypeParameters(parametersMap: Map<IrTypeParameter, IrTypeParameter>): IrType =
+    when (this) {
+        is IrSimpleType -> {
+            when (val classifier = classifier.owner) {
+                is IrTypeParameter -> {
+                    val newClassifier = parametersMap[classifier] ?: classifier
+                    IrSimpleTypeImpl(
+                        makeKotlinType(
+                            newClassifier.symbol,
+                            arguments,
+                            hasQuestionMark,
+                            annotations,
+                            abbreviation
+                        ),
+                        newClassifier.symbol,
+                        hasQuestionMark,
+                        arguments,
+                        annotations,
+                        abbreviation
+                    )
+                }
+                is IrClass -> {
+                    val arguments = arguments.map {
+                        when (it) {
+                            is IrTypeProjection -> makeTypeProjection(
+                                it.type.remapTypeParameters(parametersMap),
                                 it.variance
                             )
                             else -> it

@@ -16,7 +16,8 @@
 
 package com.ivianuu.injekt.compiler.transform
 
-import com.ivianuu.injekt.compiler.LookupManager
+import com.ivianuu.injekt.compiler.InjektWritableSlices
+import com.ivianuu.injekt.compiler.WeakBindingTrace
 import com.ivianuu.injekt.compiler.addChildAndUpdateMetadata
 import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.asNameId
@@ -26,6 +27,7 @@ import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getContextValueParameter
 import com.ivianuu.injekt.compiler.getReaderConstructor
 import com.ivianuu.injekt.compiler.irClassReference
+import com.ivianuu.injekt.compiler.remapTypeParameters
 import com.ivianuu.injekt.compiler.remapTypeParametersByName
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.compiler.thisOfClass
@@ -56,9 +58,9 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.impl.IrExternalPackageFragmentImpl
 import org.jetbrains.kotlin.ir.expressions.IrCall
@@ -89,8 +91,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ReaderCallTransformer(
     pluginContext: IrPluginContext,
-    private val indexer: Indexer,
-    private val lookupManager: LookupManager
+    private val indexer: Indexer
 ) : AbstractInjektTransformer(pluginContext) {
 
     private val transformedDeclarations = mutableListOf<IrDeclaration>()
@@ -149,22 +150,22 @@ class ReaderCallTransformer(
     ) {
 
         private val functionsByType = mutableMapOf<IrType, IrFunction>()
-
-        private val parentFunction =
-            if ((declaration as IrDeclarationWithVisibility).visibility == Visibilities.LOCAL && declaration.parent is IrFunction)
-                declaration.parent as IrFunction else null
+        private val parameterMap = ((declaration as? IrSimpleFunction)
+            ?.let { WeakBindingTrace[InjektWritableSlices.TYPE_PARAMETER_MAP, it] }
+            ?: emptyMap())
 
         fun givenExpressionForType(
             type: IrType,
             contextExpression: () -> IrExpression
         ): IrExpression {
             val finalType = type
-                .remapTypeParametersByName(declaration as IrTypeParametersContainer, context)
-                .let {
-                    if (parentFunction != null)
-                        it.remapTypeParametersByName(parentFunction, context)
-                    else it
-                }
+                .remapTypeParameters(parameterMap)
+                .remapTypeParametersByName(
+                    (declaration as IrTypeParametersContainer).typeParameters
+                        .map { it.descriptor.fqNameSafe }
+                        .zip(context.typeParameters)
+                        .toMap()
+                )
 
             val function = functionsByType.getOrPut(finalType) {
                 context.addFunction {
@@ -316,7 +317,8 @@ class ReaderCallTransformer(
             inputTypes = inputs.map { it.type },
             pluginContext = pluginContext,
             isChild = isChild,
-            typeParametersContainer = scope?.declaration as? IrTypeParametersContainer,
+            capturedTypeParameters = (scope?.declaration as? IrTypeParametersContainer)?.typeParameters
+                ?: emptyList(),
             module = module,
             injektSymbols = injektSymbols
         ).also {
