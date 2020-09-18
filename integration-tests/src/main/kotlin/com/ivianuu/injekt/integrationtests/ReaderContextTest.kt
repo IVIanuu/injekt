@@ -197,6 +197,7 @@ class ReaderContextTest {
         """ 
             @Effect
             annotation class GivenFooFactory {
+                @GivenSet
                 companion object {
                     @Given
                     fun <T : () -> Foo> invoke(): FooFactoryMarker = given<T>()
