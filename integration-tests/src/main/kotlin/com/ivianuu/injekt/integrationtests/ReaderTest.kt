@@ -780,4 +780,46 @@ class ReaderTest {
         invokeSingleFile()
     }
 
+    @Test
+    fun testComplexGenericChildContextMulti() = multiCodegen(
+        listOf(
+            source(
+                """
+                    class Optional<T>(val value: T)
+            
+                    @Reader
+                    fun <T> getTroughChild(): Optional<T> {
+                        return getOptional { 
+                            childContext<TestChildContext>().runReader { 
+                                given()
+                            }
+                         }
+                    }
+                    
+                    @Reader
+                    fun <T> getOptional(block: () -> Optional<T>): Optional<T> {
+                        return block()
+                    }
+                    
+                    @Given
+                    fun optionalFoo() = Optional(given<Foo>())
+                """,
+                initializeInjekt = false
+            )
+        ),
+        listOf(
+            source(
+                """
+                fun invoke(): Optional<Foo> {
+                    val context = rootContext<TestParentContext>(Foo())
+                    return context.runReader { getTroughChild() }
+                }
+                """,
+                name = "File.kt"
+            )
+        )
+    ) {
+        it.last().invokeSingleFile()
+    }
+
 }
