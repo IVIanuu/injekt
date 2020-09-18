@@ -307,4 +307,22 @@ class GivensGraphTest {
         it.last().assertInternalError("multiple external givens")
     }
 
+    @Test
+    fun testGivenPerContext() = codegen(
+        """
+        @Given(TestParentContext::class) fun parentFoo() = Foo()
+        @Given(TestChildContext::class) fun childFoo() = Foo()
+        fun invoke(): Pair<Foo, Foo> {
+            return rootContext<TestParentContext>().runReader {
+                given<Foo>() to childContext<TestChildContext>().runReader {
+                    given<Foo>()
+                }
+            }
+        }
+    """
+    ) {
+        val (foo1, foo2) = invokeSingleFile<Pair<Foo, Foo>>()
+        assertNotSame(foo1, foo2)
+    }
+
 }

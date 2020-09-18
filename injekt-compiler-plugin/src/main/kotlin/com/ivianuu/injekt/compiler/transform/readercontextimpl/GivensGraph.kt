@@ -584,6 +584,10 @@ class GivensGraph(
                     givenSetAccessExpression = null
                 )
             }
+            .filter {
+                it.targetContext == null || it.targetContext == contextImpl
+                    .superTypes.first().classOrNull!!.owner
+            }
 
         (declarationGraph.givenMapEntries(key.type.uniqueTypeName().asString()) +
                 inputGivenMapEntries.getOrElse(key) { emptySet() })
