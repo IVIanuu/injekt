@@ -267,6 +267,30 @@ class ReaderTest {
     }
 
     @Test
+    fun testMutableProperty() = codegen(
+        """
+        @Given
+        fun foo() = Foo()
+        
+        private var _foo: Foo? = null
+        @Reader
+        var cachedFoo: Foo 
+            get() = _foo ?: given<Foo>().also { _foo = it }
+            set(value) { _foo = value }
+        
+        fun invoke(): Foo { 
+            return rootContext<TestContext>().runReader { 
+                cachedFoo
+                cachedFoo = Foo()
+                cachedFoo
+            }
+        }
+    """
+    ) {
+        assertTrue(invokeSingleFile() is Foo)
+    }
+
+    @Test
     fun testMultiCompileReaderProperty() = multiCodegen(
         listOf(
             source(

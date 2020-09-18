@@ -20,7 +20,6 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.transform.readercontextimpl.asKey
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -28,9 +27,7 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class DeclarationGraph(
@@ -53,7 +50,6 @@ class DeclarationGraph(
                     .mapNotNull { it.getter }
                 )
             .filter {
-                println("found ${it.dump()} ${it.returnType.asKey()}")
                 (it.hasAnnotation(InjektFqNames.Given) || it.hasAnnotatedAnnotations(InjektFqNames.Effect)) ||
                         (it is IrSimpleFunction &&
                                 (it.correspondingPropertySymbol?.owner?.hasAnnotation(InjektFqNames.Given) == true ||
@@ -93,9 +89,6 @@ class DeclarationGraph(
                 context.descriptor.fqNameSafe.asString()
             )
         )
-            .onEach {
-                println("search indwx for ${context.render()} found ${it.render()}")
-            }
             .filter {
                 it.getClassFromAnnotation(InjektFqNames.RunReaderCall, 0) == context
             }

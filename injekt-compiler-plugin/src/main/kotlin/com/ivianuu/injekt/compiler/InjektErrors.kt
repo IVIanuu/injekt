@@ -88,11 +88,6 @@ interface InjektErrors {
         )
 
         @JvmField
-        val READER_PROPERTY_VAR = error(
-            "@Reader property cannot have be a var"
-        )
-
-        @JvmField
         val MULTIPLE_READER_ANNOTATIONS = error(
             "A declaration can only be annotated with one of @Reader, @Given, @GivenMapEntries, @GivenSetElements or @Effect annotated annotations"
         )
