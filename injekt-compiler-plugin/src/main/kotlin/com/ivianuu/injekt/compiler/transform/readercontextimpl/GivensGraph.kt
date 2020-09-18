@@ -167,7 +167,6 @@ class GivensGraph(
                         inputFunctionNodes.getOrPut(function.returnType.asKey()) { mutableSetOf() } += GivenFunction(
                             key = function.returnType.asKey(),
                             owner = contextImpl,
-                            declarations = listOf(function),
                             contexts = listOf(function.getContext()!!.defaultType),
                             external = function.isExternalDeclaration(),
                             explicitParameters = explicitParameters,
@@ -399,7 +398,6 @@ class GivensGraph(
             this += GivenCalleeContext(
                 key = key,
                 owner = contextImpl,
-                declarations = emptyList(),
                 origin = null,
                 lazyContexts = { contexts },
                 lazyContextImpl = {
@@ -584,7 +582,6 @@ class GivensGraph(
                     key = key,
                     owner = contextImpl,
                     contexts = listOf(function.getContext()!!.defaultType),
-                    declarations = listOf(function),
                     external = function.isExternalDeclaration(),
                     explicitParameters = explicitParameters,
                     origin = function.descriptor.fqNameSafe,

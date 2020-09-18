@@ -290,8 +290,7 @@ class ReaderContextFactoryImplGenerator(
         val expressions = GivenExpressions(
             parent = parentExpressions,
             pluginContext = pluginContext,
-            contextImpl = contextImpl,
-            initTrigger = initTrigger
+            contextImpl = contextImpl
         )
 
         val graph = GivensGraph(

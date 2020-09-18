@@ -22,7 +22,6 @@ import com.ivianuu.injekt.compiler.isTypeParameter
 import com.ivianuu.injekt.compiler.typeArguments
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
@@ -39,7 +38,6 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 sealed class Given(
     val key: Key,
     val owner: IrClass,
-    val declarations: List<IrDeclarationWithName>,
     val origin: FqName?,
     val external: Boolean,
     val targetContext: IrClass?,
@@ -51,7 +49,7 @@ sealed class Given(
 class GivenSelfContext(
     key: Key,
     val context: IrClass
-) : Given(key, context, emptyList(), null, false, null, null) {
+) : Given(key, context, null, false, null, null) {
     override val contexts: List<IrType>
         get() = emptyList()
 }
@@ -61,7 +59,7 @@ class GivenChildContext(
     owner: IrClass,
     origin: FqName?,
     private val generator: ReaderContextFactoryImplGenerator
-) : Given(key, owner, emptyList(), origin, false, null, null) {
+) : Given(key, owner, origin, false, null, null) {
     override val contexts: List<IrType>
         get() = emptyList()
     val factory by lazy {
@@ -73,11 +71,10 @@ class GivenChildContext(
 class GivenCalleeContext(
     key: Key,
     owner: IrClass,
-    declarations: List<IrDeclarationWithName>,
     origin: FqName?,
     val lazyContextImpl: () -> IrClass?,
     val lazyContexts: () -> List<IrType>
-) : Given(key, owner, declarations, origin, false, null, null) {
+) : Given(key, owner, origin, false, null, null) {
     val contextImpl by lazy(lazyContextImpl)
     override val contexts by lazy {
         contextImpl
@@ -89,14 +86,13 @@ class GivenFunction(
     key: Key,
     owner: IrClass,
     override val contexts: List<IrType>,
-    declarations: List<IrDeclarationWithName>,
     origin: FqName?,
     external: Boolean,
     targetContext: IrClass?,
     givenSetAccessExpression: ContextExpression?,
     val explicitParameters: List<IrValueParameter>,
     val function: IrFunction
-) : Given(key, owner, declarations, origin, external, targetContext, givenSetAccessExpression)
+) : Given(key, owner, origin, external, targetContext, givenSetAccessExpression)
 
 class GivenInstance(
     val inputField: IrField,
@@ -104,7 +100,6 @@ class GivenInstance(
 ) : Given(
     inputField.type.asKey(),
     owner,
-    emptyList(),
     inputField.descriptor.fqNameSafe,
     false,
     null,
@@ -123,7 +118,6 @@ class GivenMap(
 ) : Given(
     key,
     owner,
-    functions,
     null,
     false,
     null,
@@ -139,7 +133,6 @@ class GivenSet(
 ) : Given(
     key,
     owner,
-    functions,
     null,
     false,
     null,
@@ -152,7 +145,6 @@ class GivenNull(
 ) : Given(
     key,
     owner,
-    emptyList(),
     null,
     true,
     null,

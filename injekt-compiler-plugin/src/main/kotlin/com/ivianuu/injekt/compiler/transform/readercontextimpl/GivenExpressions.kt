@@ -3,46 +3,49 @@ package com.ivianuu.injekt.compiler.transform.readercontextimpl
 import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.compiler.irLambda
 import com.ivianuu.injekt.compiler.tmpFunction
-import com.ivianuu.injekt.compiler.typeWith
 import com.ivianuu.injekt.compiler.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.backend.common.lower.irNot
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irEqeqeq
 import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
+import org.jetbrains.kotlin.ir.builders.irIfThenElse
 import org.jetbrains.kotlin.ir.builders.irNull
+import org.jetbrains.kotlin.ir.builders.irSetField
+import org.jetbrains.kotlin.ir.builders.irSetVar
 import org.jetbrains.kotlin.ir.builders.irTemporary
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrReturnImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
+import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.properties
 import org.jetbrains.kotlin.name.FqName
 
 class GivenExpressions(
     private val parent: GivenExpressions?,
     private val pluginContext: IrPluginContext,
-    private val contextImpl: IrClass,
-    private val initTrigger: IrDeclarationWithName
+    private val contextImpl: IrClass
 ) {
 
     private val givenExpressions = mutableMapOf<Key, ContextExpression>()
@@ -69,57 +72,6 @@ class GivenExpressions(
             }
         }
 
-        val finalExpression = if (given.targetContext == null ||
-            given.owner != contextImpl
-        ) rawExpression else ({ c ->
-            val lazy = pluginContext.referenceFunctions(FqName("kotlin.lazy"))
-                .single { it.owner.valueParameters.size == 1 }
-                .owner
-
-            val field = contextImpl.addField(
-                given.key.type.uniqueTypeName(),
-                lazy.returnType.classOrNull!!.owner.typeWith(listOf(given.key.type))
-            ).apply {
-                initializer = irExprBody(
-                    irCall(lazy).apply {
-                        putTypeArgument(0, given.key.type)
-                        putValueArgument(
-                            0,
-                            DeclarationIrBuilder(pluginContext, symbol)
-                                .irLambda(
-                                    pluginContext.tmpFunction(0)
-                                        .owner
-                                        .typeWith(listOf(given.key.type))
-                                ) {
-                                    rawExpression(
-                                        ContextExpressionContext(
-                                            pluginContext,
-                                            contextImpl
-                                        ) {
-                                            irGet(contextImpl.thisReceiver!!)
-                                        }
-                                    )
-                                }
-                        )
-                    }
-                )
-            }
-
-            irCall(
-                lazy.returnType
-                    .classOrNull!!
-                    .owner
-                    .properties
-                    .single { it.name.asString() == "value" }
-                    .getter!!
-            ).apply {
-                dispatchReceiver = irGetField(
-                    c[contextImpl],
-                    field
-                )
-            }
-        })
-
         val functionByType = buildFun {
             this.name = given.key.type.uniqueTypeName()
             returnType = given.key.type
@@ -131,6 +83,69 @@ class GivenExpressions(
                 overriddenSymbols += superFunction.symbol
             }
         }
+
+        val finalExpression = if (given.targetContext == null ||
+            given.owner != contextImpl
+        ) rawExpression else ({ c ->
+            val field = contextImpl.addField(
+                given.key.type.uniqueTypeName(),
+                pluginContext.irBuiltIns.anyNType
+            ).apply {
+                initializer = irExprBody(irGet(contextImpl.thisReceiver!!))
+            }
+
+            irBlock(resultType = given.key.type) {
+                val tmp1 = irTemporary(irGetField(c[contextImpl], field))
+                +irIfThenElse(
+                    pluginContext.irBuiltIns.unitType,
+                    irNot(irEqeqeq(irGet(tmp1), c[contextImpl])),
+                    IrReturnImpl(
+                        UNDEFINED_OFFSET,
+                        UNDEFINED_OFFSET,
+                        given.key.type,
+                        functionByType.symbol,
+                        irGet(tmp1)
+                    ),
+                    irCall(
+                        pluginContext.referenceFunctions(FqName("kotlin.synchronized"))
+                            .single()
+                    ).apply {
+                        putTypeArgument(0, given.key.type)
+                        putValueArgument(0, c[contextImpl])
+                        putValueArgument(
+                            1,
+                            irLambda(pluginContext.tmpFunction(0).typeWith(given.key.type)) {
+                                irBlock {
+                                    val tmp2 = irTemporary(irGetField(c[contextImpl], field))
+                                    +irIfThenElse(
+                                        pluginContext.irBuiltIns.unitType,
+                                        irNot(irEqeqeq(irGet(tmp2), c[contextImpl])),
+                                        IrReturnImpl(
+                                            UNDEFINED_OFFSET,
+                                            UNDEFINED_OFFSET,
+                                            given.key.type,
+                                            functionByType.symbol,
+                                            irGet(tmp2)
+                                        ),
+                                        irBlock {
+                                            +irSetVar(tmp2.symbol, rawExpression(c))
+                                            +irSetField(c[contextImpl], field, irGet(tmp2))
+                                            +IrReturnImpl(
+                                                UNDEFINED_OFFSET,
+                                                UNDEFINED_OFFSET,
+                                                given.key.type,
+                                                functionByType.symbol,
+                                                irGet(tmp2)
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                        )
+                    }
+                )
+            }
+        })
 
         val expression: ContextExpression = { c ->
             irCall(functionByType).apply {

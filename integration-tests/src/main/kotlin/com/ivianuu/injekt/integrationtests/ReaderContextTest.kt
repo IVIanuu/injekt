@@ -254,10 +254,7 @@ class ReaderContextTest {
         }
     """
     ) {
-        assertSame(
-            invokeSingleFile(),
-            invokeSingleFile()
-        )
+        assertSame(invokeSingleFile(), invokeSingleFile())
     }
 
     @Test
