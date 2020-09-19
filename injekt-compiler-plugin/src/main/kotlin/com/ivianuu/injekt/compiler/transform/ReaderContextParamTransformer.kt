@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.WeakBindingTrace
 import com.ivianuu.injekt.compiler.addChildAndUpdateMetadata
 import com.ivianuu.injekt.compiler.canUseReaders
 import com.ivianuu.injekt.compiler.copy
-import com.ivianuu.injekt.compiler.dumpSrc
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.getReaderConstructor
@@ -231,7 +230,7 @@ class ReaderContextParamTransformer(
         if (function.isExternalDeclaration()) {
             val context = getContextFromExternalDeclaration(function)
             if (context == null) {
-                error("Wtf ${function.dump()}\n${module.dumpSrc()}")
+                error("Wtf ${function.dump()}\n${module.dump()}")
             }
             val transformedFunction = function.copyAsReader()
             transformedFunctions[function] = transformedFunction
