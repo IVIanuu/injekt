@@ -73,6 +73,11 @@ interface InjektErrors {
         )
 
         @JvmField
+        val READER_FUNCTION_MUST_BE_FINAL = error(
+            "@Reader function must be final"
+        )
+
+        @JvmField
         val READER_CLASS_CANNOT_BE_INTERFACE = error(
             "@Reader class cannot be an interface"
         )

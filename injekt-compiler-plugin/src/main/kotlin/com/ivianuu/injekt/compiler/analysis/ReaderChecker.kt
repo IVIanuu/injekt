@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
@@ -100,6 +101,12 @@ class ReaderChecker : CallChecker, DeclarationChecker {
         context: DeclarationCheckerContext
     ) {
         if (!descriptor.isReader()) return
+        if (descriptor.modality != Modality.FINAL) {
+            context.trace.report(
+                InjektErrors.READER_FUNCTION_MUST_BE_FINAL
+                    .on(declaration)
+            )
+        }
     }
 
     private fun checkProperty(

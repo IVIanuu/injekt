@@ -145,4 +145,17 @@ class ReaderFrontendTest {
         assertCompileError("one of")
     }
 
+    @Test
+    fun testNonFinalReaderFunctionFails() = codegen(
+        """
+            open class MyClass {
+                @Reader
+                open fun reader() {
+                }
+            }
+        """
+    ) {
+        assertCompileError("final")
+    }
+
 }
