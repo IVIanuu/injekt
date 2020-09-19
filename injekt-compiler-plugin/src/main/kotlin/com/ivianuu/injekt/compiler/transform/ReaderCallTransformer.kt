@@ -382,7 +382,6 @@ class ReaderCallTransformer(
         val lambdaExpression = call.getValueArgument(0)!! as IrFunctionExpression
 
         val scopeDeclaration = (scope?.declaration ?: irScope!!)
-        //recordLookup(scopeDeclaration, runReaderCallContextExpression.type.classOrNull!!.owner)
 
         indexer.index(
             runReaderCallContextExpression.type.classOrNull!!.owner,
@@ -397,7 +396,6 @@ class ReaderCallTransformer(
                 runReaderCallContextExpression.type.classOrNull!!.owner.descriptor.fqNameSafe.asString()
             )
         ) {
-            //recordLookup(this, scopeDeclaration as IrDeclarationWithName)
             annotations += DeclarationIrBuilder(pluginContext, symbol).run {
                 irCall(injektSymbols.runReaderCall.constructors.single()).apply {
                     putValueArgument(

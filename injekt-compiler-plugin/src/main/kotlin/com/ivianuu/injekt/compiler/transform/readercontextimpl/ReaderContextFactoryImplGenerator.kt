@@ -47,6 +47,7 @@ import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.isObject
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class ReaderContextFactoryImplGenerator(
     private val pluginContext: IrPluginContext,
@@ -184,8 +185,15 @@ class ReaderContextFactoryImplGenerator(
             }
         }
 
-        val dummy = buildClass {
-            this.name = Name.identifier("${factoryImpl.name}Init")
+        // we add an empty copy of the context impl to the trigger file
+        // this ensures that the init trigger file get's compiled every time a super type context changes
+        // so that we can regenerate the context impl
+        val stub = buildClass {
+            this.name = Name.identifier(
+                "${
+                    factoryImpl.descriptor.fqNameSafe.pathSegments().joinToString("_")
+                }Stubs"
+            )
             kind = ClassKind.CLASS
         }.apply clazz@{
             parent = initTrigger.file
@@ -206,8 +214,8 @@ class ReaderContextFactoryImplGenerator(
             }
         }
 
-        initTrigger.file.addChildAndUpdateMetadata(dummy)
-        lookupManager.recordLookup(factoryImpl, dummy)
+        initTrigger.file.addChildAndUpdateMetadata(stub)
+        lookupManager.recordLookup(factoryImpl, stub)
 
         return factoryImpl
     }
@@ -225,7 +233,6 @@ class ReaderContextFactoryImplGenerator(
             parent = irParent
             createImplicitParameterDeclarationWithWrappedDescriptor()
             superTypes += contextIdType
-            //recordLookup(initTrigger, contextIdType.classOrNull!!.owner)
             addMetadataIfNotLocal()
         }
 
@@ -326,10 +333,7 @@ class ReaderContextFactoryImplGenerator(
                     pluginContext = pluginContext,
                     readerContextParamTransformer = readerContextParamTransformer,
                     enterType = {
-                        if (it !in contextImpl.superTypes) {
-                            contextImpl.superTypes += it
-                            //recordLookup(initTrigger, it.classOrNull!!.owner)
-                        }
+                        if (it !in contextImpl.superTypes) contextImpl.superTypes += it
                     }
                 ) { function, substitutionMap ->
                     val existingDeclaration = contextImpl.functions.singleOrNull {
