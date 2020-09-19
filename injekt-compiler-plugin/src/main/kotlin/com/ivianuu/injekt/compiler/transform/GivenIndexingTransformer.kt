@@ -33,7 +33,6 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.util.constructedClass
-import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 
 class GivenIndexingTransformer(
@@ -48,10 +47,6 @@ class GivenIndexingTransformer(
                     declaration.hasAnnotatedAnnotations(InjektFqNames.Effect)
                 ) {
                     indexer.index(
-                        listOf(
-                            DeclarationGraph.GIVEN_PATH,
-                            declaration.constructedClass.defaultType.uniqueTypeName().asString()
-                        ),
                         declaration.constructedClass,
                         currentFile
                     )
@@ -73,34 +68,13 @@ class GivenIndexingTransformer(
                                     .typeWith(explicitParameters.map { it.type } + declaration.returnType)
                                     .uniqueTypeName()
                                     .asString()
-                            indexer.index(
-                                listOf(
-                                    DeclarationGraph.GIVEN_PATH,
-                                    typePath
-                                ),
-                                declaration,
-                                currentFile
-                            )
+                            indexer.index(declaration, currentFile)
                         }
                         declaration.hasAnnotation(InjektFqNames.GivenMapEntries) -> {
-                            indexer.index(
-                                listOf(
-                                    DeclarationGraph.MAP_ENTRIES_PATH,
-                                    declaration.returnType.uniqueTypeName().asString()
-                                ),
-                                declaration,
-                                currentFile
-                            )
+                            indexer.index(declaration, currentFile)
                         }
                         declaration.hasAnnotation(InjektFqNames.GivenSetElements) -> {
-                            indexer.index(
-                                listOf(
-                                    DeclarationGraph.SET_ELEMENTS_PATH,
-                                    declaration.returnType.uniqueTypeName().asString()
-                                ),
-                                declaration,
-                                currentFile
-                            )
+                            indexer.index(declaration, currentFile)
                         }
                     }
                 }
@@ -123,14 +97,7 @@ class GivenIndexingTransformer(
                                 .typeWith(explicitParameters.map { it.type } + readerConstructor.returnType)
                                 .uniqueTypeName()
                                 .asString()
-                        indexer.index(
-                            listOf(
-                                DeclarationGraph.GIVEN_PATH,
-                                typePath
-                            ),
-                            declaration,
-                            currentFile
-                        )
+                        indexer.index(declaration, currentFile)
                     }
                 }
                 return super.visitClassNew(declaration)
@@ -140,14 +107,7 @@ class GivenIndexingTransformer(
                 if (declaration.hasAnnotation(InjektFqNames.Given) &&
                     !declaration.isInGivenSet()
                 ) {
-                    indexer.index(
-                        listOf(
-                            DeclarationGraph.GIVEN_PATH,
-                            declaration.getter!!.returnType.uniqueTypeName().asString()
-                        ),
-                        declaration,
-                        currentFile
-                    )
+                    indexer.index(declaration, currentFile)
                 }
                 return super.visitPropertyNew(declaration)
             }

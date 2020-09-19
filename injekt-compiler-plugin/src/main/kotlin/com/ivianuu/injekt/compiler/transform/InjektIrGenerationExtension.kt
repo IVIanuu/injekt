@@ -79,6 +79,7 @@ class InjektIrGenerationExtension(
             val declarationGraph = DeclarationGraph(
                 indexer,
                 moduleFragment,
+                pluginContext,
                 readerContextParamTransformer
             )
             ReaderContextImplTransformer(

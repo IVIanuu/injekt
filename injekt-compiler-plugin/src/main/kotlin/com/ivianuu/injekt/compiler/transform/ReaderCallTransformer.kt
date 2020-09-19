@@ -323,13 +323,7 @@ class ReaderCallTransformer(
             injektSymbols = injektSymbols
         ).also {
             newDeclarations += it
-            if (!isChild) {
-                indexer.index(
-                    listOf(DeclarationGraph.ROOT_CONTEXT_FACTORY_PATH),
-                    it,
-                    it.file
-                )
-            }
+            if (!isChild) indexer.index(it, it.file)
         }
 
         return DeclarationIrBuilder(pluginContext, call.symbol).run {
@@ -390,11 +384,7 @@ class ReaderCallTransformer(
                 .descriptor.fqNameSafe.asString().hashCode() + call.startOffset)
                 .toString()
                 .removeIllegalChars()
-                .asNameId(),
-            listOf(
-                DeclarationGraph.RUN_READER_CALL_PATH,
-                runReaderCallContextExpression.type.classOrNull!!.owner.descriptor.fqNameSafe.asString()
-            )
+                .asNameId()
         ) {
             annotations += DeclarationIrBuilder(pluginContext, symbol).run {
                 irCall(injektSymbols.runReaderCall.constructors.single()).apply {

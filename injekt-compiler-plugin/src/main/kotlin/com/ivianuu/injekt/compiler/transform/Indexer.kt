@@ -58,108 +58,84 @@ class Indexer(
     private val irFileStore: IrFileStore
 ) {
 
-    private val classIndicesByTagAndKey = mutableMapOf<List<String>, List<IrClass>>()
-    fun classIndices(path: List<String>): List<IrClass> {
-        val finalPath = emptyList<String>()//path.map { it.removeIllegalChars() }
-        return classIndicesByTagAndKey.getOrPut(emptyList()) {
-            val internalClasses = internalDeclarationsByIndices.keys
-                .filter { it.path == finalPath && it.type == "class" }
-                .map { internalDeclarationsByIndices[it]!! as IrClass }
+    val classIndices by lazy {
+        val internalClasses = internalDeclarationsByIndices.keys
+            .filter { it.type == "class" }
+            .map { internalDeclarationsByIndices[it]!! as IrClass }
 
-            (internalClasses + externalClassIndices(path))
-                .distinct()
-        }
+        (internalClasses + externalClassIndices)
+            .distinct()
     }
 
-    private val externalClassIndicesByTagAndKey = mutableMapOf<List<String>, List<IrClass>>()
-    fun externalClassIndices(path: List<String>): List<IrClass> {
-        val finalPath = emptyList<String>()//path.map { it.removeIllegalChars() }
-        return externalClassIndicesByTagAndKey.getOrPut(emptyList()) {
-            externalIndicesByTagAndKey(path)
-                .filter { it.type == "class" }
-                .mapNotNull { index ->
-                    if (index.indexIsDeclaration) index.indexClass
-                    else pluginContext.referenceClass(index.fqName)?.owner
-                }
-        }
+    val externalClassIndices by lazy {
+        allExternalIndices
+            .filter { it.type == "class" }
+            .mapNotNull { index ->
+                if (index.indexIsDeclaration) index.indexClass
+                else pluginContext.referenceClass(index.fqName)?.owner
+            }
     }
 
-    private val functionIndicesByTagAndKey = mutableMapOf<List<String>, List<IrFunction>>()
-    fun functionIndices(path: List<String>): List<IrFunction> {
-        val finalPath = emptyList<String>()//path.map { it.removeIllegalChars() }
-        return functionIndicesByTagAndKey.getOrPut(emptyList()) {
-            val internalFunctions = internalDeclarationsByIndices.keys
-                .filter { it.path == finalPath && it.type == "function" }
-                .map { internalDeclarationsByIndices[it]!! }
-                .filterIsInstance<IrFunction>()
+    val functionIndices by lazy {
+        val internalFunctions = internalDeclarationsByIndices.keys
+            .filter { it.type == "function" }
+            .map { internalDeclarationsByIndices[it]!! }
+            .filterIsInstance<IrFunction>()
 
-            val externalFunctions = externalIndicesByTagAndKey(path)
-                .filter { it.type == "function" }
-                .flatMap { index ->
-                    pluginContext.referenceFunctions(index.fqName)
-                        .map { it.owner }
-                }
+        val externalFunctions = allExternalIndices
+            .filter { it.type == "function" }
+            .flatMap { index ->
+                pluginContext.referenceFunctions(index.fqName)
+                    .map { it.owner }
+            }
 
-            (internalFunctions + externalFunctions)
-                .distinct()
-        }
+        (internalFunctions + externalFunctions)
+            .distinct()
     }
 
-    private val propertyIndicesByTagAndKey = mutableMapOf<List<String>, List<IrProperty>>()
-    fun propertyIndices(path: List<String>): List<IrProperty> {
-        val finalPath = emptyList<String>()//path.map { it.removeIllegalChars() }
-        return propertyIndicesByTagAndKey.getOrPut(emptyList()) {
-            val internalProperties = internalDeclarationsByIndices.keys
-                .filter { it.path == finalPath && it.type == "property" }
-                .map { internalDeclarationsByIndices[it]!! }
-                .filterIsInstance<IrProperty>()
+    val propertyIndices by lazy {
+        val internalProperties = internalDeclarationsByIndices.keys
+            .filter { it.type == "property" }
+            .map { internalDeclarationsByIndices[it]!! }
+            .filterIsInstance<IrProperty>()
 
-            val externalProperties = externalIndicesByTagAndKey(path)
-                .filter { it.type == "property" }
-                .flatMap { index ->
-                    pluginContext.referenceProperties(index.fqName)
-                        .map { it.owner }
-                }
+        val externalProperties = allExternalIndices
+            .filter { it.type == "property" }
+            .flatMap { index ->
+                pluginContext.referenceProperties(index.fqName)
+                    .map { it.owner }
+            }
 
-            (internalProperties + externalProperties)
-                .distinct()
-        }
+        (internalProperties + externalProperties)
+            .distinct()
     }
 
-    private val externalIndicesByTagAndKey = mutableMapOf<List<String>, List<Index>>()
-    private fun externalIndicesByTagAndKey(path: List<String>): List<Index> {
-        val finalPath = emptyList<String>()//path.map { it.removeIllegalChars() }
-        return externalIndicesByTagAndKey.getOrPut(emptyList()) {
-            var packageFqName = InjektFqNames.IndexPackage
-            //finalPath.forEach { packageFqName = packageFqName.child(it.asNameId()) }
-            val memberScope = module.descriptor.getPackage(packageFqName).memberScope
-            (memberScope.getClassifierNames() ?: emptySet())
-                .mapNotNull {
-                    memberScope.getContributedClassifier(
-                        it,
-                        NoLookupLocation.FROM_BACKEND
-                    )
-                }
-                .mapNotNull { pluginContext.referenceClass(it.fqNameSafe)?.owner }
-                .map {
-                    Index(
-                        path,
-                        FqName(
-                            it.getConstantFromAnnotationOrNull<String>(
-                                InjektFqNames.Index,
-                                1
-                            )!!
-                        ),
-                        it,
-                        it.getConstantFromAnnotationOrNull<String>(InjektFqNames.Index, 0)!!,
-                        it.getConstantFromAnnotationOrNull<Boolean>(InjektFqNames.Index, 2)!!
-                    )
-                }
-        }
+    private val allExternalIndices by lazy {
+        val memberScope = module.descriptor.getPackage(InjektFqNames.IndexPackage).memberScope
+        (memberScope.getClassifierNames() ?: emptySet())
+            .mapNotNull {
+                memberScope.getContributedClassifier(
+                    it,
+                    NoLookupLocation.FROM_BACKEND
+                )
+            }
+            .mapNotNull { pluginContext.referenceClass(it.fqNameSafe)?.owner }
+            .map {
+                Index(
+                    FqName(
+                        it.getConstantFromAnnotationOrNull<String>(
+                            InjektFqNames.Index,
+                            1
+                        )!!
+                    ),
+                    it,
+                    it.getConstantFromAnnotationOrNull<String>(InjektFqNames.Index, 0)!!,
+                    it.getConstantFromAnnotationOrNull<Boolean>(InjektFqNames.Index, 2)!!
+                )
+            }
     }
 
     private data class Index(
-        val path: List<String>,
         val fqName: FqName,
         val indexClass: IrClass,
         val type: String,
@@ -172,13 +148,8 @@ class Indexer(
         originatingDeclaration: IrDeclarationWithName,
         originatingFile: IrFile,
         name: Name = originatingDeclaration.name.asString().hashCode().toString().asNameId(),
-        path: List<String>,
         classBuilder: IrClass.() -> Unit
     ) {
-        val finalPath = emptyList<String>()//path.map { it.removeIllegalChars() }
-        var packageFqName = InjektFqNames.IndexPackage
-        //finalPath.forEach { packageFqName = packageFqName.child(it.asNameId()) }
-
         val name = (getJoinedName(
             originatingDeclaration.getPackageFragment()!!.fqName,
             originatingDeclaration.descriptor.fqNameSafe
@@ -199,7 +170,6 @@ class Indexer(
                 createImplicitParameterDeclarationWithWrappedDescriptor()
                 addMetadataIfNotLocal()
                 val index = Index(
-                    finalPath,
                     descriptor.fqNameSafe,
                     this,
                     "class",
@@ -229,14 +199,9 @@ class Indexer(
     }
 
     fun index(
-        path: List<String>,
         declaration: IrDeclarationWithName,
         originatingFile: IrFile
     ) {
-        val finalPath = emptyList<String>()//path.map { it.removeIllegalChars() }
-        var packageFqName = InjektFqNames.IndexPackage
-        //finalPath.forEach { packageFqName = packageFqName.child(it.asNameId()) }
-
         val name = (getJoinedName(
             declaration.getPackageFragment()!!.fqName,
             declaration.descriptor.fqNameSafe
@@ -254,7 +219,6 @@ class Indexer(
             }.apply {
                 parent = indexFile
                 val index = Index(
-                    finalPath,
                     declaration.descriptor.fqNameSafe,
                     this,
                     when (declaration) {

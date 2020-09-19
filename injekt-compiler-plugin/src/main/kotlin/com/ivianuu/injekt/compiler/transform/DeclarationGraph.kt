@@ -19,7 +19,11 @@ package com.ivianuu.injekt.compiler.transform
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getContext
+import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.transform.readercontextimpl.Key
+import com.ivianuu.injekt.compiler.transform.readercontextimpl.asKey
+import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
@@ -28,25 +32,25 @@ import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class DeclarationGraph(
     private val indexer: Indexer,
-    val module: IrModuleFragment,
+    private val module: IrModuleFragment,
+    private val pluginContext: IrPluginContext,
     private val readerContextParamTransformer: ReaderContextParamTransformer
 ) {
 
     val rootContextFactories: List<IrClass> by lazy {
-        indexer.classIndices(listOf(ROOT_CONTEXT_FACTORY_PATH))
+        indexer.classIndices
             .filter { it.hasAnnotation(InjektFqNames.RootContextFactory) }
     }
 
-    private val givensByKey = mutableMapOf<String, List<IrFunction>>()
-    fun givens(key: String) = givensByKey.getOrPut("") {
-        (indexer.functionIndices(listOf(GIVEN_PATH, key)) +
-                indexer.classIndices(listOf(GIVEN_PATH, key))
+    private val givensByKey = mutableMapOf<Key, List<IrFunction>>()
+    fun givens(key: Key) = givensByKey.getOrPut(key) {
+        (indexer.functionIndices +
+                indexer.classIndices
                     .flatMap { it.constructors.toList() } +
-                indexer.propertyIndices(listOf(GIVEN_PATH, key))
+                indexer.propertyIndices
                     .mapNotNull { it.getter }
                 )
             .filter {
@@ -61,46 +65,48 @@ class DeclarationGraph(
             }
             .map { readerContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
+            .filter { function ->
+                if (function.extensionReceiverParameter != null || function.valueParameters
+                        .filter { it.name.asString() != "_context" }
+                        .isNotEmpty()
+                ) {
+                    function.getFunctionType(pluginContext, skipContext = true).asKey() == key
+                } else {
+                    function.returnType.asKey() == key
+                }
+            }
             .distinct()
     }
 
-    private val givenMapEntriesByKey = mutableMapOf<String, List<IrFunction>>()
-    fun givenMapEntries(key: String) = givenMapEntriesByKey.getOrPut("") {
-        (indexer.functionIndices(listOf(MAP_ENTRIES_PATH, key)) +
-                indexer.propertyIndices(listOf(MAP_ENTRIES_PATH, key)).mapNotNull { it.getter })
+    private val givenMapEntriesByKey = mutableMapOf<Key, List<IrFunction>>()
+    fun givenMapEntries(key: Key) = givenMapEntriesByKey.getOrPut(key) {
+        (indexer.functionIndices +
+                indexer.propertyIndices.mapNotNull { it.getter })
             .filter { it.hasAnnotation(InjektFqNames.GivenMapEntries) }
             .map { readerContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
+            .filter { it.returnType.asKey() == key }
     }
 
-    private val givenSetElementsByKey = mutableMapOf<String, List<IrFunction>>()
-    fun givenSetElements(key: String) = givenSetElementsByKey.getOrPut("") {
-        (indexer.functionIndices(listOf(SET_ELEMENTS_PATH, key)) +
-                indexer.propertyIndices(listOf(SET_ELEMENTS_PATH, key)).mapNotNull { it.getter })
+    private val givenSetElementsByKey = mutableMapOf<Key, List<IrFunction>>()
+    fun givenSetElements(key: Key) = givenSetElementsByKey.getOrPut(key) {
+        (indexer.functionIndices +
+                indexer.propertyIndices.mapNotNull { it.getter })
             .filter { it.hasAnnotation(InjektFqNames.GivenSetElements) }
             .map { readerContextParamTransformer.getTransformedFunction(it) }
             .filter { it.getContext() != null }
+            .filter { it.returnType.asKey() == key }
     }
 
+    private val runReaderContexts = mutableMapOf<IrClass, List<IrClass>>()
     fun getRunReaderContexts(context: IrClass): List<IrClass> {
-        return indexer.classIndices(
-            listOf(
-                RUN_READER_CALL_PATH,
-                context.descriptor.fqNameSafe.asString()
-            )
-        )
-            .filter {
-                it.getClassFromAnnotation(InjektFqNames.RunReaderCall, 0) == context
-            }
-            .mapNotNull { it.getClassFromAnnotation(InjektFqNames.RunReaderCall, 1) }
-    }
-
-    companion object {
-        const val ROOT_CONTEXT_FACTORY_PATH = "root_context_factory"
-        const val RUN_READER_CALL_PATH = "run_reader_call"
-        const val GIVEN_PATH = "given"
-        const val MAP_ENTRIES_PATH = "map_entries"
-        const val SET_ELEMENTS_PATH = "set_elements"
+        return runReaderContexts.getOrPut(context) {
+            indexer.classIndices
+                .filter {
+                    it.getClassFromAnnotation(InjektFqNames.RunReaderCall, 0) == context
+                }
+                .mapNotNull { it.getClassFromAnnotation(InjektFqNames.RunReaderCall, 1) }
+        }
     }
 
 }

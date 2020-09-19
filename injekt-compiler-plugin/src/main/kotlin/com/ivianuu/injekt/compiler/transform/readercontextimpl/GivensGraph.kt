@@ -25,7 +25,6 @@ import com.ivianuu.injekt.compiler.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.getContext
 import com.ivianuu.injekt.compiler.getContextValueParameter
-import com.ivianuu.injekt.compiler.getFunctionType
 import com.ivianuu.injekt.compiler.isExternalDeclaration
 import com.ivianuu.injekt.compiler.substitute
 import com.ivianuu.injekt.compiler.transform.DeclarationGraph
@@ -552,17 +551,7 @@ class GivensGraph(
             }
         }
 
-        this += declarationGraph.givens(key.type.uniqueTypeName().asString())
-            .filter { function ->
-                if (function.extensionReceiverParameter != null || function.valueParameters
-                        .filter { it.name.asString() != "_context" }
-                        .isNotEmpty()
-                ) {
-                    function.getFunctionType(pluginContext, skipContext = true).asKey() == key
-                } else {
-                    function.returnType.asKey() == key
-                }
-            }
+        this += declarationGraph.givens(key)
             .map { function ->
                 val targetContext = (function.getClassFromAnnotation(
                     InjektFqNames.Given, 0
@@ -592,9 +581,8 @@ class GivensGraph(
             }
             .filter { it.targetContext == null || it.targetContext == contextName }
 
-        (declarationGraph.givenMapEntries(key.type.uniqueTypeName().asString()) +
+        (declarationGraph.givenMapEntries(key) +
                 inputGivenMapEntries.getOrElse(key) { emptySet() })
-            .filter { it.returnType.asKey() == key }
             .takeIf { it.isNotEmpty() }
             ?.let { entries ->
                 GivenMap(
@@ -607,9 +595,8 @@ class GivensGraph(
             }
             ?.let { this += it }
 
-        (declarationGraph.givenSetElements(key.type.uniqueTypeName().asString()) +
+        (declarationGraph.givenSetElements(key) +
                 inputGivenSetElements.getOrElse(key) { emptySet() })
-            .filter { it.returnType.asKey() == key }
             .takeIf { it.isNotEmpty() }
             ?.let { elements ->
                 GivenSet(
