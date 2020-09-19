@@ -17,6 +17,7 @@
 package com.ivianuu.injekt.sample
 
 import com.ivianuu.injekt.Effect
+import com.ivianuu.injekt.GivenSet
 import com.ivianuu.injekt.GivenSetElements
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
@@ -27,6 +28,7 @@ typealias AppServices = Set<suspend () -> Unit>
 
 @Effect
 annotation class GivenAppService {
+    @GivenSet
     companion object {
         @GivenSetElements
         inline operator fun <reified T : suspend () -> Unit> invoke(): AppServices = setOf(
