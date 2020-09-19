@@ -23,11 +23,13 @@ import androidx.work.WorkerParameters
 import com.ivianuu.injekt.Effect
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.GivenMapEntries
+import com.ivianuu.injekt.GivenSet
 import com.ivianuu.injekt.given
 import kotlin.reflect.KClass
 
 @Effect
 annotation class GivenWorker {
+    @GivenSet
     companion object {
         @GivenMapEntries
         inline operator fun <reified T : ListenableWorker> invoke(): Workers = mapOf(
