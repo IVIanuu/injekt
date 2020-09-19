@@ -77,8 +77,6 @@ class LookupManager {
                 }
         }
 
-        // println("record lookup ${location.location?.filePath} -> ${lookedUp.descriptor.fqNameSafe}")
-
         lookupTracker.record(
             location,
             lookedUp.getPackageFragment()!!.packageFragmentDescriptor,
