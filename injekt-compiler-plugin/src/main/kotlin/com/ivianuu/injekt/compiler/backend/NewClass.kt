@@ -16,6 +16,7 @@
 
 package com.ivianuu.injekt.compiler.backend
 
+import com.ivianuu.injekt.compiler.unsafeLazy
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -119,7 +120,7 @@ open class WrappedClassDescriptor(
 
     override fun getContainingDeclaration() = (owner.parent as IrSymbolOwner).symbol.descriptor
 
-    private val _defaultType: SimpleType by lazy {
+    private val _defaultType: SimpleType by unsafeLazy {
         TypeUtils.makeUnsubstitutedType(
             this,
             unsubstitutedMemberScope,
@@ -166,7 +167,7 @@ open class WrappedClassDescriptor(
 
     override fun isActual() = false
 
-    private val _typeConstructor: TypeConstructor by lazy {
+    private val _typeConstructor: TypeConstructor by unsafeLazy {
         LazyTypeConstructor(
             this,
             { declaredTypeParameters },

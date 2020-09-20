@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -155,7 +156,15 @@ class IrFileGenerator : AnalysisHandlerExtension {
         if (initTrigger != null) {
             rootContexts += module.getPackage(InjektFqNames.IndexPackage)
                 .memberScope
-                .getContributedDescriptors()
+                .let { memberScope ->
+                    (memberScope.getClassifierNames() ?: emptySet<Name>())
+                        .map {
+                            memberScope.getContributedClassifier(
+                                it,
+                                NoLookupLocation.FROM_BACKEND
+                            )
+                        }
+                }
                 .filterIsInstance<ClassDescriptor>()
                 .mapNotNull { index ->
                     index.annotations.findAnnotation(InjektFqNames.Index)

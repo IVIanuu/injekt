@@ -20,14 +20,17 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.backend.readercontextimpl.Key
 import com.ivianuu.injekt.compiler.backend.readercontextimpl.asKey
+import com.ivianuu.injekt.compiler.unsafeLazy
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 @Given(IrContext::class)
@@ -35,8 +38,14 @@ class DeclarationGraph {
 
     private val indexer = given<Indexer>()
 
+    private val mapSymbol = pluginContext.referenceClass(
+        FqName("kotlin.collections.Map")
+    )!!
+    private val setSymbol = pluginContext.referenceClass(
+        FqName("kotlin.collections.Set")
+    )!!
 
-    val rootContextFactories: List<IrClass> by lazy {
+    val rootContextFactories: List<IrClass> by unsafeLazy {
         indexer.classIndices
             .filter { it.hasAnnotation(InjektFqNames.RootContextFactory) }
             .filter {
@@ -46,8 +55,7 @@ class DeclarationGraph {
             }
     }
 
-    private val givensByKey = mutableMapOf<Key, List<IrFunction>>()
-    fun givens(key: Key) = givensByKey.getOrPut(key) {
+    private val allGivens by unsafeLazy {
         (indexer.functionIndices +
                 indexer.classIndices
                     .flatMap { it.constructors.toList() } +
@@ -71,6 +79,12 @@ class DeclarationGraph {
             }
             .map { given<ReaderContextParamTransformer>().getTransformedFunction(it) }
             .filter { it.getContext() != null }
+            .distinct()
+    }
+
+    private val givensByKey = mutableMapOf<Key, List<IrFunction>>()
+    fun givens(key: Key) = givensByKey.getOrPut(key) {
+        allGivens
             .filter { function ->
                 if (function.extensionReceiverParameter != null || function.valueParameters
                         .filter { it.name.asString() != "_context" }
@@ -81,11 +95,9 @@ class DeclarationGraph {
                     function.returnType.asKey() == key
                 }
             }
-            .distinct()
     }
 
-    private val givenMapEntriesByKey = mutableMapOf<Key, List<IrFunction>>()
-    fun givenMapEntries(key: Key) = givenMapEntriesByKey.getOrPut(key) {
+    private val allGivenMapEntries by unsafeLazy {
         (indexer.functionIndices +
                 indexer.propertyIndices.mapNotNull { it.getter })
             .filter { it.hasAnnotation(InjektFqNames.GivenMapEntries) }
@@ -96,11 +108,16 @@ class DeclarationGraph {
             }
             .map { given<ReaderContextParamTransformer>().getTransformedFunction(it) }
             .filter { it.getContext() != null }
+    }
+
+    private val givenMapEntriesByKey = mutableMapOf<Key, List<IrFunction>>()
+    fun givenMapEntries(key: Key) = givenMapEntriesByKey.getOrPut(key) {
+        if (key.type.classOrNull != mapSymbol) return@getOrPut emptyList()
+        allGivenMapEntries
             .filter { it.returnType.asKey() == key }
     }
 
-    private val givenSetElementsByKey = mutableMapOf<Key, List<IrFunction>>()
-    fun givenSetElements(key: Key) = givenSetElementsByKey.getOrPut(key) {
+    private val allGivenSetElements by unsafeLazy {
         (indexer.functionIndices +
                 indexer.propertyIndices.mapNotNull { it.getter })
             .filter { it.hasAnnotation(InjektFqNames.GivenSetElements) }
@@ -111,6 +128,12 @@ class DeclarationGraph {
             }
             .map { given<ReaderContextParamTransformer>().getTransformedFunction(it) }
             .filter { it.getContext() != null }
+    }
+
+    private val givenSetElementsByKey = mutableMapOf<Key, List<IrFunction>>()
+    fun givenSetElements(key: Key) = givenSetElementsByKey.getOrPut(key) {
+        if (key.type.classOrNull != setSymbol) return@getOrPut emptyList()
+        allGivenSetElements
             .filter { it.returnType.asKey() == key }
     }
 

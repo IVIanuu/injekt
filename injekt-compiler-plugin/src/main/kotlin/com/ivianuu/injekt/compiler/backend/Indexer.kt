@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.backend
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.IrFileStore
+import com.ivianuu.injekt.compiler.unsafeLazy
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -46,7 +47,7 @@ class Indexer {
 
     private val fileStore = given<IrFileStore>()
 
-    val classIndices by lazy {
+    val classIndices by unsafeLazy {
         val internalClasses = internalDeclarationsByIndices.keys
             .filter { it.type == "class" }
             .map { internalDeclarationsByIndices[it]!! as IrClass }
@@ -55,7 +56,7 @@ class Indexer {
             .distinct()
     }
 
-    val externalClassIndices by lazy {
+    val externalClassIndices by unsafeLazy {
         allExternalIndices
             .filter { it.type == "class" }
             .mapNotNull { index ->
@@ -64,7 +65,7 @@ class Indexer {
             }
     }
 
-    val functionIndices by lazy {
+    val functionIndices by unsafeLazy {
         val internalFunctions = internalDeclarationsByIndices.keys
             .filter { it.type == "function" }
             .map { internalDeclarationsByIndices[it]!! }
@@ -81,7 +82,7 @@ class Indexer {
             .distinct()
     }
 
-    val propertyIndices by lazy {
+    val propertyIndices by unsafeLazy {
         val internalProperties = internalDeclarationsByIndices.keys
             .filter { it.type == "property" }
             .map { internalDeclarationsByIndices[it]!! }
@@ -98,7 +99,7 @@ class Indexer {
             .distinct()
     }
 
-    private val allExternalIndices by lazy {
+    private val allExternalIndices by unsafeLazy {
         val memberScope = module.descriptor.getPackage(InjektFqNames.IndexPackage).memberScope
         (memberScope.getClassifierNames() ?: emptySet())
             .mapNotNull {

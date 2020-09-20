@@ -53,7 +53,7 @@ class GivenTest {
         @Given interface Dep
     """
     ) {
-        assertCompileError("abstract")
+        assertCompileError("interface")
     }
 
     @Test

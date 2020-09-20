@@ -25,9 +25,7 @@ class GivenSetChecker : DeclarationChecker {
                 InjektErrors.NOT_A_GIVEN_SET
                     .on(declaration)
             )
-        }
-
-        if (descriptor is PropertyDescriptor &&
+        } else if (descriptor is PropertyDescriptor &&
             descriptor.hasAnnotation(InjektFqNames.GivenSet) &&
             descriptor.returnType?.constructor?.declarationDescriptor?.hasAnnotation(InjektFqNames.GivenSet) != true
         ) {

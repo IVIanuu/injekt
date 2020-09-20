@@ -35,9 +35,12 @@ class EffectChecker : DeclarationChecker {
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (descriptor is ClassDescriptor) checkEffect(descriptor, declaration, context)
-        if (descriptor is ClassDescriptor || descriptor is FunctionDescriptor)
+        if (descriptor is ClassDescriptor) {
+            checkEffect(descriptor, declaration, context)
             checkEffectUsage(descriptor, declaration, context)
+        } else if (descriptor is FunctionDescriptor) {
+            checkEffectUsage(descriptor, declaration, context)
+        }
     }
 
     private fun checkEffect(

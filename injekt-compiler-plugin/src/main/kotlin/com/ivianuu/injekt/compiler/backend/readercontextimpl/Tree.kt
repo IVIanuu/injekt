@@ -20,6 +20,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.backend.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.backend.isTypeParameter
 import com.ivianuu.injekt.compiler.backend.typeArguments
+import com.ivianuu.injekt.compiler.unsafeLazy
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrField
@@ -62,7 +63,7 @@ class GivenChildContext(
 ) : Given(key, owner, origin, false, null, null) {
     override val contexts: List<IrType>
         get() = emptyList()
-    val factory by lazy {
+    val factory by unsafeLazy {
         generator.generateFactory()
             .also { owner.addChild(it) }
     }
@@ -76,7 +77,7 @@ class GivenCalleeContext(
     val lazyContexts: () -> List<IrType>
 ) : Given(key, owner, origin, false, null, null) {
     val contextImpl by lazy(lazyContextImpl)
-    override val contexts by lazy {
+    override val contexts by unsafeLazy {
         contextImpl
         lazyContexts()
     }
