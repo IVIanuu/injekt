@@ -62,7 +62,7 @@ class IrFileGenerator(
         if (!generatedCode) {
             irFileStore.clear()
             files as ArrayList<KtFile>
-            files.removeAll { it.text.contains("// injekt-generated") }
+            files.removeAll { it.text.startsWith("// injekt-generated") }
             files.forEach { fileCache.deleteDependents(File(it.virtualFilePath)) }
         }
         return null
