@@ -42,16 +42,8 @@ class IrFileGenerator : AnalysisHandlerExtension {
     private val lookupManager = given<LookupManager>()
 
     private val fileCache = KeyValueFileCache(
-        cacheFile = given<CacheDir>().resolve("file-cache"),
-        fromString = { File(it) },
-        toString = { it.absolutePath },
-        onDelete = ::fileCacheOnDelete
+        cacheFile = given<CacheDir>().resolve("file-cache")
     )
-
-    private fun fileCacheOnDelete(file: File) {
-        fileCache.deleteDependents(file)
-        file.delete()
-    }
 
     private var generatedCode = false
 
