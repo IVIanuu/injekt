@@ -41,7 +41,7 @@ class IrFileGenerator : AnalysisHandlerExtension {
     private val fileStore = given<IrFileStore>()
     private val lookupManager = given<LookupManager>()
 
-    private val fileCache = KeyValueFileCache(
+    private val fileCache = IncrementalFileCache(
         cacheFile = given<CacheDir>().resolve("file-cache")
     )
 

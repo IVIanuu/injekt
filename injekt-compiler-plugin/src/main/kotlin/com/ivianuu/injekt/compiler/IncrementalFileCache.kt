@@ -2,7 +2,7 @@ package com.ivianuu.injekt.compiler
 
 import java.io.File
 
-class KeyValueFileCache(private val cacheFile: File) {
+class IncrementalFileCache(private val cacheFile: File) {
 
     private val cache = (if (cacheFile.exists()) cacheFile.readText() else "")
         .split("\n")
