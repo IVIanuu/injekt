@@ -68,13 +68,14 @@ fun bar() = Bar(given<Foo>())
 
 # Initialize injekt
 To trigger the generation of context implementations 1 declaration in the compilation unit must
-be annotated with `@InitializeInjekt`
+be annotated with `@InitializeInjekt`.
 This should be done in the application module.
 
 # Child contexts
 Contexts can inherit parent contexts.
 This allows to create a context hierarchy where child contexts have a shorter life time than a parent one.
 To declare a child context the `childContext` function must be called.
+Note that `childContext` is a reader function.
 ```kotlin
 @Given
 class MyScreen : Screen() {
