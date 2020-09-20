@@ -2,126 +2,102 @@
 
 Minimal example:
 ```kotlin
-@InitializeInjekt interface InjektInitializer
-@Given fun foo(): Foo = Foo()
+// Declares a given instance.
+@Given fun foo() = Foo()
 
-fun main() {
-    runReader { 
-        given<Foo>()
+@InitializeInjekt // Trigger generation of context implementations in the current compilation unit.
+class MyApplication : Application() {
+    override fun onCreate() {
+        // run a reader function and retrieve a instance of Foo
+        val foo = applicationReaderContext.runReader { given<Foo>() }
     }
 }
 ```
 
-What happens there:
-- `@InitializeInject` indicates that this module is supported and records the file where initialization happens.
-- Most of the magic happens with the functions marked with `@Reader` annotation. They have an additional context generated for each call of of `given` inside.
-- `@Given` indicates a declaration, result of which will be used in the reader graph.
-  - `@Given` functions are automatically `@Reader`, i.e. their parameters participate in the graph resolution.
-  - Nullable `given` can be provided by non-nullable binding.
-  - Same types can be distinguished with a typealias. (`ApplicationContext` - `ActivityContext`) in Android.
-  - `given` calls inside this and other `@Reader` functions will be replaced with a method calls on an interface.
-- `runReader` is a way to transition between `@Reader` and non-`@Reader` worlds. It will take the scope it is applied on and generate the context to run the function. 
+# Reader functions
+Injekt has the concept of reader functions.
+These functions are allowed to inject givens via calls to the given<T>() function.
+Reader functions can be declared by annotating a function with '@Reader'.
 
-## Scoping
-Lifetime scopes are defined as follows:
+```kotlin
+@Reader
+fun greet() {
+    val logger = given<Logger>()
+    logger.log("hello world")
+}
 ```
-class SingletonStorage : Storage by Storage()
 
+# Reader classes
+Similar to reader functions there are also reader classes.
+
+```kotlin
+@Reader
+class Greeter {
+    fun greet() {
+        val logger = given<Logger>()
+        logger.log("hello world")
+    }
+}
+```
+
+# Run reader
+Reader functions can only be called from inside other reader functions or classes.
+To get into a reader function we can call `runReader` on any context object.
+Any call to given<T>() inside the reader block will be retrieved from the receiver context of the `runReader` call.
+
+# Contexts
+The context is the object graph where reader functions get their givens from.
+Contexts can be instantiated by calling `rootContext`.
+`rootContext` can take inputs which can be retrieved in reader functions
+
+```kotlin
+class MyApplication : Application() {
+    val readerContext = rootContext<ApplicationContext>(this)
+}
+```
+
+# Givens
+Declaring givens is as simple as declaring a function and annotate it with ´@Given´
+Given functions are treated like reader functions, so they can also call given<T>() and other reader functions
+to build their return value.
+Classes can also be marked with ´@Given´
+```
 @Given
-val provideSingletonStorage = SingletonStorage()
-
-@Given(SingletonStorage::class)
-class MySingleton
+fun bar() = Bar(given<Foo>())
 ```
 
-- `Storage` subclass (`SingletonStorage` in this case) provides an identifier of that scope.
-  - It also indicates that for that type compiler needs to generate keys.
-- `fun scope` in conjuction with `Storage` helper make the scoping happen. Key is generated uniquely for each type / unique instance.
+# Initialize injekt
+To trigger the generation of context implementations 1 declaration in the compilation unit must
+be annotated with `@InitializeInjekt`
+This should be done in the application module.
 
-Multi instance scoping can be handled using global storage based on unique elements:
+# Child contexts
+Contexts can inherit parent contexts.
+This allows to create a context hierarchy where child contexts have a shorter life time than a parent one.
+To declare a child context the `childContext` function must be called.
 ```kotlin
-@Scoping
-object ActivityScoping {
-    private val storages = hashMapOf<Activity, Storage>()
-
-    @Reader
-    fun <T> scope(key: Any, init: () -> T) = storage.getOrPut(given<Activity>(), Storage()).scope(key, init)
-}
-
-You can also do something like that for custom scopes:
-```
-class User
-
-class UserStorage : Storage by Storage()
-
-class MyUserStorageHolder {
-    
-    private var userStorage: UserStorage? = null
-    private var user: User? = null
-    
-    fun login(user: String) {
-        this.user = user
-        this.userStorage = UserStorage()
-    }
-    
-    @Reader
-    fun <R> inUserScope(block: @Reader () -> R): R = runChildReader(
-        userStorage!!, user, block = block
-    )
-    
-}
-
-@Given(UserStorage::class)
-class UserRepo {
-    private val user = given<User>()
-}
-```
-
-## Effects 
-
-`@Effect` provides additional definitions for types:
-```kotlin
-typealias FooFactory = () -> Foo
-        
-@Effect
-annotation class BindFooFactory {
-    companion object {
-        @Given
-        operator fun <T : FooFactory> invoke(): FooFactory = given<T>()
-    }
-}
-
-@BindFooFactory
-fun fooFactory(): Foo {
-    return Foo()
-}
-
-fun invoke(): Foo { 
-    return runReader { given<FooFactory>()() }
-}
-```
-The example above contains
-  - definition, `annotation class BindFooFactory`, annotated with `Effect`
-  - its companion object, which defines types which it provide using bound on type parameter `T`
-
-Annotating function with `@BindFooFactory` will now return reference to this function as in current scope.
-So `runReader { given<FooFactory>()() }` will be essentially converted to `runReader { fooFactory() }`.
-
-One more example of using it is to bind different types:
-```kotlin
-@Effect
-annotation class ToString {
-    companion object {
-        @Given
-        operator fun <T : Any> invoke(): String = given<T>().toString()
-    }
-}
-
-@ToString
 @Given
-fun foo(): Foo = Foo()
-
-fun invoke(): Foo { 
-    return runReader { given<String>() /* Foo().toString() */ }
+class MyScreen : Screen() {
+    val screenContext = childContext<ScreenContext>(this)
 }
 ```
+
+# Scoped givens
+Givens can be scoped to a context.
+This means that only 1 instance of the given will be created trough out the lifetime of the associated context.
+```kotlin
+@Given(SingletonContext::class)
+class MySingletonRepository
+```
+
+# Given set elements
+TODO
+
+# Given map entries
+TODO
+
+# Effects
+TODO
+
+# Assisted parameters
+TODO
