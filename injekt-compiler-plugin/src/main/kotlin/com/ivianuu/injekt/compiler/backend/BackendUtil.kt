@@ -179,18 +179,8 @@ val isInjektCompiler: Boolean
 @Reader
 fun IrSymbol.irBuilder() = DeclarationIrBuilder(pluginContext, this)
 
-/*@Reader
-inline fun <R> IrSymbol.irBuilder().run(block: DeclarationIrBuilder.() -> R) =
-    irBuilder().run(block)*/
-
-// todo rename once fixed
 @Reader
-fun IrSymbolOwner.irBuilderTmp() = symbol.irBuilder()
-
-// todo rename once fixed
-/*@Reader
-inline fun <R> IrSymbolOwner.irBuilderTmp().run(block: DeclarationIrBuilder.() -> R) =
-    symbol.irBuilder().run(block)*/
+fun IrSymbolOwner.irBuilder() = symbol.irBuilder()
 
 fun IrDeclarationWithName.getContextName(): Name {
     return (getJoinedName(
@@ -217,8 +207,8 @@ fun createContext(
     addMetadataIfNotLocal()
     copyTypeParameters(capturedTypeParameters)
 
-    annotations += irBuilderTmp().irCall(injektSymbols.contextMarker.constructors.single())
-    annotations += irBuilderTmp().run {
+    annotations += irBuilder().irCall(injektSymbols.contextMarker.constructors.single())
+    annotations += irBuilder().run {
         irCall(injektSymbols.origin.constructors.single()).apply {
             putValueArgument(0, irString(origin.asString()))
         }
@@ -277,7 +267,7 @@ fun createContextFactory(
             }
     }
 
-    annotations += irBuilderTmp().run {
+    annotations += irBuilder().run {
         if (!isChild) {
             irCall(injektSymbols.rootContextFactory.constructors.single()).apply {
                 putValueArgument(
@@ -1067,7 +1057,7 @@ fun IrBuilderWithScope.irLambda(
         annotations += type.annotations.map {
             it.deepCopyWithSymbols()
         }
-        this.body = irBuilderTmp().run { irExprBody(body(this, this@apply)) }
+        this.body = irBuilder().run { irExprBody(body(this, this@apply)) }
     }
 
     return IrFunctionExpressionImpl(

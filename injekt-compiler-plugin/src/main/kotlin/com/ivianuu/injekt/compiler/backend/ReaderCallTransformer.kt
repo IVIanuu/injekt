@@ -154,7 +154,7 @@ class ReaderCallTransformer : IrLowering {
                 }.apply {
                     dispatchReceiverParameter = context.thisReceiver?.copyTo(this)
                     addMetadataIfNotLocal()
-                    annotations += irBuilderTmp().run {
+                    annotations += irBuilder().run {
                         irCall(injektSymbols.origin.constructors.single()).apply {
                             putValueArgument(
                                 0,
@@ -165,7 +165,7 @@ class ReaderCallTransformer : IrLowering {
                 }
             }
 
-            return function.irBuilderTmp().run {
+            return function.irBuilder().run {
                 irCall(function).apply {
                     dispatchReceiver = contextExpression()
                 }
@@ -188,14 +188,14 @@ class ReaderCallTransformer : IrLowering {
             context = context,
             contextExpression = { scopes ->
                 if (scopes.none { it.irElement == readerConstructor }) {
-                    declaration.irBuilderTmp().run {
+                    declaration.irBuilder().run {
                         irGetField(
                             irGet(scopes.thisOfClass(declaration)!!),
                             declaration.fields.single { it.name.asString() == "_context" }
                         )
                     }
                 } else {
-                    readerConstructor.irBuilderTmp()
+                    readerConstructor.irBuilder()
                         .irGet(readerConstructor.getContextValueParameter()!!)
                 }
             }
@@ -212,7 +212,7 @@ class ReaderCallTransformer : IrLowering {
             declarationFunction = declaration,
             context = declaration.getContext() ?: error("Wtf ${declaration.dump()}"),
             contextExpression = {
-                declaration.irBuilderTmp()
+                declaration.irBuilder()
                     .irGet(declaration.getContextValueParameter()!!)
             }
         )
@@ -362,7 +362,7 @@ class ReaderCallTransformer : IrLowering {
                 .removeIllegalChars()
                 .asNameId()
         ) {
-            annotations += irBuilderTmp().run {
+            annotations += irBuilder().run {
                 irCall(injektSymbols.runReaderCall.constructors.single()).apply {
                     putValueArgument(
                         0,

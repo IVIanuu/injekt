@@ -176,7 +176,7 @@ class ReaderContextParamTransformer : IrLowering {
             fieldType = contextParameter.type
         )
 
-        readerConstructor.body = clazz.irBuilderTmp().run {
+        readerConstructor.body = clazz.irBuilder().run {
             irBlockBody {
                 readerConstructor.body?.statements?.forEach {
                     +it
@@ -316,7 +316,7 @@ class ReaderContextParamTransformer : IrLowering {
                 annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
             ) {
                 val name = JvmAbi.getterName(descriptor.correspondingProperty.name.identifier)
-                annotations += irBuilderTmp().jvmNameAnnotation(name)
+                annotations += irBuilder().jvmNameAnnotation(name)
                 correspondingPropertySymbol?.owner?.getter = this
             }
 
@@ -324,7 +324,7 @@ class ReaderContextParamTransformer : IrLowering {
                 annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
             ) {
                 val name = JvmAbi.setterName(descriptor.correspondingProperty.name.identifier)
-                annotations += irBuilderTmp().jvmNameAnnotation(name)
+                annotations += irBuilder().jvmNameAnnotation(name)
                 correspondingPropertySymbol?.owner?.setter = this
             }
 

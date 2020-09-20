@@ -26,7 +26,7 @@ import com.ivianuu.injekt.compiler.backend.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.backend.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.backend.getContext
 import com.ivianuu.injekt.compiler.backend.getContextValueParameter
-import com.ivianuu.injekt.compiler.backend.irBuilderTmp
+import com.ivianuu.injekt.compiler.backend.irBuilder
 import com.ivianuu.injekt.compiler.backend.isExternalDeclaration
 import com.ivianuu.injekt.compiler.backend.substitute
 import com.ivianuu.injekt.compiler.backend.uniqueTypeName
@@ -420,7 +420,7 @@ class GivensGraph(
                                 "parent",
                                 contextImpl.defaultType
                             )
-                            body = irBuilderTmp().irBlockBody {
+                            body = irBuilder().irBlockBody {
                                 +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
                                 +IrInstanceInitializerCallImpl(
                                     UNDEFINED_OFFSET,
@@ -463,7 +463,7 @@ class GivensGraph(
                                     dispatchReceiverParameter =
                                         childContextImpl.thisReceiver!!.copyTo(this)
                                     overriddenSymbols += function.symbol as IrSimpleFunctionSymbol
-                                    body = irBuilderTmp().run {
+                                    body = irBuilder().run {
                                         irExprBody(
                                             expression(
                                                 this,

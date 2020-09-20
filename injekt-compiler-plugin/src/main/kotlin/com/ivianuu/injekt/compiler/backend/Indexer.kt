@@ -163,7 +163,7 @@ class Indexer {
                     "class",
                     true
                 )
-                annotations += irBuilderTmp().run {
+                annotations += irBuilder().run {
                     irCall(injektSymbols.index.constructors.single()).apply {
                         putValueArgument(
                             0,
@@ -221,7 +221,7 @@ class Indexer {
 
                 createImplicitParameterDeclarationWithWrappedDescriptor()
                 addMetadataIfNotLocal()
-                annotations += irBuilderTmp().run {
+                annotations += irBuilder().run {
                     irCall(injektSymbols.index.constructors.single()).apply {
                         putValueArgument(
                             0,

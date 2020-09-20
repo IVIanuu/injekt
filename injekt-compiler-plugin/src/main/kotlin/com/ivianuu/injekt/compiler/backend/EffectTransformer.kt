@@ -108,7 +108,7 @@ class EffectTransformer : IrLowering {
                 visibility = Visibilities.PUBLIC
             }.apply {
                 addMetadataIfNotLocal()
-                body = irBuilderTmp().irBlockBody {
+                body = irBuilder().irBlockBody {
                     +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
                     +IrInstanceInitializerCallImpl(
                         UNDEFINED_OFFSET,
@@ -138,7 +138,7 @@ class EffectTransformer : IrLowering {
                                 if (declaration.hasAnnotation(FqName("androidx.compose.runtime.Composable"))) {
                                     it.withAnnotations(
                                         listOf(
-                                            declaration.irBuilderTmp().irCall(
+                                            declaration.irBuilder().irCall(
                                                 pluginContext.referenceConstructors(FqName("androidx.compose.runtime.Composable"))
                                                     .single()
                                             )
@@ -149,7 +149,7 @@ class EffectTransformer : IrLowering {
                             .let {
                                 it.withAnnotations(
                                     listOf(
-                                        declaration.irBuilderTmp().run {
+                                        declaration.irBuilder().run {
                                             irCall(injektSymbols.qualifier.constructors.single()).apply {
                                                 putValueArgument(
                                                     0,
@@ -173,10 +173,10 @@ class EffectTransformer : IrLowering {
 
                     dispatchReceiverParameter = thisReceiver!!.copyTo(this)
 
-                    annotations += irBuilderTmp()
+                    annotations += irBuilder()
                         .irCall(injektSymbols.given.constructors.single())
 
-                    body = irBuilderTmp().run {
+                    body = irBuilder().run {
                         irExprBody(
                             irLambda(givenType) {
                                 irCall(declaration.symbol).apply {
@@ -226,7 +226,7 @@ class EffectTransformer : IrLowering {
                         annotations += effectFunction.annotations
                             .map { it.deepCopyWithSymbols() }
 
-                        body = irBuilderTmp().run {
+                        body = irBuilder().run {
                             irExprBody(
                                 irCall(effectFunction.symbol).apply {
                                     dispatchReceiver =

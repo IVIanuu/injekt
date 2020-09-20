@@ -2,7 +2,7 @@ package com.ivianuu.injekt.compiler.backend.readercontextimpl
 
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.UniqueNameProvider
-import com.ivianuu.injekt.compiler.backend.irBuilderTmp
+import com.ivianuu.injekt.compiler.backend.irBuilder
 import com.ivianuu.injekt.compiler.backend.irLambda
 import com.ivianuu.injekt.compiler.backend.pluginContext
 import com.ivianuu.injekt.compiler.backend.tmpFunction
@@ -156,7 +156,7 @@ class GivenExpressions(
 
         givenExpressions[given.key] = expression
 
-        functionByType.body = functionByType.irBuilderTmp().run {
+        functionByType.body = functionByType.irBuilder().run {
             irExprBody(
                 finalExpression(
                     this,
@@ -176,7 +176,7 @@ class GivenExpressions(
                 this.parent = contextImpl
                 contextImpl.addChild(this)
                 overriddenSymbols += superFunction.symbol
-                body = irBuilderTmp().run {
+                body = irBuilder().run {
                     irExprBody(
                         irCall(functionByType).apply {
                             dispatchReceiver = irGet(dispatchReceiverParameter!!)
@@ -396,7 +396,7 @@ class ContextExpressionContext(
                 current = if (parentField != null) {
                     val parentClass = parentField.type.classOrNull!!.owner
                     parentClass to {
-                        currentContext.irBuilderTmp()
+                        currentContext.irBuilder()
                             .irGetField(currentExpression(), parentField)
                     }
                 } else {

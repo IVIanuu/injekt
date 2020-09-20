@@ -8,7 +8,7 @@ import com.ivianuu.injekt.compiler.backend.addChildAndUpdateMetadata
 import com.ivianuu.injekt.compiler.backend.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.backend.asNameId
 import com.ivianuu.injekt.compiler.backend.buildClass
-import com.ivianuu.injekt.compiler.backend.irBuilderTmp
+import com.ivianuu.injekt.compiler.backend.irBuilder
 import com.ivianuu.injekt.compiler.backend.substitute
 import com.ivianuu.injekt.compiler.backend.typeArguments
 import com.ivianuu.injekt.compiler.backend.typeOrFail
@@ -110,7 +110,7 @@ class ReaderContextFactoryImplGenerator(
                 addValueParameter(parentField.name.asString(), parentField.type)
             } else null
 
-            body = irBuilderTmp().irBlockBody {
+            body = irBuilder().irBlockBody {
                 +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
                 +IrInstanceInitializerCallImpl(
                     UNDEFINED_OFFSET,
@@ -148,7 +148,7 @@ class ReaderContextFactoryImplGenerator(
                 )
             }
 
-            body = irBuilderTmp().run {
+            body = irBuilder().run {
                 irExprBody(
                     if (contextImpl.isObject) {
                         irGetObject(contextImpl.symbol)
@@ -204,7 +204,7 @@ class ReaderContextFactoryImplGenerator(
                     dispatchReceiverParameter = this@clazz.thisReceiver!!.copyTo(this)
                     addMetadataIfNotLocal()
                     overriddenSymbols += function.symbol
-                    body = irBuilderTmp().irBlockBody { }
+                    body = irBuilder().irBlockBody { }
                 }
             }
         }
@@ -261,7 +261,7 @@ class ReaderContextFactoryImplGenerator(
                 )
             }
 
-            body = irBuilderTmp().irBlockBody {
+            body = irBuilder().irBlockBody {
                 +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
                 +IrInstanceInitializerCallImpl(
                     UNDEFINED_OFFSET,
