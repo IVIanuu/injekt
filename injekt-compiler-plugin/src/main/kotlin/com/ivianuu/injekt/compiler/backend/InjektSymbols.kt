@@ -14,11 +14,17 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.backend
 
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 
-class InjektSymbols(private val pluginContext: IrPluginContext) {
+@Given(IrContext::class)
+class InjektSymbols {
+    private val pluginContext: IrPluginContext = given()
+
     val context = pluginContext.referenceClass(InjektFqNames.Context)!!
     val effect = pluginContext.referenceClass(InjektFqNames.Effect)!!
     val given = pluginContext.referenceClass(InjektFqNames.Given)!!

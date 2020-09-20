@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.analysis
+package com.ivianuu.injekt.compiler.frontend
 
-import com.ivianuu.injekt.compiler.InjektErrors
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 
+@Given
 class GivenChecker : DeclarationChecker {
 
     override fun check(

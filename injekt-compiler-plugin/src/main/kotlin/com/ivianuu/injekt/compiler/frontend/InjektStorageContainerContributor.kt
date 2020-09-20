@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.analysis
+package com.ivianuu.injekt.compiler.frontend
 
+import com.ivianuu.injekt.ApplicationContext
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.container.StorageComponentContainer
 import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.platform.TargetPlatform
 
+@Given(ApplicationContext::class)
 class InjektStorageContainerContributor : StorageComponentContainerContributor {
 
     override fun registerModuleComponents(
@@ -29,11 +33,11 @@ class InjektStorageContainerContributor : StorageComponentContainerContributor {
         platform: TargetPlatform,
         moduleDescriptor: ModuleDescriptor
     ) {
-        container.useInstance(ReaderContextChecker())
-        container.useInstance(EffectChecker())
-        container.useInstance(GivenChecker())
-        container.useInstance(GivenSetChecker())
-        container.useInstance(ReaderChecker())
+        container.useInstance(given<ReaderContextChecker>())
+        container.useInstance(given<EffectChecker>())
+        container.useInstance(given<GivenChecker>())
+        container.useInstance(given<GivenSetChecker>())
+        container.useInstance(given<ReaderChecker>())
     }
 
 }

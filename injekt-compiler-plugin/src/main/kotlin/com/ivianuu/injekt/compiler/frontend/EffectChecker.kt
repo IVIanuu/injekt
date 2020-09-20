@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.analysis
+package com.ivianuu.injekt.compiler.frontend
 
-import com.ivianuu.injekt.compiler.InjektErrors
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 
+@Given
 class EffectChecker : DeclarationChecker {
 
     override fun check(
@@ -34,9 +35,12 @@ class EffectChecker : DeclarationChecker {
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (descriptor is ClassDescriptor) checkEffect(descriptor, declaration, context)
-        if (descriptor is ClassDescriptor || descriptor is FunctionDescriptor)
+        if (descriptor is ClassDescriptor) {
+            checkEffect(descriptor, declaration, context)
             checkEffectUsage(descriptor, declaration, context)
+        } else if (descriptor is FunctionDescriptor) {
+            checkEffectUsage(descriptor, declaration, context)
+        }
     }
 
     private fun checkEffect(

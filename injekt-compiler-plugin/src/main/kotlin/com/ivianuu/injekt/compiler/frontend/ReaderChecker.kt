@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.analysis
+package com.ivianuu.injekt.compiler.frontend
 
-import com.ivianuu.injekt.compiler.InjektErrors
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -42,6 +42,7 @@ import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
+@Given
 class ReaderChecker : CallChecker, DeclarationChecker {
 
     override fun check(

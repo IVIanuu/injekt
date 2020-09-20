@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform
+package com.ivianuu.injekt.compiler.backend
 
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.IrFileStore
-import com.ivianuu.injekt.compiler.LookupManager
-import com.ivianuu.injekt.compiler.transform.readercontextimpl.ReaderContextImplTransformer
+import com.ivianuu.injekt.compiler.backend.readercontextimpl.InitTrigger
+import com.ivianuu.injekt.compiler.backend.readercontextimpl.ReaderContextImplContext
+import com.ivianuu.injekt.compiler.backend.readercontextimpl.ReaderContextImplTransformer
+import com.ivianuu.injekt.given
+import com.ivianuu.injekt.runReader
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -34,69 +39,50 @@ import org.jetbrains.kotlin.ir.util.SymbolTable
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
-class InjektIrGenerationExtension(
-    private val irFileStore: IrFileStore,
-    private val lookupManager: LookupManager
-) : IrGenerationExtension {
+@Given
+class InjektIrGenerationExtension : IrGenerationExtension {
+
+    private lateinit var irContext: IrContext
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        var initializeInjekt = false
-        var initTrigger: IrDeclarationWithName? = null
+        irContext = childContext(moduleFragment, pluginContext)
+        irContext.runReader {
+            if (pluginContext.referenceClass(InjektFqNames.Effect) != null)
+                given<EffectTransformer>().lower()
 
-        moduleFragment.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
-            override fun visitDeclaration(declaration: IrDeclaration): IrStatement {
-                if (declaration.hasAnnotation(InjektFqNames.InitializeInjekt)) {
-                    initializeInjekt = true
-                    initTrigger = declaration as IrDeclarationWithName
+            given<ReaderContextParamTransformer>().lower()
+            given<ReaderCallTransformer>().lower()
+            given<GivenIndexingTransformer>().lower()
+
+            val initTrigger = getInitTrigger()
+            if (initTrigger != null) {
+                childContext<ReaderContextImplContext>(initTrigger).runReader {
+                    given<ReaderContextImplTransformer>().lower()
                 }
-                return super.visitDeclaration(declaration)
             }
-        })
 
-        if (pluginContext.referenceClass(InjektFqNames.Effect) != null) {
-            EffectTransformer(lookupManager, pluginContext).doLower(moduleFragment)
+            generateSymbols()
+            given<IrFileStore>().clear()
         }
-
-        val indexer = Indexer(
-            pluginContext,
-            moduleFragment,
-            InjektSymbols(pluginContext),
-            irFileStore
-        )
-
-        val readerContextParamTransformer =
-            ReaderContextParamTransformer(pluginContext)
-        readerContextParamTransformer.doLower(moduleFragment)
-
-        ReaderCallTransformer(pluginContext, indexer).doLower(moduleFragment)
-
-        GivenIndexingTransformer(
-            indexer,
-            pluginContext
-        ).doLower(moduleFragment)
-
-        if (initializeInjekt) {
-            val declarationGraph = DeclarationGraph(
-                indexer,
-                moduleFragment,
-                pluginContext,
-                readerContextParamTransformer
-            )
-            ReaderContextImplTransformer(
-                pluginContext,
-                declarationGraph,
-                lookupManager,
-                readerContextParamTransformer,
-                initTrigger!!,
-                irFileStore
-            ).doLower(moduleFragment)
-        }
-
-        generateSymbols(pluginContext)
-
-        irFileStore.clear()
     }
 
+}
+
+@Reader
+private fun getInitTrigger(): InitTrigger? {
+    var initTrigger: IrDeclarationWithName? = null
+
+    module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
+        override fun visitDeclaration(declaration: IrDeclaration): IrStatement {
+            if (declaration.hasAnnotation(InjektFqNames.InitializeInjekt)) {
+                initTrigger = declaration as IrDeclarationWithName
+                return declaration
+            }
+            return super.visitDeclaration(declaration)
+        }
+    })
+
+    return initTrigger
 }
 
 private val SymbolTable.allUnbound: List<IrSymbol>
@@ -113,7 +99,8 @@ private val SymbolTable.allUnbound: List<IrSymbol>
         return r
     }
 
-private fun generateSymbols(pluginContext: IrPluginContext) {
+@Reader
+private fun generateSymbols() {
     lateinit var unbound: List<IrSymbol>
     val visited = mutableSetOf<IrSymbol>()
     do {

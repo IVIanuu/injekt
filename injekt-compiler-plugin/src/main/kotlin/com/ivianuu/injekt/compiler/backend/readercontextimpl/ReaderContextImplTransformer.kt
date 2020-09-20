@@ -14,32 +14,26 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.readercontextimpl
+package com.ivianuu.injekt.compiler.backend.readercontextimpl
 
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.IrFileStore
-import com.ivianuu.injekt.compiler.LookupManager
-import com.ivianuu.injekt.compiler.addChildAndUpdateMetadata
-import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
-import com.ivianuu.injekt.compiler.transform.AbstractInjektTransformer
-import com.ivianuu.injekt.compiler.transform.DeclarationGraph
-import com.ivianuu.injekt.compiler.transform.ReaderContextParamTransformer
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
+import com.ivianuu.injekt.compiler.backend.DeclarationGraph
+import com.ivianuu.injekt.compiler.backend.IrLowering
+import com.ivianuu.injekt.compiler.backend.addChildAndUpdateMetadata
+import com.ivianuu.injekt.compiler.backend.getConstantFromAnnotationOrNull
+import com.ivianuu.injekt.compiler.backend.module
+import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.name.FqName
 
-class ReaderContextImplTransformer(
-    pluginContext: IrPluginContext,
-    private val declarationGraph: DeclarationGraph,
-    private val lookupManager: LookupManager,
-    private val readerContextParamTransformer: ReaderContextParamTransformer,
-    private val initTrigger: IrDeclarationWithName,
-    private val irFileStore: IrFileStore
-) : AbstractInjektTransformer(pluginContext) {
+@Given
+class ReaderContextImplTransformer : IrLowering {
 
     override fun lower() {
+        val declarationGraph = given<DeclarationGraph>()
         declarationGraph.rootContextFactories
             .forEach { rootFactory ->
                 val factoryFqName = FqName(
@@ -48,21 +42,17 @@ class ReaderContextImplTransformer(
                     )!!
                 )
 
-                val filePath = irFileStore.get(factoryFqName.asString())
-                    ?: error("Null for $factoryFqName ${irFileStore.map}")
+                val fileStore = given<IrFileStore>()
+                val filePath = fileStore.get(factoryFqName.asString())
+                    ?: error("Null for $factoryFqName ${fileStore.map}")
                 val file = module.files.single { it.path == filePath }
 
                 val factoryImpl = ReaderContextFactoryImplGenerator(
-                    pluginContext = pluginContext,
                     name = factoryFqName.shortName(),
                     factoryInterface = rootFactory,
                     factoryType = rootFactory.defaultType,
                     irParent = file,
-                    declarationGraph = declarationGraph,
-                    readerContextParamTransformer = readerContextParamTransformer,
-                    lookupManager = lookupManager,
                     parentContext = null,
-                    initTrigger = initTrigger,
                     parentGraph = null,
                     parentExpressions = null
                 ).generateFactory()

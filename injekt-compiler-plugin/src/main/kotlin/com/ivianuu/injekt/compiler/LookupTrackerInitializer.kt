@@ -16,6 +16,9 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.ApplicationContext
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
@@ -39,6 +42,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 
+@Given(ApplicationContext::class)
 class LookupManager {
     lateinit var lookupTracker: LookupTracker
     fun recordLookup(
@@ -85,9 +89,8 @@ class LookupManager {
     }
 }
 
-class LookupTrackerInitializer(
-    private val lookupManager: LookupManager
-) : AnalysisHandlerExtension {
+@Given
+class LookupTrackerInitializer : AnalysisHandlerExtension {
 
     override fun doAnalysis(
         project: Project,
@@ -97,7 +100,7 @@ class LookupTrackerInitializer(
         bindingTrace: BindingTrace,
         componentProvider: ComponentProvider
     ): AnalysisResult? {
-        lookupManager.lookupTracker = componentProvider.get()
+        given<LookupManager>().lookupTracker = componentProvider.get()
         return null
     }
 

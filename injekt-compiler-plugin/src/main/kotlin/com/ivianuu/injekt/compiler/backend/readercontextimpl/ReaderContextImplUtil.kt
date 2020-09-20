@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.readercontextimpl
+package com.ivianuu.injekt.compiler.backend.readercontextimpl
 
 import org.jetbrains.kotlin.name.FqName
 

@@ -1,24 +1,24 @@
-package com.ivianuu.injekt.compiler.transform.readercontextimpl
+package com.ivianuu.injekt.compiler.backend.readercontextimpl
 
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.LookupManager
 import com.ivianuu.injekt.compiler.UniqueNameProvider
-import com.ivianuu.injekt.compiler.addChildAndUpdateMetadata
-import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
-import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.substitute
-import com.ivianuu.injekt.compiler.transform.DeclarationGraph
-import com.ivianuu.injekt.compiler.transform.ReaderContextParamTransformer
-import com.ivianuu.injekt.compiler.typeArguments
-import com.ivianuu.injekt.compiler.typeOrFail
-import com.ivianuu.injekt.compiler.typeWith
-import com.ivianuu.injekt.compiler.uniqueTypeName
-import com.ivianuu.injekt.compiler.visitAllFunctionsWithSubstitutionMap
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import com.ivianuu.injekt.compiler.backend.DeclarationGraph
+import com.ivianuu.injekt.compiler.backend.addChildAndUpdateMetadata
+import com.ivianuu.injekt.compiler.backend.addMetadataIfNotLocal
+import com.ivianuu.injekt.compiler.backend.asNameId
+import com.ivianuu.injekt.compiler.backend.buildClass
+import com.ivianuu.injekt.compiler.backend.irBuilder
+import com.ivianuu.injekt.compiler.backend.substitute
+import com.ivianuu.injekt.compiler.backend.typeArguments
+import com.ivianuu.injekt.compiler.backend.typeOrFail
+import com.ivianuu.injekt.compiler.backend.typeWith
+import com.ivianuu.injekt.compiler.backend.uniqueTypeName
+import com.ivianuu.injekt.compiler.backend.visitAllFunctionsWithSubstitutionMap
+import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
@@ -36,7 +36,6 @@ import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
@@ -49,20 +48,18 @@ import org.jetbrains.kotlin.ir.util.isObject
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
+@Given
 class ReaderContextFactoryImplGenerator(
-    private val pluginContext: IrPluginContext,
     private val name: Name,
     private val factoryInterface: IrClass,
     private val factoryType: IrType,
     private val irParent: IrDeclarationParent,
-    private val initTrigger: IrDeclarationWithName,
-    private val declarationGraph: DeclarationGraph,
-    private val lookupManager: LookupManager,
-    private val readerContextParamTransformer: ReaderContextParamTransformer,
     private val parentContext: IrClass?,
     private val parentGraph: GivensGraph?,
     private val parentExpressions: GivenExpressions?
 ) {
+
+    private val lookupManager = given<LookupManager>()
 
     fun generateFactory(): IrClass {
         val createFunction = factoryInterface.functions
@@ -113,10 +110,7 @@ class ReaderContextFactoryImplGenerator(
                 addValueParameter(parentField.name.asString(), parentField.type)
             } else null
 
-            body = DeclarationIrBuilder(
-                pluginContext,
-                symbol
-            ).irBlockBody {
+            body = irBuilder().irBlockBody {
                 +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
                 +IrInstanceInitializerCallImpl(
                     UNDEFINED_OFFSET,
@@ -154,7 +148,7 @@ class ReaderContextFactoryImplGenerator(
                 )
             }
 
-            body = DeclarationIrBuilder(pluginContext, symbol).run {
+            body = irBuilder().run {
                 irExprBody(
                     if (contextImpl.isObject) {
                         irGetObject(contextImpl.symbol)
@@ -185,6 +179,7 @@ class ReaderContextFactoryImplGenerator(
             }
         }
 
+        val initTrigger = given<InitTrigger>()
         // we add an empty copy of the context impl to the trigger file
         // this ensures that the init trigger file get's compiled every time a super type context changes
         // so that we can regenerate the context impl
@@ -209,7 +204,7 @@ class ReaderContextFactoryImplGenerator(
                     dispatchReceiverParameter = this@clazz.thisReceiver!!.copyTo(this)
                     addMetadataIfNotLocal()
                     overriddenSymbols += function.symbol
-                    body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody { }
+                    body = irBuilder().irBlockBody { }
                 }
             }
         }
@@ -266,10 +261,7 @@ class ReaderContextFactoryImplGenerator(
                 )
             }
 
-            body = DeclarationIrBuilder(
-                pluginContext,
-                symbol
-            ).irBlockBody {
+            body = irBuilder().irBlockBody {
                 +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
                 +IrInstanceInitializerCallImpl(
                     UNDEFINED_OFFSET,
@@ -294,26 +286,17 @@ class ReaderContextFactoryImplGenerator(
             }
         }
 
-        val expressions = GivenExpressions(
-            parent = parentExpressions,
-            pluginContext = pluginContext,
-            contextImpl = contextImpl
-        )
+        val expressions = GivenExpressions(parentExpressions, contextImpl)
 
         val graph = GivensGraph(
             parent = parentGraph,
-            pluginContext = pluginContext,
-            declarationGraph = declarationGraph,
             expressions = expressions,
             contextImpl = contextImpl,
-            lookupManager = lookupManager,
-            initTrigger = initTrigger,
-            inputs = inputFields,
-            readerContextParamTransformer = readerContextParamTransformer
+            inputs = inputFields
         )
 
         val entryPoints =
-            listOf(contextIdType) + declarationGraph.getRunReaderContexts(contextIdType.classOrNull!!.owner)
+            listOf(contextIdType) + given<DeclarationGraph>().getRunReaderContexts(contextIdType.classOrNull!!.owner)
                 .map {
                     // this is really naive and probably error prone
                     if (factoryInterface.typeParameters.size == it.typeParameters.size &&
@@ -330,8 +313,6 @@ class ReaderContextFactoryImplGenerator(
         (entryPoints + graph.resolvedGivens.flatMap { it.value.contexts })
             .forEach { context ->
                 context.visitAllFunctionsWithSubstitutionMap(
-                    pluginContext = pluginContext,
-                    readerContextParamTransformer = readerContextParamTransformer,
                     enterType = {
                         if (it !in contextImpl.superTypes) contextImpl.superTypes += it
                     }

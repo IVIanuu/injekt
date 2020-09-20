@@ -14,28 +14,14 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform
+package com.ivianuu.injekt.compiler.backend
 
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.LookupManager
-import com.ivianuu.injekt.compiler.addChildAndUpdateMetadata
-import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
-import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.getAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.getJoinedName
-import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.irLambda
-import com.ivianuu.injekt.compiler.substitute
-import com.ivianuu.injekt.compiler.tmpFunction
-import com.ivianuu.injekt.compiler.tmpSuspendFunction
-import com.ivianuu.injekt.compiler.transformFiles
-import com.ivianuu.injekt.compiler.typeWith
-import com.ivianuu.injekt.compiler.uniqueKey
-import com.ivianuu.injekt.compiler.withAnnotations
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.IrStatement
@@ -69,17 +55,16 @@ import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isSuspend
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class EffectTransformer(
-    private val lookupManager: LookupManager,
-    pluginContext: IrPluginContext
-) : AbstractInjektTransformer(pluginContext) {
+@Given
+class EffectTransformer : IrLowering {
 
     override fun lower() {
         val newDeclarations = mutableListOf<IrDeclarationWithName>()
-        module.transformFiles(object : IrElementTransformerVoid() {
+        module.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitClass(declaration: IrClass): IrStatement {
                 if (declaration.hasAnnotatedAnnotations(InjektFqNames.Effect)) {
                     newDeclarations += createEffectModuleForDeclaration(declaration)
@@ -115,7 +100,7 @@ class EffectTransformer(
             createImplicitParameterDeclarationWithWrappedDescriptor()
             addMetadataIfNotLocal()
 
-            effects.forEach { lookupManager.recordLookup(declaration, it) }
+            effects.forEach { given<LookupManager>().recordLookup(declaration, it) }
 
             addConstructor {
                 returnType = defaultType
@@ -123,10 +108,7 @@ class EffectTransformer(
                 visibility = Visibilities.PUBLIC
             }.apply {
                 addMetadataIfNotLocal()
-                body = DeclarationIrBuilder(
-                    pluginContext,
-                    symbol
-                ).irBlockBody {
+                body = irBuilder().irBlockBody {
                     +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
                     +IrInstanceInitializerCallImpl(
                         UNDEFINED_OFFSET,
@@ -156,10 +138,7 @@ class EffectTransformer(
                                 if (declaration.hasAnnotation(FqName("androidx.compose.runtime.Composable"))) {
                                     it.withAnnotations(
                                         listOf(
-                                            DeclarationIrBuilder(
-                                                pluginContext,
-                                                declaration.symbol
-                                            ).irCall(
+                                            declaration.irBuilder().irCall(
                                                 pluginContext.referenceConstructors(FqName("androidx.compose.runtime.Composable"))
                                                     .single()
                                             )
@@ -170,10 +149,7 @@ class EffectTransformer(
                             .let {
                                 it.withAnnotations(
                                     listOf(
-                                        DeclarationIrBuilder(
-                                            pluginContext,
-                                            declaration.symbol
-                                        ).run {
+                                        declaration.irBuilder().run {
                                             irCall(injektSymbols.qualifier.constructors.single()).apply {
                                                 putValueArgument(
                                                     0,
@@ -197,11 +173,10 @@ class EffectTransformer(
 
                     dispatchReceiverParameter = thisReceiver!!.copyTo(this)
 
-                    DeclarationIrBuilder(pluginContext, symbol).run {
-                        annotations += irCall(injektSymbols.given.constructors.single())
-                    }
+                    annotations += irBuilder()
+                        .irCall(injektSymbols.given.constructors.single())
 
-                    body = DeclarationIrBuilder(pluginContext, symbol).run {
+                    body = irBuilder().run {
                         irExprBody(
                             irLambda(givenType) {
                                 irCall(declaration.symbol).apply {
@@ -251,7 +226,7 @@ class EffectTransformer(
                         annotations += effectFunction.annotations
                             .map { it.deepCopyWithSymbols() }
 
-                        body = DeclarationIrBuilder(pluginContext, symbol).run {
+                        body = irBuilder().run {
                             irExprBody(
                                 irCall(effectFunction.symbol).apply {
                                     dispatchReceiver =

@@ -14,39 +14,48 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform
+package com.ivianuu.injekt.compiler.backend
 
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.getClassFromAnnotation
-import com.ivianuu.injekt.compiler.getContext
-import com.ivianuu.injekt.compiler.getFunctionType
-import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.transform.readercontextimpl.Key
-import com.ivianuu.injekt.compiler.transform.readercontextimpl.asKey
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import com.ivianuu.injekt.compiler.backend.readercontextimpl.Key
+import com.ivianuu.injekt.compiler.backend.readercontextimpl.asKey
+import com.ivianuu.injekt.compiler.unsafeLazy
+import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class DeclarationGraph(
-    private val indexer: Indexer,
-    private val module: IrModuleFragment,
-    private val pluginContext: IrPluginContext,
-    private val readerContextParamTransformer: ReaderContextParamTransformer
-) {
+@Given(IrContext::class)
+class DeclarationGraph {
 
-    val rootContextFactories: List<IrClass> by lazy {
+    private val indexer = given<Indexer>()
+
+    private val mapSymbol = pluginContext.referenceClass(
+        FqName("kotlin.collections.Map")
+    )!!
+    private val setSymbol = pluginContext.referenceClass(
+        FqName("kotlin.collections.Set")
+    )!!
+
+    val rootContextFactories: List<IrClass> by unsafeLazy {
         indexer.classIndices
             .filter { it.hasAnnotation(InjektFqNames.RootContextFactory) }
+            .filter {
+                isInjektCompiler ||
+                        !it.descriptor.fqNameSafe.asString()
+                            .startsWith("com.ivianuu.injekt.compiler")
+            }
     }
 
-    private val givensByKey = mutableMapOf<Key, List<IrFunction>>()
-    fun givens(key: Key) = givensByKey.getOrPut(key) {
+    private val allGivens by unsafeLazy {
         (indexer.functionIndices +
                 indexer.classIndices
                     .flatMap { it.constructors.toList() } +
@@ -63,38 +72,68 @@ class DeclarationGraph(
                         (it is IrConstructor && (it.constructedClass.hasAnnotation(InjektFqNames.Given) ||
                                 it.constructedClass.hasAnnotatedAnnotations(InjektFqNames.Effect)))
             }
-            .map { readerContextParamTransformer.getTransformedFunction(it) }
+            .filter {
+                isInjektCompiler ||
+                        !it.descriptor.fqNameSafe.asString()
+                            .startsWith("com.ivianuu.injekt.compiler")
+            }
+            .map { given<ReaderContextParamTransformer>().getTransformedFunction(it) }
             .filter { it.getContext() != null }
+            .distinct()
+    }
+
+    private val givensByKey = mutableMapOf<Key, List<IrFunction>>()
+    fun givens(key: Key) = givensByKey.getOrPut(key) {
+        allGivens
             .filter { function ->
                 if (function.extensionReceiverParameter != null || function.valueParameters
                         .filter { it.name.asString() != "_context" }
                         .isNotEmpty()
                 ) {
-                    function.getFunctionType(pluginContext, skipContext = true).asKey() == key
+                    function.getFunctionType(skipContext = true).asKey() == key
                 } else {
                     function.returnType.asKey() == key
                 }
             }
-            .distinct()
+    }
+
+    private val allGivenMapEntries by unsafeLazy {
+        (indexer.functionIndices +
+                indexer.propertyIndices.mapNotNull { it.getter })
+            .filter { it.hasAnnotation(InjektFqNames.GivenMapEntries) }
+            .filter {
+                isInjektCompiler ||
+                        !it.descriptor.fqNameSafe.asString()
+                            .startsWith("com.ivianuu.injekt.compiler")
+            }
+            .map { given<ReaderContextParamTransformer>().getTransformedFunction(it) }
+            .filter { it.getContext() != null }
     }
 
     private val givenMapEntriesByKey = mutableMapOf<Key, List<IrFunction>>()
     fun givenMapEntries(key: Key) = givenMapEntriesByKey.getOrPut(key) {
+        if (key.type.classOrNull != mapSymbol) return@getOrPut emptyList()
+        allGivenMapEntries
+            .filter { it.returnType.asKey() == key }
+    }
+
+    private val allGivenSetElements by unsafeLazy {
         (indexer.functionIndices +
                 indexer.propertyIndices.mapNotNull { it.getter })
-            .filter { it.hasAnnotation(InjektFqNames.GivenMapEntries) }
-            .map { readerContextParamTransformer.getTransformedFunction(it) }
+            .filter { it.hasAnnotation(InjektFqNames.GivenSetElements) }
+            .filter {
+                isInjektCompiler ||
+                        !it.descriptor.fqNameSafe.asString()
+                            .startsWith("com.ivianuu.injekt.compiler")
+            }
+            .map { given<ReaderContextParamTransformer>().getTransformedFunction(it) }
             .filter { it.getContext() != null }
-            .filter { it.returnType.asKey() == key }
     }
 
     private val givenSetElementsByKey = mutableMapOf<Key, List<IrFunction>>()
     fun givenSetElements(key: Key) = givenSetElementsByKey.getOrPut(key) {
-        (indexer.functionIndices +
-                indexer.propertyIndices.mapNotNull { it.getter })
-            .filter { it.hasAnnotation(InjektFqNames.GivenSetElements) }
-            .map { readerContextParamTransformer.getTransformedFunction(it) }
-            .filter { it.getContext() != null }
+        if (key.type.classOrNull != setSymbol) return@getOrPut emptyList()
+        allGivenSetElements
             .filter { it.returnType.asKey() == key }
     }
 

@@ -14,22 +14,14 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform
+package com.ivianuu.injekt.compiler.backend
 
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.InjektSymbols
 import com.ivianuu.injekt.compiler.IrFileStore
-import com.ivianuu.injekt.compiler.addChildAndUpdateMetadata
-import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
-import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
-import com.ivianuu.injekt.compiler.getJoinedName
-import com.ivianuu.injekt.compiler.removeIllegalChars
-import com.ivianuu.injekt.compiler.uniqueKey
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import com.ivianuu.injekt.compiler.unsafeLazy
+import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
@@ -41,7 +33,6 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.util.constructors
@@ -51,14 +42,12 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class Indexer(
-    private val pluginContext: IrPluginContext,
-    private val module: IrModuleFragment,
-    private val symbols: InjektSymbols,
-    private val irFileStore: IrFileStore
-) {
+@Given(IrContext::class)
+class Indexer {
 
-    val classIndices by lazy {
+    private val fileStore = given<IrFileStore>()
+
+    val classIndices by unsafeLazy {
         val internalClasses = internalDeclarationsByIndices.keys
             .filter { it.type == "class" }
             .map { internalDeclarationsByIndices[it]!! as IrClass }
@@ -67,7 +56,7 @@ class Indexer(
             .distinct()
     }
 
-    val externalClassIndices by lazy {
+    val externalClassIndices by unsafeLazy {
         allExternalIndices
             .filter { it.type == "class" }
             .mapNotNull { index ->
@@ -76,7 +65,7 @@ class Indexer(
             }
     }
 
-    val functionIndices by lazy {
+    val functionIndices by unsafeLazy {
         val internalFunctions = internalDeclarationsByIndices.keys
             .filter { it.type == "function" }
             .map { internalDeclarationsByIndices[it]!! }
@@ -93,7 +82,7 @@ class Indexer(
             .distinct()
     }
 
-    val propertyIndices by lazy {
+    val propertyIndices by unsafeLazy {
         val internalProperties = internalDeclarationsByIndices.keys
             .filter { it.type == "property" }
             .map { internalDeclarationsByIndices[it]!! }
@@ -110,7 +99,7 @@ class Indexer(
             .distinct()
     }
 
-    private val allExternalIndices by lazy {
+    private val allExternalIndices by unsafeLazy {
         val memberScope = module.descriptor.getPackage(InjektFqNames.IndexPackage).memberScope
         (memberScope.getClassifierNames() ?: emptySet())
             .mapNotNull {
@@ -158,7 +147,7 @@ class Indexer(
             .removeIllegalChars()
             .asNameId()
 
-        val indexFilePath = irFileStore.get(originatingFile.path)!!
+        val indexFilePath = fileStore.get(originatingFile.path)!!
         val indexFile = module.files.single { it.path == indexFilePath }
         indexFile.addChildAndUpdateMetadata(
             buildClass {
@@ -175,8 +164,8 @@ class Indexer(
                     "class",
                     true
                 )
-                annotations += DeclarationIrBuilder(pluginContext, symbol).run {
-                    irCall(symbols.index.constructors.single()).apply {
+                annotations += irBuilder().run {
+                    irCall(injektSymbols.index.constructors.single()).apply {
                         putValueArgument(
                             0,
                             irString(index.type)
@@ -208,7 +197,7 @@ class Indexer(
                 .parent().child(declaration.name.asString().asNameId())
         ).asString() + "${declaration.uniqueKey().hashCode()}Index").removeIllegalChars().asNameId()
 
-        val indexFilePath = irFileStore.get(originatingFile.path)!!
+        val indexFilePath = fileStore.get(originatingFile.path)!!
         val indexFile = module.files.singleOrNull { it.path == indexFilePath }
             ?: error("Not found for ${originatingFile.path} index is $indexFilePath in ${module.files.map { it.path }}")
         indexFile.addChildAndUpdateMetadata(
@@ -233,8 +222,8 @@ class Indexer(
 
                 createImplicitParameterDeclarationWithWrappedDescriptor()
                 addMetadataIfNotLocal()
-                annotations += DeclarationIrBuilder(pluginContext, symbol).run {
-                    irCall(symbols.index.constructors.single()).apply {
+                annotations += irBuilder().run {
+                    irCall(injektSymbols.index.constructors.single()).apply {
                         putValueArgument(
                             0,
                             irString(index.type)

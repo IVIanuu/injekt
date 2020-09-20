@@ -14,26 +14,14 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform
+package com.ivianuu.injekt.compiler.backend
 
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektWritableSlices
 import com.ivianuu.injekt.compiler.WeakBindingTrace
-import com.ivianuu.injekt.compiler.addChildAndUpdateMetadata
-import com.ivianuu.injekt.compiler.canUseReaders
-import com.ivianuu.injekt.compiler.copy
-import com.ivianuu.injekt.compiler.dumpSrc
-import com.ivianuu.injekt.compiler.getContext
-import com.ivianuu.injekt.compiler.getFunctionType
-import com.ivianuu.injekt.compiler.getReaderConstructor
-import com.ivianuu.injekt.compiler.isExternalDeclaration
-import com.ivianuu.injekt.compiler.isMarkedAsReader
-import com.ivianuu.injekt.compiler.jvmNameAnnotation
-import com.ivianuu.injekt.compiler.transformFiles
-import com.ivianuu.injekt.compiler.typeWith
+import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParameters
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
@@ -76,13 +64,13 @@ import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.statements
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.load.java.JvmAbi
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class ReaderContextParamTransformer(
-    pluginContext: IrPluginContext
-) : AbstractInjektTransformer(pluginContext) {
+@Given(IrContext::class)
+class ReaderContextParamTransformer : IrLowering {
 
     private val transformedClasses = mutableSetOf<IrClass>()
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
@@ -114,7 +102,7 @@ class ReaderContextParamTransformer(
         override fun visitClassNew(declaration: IrClass): IrStatement {
             val transformed = transformClassIfNeeded(declaration)
             return withCapturedTypeParameters(
-                if (transformed.canUseReaders(pluginContext)) transformed.typeParameters else capturedTypeParameters
+                if (transformed.canUseReaders()) transformed.typeParameters else capturedTypeParameters
             ) {
                 super.visitClassNew(transformed)
             }
@@ -123,7 +111,7 @@ class ReaderContextParamTransformer(
         override fun visitFunctionNew(declaration: IrFunction): IrStatement {
             val transformed = transformFunctionIfNeeded(declaration)
             return withCapturedTypeParameters(
-                if (transformed.canUseReaders(pluginContext)) transformed.typeParameters else capturedTypeParameters
+                if (transformed.canUseReaders()) transformed.typeParameters else capturedTypeParameters
             ) {
                 super.visitFunctionNew(transformed)
             }
@@ -131,22 +119,21 @@ class ReaderContextParamTransformer(
     }
 
     override fun lower() {
-        module.transformFiles(
+        module.transformChildrenVoid(
             object : IrElementTransformerVoidWithContext() {
                 override fun visitCall(expression: IrCall): IrExpression {
                     if (expression.symbol.descriptor.fqNameSafe.asString() ==
                         "com.ivianuu.injekt.runReader"
                     ) {
                         (expression.getValueArgument(0) as IrFunctionExpression)
-                            .function.annotations += DeclarationIrBuilder(
-                            pluginContext, expression.symbol
-                        ).irCall(injektSymbols.reader.constructors.single())
+                            .function.annotations += expression.symbol.irBuilder()
+                            .irCall(injektSymbols.reader.constructors.single())
                     }
                     return super.visitCall(expression)
                 }
             }
         )
-        module.transformFiles(transformer)
+        module.transformChildrenVoid(transformer)
         module.rewriteTransformedReferences()
 
         newContexts
@@ -181,8 +168,7 @@ class ReaderContextParamTransformer(
             createContext(
                 clazz,
                 clazz.descriptor.fqNameSafe,
-                readerConstructor.typeParameters,
-                pluginContext, module, injektSymbols
+                readerConstructor.typeParameters
             ).also { newContexts += it }
         val contextParameter = readerConstructor.addContextParameter(context)
         val contextField = clazz.addField(
@@ -190,7 +176,7 @@ class ReaderContextParamTransformer(
             fieldType = contextParameter.type
         )
 
-        readerConstructor.body = DeclarationIrBuilder(pluginContext, clazz.symbol).run {
+        readerConstructor.body = clazz.irBuilder().run {
             irBlockBody {
                 readerConstructor.body?.statements?.forEach {
                     +it
@@ -215,7 +201,7 @@ class ReaderContextParamTransformer(
         ) return function
 
         if (function is IrConstructor) {
-            return if (function.canUseReaders(pluginContext)) {
+            return if (function.canUseReaders()) {
                 transformClassIfNeeded(function.constructedClass)
                 function
             } else function
@@ -224,14 +210,14 @@ class ReaderContextParamTransformer(
         transformedFunctions[function]?.let { return it }
         if (function in transformedFunctions.values) return function
 
-        if (!function.canUseReaders(pluginContext)) return function
+        if (!function.canUseReaders()) return function
 
         if (function.getContext() != null) return function
 
         if (function.isExternalDeclaration()) {
             val context = getContextFromExternalDeclaration(function)
             if (context == null) {
-                error("Wtf ${function.dump()}\n${module.dumpSrc()}")
+                error("Wtf ${function.dump()}\n${module.dump()}")
             }
             val transformedFunction = function.copyAsReader()
             transformedFunctions[function] = transformedFunction
@@ -252,7 +238,7 @@ class ReaderContextParamTransformer(
             .map { typeParametersMap.getOrElse(it) { it } }
             .zip(transformedFunction.typeParameters.takeLast(capturedTypeParameters.size))
             .toMap()
-        WeakBindingTrace.record(
+        given<WeakBindingTrace>().record(
             InjektWritableSlices.TYPE_PARAMETER_MAP,
             transformedFunction as IrSimpleFunction,
             parameterMap
@@ -262,8 +248,7 @@ class ReaderContextParamTransformer(
             createContext(
                 transformedFunction,
                 transformedFunction.descriptor.fqNameSafe,
-                transformedFunction.typeParameters,
-                pluginContext, module, injektSymbols
+                transformedFunction.typeParameters
             ).also { newContexts += it }
         transformedFunction.addContextParameter(context)
 
@@ -325,16 +310,13 @@ class ReaderContextParamTransformer(
     }
 
     private fun IrFunction.copyAsReader(): IrFunction {
-        return copy(
-            pluginContext
-        ).apply {
+        return copy().apply {
             val descriptor = descriptor
             if (descriptor is PropertyGetterDescriptor &&
                 annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
             ) {
                 val name = JvmAbi.getterName(descriptor.correspondingProperty.name.identifier)
-                annotations += DeclarationIrBuilder(pluginContext, symbol)
-                    .jvmNameAnnotation(name, pluginContext)
+                annotations += irBuilder().jvmNameAnnotation(name)
                 correspondingPropertySymbol?.owner?.getter = this
             }
 
@@ -342,8 +324,7 @@ class ReaderContextParamTransformer(
                 annotations.findAnnotation(DescriptorUtils.JVM_NAME) == null
             ) {
                 val name = JvmAbi.setterName(descriptor.correspondingProperty.name.identifier)
-                annotations += DeclarationIrBuilder(pluginContext, symbol)
-                    .jvmNameAnnotation(name, pluginContext)
+                annotations += irBuilder().jvmNameAnnotation(name)
                 correspondingPropertySymbol?.owner?.setter = this
             }
 
@@ -364,14 +345,14 @@ class ReaderContextParamTransformer(
     }
 
     private fun IrModuleFragment.rewriteTransformedReferences() {
-        transformFiles(object : IrElementTransformerVoid() {
+        transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitFunctionExpression(expression: IrFunctionExpression): IrExpression {
                 val result = super.visitFunctionExpression(expression) as IrFunctionExpression
                 val transformed = transformFunctionIfNeeded(result.function)
                 return if (transformed in transformedFunctions.values) IrFunctionExpressionImpl(
                     result.startOffset,
                     result.endOffset,
-                    transformed.getFunctionType(pluginContext),
+                    transformed.getFunctionType(),
                     transformed as IrSimpleFunction,
                     result.origin
                 )
@@ -384,7 +365,7 @@ class ReaderContextParamTransformer(
                 return if (transformed in transformedFunctions.values) IrFunctionReferenceImpl(
                     result.startOffset,
                     result.endOffset,
-                    transformed.getFunctionType(pluginContext),
+                    transformed.getFunctionType(),
                     transformed.symbol,
                     transformed.typeParameters.size,
                     transformed.valueParameters.size,

@@ -1,6 +1,6 @@
-package com.ivianuu.injekt.compiler.analysis
+package com.ivianuu.injekt.compiler.frontend
 
-import com.ivianuu.injekt.compiler.InjektErrors
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.typeUtil.isAnyOrNullableAny
 import org.jetbrains.kotlin.types.typeUtil.supertypes
 
+@Given
 class ReaderContextChecker : CallChecker, DeclarationChecker {
 
     override fun check(
@@ -73,7 +74,6 @@ class ReaderContextChecker : CallChecker, DeclarationChecker {
         val declarations = mutableSetOf<DeclarationDescriptor>()
         fun ClassDescriptor.collect() {
             declarations += unsubstitutedMemberScope.getContributedDescriptors()
-
                 .filter {
                     (it is FunctionDescriptor
                             && it.dispatchReceiverParameter?.type?.isAnyOrNullableAny() != true)

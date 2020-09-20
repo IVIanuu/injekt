@@ -17,7 +17,6 @@
 plugins {
     kotlin("jvm")
     kotlin("kapt")
-    //kotlin("com.ivianuu.injekt")
 }
 
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/java-8.gradle")
@@ -26,6 +25,9 @@ apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/kt
 apply(from = "https://raw.githubusercontent.com/IVIanuu/gradle-scripts/master/mvn-publish.gradle")
 
 dependencies {
+    implementation(Deps.Injekt.core)
+    implementation(Deps.Injekt.common)
+    kotlinCompilerPluginClasspath(Deps.Injekt.compilerPlugin)
     implementation(Deps.processingX)
     kapt(Deps.processingX)
     compileOnly(Deps.Kotlin.compilerEmbeddable)

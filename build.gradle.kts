@@ -38,6 +38,21 @@ buildscript {
 }
 
 allprojects {
+    // todo remove
+    configurations.all {
+        resolutionStrategy.force("com.squareup:kotlinpoet:1.5.0")
+    }
+
+    repositories {
+        mavenLocal()
+        maven("https://dl.bintray.com/ivianuu/maven")
+        maven("https://dl.bintray.com/kotlin/kotlin-eap")
+        google()
+        jcenter()
+        maven("https://oss.sonatype.org/content/repositories/snapshots")
+        maven("https://plugins.gradle.org/m2")
+    }
+
     val baseSrcDir = buildDir.resolve("generated/source/injekt")
     val cacheDir = buildDir.resolve("injekt/cache")
     // todo move
@@ -75,20 +90,5 @@ allprojects {
                 }"
             )
         }
-    }
-
-    // todo remove
-    configurations.all {
-        resolutionStrategy.force("com.squareup:kotlinpoet:1.5.0")
-    }
-
-    repositories {
-        mavenLocal()
-        maven("https://dl.bintray.com/ivianuu/maven")
-        maven("https://dl.bintray.com/kotlin/kotlin-eap")
-        google()
-        jcenter()
-        maven("https://oss.sonatype.org/content/repositories/snapshots")
-        maven("https://plugins.gradle.org/m2")
     }
 }

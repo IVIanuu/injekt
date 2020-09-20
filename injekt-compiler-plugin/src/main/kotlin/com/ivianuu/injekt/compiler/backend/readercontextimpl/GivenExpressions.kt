@@ -1,13 +1,14 @@
-package com.ivianuu.injekt.compiler.transform.readercontextimpl
+package com.ivianuu.injekt.compiler.backend.readercontextimpl
 
+import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.UniqueNameProvider
-import com.ivianuu.injekt.compiler.irLambda
-import com.ivianuu.injekt.compiler.tmpFunction
-import com.ivianuu.injekt.compiler.uniqueTypeName
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import com.ivianuu.injekt.compiler.backend.irBuilder
+import com.ivianuu.injekt.compiler.backend.irLambda
+import com.ivianuu.injekt.compiler.backend.pluginContext
+import com.ivianuu.injekt.compiler.backend.tmpFunction
+import com.ivianuu.injekt.compiler.backend.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.lower.irNot
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -42,9 +43,9 @@ import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.name.FqName
 
+@com.ivianuu.injekt.Given
 class GivenExpressions(
     private val parent: GivenExpressions?,
-    private val pluginContext: IrPluginContext,
     private val contextImpl: IrClass
 ) {
 
@@ -155,17 +156,16 @@ class GivenExpressions(
 
         givenExpressions[given.key] = expression
 
-        functionByType.body =
-            DeclarationIrBuilder(pluginContext, functionByType.symbol).run {
-                irExprBody(
-                    finalExpression(
-                        this,
-                        ContextExpressionContext(pluginContext, contextImpl) {
-                            irGet(functionByType.dispatchReceiverParameter!!)
-                        }
-                    )
+        functionByType.body = functionByType.irBuilder().run {
+            irExprBody(
+                finalExpression(
+                    this,
+                    ContextExpressionContext(contextImpl) {
+                        irGet(functionByType.dispatchReceiverParameter!!)
+                    }
                 )
-            }
+            )
+        }
 
         if (superFunction is IrSimpleFunction && functionByType.name != superFunction.name) {
             buildFun {
@@ -176,7 +176,7 @@ class GivenExpressions(
                 this.parent = contextImpl
                 contextImpl.addChild(this)
                 overriddenSymbols += superFunction.symbol
-                body = DeclarationIrBuilder(pluginContext, symbol).run {
+                body = irBuilder().run {
                     irExprBody(
                         irCall(functionByType).apply {
                             dispatchReceiver = irGet(dispatchReceiverParameter!!)
@@ -379,8 +379,8 @@ class ContextExpressionContext(
     operator fun get(context: IrClass) = expressionsByContext[context]!!()
 
     companion object {
+        @Reader
         operator fun invoke(
-            pluginContext: IrPluginContext,
             thisContext: IrClass,
             thisExpression: () -> IrExpression
         ): ContextExpressionContext {
@@ -396,7 +396,7 @@ class ContextExpressionContext(
                 current = if (parentField != null) {
                     val parentClass = parentField.type.classOrNull!!.owner
                     parentClass to {
-                        DeclarationIrBuilder(pluginContext, currentContext.symbol)
+                        currentContext.irBuilder()
                             .irGetField(currentExpression(), parentField)
                     }
                 } else {

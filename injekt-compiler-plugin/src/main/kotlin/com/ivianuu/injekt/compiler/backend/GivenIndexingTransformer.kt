@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform
+package com.ivianuu.injekt.compiler.backend
 
+import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.getContextValueParameter
-import com.ivianuu.injekt.compiler.getReaderConstructor
-import com.ivianuu.injekt.compiler.hasAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.tmpFunction
-import com.ivianuu.injekt.compiler.transformFiles
-import com.ivianuu.injekt.compiler.typeWith
-import com.ivianuu.injekt.compiler.uniqueTypeName
+import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
@@ -34,14 +28,14 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
-class GivenIndexingTransformer(
-    private val indexer: Indexer,
-    pluginContext: IrPluginContext
-) : AbstractInjektTransformer(pluginContext) {
+@Given
+class GivenIndexingTransformer : IrLowering {
 
     override fun lower() {
-        module.transformFiles(object : IrElementTransformerVoidWithContext() {
+        val indexer = given<Indexer>()
+        module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitConstructor(declaration: IrConstructor): IrStatement {
                 if (declaration.hasAnnotation(InjektFqNames.Given) ||
                     declaration.hasAnnotatedAnnotations(InjektFqNames.Effect)

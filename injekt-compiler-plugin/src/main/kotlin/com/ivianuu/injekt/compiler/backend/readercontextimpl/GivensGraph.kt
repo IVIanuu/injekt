@@ -14,28 +14,27 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.transform.readercontextimpl
+package com.ivianuu.injekt.compiler.backend.readercontextimpl
 
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.LookupManager
-import com.ivianuu.injekt.compiler.addMetadataIfNotLocal
-import com.ivianuu.injekt.compiler.asNameId
-import com.ivianuu.injekt.compiler.buildClass
-import com.ivianuu.injekt.compiler.getClassFromAnnotation
-import com.ivianuu.injekt.compiler.getConstantFromAnnotationOrNull
-import com.ivianuu.injekt.compiler.getContext
-import com.ivianuu.injekt.compiler.getContextValueParameter
-import com.ivianuu.injekt.compiler.isExternalDeclaration
-import com.ivianuu.injekt.compiler.substitute
-import com.ivianuu.injekt.compiler.transform.DeclarationGraph
-import com.ivianuu.injekt.compiler.transform.ReaderContextParamTransformer
-import com.ivianuu.injekt.compiler.uniqueTypeName
-import com.ivianuu.injekt.compiler.visitAllFunctionsWithSubstitutionMap
-import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import com.ivianuu.injekt.compiler.backend.DeclarationGraph
+import com.ivianuu.injekt.compiler.backend.ReaderContextParamTransformer
+import com.ivianuu.injekt.compiler.backend.addMetadataIfNotLocal
+import com.ivianuu.injekt.compiler.backend.asNameId
+import com.ivianuu.injekt.compiler.backend.buildClass
+import com.ivianuu.injekt.compiler.backend.getClassFromAnnotation
+import com.ivianuu.injekt.compiler.backend.getConstantFromAnnotationOrNull
+import com.ivianuu.injekt.compiler.backend.getContext
+import com.ivianuu.injekt.compiler.backend.getContextValueParameter
+import com.ivianuu.injekt.compiler.backend.irBuilder
+import com.ivianuu.injekt.compiler.backend.isExternalDeclaration
+import com.ivianuu.injekt.compiler.backend.substitute
+import com.ivianuu.injekt.compiler.backend.uniqueTypeName
+import com.ivianuu.injekt.compiler.backend.visitAllFunctionsWithSubstitutionMap
+import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -53,7 +52,6 @@ import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
@@ -74,17 +72,15 @@ import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
+@com.ivianuu.injekt.Given
 class GivensGraph(
     private val parent: GivensGraph?,
-    private val pluginContext: IrPluginContext,
-    private val declarationGraph: DeclarationGraph,
-    private val lookupManager: LookupManager,
     private val contextImpl: IrClass,
-    private val initTrigger: IrDeclarationWithName,
     private val expressions: GivenExpressions,
-    val inputs: List<IrField>,
-    private val readerContextParamTransformer: ReaderContextParamTransformer
+    val inputs: List<IrField>
 ) {
+
+    private val declarationGraph = given<DeclarationGraph>()
 
     private val contextName = contextImpl.superTypes.first().classOrNull!!.owner
 
@@ -124,7 +120,7 @@ class GivensGraph(
             val functions = (functions
                 .toList() + properties
                 .map { it.getter!! })
-                .map { readerContextParamTransformer.getTransformedFunction(it) }
+                .map { given<ReaderContextParamTransformer>().getTransformedFunction(it) }
 
             val thisAccessExpression: ContextExpression = { c ->
                 if (parentAccessExpression == null) {
@@ -220,8 +216,6 @@ class GivensGraph(
         checkedTypes += context
 
         context.visitAllFunctionsWithSubstitutionMap(
-            pluginContext = pluginContext,
-            readerContextParamTransformer = readerContextParamTransformer,
             enterType = {
                 val origin = it.classOrNull!!.owner.getConstantFromAnnotationOrNull<String>(
                     InjektFqNames.Origin,
@@ -426,10 +420,7 @@ class GivensGraph(
                                 "parent",
                                 contextImpl.defaultType
                             )
-                            body = DeclarationIrBuilder(
-                                pluginContext,
-                                symbol
-                            ).irBlockBody {
+                            body = irBuilder().irBlockBody {
                                 +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
                                 +IrInstanceInitializerCallImpl(
                                     UNDEFINED_OFFSET,
@@ -446,8 +437,6 @@ class GivensGraph(
                         }
 
                         key.type.visitAllFunctionsWithSubstitutionMap(
-                            pluginContext = pluginContext,
-                            readerContextParamTransformer = readerContextParamTransformer,
                             enterType = { childContextImpl.superTypes += it },
                             exitType = {},
                             visitFunction = { function, substitutionMap ->
@@ -474,14 +463,11 @@ class GivensGraph(
                                     dispatchReceiverParameter =
                                         childContextImpl.thisReceiver!!.copyTo(this)
                                     overriddenSymbols += function.symbol as IrSimpleFunctionSymbol
-                                    body = DeclarationIrBuilder(pluginContext, symbol).run {
+                                    body = irBuilder().run {
                                         irExprBody(
                                             expression(
                                                 this,
-                                                ContextExpressionContext(
-                                                    pluginContext = pluginContext,
-                                                    thisContext = contextImpl
-                                                ) {
+                                                ContextExpressionContext(contextImpl) {
                                                     irGetField(
                                                         irGet(dispatchReceiverParameter!!),
                                                         parentField
@@ -496,8 +482,6 @@ class GivensGraph(
                         childContextImpl
                     } else {
                         key.type.visitAllFunctionsWithSubstitutionMap(
-                            pluginContext = pluginContext,
-                            readerContextParamTransformer = readerContextParamTransformer,
                             enterType = { contexts += it },
                             exitType = {},
                             visitFunction = { function, substitutionMap ->
@@ -528,15 +512,10 @@ class GivensGraph(
             if (key.type.classOrNull!!.owner !in existingFactories) {
                 val factory = key.type.classOrNull!!.owner
                 val generator = ReaderContextFactoryImplGenerator(
-                    pluginContext = pluginContext,
                     name = expressions.uniqueChildNameProvider("F").asNameId(),
                     factoryInterface = factory,
                     factoryType = key.type,
-                    initTrigger = initTrigger,
                     irParent = contextImpl,
-                    declarationGraph = declarationGraph,
-                    lookupManager = lookupManager,
-                    readerContextParamTransformer = readerContextParamTransformer,
                     parentContext = contextImpl,
                     parentGraph = this@GivensGraph,
                     parentExpressions = expressions
