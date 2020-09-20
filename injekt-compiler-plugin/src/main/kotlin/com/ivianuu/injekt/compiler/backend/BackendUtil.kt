@@ -173,6 +173,10 @@ import org.jetbrains.kotlin.types.withAbbreviation
 import kotlin.math.absoluteValue
 
 @Reader
+val isInjektCompiler: Boolean
+    get() = module.name.asString() == "<injekt-compiler-plugin>"
+
+@Reader
 fun IrSymbol.irBuilder() = DeclarationIrBuilder(pluginContext, this)
 
 /*@Reader

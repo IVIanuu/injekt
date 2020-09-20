@@ -28,15 +28,22 @@ import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 @Given(IrContext::class)
 class DeclarationGraph {
 
     private val indexer = given<Indexer>()
 
+
     val rootContextFactories: List<IrClass> by lazy {
         indexer.classIndices
             .filter { it.hasAnnotation(InjektFqNames.RootContextFactory) }
+            .filter {
+                isInjektCompiler ||
+                        !it.descriptor.fqNameSafe.asString()
+                            .startsWith("com.ivianuu.injekt.compiler")
+            }
     }
 
     private val givensByKey = mutableMapOf<Key, List<IrFunction>>()
@@ -56,6 +63,11 @@ class DeclarationGraph {
                                         ) == true)) ||
                         (it is IrConstructor && (it.constructedClass.hasAnnotation(InjektFqNames.Given) ||
                                 it.constructedClass.hasAnnotatedAnnotations(InjektFqNames.Effect)))
+            }
+            .filter {
+                isInjektCompiler ||
+                        !it.descriptor.fqNameSafe.asString()
+                            .startsWith("com.ivianuu.injekt.compiler")
             }
             .map { given<ReaderContextParamTransformer>().getTransformedFunction(it) }
             .filter { it.getContext() != null }
@@ -77,6 +89,11 @@ class DeclarationGraph {
         (indexer.functionIndices +
                 indexer.propertyIndices.mapNotNull { it.getter })
             .filter { it.hasAnnotation(InjektFqNames.GivenMapEntries) }
+            .filter {
+                isInjektCompiler ||
+                        !it.descriptor.fqNameSafe.asString()
+                            .startsWith("com.ivianuu.injekt.compiler")
+            }
             .map { given<ReaderContextParamTransformer>().getTransformedFunction(it) }
             .filter { it.getContext() != null }
             .filter { it.returnType.asKey() == key }
@@ -87,6 +104,11 @@ class DeclarationGraph {
         (indexer.functionIndices +
                 indexer.propertyIndices.mapNotNull { it.getter })
             .filter { it.hasAnnotation(InjektFqNames.GivenSetElements) }
+            .filter {
+                isInjektCompiler ||
+                        !it.descriptor.fqNameSafe.asString()
+                            .startsWith("com.ivianuu.injekt.compiler")
+            }
             .map { given<ReaderContextParamTransformer>().getTransformedFunction(it) }
             .filter { it.getContext() != null }
             .filter { it.returnType.asKey() == key }
