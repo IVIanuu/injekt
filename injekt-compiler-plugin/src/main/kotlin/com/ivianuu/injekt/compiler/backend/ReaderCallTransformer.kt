@@ -24,7 +24,6 @@ import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -78,7 +77,7 @@ class ReaderCallTransformer : IrLowering {
     private val newDeclarations = mutableListOf<IrDeclaration>()
 
     override fun lower() {
-        module.transformFiles(
+        module.transformChildrenVoid(
             object : IrElementTransformerVoidWithContext() {
                 override fun visitClassNew(declaration: IrClass): IrStatement {
                     transformClassIfNeeded(declaration)
@@ -155,7 +154,7 @@ class ReaderCallTransformer : IrLowering {
                 }.apply {
                     dispatchReceiverParameter = context.thisReceiver?.copyTo(this)
                     addMetadataIfNotLocal()
-                    annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+                    annotations += irBuilderTmp().run {
                         irCall(injektSymbols.origin.constructors.single()).apply {
                             putValueArgument(
                                 0,
@@ -166,7 +165,7 @@ class ReaderCallTransformer : IrLowering {
                 }
             }
 
-            return DeclarationIrBuilder(pluginContext, function.symbol).run {
+            return function.irBuilderTmp().run {
                 irCall(function).apply {
                     dispatchReceiver = contextExpression()
                 }
@@ -177,7 +176,7 @@ class ReaderCallTransformer : IrLowering {
     private fun transformClassIfNeeded(
         declaration: IrClass
     ) {
-        if (!declaration.canUseReaders(pluginContext)) return
+        if (!declaration.canUseReaders()) return
 
         val readerConstructor = declaration.getReaderConstructor()!!
 
@@ -189,14 +188,14 @@ class ReaderCallTransformer : IrLowering {
             context = context,
             contextExpression = { scopes ->
                 if (scopes.none { it.irElement == readerConstructor }) {
-                    DeclarationIrBuilder(pluginContext, declaration.symbol).run {
+                    declaration.irBuilderTmp().run {
                         irGetField(
                             irGet(scopes.thisOfClass(declaration)!!),
                             declaration.fields.single { it.name.asString() == "_context" }
                         )
                     }
                 } else {
-                    DeclarationIrBuilder(pluginContext, readerConstructor.symbol)
+                    readerConstructor.irBuilderTmp()
                         .irGet(readerConstructor.getContextValueParameter()!!)
                 }
             }
@@ -206,14 +205,14 @@ class ReaderCallTransformer : IrLowering {
     private fun transformFunctionIfNeeded(
         declaration: IrFunction
     ) {
-        if (!declaration.canUseReaders(pluginContext)) return
+        if (!declaration.canUseReaders()) return
 
         transformDeclarationIfNeeded(
             declaration = declaration,
             declarationFunction = declaration,
             context = declaration.getContext() ?: error("Wtf ${declaration.dump()}"),
             contextExpression = {
-                DeclarationIrBuilder(pluginContext, declaration.symbol)
+                declaration.irBuilderTmp()
                     .irGet(declaration.getContextValueParameter()!!)
             }
         )
@@ -240,7 +239,7 @@ class ReaderCallTransformer : IrLowering {
 
                 if (allScopes
                         .mapNotNull { it.irElement as? IrDeclarationWithName }
-                        .last { it.canUseReaders(pluginContext) }
+                        .last { it.canUseReaders() }
                         .let {
                             it != declaration && it != declarationFunction
                         }
@@ -265,7 +264,7 @@ class ReaderCallTransformer : IrLowering {
                         transformRunReaderCall(scope, null, expression) {
                             contextExpression(allScopes)
                         }
-                    expression.symbol.owner.canUseReaders(pluginContext) ->
+                    expression.symbol.owner.canUseReaders() ->
                         transformReaderCall(scope, expression) {
                             contextExpression(allScopes)
                         }
@@ -295,18 +294,15 @@ class ReaderCallTransformer : IrLowering {
             file = file,
             startOffset = call.startOffset,
             inputTypes = inputs.map { it.type },
-            pluginContext = pluginContext,
             isChild = isChild,
             capturedTypeParameters = (scope?.declaration as? IrTypeParametersContainer)?.typeParameters
-                ?: emptyList(),
-            module = module,
-            injektSymbols = injektSymbols
+                ?: emptyList()
         ).also {
             newDeclarations += it
             if (!isChild) given<Indexer>().index(it, it.file)
         }
 
-        return DeclarationIrBuilder(pluginContext, call.symbol).run {
+        return call.symbol.irBuilder().run {
             irCall(contextFactory.functions.single()).apply {
                 dispatchReceiver = if (isChild) {
                     scope!!.givenExpressionForType(
@@ -366,7 +362,7 @@ class ReaderCallTransformer : IrLowering {
                 .removeIllegalChars()
                 .asNameId()
         ) {
-            annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+            annotations += irBuilderTmp().run {
                 irCall(injektSymbols.runReaderCall.constructors.single()).apply {
                     putValueArgument(
                         0,
@@ -380,7 +376,7 @@ class ReaderCallTransformer : IrLowering {
             }
         }
 
-        return DeclarationIrBuilder(pluginContext, call.symbol).run {
+        return call.symbol.irBuilder().run {
             irCall(
                 pluginContext.referenceFunctions(
                     FqName("com.ivianuu.injekt.internal.runReaderDummy")
@@ -409,12 +405,9 @@ class ReaderCallTransformer : IrLowering {
             else -> call.getTypeArgument(0)!!
         }
         val rawExpression = scope.givenExpressionForType(realType, contextExpression)
-        return DeclarationIrBuilder(pluginContext, call.symbol).run {
+        return call.symbol.irBuilder().run {
             when {
-                arguments.isNotEmpty() -> DeclarationIrBuilder(
-                    context,
-                    call.symbol
-                ).irCall(
+                arguments.isNotEmpty() -> call.symbol.irBuilder().irCall(
                     rawExpression.type.classOrNull!!
                         .owner
                         .functions

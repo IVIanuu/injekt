@@ -28,13 +28,14 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 
 @Given
 class GivenIndexingTransformer : IrLowering {
 
     override fun lower() {
         val indexer = given<Indexer>()
-        module.transformFiles(object : IrElementTransformerVoidWithContext() {
+        module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
             override fun visitConstructor(declaration: IrConstructor): IrStatement {
                 if (declaration.hasAnnotation(InjektFqNames.Given) ||
                     declaration.hasAnnotatedAnnotations(InjektFqNames.Effect)

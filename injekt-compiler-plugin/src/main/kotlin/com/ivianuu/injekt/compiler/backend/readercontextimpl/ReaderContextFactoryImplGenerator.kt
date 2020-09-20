@@ -8,7 +8,7 @@ import com.ivianuu.injekt.compiler.backend.addChildAndUpdateMetadata
 import com.ivianuu.injekt.compiler.backend.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.backend.asNameId
 import com.ivianuu.injekt.compiler.backend.buildClass
-import com.ivianuu.injekt.compiler.backend.pluginContext
+import com.ivianuu.injekt.compiler.backend.irBuilderTmp
 import com.ivianuu.injekt.compiler.backend.substitute
 import com.ivianuu.injekt.compiler.backend.typeArguments
 import com.ivianuu.injekt.compiler.backend.typeOrFail
@@ -19,7 +19,6 @@ import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
@@ -111,10 +110,7 @@ class ReaderContextFactoryImplGenerator(
                 addValueParameter(parentField.name.asString(), parentField.type)
             } else null
 
-            body = DeclarationIrBuilder(
-                pluginContext,
-                symbol
-            ).irBlockBody {
+            body = irBuilderTmp().irBlockBody {
                 +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
                 +IrInstanceInitializerCallImpl(
                     UNDEFINED_OFFSET,
@@ -152,7 +148,7 @@ class ReaderContextFactoryImplGenerator(
                 )
             }
 
-            body = DeclarationIrBuilder(pluginContext, symbol).run {
+            body = irBuilderTmp().run {
                 irExprBody(
                     if (contextImpl.isObject) {
                         irGetObject(contextImpl.symbol)
@@ -208,7 +204,7 @@ class ReaderContextFactoryImplGenerator(
                     dispatchReceiverParameter = this@clazz.thisReceiver!!.copyTo(this)
                     addMetadataIfNotLocal()
                     overriddenSymbols += function.symbol
-                    body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody { }
+                    body = irBuilderTmp().irBlockBody { }
                 }
             }
         }
@@ -265,10 +261,7 @@ class ReaderContextFactoryImplGenerator(
                 )
             }
 
-            body = DeclarationIrBuilder(
-                pluginContext,
-                symbol
-            ).irBlockBody {
+            body = irBuilderTmp().irBlockBody {
                 +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
                 +IrInstanceInitializerCallImpl(
                     UNDEFINED_OFFSET,
@@ -293,11 +286,7 @@ class ReaderContextFactoryImplGenerator(
             }
         }
 
-        val expressions = GivenExpressions(
-            parent = parentExpressions,
-            pluginContext = pluginContext,
-            contextImpl = contextImpl
-        )
+        val expressions = GivenExpressions(parentExpressions, contextImpl)
 
         val graph = GivensGraph(
             parent = parentGraph,

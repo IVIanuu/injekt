@@ -63,9 +63,9 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrMetadataSourceOwner
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.declarations.IrSymbolOwner
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.IrValueDeclaration
@@ -100,6 +100,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrReturnImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.IrReturnTargetSymbol
+import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrSimpleType
@@ -170,6 +171,22 @@ import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.types.withAbbreviation
 import kotlin.math.absoluteValue
 
+@Reader
+fun IrSymbol.irBuilder() = DeclarationIrBuilder(pluginContext, this)
+
+/*@Reader
+inline fun <R> IrSymbol.irBuilder().run(block: DeclarationIrBuilder.() -> R) =
+    irBuilder().run(block)*/
+
+// todo rename once fixed
+@Reader
+fun IrSymbolOwner.irBuilderTmp() = symbol.irBuilder()
+
+// todo rename once fixed
+/*@Reader
+inline fun <R> IrSymbolOwner.irBuilderTmp().run(block: DeclarationIrBuilder.() -> R) =
+    symbol.irBuilder().run(block)*/
+
 fun IrDeclarationWithName.getContextName(): Name {
     return (getJoinedName(
         getPackageFragment()!!.fqName,
@@ -180,13 +197,11 @@ fun IrDeclarationWithName.getContextName(): Name {
         .asNameId()
 }
 
+@Reader
 fun createContext(
     owner: IrDeclarationWithName,
     origin: FqName,
-    capturedTypeParameters: List<IrTypeParameter>,
-    pluginContext: IrPluginContext,
-    module: IrModuleFragment,
-    injektSymbols: InjektSymbols
+    capturedTypeParameters: List<IrTypeParameter>
 ) = buildClass {
     kind = ClassKind.INTERFACE
     name = owner.getContextName()
@@ -197,25 +212,21 @@ fun createContext(
     addMetadataIfNotLocal()
     copyTypeParameters(capturedTypeParameters)
 
-    annotations += DeclarationIrBuilder(pluginContext, symbol).run {
-        irCall(injektSymbols.contextMarker.constructors.single())
-    }
-    annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+    annotations += irBuilderTmp().irCall(injektSymbols.contextMarker.constructors.single())
+    annotations += irBuilderTmp().run {
         irCall(injektSymbols.origin.constructors.single()).apply {
             putValueArgument(0, irString(origin.asString()))
         }
     }
 }
 
+@Reader
 fun createContextFactory(
     contextType: IrType,
     capturedTypeParameters: List<IrTypeParameter>,
     file: IrFile,
     inputTypes: List<IrType>,
     startOffset: Int,
-    pluginContext: IrPluginContext,
-    module: IrModuleFragment,
-    injektSymbols: InjektSymbols,
     isChild: Boolean
 ) = buildClass {
     name = "${contextType.classOrNull!!.owner.name}${startOffset}Factory"
@@ -261,7 +272,7 @@ fun createContextFactory(
             }
     }
 
-    annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+    annotations += irBuilderTmp().run {
         if (!isChild) {
             irCall(injektSymbols.rootContextFactory.constructors.single()).apply {
                 putValueArgument(
@@ -275,12 +286,6 @@ fun createContextFactory(
             irCall(injektSymbols.childContextFactory.constructors.single())
         }
     }
-}
-
-fun IrModuleFragment.transformFiles(
-    transformer: IrElementTransformerVoid
-) {
-    files.toList().forEach { it.transform(transformer, null) }
 }
 
 fun IrFile.addChildAndUpdateMetadata(
@@ -727,10 +732,8 @@ fun IrPluginContext.tmpSuspendFunction(n: Int): IrClassSymbol =
 fun IrPluginContext.tmpSuspendKFunction(n: Int): IrClassSymbol =
     referenceClass(builtIns.getKSuspendFunction(n).fqNameSafe)!!
 
-fun IrFunction.getFunctionType(
-    pluginContext: IrPluginContext,
-    skipContext: Boolean = false
-): IrType {
+@Reader
+fun IrFunction.getFunctionType(skipContext: Boolean = false): IrType {
     val valueParameters = listOfNotNull(extensionReceiverParameter) + valueParameters
         .filter { !skipContext || it.name.asString() != "_context" }
     return (if (isSuspend) pluginContext.tmpSuspendFunction(valueParameters.size)
@@ -810,7 +813,8 @@ fun wrapDescriptor(descriptor: FunctionDescriptor): WrappedSimpleFunctionDescrip
     }
 }
 
-fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
+@Reader
+fun IrFunction.copy(): IrSimpleFunction {
     val descriptor = descriptor
     val newDescriptor = wrapDescriptor(descriptor)
 
@@ -856,7 +860,7 @@ fun IrFunction.copy(pluginContext: IrPluginContext): IrSimpleFunction {
                         .mapIndexed { index, valueParameter -> valueParameter to index }
                         .singleOrNull { it.first.symbol == expression.symbol }
                         ?.let { fn.allParameters[it.second] }
-                        ?.let { DeclarationIrBuilder(pluginContext, fn.symbol).irGet(it) }
+                        ?.let { fn.symbol.irBuilder().irGet(it) }
                         ?: super.visitGetValue(expression)
                 }
             })
@@ -895,7 +899,7 @@ fun IrFunction.copyBodyTo(
 
 private inline fun <reified T : IrElement> T.deepCopyWithSymbols2(
     initialParent: IrDeclarationParent? = null,
-    createCopier: (SymbolRemapper, TypeRemapper) -> DeepCopyIrTreeWithSymbols = org.jetbrains.kotlin.ir.util::DeepCopyIrTreeWithSymbols
+    createCopier: (SymbolRemapper, TypeRemapper) -> DeepCopyIrTreeWithSymbols = ::DeepCopyIrTreeWithSymbols
 ): T {
     val symbolRemapper = DeepCopySymbolRemapper()
     acceptVoid(symbolRemapper)
@@ -1019,15 +1023,15 @@ fun IrDeclarationWithName.isMarkedAsReader(): Boolean =
             hasAnnotation(InjektFqNames.GivenSetElements) ||
             hasAnnotatedAnnotations(InjektFqNames.Effect)
 
-fun IrDeclarationWithName.canUseReaders(
-    pluginContext: IrPluginContext
-): Boolean =
+@Reader
+fun IrDeclarationWithName.canUseReaders(): Boolean =
     (this is IrFunction && !isExternalDeclaration() && getContext() != null) ||
             isMarkedAsReader() ||
             (this is IrClass && constructors.any { it.isMarkedAsReader() }) ||
             (this is IrConstructor && constructedClass.isMarkedAsReader()) ||
             (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsReader() == true)
 
+@Reader
 fun IrBuilderWithScope.irLambda(
     type: IrType,
     startOffset: Int = UNDEFINED_OFFSET,
@@ -1053,10 +1057,7 @@ fun IrBuilderWithScope.irLambda(
         annotations += type.annotations.map {
             it.deepCopyWithSymbols()
         }
-        this.body =
-            DeclarationIrBuilder(context, symbol).run {
-                irExprBody(body(this, this@apply))
-            }
+        this.body = irBuilderTmp().run { irExprBody(body(this, this@apply)) }
     }
 
     return IrFunctionExpressionImpl(
@@ -1068,9 +1069,9 @@ fun IrBuilderWithScope.irLambda(
     )
 }
 
+@Reader
 fun IrBuilderWithScope.jvmNameAnnotation(
-    name: String,
-    pluginContext: IrPluginContext
+    name: String
 ): IrConstructorCall {
     val jvmName = pluginContext.referenceClass(DescriptorUtils.JVM_NAME)!!
     return irCall(jvmName.constructors.single()).apply {

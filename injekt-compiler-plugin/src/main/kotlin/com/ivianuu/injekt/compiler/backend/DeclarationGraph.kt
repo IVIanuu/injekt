@@ -64,7 +64,7 @@ class DeclarationGraph {
                         .filter { it.name.asString() != "_context" }
                         .isNotEmpty()
                 ) {
-                    function.getFunctionType(pluginContext, skipContext = true).asKey() == key
+                    function.getFunctionType(skipContext = true).asKey() == key
                 } else {
                     function.returnType.asKey() == key
                 }

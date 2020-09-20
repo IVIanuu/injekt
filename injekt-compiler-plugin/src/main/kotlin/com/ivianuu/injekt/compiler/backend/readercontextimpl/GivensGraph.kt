@@ -26,8 +26,8 @@ import com.ivianuu.injekt.compiler.backend.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.backend.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.backend.getContext
 import com.ivianuu.injekt.compiler.backend.getContextValueParameter
+import com.ivianuu.injekt.compiler.backend.irBuilderTmp
 import com.ivianuu.injekt.compiler.backend.isExternalDeclaration
-import com.ivianuu.injekt.compiler.backend.pluginContext
 import com.ivianuu.injekt.compiler.backend.substitute
 import com.ivianuu.injekt.compiler.backend.uniqueTypeName
 import com.ivianuu.injekt.compiler.backend.visitAllFunctionsWithSubstitutionMap
@@ -35,7 +35,6 @@ import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -421,7 +420,7 @@ class GivensGraph(
                                 "parent",
                                 contextImpl.defaultType
                             )
-                            body = DeclarationIrBuilder(pluginContext, symbol).irBlockBody {
+                            body = irBuilderTmp().irBlockBody {
                                 +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
                                 +IrInstanceInitializerCallImpl(
                                     UNDEFINED_OFFSET,
@@ -464,14 +463,11 @@ class GivensGraph(
                                     dispatchReceiverParameter =
                                         childContextImpl.thisReceiver!!.copyTo(this)
                                     overriddenSymbols += function.symbol as IrSimpleFunctionSymbol
-                                    body = DeclarationIrBuilder(pluginContext, symbol).run {
+                                    body = irBuilderTmp().run {
                                         irExprBody(
                                             expression(
                                                 this,
-                                                ContextExpressionContext(
-                                                    pluginContext = pluginContext,
-                                                    thisContext = contextImpl
-                                                ) {
+                                                ContextExpressionContext(contextImpl) {
                                                     irGetField(
                                                         irGet(dispatchReceiverParameter!!),
                                                         parentField

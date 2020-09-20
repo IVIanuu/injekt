@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.IrFileStore
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
-import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
@@ -164,7 +163,7 @@ class Indexer {
                     "class",
                     true
                 )
-                annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+                annotations += irBuilderTmp().run {
                     irCall(injektSymbols.index.constructors.single()).apply {
                         putValueArgument(
                             0,
@@ -222,7 +221,7 @@ class Indexer {
 
                 createImplicitParameterDeclarationWithWrappedDescriptor()
                 addMetadataIfNotLocal()
-                annotations += DeclarationIrBuilder(pluginContext, symbol).run {
+                annotations += irBuilderTmp().run {
                     irCall(injektSymbols.index.constructors.single()).apply {
                         putValueArgument(
                             0,
