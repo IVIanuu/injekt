@@ -61,7 +61,7 @@ Declaring givens is as simple as declaring a function and annotate it with ´@Gi
 Given functions are treated like reader functions, so they can also call given<T>() and other reader functions
 to build their return value.
 Classes can also be marked with ´@Given´
-```
+```kotlin
 @Given
 fun bar() = Bar(given<Foo>())
 ```
