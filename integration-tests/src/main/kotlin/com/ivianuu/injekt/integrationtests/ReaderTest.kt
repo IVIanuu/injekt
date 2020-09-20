@@ -496,6 +496,19 @@ class ReaderTest {
     )
 
     @Test
+    fun testReaderWithSameNameAndDifferentReceivers() = codegen(
+        """
+        @Reader
+        fun Foo.func() {
+        }
+        
+        @Reader
+        fun Bar.func() {
+        }
+    """
+    )
+
+    @Test
     fun testGenericReader() = codegen(
         """
         @Given fun foo() = Foo()

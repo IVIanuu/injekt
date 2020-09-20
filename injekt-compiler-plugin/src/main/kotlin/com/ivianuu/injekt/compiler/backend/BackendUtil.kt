@@ -21,6 +21,7 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
+import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.allParameters
@@ -1002,7 +1003,7 @@ fun IrDeclarationWithName.uniqueKey() = when (this) {
             descriptor.name.isSpecial
         ) startOffset else ""
     }__function${
-        ((metadata as? MetadataSource.Function)?.descriptor ?: descriptor).valueParameters
+        ((metadata as? MetadataSource.Function)?.descriptor ?: descriptor).allParameters
             .filterNot { it.name == getContextValueParameter()?.name }
             .map { it.type }.map {
                 it.constructor.declarationDescriptor!!.fqNameSafe
@@ -1012,7 +1013,12 @@ fun IrDeclarationWithName.uniqueKey() = when (this) {
         if (descriptor.visibility == Visibilities.LOCAL &&
             descriptor.name.isSpecial
         ) startOffset else ""
-    }__property"
+    }__property${
+        listOfNotNull(
+            descriptor.dispatchReceiverParameter?.type,
+            descriptor.extensionReceiverParameter?.type
+        ).map { it.constructor.declarationDescriptor!!.fqNameSafe }.hashCode().absoluteValue
+    }"
     else -> error("Unsupported declaration ${dump()}")
 }
 

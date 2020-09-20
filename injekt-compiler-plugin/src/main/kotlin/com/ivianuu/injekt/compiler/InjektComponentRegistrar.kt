@@ -43,10 +43,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
         project: MockProject,
         configuration: CompilerConfiguration
     ) {
-        applicationContext = rootContext(
-            project as Project,
-            configuration
-        )
+        applicationContext = rootContext(project as Project, configuration)
 
         applicationContext.runReader {
             StorageComponentContainerContributor.registerExtension(
