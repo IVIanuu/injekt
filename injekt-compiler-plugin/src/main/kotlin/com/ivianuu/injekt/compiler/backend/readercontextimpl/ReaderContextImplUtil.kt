@@ -14,24 +14,8 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler
+package com.ivianuu.injekt.compiler.backend.readercontextimpl
 
-import com.ivianuu.injekt.compiler.backend.removeIllegalChars
+import org.jetbrains.kotlin.name.FqName
 
-class UniqueNameProvider {
-
-    private val existingNames = mutableSetOf<String>()
-
-    operator fun invoke(base: String): String {
-        val finalBase = base.removeIllegalChars()
-        var name = finalBase
-        var differentiator = 2
-        while (name in existingNames) {
-            name = finalBase + differentiator
-            differentiator++
-        }
-        existingNames += name
-        return name
-    }
-
-}
+fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"

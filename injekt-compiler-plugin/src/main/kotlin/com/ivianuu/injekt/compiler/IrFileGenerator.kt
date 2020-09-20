@@ -1,7 +1,11 @@
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.analysis.hasAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.analysis.hasAnnotation
+import com.ivianuu.injekt.ApplicationContext
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.compiler.backend.getJoinedName
+import com.ivianuu.injekt.compiler.frontend.hasAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.frontend.hasAnnotation
+import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
@@ -30,15 +34,14 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import java.io.File
 
-class IrFileGenerator(
-    private val srcDir: File,
-    private val cacheDir: File,
-    private val irFileStore: IrFileStore,
-    private val lookupManager: LookupManager
-) : AnalysisHandlerExtension {
+@Given
+class IrFileGenerator : AnalysisHandlerExtension {
+
+    private val fileStore = given<IrFileStore>()
+    private val lookupManager = given<LookupManager>()
 
     private val fileCache = KeyValueFileCache(
-        cacheFile = cacheDir.resolve("file-cache"),
+        cacheFile = given<CacheDir>().resolve("file-cache"),
         fromString = { File(it) },
         toString = { it.absolutePath },
         onDelete = ::fileCacheOnDelete
@@ -60,7 +63,7 @@ class IrFileGenerator(
         componentProvider: ComponentProvider
     ): AnalysisResult? {
         if (!generatedCode) {
-            irFileStore.clear()
+            fileStore.clear()
             files as ArrayList<KtFile>
             files.removeAll { it.text.startsWith("// injekt-generated") }
             files.forEach { fileCache.deleteDependents(File(it.virtualFilePath)) }
@@ -189,7 +192,7 @@ class IrFileGenerator(
         }
 
         return AnalysisResult.RetryWithAdditionalRoots(
-            bindingTrace.bindingContext, module, emptyList(), listOf(srcDir), true
+            bindingTrace.bindingContext, module, emptyList(), listOf(given<SrcDir>()), true
         )
     }
 
@@ -197,7 +200,7 @@ class IrFileGenerator(
         originatingFile: KtFile,
         originatingDescriptor: DeclarationDescriptor
     ) {
-        val existingIndexFilePath = irFileStore.get(originatingFile.virtualFilePath)
+        val existingIndexFilePath = fileStore.get(originatingFile.virtualFilePath)
         if (existingIndexFilePath != null) {
             lookupManager.recordLookup(existingIndexFilePath, originatingDescriptor)
             return
@@ -217,13 +220,14 @@ class IrFileGenerator(
             appendLine("package ${InjektFqNames.IndexPackage}")
         }
 
-        val indexFile = srcDir.resolve(InjektFqNames.IndexPackage.asString().replace(".", "/"))
-            .also { it.mkdirs() }
-            .resolve("$indexFileName.kt")
-            .also { it.createNewFile() }
+        val indexFile =
+            given<SrcDir>().resolve(InjektFqNames.IndexPackage.asString().replace(".", "/"))
+                .also { it.mkdirs() }
+                .resolve("$indexFileName.kt")
+                .also { it.createNewFile() }
         indexFile.writeText(code)
         fileCache.recordDependency(indexFile, File(originatingFile.virtualFilePath))
-        irFileStore.put(originatingFile.virtualFilePath, indexFile.absolutePath)
+        fileStore.put(originatingFile.virtualFilePath, indexFile.absolutePath)
     }
 
     private fun generateRootFactoryFileFor(
@@ -236,18 +240,19 @@ class IrFileGenerator(
             appendLine("package ${fqName.parent()}")
         }
 
-        val factoryFile = srcDir.resolve(fqName.parent().asString().replace(".", "/"))
+        val factoryFile = given<SrcDir>().resolve(fqName.parent().asString().replace(".", "/"))
             .also { it.mkdirs() }
             .resolve("${fqName.shortName()}.kt")
             .also { it.createNewFile() }
         factoryFile.writeText(code)
         fileCache.recordDependency(factoryFile, File(originatingFile.virtualFilePath))
-        irFileStore.put(fqName.asString(), factoryFile.absolutePath)
+        fileStore.put(fqName.asString(), factoryFile.absolutePath)
         lookupManager.recordLookup(factoryFile.absolutePath, originatingDescriptor)
     }
 
 }
 
+@Given(ApplicationContext::class)
 class IrFileStore {
     val map = mutableMapOf<String, String>()
     fun put(key: String, value: String) {

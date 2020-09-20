@@ -16,13 +16,16 @@
 
 package com.ivianuu.injekt.compiler
 
+import com.ivianuu.injekt.ApplicationContext
+import com.ivianuu.injekt.Given
 import org.jetbrains.kotlin.com.intellij.util.keyFMap.KeyFMap
 import org.jetbrains.kotlin.ir.declarations.IrAttributeContainer
 import org.jetbrains.kotlin.util.slicedMap.ReadOnlySlice
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 import java.util.WeakHashMap
 
-object WeakBindingTrace {
+@Given(ApplicationContext::class)
+class WeakBindingTrace {
     private val map = WeakHashMap<Any, KeyFMap>()
 
     fun <K : IrAttributeContainer, V> record(slice: WritableSlice<K, V>, key: K, value: V) {
