@@ -25,22 +25,23 @@ class ReaderContextGenerator : KtGenerator {
 
     private val fileManager = given<KtFileManager>()
     private val promisedReaderContextDescriptor = mutableSetOf<PromisedReaderContextDescriptor>()
+    private val contexts = mutableMapOf<DeclarationDescriptor, ReaderContextDescriptor>()
+
+    fun getContextForDescriptor(descriptor: DeclarationDescriptor) = contexts[descriptor]
 
     override fun generate(files: List<KtFile>) {
-        val descriptorCollector = given<ReaderContextDescriptorCollector>()
+        val descriptorCollector = given<ReaderContextDescriptorCollector>(contexts)
         files.forEach { file -> file.accept(descriptorCollector) }
         val givensCollector = given<ReaderContextGivensCollector>(
-            { descriptor: DeclarationDescriptor ->
-                descriptorCollector.readerContexts[descriptor]
-            }
+            { descriptor: DeclarationDescriptor -> contexts[descriptor] }
         )
         files.forEach { file -> file.accept(givensCollector) }
-        descriptorCollector.readerContexts.values.forEach { generateReaderContext(it) }
+        contexts.values.forEach { generateReaderContext(it) }
         promisedReaderContextDescriptor
             .map { promised ->
                 ReaderContextDescriptor(promised.fqName).apply {
                     givenTypes +=
-                        FqNameTypeRef(descriptorCollector.readerContexts[promised.callee]!!.fqName)
+                        FqNameTypeRef(contexts[promised.callee]!!.fqName)
                 }
             }
             .forEach { generateReaderContext(it) }
@@ -91,8 +92,9 @@ data class ReaderContextDescriptor(val fqName: FqName) {
 }
 
 @Given
-class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
-    val readerContexts = mutableMapOf<DeclarationDescriptor, ReaderContextDescriptor>()
+class ReaderContextDescriptorCollector(
+    private val contexts: MutableMap<DeclarationDescriptor, ReaderContextDescriptor>
+) : KtTreeVisitorVoid() {
 
     override fun visitCallExpression(expression: KtCallExpression) {
         super.visitCallExpression(expression)
@@ -125,9 +127,9 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
         descriptor: DeclarationDescriptor,
         fromRunReaderCall: Boolean = false
     ) {
-        if (descriptor in readerContexts) return
+        if (descriptor in contexts) return
         if (!descriptor.isReader() && !fromRunReaderCall) return
-        readerContexts[descriptor] = ReaderContextDescriptor(
+        contexts[descriptor] = ReaderContextDescriptor(
             fqName = descriptor.findPackage().fqName.child(descriptor.getContextName())
         )
     }

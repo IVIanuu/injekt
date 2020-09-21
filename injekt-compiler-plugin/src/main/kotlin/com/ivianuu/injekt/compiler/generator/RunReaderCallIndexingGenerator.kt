@@ -4,14 +4,15 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.backend.asNameId
 import com.ivianuu.injekt.given
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.types.KotlinType
 
 @Given
 class RunReaderCallIndexingGenerator : KtGenerator {
@@ -28,7 +29,7 @@ class RunReaderCallIndexingGenerator : KtGenerator {
                         if (resolvedCall.resultingDescriptor.fqNameSafe.asString() ==
                             "com.ivianuu.injekt.runReader"
                         ) {
-
+                            generateIndexForRunReaderCall(resolvedCall)
                         }
                     }
                 }
@@ -39,12 +40,19 @@ class RunReaderCallIndexingGenerator : KtGenerator {
     private fun generateIndexForRunReaderCall(
         call: ResolvedCall<*>
     ) {
-        return
         val callElement = call.call.callElement
         val file = callElement.containingKtFile
 
         val contextType = call.extensionReceiver!!.type
-        val blockContext: KotlinType = TODO()
+        val blockContextFqName = call.valueArguments.values.single()
+            .arguments
+            .single()
+            .getArgumentExpression()!!
+            .let { it as KtLambdaExpression }
+            .functionLiteral
+            .descriptor<FunctionDescriptor>()
+            .let { given<ReaderContextGenerator>().getContextForDescriptor(it)!! }
+            .fqName
 
         indexer.index(
             fqName = file.packageFqName.child(
@@ -53,7 +61,8 @@ class RunReaderCallIndexingGenerator : KtGenerator {
             type = "class",
             indexIsDeclaration = true,
             annotations = listOf(
-                InjektFqNames.RunReaderCall to "@RunReaderCall(calleeContext = ${contextType.render()}::class, blockContext = )"
+                InjektFqNames.RunReaderCall to
+                        "@RunReaderCall(calleeContext = ${contextType.render()}::class, blockContext = $blockContextFqName::class)"
             )
         )
     }
