@@ -1,7 +1,7 @@
 # Injekt: Next gen DI framework powered by a Kotlin compiler plugin
 
-Injekt is compile-time safe DI framework for Kotlin developers.
-Injekt is highly experimental the api is unstable.
+Injekt is compile-time checked DI framework for Kotlin developers.
+Injekt is highly experimental and the api is unstable.
 
 Minimal example:
 ```kotlin
