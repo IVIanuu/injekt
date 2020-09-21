@@ -22,6 +22,7 @@ import com.ivianuu.injekt.InitializeInjekt
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.backend.InjektIrGenerationExtension
 import com.ivianuu.injekt.compiler.frontend.InjektStorageContainerContributor
+import com.ivianuu.injekt.compiler.generator.InjektKtGenerationExtension
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.rootContext
 import com.ivianuu.injekt.runReader
@@ -56,7 +57,7 @@ class InjektComponentRegistrar : ComponentRegistrar {
         )
 
         AnalysisHandlerExtension.registerExtension(project, given<LookupTrackerInitializer>())
-        AnalysisHandlerExtension.registerExtension(project, given<IrFileGenerator>())
+        AnalysisHandlerExtension.registerExtension(project, given<InjektKtGenerationExtension>())
 
         // make sure that our plugin always runs before the Compose plugin
         // otherwise it will break @Reader @Composable functions

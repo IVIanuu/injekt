@@ -16,7 +16,9 @@
 
 package com.ivianuu.injekt.compiler.frontend
 
+import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -49,6 +51,11 @@ fun Annotated.hasAnnotatedAnnotations(
     annotation: FqName,
     module: ModuleDescriptor
 ): Boolean = annotations.any { it.hasAnnotation(annotation, module) }
+
+@Reader
+fun Annotated.hasAnnotatedAnnotations(
+    annotation: FqName
+): Boolean = hasAnnotatedAnnotations(annotation, given())
 
 fun Annotated.getAnnotatedAnnotations(
     annotation: FqName,

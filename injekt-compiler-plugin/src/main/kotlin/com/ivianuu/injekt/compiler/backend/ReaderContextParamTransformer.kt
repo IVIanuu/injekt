@@ -118,7 +118,7 @@ class ReaderContextParamTransformer : IrLowering {
     }
 
     override fun lower() {
-        module.transformChildrenVoid(
+        irModule.transformChildrenVoid(
             object : IrElementTransformerVoidWithContext() {
                 override fun visitCall(expression: IrCall): IrExpression {
                     if (expression.symbol.descriptor.fqNameSafe.asString() ==
@@ -132,8 +132,8 @@ class ReaderContextParamTransformer : IrLowering {
                 }
             }
         )
-        module.transformChildrenVoid(transformer)
-        module.rewriteTransformedReferences()
+        irModule.transformChildrenVoid(transformer)
+        irModule.rewriteTransformedReferences()
 
         newContexts
             .filterNot { it.isExternalDeclaration() }

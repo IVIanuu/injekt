@@ -22,8 +22,6 @@ import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.IrFileStore
 import com.ivianuu.injekt.compiler.backend.readercontextimpl.InitTrigger
-import com.ivianuu.injekt.compiler.backend.readercontextimpl.ReaderContextImplContext
-import com.ivianuu.injekt.compiler.backend.readercontextimpl.ReaderContextImplTransformer
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
@@ -47,23 +45,20 @@ class InjektIrGenerationExtension : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         irContext = childContext(moduleFragment, pluginContext)
         irContext.runReader {
-            if (pluginContext.referenceClass(InjektFqNames.Effect) != null)
-                given<EffectTransformer>().lower()
+            //given<ReaderContextParamTransformer>().lower()
+            //given<ReaderCallTransformer>().lower()
 
-            given<ReaderContextParamTransformer>().lower()
-            given<ReaderCallTransformer>().lower()
-            given<GivenIndexingTransformer>().lower()
-
-            val initTrigger = getInitTrigger()
+            /*val initTrigger = getInitTrigger()
             if (initTrigger != null) {
                 childContext<ReaderContextImplContext>(initTrigger).runReader {
                     given<ReaderContextImplTransformer>().lower()
                 }
             }
-
+*/
             generateSymbols()
             given<IrFileStore>().clear()
         }
+        println(moduleFragment.dumpSrc())
     }
 
 }
@@ -72,7 +67,7 @@ class InjektIrGenerationExtension : IrGenerationExtension {
 private fun getInitTrigger(): InitTrigger? {
     var initTrigger: IrDeclarationWithName? = null
 
-    module.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
+    irModule.transformChildrenVoid(object : IrElementTransformerVoidWithContext() {
         override fun visitDeclaration(declaration: IrDeclaration): IrStatement {
             if (declaration.hasAnnotation(InjektFqNames.InitializeInjekt)) {
                 initTrigger = declaration as IrDeclarationWithName

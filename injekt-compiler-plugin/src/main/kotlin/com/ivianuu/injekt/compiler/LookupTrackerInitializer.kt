@@ -32,12 +32,14 @@ import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.incremental.components.Position
 import org.jetbrains.kotlin.incremental.record
+import org.jetbrains.kotlin.incremental.recordPackageLookup
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.getPackageFragment
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
@@ -63,6 +65,27 @@ class LookupManager {
             location,
             lookedUp.findPackage(),
             lookedUp.name
+        )
+    }
+
+    fun recordLookup(
+        sourceFilePath: String,
+        lookedUpFqName: FqName
+    ) {
+        val location = object : LookupLocation {
+            override val location: LocationInfo?
+                get() = object : LocationInfo {
+                    override val filePath: String
+                        get() = sourceFilePath
+                    override val position: Position
+                        get() = Position.NO_POSITION
+                }
+        }
+
+        lookupTracker.recordPackageLookup(
+            location,
+            lookedUpFqName.parent().asString(),
+            lookedUpFqName.shortName().asString()
         )
     }
 

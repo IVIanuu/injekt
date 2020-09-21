@@ -40,4 +40,7 @@ object InjektFqNames {
     val RunReaderCall = InternalPackage.child("RunReaderCall".asNameId())
 
     val IndexPackage = InternalPackage.child("index".asNameId())
+
+    val Composable = FqName("androidx.compose.runtime.Composable")
 }
+

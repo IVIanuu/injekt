@@ -77,7 +77,7 @@ class ReaderCallTransformer : IrLowering {
     private val newDeclarations = mutableListOf<IrDeclaration>()
 
     override fun lower() {
-        module.transformChildrenVoid(
+        irModule.transformChildrenVoid(
             object : IrElementTransformerVoidWithContext() {
                 override fun visitClassNew(declaration: IrClass): IrStatement {
                     transformClassIfNeeded(declaration)

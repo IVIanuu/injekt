@@ -14,7 +14,7 @@ inline val pluginContext: IrPluginContext
     get() = given()
 
 @Reader
-inline val module: IrModuleFragment
+inline val irModule: IrModuleFragment
     get() = given()
 
 @Reader

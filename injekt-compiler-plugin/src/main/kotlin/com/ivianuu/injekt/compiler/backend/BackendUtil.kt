@@ -21,7 +21,6 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
-import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.allParameters
@@ -64,7 +63,6 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithVisibility
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrMetadataSourceOwner
-import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrSymbolOwner
 import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
@@ -170,11 +168,10 @@ import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.types.withAbbreviation
-import kotlin.math.absoluteValue
 
 @Reader
 val isInjektCompiler: Boolean
-    get() = module.name.asString() == "<injekt-compiler-plugin>"
+    get() = irModule.name.asString() == "<injekt-compiler-plugin>"
 
 @Reader
 fun IrSymbol.irBuilder() = DeclarationIrBuilder(pluginContext, this)
@@ -947,35 +944,8 @@ private fun IrBody.move(
     }
 }, null)
 
-fun IrDeclarationWithName.uniqueKey() = when (this) {
-    is IrClass -> "${descriptor.fqNameSafe}${
-        if (descriptor.visibility == Visibilities.LOCAL &&
-            descriptor.name.isSpecial
-        ) startOffset else ""
-    }__class"
-    is IrFunction -> "${descriptor.fqNameSafe}${
-        if (descriptor.visibility == Visibilities.LOCAL &&
-            descriptor.name.isSpecial
-        ) startOffset else ""
-    }__function${
-        ((metadata as? MetadataSource.Function)?.descriptor ?: descriptor).allParameters
-            .filterNot { it.name == getContextValueParameter()?.name }
-            .map { it.type }.map {
-                it.constructor.declarationDescriptor!!.fqNameSafe
-            }.hashCode().absoluteValue
-    }"
-    is IrProperty -> "${descriptor.fqNameSafe}${
-        if (descriptor.visibility == Visibilities.LOCAL &&
-            descriptor.name.isSpecial
-        ) startOffset else ""
-    }__property${
-        listOfNotNull(
-            descriptor.dispatchReceiverParameter?.type,
-            descriptor.extensionReceiverParameter?.type
-        ).map { it.constructor.declarationDescriptor!!.fqNameSafe }.hashCode().absoluteValue
-    }"
-    else -> error("Unsupported declaration ${dump()}")
-}
+fun IrDeclarationWithName.uniqueKey() =
+    (metadata as? MetadataSource.Function)?.descriptor ?: descriptor
 
 fun IrDeclarationWithName.isMarkedAsReader(): Boolean =
     hasAnnotation(InjektFqNames.Reader) ||

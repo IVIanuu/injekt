@@ -17,4 +17,4 @@
 package com.ivianuu.injekt.internal
 
 @Target(AnnotationTarget.TYPE)
-internal annotation class Qualifier(val value: String)
+annotation class Qualifier(val value: String)

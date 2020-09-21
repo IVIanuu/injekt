@@ -100,7 +100,7 @@ class Indexer {
     }
 
     private val allExternalIndices by unsafeLazy {
-        val memberScope = module.descriptor.getPackage(InjektFqNames.IndexPackage).memberScope
+        val memberScope = irModule.descriptor.getPackage(InjektFqNames.IndexPackage).memberScope
         (memberScope.getClassifierNames() ?: emptySet())
             .mapNotNull {
                 memberScope.getContributedClassifier(
@@ -148,7 +148,7 @@ class Indexer {
             .asNameId()
 
         val indexFilePath = fileStore.get(originatingFile.path)!!
-        val indexFile = module.files.single { it.path == indexFilePath }
+        val indexFile = irModule.files.single { it.path == indexFilePath }
         indexFile.addChildAndUpdateMetadata(
             buildClass {
                 this.name = name
@@ -198,8 +198,8 @@ class Indexer {
         ).asString() + "${declaration.uniqueKey().hashCode()}Index").removeIllegalChars().asNameId()
 
         val indexFilePath = fileStore.get(originatingFile.path)!!
-        val indexFile = module.files.singleOrNull { it.path == indexFilePath }
-            ?: error("Not found for ${originatingFile.path} index is $indexFilePath in ${module.files.map { it.path }}")
+        val indexFile = irModule.files.singleOrNull { it.path == indexFilePath }
+            ?: error("Not found for ${originatingFile.path} index is $indexFilePath in ${irModule.files.map { it.path }}")
         indexFile.addChildAndUpdateMetadata(
             buildClass {
                 this.name = name
