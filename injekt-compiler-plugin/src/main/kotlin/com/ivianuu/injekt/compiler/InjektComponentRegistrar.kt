@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler
 import com.google.auto.service.AutoService
 import com.ivianuu.injekt.ApplicationContext
 import com.ivianuu.injekt.InitializeInjekt
+import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.backend.InjektIrGenerationExtension
 import com.ivianuu.injekt.compiler.frontend.InjektStorageContainerContributor
 import com.ivianuu.injekt.given
@@ -44,38 +45,37 @@ class InjektComponentRegistrar : ComponentRegistrar {
         configuration: CompilerConfiguration
     ) {
         applicationContext = rootContext(project as Project, configuration)
-
-        applicationContext.runReader {
-            StorageComponentContainerContributor.registerExtension(
-                project,
-                given<InjektStorageContainerContributor>()
-            )
-
-            AnalysisHandlerExtension.registerExtension(project, given<LookupTrackerInitializer>())
-            AnalysisHandlerExtension.registerExtension(project, given<IrFileGenerator>())
-
-            // make sure that our plugin always runs before the Compose plugin
-            // otherwise it will break @Reader @Composable functions
-            val irExtensionPoint = Extensions.getArea(project)
-                .getExtensionPoint(IrGenerationExtension.extensionPointName)
-
-            val composeIrExtensionClass = try {
-                Class.forName("androidx.compose.compiler.plugins.kotlin.ComposeIrGenerationExtension")
-            } catch (t: Throwable) {
-                null
-            }
-            val composeExtension = if (composeIrExtensionClass != null) {
-                irExtensionPoint.extensionList.singleOrNull {
-                    it.javaClass == composeIrExtensionClass
-                }
-            } else null
-            if (composeExtension != null) irExtensionPoint
-                .unregisterExtension(composeIrExtensionClass as Class<out IrGenerationExtension>)
-            irExtensionPoint.registerExtension(given<InjektIrGenerationExtension>()) {}
-            if (composeExtension != null) irExtensionPoint.registerExtension(composeExtension) {}
-        }
+        applicationContext.runReader { registerExtensions(project) }
     }
 
+    @Reader
+    private fun registerExtensions(project: Project) {
+        StorageComponentContainerContributor.registerExtension(
+            project,
+            given<InjektStorageContainerContributor>()
+        )
+
+        AnalysisHandlerExtension.registerExtension(project, given<LookupTrackerInitializer>())
+        AnalysisHandlerExtension.registerExtension(project, given<IrFileGenerator>())
+
+        // make sure that our plugin always runs before the Compose plugin
+        // otherwise it will break @Reader @Composable functions
+        val irExtensionPoint = Extensions.getArea(project)
+            .getExtensionPoint(IrGenerationExtension.extensionPointName)
+
+        val composeIrExtensionClass = try {
+            Class.forName("androidx.compose.compiler.plugins.kotlin.ComposeIrGenerationExtension")
+        } catch (t: Throwable) {
+            null
+        }
+        val composeExtension = if (composeIrExtensionClass != null) {
+            irExtensionPoint.extensionList.singleOrNull {
+                it.javaClass == composeIrExtensionClass
+            }
+        } else null
+        if (composeExtension != null) irExtensionPoint
+            .unregisterExtension(composeIrExtensionClass as Class<out IrGenerationExtension>)
+        irExtensionPoint.registerExtension(given<InjektIrGenerationExtension>()) {}
+        if (composeExtension != null) irExtensionPoint.registerExtension(composeExtension) {}
+    }
 }
-
-
