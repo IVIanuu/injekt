@@ -22,7 +22,7 @@ fun main() {
 
 # Reader functions
 Injekt has the concept of reader functions.
-These functions are allowed to inject givens via calls to the given<T>() function.
+These functions are allowed to inject givens via calls to the `given<T>()` function.
 Reader functions can be declared by annotating a function with '@Reader'.
 
 ```kotlin
@@ -49,7 +49,7 @@ class Greeter {
 # Run reader
 Reader functions can only be called from inside other reader functions or classes.
 To get into a reader function we can call `runReader` on any context object.
-Any call to given<T>() inside the reader block will be retrieved from the receiver context of the `runReader` call.
+Any call to `given<T>()` inside the reader block will be retrieved from the receiver context of the `runReader` call.
 
 # Contexts
 The context is the object graph where reader functions get their givens from.
