@@ -23,7 +23,9 @@
             <option value="$PROJECT_DIR$/injekt-gradle-plugin" />
             <option value="$PROJECT_DIR$/integration-tests" />
             <option value="$PROJECT_DIR$/lol" />
-            <option value="$PROJECT_DIR$/sample" />
+            <option value="$PROJECT_DIR$/samples" />
+            <option value="$PROJECT_DIR$/samples/coffee-maker" />
+            <option value="$PROJECT_DIR$/samples/sample" />
             <option value="$PROJECT_DIR$/test-util" />
           </set>
         </option>

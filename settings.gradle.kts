@@ -10,6 +10,7 @@ include(
     ":injekt-gradle-plugin",
     ":integration-tests",
     ":lol",
-    ":sample",
-    ":test-util"
+    ":test-util",
+    "samples:coffee-maker",
+    "samples:sample"
 )
