@@ -89,7 +89,6 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
-import org.jetbrains.kotlin.ir.types.isMarkedNullable
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.constructedClass
@@ -165,22 +164,6 @@ fun IrTypeArgument.hasAnnotation(fqName: FqName): Boolean =
 val IrMemberAccessExpression.typeArguments: List<IrType>
     get() =
         (0 until typeArgumentsCount).map { getTypeArgument(it)!! }
-
-fun IrType.copy(
-    classifier: IrClassifierSymbol = classifierOrFail,
-    isMarkedNullable: Boolean = this.isMarkedNullable(),
-    arguments: List<IrTypeArgument> = (this as IrSimpleType).arguments,
-    annotations: List<IrConstructorCall> = this.annotations,
-    abbreviation: IrTypeAbbreviation? = (this as IrSimpleType).abbreviation,
-): IrType {
-    return IrSimpleTypeImpl(
-        makeKotlinType(classifier, arguments, isMarkedNullable, annotations, abbreviation),
-        classifier,
-        isMarkedNullable,
-        arguments,
-        annotations,
-    )
-}
 
 fun IrType.remapTypeParametersByName(
     source: IrTypeParametersContainer,

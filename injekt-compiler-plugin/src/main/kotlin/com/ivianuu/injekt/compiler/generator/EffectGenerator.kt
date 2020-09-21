@@ -82,7 +82,7 @@ class EffectGenerator : KtGenerator {
             emitLine("package $packageName")
             emitLine("import ${InjektFqNames.Given}")
             emitLine("import ${declaration.fqNameSafe}")
-            emit("internal object $effectsName ")
+            emit("object $effectsName ")
             braced {
                 val givenType = declaration.getGivenType()
                 if (declaration is FunctionDescriptor && !declaration.hasAnnotation(InjektFqNames.Given)) {
@@ -124,7 +124,8 @@ class EffectGenerator : KtGenerator {
                                     )
                                 )
                             ),
-                            declaration
+                            declaration,
+                            emptyList()
                         )
                     )
                 }
@@ -154,7 +155,7 @@ class EffectGenerator : KtGenerator {
                         ).substitute(effectFunction.returnType!!.asTypeProjection())!!.type
                         emit("@Given fun $name(): ${returnType.render()} ")
                         braced {
-                            emit("return ${effectFunction.fqNameSafe}<${returnType.render()}>(")
+                            emit("return ${effectFunction.fqNameSafe}<${givenType.render()}>(")
                             effectFunction.valueParameters.indices.forEach { index ->
                                 emit("p1$index")
                                 if (index != effectFunction.valueParameters.lastIndex) emit(", ")
@@ -181,7 +182,8 @@ class EffectGenerator : KtGenerator {
                                         )
                                     )
                                 ),
-                                effectFunction
+                                effectFunction,
+                                listOf(KotlinTypeRef(givenType))
                             )
                         )
                     }

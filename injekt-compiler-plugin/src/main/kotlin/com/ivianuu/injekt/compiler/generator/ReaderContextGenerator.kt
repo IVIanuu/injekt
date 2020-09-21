@@ -10,9 +10,11 @@ import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtLambdaExpression
@@ -48,7 +50,20 @@ class ReaderContextGenerator : KtGenerator {
                         descriptor.getContextName(),
                         NoLookupLocation.FROM_BACKEND
                     )
-                    ?.let { ReaderContextDescriptor(it.fqNameSafe) }
+                    ?.let { it as ClassDescriptor }
+                    ?.let {
+                        ReaderContextDescriptor(
+                            it.fqNameSafe,
+                            it.declaredTypeParameters
+                                .map { typeParameter ->
+                                    ReaderContextTypeParameter(
+                                        typeParameter.name,
+                                        typeParameter.upperBounds
+                                            .map { KotlinTypeRef(it) }
+                                    )
+                                }
+                        )
+                    }
                     ?.also { contexts[descriptor.original] = it }
             }
         )
@@ -56,9 +71,12 @@ class ReaderContextGenerator : KtGenerator {
         contexts.values.forEach { generateReaderContext(it) }
         promisedReaderContextDescriptor
             .map { promised ->
-                ReaderContextDescriptor(promised.fqName).apply {
+                ReaderContextDescriptor(promised.fqName, emptyList()).apply {
                     givenTypes +=
-                        FqNameTypeRef(contexts[promised.callee]!!.fqName)
+                        FqNameTypeRef(
+                            contexts[promised.callee]!!.fqName,
+                            promised.calleeTypeArguments
+                        )
                 }
             }
             .forEach { generateReaderContext(it) }
@@ -76,14 +94,21 @@ class ReaderContextGenerator : KtGenerator {
             emitLine("package ${descriptor.fqName.parent()}")
             emitLine("import com.ivianuu.injekt.internal.ContextMarker")
             emitLine("@ContextMarker")
-            emit("interface ${descriptor.fqName.shortName()} ")
+            emit("interface ${descriptor.fqName.shortName()}")
+            if (descriptor.typeParameters.isNotEmpty()) {
+                emit("<")
+                descriptor.typeParameters.forEachIndexed { index, typeParameter ->
+                    emit(typeParameter.name)
+                    if (index != descriptor.typeParameters.lastIndex) emit(", ")
+                }
+                emit(">")
+            }
+
+            emitSpace()
             braced {
                 descriptor.givenTypes.forEach { typeRef ->
-                    val (name, returnType) = when (typeRef) {
-                        is KotlinTypeRef -> typeRef.kotlinType.uniqueTypeName() to typeRef.kotlinType.render()
-                        is FqNameTypeRef -> typeRef.fqName.pathSegments()
-                            .joinToString("_") to typeRef.fqName
-                    }
+                    val name = typeRef.uniqueTypeName()
+                    val returnType = typeRef.render()
                     emitLine("fun $name(): $returnType")
                 }
             }
@@ -102,12 +127,21 @@ class ReaderContextGenerator : KtGenerator {
 
 data class PromisedReaderContextDescriptor(
     val fqName: FqName,
-    val callee: DeclarationDescriptor
+    val callee: DeclarationDescriptor,
+    val calleeTypeArguments: List<TypeRef>
 )
 
-data class ReaderContextDescriptor(val fqName: FqName) {
+data class ReaderContextDescriptor(
+    val fqName: FqName,
+    val typeParameters: List<ReaderContextTypeParameter>
+) {
     val givenTypes = mutableSetOf<TypeRef>()
 }
+
+data class ReaderContextTypeParameter(
+    val name: Name,
+    val upperBounds: List<TypeRef>
+)
 
 @Given
 class ReaderContextDescriptorCollector(
@@ -153,7 +187,18 @@ class ReaderContextDescriptorCollector(
         if (descriptor in contexts) return
         if (!descriptor.isReader() && !fromRunReaderCall) return
         contexts[descriptor.original] = ReaderContextDescriptor(
-            fqName = descriptor.findPackage().fqName.child(descriptor.getContextName())
+            fqName = descriptor.findPackage().fqName.child(descriptor.getContextName()),
+            typeParameters = when (descriptor) {
+                is ClassDescriptor -> descriptor.declaredTypeParameters
+                is FunctionDescriptor -> descriptor.typeParameters
+                is PropertyDescriptor -> descriptor.typeParameters
+                else -> emptyList()
+            }.map { typeParameter ->
+                ReaderContextTypeParameter(
+                    typeParameter.name,
+                    typeParameter.upperBounds.map { KotlinTypeRef(it) }
+                )
+            }
         )
     }
 
@@ -259,11 +304,16 @@ class ReaderContextGivensCollector(
                 val factoryFqName = given<InjektAttributes>()[InjektAttributes.ContextFactoryKey(
                     expression.containingKtFile.virtualFilePath, expression.startOffset
                 )]!!
-                readerScope!!.recordGivenType(FqNameTypeRef(factoryFqName))
+                readerScope!!.recordGivenType(FqNameTypeRef(factoryFqName, emptyList())) // todo
             }
             else -> {
                 val calleeContext = contextProvider(resulting)!!
-                readerScope!!.recordGivenType(FqNameTypeRef(calleeContext.fqName))
+                readerScope!!.recordGivenType(
+                    FqNameTypeRef(
+                        calleeContext.fqName,
+                        resolvedCall.typeArguments.values.map { KotlinTypeRef(it) }
+                    )
+                )
             }
         }
     }

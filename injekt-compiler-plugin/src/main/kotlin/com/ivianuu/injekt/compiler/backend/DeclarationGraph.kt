@@ -45,16 +45,6 @@ class DeclarationGraph {
         FqName("kotlin.collections.Set")
     )!!
 
-    val rootContextFactories: List<IrClass> by unsafeLazy {
-        indexer.classIndices
-            .filter { it.hasAnnotation(InjektFqNames.RootContextFactory) }
-            .filter {
-                isInjektCompiler ||
-                        !it.descriptor.fqNameSafe.asString()
-                            .startsWith("com.ivianuu.injekt.compiler")
-            }
-    }
-
     private val allGivens by unsafeLazy {
         (indexer.functionIndices +
                 indexer.classIndices

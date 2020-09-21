@@ -23,6 +23,10 @@ class CodeBuilder(out: Appendable) {
         printer.println(value)
     }
 
+    fun emitSpace() {
+        emit(" ")
+    }
+
     fun emitLine() {
         printer.println()
     }

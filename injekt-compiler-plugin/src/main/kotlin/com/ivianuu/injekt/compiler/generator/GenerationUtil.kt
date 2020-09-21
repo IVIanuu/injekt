@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.incremental.components.LocationInfo
@@ -96,6 +97,8 @@ fun KotlinType.render() = buildString {
         val abbreviation = getAbbreviation()
         if (abbreviation != null) {
             append(abbreviation.constructor.declarationDescriptor!!.fqNameSafe)
+        } else if (constructor.declarationDescriptor!! is TypeParameterDescriptor) {
+            append(constructor.declarationDescriptor!!.name)
         } else {
             append(constructor.declarationDescriptor!!.fqNameSafe)
         }
@@ -145,6 +148,21 @@ fun IrType.uniqueTypeName(): Name {
         .asNameId()
 }
 
+fun TypeRef.render(): String = when (this) {
+    is KotlinTypeRef -> kotlinType.render()
+    is FqNameTypeRef -> buildString {
+        append(fqName)
+        if (typeArguments.isNotEmpty()) {
+            append("<")
+            typeArguments.forEachIndexed { index, typeArgument ->
+                append(typeArgument.render())
+                if (index != typeArguments.lastIndex) append(", ")
+            }
+            append(">")
+        }
+    }
+}
+
 fun KotlinType.uniqueTypeName(): Name {
     fun KotlinType.renderName(includeArguments: Boolean = true): String {
         return buildString {
@@ -164,6 +182,53 @@ fun KotlinType.uniqueTypeName(): Name {
                     else append(typeArgument.type.renderName())
                     if (index != arguments.lastIndex) append("_")
                 }
+            }
+        }
+    }
+
+    val fullTypeName = renderName()
+
+    // Conservatively shorten the name if the length exceeds 128
+    return (if (fullTypeName.length <= 128) fullTypeName
+    else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}"))
+        .removeIllegalChars()
+        .asNameId()
+}
+
+fun TypeRef.uniqueTypeName(): Name {
+    fun TypeRef.renderName(includeArguments: Boolean = true): String {
+        return buildString {
+            val qualifier = (this@renderName as? KotlinTypeRef)
+                ?.kotlinType?.annotations?.findAnnotation(InjektFqNames.Qualifier)
+                ?.allValueArguments?.values?.singleOrNull()?.value as? String
+            if (qualifier != null) append("${qualifier}_")
+
+            val fqName = when (this@renderName) {
+                is KotlinTypeRef -> kotlinType.getAbbreviation()?.constructor?.declarationDescriptor?.fqNameSafe
+                    ?: kotlinType.constructor.declarationDescriptor!!.fqNameSafe
+                is FqNameTypeRef -> fqName
+            }
+
+            append(fqName.pathSegments().joinToString("_") { it.asString() })
+
+            if (includeArguments) {
+                when (this@renderName) {
+                    is KotlinTypeRef -> {
+                        kotlinType.arguments.forEachIndexed { index, typeArgument ->
+                            if (index == 0) append("_")
+                            if (typeArgument.isStarProjection) append("star")
+                            else append(typeArgument.type.uniqueTypeName())
+                            if (index != kotlinType.arguments.lastIndex) append("_")
+                        }
+                    }
+                    is FqNameTypeRef -> {
+                        typeArguments.forEachIndexed { index, typeArgument ->
+                            if (index == 0) append("_")
+                            append(typeArgument.uniqueTypeName())
+                            if (index != typeArguments.lastIndex) append("_")
+                        }
+                    }
+                }.let {}
             }
         }
     }

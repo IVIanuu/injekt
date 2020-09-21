@@ -13,7 +13,10 @@ sealed class TypeRef {
 
 class KotlinTypeRef(val kotlinType: KotlinType) : TypeRef()
 
-class FqNameTypeRef(val fqName: FqName) : TypeRef()
+class FqNameTypeRef(
+    val fqName: FqName,
+    val typeArguments: List<TypeRef>
+) : TypeRef()
 
 private val TypeRef.classifierFqName: FqName
     get() = when (this) {
