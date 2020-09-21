@@ -160,21 +160,22 @@ class IrFileGenerator : AnalysisHandlerExtension {
                 .filterIsInstance<ClassDescriptor>()
                 .mapNotNull { index ->
                     index.annotations.findAnnotation(InjektFqNames.Index)
-                        ?.takeIf {
-                            it.allValueArguments[Name.identifier("type")]
+                        ?.takeIf { annotation ->
+                            annotation.allValueArguments[Name.identifier("type")]
                                 .let { it as StringValue }
                                 .value == "class"
                         }
                         ?.let { annotation ->
-                            val fqName = annotation.allValueArguments[Name.identifier("fqName")]!!
-                                .let { it as StringValue }
-                                .value
-                                .let { FqName(it) }
+                            val fqName =
+                                annotation.allValueArguments.getValue(Name.identifier("fqName"))
+                                    .let { it as StringValue }
+                                    .value
+                                    .let { FqName(it) }
                             module.findClassAcrossModuleDependencies(ClassId.topLevel(fqName))
                         }
                 }
-                .mapNotNull {
-                    it.annotations.findAnnotation(InjektFqNames.RootContextFactory)
+                .mapNotNull { index ->
+                    index.annotations.findAnnotation(InjektFqNames.RootContextFactory)
                         ?.allValueArguments
                         ?.values
                         ?.single()

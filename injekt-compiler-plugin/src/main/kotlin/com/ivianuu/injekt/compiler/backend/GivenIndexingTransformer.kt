@@ -52,16 +52,6 @@ class GivenIndexingTransformer : IrLowering {
                 if (!declaration.isInGivenSet()) {
                     when {
                         declaration.hasAnnotation(InjektFqNames.Given) -> {
-                            val explicitParameters = declaration.valueParameters
-                                .filter { it != declaration.getContextValueParameter() }
-                            val typePath =
-                                if (explicitParameters.isEmpty()) declaration.returnType.uniqueTypeName()
-                                    .asString()
-                                else pluginContext.tmpFunction(explicitParameters.size)
-                                    .owner
-                                    .typeWith(explicitParameters.map { it.type } + declaration.returnType)
-                                    .uniqueTypeName()
-                                    .asString()
                             indexer.index(declaration, currentFile)
                         }
                         declaration.hasAnnotation(InjektFqNames.GivenMapEntries) -> {
@@ -79,18 +69,6 @@ class GivenIndexingTransformer : IrLowering {
                 when {
                     declaration.hasAnnotation(InjektFqNames.Given) ||
                             declaration.hasAnnotatedAnnotations(InjektFqNames.Effect) -> {
-                        val readerConstructor =
-                            declaration.getReaderConstructor()!!
-                        val explicitParameters = readerConstructor.valueParameters
-                            .filter { it != readerConstructor.getContextValueParameter() }
-                        val typePath =
-                            if (explicitParameters.isEmpty()) readerConstructor.returnType.uniqueTypeName()
-                                .asString()
-                            else pluginContext.tmpFunction(explicitParameters.size)
-                                .owner
-                                .typeWith(explicitParameters.map { it.type } + readerConstructor.returnType)
-                                .uniqueTypeName()
-                                .asString()
                         indexer.index(declaration, currentFile)
                     }
                 }

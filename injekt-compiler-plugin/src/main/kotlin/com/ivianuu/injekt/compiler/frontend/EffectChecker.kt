@@ -106,8 +106,8 @@ class EffectChecker : DeclarationChecker {
         )
 
         val upperBounds = effectAnnotations
-            .mapNotNull {
-                it.type
+            .mapNotNull { effectAnnotation ->
+                effectAnnotation.type
                     .constructor
                     .declarationDescriptor
                     .let { it as ClassDescriptor }

@@ -251,8 +251,8 @@ fun createContextFactory(
         addMetadataIfNotLocal()
         val parameterUniqueNameProvider = UniqueNameProvider()
         inputTypes
-            .map {
-                it.remapTypeParametersByName(
+            .map { inputType ->
+                inputType.remapTypeParametersByName(
                     capturedTypeParameters
                         .map { it.descriptor.fqNameSafe }
                         .zip(typeParameters)
@@ -588,9 +588,9 @@ fun makeKotlinType(
             else Annotations.create(annotations.map { it.toAnnotationDescriptor() })
         )
         .makeNullableAsSpecified(hasQuestionMark)
-        .let {
+        .let { type ->
             if (abbreviation != null) {
-                it.withAbbreviation(
+                type.withAbbreviation(
                     abbreviation.typeAlias.descriptor.defaultType
                         .replace(
                             newArguments = abbreviation.arguments.mapIndexed { index, it ->
@@ -608,7 +608,7 @@ fun makeKotlinType(
                         )
                 )
             } else {
-                it
+                type
             }
         }
 }
@@ -715,17 +715,11 @@ fun IrDeclaration.isExternalDeclaration() = origin ==
         IrDeclarationOrigin.IR_EXTERNAL_DECLARATION_STUB ||
         origin == IrDeclarationOrigin.IR_EXTERNAL_JAVA_DECLARATION_STUB
 
-fun IrPluginContext.tmpKFunction(n: Int): IrClassSymbol =
-    referenceClass(builtIns.getKFunction(n).fqNameSafe)!!
-
 fun IrPluginContext.tmpFunction(n: Int): IrClassSymbol =
     referenceClass(builtIns.getFunction(n).fqNameSafe)!!
 
 fun IrPluginContext.tmpSuspendFunction(n: Int): IrClassSymbol =
     referenceClass(builtIns.getSuspendFunction(n).fqNameSafe)!!
-
-fun IrPluginContext.tmpSuspendKFunction(n: Int): IrClassSymbol =
-    referenceClass(builtIns.getKSuspendFunction(n).fqNameSafe)!!
 
 @Reader
 fun IrFunction.getFunctionType(skipContext: Boolean = false): IrType {

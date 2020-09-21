@@ -216,8 +216,8 @@ class GivensGraph(
         checkedTypes += context
 
         context.visitAllFunctionsWithSubstitutionMap(
-            enterType = {
-                val origin = it.classOrNull!!.owner.getConstantFromAnnotationOrNull<String>(
+            enterType = { type ->
+                val origin = type.classOrNull!!.owner.getConstantFromAnnotationOrNull<String>(
                     InjektFqNames.Origin,
                     0
                 )?.let { FqName(it) }

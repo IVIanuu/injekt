@@ -376,7 +376,7 @@ class ContextExpressionContext(
     private val expressionsByContext: Map<IrClass, () -> IrExpression>
 ) {
 
-    operator fun get(context: IrClass) = expressionsByContext[context]!!()
+    operator fun get(context: IrClass) = expressionsByContext.getValue(context)()
 
     companion object {
         @Reader

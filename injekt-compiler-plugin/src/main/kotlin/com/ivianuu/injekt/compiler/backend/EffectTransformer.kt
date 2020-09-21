@@ -41,7 +41,6 @@ import org.jetbrains.kotlin.ir.declarations.IrField
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrProperty
-import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.companionObject
@@ -184,7 +183,7 @@ class EffectTransformer : IrLowering {
                                         dispatchReceiver =
                                             irGetObject(declaration.dispatchReceiverParameter!!.type.classOrNull!!)
                                     }
-                                    valueParameters.forEachIndexed<IrValueParameter> { index, param ->
+                                    valueParameters.forEachIndexed { index, param ->
                                         putValueArgument(index, irGet(param))
                                     }
                                 }
@@ -196,8 +195,8 @@ class EffectTransformer : IrLowering {
 
             effects
                 .map { it.companionObject() as IrClass }
-                .flatMap {
-                    it.declarations
+                .flatMap { effectGivenSet ->
+                    effectGivenSet.declarations
                         .filter {
                             it.hasAnnotation(InjektFqNames.Given) ||
                                     it.hasAnnotation(InjektFqNames.GivenMapEntries) ||

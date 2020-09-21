@@ -87,8 +87,7 @@ class DeclarationGraph {
         allGivens
             .filter { function ->
                 if (function.extensionReceiverParameter != null || function.valueParameters
-                        .filter { it.name.asString() != "_context" }
-                        .isNotEmpty()
+                        .any { it.name.asString() != "_context" }
                 ) {
                     function.getFunctionType(skipContext = true).asKey() == key
                 } else {

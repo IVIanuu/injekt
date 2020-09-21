@@ -68,8 +68,8 @@ class ReaderContextFactoryImplGenerator(
         val inputTypes = createFunction
             .valueParameters
             .map { it.type }
-            .map {
-                it.substitute(
+            .map { inputType ->
+                inputType.substitute(
                     factoryInterface.typeParameters
                         .map { it.symbol }
                         .zip(factoryType.typeArguments.map { it.typeOrFail })
@@ -297,15 +297,15 @@ class ReaderContextFactoryImplGenerator(
 
         val entryPoints =
             listOf(contextIdType) + given<DeclarationGraph>().getRunReaderContexts(contextIdType.classOrNull!!.owner)
-                .map {
+                .map { entryPoint ->
                     // this is really naive and probably error prone
-                    if (factoryInterface.typeParameters.size == it.typeParameters.size &&
-                        factoryInterface.typeParameters.zip(it.typeParameters).all {
+                    if (factoryInterface.typeParameters.size == entryPoint.typeParameters.size &&
+                        factoryInterface.typeParameters.zip(entryPoint.typeParameters).all {
                             it.first.name == it.second.name
                         }
                     ) {
-                        it.typeWith(factoryType.typeArguments.map { it.typeOrFail })
-                    } else it.defaultType
+                        entryPoint.typeWith(factoryType.typeArguments.map { it.typeOrFail })
+                    } else entryPoint.defaultType
                 }
 
         graph.checkEntryPoints(entryPoints)

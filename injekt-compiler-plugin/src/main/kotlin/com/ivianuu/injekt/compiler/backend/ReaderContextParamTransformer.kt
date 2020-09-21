@@ -59,7 +59,6 @@ import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.findAnnotation
 import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.statements
@@ -155,8 +154,7 @@ class ReaderContextParamTransformer : IrLowering {
         transformedClasses += clazz
 
         if (clazz.isExternalDeclaration()) {
-            val context = getContextFromExternalDeclaration(clazz)
-                ?: error("Lol ${clazz.dump()}")
+            val context = getContextFromExternalDeclaration(clazz)!!
             readerConstructor.addValueParameter(
                 "_context",
                 context.typeWith(readerConstructor.typeParameters.map { it.defaultType })
@@ -215,10 +213,7 @@ class ReaderContextParamTransformer : IrLowering {
         if (function.getContext() != null) return function
 
         if (function.isExternalDeclaration()) {
-            val context = getContextFromExternalDeclaration(function)
-            if (context == null) {
-                error("Wtf ${function.dump()}\n${module.dump()}")
-            }
+            val context = getContextFromExternalDeclaration(function)!!
             val transformedFunction = function.copyAsReader()
             transformedFunctions[function] = transformedFunction
             transformedFunction.addValueParameter(
