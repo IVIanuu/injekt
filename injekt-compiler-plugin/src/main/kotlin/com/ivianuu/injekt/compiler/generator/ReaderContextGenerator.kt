@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
@@ -150,6 +151,8 @@ class ReaderContextDescriptorCollector(
     private val contexts: MutableMap<DeclarationDescriptor, ReaderContextDescriptor>
 ) : KtTreeVisitorVoid() {
 
+    private val capturedTypeParameters = mutableListOf<TypeParameterDescriptor>()
+
     override fun visitReferenceExpression(expression: KtReferenceExpression) {
         super.visitReferenceExpression(expression)
         val resolvedCall = expression.getResolvedCall(given()) ?: return
@@ -167,19 +170,40 @@ class ReaderContextDescriptorCollector(
         }
     }
 
+    private inline fun <R> withCapturedTypeParametersIfNeeded(
+        owner: DeclarationDescriptor,
+        typeParameters: List<TypeParameterDescriptor>,
+        block: () -> R
+    ): R {
+        val isReader = owner.isReader()
+        if (isReader) capturedTypeParameters += typeParameters
+        val result = block()
+        if (isReader) capturedTypeParameters -= typeParameters
+        return result
+    }
+
     override fun visitClass(klass: KtClass) {
-        super.visitClass(klass)
-        generateContextIfNeeded(klass.descriptor())
+        val descriptor = klass.descriptor<ClassDescriptor>()
+        withCapturedTypeParametersIfNeeded(descriptor, descriptor.declaredTypeParameters) {
+            super.visitClass(klass)
+        }
+        generateContextIfNeeded(descriptor)
     }
 
     override fun visitNamedFunction(function: KtNamedFunction) {
-        super.visitNamedFunction(function)
-        generateContextIfNeeded(function.descriptor())
+        val descriptor = function.descriptor<FunctionDescriptor>()
+        withCapturedTypeParametersIfNeeded(descriptor, descriptor.typeParameters) {
+            super.visitNamedFunction(function)
+        }
+        generateContextIfNeeded(descriptor)
     }
 
     override fun visitProperty(property: KtProperty) {
-        super.visitProperty(property)
-        generateContextIfNeeded(property.descriptor())
+        val descriptor = property.descriptor<VariableDescriptor>()
+        withCapturedTypeParametersIfNeeded(descriptor, descriptor.typeParameters) {
+            super.visitProperty(property)
+        }
+        generateContextIfNeeded(descriptor)
     }
 
     private fun generateContextIfNeeded(
@@ -190,12 +214,12 @@ class ReaderContextDescriptorCollector(
         if (!descriptor.isReader() && !fromRunReaderCall) return
         contexts[descriptor.original] = ReaderContextDescriptor(
             fqName = descriptor.findPackage().fqName.child(descriptor.getContextName()),
-            typeParameters = when (descriptor) {
+            typeParameters = (when (descriptor) {
                 is ClassDescriptor -> descriptor.declaredTypeParameters
                 is FunctionDescriptor -> descriptor.typeParameters
                 is PropertyDescriptor -> descriptor.typeParameters
                 else -> emptyList()
-            }.map { typeParameter ->
+            } + capturedTypeParameters).map { typeParameter ->
                 ReaderContextTypeParameter(
                     typeParameter.name,
                     typeParameter.upperBounds.map { KotlinTypeRef(it) }
