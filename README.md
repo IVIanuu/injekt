@@ -1,5 +1,7 @@
 # Injekt: Next gen DI framework powered by a Kotlin compiler plugin
 
+Injekt is compile-time safe DI framework for Kotlin developers.
+
 Minimal example:
 ```kotlin
 // Declares a given instance.
@@ -14,7 +16,7 @@ fun main() {
         // retrieve a Foo instance
         val foo = given<Foo>()
         println("Got $doo")
-    }   
+    }
 }
 ```
 
@@ -107,3 +109,7 @@ TODO
 
 # Assisted parameters
 TODO
+
+# Coroutines and Compose support
+Injekt is built with Jetpack Compose and Coroutines in mind.
+This means that it's possible to create composable reader functions and suspend reader functions.
