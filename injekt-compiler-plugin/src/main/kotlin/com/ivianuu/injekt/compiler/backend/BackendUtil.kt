@@ -18,22 +18,17 @@ package com.ivianuu.injekt.compiler.backend
 
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.UniqueNameProvider
-import com.ivianuu.injekt.given
+import com.ivianuu.injekt.compiler.removeIllegalChars
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.allParameters
 import org.jetbrains.kotlin.backend.common.ir.copyTo
-import org.jetbrains.kotlin.backend.common.ir.copyTypeParameters
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
-import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.backend.common.lower.VariableRemapper
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
@@ -45,7 +40,6 @@ import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
-import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -125,10 +119,8 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.getAnnotation
-import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isSuspend
@@ -179,107 +171,6 @@ fun IrSymbol.irBuilder() = DeclarationIrBuilder(pluginContext, this)
 @Reader
 fun IrSymbolOwner.irBuilder() = symbol.irBuilder()
 
-fun IrDeclarationWithName.getContextName(): Name {
-    return (getJoinedName(
-        getPackageFragment()!!.fqName,
-        descriptor.fqNameSafe
-            .parent().child(name.asString().asNameId())
-    ).asString().removeIllegalChars() + "${uniqueKey().hashCode()}__Context")
-        .removeIllegalChars()
-        .asNameId()
-}
-
-@Reader
-fun createContext(
-    owner: IrDeclarationWithName,
-    origin: FqName,
-    capturedTypeParameters: List<IrTypeParameter>
-) = buildClass {
-    kind = ClassKind.INTERFACE
-    name = owner.getContextName()
-    visibility = Visibilities.INTERNAL
-}.apply {
-    parent = owner.file
-    createImplicitParameterDeclarationWithWrappedDescriptor()
-    addMetadataIfNotLocal()
-    copyTypeParameters(capturedTypeParameters)
-
-    annotations += irBuilder().irCall(injektSymbols.contextMarker.constructors.single())
-    annotations += irBuilder().run {
-        irCall(injektSymbols.origin.constructors.single()).apply {
-            putValueArgument(0, irString(origin.asString()))
-        }
-    }
-}
-
-@Reader
-fun createContextFactory(
-    contextType: IrType,
-    capturedTypeParameters: List<IrTypeParameter>,
-    file: IrFile,
-    inputTypes: List<IrType>,
-    startOffset: Int,
-    isChild: Boolean
-) = buildClass {
-    name = "${contextType.classOrNull!!.owner.name}${startOffset}Factory"
-        .removeIllegalChars().asNameId()
-    kind = ClassKind.INTERFACE
-    visibility = Visibilities.INTERNAL
-}.apply clazz@{
-    parent = file
-    createImplicitParameterDeclarationWithWrappedDescriptor()
-    addMetadataIfNotLocal()
-
-    copyTypeParameters(capturedTypeParameters)
-
-    addFunction {
-        this.name = "create".asNameId()
-        returnType = contextType
-            .remapTypeParametersByName(
-                capturedTypeParameters
-                    .map { it.descriptor.fqNameSafe }
-                    .zip(typeParameters)
-                    .toMap()
-            )
-        modality = Modality.ABSTRACT
-    }.apply {
-        dispatchReceiverParameter = thisReceiver!!.copyTo(this)
-        parent = this@clazz
-        addMetadataIfNotLocal()
-        val parameterUniqueNameProvider = UniqueNameProvider()
-        inputTypes
-            .map { inputType ->
-                inputType.remapTypeParametersByName(
-                    capturedTypeParameters
-                        .map { it.descriptor.fqNameSafe }
-                        .zip(typeParameters)
-                        .toMap()
-                )
-            }
-            .forEach {
-                addValueParameter(
-                    parameterUniqueNameProvider(it.uniqueTypeName().asString()),
-                    it
-                )
-            }
-    }
-
-    annotations += irBuilder().run {
-        if (!isChild) {
-            irCall(injektSymbols.rootContextFactory.constructors.single()).apply {
-                putValueArgument(
-                    0,
-                    irString(
-                        file.fqName.child((name.asString() + "Impl").asNameId()).asString()
-                    )
-                )
-            }
-        } else {
-            irCall(injektSymbols.childContextFactory.constructors.single())
-        }
-    }
-}
-
 fun IrFile.addChildAndUpdateMetadata(
     declaration: IrDeclaration
 ) {
@@ -297,13 +188,6 @@ fun IrFile.addChildAndUpdateMetadata(
 fun IrAnnotationContainer.hasAnnotatedAnnotations(
     annotation: FqName
 ): Boolean = annotations.any { it.type.classOrNull!!.owner.hasAnnotation(annotation) }
-
-fun IrAnnotationContainer.getAnnotatedAnnotations(
-    annotation: FqName
-): List<IrConstructorCall> =
-    annotations.filter {
-        it.type.classOrNull!!.owner.hasAnnotation(annotation)
-    }
 
 val IrType.typeArguments: List<IrTypeArgument>
     get() = (this as? IrSimpleType)?.arguments?.map { it } ?: emptyList()
@@ -456,7 +340,7 @@ fun IrType.remapTypeParameters(parametersMap: Map<IrTypeParameter, IrTypeParamet
 fun IrType.visitAllFunctionsWithSubstitutionMap(
     visitFunction: (IrFunction, Map<IrTypeParameterSymbol, IrType>) -> Unit
 ) {
-    val clazz = given<ReaderContextParamTransformer>().getTransformedContext(classOrNull!!.owner)
+    val clazz = classOrNull!!.owner
     val substitutionMap = clazz.typeParameters
         .map { it.symbol }
         .zip(typeArguments.map { it.typeOrFail })
@@ -511,23 +395,6 @@ fun IrClass.typeWith(arguments: List<IrType>): IrSimpleType {
         finalArguments,
         emptyList(),
         null
-    )
-}
-
-fun IrType.withAnnotations(annotations: List<IrConstructorCall>): IrType {
-    return IrSimpleTypeImpl(
-        makeKotlinType(
-            classifierOrFail,
-            typeArguments,
-            isMarkedNullable(),
-            this.annotations + annotations,
-            (this as? IrSimpleType)?.abbreviation
-        ),
-        classifierOrFail,
-        isMarkedNullable(),
-        typeArguments,
-        this.annotations + annotations,
-        (this as? IrSimpleType)?.abbreviation
     )
 }
 
@@ -622,16 +489,6 @@ fun IrElement.toConstantValue(): ConstantValue<*> {
     }
 }
 
-fun IrBuilderWithScope.irClassReference(
-    clazz: IrClass
-) = IrClassReferenceImpl(
-    UNDEFINED_OFFSET,
-    UNDEFINED_OFFSET,
-    context.irBuiltIns.kClassClass.owner.typeWith(listOf(clazz.defaultType)),
-    clazz.symbol,
-    clazz.defaultType
-)
-
 fun <T> T.getClassFromAnnotation(
     fqName: FqName,
     index: Int
@@ -695,27 +552,6 @@ fun IrFunction.getFunctionType(skipContext: Boolean = false): IrType {
         .typeWith(valueParameters.map { it.type } + returnType)
 }
 
-fun getJoinedName(
-    packageFqName: FqName,
-    fqName: FqName
-): Name {
-    val joinedSegments = fqName.asString()
-        .removePrefix(packageFqName.asString() + ".")
-        .split(".")
-    return joinedSegments.joinToString("_").asNameId()
-}
-
-fun String.removeIllegalChars() =
-    replace(".", "")
-        .replace("<", "")
-        .replace(">", "")
-        .replace(" ", "")
-        .replace("[", "")
-        .replace("]", "")
-        .replace("@", "")
-        .replace(",", "")
-        .replace(" ", "")
-        .replace("-", "")
 
 fun IrType.uniqueTypeName(): Name {
     fun IrType.renderName(includeArguments: Boolean = true): String {
@@ -943,9 +779,6 @@ private fun IrBody.move(
         return super.visitDeclaration(declaration)
     }
 }, null)
-
-fun IrDeclarationWithName.uniqueKey() =
-    (metadata as? MetadataSource.Function)?.descriptor ?: descriptor
 
 fun IrDeclarationWithName.isMarkedAsReader(): Boolean =
     hasAnnotation(InjektFqNames.Reader) ||

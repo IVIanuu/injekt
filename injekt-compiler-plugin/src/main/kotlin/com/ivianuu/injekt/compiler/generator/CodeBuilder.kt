@@ -27,10 +27,6 @@ class CodeBuilder(out: Appendable) {
         printer.println()
     }
 
-    fun emitSpace() {
-        emit(" ")
-    }
-
     inline fun indented(body: () -> Unit) {
         printer.pushIndent()
         body()

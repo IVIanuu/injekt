@@ -2,7 +2,9 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.backend.asNameId
 import com.ivianuu.injekt.compiler.frontend.hasAnnotation
+import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -11,7 +13,10 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
@@ -34,14 +39,13 @@ fun DeclarationDescriptor.uniqueKey() = when (this) {
             name.isSpecial
         ) findPsi()?.startOffset else ""
     }__class"
-    is FunctionDescriptor -> "${fqNameSafe}${
-        if (visibility == Visibilities.LOCAL && name.isSpecial) findPsi()?.startOffset else ""
-    }__function${
-        allParameters
-            .map { it.type }.map {
-                it.constructor.declarationDescriptor!!.fqNameSafe
-            }.hashCode().absoluteValue
-    }"
+    is FunctionDescriptor -> uniqueFunctionKeyOf(
+        fqNameSafe,
+        visibility,
+        findPsi()?.startOffset,
+        allParameters.map {
+            it.type.constructor.declarationDescriptor!!.fqNameSafe
+        })
     is PropertyDescriptor -> "${fqNameSafe}${
         if (visibility == Visibilities.LOCAL &&
             name.isSpecial
@@ -54,6 +58,15 @@ fun DeclarationDescriptor.uniqueKey() = when (this) {
     }"
     else -> error("Unsupported declaration $this")
 }
+
+fun uniqueFunctionKeyOf(
+    fqName: FqName,
+    visibility: Visibility,
+    startOffset: Int? = null,
+    parameterTypes: List<FqName>
+) = "$fqName${
+    if (visibility == Visibilities.LOCAL && fqName.shortName().isSpecial) startOffset ?: "" else ""
+}__function${parameterTypes.hashCode().absoluteValue}"
 
 fun KotlinType.render() = buildString {
     fun KotlinType.renderInner() {
@@ -83,4 +96,38 @@ fun KotlinType.render() = buildString {
         if (isMarkedNullable) append("?")
     }
     renderInner()
+}
+
+fun KotlinType.uniqueTypeName(): Name {
+    fun KotlinType.renderName(includeArguments: Boolean = true): String {
+        return buildString {
+            val qualifier = annotations.findAnnotation(InjektFqNames.Qualifier)
+                ?.allValueArguments?.values?.singleOrNull()
+                ?.value as? String
+            if (qualifier != null) append("${qualifier}_")
+
+            val fqName = getAbbreviation()?.constructor?.declarationDescriptor?.fqNameSafe
+                ?: constructor.declarationDescriptor!!.fqNameSafe
+            append(fqName.pathSegments().joinToString("_") { it.asString() })
+
+            if (includeArguments) {
+                arguments.forEachIndexed { index, typeArgument ->
+                    if (index == 0) append("_")
+                    arguments.forEachIndexed { index, argument ->
+                        if (argument.isStarProjection) append("start")
+                        else argument.type.renderName()
+                        if (index != arguments.lastIndex) append(", ")
+                    }
+                }
+            }
+        }
+    }
+
+    val fullTypeName = renderName()
+
+    // Conservatively shorten the name if the length exceeds 128
+    return (if (fullTypeName.length <= 128) fullTypeName
+    else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}"))
+        .removeIllegalChars()
+        .asNameId()
 }

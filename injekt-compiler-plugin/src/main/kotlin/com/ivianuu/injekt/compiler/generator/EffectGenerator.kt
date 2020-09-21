@@ -3,10 +3,11 @@ package com.ivianuu.injekt.compiler.generator
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.backend.asNameId
-import com.ivianuu.injekt.compiler.backend.getJoinedName
+import com.ivianuu.injekt.compiler.contextNameOf
 import com.ivianuu.injekt.compiler.frontend.getAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.frontend.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.frontend.hasAnnotation
+import com.ivianuu.injekt.compiler.getJoinedName
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.builtins.getValueParameterTypesFromFunctionType
@@ -15,6 +16,7 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
@@ -36,6 +38,7 @@ class EffectGenerator : KtGenerator {
 
     private val fileManager = given<KtFileManager>()
     private val indexer = given<KtIndexer>()
+    private val readerContextGenerator = given<ReaderContextGenerator>()
 
     override fun generate(files: List<KtFile>) {
         files.forEach { file ->
@@ -51,6 +54,10 @@ class EffectGenerator : KtGenerator {
 
                     override fun visitNamedFunction(function: KtNamedFunction) {
                         super.visitNamedFunction(function)
+                        val descriptor = function.descriptor<FunctionDescriptor>()
+                        if (descriptor.hasAnnotatedAnnotations(InjektFqNames.Effect)) {
+                            generateEffectsForDeclaration(descriptor)
+                        }
                     }
                 }
             )
@@ -100,6 +107,24 @@ class EffectGenerator : KtGenerator {
                             .child("function".asNameId()),
                         "function"
                     )
+                    val functionFqName = packageName.child(effectsName).child("function".asNameId())
+                    readerContextGenerator.addPromisedReaderContextDescriptor(
+                        PromisedReaderContextDescriptor(
+                            packageName.child(
+                                contextNameOf(
+                                    packageFqName = packageName,
+                                    fqName = functionFqName,
+                                    uniqueKey = uniqueFunctionKeyOf(
+                                        fqName = functionFqName,
+                                        visibility = Visibilities.PUBLIC,
+                                        startOffset = null,
+                                        parameterTypes = listOf(packageName.child(effectsName))
+                                    )
+                                )
+                            ),
+                            declaration
+                        )
+                    )
                 }
 
                 effects
@@ -138,6 +163,24 @@ class EffectGenerator : KtGenerator {
                             packageName.child(effectsName)
                                 .child(name),
                             "function"
+                        )
+                        val effectFunctionFqName = packageName.child(effectsName).child(name)
+                        readerContextGenerator.addPromisedReaderContextDescriptor(
+                            PromisedReaderContextDescriptor(
+                                packageName.child(
+                                    contextNameOf(
+                                        packageFqName = packageName,
+                                        fqName = effectFunctionFqName,
+                                        uniqueKey = uniqueFunctionKeyOf(
+                                            fqName = effectFunctionFqName,
+                                            visibility = Visibilities.PUBLIC,
+                                            startOffset = null,
+                                            parameterTypes = listOf(packageName.child(effectsName))
+                                        )
+                                    )
+                                ),
+                                effectFunction
+                            )
                         )
                     }
             }

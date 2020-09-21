@@ -17,11 +17,8 @@
 package com.ivianuu.injekt.compiler.backend
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.WeakBindingTrace
-import com.ivianuu.injekt.given
+import com.ivianuu.injekt.compiler.getContextName
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
-import org.jetbrains.kotlin.backend.common.ir.copyTypeParameters
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
@@ -34,12 +31,10 @@ import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
-import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrOverridableDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
-import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
@@ -73,49 +68,9 @@ class ReaderContextParamTransformer : IrLowering {
 
     private val transformedClasses = mutableSetOf<IrClass>()
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
-    private val newContexts = mutableSetOf<IrClass>()
-    private var capturedTypeParameters = emptyList<IrTypeParameter>()
-    private val typeParametersMap = mutableMapOf<IrTypeParameter, IrTypeParameter>()
-    private inline fun <R> withCapturedTypeParameters(
-        typeParameters: List<IrTypeParameter>,
-        block: () -> R
-    ): R {
-        val prev = capturedTypeParameters
-        capturedTypeParameters = typeParameters
-        val result = block()
-        capturedTypeParameters = prev
-        return result
-    }
 
     fun getTransformedFunction(function: IrFunction) =
         transformFunctionIfNeeded(function)
-
-    fun getTransformedContext(context: IrClass): IrClass {
-        return if (!context.isExternalDeclaration()) context
-        else newContexts.singleOrNull {
-            it.descriptor.fqNameSafe == context.descriptor.fqNameSafe
-        } ?: context
-    }
-
-    private val transformer = object : IrElementTransformerVoidWithContext() {
-        override fun visitClassNew(declaration: IrClass): IrStatement {
-            val transformed = transformClassIfNeeded(declaration)
-            return withCapturedTypeParameters(
-                if (transformed.canUseReaders()) transformed.typeParameters else capturedTypeParameters
-            ) {
-                super.visitClassNew(transformed)
-            }
-        }
-
-        override fun visitFunctionNew(declaration: IrFunction): IrStatement {
-            val transformed = transformFunctionIfNeeded(declaration)
-            return withCapturedTypeParameters(
-                if (transformed.canUseReaders()) transformed.typeParameters else capturedTypeParameters
-            ) {
-                super.visitFunctionNew(transformed)
-            }
-        }
-    }
 
     override fun lower() {
         irModule.transformChildrenVoid(
@@ -132,12 +87,16 @@ class ReaderContextParamTransformer : IrLowering {
                 }
             }
         )
-        irModule.transformChildrenVoid(transformer)
-        irModule.rewriteTransformedReferences()
+        irModule.transformChildrenVoid(
+            object : IrElementTransformerVoid() {
+                override fun visitClass(declaration: IrClass): IrStatement =
+                    super.visitClass(transformClassIfNeeded(declaration))
 
-        newContexts
-            .filterNot { it.isExternalDeclaration() }
-            .forEach { (it.parent as IrFile).addChildAndUpdateMetadata(it) }
+                override fun visitFunction(declaration: IrFunction): IrStatement =
+                    super.visitFunction(transformFunctionIfNeeded(declaration))
+            }
+        )
+        irModule.rewriteTransformedReferences()
     }
 
     private fun transformClassIfNeeded(clazz: IrClass): IrClass {
@@ -154,7 +113,7 @@ class ReaderContextParamTransformer : IrLowering {
         transformedClasses += clazz
 
         if (clazz.isExternalDeclaration()) {
-            val context = getContextFromExternalDeclaration(clazz)!!
+            val context = getContextForDeclaration(clazz)!!
             readerConstructor.addValueParameter(
                 "_context",
                 context.typeWith(readerConstructor.typeParameters.map { it.defaultType })
@@ -162,12 +121,7 @@ class ReaderContextParamTransformer : IrLowering {
             return clazz
         }
 
-        val context =
-            createContext(
-                clazz,
-                clazz.descriptor.fqNameSafe,
-                readerConstructor.typeParameters
-            ).also { newContexts += it }
+        val context = getContextForDeclaration(clazz)!!
         val contextParameter = readerConstructor.addContextParameter(context)
         val contextField = clazz.addField(
             fieldName = "_context",
@@ -194,8 +148,7 @@ class ReaderContextParamTransformer : IrLowering {
 
     private fun transformFunctionIfNeeded(function: IrFunction): IrFunction {
         if (function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.given" ||
-            function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.childContext" ||
-            function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runReader"
+            function.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.childContext"
         ) return function
 
         if (function is IrConstructor) {
@@ -213,7 +166,7 @@ class ReaderContextParamTransformer : IrLowering {
         if (function.getContext() != null) return function
 
         if (function.isExternalDeclaration()) {
-            val context = getContextFromExternalDeclaration(function)!!
+            val context = getContextForDeclaration(function)!!
             val transformedFunction = function.copyAsReader()
             transformedFunctions[function] = transformedFunction
             transformedFunction.addValueParameter(
@@ -224,27 +177,8 @@ class ReaderContextParamTransformer : IrLowering {
         }
 
         val transformedFunction = function.copyAsReader()
-        typeParametersMap += transformedFunction.typeParameters
-            .zip(function.typeParameters).toMap()
         transformedFunctions[function] = transformedFunction
-
-        transformedFunction.copyTypeParameters(capturedTypeParameters)
-        val parameterMap = capturedTypeParameters
-            .map { typeParametersMap.getOrElse(it) { it } }
-            .zip(transformedFunction.typeParameters.takeLast(capturedTypeParameters.size))
-            .toMap()
-        given<WeakBindingTrace>().record(
-            InjektWritableSlices.TYPE_PARAMETER_MAP,
-            transformedFunction as IrSimpleFunction,
-            parameterMap
-        )
-
-        val context =
-            createContext(
-                transformedFunction,
-                transformedFunction.descriptor.fqNameSafe,
-                transformedFunction.typeParameters
-            ).also { newContexts += it }
+        val context = getContextForDeclaration(function)!!
         transformedFunction.addContextParameter(context)
 
         return transformedFunction
@@ -333,9 +267,9 @@ class ReaderContextParamTransformer : IrLowering {
         }
     }
 
-    private fun getContextFromExternalDeclaration(owner: IrDeclarationWithName): IrClass? {
+    private fun getContextForDeclaration(owner: IrDeclarationWithName): IrClass? {
         return pluginContext.referenceClass(
-            owner.getPackageFragment()!!.fqName.child(owner.getContextName())
+            owner.getPackageFragment()!!.fqName.child(owner.descriptor.getContextName())
         )?.owner
     }
 

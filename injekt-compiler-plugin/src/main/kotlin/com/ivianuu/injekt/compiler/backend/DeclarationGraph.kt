@@ -36,7 +36,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 @Given(IrContext::class)
 class DeclarationGraph {
 
-    private val indexer = given<Indexer>()
+    private val indexer = given<IrIndexedDeclarations>()
 
     private val mapSymbol = pluginContext.referenceClass(
         FqName("kotlin.collections.Map")

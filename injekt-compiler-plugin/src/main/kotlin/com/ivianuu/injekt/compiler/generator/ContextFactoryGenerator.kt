@@ -1,0 +1,100 @@
+package com.ivianuu.injekt.compiler.generator
+
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.compiler.InjektAttributes
+import com.ivianuu.injekt.compiler.InjektAttributes.ContextFactoryKey
+import com.ivianuu.injekt.compiler.backend.asNameId
+import com.ivianuu.injekt.compiler.removeIllegalChars
+import com.ivianuu.injekt.given
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
+import org.jetbrains.kotlin.psi.psiUtil.startOffset
+import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
+import org.jetbrains.kotlin.resolve.calls.callUtil.getType
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.resolve.calls.model.VarargValueArgument
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+
+@Given
+class ContextFactoryGenerator : KtGenerator {
+
+    private val fileManager = given<KtFileManager>()
+
+    override fun generate(files: List<KtFile>) {
+        files.forEach { file ->
+            file.accept(
+                object : KtTreeVisitorVoid() {
+                    override fun visitCallExpression(expression: KtCallExpression) {
+                        super.visitCallExpression(expression)
+                        val resolvedCall = expression.getResolvedCall(given())!!
+                        if (resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.rootContext" ||
+                            resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.childContext"
+                        ) {
+                            generateContextFactoryFor(resolvedCall)
+                        }
+                    }
+                }
+            )
+        }
+    }
+
+    private fun generateContextFactoryFor(call: ResolvedCall<*>) {
+        val isChild = call.resultingDescriptor.name.asString() == "childContext"
+
+        val contextType = call.typeArguments.values.single()
+
+        val inputs = call.valueArguments.values.singleOrNull()
+            ?.let { it as VarargValueArgument }
+            ?.arguments
+            ?.map { it.getArgumentExpression()?.getType(given())!! }
+            ?: emptyList()
+
+        val containingFile = call.call.callElement.containingKtFile
+
+        val callElement = call.call.callElement
+        val factoryName = (contextType.constructor.declarationDescriptor!!.fqNameSafe.pathSegments()
+            .joinToString("_") + "_${callElement.containingKtFile.name.removeSuffix(".kt")}${callElement.startOffset}Factory")
+            .removeIllegalChars()
+            .asNameId()
+
+        val code = buildCodeString {
+            emitLine("// injekt-generated")
+            emitLine("package ${containingFile.packageFqName}")
+
+            if (isChild) {
+                emitLine("import com.ivianuu.injekt.internal.ChildContextFactory")
+                emitLine("@ChildContextFactory")
+            } else {
+                emitLine("import com.ivianuu.injekt.internal.RootContextFactory")
+                val implFqName =
+                    containingFile.packageFqName.child((factoryName.asString() + "Impl").asNameId())
+                emitLine("@RootContextFactory(factoryFqName = \"$implFqName\")")
+            }
+
+            emit("internal interface $factoryName ")
+            braced {
+                emit("fun create(")
+                inputs.forEachIndexed { index, type ->
+                    emit("p$index: ${type.render()}")
+                    if (index != inputs.lastIndex) emit(", ")
+                }
+                emitLine("): ${contextType.render()}")
+            }
+        }
+
+        given<InjektAttributes>()[ContextFactoryKey(
+            callElement.containingKtFile.virtualFilePath,
+            callElement.startOffset
+        )] =
+            containingFile.packageFqName.child(factoryName)
+
+        fileManager.generateFile(
+            packageFqName = containingFile.packageFqName,
+            fileName = "$factoryName.kt",
+            code = code,
+            originatingDeclarations = emptyList<DeclarationDescriptor>() // todo
+        )
+    }
+}

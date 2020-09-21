@@ -18,15 +18,10 @@ package com.ivianuu.injekt.compiler.backend.readercontextimpl
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.IrFileStore
 import com.ivianuu.injekt.compiler.backend.DeclarationGraph
 import com.ivianuu.injekt.compiler.backend.IrLowering
-import com.ivianuu.injekt.compiler.backend.addChildAndUpdateMetadata
 import com.ivianuu.injekt.compiler.backend.getConstantFromAnnotationOrNull
-import com.ivianuu.injekt.compiler.backend.irModule
 import com.ivianuu.injekt.given
-import org.jetbrains.kotlin.ir.declarations.path
-import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.name.FqName
 
 @Given
@@ -42,7 +37,7 @@ class ReaderContextImplTransformer : IrLowering {
                     )!!
                 )
 
-                val fileStore = given<IrFileStore>()
+                /*val fileStore = given<IrFileStore>()
                 val filePath = fileStore.get(factoryFqName.asString())
                     ?: error("Null for $factoryFqName ${fileStore.map}")
                 val file = irModule.files.single { it.path == filePath }
@@ -57,7 +52,7 @@ class ReaderContextImplTransformer : IrLowering {
                     parentExpressions = null
                 ).generateFactory()
 
-                file.addChildAndUpdateMetadata(factoryImpl)
+                file.addChildAndUpdateMetadata(factoryImpl)*/
             }
     }
 

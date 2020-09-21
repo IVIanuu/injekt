@@ -16,8 +16,6 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.backend.removeIllegalChars
-
 class UniqueNameProvider {
 
     private val existingNames = mutableSetOf<String>()

@@ -4,7 +4,6 @@ import com.ivianuu.injekt.ApplicationContext
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.CacheDir
 import com.ivianuu.injekt.compiler.IncrementalFileCache
-import com.ivianuu.injekt.compiler.IrFileStore
 import com.ivianuu.injekt.compiler.LookupManager
 import com.ivianuu.injekt.compiler.SrcDir
 import com.ivianuu.injekt.given
@@ -17,17 +16,14 @@ import java.io.File
 @Given(ApplicationContext::class)
 class KtFileManager {
 
-    private val fileStore = given<IrFileStore>()
-
     private val fileCache = IncrementalFileCache(
-        // todo temporary workaround because requesting 2 givens with the same expanded type would not distinct
+        // todo temporary workaround because requesting 2 givens with the same expanded type is not working
         cacheFile = given<ApplicationContext>().runReader { given<CacheDir>() }
             .resolve("file-cache")
     )
     private val lookupManager = given<LookupManager>()
 
     fun onPreCompile(files: List<KtFile>): List<KtFile> {
-        fileStore.clear()
         files.forEach { fileCache.deleteDependents(File(it.virtualFilePath)) }
         return files.filterNot { it.text.startsWith("// injekt-generated") }
     }

@@ -16,8 +16,8 @@
 
 package com.ivianuu.injekt.internal
 
-internal annotation class ContextMarker
+annotation class ContextMarker
 
-internal annotation class ChildContextFactory
+annotation class ChildContextFactory
 
-internal annotation class RootContextFactory(val factoryFqName: String)
+annotation class RootContextFactory(val factoryFqName: String)

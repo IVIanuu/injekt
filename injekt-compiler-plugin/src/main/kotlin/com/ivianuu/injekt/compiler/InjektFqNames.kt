@@ -43,4 +43,3 @@ object InjektFqNames {
 
     val Composable = FqName("androidx.compose.runtime.Composable")
 }
-

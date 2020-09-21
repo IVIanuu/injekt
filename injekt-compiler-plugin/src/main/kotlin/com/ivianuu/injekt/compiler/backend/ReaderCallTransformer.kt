@@ -17,8 +17,9 @@
 package com.ivianuu.injekt.compiler.backend
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.compiler.InjektWritableSlices
-import com.ivianuu.injekt.compiler.WeakBindingTrace
+import com.ivianuu.injekt.compiler.InjektAttributes
+import com.ivianuu.injekt.compiler.InjektAttributes.ContextFactoryKey
+import com.ivianuu.injekt.compiler.InjektAttributes.IrFunctionTypeParametersMapKey
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
@@ -44,6 +45,7 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.impl.IrExternalPackageFragmentImpl
+import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrDelegatingConstructorCall
@@ -62,10 +64,10 @@ import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -103,12 +105,7 @@ class ReaderCallTransformer : IrLowering {
                         }
                         expression.symbol.descriptor.fqNameSafe.asString() ==
                                 "com.ivianuu.injekt.runReader" -> {
-                            transformRunReaderCall(
-                                null,
-                                currentScope!!.irElement as IrDeclaration,
-                                result,
-                                null
-                            )
+                            transformRunReaderCall(result)
                         }
                         else -> {
                             result
@@ -130,7 +127,7 @@ class ReaderCallTransformer : IrLowering {
 
         private val functionsByType = mutableMapOf<IrType, IrFunction>()
         private val parameterMap = ((declaration as? IrSimpleFunction)
-            ?.let { given<WeakBindingTrace>()[InjektWritableSlices.TYPE_PARAMETER_MAP, it] }
+            ?.let { given<InjektAttributes>()[IrFunctionTypeParametersMapKey(it.attributeOwnerId)] }
             ?: emptyMap())
 
         fun givenExpressionForType(
@@ -210,7 +207,7 @@ class ReaderCallTransformer : IrLowering {
         transformDeclarationIfNeeded(
             declaration = declaration,
             declarationFunction = declaration,
-            context = declaration.getContext() ?: error("Wtf ${declaration.dump()}"),
+            context = declaration.getContext() ?: error("Wtf ${declaration.render()}"),
             contextExpression = {
                 declaration.irBuilder()
                     .irGet(declaration.getContextValueParameter()!!)
@@ -261,9 +258,7 @@ class ReaderCallTransformer : IrLowering {
                         }
                     expression is IrCall &&
                             expression.symbol.owner.descriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runReader" ->
-                        transformRunReaderCall(scope, null, expression) {
-                            contextExpression(allScopes)
-                        }
+                        transformRunReaderCall(expression)
                     expression.symbol.owner.canUseReaders() ->
                         transformReaderCall(scope, expression) {
                             contextExpression(allScopes)
@@ -284,26 +279,15 @@ class ReaderCallTransformer : IrLowering {
             ?.elements
             ?.map { it as IrExpression } ?: emptyList()
 
-        val contextType = call.getTypeArgument(0)!!
-
         val isChild = call.symbol.descriptor.fqNameSafe.asString() ==
                 "com.ivianuu.injekt.childContext"
 
-        val contextFactory = createContextFactory(
-            contextType = contextType,
-            file = file,
-            startOffset = call.startOffset,
-            inputTypes = inputs.map { it.type },
-            isChild = isChild,
-            capturedTypeParameters = (scope?.declaration as? IrTypeParametersContainer)?.typeParameters
-                ?: emptyList()
-        ).also {
-            newDeclarations += it
-            if (!isChild) given<Indexer>().index(it, it.file)
-        }
+        val contextFactory = pluginContext.referenceClass(
+            given<InjektAttributes>()[ContextFactoryKey(file.path, call.startOffset)]!!
+        )!!.owner
 
         return call.symbol.irBuilder().run {
-            irCall(contextFactory.functions.single()).apply {
+            irCall(contextFactory.functions.single { it.name.asString() == "create" }).apply {
                 dispatchReceiver = if (isChild) {
                     scope!!.givenExpressionForType(
                         if (scope.declaration is IrTypeParametersContainer)
@@ -342,40 +326,9 @@ class ReaderCallTransformer : IrLowering {
         }
     }
 
-    private fun transformRunReaderCall(
-        scope: ReaderScope?,
-        irScope: IrDeclaration?,
-        call: IrCall,
-        contextExpression: (() -> IrExpression)?
-    ): IrExpression {
+    private fun transformRunReaderCall(call: IrCall): IrExpression {
         val runReaderCallContextExpression = call.extensionReceiver!!
         val lambdaExpression = call.getValueArgument(0)!! as IrFunctionExpression
-
-        val scopeDeclaration = (scope?.declaration ?: irScope!!)
-
-        given<Indexer>().index(
-            runReaderCallContextExpression.type.classOrNull!!.owner,
-            scopeDeclaration.file,
-            (scopeDeclaration
-                .descriptor.fqNameSafe.asString().hashCode() + call.startOffset)
-                .toString()
-                .removeIllegalChars()
-                .asNameId()
-        ) {
-            annotations += irBuilder().run {
-                irCall(injektSymbols.runReaderCall.constructors.single()).apply {
-                    putValueArgument(
-                        0,
-                        irClassReference(runReaderCallContextExpression.type.classOrNull!!.owner)
-                    )
-                    putValueArgument(
-                        1,
-                        irClassReference(lambdaExpression.function.getContext()!!)
-                    )
-                }
-            }
-        }
-
         return call.symbol.irBuilder().run {
             irCall(
                 pluginContext.referenceFunctions(

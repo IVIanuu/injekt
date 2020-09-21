@@ -16,7 +16,12 @@ class KtIndexer {
 
     private val fileManager = given<KtFileManager>()
 
-    fun index(fqName: FqName, type: String) {
+    fun index(
+        fqName: FqName,
+        type: String,
+        indexIsDeclaration: Boolean = false,
+        annotations: List<Pair<FqName, String>> = emptyList()
+    ) {
         val indexName = "${
             fqName.pathSegments()
                 .joinToString("_")
@@ -29,7 +34,9 @@ class KtIndexer {
                     emitLine("// injekt-generated")
                     emitLine("package ${InjektFqNames.IndexPackage}")
                     emitLine("import com.ivianuu.injekt.internal.Index")
-                    emitLine("@Index(type = \"$type\", fqName = \"$fqName\", indexIsDeclaration = false)")
+                    annotations.forEach { emitLine("import ${it.first}") }
+                    emitLine("@Index(type = \"$type\", fqName = \"$fqName\", indexIsDeclaration = $indexIsDeclaration)")
+                    annotations.forEach { emitLine(it.second) }
                     emitLine("internal object $indexName")
                 },
                 listOf(fqName)
