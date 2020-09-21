@@ -6,11 +6,15 @@ Minimal example:
 @Given fun foo() = Foo()
 
 @InitializeInjekt // Trigger generation of context implementations in the current compilation unit.
-class MyApplication : Application() {
-    override fun onCreate() {
-        // run a reader function and retrieve a instance of Foo
-        val foo = applicationReaderContext.runReader { given<Foo>() }
-    }
+fun main() {
+    // create a context
+    val context = rootContext<MainContext>()
+    // run a reader function
+    context.runReader {
+        // retrieve a Foo instance
+        val foo = given<Foo>()
+        println("Got $doo")
+    }   
 }
 ```
 
