@@ -77,7 +77,8 @@ This should be done in the application module.
 
 # Child contexts
 Contexts can inherit parent contexts.
-This allows to create a context hierarchy where child contexts have a shorter life time than a parent one.
+This allows to create a context hierarchy where child contexts have a shorter life time than a parent one,
+while inheriting all givens of the parent.
 To declare a child context the `childContext` function must be called.
 Note that `childContext` is a reader function.
 ```kotlin
