@@ -105,11 +105,16 @@ TODO
 TODO
 
 # Effects
-TODO
+TODO A effect allows to create reusable patterns to declare givens
 
 # Assisted parameters
 TODO
 
 # Coroutines and Compose support
 Injekt is built with Jetpack Compose and Coroutines in mind.
-This means that it's possible to create composable reader functions and suspend reader functions.
+This means that it's possible to create composable reader functions as well as suspend reader functions.
+
+# Android
+
+# Android work
+
