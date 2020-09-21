@@ -29,8 +29,7 @@ fun contextNameOf(
     packageFqName: FqName,
     fqName: FqName,
     uniqueKey: String
-) = (getJoinedName(packageFqName, fqName).asString()
-    .removeIllegalChars() + "${uniqueKey.hashCode()}__Context")
+) = (getJoinedName(packageFqName, fqName).asString() + "${uniqueKey.hashCode()}__Context")
     .removeIllegalChars()
     .asNameId()
 

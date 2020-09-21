@@ -175,7 +175,6 @@ class GivenExpressions(
             }
         }
 
-
         functionByType.body = functionByType.irBuilder().run {
             irExprBody(
                 finalExpression(

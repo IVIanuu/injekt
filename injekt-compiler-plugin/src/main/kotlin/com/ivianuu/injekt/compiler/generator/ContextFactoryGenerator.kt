@@ -101,6 +101,10 @@ class ContextFactoryGenerator : KtGenerator {
         )
 
         if (!isChild) {
+            given<KtIndexer>().index(
+                fqName = containingFile.packageFqName.child(factoryName),
+                type = "class"
+            )
             given<RootFactoryGenerator>()
                 .addRootFactory(implFqName!!)
         }

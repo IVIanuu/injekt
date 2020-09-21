@@ -466,6 +466,17 @@ fun IrType.uniqueTypeName(): Name {
         .asNameId()
 }
 
+fun IrType.toKotlinType(): SimpleType {
+    this as IrSimpleType
+    return makeKotlinType(
+        classifier,
+        arguments,
+        hasQuestionMark,
+        annotations,
+        abbreviation
+    )
+}
+
 fun wrapDescriptor(descriptor: FunctionDescriptor): WrappedSimpleFunctionDescriptor {
     return when (descriptor) {
         is PropertyGetterDescriptor ->

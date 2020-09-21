@@ -120,9 +120,10 @@ class ReaderCallTransformer : IrLowering {
             type: IrType,
             contextExpression: () -> IrExpression
         ): IrExpression {
+            val typeName = type.toKotlinType().uniqueTypeName().asString()
             val function = context.functions.singleOrNull {
-                it.name.asString() == type.uniqueTypeName().asString()
-            } ?: error("Nothing found for ${type.uniqueTypeName()} in ${context.dump()}")
+                it.name.asString() == typeName
+            } ?: error("Nothing found for $typeName in ${context.dump()}")
             return function.irBuilder().run {
                 irCall(function).apply {
                     dispatchReceiver = contextExpression()

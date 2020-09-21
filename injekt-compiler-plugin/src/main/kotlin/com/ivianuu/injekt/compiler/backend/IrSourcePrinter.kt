@@ -163,14 +163,18 @@ private class IrSourcePrinterVisitor(
 
     override fun visitModuleFragment(declaration: IrModuleFragment) {
         println("MODULE: ${declaration.name}")
+        println()
         declaration.files.printJoin()
+        println()
     }
 
     override fun visitFile(declaration: IrFile) {
         println("FILE: ${declaration.fileEntry.name}")
+        println()
         println("package ${declaration.fqName}")
         println()
         declaration.declarations.printJoin()
+        println()
     }
 
     override fun visitValueParameter(declaration: IrValueParameter) {

@@ -3,8 +3,6 @@ package com.ivianuu.injekt.compiler.generator
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.backend.asNameId
-import com.ivianuu.injekt.compiler.backend.getConstantFromAnnotationOrNull
-import com.ivianuu.injekt.compiler.backend.typeArguments
 import com.ivianuu.injekt.compiler.frontend.hasAnnotation
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.given
@@ -24,10 +22,6 @@ import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.incremental.components.Position
 import org.jetbrains.kotlin.incremental.record
 import org.jetbrains.kotlin.incremental.recordPackageLookup
-import org.jetbrains.kotlin.ir.types.IrSimpleType
-import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.classifierOrFail
-import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -116,36 +110,6 @@ fun KotlinType.render() = buildString {
         if (isMarkedNullable) append("?")
     }
     renderInner()
-}
-
-fun IrType.uniqueTypeName(): Name {
-    fun IrType.renderName(includeArguments: Boolean = true): String {
-        return buildString {
-            val qualifier = getConstantFromAnnotationOrNull<String>(InjektFqNames.Qualifier, 0)
-            if (qualifier != null) append("${qualifier}_")
-
-            val fqName = if (this@renderName is IrSimpleType && abbreviation != null)
-                abbreviation!!.typeAlias.descriptor.fqNameSafe
-            else classifierOrFail.descriptor.fqNameSafe
-            append(fqName.pathSegments().joinToString("_") { it.asString() })
-
-            if (includeArguments) {
-                typeArguments.forEachIndexed { index, typeArgument ->
-                    if (index == 0) append("_")
-                    append(typeArgument.typeOrNull?.renderName() ?: "star")
-                    if (index != typeArguments.lastIndex) append("_")
-                }
-            }
-        }
-    }
-
-    val fullTypeName = renderName()
-
-    // Conservatively shorten the name if the length exceeds 128
-    return (if (fullTypeName.length <= 128) fullTypeName
-    else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}"))
-        .removeIllegalChars()
-        .asNameId()
 }
 
 fun TypeRef.render(): String = when (this) {
