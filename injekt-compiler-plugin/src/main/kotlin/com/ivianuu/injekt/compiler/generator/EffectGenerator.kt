@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClass
@@ -32,6 +33,7 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeSubstitutor
 import org.jetbrains.kotlin.types.replace
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
+import java.io.File
 
 @Given
 class EffectGenerator : KtGenerator {
@@ -190,7 +192,10 @@ class EffectGenerator : KtGenerator {
             packageFqName = declaration.findPackage().fqName,
             fileName = "$effectsName.kt",
             code = code,
-            originatingDeclarations = listOf(declaration)
+            originatingDeclarations = listOf(declaration),
+            originatingFiles = listOf(
+                File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath)
+            )
         )
     }
 

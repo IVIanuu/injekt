@@ -1,5 +1,6 @@
 package com.ivianuu.injekt.compiler.generator
 
+import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.childContext
 import com.ivianuu.injekt.compiler.SrcDir
@@ -8,8 +9,11 @@ import com.ivianuu.injekt.runReader
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.container.ComponentProvider
+import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.diagnostics.Severity
+import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
@@ -17,7 +21,7 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 @Given
 class InjektKtGenerationExtension : AnalysisHandlerExtension {
 
-    private val fileManager = given<KtFileManager>()
+    private lateinit var analysisContext: AnalysisContext
 
     private var generatedCode = false
 
@@ -30,10 +34,19 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
         componentProvider: ComponentProvider
     ): AnalysisResult? {
         if (!generatedCode) {
+            analysisContext = childContext(
+                module,
+                bindingTrace,
+                bindingTrace.bindingContext,
+                componentProvider.get<LookupTracker>()
+            )
+
             files as ArrayList<KtFile>
             val copy = files.toList()
             files.clear()
-            files += fileManager.onPreCompile(copy)
+            files += analysisContext.runReader {
+                given<KtFileManager>().onPreCompile(copy)
+            }
         }
         return null
     }
@@ -44,25 +57,26 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
         bindingTrace: BindingTrace,
         files: Collection<KtFile>
     ): AnalysisResult? {
+        if (bindingTrace.bindingContext.diagnostics.any {
+                it.severity == Severity.ERROR
+            }) return null
         if (generatedCode) {
-            fileManager.onPostCompile()
+            analysisContext.runReader { given<KtFileManager>().onPostCompile() }
             return null
         }
         generatedCode = true
 
         files as List<KtFile>
 
-        val context = childContext<KtGenerationContext>(
-            bindingTrace,
-            bindingTrace.bindingContext, module
-        )
+        val context = analysisContext.runReader { childContext<KtGenerationContext>() }
 
         context.runReader {
             given<GivenIndexingGenerator>().generate(files)
             given<EffectGenerator>().generate(files)
+            given<ContextFactoryGenerator>().generate(files)
             given<ReaderContextGenerator>().generate(files)
             given<RunReaderCallIndexingGenerator>().generate(files)
-            given<ContextFactoryGenerator>().generate(files)
+            given<RootFactoryGenerator>().generate(files)
         }
 
         return AnalysisResult.RetryWithAdditionalRoots(
@@ -71,3 +85,6 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
     }
 
 }
+
+@Context
+interface AnalysisContext

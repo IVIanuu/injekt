@@ -19,30 +19,26 @@ package com.ivianuu.injekt.compiler.backend
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektAttributes
 import com.ivianuu.injekt.compiler.InjektAttributes.ContextFactoryKey
-import com.ivianuu.injekt.compiler.InjektAttributes.IrFunctionTypeParametersMapKey
+import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.ScopeWithIr
-import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
-import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.impl.EmptyPackageFragmentDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.builders.declarations.addFunction
+import org.jetbrains.kotlin.ir.builders.declarations.buildClass
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObject
-import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.declarations.IrTypeParametersContainer
 import org.jetbrains.kotlin.ir.declarations.impl.IrExternalPackageFragmentImpl
 import org.jetbrains.kotlin.ir.declarations.path
@@ -61,9 +57,9 @@ import org.jetbrains.kotlin.ir.symbols.impl.IrExternalPackageFragmentSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.defaultType
-import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.copyTypeAndValueArgumentsFrom
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
@@ -76,7 +72,6 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 class ReaderCallTransformer : IrLowering {
 
     private val transformedDeclarations = mutableListOf<IrDeclaration>()
-    private val newDeclarations = mutableListOf<IrDeclaration>()
 
     override fun lower() {
         irModule.transformChildrenVoid(
@@ -114,10 +109,6 @@ class ReaderCallTransformer : IrLowering {
                 }
             }
         )
-
-        newDeclarations.forEach {
-            (it.parent as IrFile).addChildAndUpdateMetadata(it)
-        }
     }
 
     inner class ReaderScope(
@@ -125,43 +116,13 @@ class ReaderCallTransformer : IrLowering {
         val context: IrClass
     ) {
 
-        private val functionsByType = mutableMapOf<IrType, IrFunction>()
-        private val parameterMap = ((declaration as? IrSimpleFunction)
-            ?.let { given<InjektAttributes>()[IrFunctionTypeParametersMapKey(it.attributeOwnerId)] }
-            ?: emptyMap())
-
         fun givenExpressionForType(
             type: IrType,
             contextExpression: () -> IrExpression
         ): IrExpression {
-            val finalType = type
-                .remapTypeParameters(parameterMap)
-                .remapTypeParametersByName(
-                    (declaration as IrTypeParametersContainer).typeParameters
-                        .map { it.descriptor.fqNameSafe }
-                        .zip(context.typeParameters)
-                        .toMap()
-                )
-
-            val function = functionsByType.getOrPut(finalType) {
-                context.addFunction {
-                    name = finalType.uniqueTypeName()
-                    returnType = finalType
-                    modality = Modality.ABSTRACT
-                }.apply {
-                    dispatchReceiverParameter = context.thisReceiver?.copyTo(this)
-                    addMetadataIfNotLocal()
-                    annotations += irBuilder().run {
-                        irCall(injektSymbols.origin.constructors.single()).apply {
-                            putValueArgument(
-                                0,
-                                irString(declaration.descriptor.fqNameSafe.asString())
-                            )
-                        }
-                    }
-                }
-            }
-
+            val function = context.functions.singleOrNull {
+                it.name.asString() == type.uniqueTypeName().asString()
+            } ?: error("Nothing found for ${type.uniqueTypeName()} in ${context.dump()}")
             return function.irBuilder().run {
                 irCall(function).apply {
                     dispatchReceiver = contextExpression()

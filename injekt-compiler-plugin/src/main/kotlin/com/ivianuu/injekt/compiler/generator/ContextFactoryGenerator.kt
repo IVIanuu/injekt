@@ -7,8 +7,8 @@ import com.ivianuu.injekt.compiler.backend.asNameId
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.resolve.calls.callUtil.getType
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.VarargValueArgument
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import java.io.File
 
 @Given
 class ContextFactoryGenerator : KtGenerator {
@@ -26,9 +27,9 @@ class ContextFactoryGenerator : KtGenerator {
         files.forEach { file ->
             file.accept(
                 object : KtTreeVisitorVoid() {
-                    override fun visitCallExpression(expression: KtCallExpression) {
-                        super.visitCallExpression(expression)
-                        val resolvedCall = expression.getResolvedCall(given())!!
+                    override fun visitReferenceExpression(expression: KtReferenceExpression) {
+                        super.visitReferenceExpression(expression)
+                        val resolvedCall = expression.getResolvedCall(given()) ?: return
                         if (resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.rootContext" ||
                             resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.childContext"
                         ) {
@@ -59,6 +60,9 @@ class ContextFactoryGenerator : KtGenerator {
             .removeIllegalChars()
             .asNameId()
 
+        val implFqName = if (isChild) null else
+            containingFile.packageFqName.child((factoryName.asString() + "Impl").asNameId())
+
         val code = buildCodeString {
             emitLine("// injekt-generated")
             emitLine("package ${containingFile.packageFqName}")
@@ -68,12 +72,11 @@ class ContextFactoryGenerator : KtGenerator {
                 emitLine("@ChildContextFactory")
             } else {
                 emitLine("import com.ivianuu.injekt.internal.RootContextFactory")
-                val implFqName =
-                    containingFile.packageFqName.child((factoryName.asString() + "Impl").asNameId())
+
                 emitLine("@RootContextFactory(factoryFqName = \"$implFqName\")")
             }
 
-            emit("internal interface $factoryName ")
+            emit("interface $factoryName ")
             braced {
                 emit("fun create(")
                 inputs.forEachIndexed { index, type ->
@@ -87,14 +90,19 @@ class ContextFactoryGenerator : KtGenerator {
         given<InjektAttributes>()[ContextFactoryKey(
             callElement.containingKtFile.virtualFilePath,
             callElement.startOffset
-        )] =
-            containingFile.packageFqName.child(factoryName)
+        )] = containingFile.packageFqName.child(factoryName)
 
         fileManager.generateFile(
             packageFqName = containingFile.packageFqName,
             fileName = "$factoryName.kt",
             code = code,
-            originatingDeclarations = emptyList<DeclarationDescriptor>() // todo
+            originatingDeclarations = emptyList<DeclarationDescriptor>(), // todo
+            originatingFiles = listOf(File(callElement.containingKtFile.virtualFilePath))
         )
+
+        if (!isChild) {
+            given<RootFactoryGenerator>()
+                .addRootFactory(implFqName!!)
+        }
     }
 }

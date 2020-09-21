@@ -3,7 +3,9 @@ package com.ivianuu.injekt.compiler
 import com.ivianuu.injekt.compiler.backend.asNameId
 import com.ivianuu.injekt.compiler.generator.uniqueKey
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -11,10 +13,15 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 fun <T> unsafeLazy(init: () -> T) = lazy(LazyThreadSafetyMode.NONE, init)
 
 fun DeclarationDescriptor.getContextName(): Name {
+    val owner = when (this) {
+        is ConstructorDescriptor -> constructedClass
+        is PropertyAccessorDescriptor -> correspondingProperty
+        else -> this
+    }
     return contextNameOf(
-        findPackage().fqName,
-        fqNameSafe,
-        uniqueKey()
+        owner.findPackage().fqName,
+        owner.fqNameSafe,
+        owner.uniqueKey()
     )
 }
 

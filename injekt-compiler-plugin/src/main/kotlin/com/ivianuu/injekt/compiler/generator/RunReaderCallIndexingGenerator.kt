@@ -5,9 +5,9 @@ import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.backend.asNameId
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtLambdaExpression
+import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
@@ -23,9 +23,9 @@ class RunReaderCallIndexingGenerator : KtGenerator {
         files.forEach { file ->
             file.accept(
                 object : KtTreeVisitorVoid() {
-                    override fun visitCallExpression(expression: KtCallExpression) {
-                        super.visitCallExpression(expression)
-                        val resolvedCall = expression.getResolvedCall(given())!!
+                    override fun visitReferenceExpression(expression: KtReferenceExpression) {
+                        super.visitReferenceExpression(expression)
+                        val resolvedCall = expression.getResolvedCall(given()) ?: return
                         if (resolvedCall.resultingDescriptor.fqNameSafe.asString() ==
                             "com.ivianuu.injekt.runReader"
                         ) {

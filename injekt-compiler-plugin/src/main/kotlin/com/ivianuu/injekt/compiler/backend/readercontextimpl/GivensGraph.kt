@@ -19,9 +19,7 @@ package com.ivianuu.injekt.compiler.backend.readercontextimpl
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.backend.DeclarationGraph
 import com.ivianuu.injekt.compiler.backend.ReaderContextParamTransformer
-import com.ivianuu.injekt.compiler.backend.addMetadataIfNotLocal
 import com.ivianuu.injekt.compiler.backend.asNameId
-import com.ivianuu.injekt.compiler.backend.buildClass
 import com.ivianuu.injekt.compiler.backend.getClassFromAnnotation
 import com.ivianuu.injekt.compiler.backend.getConstantFromAnnotationOrNull
 import com.ivianuu.injekt.compiler.backend.getContext
@@ -43,6 +41,7 @@ import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
 import org.jetbrains.kotlin.ir.builders.declarations.addField
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
+import org.jetbrains.kotlin.ir.builders.declarations.buildClass
 import org.jetbrains.kotlin.ir.builders.irBlockBody
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
@@ -396,7 +395,6 @@ class GivensGraph(
                             this.name = (key.type.uniqueTypeName().asString() + "Impl").asNameId()
                             visibility = Visibilities.PRIVATE
                         }.apply clazz@{
-                            addMetadataIfNotLocal()
                             parent = contextImpl
                             contextImpl.addChild(this)
                             createImplicitParameterDeclarationWithWrappedDescriptor()
@@ -412,7 +410,6 @@ class GivensGraph(
                             isPrimary = true
                             visibility = Visibilities.PUBLIC
                         }.apply {
-                            addMetadataIfNotLocal()
                             val parentValueParameter = addValueParameter(
                                 "parent",
                                 contextImpl.defaultType
@@ -454,7 +451,6 @@ class GivensGraph(
                                 this.name = function.name
                                 returnType = functionKey.type
                             }.apply {
-                                addMetadataIfNotLocal()
                                 dispatchReceiverParameter =
                                     childContextImpl.thisReceiver!!.copyTo(this)
                                 overriddenSymbols += function.symbol as IrSimpleFunctionSymbol

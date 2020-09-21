@@ -56,7 +56,6 @@ class InjektComponentRegistrar : ComponentRegistrar {
             given<InjektStorageContainerContributor>()
         )
 
-        AnalysisHandlerExtension.registerExtension(project, given<LookupTrackerInitializer>())
         AnalysisHandlerExtension.registerExtension(project, given<InjektKtGenerationExtension>())
 
         // make sure that our plugin always runs before the Compose plugin

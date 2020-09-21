@@ -1,6 +1,5 @@
 package com.ivianuu.injekt.compiler.generator
 
-import com.ivianuu.injekt.ApplicationContext
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.given
@@ -8,10 +7,13 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import java.io.File
 
-@Given(ApplicationContext::class)
+@Given(AnalysisContext::class)
 class KtIndexer {
 
     private val fileManager = given<KtFileManager>()
@@ -39,7 +41,8 @@ class KtIndexer {
                     annotations.forEach { emitLine(it.second) }
                     emitLine("internal object $indexName")
                 },
-                listOf(fqName)
+                listOf(fqName),
+                emptyList() // todo
             )
         }
     }
@@ -66,7 +69,8 @@ class KtIndexer {
                     emitLine("@Index(type = \"$type\", fqName = \"${declaration.fqNameSafe}\", indexIsDeclaration = false)")
                     emitLine("internal object $indexName")
                 },
-                listOf(declaration)
+                listOf(declaration),
+                listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
             )
         }
     }

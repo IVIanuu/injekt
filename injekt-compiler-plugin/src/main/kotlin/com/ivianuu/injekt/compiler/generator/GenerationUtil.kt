@@ -3,10 +3,13 @@ package com.ivianuu.injekt.compiler.generator
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.backend.asNameId
+import com.ivianuu.injekt.compiler.backend.getConstantFromAnnotationOrNull
+import com.ivianuu.injekt.compiler.backend.typeArguments
 import com.ivianuu.injekt.compiler.frontend.hasAnnotation
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
+import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -14,6 +17,16 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
+import org.jetbrains.kotlin.incremental.components.LocationInfo
+import org.jetbrains.kotlin.incremental.components.LookupLocation
+import org.jetbrains.kotlin.incremental.components.LookupTracker
+import org.jetbrains.kotlin.incremental.components.Position
+import org.jetbrains.kotlin.incremental.record
+import org.jetbrains.kotlin.incremental.recordPackageLookup
+import org.jetbrains.kotlin.ir.types.IrSimpleType
+import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.classifierOrFail
+import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -24,6 +37,10 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.getAbbreviation
 import kotlin.math.absoluteValue
+
+@Reader
+val isInjektCompiler: Boolean
+    get() = moduleDescriptor.name.asString() == "<injekt-compiler-plugin>"
 
 @Reader
 fun <D : DeclarationDescriptor> KtDeclaration.descriptor() =
@@ -98,6 +115,36 @@ fun KotlinType.render() = buildString {
     renderInner()
 }
 
+fun IrType.uniqueTypeName(): Name {
+    fun IrType.renderName(includeArguments: Boolean = true): String {
+        return buildString {
+            val qualifier = getConstantFromAnnotationOrNull<String>(InjektFqNames.Qualifier, 0)
+            if (qualifier != null) append("${qualifier}_")
+
+            val fqName = if (this@renderName is IrSimpleType && abbreviation != null)
+                abbreviation!!.typeAlias.descriptor.fqNameSafe
+            else classifierOrFail.descriptor.fqNameSafe
+            append(fqName.pathSegments().joinToString("_") { it.asString() })
+
+            if (includeArguments) {
+                typeArguments.forEachIndexed { index, typeArgument ->
+                    if (index == 0) append("_")
+                    append(typeArgument.typeOrNull?.renderName() ?: "star")
+                    if (index != typeArguments.lastIndex) append("_")
+                }
+            }
+        }
+    }
+
+    val fullTypeName = renderName()
+
+    // Conservatively shorten the name if the length exceeds 128
+    return (if (fullTypeName.length <= 128) fullTypeName
+    else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}"))
+        .removeIllegalChars()
+        .asNameId()
+}
+
 fun KotlinType.uniqueTypeName(): Name {
     fun KotlinType.renderName(includeArguments: Boolean = true): String {
         return buildString {
@@ -113,11 +160,9 @@ fun KotlinType.uniqueTypeName(): Name {
             if (includeArguments) {
                 arguments.forEachIndexed { index, typeArgument ->
                     if (index == 0) append("_")
-                    arguments.forEachIndexed { index, argument ->
-                        if (argument.isStarProjection) append("start")
-                        else argument.type.renderName()
-                        if (index != arguments.lastIndex) append(", ")
-                    }
+                    if (typeArgument.isStarProjection) append("star")
+                    else append(typeArgument.type.renderName())
+                    if (index != arguments.lastIndex) append("_")
                 }
             }
         }
@@ -130,4 +175,48 @@ fun KotlinType.uniqueTypeName(): Name {
     else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}"))
         .removeIllegalChars()
         .asNameId()
+}
+
+@Reader
+fun recordLookup(
+    sourceFilePath: String,
+    lookedUp: DeclarationDescriptor
+) {
+    val location = object : LookupLocation {
+        override val location: LocationInfo?
+            get() = object : LocationInfo {
+                override val filePath: String
+                    get() = sourceFilePath
+                override val position: Position
+                    get() = Position.NO_POSITION
+            }
+    }
+
+    given<LookupTracker>().record(
+        location,
+        lookedUp.findPackage(),
+        lookedUp.name
+    )
+}
+
+@Reader
+fun recordLookup(
+    sourceFilePath: String,
+    lookedUpFqName: FqName
+) {
+    val location = object : LookupLocation {
+        override val location: LocationInfo?
+            get() = object : LocationInfo {
+                override val filePath: String
+                    get() = sourceFilePath
+                override val position: Position
+                    get() = Position.NO_POSITION
+            }
+    }
+
+    given<LookupTracker>().recordPackageLookup(
+        location,
+        lookedUpFqName.parent().asString(),
+        lookedUpFqName.shortName().asString()
+    )
 }

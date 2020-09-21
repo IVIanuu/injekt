@@ -6,19 +6,27 @@ import com.ivianuu.injekt.compiler.frontend.isReader
 import com.ivianuu.injekt.compiler.getContextName
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
+import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
+import org.jetbrains.kotlin.resolve.calls.callUtil.getType
+import org.jetbrains.kotlin.resolve.calls.model.VarargValueArgument
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.types.replace
+import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 
 @Given(KtGenerationContext::class)
 class ReaderContextGenerator : KtGenerator {
@@ -27,13 +35,22 @@ class ReaderContextGenerator : KtGenerator {
     private val promisedReaderContextDescriptor = mutableSetOf<PromisedReaderContextDescriptor>()
     private val contexts = mutableMapOf<DeclarationDescriptor, ReaderContextDescriptor>()
 
-    fun getContextForDescriptor(descriptor: DeclarationDescriptor) = contexts[descriptor]
+    fun getContextForDescriptor(descriptor: DeclarationDescriptor) = contexts[descriptor.original]
 
     override fun generate(files: List<KtFile>) {
         val descriptorCollector = given<ReaderContextDescriptorCollector>(contexts)
         files.forEach { file -> file.accept(descriptorCollector) }
         val givensCollector = given<ReaderContextGivensCollector>(
-            { descriptor: DeclarationDescriptor -> contexts[descriptor] }
+            { descriptor: DeclarationDescriptor ->
+                contexts[descriptor.original] ?: descriptor.findPackage()
+                    .getMemberScope()
+                    .getContributedClassifier(
+                        descriptor.getContextName(),
+                        NoLookupLocation.FROM_BACKEND
+                    )
+                    ?.let { ReaderContextDescriptor(it.fqNameSafe) }
+                    ?.also { contexts[descriptor.original] = it }
+            }
         )
         files.forEach { file -> file.accept(givensCollector) }
         contexts.values.forEach { generateReaderContext(it) }
@@ -76,7 +93,8 @@ class ReaderContextGenerator : KtGenerator {
             packageFqName = descriptor.fqName.parent(),
             fileName = "${descriptor.fqName.shortName()}.kt",
             code = code,
-            originatingDeclarations = emptyList<DeclarationDescriptor>() // todo
+            originatingDeclarations = emptyList<DeclarationDescriptor>(), // todo
+            originatingFiles = emptyList()
         )
     }
 
@@ -96,10 +114,10 @@ class ReaderContextDescriptorCollector(
     private val contexts: MutableMap<DeclarationDescriptor, ReaderContextDescriptor>
 ) : KtTreeVisitorVoid() {
 
-    override fun visitCallExpression(expression: KtCallExpression) {
-        super.visitCallExpression(expression)
-        val resolvedCall = expression.getResolvedCall(given())
-        if (resolvedCall!!.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runReader") {
+    override fun visitReferenceExpression(expression: KtReferenceExpression) {
+        super.visitReferenceExpression(expression)
+        val resolvedCall = expression.getResolvedCall(given()) ?: return
+        if (resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.runReader") {
             generateContextIfNeeded(
                 resolvedCall.valueArguments.values.single()
                     .arguments
@@ -123,13 +141,18 @@ class ReaderContextDescriptorCollector(
         generateContextIfNeeded(function.descriptor())
     }
 
+    override fun visitProperty(property: KtProperty) {
+        super.visitProperty(property)
+        generateContextIfNeeded(property.descriptor())
+    }
+
     private fun generateContextIfNeeded(
         descriptor: DeclarationDescriptor,
         fromRunReaderCall: Boolean = false
     ) {
         if (descriptor in contexts) return
         if (!descriptor.isReader() && !fromRunReaderCall) return
-        contexts[descriptor] = ReaderContextDescriptor(
+        contexts[descriptor.original] = ReaderContextDescriptor(
             fqName = descriptor.findPackage().fqName.child(descriptor.getContextName())
         )
     }
@@ -183,6 +206,17 @@ class ReaderContextGivensCollector(
         }
     }
 
+    override fun visitProperty(property: KtProperty) {
+        val descriptor = property.descriptor<VariableDescriptor>()
+        if (descriptor.isReader()) {
+            withReaderScope(ReaderScope(contextProvider(descriptor)!!)) {
+                super.visitProperty(property)
+            }
+        } else {
+            super.visitProperty(property)
+        }
+    }
+
     override fun visitLambdaExpression(lambdaExpression: KtLambdaExpression) {
         val descriptor = lambdaExpression.functionLiteral.descriptor<FunctionDescriptor>()
         val contextDescriptor = contextProvider(descriptor)
@@ -195,19 +229,42 @@ class ReaderContextGivensCollector(
         }
     }
 
-    override fun visitCallExpression(expression: KtCallExpression) {
-        super.visitCallExpression(expression)
+    override fun visitReferenceExpression(expression: KtReferenceExpression) {
+        super.visitReferenceExpression(expression)
         val resolvedCall = expression.getResolvedCall(given())
-            ?: error("No resolved call found for ${expression.text}")
+            ?: return
         val resulting = resolvedCall.resultingDescriptor
+            .let { if (it is ClassConstructorDescriptor) it.constructedClass else it }
         if (!resulting.isReader()) return
-        if (resulting.fqNameSafe.asString() == "com.ivianuu.injekt.given") {
-            readerScope!!.recordGivenType(KotlinTypeRef(resolvedCall.typeArguments.values.single()))
-        } else if (resulting.fqNameSafe.asString() == "com.ivianuu.injekt.childContext") {
-            val factoryFqName = given<InjektAttributes>()[InjektAttributes.ContextFactoryKey(
-                expression.containingKtFile.virtualFilePath, expression.startOffset
-            )]!!
-            readerScope!!.recordGivenType(FqNameTypeRef(factoryFqName))
+        when {
+            resulting.fqNameSafe.asString() == "com.ivianuu.injekt.given" -> {
+                val arguments = resolvedCall.valueArguments.values
+                    .singleOrNull()
+                    ?.let { it as VarargValueArgument }
+                    ?.arguments
+                    ?.mapNotNull { it.getArgumentExpression()?.getType(given()) }
+                    ?: emptyList()
+                val rawType = resolvedCall.typeArguments.values.single()
+                val realType = when {
+                    arguments.isNotEmpty() -> moduleDescriptor.builtIns.getFunction(arguments.size)
+                        .defaultType
+                        .replace(
+                            newArguments = arguments.map { it.asTypeProjection() } + rawType.asTypeProjection()
+                        )
+                    else -> rawType
+                }
+                readerScope!!.recordGivenType(KotlinTypeRef(realType))
+            }
+            resulting.fqNameSafe.asString() == "com.ivianuu.injekt.childContext" -> {
+                val factoryFqName = given<InjektAttributes>()[InjektAttributes.ContextFactoryKey(
+                    expression.containingKtFile.virtualFilePath, expression.startOffset
+                )]!!
+                readerScope!!.recordGivenType(FqNameTypeRef(factoryFqName))
+            }
+            else -> {
+                val calleeContext = contextProvider(resulting)!!
+                readerScope!!.recordGivenType(FqNameTypeRef(calleeContext.fqName))
+            }
         }
     }
 

@@ -8,7 +8,7 @@ import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
@@ -53,7 +53,7 @@ class GivenIndexingGenerator : KtGenerator {
 
                     override fun visitProperty(property: KtProperty) {
                         super.visitProperty(property)
-                        val descriptor = property.descriptor<PropertyDescriptor>()
+                        val descriptor = property.descriptor<VariableDescriptor>()
                         if (descriptor.hasAnnotation(InjektFqNames.Given) &&
                             !descriptor.isInGivenSet()
                         ) {

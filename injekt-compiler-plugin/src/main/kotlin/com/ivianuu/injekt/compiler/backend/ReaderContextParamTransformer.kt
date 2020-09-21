@@ -35,7 +35,6 @@ import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrOverridableDeclaration
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
-import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrDelegatingConstructorCall
@@ -112,17 +111,14 @@ class ReaderContextParamTransformer : IrLowering {
 
         transformedClasses += clazz
 
-        if (clazz.isExternalDeclaration()) {
-            val context = getContextForDeclaration(clazz)!!
-            readerConstructor.addValueParameter(
-                "_context",
-                context.typeWith(readerConstructor.typeParameters.map { it.defaultType })
-            )
-            return clazz
-        }
-
         val context = getContextForDeclaration(clazz)!!
-        val contextParameter = readerConstructor.addContextParameter(context)
+        val contextParameter = readerConstructor.addValueParameter(
+            "_context",
+            context.typeWith(readerConstructor.typeParameters.map { it.defaultType })
+        )
+
+        if (clazz.isExternalDeclaration()) return clazz
+
         val contextField = clazz.addField(
             fieldName = "_context",
             fieldType = contextParameter.type
@@ -165,30 +161,15 @@ class ReaderContextParamTransformer : IrLowering {
 
         if (function.getContext() != null) return function
 
-        if (function.isExternalDeclaration()) {
-            val context = getContextForDeclaration(function)!!
-            val transformedFunction = function.copyAsReader()
-            transformedFunctions[function] = transformedFunction
-            transformedFunction.addValueParameter(
-                "_context",
-                context.typeWith(transformedFunction.typeParameters.map { it.defaultType })
-            )
-            return transformedFunction
-        }
-
+        val context = getContextForDeclaration(function)!!
         val transformedFunction = function.copyAsReader()
         transformedFunctions[function] = transformedFunction
-        val context = getContextForDeclaration(function)!!
-        transformedFunction.addContextParameter(context)
+        transformedFunction.addValueParameter(
+            "_context",
+            context.typeWith(transformedFunction.typeParameters.map { it.defaultType })
+        )
 
         return transformedFunction
-    }
-
-    private fun IrFunction.addContextParameter(context: IrClass): IrValueParameter {
-        return addValueParameter(
-            name = "_context",
-            type = context.typeWith(typeParameters.map { it.defaultType })
-        )
     }
 
     private fun transformCall(

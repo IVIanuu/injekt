@@ -4,7 +4,6 @@ import com.ivianuu.injekt.ApplicationContext
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.CacheDir
 import com.ivianuu.injekt.compiler.IncrementalFileCache
-import com.ivianuu.injekt.compiler.LookupManager
 import com.ivianuu.injekt.compiler.SrcDir
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
@@ -13,7 +12,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
-@Given(ApplicationContext::class)
+@Given(AnalysisContext::class)
 class KtFileManager {
 
     private val fileCache = IncrementalFileCache(
@@ -21,7 +20,6 @@ class KtFileManager {
         cacheFile = given<ApplicationContext>().runReader { given<CacheDir>() }
             .resolve("file-cache")
     )
-    private val lookupManager = given<LookupManager>()
 
     fun onPreCompile(files: List<KtFile>): List<KtFile> {
         files.forEach { fileCache.deleteDependents(File(it.virtualFilePath)) }
@@ -41,7 +39,8 @@ class KtFileManager {
         packageFqName: FqName,
         fileName: String,
         code: String,
-        originatingDeclarations: List<DeclarationDescriptor>
+        originatingDeclarations: List<DeclarationDescriptor>,
+        originatingFiles: List<File>
     ): File {
         return given<SrcDir>()
             .resolve(packageFqName.asString().replace(".", "/"))
@@ -51,10 +50,10 @@ class KtFileManager {
             .also { it.writeText(code) }
             .also { result ->
                 originatingDeclarations.forEach {
-                    lookupManager.recordLookup(
-                        result.absolutePath,
-                        it
-                    )
+                    recordLookup(result.absolutePath, it)
+                }
+                originatingFiles.forEach {
+                    fileCache.recordDependency(result, it)
                 }
             }
     }
@@ -64,7 +63,8 @@ class KtFileManager {
         packageFqName: FqName,
         fileName: String,
         code: String,
-        originatingDeclarations: List<FqName>
+        originatingDeclarations: List<FqName>,
+        originatingFiles: List<File>
     ): File {
         return given<SrcDir>()
             .resolve(packageFqName.asString().replace(".", "/"))
@@ -74,10 +74,10 @@ class KtFileManager {
             .also { it.writeText(code) }
             .also { result ->
                 originatingDeclarations.forEach {
-                    lookupManager.recordLookup(
-                        result.absolutePath,
-                        it
-                    )
+                    recordLookup(result.absolutePath, it)
+                    originatingFiles.forEach {
+                        fileCache.recordDependency(result, it)
+                    }
                 }
             }
     }
