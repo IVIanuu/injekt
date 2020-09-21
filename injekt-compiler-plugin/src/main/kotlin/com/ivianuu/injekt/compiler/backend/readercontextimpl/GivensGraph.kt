@@ -215,16 +215,12 @@ class GivensGraph(
         if (context in checkedTypes) return
         checkedTypes += context
 
-        context.visitAllFunctionsWithSubstitutionMap(
-            enterType = { type ->
-                val origin = type.classOrNull!!.owner.getConstantFromAnnotationOrNull<String>(
-                    InjektFqNames.Origin,
-                    0
-                )?.let { FqName(it) }
-                chain.push(ChainElement.Call(origin))
-            },
-            exitType = { chain.pop() }
-        ) { function, substitutionMap ->
+        val origin = context.classOrNull!!.owner.getConstantFromAnnotationOrNull<String>(
+            InjektFqNames.Origin,
+            0
+        )?.let { FqName(it) }
+        chain.push(ChainElement.Call(origin))
+        context.visitAllFunctionsWithSubstitutionMap { function, substitutionMap ->
             val existingFunction = contextImpl.functions.singleOrNull {
                 it.name == function.name
             }
@@ -235,6 +231,7 @@ class GivensGraph(
 
             check(function.returnType.substitute(substitutionMap).asKey())
         }
+        chain.pop()
     }
 
     fun getGiven(key: Key): Given {
@@ -436,61 +433,55 @@ class GivensGraph(
                             }
                         }
 
-                        key.type.visitAllFunctionsWithSubstitutionMap(
-                            enterType = { childContextImpl.superTypes += it },
-                            exitType = {},
-                            visitFunction = { function, substitutionMap ->
-                                val functionKey = function.returnType
-                                    .substitute(substitutionMap)
-                                    .asKey()
+                        childContextImpl.superTypes += key.type
+                        key.type.visitAllFunctionsWithSubstitutionMap { function, substitutionMap ->
+                            val functionKey = function.returnType
+                                .substitute(substitutionMap)
+                                .asKey()
 
-                                val existingDeclaration = childContextImpl.functions.singleOrNull {
-                                    it.name == function.name
-                                }
-                                if (existingDeclaration != null) {
-                                    existingDeclaration.overriddenSymbols +=
-                                        function.symbol as IrSimpleFunctionSymbol
-                                    return@visitAllFunctionsWithSubstitutionMap
-                                }
+                            val existingDeclaration = childContextImpl.functions.singleOrNull {
+                                it.name == function.name
+                            }
+                            if (existingDeclaration != null) {
+                                existingDeclaration.overriddenSymbols +=
+                                    function.symbol as IrSimpleFunctionSymbol
+                                return@visitAllFunctionsWithSubstitutionMap
+                            }
 
-                                val expression =
-                                    expressions.getGivenExpression(getGiven(functionKey), function)
-                                childContextImpl.addFunction {
-                                    this.name = function.name
-                                    returnType = functionKey.type
-                                }.apply {
-                                    addMetadataIfNotLocal()
-                                    dispatchReceiverParameter =
-                                        childContextImpl.thisReceiver!!.copyTo(this)
-                                    overriddenSymbols += function.symbol as IrSimpleFunctionSymbol
-                                    body = irBuilder().run {
-                                        irExprBody(
-                                            expression(
-                                                this,
-                                                ContextExpressionContext(contextImpl) {
-                                                    irGetField(
-                                                        irGet(dispatchReceiverParameter!!),
-                                                        parentField
-                                                    )
-                                                }
-                                            )
+                            val expression =
+                                expressions.getGivenExpression(getGiven(functionKey), function)
+                            childContextImpl.addFunction {
+                                this.name = function.name
+                                returnType = functionKey.type
+                            }.apply {
+                                addMetadataIfNotLocal()
+                                dispatchReceiverParameter =
+                                    childContextImpl.thisReceiver!!.copyTo(this)
+                                overriddenSymbols += function.symbol as IrSimpleFunctionSymbol
+                                body = irBuilder().run {
+                                    irExprBody(
+                                        expression(
+                                            this,
+                                            ContextExpressionContext(contextImpl) {
+                                                irGetField(
+                                                    irGet(dispatchReceiverParameter!!),
+                                                    parentField
+                                                )
+                                            }
                                         )
-                                    }
+                                    )
                                 }
                             }
-                        )
+                        }
                         childContextImpl
                     } else {
-                        key.type.visitAllFunctionsWithSubstitutionMap(
-                            enterType = { contexts += it },
-                            exitType = {},
-                            visitFunction = { function, substitutionMap ->
-                                val functionKey = function.returnType
-                                    .substitute(substitutionMap)
-                                    .asKey()
-                                expressions.getGivenExpression(getGiven(functionKey), function)
-                            }
-                        )
+                        contexts += key.type
+                        key.type.visitAllFunctionsWithSubstitutionMap { function, substitutionMap ->
+                            val functionKey = function.returnType
+                                .substitute(substitutionMap)
+                                .asKey()
+                            expressions.getGivenExpression(getGiven(functionKey), function)
+                        }
                         null
                     }
                 }

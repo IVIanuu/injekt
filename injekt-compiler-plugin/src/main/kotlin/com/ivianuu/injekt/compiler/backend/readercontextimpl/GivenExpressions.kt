@@ -156,17 +156,6 @@ class GivenExpressions(
 
         givenExpressions[given.key] = expression
 
-        functionByType.body = functionByType.irBuilder().run {
-            irExprBody(
-                finalExpression(
-                    this,
-                    ContextExpressionContext(contextImpl) {
-                        irGet(functionByType.dispatchReceiverParameter!!)
-                    }
-                )
-            )
-        }
-
         if (superFunction is IrSimpleFunction && functionByType.name != superFunction.name) {
             buildFun {
                 this.name = superFunction.name
@@ -184,6 +173,18 @@ class GivenExpressions(
                     )
                 }
             }
+        }
+
+
+        functionByType.body = functionByType.irBuilder().run {
+            irExprBody(
+                finalExpression(
+                    this,
+                    ContextExpressionContext(contextImpl) {
+                        irGet(functionByType.dispatchReceiverParameter!!)
+                    }
+                )
+            )
         }
 
         return expression

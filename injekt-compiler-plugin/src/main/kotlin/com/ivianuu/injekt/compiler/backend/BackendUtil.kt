@@ -457,51 +457,18 @@ fun IrType.remapTypeParameters(parametersMap: Map<IrTypeParameter, IrTypeParamet
 
 @Reader
 fun IrType.visitAllFunctionsWithSubstitutionMap(
-    enterType: (IrType) -> Unit = {},
-    exitType: (IrType) -> Unit = {},
     visitFunction: (IrFunction, Map<IrTypeParameterSymbol, IrType>) -> Unit
 ) {
-    val processedTypes = mutableSetOf<IrType>()
-    fun visit(
-        clazz: IrClass,
-        typeArguments: List<IrType>
-    ) {
-        val type = clazz.typeWith(typeArguments)
-        if (type in processedTypes) return
-        processedTypes += type
-        enterType(type)
-        val substitutionMap = clazz.typeParameters
-            .map { it.symbol }
-            .zip(typeArguments)
-            .toMap()
-
-        for (function in clazz.functions) {
-            if (function is IrConstructor) continue
-            if (function.dispatchReceiverParameter?.type ==
-                pluginContext.irBuiltIns.anyType
-            ) continue
-            if (function.isFakeOverride) continue
-            visitFunction(function, substitutionMap)
-        }
-
-        clazz.superTypes
-            .forEach { superType ->
-                visit(
-                    given<ReaderContextParamTransformer>().getTransformedContext(superType.classOrNull!!.owner),
-                    superType.typeArguments
-                        .map { it.typeOrFail }
-                        .map { typeArg ->
-                            typeArg.substitute(substitutionMap)
-                        }
-                )
-            }
-        exitType(type)
-    }
-
-    visit(
-        given<ReaderContextParamTransformer>().getTransformedContext(classOrNull!!.owner),
-        typeArguments.map { it.typeOrFail }
-    )
+    val clazz = given<ReaderContextParamTransformer>().getTransformedContext(classOrNull!!.owner)
+    val substitutionMap = clazz.typeParameters
+        .map { it.symbol }
+        .zip(typeArguments.map { it.typeOrFail })
+        .toMap()
+    clazz.functions
+        .filter { it !is IrConstructor }
+        .filter { it.dispatchReceiverParameter?.type != pluginContext.irBuiltIns.anyType }
+        .filter { !it.isFakeOverride }
+        .forEach { visitFunction(it, substitutionMap) }
 }
 
 fun <T> IrAnnotationContainer.getConstantFromAnnotationOrNull(

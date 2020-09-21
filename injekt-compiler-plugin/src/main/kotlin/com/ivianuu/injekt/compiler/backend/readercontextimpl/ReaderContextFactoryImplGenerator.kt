@@ -311,12 +311,10 @@ class ReaderContextFactoryImplGenerator(
         graph.checkEntryPoints(entryPoints)
 
         (entryPoints + graph.resolvedGivens.flatMap { it.value.contexts })
+            .filterNot { it in contextImpl.superTypes }
             .forEach { context ->
-                context.visitAllFunctionsWithSubstitutionMap(
-                    enterType = {
-                        if (it !in contextImpl.superTypes) contextImpl.superTypes += it
-                    }
-                ) { function, substitutionMap ->
+                contextImpl.superTypes += context
+                context.visitAllFunctionsWithSubstitutionMap { function, substitutionMap ->
                     val existingDeclaration = contextImpl.functions.singleOrNull {
                         it.name == function.name
                     }
