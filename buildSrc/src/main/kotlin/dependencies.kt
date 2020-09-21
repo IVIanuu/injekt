@@ -18,7 +18,7 @@
 
 object Build {
     const val applicationId = "com.ivianuu.injekt.sample"
-    const val applicationIdComparison = "com.ivianuu.injekt.comparison"
+    const val applicationIdComparison = "com.ivianuu.injekt.samples.comparison"
     const val compileSdk = 29
     const val minSdk = 21
     const val minSdkComparison = 29

@@ -2,10 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/samples/android-app/android-app.iml" filepath="$PROJECT_DIR$/.idea/modules/samples/android-app/android-app.iml" group="injekt/samples/android-app" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/android-integration-tests/android-integration-tests.iml" filepath="$PROJECT_DIR$/.idea/modules/android-integration-tests/android-integration-tests.iml" group="injekt/android-integration-tests" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/benchmark/benchmark.iml" filepath="$PROJECT_DIR$/.idea/modules/benchmark/benchmark.iml" group="injekt/benchmark" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/samples/coffee-maker/coffee-maker.iml" filepath="$PROJECT_DIR$/.idea/modules/samples/coffee-maker/coffee-maker.iml" group="injekt/samples/coffee-maker" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/comparison/comparison.iml" filepath="$PROJECT_DIR$/.idea/modules/comparison/comparison.iml" group="injekt/comparison" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/essentials-android-testing/essentials-android-testing.iml" filepath="$PROJECT_DIR$/.idea/modules/essentials-android-testing/essentials-android-testing.iml" group="injekt/essentials-android-testing" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt.iml" group="injekt" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt-android/injekt-android.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt-android/injekt-android.iml" group="injekt/injekt-android" />
@@ -20,7 +20,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/injekt_buildSrc.iml" filepath="$PROJECT_DIR$/.idea/modules/injekt_buildSrc.iml" group="injekt/injekt_buildSrc" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/integration-tests/integration-tests.iml" filepath="$PROJECT_DIR$/.idea/modules/integration-tests/integration-tests.iml" group="injekt/integration-tests" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/lol/lol.iml" filepath="$PROJECT_DIR$/.idea/modules/lol/lol.iml" group="injekt/lol" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/sample/sample.iml" filepath="$PROJECT_DIR$/.idea/modules/sample/sample.iml" group="injekt/samples/sample" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/samples/performance-comparison/performance-comparison.iml" filepath="$PROJECT_DIR$/.idea/modules/samples/performance-comparison/performance-comparison.iml" group="injekt/samples/performance-comparison" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/samples/samples.iml" filepath="$PROJECT_DIR$/.idea/modules/samples/samples.iml" group="injekt/samples" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/test-util/test-util.iml" filepath="$PROJECT_DIR$/.idea/modules/test-util/test-util.iml" group="injekt/test-util" />
     </modules>

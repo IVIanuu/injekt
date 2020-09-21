@@ -13,7 +13,6 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/android-integration-tests" />
             <option value="$PROJECT_DIR$/buildSrc" />
-            <option value="$PROJECT_DIR$/comparison" />
             <option value="$PROJECT_DIR$/essentials-android-testing" />
             <option value="$PROJECT_DIR$/injekt-android" />
             <option value="$PROJECT_DIR$/injekt-android-work" />
@@ -24,8 +23,9 @@
             <option value="$PROJECT_DIR$/integration-tests" />
             <option value="$PROJECT_DIR$/lol" />
             <option value="$PROJECT_DIR$/samples" />
+            <option value="$PROJECT_DIR$/samples/android-app" />
             <option value="$PROJECT_DIR$/samples/coffee-maker" />
-            <option value="$PROJECT_DIR$/samples/sample" />
+            <option value="$PROJECT_DIR$/samples/performance-comparison" />
             <option value="$PROJECT_DIR$/test-util" />
           </set>
         </option>

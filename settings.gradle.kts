@@ -1,6 +1,5 @@
 include(
     ":android-integration-tests",
-    ":comparison",
     ":essentials-android-testing",
     ":injekt-android",
     ":injekt-android-work",
@@ -12,5 +11,6 @@ include(
     ":lol",
     ":test-util",
     "samples:coffee-maker",
-    "samples:sample"
+    "samples:performance-comparison",
+    "samples:android-app"
 )
