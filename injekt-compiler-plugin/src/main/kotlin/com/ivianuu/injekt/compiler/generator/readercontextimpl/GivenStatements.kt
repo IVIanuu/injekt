@@ -27,8 +27,8 @@ class GivenStatements(private val owner: ContextImpl) {
                 //is GivenFunction -> functionExpression(given)
                 is InstanceGivenNode -> inputExpression(given)
                 // is GivenMap -> mapExpression(given)
-                //is GivenNull -> nullExpression()
-                //is GivenSelfContext -> selfContextExpression(given)
+                is NullGivenNode -> nullExpression()
+                is SelfGivenNode -> selfContextExpression(given)
                 //is GivenSet -> setExpression(given)
                 else -> TODO()
             }
@@ -68,7 +68,6 @@ class GivenStatements(private val owner: ContextImpl) {
         )
 
         owner.members += functionByType
-
 
         /*if (superFunction is IrSimpleFunction && functionByType.name != superFunction.name) {
             buildFun {
@@ -205,11 +204,11 @@ class GivenStatements(private val owner: ContextImpl) {
     +irGet(tmpSet)
     }
     }
-    }
+    }*/
 
-    private fun nullExpression(): ContextStatement = { irNull() }
+    private fun nullExpression(): ContextStatement = { emit("null") }
 
-    private fun functionExpression(given: GivenFunction): ContextStatement {
+    /*private fun functionExpression(given: GivenFunction): ContextStatement {
     return { c ->
     fun createExpression(parametersMap: Map<IrValueParameter, () -> IrExpression?>): IrExpression {
     val call = if (given.function is IrConstructor) {
@@ -279,10 +278,9 @@ class GivenStatements(private val owner: ContextImpl) {
     createExpression(emptyMap())
     }
     }
-    }
-
-    private fun selfContextExpression(given: GivenSelfContext): ContextStatement {
-    return { c -> c[given.context] }
     }*/
+
+    private fun selfContextExpression(given: SelfGivenNode): ContextStatement =
+        { emit("this@${given.context.name}") }
 
 }

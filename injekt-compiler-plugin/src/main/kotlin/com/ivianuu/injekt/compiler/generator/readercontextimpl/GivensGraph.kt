@@ -320,16 +320,14 @@ class GivensGraph(
     private fun givensForKey(type: TypeRef): List<GivenNode> = buildList<GivenNode> {
         instanceNodes[type]?.let { this += it }
 
-        /*inputFunctionNodes[type]?.let { this += it }
-
-        if (type.type.classOrNull!!.owner == contextId) {
-            this += GivenSelfContext(
+        if (type == contextId) {
+            this += SelfGivenNode(
                 type = type,
-                context = contextImpl
+                context = owner
             )
         }
 
-        if (type.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.ContextMarker) ||
+        /*if (type.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.ContextMarker) ||
             type.type.classOrNull!!.owner.name.asString().endsWith("__Context")
         ) {
             val contexts = mutableListOf<IrType>()
