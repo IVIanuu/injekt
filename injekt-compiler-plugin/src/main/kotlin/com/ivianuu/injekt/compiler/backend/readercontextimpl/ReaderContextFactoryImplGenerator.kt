@@ -6,11 +6,13 @@ import com.ivianuu.injekt.compiler.backend.DeclarationGraph
 import com.ivianuu.injekt.compiler.backend.asNameId
 import com.ivianuu.injekt.compiler.backend.irBuilder
 import com.ivianuu.injekt.compiler.backend.substitute
+import com.ivianuu.injekt.compiler.backend.toKotlinType
 import com.ivianuu.injekt.compiler.backend.typeArguments
 import com.ivianuu.injekt.compiler.backend.typeOrFail
 import com.ivianuu.injekt.compiler.backend.typeWith
-import com.ivianuu.injekt.compiler.backend.uniqueTypeName
 import com.ivianuu.injekt.compiler.backend.visitAllFunctionsWithSubstitutionMap
+import com.ivianuu.injekt.compiler.generator.KotlinTypeRef
+import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -133,7 +135,7 @@ class ReaderContextFactoryImplGenerator(
             val inputNameProvider = UniqueNameProvider()
             inputTypes.forEach {
                 addValueParameter(
-                    inputNameProvider(it.uniqueTypeName().asString()),
+                    inputNameProvider(KotlinTypeRef(it.toKotlinType()).uniqueTypeName().asString()),
                     it
                 )
             }
@@ -195,7 +197,9 @@ class ReaderContextFactoryImplGenerator(
         val inputFields = inputTypes
             .map {
                 contextImpl.addField(
-                    inputFieldNameProvider(it.uniqueTypeName().asString()),
+                    inputFieldNameProvider(
+                        KotlinTypeRef(it.toKotlinType()).uniqueTypeName().asString()
+                    ),
                     it
                 )
             }

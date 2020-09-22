@@ -435,37 +435,6 @@ fun IrFunction.getFunctionType(skipContext: Boolean = false): IrType {
         .typeWith(valueParameters.map { it.type } + returnType)
 }
 
-
-fun IrType.uniqueTypeName(): Name {
-    fun IrType.renderName(includeArguments: Boolean = true): String {
-        return buildString {
-            val qualifier = getConstantFromAnnotationOrNull<String>(InjektFqNames.Qualifier, 0)
-            if (qualifier != null) append("${qualifier}_")
-
-            val fqName = if (this@renderName is IrSimpleType && abbreviation != null)
-                abbreviation!!.typeAlias.descriptor.fqNameSafe
-            else classifierOrFail.descriptor.fqNameSafe
-            append(fqName.pathSegments().joinToString("_") { it.asString() })
-
-            if (includeArguments) {
-                typeArguments.forEachIndexed { index, typeArgument ->
-                    if (index == 0) append("_")
-                    append(typeArgument.typeOrNull?.renderName() ?: "star")
-                    if (index != typeArguments.lastIndex) append("_")
-                }
-            }
-        }
-    }
-
-    val fullTypeName = renderName()
-
-    // Conservatively shorten the name if the length exceeds 128
-    return (if (fullTypeName.length <= 128) fullTypeName
-    else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}"))
-        .removeIllegalChars()
-        .asNameId()
-}
-
 fun IrType.toKotlinType(): SimpleType {
     this as IrSimpleType
     return makeKotlinType(

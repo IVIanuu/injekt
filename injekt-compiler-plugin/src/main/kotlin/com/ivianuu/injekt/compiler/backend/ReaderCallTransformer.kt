@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.backend
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektAttributes
 import com.ivianuu.injekt.compiler.InjektAttributes.ContextFactoryKey
+import com.ivianuu.injekt.compiler.generator.KotlinTypeRef
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
@@ -120,7 +121,7 @@ class ReaderCallTransformer : IrLowering {
             type: IrType,
             contextExpression: () -> IrExpression
         ): IrExpression {
-            val typeName = type.toKotlinType().uniqueTypeName().asString()
+            val typeName = KotlinTypeRef(type.toKotlinType()).uniqueTypeName().asString()
             val function = context.functions.singleOrNull {
                 it.name.asString() == typeName
             } ?: error("Nothing found for $typeName in ${context.dump()}")

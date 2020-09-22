@@ -27,8 +27,10 @@ import com.ivianuu.injekt.compiler.backend.getContextValueParameter
 import com.ivianuu.injekt.compiler.backend.irBuilder
 import com.ivianuu.injekt.compiler.backend.isExternalDeclaration
 import com.ivianuu.injekt.compiler.backend.substitute
-import com.ivianuu.injekt.compiler.backend.uniqueTypeName
+import com.ivianuu.injekt.compiler.backend.toKotlinType
 import com.ivianuu.injekt.compiler.backend.visitAllFunctionsWithSubstitutionMap
+import com.ivianuu.injekt.compiler.generator.KotlinTypeRef
+import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -392,7 +394,8 @@ class GivensGraph(
                 lazyContextImpl = {
                     if (key.type.classOrNull!!.owner.typeParameters.isNotEmpty()) {
                         val childContextImpl = buildClass {
-                            this.name = (key.type.uniqueTypeName().asString() + "Impl").asNameId()
+                            this.name = (KotlinTypeRef(key.type.toKotlinType()).uniqueTypeName()
+                                .asString() + "Impl").asNameId()
                             visibility = Visibilities.PRIVATE
                         }.apply clazz@{
                             parent = contextImpl

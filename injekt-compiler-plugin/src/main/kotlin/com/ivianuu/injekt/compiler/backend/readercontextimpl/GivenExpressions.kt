@@ -6,7 +6,9 @@ import com.ivianuu.injekt.compiler.backend.irBuilder
 import com.ivianuu.injekt.compiler.backend.irLambda
 import com.ivianuu.injekt.compiler.backend.pluginContext
 import com.ivianuu.injekt.compiler.backend.tmpFunction
-import com.ivianuu.injekt.compiler.backend.uniqueTypeName
+import com.ivianuu.injekt.compiler.backend.toKotlinType
+import com.ivianuu.injekt.compiler.generator.KotlinTypeRef
+import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.backend.common.ir.addChild
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.lower.irNot
@@ -74,7 +76,7 @@ class GivenExpressions(
         }
 
         val functionByType = buildFun {
-            this.name = given.key.type.uniqueTypeName()
+            this.name = KotlinTypeRef(given.key.type.toKotlinType()).uniqueTypeName()
             returnType = given.key.type
         }.apply {
             dispatchReceiverParameter = contextImpl.thisReceiver!!.copyTo(this)
@@ -89,7 +91,7 @@ class GivenExpressions(
             given.owner != contextImpl
         ) rawExpression else ({ c ->
             val field = contextImpl.addField(
-                given.key.type.uniqueTypeName(),
+                KotlinTypeRef(given.key.type.toKotlinType()).uniqueTypeName(),
                 pluginContext.irBuiltIns.anyNType
             ).apply {
                 initializer = irExprBody(irGet(contextImpl.thisReceiver!!))

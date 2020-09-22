@@ -41,7 +41,7 @@ annotation class GivenWorker {
 internal typealias Workers = Map<KClass<out ListenableWorker>, (Context, WorkerParameters) -> ListenableWorker>
 
 @Given
-internal class InjektWorkerFactory : WorkerFactory() {
+class InjektWorkerFactory : WorkerFactory() {
 
     override fun createWorker(
         appContext: Context,

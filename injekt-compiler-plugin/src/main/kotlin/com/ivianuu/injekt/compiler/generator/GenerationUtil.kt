@@ -23,14 +23,18 @@ import org.jetbrains.kotlin.incremental.components.Position
 import org.jetbrains.kotlin.incremental.record
 import org.jetbrains.kotlin.incremental.recordPackageLookup
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.js.translate.utils.refineType
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.types.CommonSupertypes
+import org.jetbrains.kotlin.types.IntersectionTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.getAbbreviation
+import org.jetbrains.kotlin.types.upperIfFlexible
 import kotlin.math.absoluteValue
 
 @Reader
@@ -56,7 +60,9 @@ fun DeclarationDescriptor.uniqueKey() = when (this) {
         visibility,
         findPsi()?.startOffset,
         allParameters.map {
-            it.type.constructor.declarationDescriptor!!.fqNameSafe
+            it.type.prepare()
+                .constructor.declarationDescriptor?.fqNameSafe
+                ?: error("Wtf broken ${it.type} ${it.type.javaClass} ${it.type.prepare()} ${it.type.prepare().javaClass}")
         })
     is PropertyDescriptor -> "${fqNameSafe}${
         if (visibility == Visibilities.LOCAL &&
@@ -64,11 +70,20 @@ fun DeclarationDescriptor.uniqueKey() = when (this) {
         ) findPsi()?.startOffset else ""
     }__property${
         listOfNotNull(
-            dispatchReceiverParameter?.type,
-            extensionReceiverParameter?.type
+            dispatchReceiverParameter?.type?.prepare(),
+            extensionReceiverParameter?.type?.prepare()
         ).map { it.constructor.declarationDescriptor!!.fqNameSafe }.hashCode().absoluteValue
     }"
     else -> error("Unsupported declaration $this")
+}
+
+fun KotlinType.prepare(): KotlinType {
+    var tmp = refineType()
+    if (constructor is IntersectionTypeConstructor) {
+        tmp = CommonSupertypes.commonSupertype(constructor.supertypes)
+    }
+    tmp = tmp.upperIfFlexible()
+    return tmp
 }
 
 fun uniqueFunctionKeyOf(
@@ -101,7 +116,7 @@ fun KotlinType.render() = buildString {
             append("<")
             arguments.forEachIndexed { index, argument ->
                 if (argument.isStarProjection) append("*")
-                else argument.type.renderInner()
+                else argument.type.prepare().renderInner()
                 if (index != arguments.lastIndex) append(", ")
             }
             append(">")
@@ -109,7 +124,7 @@ fun KotlinType.render() = buildString {
 
         if (isMarkedNullable) append("?")
     }
-    renderInner()
+    prepare().renderInner()
 }
 
 fun TypeRef.render(): String = when (this) {
@@ -127,38 +142,6 @@ fun TypeRef.render(): String = when (this) {
     }
 }
 
-fun KotlinType.uniqueTypeName(): Name {
-    fun KotlinType.renderName(includeArguments: Boolean = true): String {
-        return buildString {
-            val qualifier = annotations.findAnnotation(InjektFqNames.Qualifier)
-                ?.allValueArguments?.values?.singleOrNull()
-                ?.value as? String
-            if (qualifier != null) append("${qualifier}_")
-
-            val fqName = getAbbreviation()?.constructor?.declarationDescriptor?.fqNameSafe
-                ?: constructor.declarationDescriptor!!.fqNameSafe
-            append(fqName.pathSegments().joinToString("_") { it.asString() })
-
-            if (includeArguments) {
-                arguments.forEachIndexed { index, typeArgument ->
-                    if (index == 0) append("_")
-                    if (typeArgument.isStarProjection) append("star")
-                    else append(typeArgument.type.renderName())
-                    if (index != arguments.lastIndex) append("_")
-                }
-            }
-        }
-    }
-
-    val fullTypeName = renderName()
-
-    // Conservatively shorten the name if the length exceeds 128
-    return (if (fullTypeName.length <= 128) fullTypeName
-    else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}"))
-        .removeIllegalChars()
-        .asNameId()
-}
-
 fun TypeRef.uniqueTypeName(): Name {
     fun TypeRef.renderName(includeArguments: Boolean = true): String {
         return buildString {
@@ -168,8 +151,9 @@ fun TypeRef.uniqueTypeName(): Name {
             if (qualifier != null) append("${qualifier}_")
 
             val fqName = when (this@renderName) {
-                is KotlinTypeRef -> kotlinType.getAbbreviation()?.constructor?.declarationDescriptor?.fqNameSafe
-                    ?: kotlinType.constructor.declarationDescriptor!!.fqNameSafe
+                is KotlinTypeRef -> kotlinType.prepare()
+                    .getAbbreviation()?.constructor?.declarationDescriptor?.fqNameSafe
+                    ?: kotlinType.prepare().constructor.declarationDescriptor!!.fqNameSafe
                 is FqNameTypeRef -> fqName
             }
 
@@ -181,7 +165,7 @@ fun TypeRef.uniqueTypeName(): Name {
                         kotlinType.arguments.forEachIndexed { index, typeArgument ->
                             if (index == 0) append("_")
                             if (typeArgument.isStarProjection) append("star")
-                            else append(typeArgument.type.uniqueTypeName())
+                            else append(KotlinTypeRef(typeArgument.type).uniqueTypeName())
                             if (index != kotlinType.arguments.lastIndex) append("_")
                         }
                     }

@@ -38,7 +38,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         irContext = childContext(moduleFragment, pluginContext)
         irContext.runReader {
             given<ReaderContextParamTransformer>().lower()
-            println(moduleFragment.dumpSrc())
             given<ReaderCallTransformer>().lower()
             given<RootContextImplTransformer>().lower()
             generateSymbols()
