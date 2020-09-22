@@ -7,7 +7,6 @@ import com.ivianuu.injekt.compiler.IncrementalFileCache
 import com.ivianuu.injekt.compiler.SrcDir
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
@@ -44,7 +43,6 @@ class KtFileManager {
         packageFqName: FqName,
         fileName: String,
         code: String,
-        originatingDeclarations: List<DeclarationDescriptor>,
         originatingFiles: List<File>
     ): File {
         return given<SrcDir>()
@@ -54,34 +52,6 @@ class KtFileManager {
             .also { it.createNewFile() }
             .also { it.writeText(code) }
             .also { result ->
-                originatingDeclarations.forEach {
-                    //recordLookup(result.absolutePath, it)
-                }
-                originatingFiles.forEach {
-                    fileCache.recordDependency(result, it)
-                }
-                newFiles += result
-            }
-    }
-
-    @JvmName("generateFilesWithFqNames")
-    fun generateFile(
-        packageFqName: FqName,
-        fileName: String,
-        code: String,
-        originatingDeclarations: List<FqName>,
-        originatingFiles: List<File>
-    ): File {
-        return given<SrcDir>()
-            .resolve(packageFqName.asString().replace(".", "/"))
-            .also { it.mkdirs() }
-            .resolve(fileName)
-            .also { it.createNewFile() }
-            .also { it.writeText(code) }
-            .also { result ->
-                originatingDeclarations.forEach {
-                    //recordLookup(result.absolutePath, it)
-                }
                 originatingFiles.forEach {
                     fileCache.recordDependency(result, it)
                 }

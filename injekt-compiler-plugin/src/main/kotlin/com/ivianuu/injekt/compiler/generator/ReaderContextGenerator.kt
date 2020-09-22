@@ -130,7 +130,6 @@ class ReaderContextGenerator : KtGenerator {
             packageFqName = descriptor.fqName.parent(),
             fileName = "${descriptor.fqName.shortName()}.kt",
             code = code,
-            originatingDeclarations = emptyList<DeclarationDescriptor>(), // todo
             originatingFiles = descriptor.originatingFiles
         )
     }

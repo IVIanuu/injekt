@@ -6,7 +6,6 @@ import com.ivianuu.injekt.compiler.InjektAttributes.ContextFactoryKey
 import com.ivianuu.injekt.compiler.backend.asNameId
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.given
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
@@ -96,7 +95,6 @@ class ContextFactoryGenerator : KtGenerator {
             packageFqName = containingFile.packageFqName,
             fileName = "$factoryName.kt",
             code = code,
-            originatingDeclarations = emptyList<DeclarationDescriptor>(), // todo
             originatingFiles = listOf(File(callElement.containingKtFile.virtualFilePath))
         )
 

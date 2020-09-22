@@ -42,7 +42,6 @@ class KtIndexer {
                     annotations.forEach { emitLine(it.second) }
                     emitLine("internal object $indexName")
                 },
-                listOf(fqName),
                 originatingFiles
             )
         }
@@ -70,7 +69,6 @@ class KtIndexer {
                     emitLine("@Index(type = \"$type\", fqName = \"${declaration.fqNameSafe}\", indexIsDeclaration = false)")
                     emitLine("internal object $indexName")
                 },
-                listOf(declaration),
                 listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
             )
         }

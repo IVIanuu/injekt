@@ -200,7 +200,6 @@ class EffectGenerator : KtGenerator {
             packageFqName = declaration.findPackage().fqName,
             fileName = "$effectsName.kt",
             code = code,
-            originatingDeclarations = listOf(declaration),
             originatingFiles = listOf(
                 File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath)
             )

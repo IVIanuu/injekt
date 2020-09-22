@@ -47,7 +47,7 @@ class RootFactoryGenerator : KtGenerator {
         given<ModuleDescriptor>().getPackage(InjektFqNames.IndexPackage)
             .memberScope
             .let { memberScope ->
-                (memberScope.getClassifierNames() ?: emptySet<Name>())
+                (memberScope.getClassifierNames() ?: emptySet())
                     .map {
                         memberScope.getContributedClassifier(
                             it,
@@ -103,7 +103,6 @@ class RootFactoryGenerator : KtGenerator {
             packageFqName = fqName.parent(),
             fileName = "${fqName.shortName()}.kt",
             code = code,
-            originatingDeclarations = listOf<DeclarationDescriptor>(initTrigger.descriptor()),
             originatingFiles = listOf(
                 File(initTrigger.containingKtFile.virtualFilePath)
             )
