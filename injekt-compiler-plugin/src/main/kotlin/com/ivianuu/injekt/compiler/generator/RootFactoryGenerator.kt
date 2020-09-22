@@ -69,6 +69,9 @@ class RootFactoryGenerator : KtGenerator {
                                 .let { it as StringValue }
                                 .value
                                 .let { FqName(it) }
+                        if (!isInjektCompiler &&
+                            fqName.asString().startsWith("com.ivianuu.injekt.compiler")
+                        ) return@mapNotNull null
                         given<ModuleDescriptor>()
                             .findClassAcrossModuleDependencies(ClassId.topLevel(fqName))
                     }
@@ -81,10 +84,6 @@ class RootFactoryGenerator : KtGenerator {
                     ?.let { it as StringValue }
                     ?.value
                     ?.let { FqName(it) }
-            }
-            .filter {
-                !isInjektCompiler &&
-                        !it.asString().startsWith("com.ivianuu.injekt.compiler")
             }
             .let { (thisCompilationRootFactories + it).toSet() }
             .forEach { generateRootContext(it, initTrigger!!) }
