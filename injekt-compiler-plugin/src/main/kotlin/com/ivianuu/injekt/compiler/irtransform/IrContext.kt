@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.compiler.backend
+package com.ivianuu.injekt.compiler.irtransform
 
 import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.Reader

@@ -8,4 +8,4 @@ interface KtGenerator {
 }
 
 @Context
-interface KtGenerationContext
+interface GenerationContext

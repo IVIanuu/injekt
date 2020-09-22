@@ -2,12 +2,12 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.backend.asNameId
+import com.ivianuu.injekt.compiler.checkers.getAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.checkers.hasAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.checkers.hasAnnotation
 import com.ivianuu.injekt.compiler.contextNameOf
-import com.ivianuu.injekt.compiler.frontend.getAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.frontend.hasAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.frontend.hasAnnotation
 import com.ivianuu.injekt.compiler.getJoinedName
+import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.builtins.getValueParameterTypesFromFunctionType
@@ -39,7 +39,7 @@ import java.io.File
 class EffectGenerator : KtGenerator {
 
     private val fileManager = given<KtFileManager>()
-    private val indexer = given<KtIndexer>()
+    private val indexer = given<Indexer>()
     private val readerContextGenerator = given<ReaderContextGenerator>()
 
     override fun generate(files: List<KtFile>) {
@@ -113,21 +113,22 @@ class EffectGenerator : KtGenerator {
                     val functionFqName = packageName.child(effectsName).child("function".asNameId())
                     readerContextGenerator.addPromisedReaderContextDescriptor(
                         PromisedReaderContextDescriptor(
-                            packageName.child(
-                                contextNameOf(
-                                    packageFqName = packageName,
-                                    fqName = functionFqName,
-                                    uniqueKey = uniqueFunctionKeyOf(
+                            FqNameTypeRef(
+                                packageName.child(
+                                    contextNameOf(
+                                        packageFqName = packageName,
                                         fqName = functionFqName,
-                                        visibility = Visibilities.PUBLIC,
-                                        startOffset = null,
-                                        parameterTypes = listOf(packageName.child(effectsName))
+                                        uniqueKey = uniqueFunctionKeyOf(
+                                            fqName = functionFqName,
+                                            visibility = Visibilities.PUBLIC,
+                                            startOffset = null,
+                                            parameterTypes = listOf(packageName.child(effectsName))
+                                        )
                                     )
                                 )
                             ),
                             declaration,
                             emptyList(),
-                            listOf(declaration),
                             listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
                         )
                     )
@@ -174,21 +175,26 @@ class EffectGenerator : KtGenerator {
                         val effectFunctionFqName = packageName.child(effectsName).child(name)
                         readerContextGenerator.addPromisedReaderContextDescriptor(
                             PromisedReaderContextDescriptor(
-                                packageName.child(
-                                    contextNameOf(
-                                        packageFqName = packageName,
-                                        fqName = effectFunctionFqName,
-                                        uniqueKey = uniqueFunctionKeyOf(
+                                FqNameTypeRef(
+                                    packageName.child(
+                                        contextNameOf(
+                                            packageFqName = packageName,
                                             fqName = effectFunctionFqName,
-                                            visibility = Visibilities.PUBLIC,
-                                            startOffset = null,
-                                            parameterTypes = listOf(packageName.child(effectsName))
+                                            uniqueKey = uniqueFunctionKeyOf(
+                                                fqName = effectFunctionFqName,
+                                                visibility = Visibilities.PUBLIC,
+                                                startOffset = null,
+                                                parameterTypes = listOf(
+                                                    packageName.child(
+                                                        effectsName
+                                                    )
+                                                )
+                                            )
                                         )
                                     )
                                 ),
                                 effectFunction,
                                 listOf(KotlinTypeRef(givenType)),
-                                listOf(declaration),
                                 listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
                             )
                         )

@@ -14,90 +14,46 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.backend.readercontextimpl
+package com.ivianuu.injekt.compiler.generator.readercontextimpl
 
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.backend.DeclarationGraph
-import com.ivianuu.injekt.compiler.backend.ReaderContextParamTransformer
-import com.ivianuu.injekt.compiler.backend.asNameId
-import com.ivianuu.injekt.compiler.backend.getClassFromAnnotation
-import com.ivianuu.injekt.compiler.backend.getConstantFromAnnotationOrNull
-import com.ivianuu.injekt.compiler.backend.getContext
-import com.ivianuu.injekt.compiler.backend.getContextValueParameter
-import com.ivianuu.injekt.compiler.backend.irBuilder
-import com.ivianuu.injekt.compiler.backend.isExternalDeclaration
-import com.ivianuu.injekt.compiler.backend.substitute
-import com.ivianuu.injekt.compiler.backend.toKotlinType
-import com.ivianuu.injekt.compiler.backend.visitAllFunctionsWithSubstitutionMap
-import com.ivianuu.injekt.compiler.generator.KotlinTypeRef
+import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.compiler.generator.DeclarationStore
+import com.ivianuu.injekt.compiler.generator.ReaderContextDescriptor
+import com.ivianuu.injekt.compiler.generator.TypeRef
+import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import com.ivianuu.injekt.given
-import org.jetbrains.kotlin.backend.common.ir.addChild
-import org.jetbrains.kotlin.backend.common.ir.copyTo
-import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
-import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
-import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
-import org.jetbrains.kotlin.ir.builders.declarations.addField
-import org.jetbrains.kotlin.ir.builders.declarations.addFunction
-import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
-import org.jetbrains.kotlin.ir.builders.declarations.buildClass
-import org.jetbrains.kotlin.ir.builders.irBlockBody
-import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
-import org.jetbrains.kotlin.ir.builders.irExprBody
-import org.jetbrains.kotlin.ir.builders.irGet
-import org.jetbrains.kotlin.ir.builders.irGetField
-import org.jetbrains.kotlin.ir.builders.irSetField
-import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrConstructor
-import org.jetbrains.kotlin.ir.declarations.IrField
-import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
-import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
-import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
-import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.classOrNull
-import org.jetbrains.kotlin.ir.types.isMarkedNullable
-import org.jetbrains.kotlin.ir.types.isNothing
-import org.jetbrains.kotlin.ir.util.constructedClass
-import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.fields
-import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.hasAnnotation
-import org.jetbrains.kotlin.ir.util.properties
-import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-@com.ivianuu.injekt.Given
+@Given
 class GivensGraph(
-    private val parent: GivensGraph?,
-    private val contextImpl: IrClass,
-    private val expressions: GivenExpressions,
-    val inputs: List<IrField>
+    private val owner: ContextImpl
 ) {
 
-    private val declarationGraph = given<DeclarationGraph>()
+    private val parent = owner.graph
 
-    private val contextName = contextImpl.superTypes.first().classOrNull!!.owner
+    private val statements = owner.statements
+    private val inputs = owner.inputTypes
+
+    private val declarationStore = given<DeclarationStore>()
+
+    private val contextId = owner.contextId
 
     private val instanceNodes = inputs
-        .map { GivenInstance(it, contextImpl) }
-        .groupBy { it.key }
+        .mapIndexed { index, inputType -> InstanceGivenNode(inputType, "p$index", owner) }
+        .groupBy { it.type }
 
-    private val inputFunctionNodes = mutableMapOf<Key, MutableSet<Given>>()
-    private val inputGivenMapEntries = mutableMapOf<Key, MutableSet<IrFunction>>()
-    private val inputGivenSetElements = mutableMapOf<Key, MutableSet<IrFunction>>()
+    //private val inputFunctionNodes = mutableMapOf<Key, MutableSet<Given>>()
+    //private val inputGivenMapEntries = mutableMapOf<Key, MutableSet<IrFunction>>()
+    //private val inputGivenSetElements = mutableMapOf<Key, MutableSet<IrFunction>>()
 
-    val resolvedGivens = mutableMapOf<Key, Given>()
+    val resolvedGivens = mutableMapOf<TypeRef, GivenNode>()
 
     sealed class ChainElement {
-        class Given(val key: Key) : ChainElement() {
-            override fun toString() = key.toString()
+        class Given(val type: TypeRef) : ChainElement() {
+            override fun toString() = type.toString()
         }
 
         class Call(val fqName: FqName?) : ChainElement() {
@@ -106,35 +62,34 @@ class GivensGraph(
     }
 
     private val chain = mutableListOf<ChainElement>()
-    private val checkedKeys = mutableSetOf<Key>()
-    private val checkedTypes = mutableSetOf<IrType>()
+    private val checkedTypes = mutableSetOf<TypeRef>()
 
     init {
-        val givenSets = inputs
-            .filter { it.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.GivenSet) }
-            .associateWith { it.type.classOrNull!!.owner }
+        /**val givenSets = inputs
+        .filter { it.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.GivenSet) }
+        .associateWith { it.type.classOrNull!!.owner }
 
         fun IrClass.collectGivens(
-            parentAccessExpression: ContextExpression?,
-            parentAccessFunction: IrFunction?
+        parentAccessStatement: ContextStatement?,
+        parentAccessFunction: IrFunction?
         ) {
-            val functions = (functions
-                .toList() + properties
-                .map { it.getter!! })
-                .map { given<ReaderContextParamTransformer>().getTransformedFunction(it) }
+        val functions = (functions
+        .toList() + properties
+        .map { it.getter!! })
+        .map { given<ReaderContextParamTransformer>().getTransformedFunction(it) }
 
-            val thisAccessExpression: ContextExpression = { c ->
-                if (parentAccessExpression == null) {
-                    irGetField(
-                        c[contextImpl],
-                        contextImpl.fields
-                            .single { it.type.classOrNull!!.owner == this@collectGivens }
-                    )
-                } else {
-                    inputFunctionNodes
-                    irCall(parentAccessFunction!!).apply {
-                        dispatchReceiver = parentAccessExpression(c)
-                    }
+        val thisAccessStatement: ContextStatement = { c ->
+        if (parentAccessStatement == null) {
+        irGetField(
+        c[contextImpl],
+        contextImpl.fields
+        .single { it.type.classOrNull!!.owner == this@collectGivens }
+        )
+        } else {
+        inputFunctionNodes
+        irCall(parentAccessFunction!!).apply {
+        dispatchReceiver = parentAccessStatement(c)
+        }
                 }
             }
 
@@ -160,88 +115,84 @@ class GivensGraph(
                         val explicitParameters = function.valueParameters
                             .filter { it != function.getContextValueParameter() }
 
-                        inputFunctionNodes.getOrPut(function.returnType.asKey()) { mutableSetOf() } += GivenFunction(
-                            key = function.returnType.asKey(),
-                            owner = contextImpl,
+        inputFunctionNodes.getOrPut(function.returnType.asKey()) { mutableSetOf() } += GivenFunction(
+        type = function.returnType.asKey(),
+        owner = contextImpl,
                             contexts = listOf(function.getContext()!!.defaultType),
                             external = function.isExternalDeclaration(),
                             explicitParameters = explicitParameters,
                             origin = function.descriptor.fqNameSafe,
                             function = function,
-                            targetContext = targetContext,
-                            givenSetAccessExpression = thisAccessExpression
-                        )
+        targetContext = targetContext,
+        givenSetAccessExpression = thisAccessStatement
+        )
                     }
                     functionOrPropertyHasAnnotation(InjektFqNames.GivenSet) -> {
-                        function.returnType.classOrNull!!.owner.collectGivens(
-                            thisAccessExpression,
-                            function
+        function.returnType.classOrNull!!.owner.collectGivens(
+        thisAccessStatement,
+        function
                         )
                     }
                     functionOrPropertyHasAnnotation(InjektFqNames.GivenMapEntries) -> {
                         inputGivenMapEntries.getOrPut(function.returnType.asKey()) { mutableSetOf() } += function
-                    }
-                    functionOrPropertyHasAnnotation(InjektFqNames.GivenSetElements) -> {
-                        inputGivenSetElements.getOrPut(function.returnType.asKey()) { mutableSetOf() } += function
-                    }
-                }
-            }
+        }
+        functionOrPropertyHasAnnotation(InjektFqNames.GivenSetElements) -> {
+        inputGivenSetElements.getOrPut(function.returnType.asKey()) { mutableSetOf() } += function
+        }
+        }
+        }
         }
 
         givenSets.values.forEach {
-            it.collectGivens(null, null)
-        }
+        it.collectGivens(null, null)
+        }*/
     }
 
-    fun checkEntryPoints(entryPoints: List<IrType>) {
+    fun checkEntryPoints(entryPoints: List<ReaderContextDescriptor>) {
         entryPoints.forEach { check(it) }
     }
 
-    private fun check(key: Key) {
-        if (key in checkedKeys) return
-        chain.push(ChainElement.Given(key))
-        check(getGiven(key))
+    private fun check(type: TypeRef) {
+        if (type in checkedTypes) return
+        chain.push(ChainElement.Given(type))
+        check(getGiven(type))
         chain.pop()
     }
 
-    private fun check(given: Given) {
-        if (given.key in checkedKeys) return
-        checkedKeys += given.key
+    private fun check(given: GivenNode) {
+        if (given.type in checkedTypes) return
+        checkedTypes += given.type
         given
             .contexts
             .forEach { check(it) }
     }
 
-    private fun check(context: IrType) {
+    private fun check(context: ReaderContextDescriptor) {
         if (context in checkedTypes) return
-        checkedTypes += context
+        checkedTypes += context.type
 
-        val origin = context.classOrNull!!.owner.getConstantFromAnnotationOrNull<String>(
+        val origin: FqName?/* = context.classOrNull!!.owner.getConstantFromAnnotationOrNull<String>(
             InjektFqNames.Origin,
             0
-        )?.let { FqName(it) }
-        chain.push(ChainElement.Call(origin))
-        context.visitAllFunctionsWithSubstitutionMap { function, substitutionMap ->
-            val existingFunction = contextImpl.functions.singleOrNull {
-                it.name == function.name
+        )?.let { FqName(it) }*/ // todo
+        //chain.push(ChainElement.Call(origin))
+        context.givenTypes.forEach { givenType ->
+            val existingFunction = owner.members.singleOrNull {
+                it is ContextFunction && it.name == givenType.uniqueTypeName()
             }
-            if (existingFunction != null) {
-                existingFunction.overriddenSymbols += function.symbol as IrSimpleFunctionSymbol
-                return@visitAllFunctionsWithSubstitutionMap
-            }
-
-            check(function.returnType.substitute(substitutionMap).asKey())
+            if (existingFunction != null) return@forEach
+            check(givenType)
         }
-        chain.pop()
+        //chain.pop()
     }
 
-    fun getGiven(key: Key): Given {
-        var given = getGivenOrNull(key)
+    fun getGiven(type: TypeRef): GivenNode {
+        var given = getGivenOrNull(type)
         if (given != null) return given
 
-        if (key.type.isMarkedNullable()) {
-            given = GivenNull(key, contextImpl)
-            resolvedGivens[key] = given
+        if (type.isMarkedNullable) {
+            given = NullGivenNode(type, owner)
+            resolvedGivens[type] = given
             return given
         }
 
@@ -251,11 +202,7 @@ class GivensGraph(
                 fun indent() {
                     indendation = "$indendation    "
                 }
-                appendLine(
-                    "No given found for '${key}' in '${
-                        contextName.defaultType.render()
-                    }':"
-                )
+                appendLine("No given found for '${type.render()}' in '${contextId.render()}':")
 
                 chain.forEachIndexed { index, element ->
                     if (index == 0) {
@@ -280,17 +227,17 @@ class GivensGraph(
         )
     }
 
-    private fun getGivenOrNull(key: Key): Given? {
-        var given = resolvedGivens[key]
+    private fun getGivenOrNull(type: TypeRef): GivenNode? {
+        var given = resolvedGivens[type]
         if (given != null) return given
 
-        fun Given.check(): Given? {
-            if (targetContext != null && targetContext != contextName) {
+        fun GivenNode.check(): GivenNode? {
+            if (targetContext != null && targetContext != contextId) {
                 if (parent == null) {
                     error(
-                        "Context mismatch, given '${key}' " +
-                                "is scoped to '${targetContext.defaultType.render()}' but actual context is " +
-                                contextName.defaultType.render()
+                        "Context mismatch, given '${type}' " +
+                                "is scoped to '${targetContext!!.render()}' but actual context is " +
+                                contextId.render()
                     )
                 } else {
                     return null
@@ -300,15 +247,15 @@ class GivensGraph(
             return this
         }
 
-        val allGivens = givensForKey(key)
+        val allGivens = givensForKey(type)
 
         val instanceAndGivenSetGivens = allGivens
-            .filter { it.key == key }
-            .filter { it is GivenInstance || it.givenSetAccessExpression != null }
+            .filter { it.type == type }
+            .filter { it is InstanceGivenNode || it.givenSetAccessStatement != null }
 
         if (instanceAndGivenSetGivens.size > 1) {
             error(
-                "Multiple givens found in inputs for '${key}' at:\n${
+                "Multiple givens found in inputs for '${type}' at:\n${
                     instanceAndGivenSetGivens
                         .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
                 }"
@@ -317,20 +264,20 @@ class GivensGraph(
 
         given = instanceAndGivenSetGivens.singleOrNull()
         given?.check()?.let {
-            resolvedGivens[key] = it
+            resolvedGivens[type] = it
             check(it)
             return it
         }
 
         val (internalGlobalGivens, externalGlobalGivens) = allGivens
-            .filterNot { it is GivenInstance }
-            .filter { it.givenSetAccessExpression == null }
-            .filter { it.key == key }
+            .filterNot { it is InstanceGivenNode }
+            .filter { it.givenSetAccessStatement == null }
+            .filter { it.type == type }
             .partition { !it.external }
 
         if (internalGlobalGivens.size > 1) {
             error(
-                "Multiple internal givens found for '${key}' at:\n${
+                "Multiple internal givens found for '${type}' at:\n${
                     internalGlobalGivens
                         .joinToString("\n") { "    '${it to it.origin.orUnknown()}'" }
                 }"
@@ -339,16 +286,16 @@ class GivensGraph(
 
         given = internalGlobalGivens.singleOrNull()
         given?.check()?.let {
-            resolvedGivens[key] = it
+            resolvedGivens[type] = it
             check(it)
-            (it as? GivenChildContext)?.factory
-            (it as? GivenCalleeContext)?.contextImpl
+            // todo (it as? ChildContextGivenNode)?.childContextFactoryImpl
+            // todo (it as? GivenCalleeContext)?.contextImpl
             return it
         }
 
         if (externalGlobalGivens.size > 1) {
             error(
-                "Multiple external givens found for '${key}' at:\n${
+                "Multiple external givens found for '${type}' at:\n${
                     externalGlobalGivens
                         .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
                 }.\nPlease specify a given for the requested type in this project."
@@ -357,44 +304,44 @@ class GivensGraph(
 
         given = externalGlobalGivens.singleOrNull()
         given?.check()?.let {
-            resolvedGivens[key] = it
+            resolvedGivens[type] = it
             check(it)
             return it
         }
 
-        parent?.getGivenOrNull(key)?.let {
-            resolvedGivens[key] = it
+        parent?.getGivenOrNull(type)?.let {
+            resolvedGivens[type] = it
             return it
         }
 
         return null
     }
 
-    private fun givensForKey(key: Key): List<Given> = buildList<Given> {
-        instanceNodes[key]?.let { this += it }
+    private fun givensForKey(type: TypeRef): List<GivenNode> = buildList<GivenNode> {
+        instanceNodes[type]?.let { this += it }
 
-        inputFunctionNodes[key]?.let { this += it }
+        /*inputFunctionNodes[type]?.let { this += it }
 
-        if (key.type.classOrNull!!.owner == contextName) {
+        if (type.type.classOrNull!!.owner == contextId) {
             this += GivenSelfContext(
-                key = key,
+                type = type,
                 context = contextImpl
             )
         }
 
-        if (key.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.ContextMarker) ||
-            key.type.classOrNull!!.owner.name.asString().endsWith("__Context")
+        if (type.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.ContextMarker) ||
+            type.type.classOrNull!!.owner.name.asString().endsWith("__Context")
         ) {
             val contexts = mutableListOf<IrType>()
             this += GivenCalleeContext(
-                key = key,
+                type = type,
                 owner = contextImpl,
                 origin = null,
                 lazyContexts = { contexts },
                 lazyContextImpl = {
-                    if (key.type.classOrNull!!.owner.typeParameters.isNotEmpty()) {
+                    if (type.type.classOrNull!!.owner.typeParameters.isNotEmpty()) {
                         val childContextImpl = buildClass {
-                            this.name = (KotlinTypeRef(key.type.toKotlinType()).uniqueTypeName()
+                            this.name = (KotlinTypeRef(type.type.toKotlinType()).uniqueTypeName()
                                 .asString() + "Impl").asNameId()
                             visibility = Visibilities.PRIVATE
                         }.apply clazz@{
@@ -433,8 +380,8 @@ class GivensGraph(
                             }
                         }
 
-                        childContextImpl.superTypes += key.type
-                        key.type.visitAllFunctionsWithSubstitutionMap { function, substitutionMap ->
+                        childContextImpl.superTypes += type.type
+                        type.type.visitAllFunctionsWithSubstitutionMap { function, substitutionMap ->
                             val functionKey = function.returnType
                                 .substitute(substitutionMap)
                                 .asKey()
@@ -474,8 +421,8 @@ class GivensGraph(
                         }
                         childContextImpl
                     } else {
-                        contexts += key.type
-                        key.type.visitAllFunctionsWithSubstitutionMap { function, substitutionMap ->
+                        contexts += type.type
+                        type.type.visitAllFunctionsWithSubstitutionMap { function, substitutionMap ->
                             val functionKey = function.returnType
                                 .substitute(substitutionMap)
                                 .asKey()
@@ -487,7 +434,7 @@ class GivensGraph(
             )
         }
 
-        if (key.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.ChildContextFactory)) {
+        if (type.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.ChildContextFactory)) {
             val existingFactories = mutableSetOf<IrClass>()
             var currentContext: IrClass? = contextImpl
             while (currentContext != null) {
@@ -499,12 +446,12 @@ class GivensGraph(
                     ?.classOrNull
                     ?.owner
             }
-            if (key.type.classOrNull!!.owner !in existingFactories) {
-                val factory = key.type.classOrNull!!.owner
+            if (type.type.classOrNull!!.owner !in existingFactories) {
+                val factory = type.type.classOrNull!!.owner
                 val generator = ReaderContextFactoryImplGenerator(
                     name = expressions.uniqueChildNameProvider("F").asNameId(),
                     factoryInterface = factory,
-                    factoryType = key.type,
+                    factoryType = type.type,
                     irParent = contextImpl,
                     parentContext = contextImpl,
                     parentGraph = this@GivensGraph,
@@ -512,7 +459,7 @@ class GivensGraph(
                 )
 
                 this += GivenChildContext(
-                    key = key,
+                    type = type,
                     owner = contextImpl,
                     origin = null,
                     generator = generator
@@ -520,7 +467,7 @@ class GivensGraph(
             }
         }
 
-        this += declarationGraph.givens(key)
+        this += declarationStore.givens(type)
             .map { function ->
                 val targetContext = (function.getClassFromAnnotation(
                     InjektFqNames.Given, 0
@@ -537,7 +484,7 @@ class GivensGraph(
                             .filter { it != function.getContextValueParameter() }
 
                 GivenFunction(
-                    key = key,
+                    type = type,
                     owner = contextImpl,
                     contexts = listOf(function.getContext()!!.defaultType),
                     external = function.isExternalDeclaration(),
@@ -548,14 +495,14 @@ class GivensGraph(
                     givenSetAccessExpression = null
                 )
             }
-            .filter { it.targetContext == null || it.targetContext == contextName }
+            .filter { it.targetContext == null || it.targetContext == contextId }
 
-        (declarationGraph.givenMapEntries(key) +
-                inputGivenMapEntries.getOrElse(key) { emptySet() })
+        (declarationStore.givenMapEntries(type) +
+                inputGivenMapEntries.getOrElse(type) { emptySet() })
             .takeIf { it.isNotEmpty() }
             ?.let { entries ->
                 GivenMap(
-                    key = key,
+                    type = type,
                     owner = contextImpl,
                     contexts = entries.map { it.getContext()!!.defaultType },
                     givenSetAccessExpression = null,
@@ -564,18 +511,21 @@ class GivensGraph(
             }
             ?.let { this += it }
 
-        (declarationGraph.givenSetElements(key) +
-                inputGivenSetElements.getOrElse(key) { emptySet() })
+        (declarationStore.givenSetElements(type) +
+                inputGivenSetElements.getOrElse(type) { emptySet() })
             .takeIf { it.isNotEmpty() }
             ?.let { elements ->
                 GivenSet(
-                    key = key,
+                    type = type,
                     owner = contextImpl,
                     contexts = elements.map { it.getContext()!!.defaultType },
                     givenSetAccessExpression = null,
                     functions = elements
                 )
             }
-            ?.let { this += it }
+            ?.let { this += it }*/
     }
+
 }
+
+private fun FqName?.orUnknown(): String = this?.asString() ?: "unknown origin"

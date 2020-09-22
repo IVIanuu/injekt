@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.backend
+package com.ivianuu.injekt.compiler.irtransform
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.getContextName

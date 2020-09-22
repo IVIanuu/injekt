@@ -45,6 +45,7 @@ class KtFileManager {
         code: String,
         originatingFiles: List<File>
     ): File {
+        println("generated file $packageFqName.$fileName\n$code")
         return given<SrcDir>()
             .resolve(packageFqName.asString().replace(".", "/"))
             .also { it.mkdirs() }

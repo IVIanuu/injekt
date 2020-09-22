@@ -8,11 +8,9 @@ import com.ivianuu.injekt.runReader
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.container.ComponentProvider
-import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.diagnostics.Severity
-import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
@@ -36,9 +34,7 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
             analysisContext = childContext(
                 module,
                 bindingTrace,
-                bindingTrace.bindingContext,
-                componentProvider.get<LookupTracker>()
-                    .also { lookupTracker = it }
+                bindingTrace.bindingContext
             )
 
             files as ArrayList<KtFile>
@@ -68,7 +64,7 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
 
         files as List<KtFile>
 
-        val context = analysisContext.runReader { childContext<KtGenerationContext>() }
+        val context = analysisContext.runReader { childContext<GenerationContext>() }
 
         context.runReader {
             given<GivenIndexingGenerator>().generate(files)
@@ -76,7 +72,7 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
             given<ContextFactoryGenerator>().generate(files)
             given<ReaderContextGenerator>().generate(files)
             given<RunReaderCallIndexingGenerator>().generate(files)
-            given<RootFactoryGenerator>().generate(files)
+            given<RootContextFactoryImplGenerator>().generate(files)
         }
 
         return AnalysisResult.RetryWithAdditionalRoots(

@@ -16,7 +16,7 @@
 
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.backend.asNameId
+import com.ivianuu.injekt.compiler.irtransform.asNameId
 import org.jetbrains.kotlin.name.FqName
 
 object InjektFqNames {

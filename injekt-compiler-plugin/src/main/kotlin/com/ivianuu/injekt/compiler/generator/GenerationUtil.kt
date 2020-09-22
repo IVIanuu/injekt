@@ -2,12 +2,11 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.backend.asNameId
-import com.ivianuu.injekt.compiler.frontend.hasAnnotation
+import com.ivianuu.injekt.compiler.checkers.hasAnnotation
+import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
-import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -16,18 +15,6 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
-import org.jetbrains.kotlin.incremental.components.LocationInfo
-import org.jetbrains.kotlin.incremental.components.LookupLocation
-import org.jetbrains.kotlin.incremental.components.LookupTracker
-import org.jetbrains.kotlin.incremental.components.Position
-import org.jetbrains.kotlin.incremental.record
-import org.jetbrains.kotlin.incremental.recordPackageLookup
-import org.jetbrains.kotlin.ir.IrElement
-import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
-import org.jetbrains.kotlin.ir.declarations.IrFile
-import org.jetbrains.kotlin.ir.declarations.path
-import org.jetbrains.kotlin.ir.util.file
-import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.js.translate.utils.refineType
 import org.jetbrains.kotlin.name.FqName
@@ -194,73 +181,4 @@ fun TypeRef.uniqueTypeName(): Name {
     else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}"))
         .removeIllegalChars()
         .asNameId()
-}
-
-lateinit var lookupTracker: LookupTracker
-
-@Reader
-fun recordLookup(
-    sourceFilePath: String,
-    lookedUp: DeclarationDescriptor
-) {
-    val location = object : LookupLocation {
-        override val location: LocationInfo?
-            get() = object : LocationInfo {
-                override val filePath: String
-                    get() = sourceFilePath
-                override val position: Position
-                    get() = Position.NO_POSITION
-            }
-    }
-
-    lookupTracker.record(
-        location,
-        lookedUp.findPackage(),
-        lookedUp.name
-    )
-}
-
-@Reader
-fun recordLookup(
-    sourceFilePath: String,
-    lookedUpFqName: FqName
-) {
-    val location = object : LookupLocation {
-        override val location: LocationInfo?
-            get() = object : LocationInfo {
-                override val filePath: String
-                    get() = sourceFilePath
-                override val position: Position
-                    get() = Position.NO_POSITION
-            }
-    }
-
-    lookupTracker.recordPackageLookup(
-        location,
-        lookedUpFqName.parent().asString(),
-        lookedUpFqName.shortName().asString()
-    )
-}
-
-@Reader
-fun recordLookup(
-    source: IrElement,
-    lookedUp: IrDeclarationWithName
-) {
-    val location = object : LookupLocation {
-        override val location: LocationInfo?
-            get() = object : LocationInfo {
-                override val filePath: String
-                    get() = (source as? IrFile)?.path
-                        ?: (source as IrDeclarationWithName).file.path
-                override val position: Position
-                    get() = Position.NO_POSITION
-            }
-    }
-
-    lookupTracker.record(
-        location,
-        lookedUp.getPackageFragment()!!.packageFragmentDescriptor,
-        lookedUp.name
-    )
 }

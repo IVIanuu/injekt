@@ -3,7 +3,7 @@ package com.ivianuu.injekt.compiler.generator
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektAttributes
 import com.ivianuu.injekt.compiler.InjektAttributes.ContextFactoryKey
-import com.ivianuu.injekt.compiler.backend.asNameId
+import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.psi.KtFile
@@ -99,13 +99,26 @@ class ContextFactoryGenerator : KtGenerator {
         )
 
         if (!isChild) {
-            given<KtIndexer>().index(
+            given<Indexer>().index(
                 fqName = containingFile.packageFqName.child(factoryName),
                 type = "class",
                 originatingFiles = listOf(factoryFile)
             )
-            given<RootFactoryGenerator>()
-                .addRootFactory(implFqName!!)
+            given<RootContextFactoryImplGenerator>()
+                .addRootFactory(
+                    ContextFactoryImplDescriptor(
+                        factoryImplFqName = implFqName!!,
+                        factory = ContextFactoryDescriptor(
+                            factoryType = FqNameTypeRef(
+                                containingFile.packageFqName.child(
+                                    factoryName
+                                )
+                            ),
+                            contextType = KotlinTypeRef(contextType),
+                            inputTypes = inputs.map { KotlinTypeRef(it) }
+                        )
+                    )
+                )
         }
     }
 }

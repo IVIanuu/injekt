@@ -2,7 +2,7 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.backend.asNameId
+import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.psi.KtFile
@@ -18,7 +18,7 @@ import java.io.File
 @Given
 class RunReaderCallIndexingGenerator : KtGenerator {
 
-    private val indexer = given<KtIndexer>()
+    private val indexer = given<Indexer>()
 
     override fun generate(files: List<KtFile>) {
         files.forEach { file ->
@@ -45,15 +45,21 @@ class RunReaderCallIndexingGenerator : KtGenerator {
         val file = callElement.containingKtFile
 
         val contextType = call.extensionReceiver!!.type
-        val blockContextFqName = call.valueArguments.values.single()
+        val blockContextType = call.valueArguments.values.single()
             .arguments
             .single()
             .getArgumentExpression()!!
             .let { it as KtLambdaExpression }
             .functionLiteral
             .descriptor<FunctionDescriptor>()
-            .let { given<ReaderContextGenerator>().getContextForDescriptor(it)!! }
-            .fqName
+            .let { given<ReaderContextGenerator>().getContextForDeclaration(it)!! }
+            .type
+
+        given<DeclarationStore>()
+            .addInternalRunReaderContext(
+                FqNameTypeRef(contextType.constructor.declarationDescriptor!!.fqNameSafe),
+                blockContextType
+            )
 
         indexer.index(
             fqName = file.packageFqName.child(
@@ -63,7 +69,7 @@ class RunReaderCallIndexingGenerator : KtGenerator {
             indexIsDeclaration = true,
             annotations = listOf(
                 InjektFqNames.RunReaderCall to
-                        "@RunReaderCall(calleeContext = ${contextType.render()}::class, blockContext = $blockContextFqName::class)"
+                        "@RunReaderCall(calleeContext = ${contextType.render()}::class, blockContext = ${blockContextType.render()}::class)"
             ),
             originatingFiles = listOf(File(file.virtualFilePath))
         )

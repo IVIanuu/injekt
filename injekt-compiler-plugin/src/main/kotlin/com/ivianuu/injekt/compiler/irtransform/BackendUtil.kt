@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.backend
+package com.ivianuu.injekt.compiler.irtransform
 
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.InjektFqNames
@@ -31,17 +31,12 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.descriptors.PropertySetterDescriptor
 import org.jetbrains.kotlin.descriptors.SourceElement
-import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptorImpl
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.ir.IrElement
-import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
-import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
-import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irCall
-import org.jetbrains.kotlin.ir.builders.irExprBody
 import org.jetbrains.kotlin.ir.builders.irGet
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
@@ -70,10 +65,7 @@ import org.jetbrains.kotlin.ir.expressions.IrGetEnumValue
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrSpreadElement
-import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.IrVararg
-import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
@@ -96,12 +88,9 @@ import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.dump
-import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.isFakeOverride
 import org.jetbrains.kotlin.ir.util.isSuspend
-import org.jetbrains.kotlin.ir.util.isSuspendFunction
 import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.ir.util.render
@@ -133,12 +122,7 @@ import org.jetbrains.kotlin.types.StarProjectionImpl
 import org.jetbrains.kotlin.types.TypeProjectionImpl
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.replace
-import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.types.withAbbreviation
-
-@Reader
-val isInjektCompiler: Boolean
-    get() = irModule.name.asString() == "<injekt-compiler-plugin>"
 
 @Reader
 fun IrSymbol.irBuilder() = DeclarationIrBuilder(pluginContext, this)
@@ -155,8 +139,6 @@ val IrType.typeArguments: List<IrTypeArgument>
 
 val IrTypeArgument.typeOrFail: IrType
     get() = typeOrNull ?: error("Type is null for ${render()}")
-
-fun IrType.isTypeParameter() = toKotlinType().isTypeParameter()
 
 fun IrTypeArgument.hasAnnotation(fqName: FqName): Boolean =
     typeOrNull?.hasAnnotation(fqName) == true
@@ -228,29 +210,6 @@ fun IrType.remapTypeParametersByName(parametersMap: Map<FqName, IrTypeParameter>
         }
         else -> this
     }
-
-@Reader
-fun IrType.visitAllFunctionsWithSubstitutionMap(
-    visitFunction: (IrFunction, Map<IrTypeParameterSymbol, IrType>) -> Unit
-) {
-    val clazz = classOrNull!!.owner
-    val substitutionMap = clazz.typeParameters
-        .map { it.symbol }
-        .zip(typeArguments.map { it.typeOrFail })
-        .toMap()
-    clazz.functions
-        .filter { it !is IrConstructor }
-        .filter { it.dispatchReceiverParameter?.type != pluginContext.irBuiltIns.anyType }
-        .forEach { visitFunction(it, substitutionMap) }
-}
-
-fun <T> IrAnnotationContainer.getConstantFromAnnotationOrNull(
-    fqName: FqName,
-    index: Int
-) = getAnnotation(fqName)
-    ?.getValueArgument(index)
-    ?.let { it as IrConst<T> }
-    ?.value
 
 fun IrType.substitute(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {
     if (this !is IrSimpleType) return this
@@ -379,18 +338,6 @@ fun IrElement.toConstantValue(): ConstantValue<*> {
         is IrConstructorCall -> AnnotationValue(this.toAnnotationDescriptor())
         else -> error("$this is not expected: ${this.dump()}")
     }
-}
-
-fun <T> T.getClassFromAnnotation(
-    fqName: FqName,
-    index: Int
-): IrClass? where T : IrDeclaration, T : IrAnnotationContainer {
-    return getAnnotation(fqName)
-        ?.getValueArgument(index)
-        ?.let { it as? IrClassReferenceImpl }
-        ?.classType
-        ?.classOrNull
-        ?.owner
 }
 
 fun String.asNameId(): Name = Name.identifier(this)
@@ -534,44 +481,6 @@ fun IrDeclarationWithName.canUseReaders(): Boolean =
             (this is IrClass && constructors.any { it.isMarkedAsReader() }) ||
             (this is IrConstructor && constructedClass.isMarkedAsReader()) ||
             (this is IrSimpleFunction && correspondingPropertySymbol?.owner?.isMarkedAsReader() == true)
-
-@Reader
-fun IrBuilderWithScope.irLambda(
-    type: IrType,
-    startOffset: Int = UNDEFINED_OFFSET,
-    endOffset: Int = UNDEFINED_OFFSET,
-    body: IrBuilderWithScope.(IrFunction) -> IrExpression
-): IrExpression {
-    val returnType = type.typeArguments.last().typeOrNull!!
-
-    val lambda = buildFun {
-        origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA
-        name = Name.special("<anonymous>")
-        this.returnType = returnType
-        visibility = Visibilities.LOCAL
-        isSuspend = type.isSuspendFunction()
-    }.apply {
-        parent = scope.getLocalDeclarationParent()
-        type.typeArguments.dropLast(1).forEachIndexed { index, typeArgument ->
-            addValueParameter(
-                "p$index",
-                typeArgument.typeOrNull!!
-            )
-        }
-        annotations += type.annotations.map {
-            it.deepCopyWithSymbols()
-        }
-        this.body = irBuilder().run { irExprBody(body(this, this@apply)) }
-    }
-
-    return IrFunctionExpressionImpl(
-        startOffset = startOffset,
-        endOffset = endOffset,
-        type = type,
-        function = lambda,
-        origin = IrStatementOrigin.LAMBDA
-    )
-}
 
 @Reader
 fun IrBuilderWithScope.jvmNameAnnotation(

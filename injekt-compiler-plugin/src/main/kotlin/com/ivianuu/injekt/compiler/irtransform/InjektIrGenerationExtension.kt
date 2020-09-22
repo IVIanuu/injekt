@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.backend
+package com.ivianuu.injekt.compiler.irtransform
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.childContext
-import com.ivianuu.injekt.compiler.backend.readercontextimpl.RootContextImplTransformer
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -39,7 +38,6 @@ class InjektIrGenerationExtension : IrGenerationExtension {
         irContext.runReader {
             given<ReaderContextParamTransformer>().lower()
             given<ReaderCallTransformer>().lower()
-            given<RootContextImplTransformer>().lower()
             generateSymbols()
         }
     }

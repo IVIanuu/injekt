@@ -2,8 +2,8 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.frontend.hasAnnotatedAnnotations
-import com.ivianuu.injekt.compiler.frontend.hasAnnotation
+import com.ivianuu.injekt.compiler.checkers.hasAnnotatedAnnotations
+import com.ivianuu.injekt.compiler.checkers.hasAnnotation
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -18,7 +18,7 @@ import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 @Given
 class GivenIndexingGenerator : KtGenerator {
 
-    private val indexer = given<KtIndexer>()
+    private val indexer = given<Indexer>()
 
     override fun generate(files: List<KtFile>) {
         files.forEach { file ->

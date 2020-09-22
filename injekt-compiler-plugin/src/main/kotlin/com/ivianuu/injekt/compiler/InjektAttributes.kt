@@ -15,5 +15,4 @@ class InjektAttributes {
     interface Key<V : Any>
 
     data class ContextFactoryKey(val filePath: String, val startOffset: Int) : Key<FqName>
-    data class IsRootFactory(val fqName: FqName) : Key<Boolean>
 }

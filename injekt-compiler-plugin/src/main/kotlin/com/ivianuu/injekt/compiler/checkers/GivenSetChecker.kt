@@ -1,4 +1,4 @@
-package com.ivianuu.injekt.compiler.frontend
+package com.ivianuu.injekt.compiler.checkers
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames

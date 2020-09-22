@@ -1,7 +1,7 @@
 package com.ivianuu.injekt.compiler
 
-import com.ivianuu.injekt.compiler.backend.asNameId
 import com.ivianuu.injekt.compiler.generator.uniqueKey
+import com.ivianuu.injekt.compiler.irtransform.asNameId
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor

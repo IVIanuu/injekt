@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.frontend
+package com.ivianuu.injekt.compiler.checkers
 
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.InjektFqNames

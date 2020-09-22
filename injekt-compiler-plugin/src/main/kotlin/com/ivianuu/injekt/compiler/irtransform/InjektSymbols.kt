@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ivianuu.injekt.compiler.backend
+package com.ivianuu.injekt.compiler.irtransform
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
@@ -24,20 +24,9 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 @Given(IrContext::class)
 class InjektSymbols {
     private val pluginContext: IrPluginContext = given()
-
     val context = pluginContext.referenceClass(InjektFqNames.Context)!!
     val effect = pluginContext.referenceClass(InjektFqNames.Effect)!!
     val given = pluginContext.referenceClass(InjektFqNames.Given)!!
-    val givenMapEntries = pluginContext.referenceClass(InjektFqNames.GivenMapEntries)!!
-    val givenSet = pluginContext.referenceClass(InjektFqNames.GivenSet)!!
-    val givenSetElements = pluginContext.referenceClass(InjektFqNames.GivenSetElements)!!
     val reader = pluginContext.referenceClass(InjektFqNames.Reader)!!
-
-    val childContextFactory = pluginContext.referenceClass(InjektFqNames.ChildContextFactory)!!
-    val contextMarker = pluginContext.referenceClass(InjektFqNames.ContextMarker)!!
     val index = pluginContext.referenceClass(InjektFqNames.Index)!!
-    val origin = pluginContext.referenceClass(InjektFqNames.Origin)!!
-    val qualifier = pluginContext.referenceClass(InjektFqNames.Qualifier)!!
-    val rootContextFactory = pluginContext.referenceClass(InjektFqNames.RootContextFactory)!!
-    val runReaderCall = pluginContext.referenceClass(InjektFqNames.RunReaderCall)!!
 }
