@@ -31,11 +31,8 @@ import org.jetbrains.kotlin.ir.util.SymbolTable
 @Given
 class InjektIrGenerationExtension : IrGenerationExtension {
 
-    private lateinit var irContext: IrContext
-
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        irContext = childContext(moduleFragment, pluginContext)
-        irContext.runReader {
+        childContext<IrContext>(moduleFragment, pluginContext).runReader {
             given<ReaderContextParamTransformer>().lower()
             given<ReaderCallTransformer>().lower()
             generateSymbols()

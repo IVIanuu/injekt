@@ -68,9 +68,6 @@ class ReaderContextParamTransformer : IrLowering {
     private val transformedClasses = mutableSetOf<IrClass>()
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
 
-    fun getTransformedFunction(function: IrFunction) =
-        transformFunctionIfNeeded(function)
-
     override fun lower() {
         irModule.transformChildrenVoid(
             object : IrElementTransformerVoidWithContext() {
