@@ -8,7 +8,6 @@ include(
     ":injekt-core",
     ":injekt-gradle-plugin",
     ":integration-tests",
-    ":lol",
     ":test-util",
     "samples:coffee-maker",
     "samples:performance-comparison",

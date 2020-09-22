@@ -92,7 +92,7 @@ class ContextFactoryGenerator : KtGenerator {
             callElement.startOffset
         )] = containingFile.packageFqName.child(factoryName)
 
-        fileManager.generateFile(
+        val factoryFile = fileManager.generateFile(
             packageFqName = containingFile.packageFqName,
             fileName = "$factoryName.kt",
             code = code,
@@ -103,7 +103,8 @@ class ContextFactoryGenerator : KtGenerator {
         if (!isChild) {
             given<KtIndexer>().index(
                 fqName = containingFile.packageFqName.child(factoryName),
-                type = "class"
+                type = "class",
+                originatingFiles = listOf(factoryFile)
             )
             given<RootFactoryGenerator>()
                 .addRootFactory(implFqName!!)

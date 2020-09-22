@@ -22,7 +22,8 @@ class KtIndexer {
         fqName: FqName,
         type: String,
         indexIsDeclaration: Boolean = false,
-        annotations: List<Pair<FqName, String>> = emptyList()
+        annotations: List<Pair<FqName, String>> = emptyList(),
+        originatingFiles: List<File>
     ) {
         val indexName = "${
             fqName.pathSegments()
@@ -42,7 +43,7 @@ class KtIndexer {
                     emitLine("internal object $indexName")
                 },
                 listOf(fqName),
-                emptyList() // todo
+                originatingFiles
             )
         }
     }

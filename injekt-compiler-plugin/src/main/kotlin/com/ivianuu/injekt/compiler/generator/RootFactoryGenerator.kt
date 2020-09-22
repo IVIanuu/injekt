@@ -103,7 +103,7 @@ class RootFactoryGenerator : KtGenerator {
             packageFqName = fqName.parent(),
             fileName = "${fqName.shortName()}.kt",
             code = code,
-            originatingDeclarations = emptyList<DeclarationDescriptor>(),
+            originatingDeclarations = listOf<DeclarationDescriptor>(initTrigger.descriptor()),
             originatingFiles = listOf(
                 File(initTrigger.containingKtFile.virtualFilePath)
             )

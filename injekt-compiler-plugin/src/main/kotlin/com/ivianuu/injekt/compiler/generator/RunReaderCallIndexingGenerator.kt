@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import java.io.File
 
 @Given
 class RunReaderCallIndexingGenerator : KtGenerator {
@@ -63,7 +64,8 @@ class RunReaderCallIndexingGenerator : KtGenerator {
             annotations = listOf(
                 InjektFqNames.RunReaderCall to
                         "@RunReaderCall(calleeContext = ${contextType.render()}::class, blockContext = $blockContextFqName::class)"
-            )
+            ),
+            originatingFiles = listOf(File(file.virtualFilePath))
         )
     }
 

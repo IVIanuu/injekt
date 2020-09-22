@@ -190,6 +190,8 @@ fun TypeRef.uniqueTypeName(): Name {
         .asNameId()
 }
 
+lateinit var lookupTracker: LookupTracker
+
 @Reader
 fun recordLookup(
     sourceFilePath: String,
@@ -205,7 +207,7 @@ fun recordLookup(
             }
     }
 
-    given<LookupTracker>().record(
+    lookupTracker.record(
         location,
         lookedUp.findPackage(),
         lookedUp.name
@@ -227,7 +229,7 @@ fun recordLookup(
             }
     }
 
-    given<LookupTracker>().recordPackageLookup(
+    lookupTracker.recordPackageLookup(
         location,
         lookedUpFqName.parent().asString(),
         lookedUpFqName.shortName().asString()

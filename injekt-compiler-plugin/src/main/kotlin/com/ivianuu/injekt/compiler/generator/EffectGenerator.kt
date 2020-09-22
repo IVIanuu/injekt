@@ -107,7 +107,8 @@ class EffectGenerator : KtGenerator {
                     indexer.index(
                         packageName.child(effectsName)
                             .child("function".asNameId()),
-                        "function"
+                        "function",
+                        originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
                     )
                     val functionFqName = packageName.child(effectsName).child("function".asNameId())
                     readerContextGenerator.addPromisedReaderContextDescriptor(
@@ -125,7 +126,8 @@ class EffectGenerator : KtGenerator {
                                 )
                             ),
                             declaration,
-                            emptyList()
+                            emptyList(),
+                            listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
                         )
                     )
                 }
@@ -165,7 +167,8 @@ class EffectGenerator : KtGenerator {
                         indexer.index(
                             packageName.child(effectsName)
                                 .child(name),
-                            "function"
+                            "function",
+                            originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
                         )
                         val effectFunctionFqName = packageName.child(effectsName).child(name)
                         readerContextGenerator.addPromisedReaderContextDescriptor(
@@ -183,7 +186,8 @@ class EffectGenerator : KtGenerator {
                                     )
                                 ),
                                 effectFunction,
-                                listOf(KotlinTypeRef(givenType))
+                                listOf(KotlinTypeRef(givenType)),
+                                listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
                             )
                         )
                     }

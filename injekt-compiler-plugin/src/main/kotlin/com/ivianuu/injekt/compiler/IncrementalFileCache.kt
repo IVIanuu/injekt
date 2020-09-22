@@ -28,6 +28,7 @@ class IncrementalFileCache(private val cacheFile: File) {
 
     fun deleteDependents(dependency: File) {
         cache.remove(dependency)?.forEach {
+            println("$dependency delete dependent $it")
             deleteDependents(it)
             it.delete()
         }

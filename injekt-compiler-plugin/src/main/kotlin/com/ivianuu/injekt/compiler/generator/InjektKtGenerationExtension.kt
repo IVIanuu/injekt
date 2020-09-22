@@ -39,10 +39,12 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
                 bindingTrace,
                 bindingTrace.bindingContext,
                 componentProvider.get<LookupTracker>()
+                    .also { lookupTracker = it }
             )
 
             files as ArrayList<KtFile>
             val copy = files.toList()
+            println("on pre compile $files")
             files.clear()
             files += analysisContext.runReader {
                 given<KtFileManager>().onPreCompile(copy)
@@ -61,6 +63,7 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
                 it.severity == Severity.ERROR
             }) return null
         if (generatedCode) {
+            println("on post compile $files")
             analysisContext.runReader { given<KtFileManager>().onPostCompile() }
             return null
         }
