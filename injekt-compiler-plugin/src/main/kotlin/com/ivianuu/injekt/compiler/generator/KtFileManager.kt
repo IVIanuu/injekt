@@ -21,12 +21,17 @@ class KtFileManager {
             .resolve("file-cache")
     )
 
+    val newFiles = mutableSetOf<File>()
+
     fun onPreCompile(files: List<KtFile>): List<KtFile> {
+        println("pre compile $files")
         files.forEach { fileCache.deleteDependents(File(it.virtualFilePath)) }
-        return files.filterNot { it.text.startsWith("// injekt-generated") }
+        println("pre compile deleted files ${fileCache.deletedFiles}")
+        return files.filterNot { it.virtualFilePath in fileCache.deletedFiles }
     }
 
-    fun onPostCompile() {
+    fun onPostCompile(files: List<KtFile>) {
+        println("post compile $files")
         fileCache.flush()
     }
 
@@ -50,11 +55,12 @@ class KtFileManager {
             .also { it.writeText(code) }
             .also { result ->
                 originatingDeclarations.forEach {
-                    recordLookup(result.absolutePath, it)
+                    //recordLookup(result.absolutePath, it)
                 }
                 originatingFiles.forEach {
                     fileCache.recordDependency(result, it)
                 }
+                newFiles += result
             }
     }
 
@@ -74,11 +80,12 @@ class KtFileManager {
             .also { it.writeText(code) }
             .also { result ->
                 originatingDeclarations.forEach {
-                    recordLookup(result.absolutePath, it)
-                    originatingFiles.forEach {
-                        fileCache.recordDependency(result, it)
-                    }
+                    //recordLookup(result.absolutePath, it)
                 }
+                originatingFiles.forEach {
+                    fileCache.recordDependency(result, it)
+                }
+                newFiles += result
             }
     }
 

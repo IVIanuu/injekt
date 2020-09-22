@@ -12,7 +12,6 @@ import com.ivianuu.injekt.compiler.backend.typeOrFail
 import com.ivianuu.injekt.compiler.backend.typeWith
 import com.ivianuu.injekt.compiler.backend.visitAllFunctionsWithSubstitutionMap
 import com.ivianuu.injekt.compiler.generator.KotlinTypeRef
-import com.ivianuu.injekt.compiler.generator.recordLookup
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.ir.addChild
@@ -36,14 +35,12 @@ import org.jetbrains.kotlin.ir.builders.irGetObject
 import org.jetbrains.kotlin.ir.builders.irSetField
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
-import org.jetbrains.kotlin.ir.declarations.path
 import org.jetbrains.kotlin.ir.expressions.impl.IrInstanceInitializerCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.isObject
 import org.jetbrains.kotlin.name.Name
@@ -172,10 +169,6 @@ class ReaderContextFactoryImplGenerator(
                     }
                 )
             }
-        }
-
-        contextImpl.superTypes.forEach {
-            recordLookup(factoryImpl.file.path, it.classOrNull!!.descriptor)
         }
 
         return factoryImpl

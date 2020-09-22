@@ -127,6 +127,7 @@ class EffectGenerator : KtGenerator {
                             ),
                             declaration,
                             emptyList(),
+                            listOf(declaration),
                             listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
                         )
                     )
@@ -187,6 +188,7 @@ class EffectGenerator : KtGenerator {
                                 ),
                                 effectFunction,
                                 listOf(KotlinTypeRef(givenType)),
+                                listOf(declaration),
                                 listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
                             )
                         )

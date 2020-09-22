@@ -61,6 +61,7 @@ class ReaderContextGenerator : KtGenerator {
                                     .map { KotlinTypeRef(it) }
                             )
                         },
+                    emptyList(),
                     emptyList()
                 )
             }
@@ -80,6 +81,7 @@ class ReaderContextGenerator : KtGenerator {
                 ReaderContextDescriptor(
                     promised.fqName,
                     emptyList(),
+                    promised.originatingDeclarations,
                     promised.originatingFiles
                 ).apply {
                     givenTypes +=
@@ -139,12 +141,14 @@ data class PromisedReaderContextDescriptor(
     val fqName: FqName,
     val callee: DeclarationDescriptor,
     val calleeTypeArguments: List<TypeRef>,
+    val originatingDeclarations: List<DeclarationDescriptor>,
     val originatingFiles: List<File>
 )
 
 data class ReaderContextDescriptor(
     val fqName: FqName,
     val typeParameters: List<ReaderContextTypeParameter>,
+    val originatingDeclarations: List<DeclarationDescriptor>,
     val originatingFiles: List<File>
 ) {
     val givenTypes = mutableSetOf<TypeRef>()
@@ -234,6 +238,7 @@ class ReaderContextDescriptorCollector(
                     typeParameter.upperBounds.map { KotlinTypeRef(it) }
                 )
             },
+            listOf(descriptor),
             listOf(File((descriptor.findPsi()!!.containingFile as KtFile).virtualFilePath))
         )
     }

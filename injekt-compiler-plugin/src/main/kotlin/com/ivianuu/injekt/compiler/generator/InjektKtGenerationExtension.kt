@@ -3,7 +3,6 @@ package com.ivianuu.injekt.compiler.generator
 import com.ivianuu.injekt.Context
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.childContext
-import com.ivianuu.injekt.compiler.SrcDir
 import com.ivianuu.injekt.given
 import com.ivianuu.injekt.runReader
 import org.jetbrains.kotlin.analyzer.AnalysisResult
@@ -44,7 +43,6 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
 
             files as ArrayList<KtFile>
             val copy = files.toList()
-            println("on pre compile $files")
             files.clear()
             files += analysisContext.runReader {
                 given<KtFileManager>().onPreCompile(copy)
@@ -63,8 +61,7 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
                 it.severity == Severity.ERROR
             }) return null
         if (generatedCode) {
-            println("on post compile $files")
-            analysisContext.runReader { given<KtFileManager>().onPostCompile() }
+            analysisContext.runReader { given<KtFileManager>().onPostCompile(files as ArrayList) }
             return null
         }
         generatedCode = true
@@ -83,7 +80,10 @@ class InjektKtGenerationExtension : AnalysisHandlerExtension {
         }
 
         return AnalysisResult.RetryWithAdditionalRoots(
-            bindingTrace.bindingContext, module, emptyList(), listOf(given<SrcDir>()), true
+            bindingTrace.bindingContext, module, emptyList(), analysisContext.runReader {
+                given<KtFileManager>()
+                    .newFiles.toList()
+            }, true
         )
     }
 

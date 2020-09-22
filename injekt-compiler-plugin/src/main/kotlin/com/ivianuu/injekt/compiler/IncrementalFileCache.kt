@@ -4,6 +4,8 @@ import java.io.File
 
 class IncrementalFileCache(private val cacheFile: File) {
 
+    val deletedFiles = mutableSetOf<String>()
+
     private val cache = (if (cacheFile.exists()) cacheFile.readText() else "")
         .split("\n")
         .filter { it.isNotEmpty() }
@@ -24,17 +26,20 @@ class IncrementalFileCache(private val cacheFile: File) {
         dependency: File
     ) {
         cache.getOrPut(dependency) { mutableSetOf() } += dependent
+        println("$dependency record dependent $dependent")
     }
 
     fun deleteDependents(dependency: File) {
         cache.remove(dependency)?.forEach {
-            println("$dependency delete dependent $it")
             deleteDependents(it)
             it.delete()
+            println("$dependency delete dependents $it")
+            deletedFiles += it.absolutePath
         }
     }
 
     fun flush() {
+        deletedFiles.clear()
         if (cache.isNotEmpty()) {
             cacheFile.parentFile.mkdirs()
             cacheFile.createNewFile()

@@ -22,6 +22,12 @@ import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.incremental.components.Position
 import org.jetbrains.kotlin.incremental.record
 import org.jetbrains.kotlin.incremental.recordPackageLookup
+import org.jetbrains.kotlin.ir.IrElement
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
+import org.jetbrains.kotlin.ir.declarations.IrFile
+import org.jetbrains.kotlin.ir.declarations.path
+import org.jetbrains.kotlin.ir.util.file
+import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.js.translate.utils.refineType
 import org.jetbrains.kotlin.name.FqName
@@ -233,5 +239,28 @@ fun recordLookup(
         location,
         lookedUpFqName.parent().asString(),
         lookedUpFqName.shortName().asString()
+    )
+}
+
+@Reader
+fun recordLookup(
+    source: IrElement,
+    lookedUp: IrDeclarationWithName
+) {
+    val location = object : LookupLocation {
+        override val location: LocationInfo?
+            get() = object : LocationInfo {
+                override val filePath: String
+                    get() = (source as? IrFile)?.path
+                        ?: (source as IrDeclarationWithName).file.path
+                override val position: Position
+                    get() = Position.NO_POSITION
+            }
+    }
+
+    lookupTracker.record(
+        location,
+        lookedUp.getPackageFragment()!!.packageFragmentDescriptor,
+        lookedUp.name
     )
 }

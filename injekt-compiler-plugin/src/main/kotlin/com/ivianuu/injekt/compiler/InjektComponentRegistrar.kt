@@ -28,6 +28,7 @@ import com.ivianuu.injekt.rootContext
 import com.ivianuu.injekt.runReader
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
+import org.jetbrains.kotlin.com.intellij.openapi.extensions.ExtensionPointName
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
@@ -56,26 +57,32 @@ class InjektComponentRegistrar : ComponentRegistrar {
             given<InjektStorageContainerContributor>()
         )
 
-        AnalysisHandlerExtension.registerExtension(project, given<InjektKtGenerationExtension>())
+        registerExtensionAtFirst(
+            project,
+            AnalysisHandlerExtension.extensionPointName,
+            given<InjektKtGenerationExtension>()
+        )
 
-        // make sure that our plugin always runs before the Compose plugin
-        // otherwise it will break @Reader @Composable functions
-        val irExtensionPoint = Extensions.getArea(project)
-            .getExtensionPoint(IrGenerationExtension.extensionPointName)
-
-        val composeIrExtensionClass = try {
-            Class.forName("androidx.compose.compiler.plugins.kotlin.ComposeIrGenerationExtension")
-        } catch (t: Throwable) {
-            null
-        }
-        val composeExtension = if (composeIrExtensionClass != null) {
-            irExtensionPoint.extensionList.singleOrNull {
-                it.javaClass == composeIrExtensionClass
-            }
-        } else null
-        if (composeExtension != null) irExtensionPoint
-            .unregisterExtension(composeIrExtensionClass as Class<out IrGenerationExtension>)
-        irExtensionPoint.registerExtension(given<InjektIrGenerationExtension>()) {}
-        if (composeExtension != null) irExtensionPoint.registerExtension(composeExtension) {}
+        registerExtensionAtFirst(
+            project,
+            IrGenerationExtension.extensionPointName,
+            given<InjektIrGenerationExtension>()
+        )
     }
+
+    fun <T : Any> registerExtensionAtFirst(
+        project: Project,
+        extensionPointName: ExtensionPointName<T>,
+        extension: T
+    ) {
+        val extensionPoint = Extensions.getArea(project)
+            .getExtensionPoint(extensionPointName)
+
+        val registeredExtensions = extensionPoint.extensionList
+        registeredExtensions.forEach { extensionPoint.unregisterExtension(it::class.java) }
+
+        extensionPoint.registerExtension(extension, {})
+        registeredExtensions.forEach { extensionPoint.registerExtension(it, {}) }
+    }
+
 }
