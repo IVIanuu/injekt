@@ -222,7 +222,8 @@ class DeclarationStore {
 
     private val readerContextsByDeclaration =
         mutableMapOf<DeclarationDescriptor, ReaderContextDescriptor>()
-    val readerContextsByType = mutableMapOf<ClassifierRef, ReaderContextDescriptor>()
+    val internalReaderContextsByType = mutableMapOf<ClassifierRef, ReaderContextDescriptor>()
+    private val readerContextsByType = mutableMapOf<ClassifierRef, ReaderContextDescriptor>()
     private val externalReaderContexts =
         mutableMapOf<DeclarationDescriptor, ReaderContextDescriptor>()
 
@@ -244,6 +245,7 @@ class DeclarationStore {
 
     fun addReaderContextForType(type: TypeRef, context: ReaderContextDescriptor) {
         readerContextsByType[type.classifier] = context
+        internalReaderContextsByType[type.classifier] = context
     }
 
     fun getReaderContextByType(type: TypeRef): ReaderContextDescriptor? {
@@ -282,6 +284,7 @@ class DeclarationStore {
     ) {
         readerContextsByDeclaration[declaration.original] = context
         readerContextsByType[context.type.classifier] = context
+        internalReaderContextsByType[context.type.classifier] = context
     }
 
     fun getReaderContextForDeclaration(declaration: DeclarationDescriptor): ReaderContextDescriptor? {
@@ -294,10 +297,10 @@ class DeclarationStore {
                     NoLookupLocation.FROM_BACKEND
                 )
                 ?.let { it as ClassDescriptor }
-                ?.let {
+                ?.let { classDescriptor ->
                     ReaderContextDescriptor(
-                        SimpleTypeRef(it.toClassifierRef(), isContext = true),
-                        it.declaredTypeParameters
+                        SimpleTypeRef(classDescriptor.toClassifierRef(), isContext = true),
+                        classDescriptor.declaredTypeParameters
                             .map { typeParameter ->
                                 ReaderContextTypeParameter(
                                     typeParameter.name,
@@ -307,7 +310,13 @@ class DeclarationStore {
                             },
                         declaration.fqNameSafe,
                         emptyList()
-                    )
+                    ).apply {
+                        givenTypes += classDescriptor.unsubstitutedMemberScope
+                            .getContributedDescriptors()
+                            .filterIsInstance<FunctionDescriptor>()
+                            .filter { it.dispatchReceiverParameter?.type == classDescriptor.defaultType }
+                            .map { it.returnType!!.toTypeRef() }
+                    }
                 }
                 ?.also { externalReaderContexts[declaration.original] = it }
                 ?.also { readerContextsByType[it.type.classifier] = it }

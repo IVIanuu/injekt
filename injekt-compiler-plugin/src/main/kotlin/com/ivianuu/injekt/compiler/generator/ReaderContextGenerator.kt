@@ -53,7 +53,7 @@ class ReaderContextGenerator : Generator {
         files.forEach { file -> file.accept(givensCollector) }
 
         // generate contexts
-        declarationStore.readerContextsByType.values.forEach { generateReaderContext(it) }
+        declarationStore.internalReaderContextsByType.values.forEach { generateReaderContext(it) }
         promisedReaderContextDescriptor
             .map { promised ->
                 ReaderContextDescriptor(

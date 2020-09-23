@@ -117,7 +117,6 @@ fun TypeRef.typeWith(arguments: List<TypeRef>): TypeRef {
 }
 
 fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
-    println("${render()} substitute with ${map.map { it.key to it.value.render() }}")
     map[classifier]?.let { return it }
     return SimpleTypeRef(
         classifier,
