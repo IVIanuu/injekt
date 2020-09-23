@@ -311,6 +311,21 @@ class EffectGenerator : Generator {
                             } else it
                         }
                         .let {
+                            if (hasAnnotation(InjektFqNames.Reader)) {
+                                it.replaceAnnotations(
+                                    Annotations.create(
+                                        it.annotations + AnnotationDescriptorImpl(
+                                            moduleDescriptor.findClassAcrossModuleDependencies(
+                                                ClassId.topLevel(InjektFqNames.Reader)
+                                            )!!.defaultType,
+                                            emptyMap(),
+                                            SourceElement.NO_SOURCE
+                                        )
+                                    )
+                                )
+                            } else it
+                        }
+                        .let {
                             it.replaceAnnotations(
                                 Annotations.create(
                                     it.annotations + AnnotationDescriptorImpl(

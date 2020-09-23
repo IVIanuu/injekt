@@ -49,6 +49,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
+import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.util.constructedClass
 import org.jetbrains.kotlin.ir.util.constructors
@@ -67,6 +68,8 @@ class ReaderContextParamTransformer : IrLowering {
 
     private val transformedClasses = mutableSetOf<IrClass>()
     private val transformedFunctions = mutableMapOf<IrFunction, IrFunction>()
+    val transformedTypeParametersToOriginalTypeParameters =
+        mutableMapOf<IrTypeParameterSymbol, IrTypeParameterSymbol>()
 
     override fun lower() {
         irModule.transformChildrenVoid(
@@ -160,6 +163,9 @@ class ReaderContextParamTransformer : IrLowering {
 
         val context = getContextForDeclaration(function)!!
         val transformedFunction = function.copyAsReader()
+        transformedTypeParametersToOriginalTypeParameters += transformedFunction.typeParameters
+            .map { it.symbol }
+            .zip(function.typeParameters.map { it.symbol })
         transformedFunctions[function] = transformedFunction
         transformedFunction.addValueParameter(
             "_context",

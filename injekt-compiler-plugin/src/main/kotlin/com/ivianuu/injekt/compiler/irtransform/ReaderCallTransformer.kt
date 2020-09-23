@@ -20,7 +20,7 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektAttributes
 import com.ivianuu.injekt.compiler.InjektAttributes.ContextFactoryKey
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.generator.KotlinTypeRef
+import com.ivianuu.injekt.compiler.generator.toTypeRef
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
@@ -55,6 +55,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
+import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrExternalPackageFragmentSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
@@ -116,17 +117,33 @@ class ReaderCallTransformer : IrLowering {
 
     inner class ReaderScope(
         val declaration: IrDeclaration,
-        val context: IrClass
+        val originalToDeclarationSubstitutionMap: Map<IrTypeParameterSymbol, IrTypeParameterSymbol>,
+        val context: IrClass,
     ) {
+
+        private val declarationToContextSubstitutionMap = (declaration as IrTypeParametersContainer)
+            .typeParameters
+            .map { it.symbol }
+            .zip(context.typeParameters.map { it.defaultType })
+            .toMap() + declaration.typeParameters
+            .map { originalToDeclarationSubstitutionMap[it.symbol] ?: it.symbol }
+            .zip(context.typeParameters.map { it.defaultType })
+            .toMap()
 
         fun givenExpressionForType(
             type: IrType,
             contextExpression: () -> IrExpression
         ): IrExpression {
-            return if (type in context.superTypes) {
+            val finalType = type
+                .substitute(declarationToContextSubstitutionMap)
+            return if (finalType in context.superTypes) {
                 contextExpression()
             } else {
-                val typeName = KotlinTypeRef(type.toKotlinType()).uniqueTypeName().asString()
+                val typeName = finalType
+                    .toKotlinType()
+                    .toTypeRef()
+                    .uniqueTypeName()
+                    .asString()
                 val function =
                     context.functions.singleOrNull {
                         it.name.asString() == typeName
@@ -208,7 +225,11 @@ class ReaderCallTransformer : IrLowering {
         if (declaration in transformedDeclarations) return
         transformedDeclarations += declaration
 
-        val scope = ReaderScope(declaration, context)
+        val scope = ReaderScope(
+            declaration,
+            given<ReaderContextParamTransformer>().transformedTypeParametersToOriginalTypeParameters,
+            context
+        )
 
         declaration.transform(object : IrElementTransformerVoidWithContext() {
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {

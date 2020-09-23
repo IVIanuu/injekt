@@ -208,18 +208,30 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
         if (declarationStore
                 .getReaderContextForDeclaration(declaration) != null
         ) return
+        val contextName = declaration.getContextName()
+        val contextFqName = declaration.findPackage().fqName.child(contextName)
         declarationStore
             .addReaderContextForDeclaration(
                 declaration,
                 ReaderContextDescriptor(
                     type = SimpleTypeRef(
                         classifier = ClassifierRef(
-                            fqName = declaration.findPackage().fqName.child(declaration.getContextName()),
+                            fqName = contextFqName,
                             typeParameters = when (declaration) {
                                 is ClassifierDescriptorWithTypeParameters -> declaration.declaredTypeParameters
-                                    .map { it.toClassifierRef() }
+                                    .map {
+                                        ClassifierRef(
+                                            contextFqName.child(it.name),
+                                            isTypeParameter = true
+                                        )
+                                    }
                                 is CallableDescriptor -> declaration.typeParameters
-                                    .map { it.toClassifierRef() }
+                                    .map {
+                                        ClassifierRef(
+                                            contextFqName.child(it.name),
+                                            isTypeParameter = true
+                                        )
+                                    }
                                 else -> emptyList()
                             }
                         ),
@@ -250,10 +262,26 @@ class ReaderContextGivensCollector(
 ) : KtTreeVisitorVoid() {
 
     inner class ReaderScope(
+        val declaration: DeclarationDescriptor,
         val contextDescriptor: ReaderContextDescriptor
     ) {
+        private val substitutionMap = when (declaration) {
+            is ClassifierDescriptorWithTypeParameters -> declaration.declaredTypeParameters
+            is CallableDescriptor -> declaration.typeParameters
+            else -> emptyList()
+        }.map { it.toClassifierRef() }
+            .zip(contextDescriptor.typeParameters.map {
+                SimpleTypeRef(
+                    ClassifierRef(
+                        contextDescriptor.type.classifier.fqName.child(it.name),
+                        isTypeParameter = true
+                    )
+                )
+            }).toMap()
+
         fun recordGivenType(type: TypeRef) {
             contextDescriptor.givenTypes += type
+                .substitute(substitutionMap)
         }
     }
 
@@ -272,7 +300,7 @@ class ReaderContextGivensCollector(
     override fun visitClass(klass: KtClass) {
         val descriptor = klass.descriptor<ClassDescriptor>()
         if (descriptor.isReader()) {
-            withReaderScope(ReaderScope(contextProvider(descriptor)!!)) {
+            withReaderScope(ReaderScope(descriptor, contextProvider(descriptor)!!)) {
                 super.visitClass(klass)
             }
         } else {
@@ -283,7 +311,7 @@ class ReaderContextGivensCollector(
     override fun visitNamedFunction(function: KtNamedFunction) {
         val descriptor = function.descriptor<FunctionDescriptor>()
         if (descriptor.isReader()) {
-            withReaderScope(ReaderScope(contextProvider(descriptor)!!)) {
+            withReaderScope(ReaderScope(descriptor, contextProvider(descriptor)!!)) {
                 super.visitNamedFunction(function)
             }
         } else {
@@ -294,7 +322,7 @@ class ReaderContextGivensCollector(
     override fun visitProperty(property: KtProperty) {
         val descriptor = property.descriptor<VariableDescriptor>()
         if (descriptor.isReader()) {
-            withReaderScope(ReaderScope(contextProvider(descriptor)!!)) {
+            withReaderScope(ReaderScope(descriptor, contextProvider(descriptor)!!)) {
                 super.visitProperty(property)
             }
         } else {
@@ -306,7 +334,7 @@ class ReaderContextGivensCollector(
         val descriptor = lambdaExpression.functionLiteral.descriptor<FunctionDescriptor>()
         val contextDescriptor = contextProvider(descriptor)
         if (contextDescriptor != null) {
-            withReaderScope(ReaderScope(contextDescriptor)) {
+            withReaderScope(ReaderScope(descriptor, contextDescriptor)) {
                 super.visitLambdaExpression(lambdaExpression)
             }
         } else {

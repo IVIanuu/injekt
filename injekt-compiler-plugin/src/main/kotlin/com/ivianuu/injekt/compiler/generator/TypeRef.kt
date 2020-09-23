@@ -51,14 +51,12 @@ class KotlinTypeRef(
     override val variance: Variance = Variance.INVARIANT
 ) : TypeRef() {
     override val classifier: ClassifierRef
-
     init {
         val declarationDescriptor = kotlinType.prepare()
             .getAbbreviation()?.constructor?.declarationDescriptor
             ?: kotlinType.prepare().constructor.declarationDescriptor!!
         classifier = declarationDescriptor.toClassifierRef()
     }
-
     override val isComposable: Boolean
         get() = kotlinType.hasAnnotation(InjektFqNames.Composable)
     override val isReader: Boolean
@@ -75,10 +73,15 @@ class KotlinTypeRef(
     override val isMarkedNullable: Boolean
         get() = kotlinType.isMarkedNullable
     override val typeArguments: List<TypeRef>
-        get() = kotlinType.arguments.map { KotlinTypeRef(it.type, it.projectionKind) }
+        get() {
+            val finalType = kotlinType.prepare()
+                .getAbbreviation()
+                ?: kotlinType
+            return finalType.arguments.map { it.type.toTypeRef(it.projectionKind) }
+        }
 }
 
-fun KotlinType.toTypeRef() = KotlinTypeRef(this)
+fun KotlinType.toTypeRef(variance: Variance = Variance.INVARIANT) = KotlinTypeRef(this, variance)
 
 class SimpleTypeRef(
     override val classifier: ClassifierRef,
@@ -133,17 +136,15 @@ fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
 fun TypeRef.render(): String {
     return buildString {
         val annotations = listOfNotNull(
-            if (isReader) "@Reader" else null,
-            if (isComposable) "@Composable" else null,
-            qualifier?.let { "@Qualifier($it)" }
+            if (isReader) "@com.ivianuu.injekt.Reader" else null,
+            if (isComposable) "@androidx.compose.runtime.Composable" else null,
+            qualifier?.let { "@com.ivianuu.injekt.internal.Qualifier(\"$it\")" }
         )
         if (annotations.isNotEmpty()) {
-            append("[")
-            annotations.forEachIndexed { index, annotation ->
+            annotations.forEach { annotation ->
                 append(annotation)
-                if (index != annotations.lastIndex) append(", ")
+                append(" ")
             }
-            append("] ")
         }
         if (classifier.isTypeParameter) append(classifier.fqName.shortName())
         else append(classifier.fqName)
