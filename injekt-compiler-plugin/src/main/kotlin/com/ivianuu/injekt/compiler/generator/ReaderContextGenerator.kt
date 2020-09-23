@@ -6,8 +6,10 @@ import com.ivianuu.injekt.compiler.checkers.isReader
 import com.ivianuu.injekt.compiler.getContextName
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
@@ -63,8 +65,8 @@ class ReaderContextGenerator : Generator {
                     declarationStore.addReaderContextForType(promised.type, this)
                     givenTypes +=
                         SimpleTypeRef(
-                            fqName = declarationStore.getReaderContextForDeclaration(promised.callee)!!.type.fqName,
-                            isMarkedNullable = false,
+                            classifier = declarationStore.getReaderContextForDeclaration(promised.callee)!!
+                                .type.classifier,
                             isContext = true,
                             typeArguments = promised.calleeTypeArguments
                         )
@@ -82,12 +84,12 @@ class ReaderContextGenerator : Generator {
     private fun generateReaderContext(descriptor: ReaderContextDescriptor) {
         val code = buildCodeString {
             emitLine("// injekt-generated")
-            emitLine("package ${descriptor.type.fqName.parent()}")
+            emitLine("package ${descriptor.type.classifier.fqName.parent()}")
             emitLine("import com.ivianuu.injekt.internal.ContextMarker")
             emitLine("import com.ivianuu.injekt.internal.Origin")
             emitLine("@Origin(\"${descriptor.origin}\")")
             emitLine("@ContextMarker")
-            emit("interface ${descriptor.type.fqName.shortName()}")
+            emit("interface ${descriptor.type.classifier.fqName.shortName()}")
             if (descriptor.typeParameters.isNotEmpty()) {
                 emit("<")
                 descriptor.typeParameters.forEachIndexed { index, typeParameter ->
@@ -108,8 +110,8 @@ class ReaderContextGenerator : Generator {
         }
 
         fileManager.generateFile(
-            packageFqName = descriptor.type.fqName.parent(),
-            fileName = "${descriptor.type.fqName.shortName()}.kt",
+            packageFqName = descriptor.type.classifier.fqName.parent(),
+            fileName = "${descriptor.type.classifier.fqName.shortName()}.kt",
             code = code,
             originatingFiles = descriptor.originatingFiles
         )
@@ -211,7 +213,16 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
                 declaration,
                 ReaderContextDescriptor(
                     type = SimpleTypeRef(
-                        fqName = declaration.findPackage().fqName.child(declaration.getContextName()),
+                        classifier = ClassifierRef(
+                            fqName = declaration.findPackage().fqName.child(declaration.getContextName()),
+                            typeParameters = when (declaration) {
+                                is ClassifierDescriptorWithTypeParameters -> declaration.declaredTypeParameters
+                                    .map { it.toClassifierRef() }
+                                is CallableDescriptor -> declaration.typeParameters
+                                    .map { it.toClassifierRef() }
+                                else -> emptyList()
+                            }
+                        ),
                         isContext = true
                     ),
                     typeParameters = (when (declaration) {
@@ -222,7 +233,7 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
                     } + capturedTypeParameters).map { typeParameter ->
                         ReaderContextTypeParameter(
                             typeParameter.name,
-                            typeParameter.upperBounds.map { KotlinTypeRef(it) }
+                            typeParameter.upperBounds.map { it.toTypeRef() }
                         )
                     },
                     origin = declaration.fqNameSafe,
@@ -333,16 +344,13 @@ class ReaderContextGivensCollector(
                 val factoryFqName = given<InjektAttributes>()[InjektAttributes.ContextFactoryKey(
                     expression.containingKtFile.virtualFilePath, expression.startOffset
                 )]!!
-                SimpleTypeRef(factoryFqName, isChildContextFactory = true)
+                SimpleTypeRef(ClassifierRef(factoryFqName), isChildContextFactory = true)
             }
             else -> {
                 val calleeContext = contextProvider(resulting)
                     ?: error("Null for $resulting")
-                SimpleTypeRef(
-                    fqName = calleeContext.type.fqName,
-                    isMarkedNullable = false,
-                    isContext = true,
-                    typeArguments = resolvedCall.typeArguments.values.map { KotlinTypeRef(it) }
+                calleeContext.type.typeWith(
+                    resolvedCall.typeArguments.values.map { it.toTypeRef() }
                 )
             }
         }

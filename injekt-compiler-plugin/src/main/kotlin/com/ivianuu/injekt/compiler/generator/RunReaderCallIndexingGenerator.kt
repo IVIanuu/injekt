@@ -57,7 +57,7 @@ class RunReaderCallIndexingGenerator : Generator {
 
         given<DeclarationStore>()
             .addInternalRunReaderContext(
-                SimpleTypeRef(contextType.constructor.declarationDescriptor!!.fqNameSafe),
+                SimpleTypeRef(contextType.constructor.declarationDescriptor!!.toClassifierRef()),
                 blockContextType
             )
 

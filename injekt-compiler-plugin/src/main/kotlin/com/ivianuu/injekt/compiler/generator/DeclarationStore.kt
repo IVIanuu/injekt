@@ -53,16 +53,16 @@ class DeclarationStore {
     fun getContextFactoryForType(type: TypeRef): ContextFactoryDescriptor {
         return internalContextFactories[type] ?: externalContextFactories[type] ?: kotlin.run {
             val descriptor = moduleDescriptor.findClassAcrossModuleDependencies(
-                ClassId.topLevel(type.fqName)
+                ClassId.topLevel(type.classifier.fqName)
             )!!
             val createFunction = descriptor.unsubstitutedMemberScope
                 .getContributedFunctions("create".asNameId(), NoLookupLocation.FROM_BACKEND)
                 .single()
             ContextFactoryDescriptor(
                 factoryType = type,
-                contextType = KotlinTypeRef(createFunction.returnType!!),
+                contextType = createFunction.returnType!!.toTypeRef(),
                 inputTypes = createFunction.valueParameters
-                    .map { KotlinTypeRef(it.type) }
+                    .map { it.type.toTypeRef() }
             )
         }
     }
@@ -116,7 +116,7 @@ class DeclarationStore {
                         ?.let { FqName(it) } ?: return@mapNotNull null
                 ContextFactoryImplDescriptor(
                     factoryImplFqName = factoryImplFqName,
-                    factory = getContextFactoryForType(KotlinTypeRef(index.defaultType))
+                    factory = getContextFactoryForType(index.defaultType.toTypeRef())
                 )
             }
     }
@@ -207,13 +207,13 @@ class DeclarationStore {
                     val runReaderCallAnnotation =
                         it.annotations.findAnnotation(InjektFqNames.RunReaderCall)
                             ?: return@mapNotNull null
-                    KotlinTypeRef(
-                        runReaderCallAnnotation.allValueArguments["calleeContext".asNameId()]
-                            .let { it as KClassValue }
-                            .getArgumentType(moduleDescriptor)
-                    ) to KotlinTypeRef(runReaderCallAnnotation.allValueArguments["blockContext".asNameId()]
+                    runReaderCallAnnotation.allValueArguments["calleeContext".asNameId()]
                         .let { it as KClassValue }
-                        .getArgumentType(moduleDescriptor))
+                        .getArgumentType(moduleDescriptor)
+                        .toTypeRef() to runReaderCallAnnotation.allValueArguments["blockContext".asNameId()]
+                        .let { it as KClassValue }
+                        .getArgumentType(moduleDescriptor)
+                        .toTypeRef()
                 }
                 .filter { it.first == contextId }
                 .map { it.second }
@@ -222,18 +222,20 @@ class DeclarationStore {
 
     private val readerContextsByDeclaration =
         mutableMapOf<DeclarationDescriptor, ReaderContextDescriptor>()
-    val readerContextsByType = mutableMapOf<TypeRef, ReaderContextDescriptor>()
+    val readerContextsByType = mutableMapOf<ClassifierRef, ReaderContextDescriptor>()
     private val externalReaderContexts =
         mutableMapOf<DeclarationDescriptor, ReaderContextDescriptor>()
 
     fun getReaderContextForCallable(callableRef: CallableRef): ReaderContextDescriptor? {
         return getReaderContextByType(
             SimpleTypeRef(
-                fqName = callableRef.packageFqName.child(
-                    contextNameOf(
-                        packageFqName = callableRef.packageFqName,
-                        fqName = callableRef.fqName,
-                        uniqueKey = callableRef.uniqueKey
+                classifier = ClassifierRef(
+                    callableRef.packageFqName.child(
+                        contextNameOf(
+                            packageFqName = callableRef.packageFqName,
+                            fqName = callableRef.fqName,
+                            uniqueKey = callableRef.uniqueKey
+                        )
                     )
                 )
             )
@@ -241,14 +243,14 @@ class DeclarationStore {
     }
 
     fun addReaderContextForType(type: TypeRef, context: ReaderContextDescriptor) {
-        readerContextsByType[type] = context
+        readerContextsByType[type.classifier] = context
     }
 
     fun getReaderContextByType(type: TypeRef): ReaderContextDescriptor? {
-        readerContextsByType[type]?.let { return it }
+        readerContextsByType[type.classifier]?.let { return it }
 
         return moduleDescriptor.findClassAcrossModuleDependencies(
-            ClassId.topLevel(type.fqName)
+            ClassId.topLevel(type.classifier.fqName)
         )?.let { classDescriptor ->
             ReaderContextDescriptor(
                 type = type,
@@ -256,7 +258,7 @@ class DeclarationStore {
                     .map {
                         ReaderContextTypeParameter(
                             it.name,
-                            it.upperBounds.map { KotlinTypeRef(it) }
+                            it.upperBounds.map { it.toTypeRef() }
                         )
                     },
                 originatingFiles = emptyList(),
@@ -269,9 +271,9 @@ class DeclarationStore {
                     .getContributedDescriptors()
                     .filterIsInstance<FunctionDescriptor>()
                     .filter { it.dispatchReceiverParameter?.type == classDescriptor.defaultType }
-                    .map { KotlinTypeRef(it.returnType!!) }
+                    .map { it.returnType!!.toTypeRef() }
             }
-        }?.also { readerContextsByType[type] = it }
+        }?.also { readerContextsByType[type.classifier] = it }
     }
 
     fun addReaderContextForDeclaration(
@@ -279,7 +281,7 @@ class DeclarationStore {
         context: ReaderContextDescriptor
     ) {
         readerContextsByDeclaration[declaration.original] = context
-        readerContextsByType[context.type] = context
+        readerContextsByType[context.type.classifier] = context
     }
 
     fun getReaderContextForDeclaration(declaration: DeclarationDescriptor): ReaderContextDescriptor? {
@@ -294,13 +296,13 @@ class DeclarationStore {
                 ?.let { it as ClassDescriptor }
                 ?.let {
                     ReaderContextDescriptor(
-                        SimpleTypeRef(it.fqNameSafe, isContext = true),
+                        SimpleTypeRef(it.toClassifierRef(), isContext = true),
                         it.declaredTypeParameters
                             .map { typeParameter ->
                                 ReaderContextTypeParameter(
                                     typeParameter.name,
                                     typeParameter.upperBounds
-                                        .map { KotlinTypeRef(it) }
+                                        .map { it.toTypeRef() }
                                 )
                             },
                         declaration.fqNameSafe,
@@ -308,15 +310,15 @@ class DeclarationStore {
                     )
                 }
                 ?.also { externalReaderContexts[declaration.original] = it }
-                ?.also { readerContextsByType[it.type] = it }
+                ?.also { readerContextsByType[it.type.classifier] = it }
     }
 
     private val givenSetsByType = mutableMapOf<TypeRef, GivenSetDescriptor>()
     fun getGivenSetForType(type: TypeRef): GivenSetDescriptor {
         return givenSetsByType.getOrPut(type) {
-            val descriptor = indexer.getMemberScope(type.fqName.parent())!!
+            val descriptor = indexer.getMemberScope(type.classifier.fqName.parent())!!
                 .getContributedClassifier(
-                    type.fqName.shortName(),
+                    type.classifier.fqName.shortName(),
                     NoLookupLocation.FROM_BACKEND
                 )!! as ClassDescriptor
             val members = descriptor.unsubstitutedMemberScope.getContributedDescriptors()

@@ -2,15 +2,36 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
+import com.ivianuu.injekt.compiler.irtransform.asNameId
+import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.compiler.unsafeLazy
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.getAbbreviation
 
+data class ClassifierRef(
+    val fqName: FqName,
+    val typeParameters: List<ClassifierRef> = emptyList(),
+    val isTypeParameter: Boolean = false
+)
+
+fun ClassifierDescriptor.toClassifierRef(): ClassifierRef {
+    return ClassifierRef(
+        fqNameSafe,
+        (this as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
+            ?.map { it.toClassifierRef() } ?: emptyList(),
+        this is TypeParameterDescriptor
+    )
+}
+
 sealed class TypeRef {
-    abstract val fqName: FqName
+    abstract val classifier: ClassifierRef
     abstract val isMarkedNullable: Boolean
     abstract val isContext: Boolean
     abstract val isChildContextFactory: Boolean
@@ -29,10 +50,15 @@ class KotlinTypeRef(
     val kotlinType: KotlinType,
     override val variance: Variance = Variance.INVARIANT
 ) : TypeRef() {
-    override val fqName: FqName
-        get() = kotlinType.prepare()
-            .getAbbreviation()?.constructor?.declarationDescriptor?.fqNameSafe
-            ?: kotlinType.prepare().constructor.declarationDescriptor!!.fqNameSafe
+    override val classifier: ClassifierRef
+
+    init {
+        val declarationDescriptor = kotlinType.prepare()
+            .getAbbreviation()?.constructor?.declarationDescriptor
+            ?: kotlinType.prepare().constructor.declarationDescriptor!!
+        classifier = declarationDescriptor.toClassifierRef()
+    }
+
     override val isComposable: Boolean
         get() = kotlinType.hasAnnotation(InjektFqNames.Composable)
     override val isReader: Boolean
@@ -52,8 +78,10 @@ class KotlinTypeRef(
         get() = kotlinType.arguments.map { KotlinTypeRef(it.type, it.projectionKind) }
 }
 
+fun KotlinType.toTypeRef() = KotlinTypeRef(this)
+
 class SimpleTypeRef(
-    override val fqName: FqName,
+    override val classifier: ClassifierRef,
     override val isMarkedNullable: Boolean = false,
     override val isContext: Boolean = false,
     override val isChildContextFactory: Boolean = false,
@@ -64,3 +92,98 @@ class SimpleTypeRef(
     override val isReader: Boolean = false,
     override val qualifier: String? = null
 ) : TypeRef()
+
+fun TypeRef.typeWith(arguments: List<TypeRef>): TypeRef {
+    check(arguments.size == classifier.typeParameters.size) {
+        "Argument size mismatch ${classifier.fqName} " +
+                "params: ${classifier.typeParameters.map { it.fqName }} " +
+                "args: ${arguments.map { it.render() }}"
+    }
+    return SimpleTypeRef(
+        classifier,
+        isMarkedNullable,
+        isContext,
+        isChildContextFactory,
+        isGivenSet,
+        arguments,
+        variance,
+        isComposable,
+        isReader,
+        qualifier
+    )
+}
+
+fun TypeRef.substitute(map: Map<ClassifierRef, TypeRef>): TypeRef {
+    println("${render()} substitute with ${map.map { it.key to it.value.render() }}")
+    map[classifier]?.let { return it }
+    return SimpleTypeRef(
+        classifier,
+        isMarkedNullable,
+        isContext,
+        isChildContextFactory,
+        isGivenSet,
+        typeArguments.map { it.substitute(map) },
+        variance,
+        isComposable,
+        isReader,
+        qualifier
+    )
+}
+
+fun TypeRef.render(): String {
+    return buildString {
+        val annotations = listOfNotNull(
+            if (isReader) "@Reader" else null,
+            if (isComposable) "@Composable" else null,
+            qualifier?.let { "@Qualifier($it)" }
+        )
+        if (annotations.isNotEmpty()) {
+            append("[")
+            annotations.forEachIndexed { index, annotation ->
+                append(annotation)
+                if (index != annotations.lastIndex) append(", ")
+            }
+            append("] ")
+        }
+        if (classifier.isTypeParameter) append(classifier.fqName.shortName())
+        else append(classifier.fqName)
+        if (typeArguments.isNotEmpty()) {
+            append("<")
+            typeArguments.forEachIndexed { index, typeArgument ->
+                if (typeArgument.variance != Variance.INVARIANT)
+                    append("${typeArgument.variance.label} ")
+                append(typeArgument.render())
+                if (index != typeArguments.lastIndex) append(", ")
+            }
+            append(">")
+        }
+        if (isMarkedNullable) append("?")
+    }
+}
+
+fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
+    fun TypeRef.renderName(includeArguments: Boolean = true): String {
+        return buildString {
+            if (isComposable) append("composable_")
+            if (isReader) append("reader_")
+            if (qualifier != null) append("${qualifier}_")
+            if (includeNullability && isMarkedNullable) append("nullable_")
+            append(classifier.fqName.pathSegments().joinToString("_") { it.asString() })
+            if (includeArguments) {
+                typeArguments.forEachIndexed { index, typeArgument ->
+                    if (index == 0) append("_")
+                    else append(typeArgument.renderName())
+                    if (index != typeArguments.lastIndex) append("_")
+                }
+            }
+        }
+    }
+
+    val fullTypeName = renderName()
+
+    // Conservatively shorten the name if the length exceeds 128
+    return (if (fullTypeName.length <= 128) fullTypeName
+    else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}"))
+        .removeIllegalChars()
+        .asNameId()
+}

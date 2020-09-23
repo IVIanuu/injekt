@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.generator.readercontextimpl
 
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.compiler.generator.ClassifierRef
 import com.ivianuu.injekt.compiler.generator.SimpleTypeRef
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.render
@@ -39,7 +40,7 @@ class GivenStatements(private val owner: ContextImpl) {
         ) rawStatement else ({
             val property = ContextProperty(
                 name = given.type.uniqueTypeName(),
-                type = SimpleTypeRef(FqName("kotlin.Any"), isMarkedNullable = true),
+                type = SimpleTypeRef(ClassifierRef(FqName("kotlin.Any")), isMarkedNullable = true),
                 initializer = { emit("this") },
                 isMutable = true
             ).also { owner.members += it }
@@ -61,33 +62,15 @@ class GivenStatements(private val owner: ContextImpl) {
             }
         })
 
+        val functionByTypeName = given.type.uniqueTypeName()
         val functionByType = ContextFunction(
-            name = given.type.uniqueTypeName(),
+            name = functionByTypeName,
             isOverride = isOverride,
             type = given.type,
             statement = finalStatement
         )
 
         owner.members += functionByType
-
-        /*if (superFunction is IrSimpleFunction && functionByType.name != superFunction.name) {
-            buildFun {
-                this.name = superFunction.name
-                returnType = given.type
-            }.apply {
-                dispatchReceiverParameter = contextImpl.thisReceiver!!.copyTo(this)
-                this.parent = contextImpl
-                contextImpl.addChild(this)
-                overriddenSymbols += superFunction.symbol
-                body = irBuilder().run {
-                    irExprBody(
-                        irCall(functionByType).apply {
-                            dispatchReceiver = irGet(dispatchReceiverParameter!!)
-                        }
-                    )
-                }
-            }
-        }*/
 
         val statement: ContextStatement = {
             emit("this@${owner.name}.${functionByType.name}()")

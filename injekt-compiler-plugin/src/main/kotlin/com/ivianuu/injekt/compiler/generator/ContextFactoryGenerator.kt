@@ -100,11 +100,11 @@ class ContextFactoryGenerator : Generator {
 
         val factoryDescriptor = ContextFactoryDescriptor(
             factoryType = SimpleTypeRef(
-                fqName = containingFile.packageFqName.child(factoryName),
+                classifier = ClassifierRef(containingFile.packageFqName.child(factoryName)),
                 isChildContextFactory = true
             ),
-            contextType = KotlinTypeRef(contextType),
-            inputTypes = inputs.map { KotlinTypeRef(it) }
+            contextType = contextType.toTypeRef(),
+            inputTypes = inputs.map { it.toTypeRef() }
         )
         given<DeclarationStore>()
             .addInternalContextFactory(factoryDescriptor)

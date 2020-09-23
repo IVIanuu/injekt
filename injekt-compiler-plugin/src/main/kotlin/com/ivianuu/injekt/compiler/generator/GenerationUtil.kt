@@ -1,21 +1,14 @@
 package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Reader
-import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.checkers.getFunctionType
 import com.ivianuu.injekt.compiler.checkers.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
 import com.ivianuu.injekt.compiler.checkers.isMarkedAsReader
-import com.ivianuu.injekt.compiler.irtransform.asNameId
-import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
-import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.DeserializedDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
@@ -25,17 +18,14 @@ import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.js.translate.utils.refineType
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.IntersectionTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.upperIfFlexible
 import kotlin.math.absoluteValue
 
@@ -97,64 +87,7 @@ fun uniqueFunctionKeyOf(
     if (visibility == Visibilities.LOCAL && fqName.shortName().isSpecial) startOffset ?: "" else ""
 }__function${parameterTypes.hashCode().absoluteValue}"
 
-fun KotlinType.render() = KotlinTypeRef(this).render()
-
-fun TypeRef.render(): String {
-    return buildString {
-        val annotations = listOfNotNull(
-            if (isReader) "@Reader" else null,
-            if (isComposable) "@Composable" else null,
-            qualifier?.let { "@Qualifier($it)" }
-        )
-        if (annotations.isNotEmpty()) {
-            append("[")
-            annotations.forEachIndexed { index, annotation ->
-                append(annotation)
-                if (index != annotations.lastIndex) append(", ")
-            }
-            append("] ")
-        }
-        append(fqName)
-        if (typeArguments.isNotEmpty()) {
-            append("<")
-            typeArguments.forEachIndexed { index, typeArgument ->
-                if (typeArgument.variance != Variance.INVARIANT)
-                    append("${typeArgument.variance.label} ")
-                append(typeArgument.render())
-                if (index != typeArguments.lastIndex) append(", ")
-            }
-            append(">")
-        }
-        if (isMarkedNullable) append("?")
-    }
-}
-
-fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
-    fun TypeRef.renderName(includeArguments: Boolean = true): String {
-        return buildString {
-            if (isComposable) append("composable_")
-            if (isReader) append("reader_")
-            if (qualifier != null) append("${qualifier}_")
-            if (includeNullability && isMarkedNullable) append("nullable_")
-            append(fqName.pathSegments().joinToString("_") { it.asString() })
-            if (includeArguments) {
-                typeArguments.forEachIndexed { index, typeArgument ->
-                    if (index == 0) append("_")
-                    else append(typeArgument.renderName())
-                    if (index != typeArguments.lastIndex) append("_")
-                }
-            }
-        }
-    }
-
-    val fullTypeName = renderName()
-
-    // Conservatively shorten the name if the length exceeds 128
-    return (if (fullTypeName.length <= 128) fullTypeName
-    else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}"))
-        .removeIllegalChars()
-        .asNameId()
-}
+fun KotlinType.render() = toTypeRef().render()
 
 fun DeclarationDescriptor.hasAnnotationWithPropertyAndClass(
     fqName: FqName
@@ -170,62 +103,6 @@ fun DeclarationDescriptor.hasAnnotatedAnnotationsWithPropertyAndClass(
             module
         )) ||
         (this is ConstructorDescriptor && constructedClass.hasAnnotatedAnnotations(fqName, module))
-
-fun FunctionDescriptor.toCallableRef() = CallableRef(
-    name = when (this) {
-        is ConstructorDescriptor -> constructedClass.name
-        is PropertyAccessorDescriptor -> correspondingProperty.name
-        else -> name
-    },
-    packageFqName = findPackage().fqName,
-    fqName = when (this) {
-        is ConstructorDescriptor -> constructedClass.fqNameSafe
-        is PropertyAccessorDescriptor -> correspondingProperty.fqNameSafe
-        else -> fqNameSafe
-    },
-    type = if (extensionReceiverParameter != null || valueParameters.isNotEmpty()) {
-        KotlinTypeRef(getFunctionType())
-    } else {
-        KotlinTypeRef(returnType!!)
-    },
-    receiver = dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
-        ?.takeIf { it is ClassDescriptor && it.kind == ClassKind.OBJECT }
-        ?.let { KotlinTypeRef(it.defaultType) },
-    isExternal = when (this) {
-        is ConstructorDescriptor -> constructedClass is DeserializedDescriptor
-        is PropertyAccessorDescriptor -> correspondingProperty is DeserializedDescriptor
-        else -> this is DeserializedDescriptor
-    },
-    targetContext = annotations.findAnnotation(InjektFqNames.Given)
-        ?.allValueArguments
-        ?.get("scopeContext".asNameId())
-        ?.let { it as KClassValue }
-        ?.getArgumentType(module)
-        ?.let { KotlinTypeRef(it) },
-    givenKind = when {
-        hasAnnotationWithPropertyAndClass(InjektFqNames.Given) -> CallableRef.GivenKind.GIVEN
-        hasAnnotationWithPropertyAndClass(InjektFqNames.GivenMapEntries) -> CallableRef.GivenKind.GIVEN_MAP_ENTRIES
-        hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSetElements) -> CallableRef.GivenKind.GIVEN_SET_ELEMENTS
-        hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSet) -> CallableRef.GivenKind.GIVEN_SET
-        else -> error("Unexpected callable $this")
-    },
-    parameters = listOfNotNull(
-        extensionReceiverParameter?.type?.let {
-            ParameterRef(
-                KotlinTypeRef(it),
-                true
-            )
-        }
-    ) + valueParameters.map {
-        ParameterRef(KotlinTypeRef(it.type))
-    },
-    isPropertyAccessor = this is PropertyAccessorDescriptor,
-    uniqueKey = when (this) {
-        is ConstructorDescriptor -> constructedClass.uniqueKey()
-        is PropertyAccessorDescriptor -> correspondingProperty.uniqueKey()
-        else -> uniqueKey()
-    }
-)
 
 fun ClassDescriptor.getReaderConstructor(): ConstructorDescriptor? {
     constructors

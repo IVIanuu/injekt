@@ -114,15 +114,21 @@ class EffectGenerator : Generator {
                     readerContextGenerator.addPromisedReaderContextDescriptor(
                         PromisedReaderContextDescriptor(
                             type = SimpleTypeRef(
-                                fqName = packageName.child(
-                                    contextNameOf(
-                                        packageFqName = packageName,
-                                        fqName = functionFqName,
-                                        uniqueKey = uniqueFunctionKeyOf(
+                                classifier = ClassifierRef(
+                                    packageName.child(
+                                        contextNameOf(
+                                            packageFqName = packageName,
                                             fqName = functionFqName,
-                                            visibility = Visibilities.PUBLIC,
-                                            startOffset = null,
-                                            parameterTypes = listOf(packageName.child(effectsName))
+                                            uniqueKey = uniqueFunctionKeyOf(
+                                                fqName = functionFqName,
+                                                visibility = Visibilities.PUBLIC,
+                                                startOffset = null,
+                                                parameterTypes = listOf(
+                                                    packageName.child(
+                                                        effectsName
+                                                    )
+                                                )
+                                            )
                                         )
                                     )
                                 ),
@@ -178,17 +184,19 @@ class EffectGenerator : Generator {
                         readerContextGenerator.addPromisedReaderContextDescriptor(
                             PromisedReaderContextDescriptor(
                                 type = SimpleTypeRef(
-                                    fqName = packageName.child(
-                                        contextNameOf(
-                                            packageFqName = packageName,
-                                            fqName = effectFunctionFqName,
-                                            uniqueKey = uniqueFunctionKeyOf(
+                                    classifier = ClassifierRef(
+                                        packageName.child(
+                                            contextNameOf(
+                                                packageFqName = packageName,
                                                 fqName = effectFunctionFqName,
-                                                visibility = Visibilities.PUBLIC,
-                                                startOffset = null,
-                                                parameterTypes = listOf(
-                                                    packageName.child(
-                                                        effectsName
+                                                uniqueKey = uniqueFunctionKeyOf(
+                                                    fqName = effectFunctionFqName,
+                                                    visibility = Visibilities.PUBLIC,
+                                                    startOffset = null,
+                                                    parameterTypes = listOf(
+                                                        packageName.child(
+                                                            effectsName
+                                                        )
                                                     )
                                                 )
                                             )
@@ -197,7 +205,7 @@ class EffectGenerator : Generator {
                                     isContext = true
                                 ),
                                 callee = effectFunction,
-                                calleeTypeArguments = listOf(KotlinTypeRef(givenType)),
+                                calleeTypeArguments = listOf(givenType.toTypeRef()),
                                 origin = effectFunctionFqName,
                                 originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
                             )

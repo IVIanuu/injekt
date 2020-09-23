@@ -23,12 +23,14 @@ import com.ivianuu.injekt.compiler.generator.GivenSetDescriptor
 import com.ivianuu.injekt.compiler.generator.ReaderContextDescriptor
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.render
+import com.ivianuu.injekt.compiler.generator.substitute
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 
 @Given
 class GivensGraph(private val owner: ContextImpl) {
@@ -303,24 +305,44 @@ class GivensGraph(private val owner: ContextImpl) {
                 lazyContexts = { contexts },
                 lazyCalleeContextStatement = {
                     if (type.typeArguments.isNotEmpty()) {
+                        class GivenTypeWithStatement(
+                            val type: TypeRef,
+                            val name: Name,
+                            val statement: ContextStatement
+                        )
+
                         val givenTypesWithStatements = declarationStore
                             .getReaderContextByType(type)!!
                             .givenTypes
-                            .map { givenType ->
-                                givenType to statements.getGivenStatement(
-                                    getGiven(givenType),
+                            .map {
+                                it to it.substitute(
+                                    type.classifier
+                                        .typeParameters
+                                        .zip(type.typeArguments)
+                                        .toMap()
+                                )
+                            }
+                            .map { (originalType, substitutedType) ->
+                                val statement = statements.getGivenStatement(
+                                    getGiven(substitutedType),
                                     false
+                                )
+                                GivenTypeWithStatement(
+                                    substitutedType,
+                                    if (originalType == substitutedType) substitutedType.uniqueTypeName()
+                                    else originalType.uniqueTypeName(),
+                                    statement
                                 )
                             }
 
                         return@CalleeContextGivenNode {
                             emit("object : ${type.render()} ")
                             braced {
-                                givenTypesWithStatements.forEach { (givenType, statement) ->
-                                    emit("override fun ${givenType.uniqueTypeName()}(): ${givenType.render()} ")
+                                givenTypesWithStatements.forEach { typeWithStatement ->
+                                    emit("override fun ${typeWithStatement.name}(): ${typeWithStatement.type.render()} ")
                                     braced {
                                         emit("return ")
-                                        statement()
+                                        typeWithStatement.statement(this)
                                     }
                                 }
                             }
@@ -328,9 +350,8 @@ class GivensGraph(private val owner: ContextImpl) {
                     } else {
                         owner.superTypes += type
                         declarationStore.getReaderContextByType(type)!!
-                            .givenTypes.forEach {
-                                statements.getGivenStatement(getGiven(it), true)
-                            }
+                            .givenTypes
+                            .forEach { statements.getGivenStatement(getGiven(it), true) }
                         return@CalleeContextGivenNode {
                             emit("this@${owner.name}")
                         }
