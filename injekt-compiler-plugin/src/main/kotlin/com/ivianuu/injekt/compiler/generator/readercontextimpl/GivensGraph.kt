@@ -17,21 +17,21 @@
 package com.ivianuu.injekt.compiler.generator.readercontextimpl
 
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.compiler.generator.ContextFactoryGenerator
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.ReaderContextDescriptor
 import com.ivianuu.injekt.compiler.generator.ReaderContextGenerator
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
+import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.pop
 import org.jetbrains.kotlin.backend.common.push
 import org.jetbrains.kotlin.name.FqName
 
 @Given
-class GivensGraph(
-    private val owner: ContextImpl
-) {
+class GivensGraph(private val owner: ContextImpl) {
 
     private val parent = owner.factoryImpl.parent?.graph
 
@@ -54,7 +54,7 @@ class GivensGraph(
 
     sealed class ChainElement {
         class Given(val type: TypeRef) : ChainElement() {
-            override fun toString() = type.toString()
+            override fun toString() = type.render()
         }
 
         class Call(val fqName: FqName?) : ChainElement() {
@@ -151,9 +151,7 @@ class GivensGraph(
     }
 
     fun checkEntryPoints(entryPoints: List<ReaderContextDescriptor>) {
-        println("check entry points $entryPoints")
         entryPoints.forEach { check(it) }
-        println("entry points checked")
     }
 
     private fun check(type: TypeRef) {
@@ -165,7 +163,6 @@ class GivensGraph(
 
     private fun check(given: GivenNode) {
         if (given in checkedGivens) return
-        println("check $given")
         checkedGivens += given
         given
             .contexts
@@ -175,8 +172,6 @@ class GivensGraph(
     private fun check(context: ReaderContextDescriptor) {
         if (context.type in checkedTypes) return
         checkedTypes += context.type
-
-        println("check context ${context.type.render()}")
 
         chain.push(ChainElement.Call(context.origin))
         context.givenTypes.forEach { givenType ->
@@ -291,7 +286,7 @@ class GivensGraph(
         given?.check()?.let {
             resolvedGivens[type] = it
             check(it)
-            // todo (it as? ChildContextGivenNode)?.childContextFactoryImpl
+            (it as? ChildContextGivenNode)?.childFactoryImpl?.initialize()
             (it as? CalleeContextGivenNode)?.calleeContextStatement
             return it
         }
@@ -375,38 +370,31 @@ class GivensGraph(
             )
         }
 
-        /*if (type.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.ChildContextFactory)) {
-            val existingFactories = mutableSetOf<IrClass>()
-            var currentContext: IrClass? = contextImpl
+        if (type.isChildContextFactory) {
+            val existingFactories = mutableSetOf<TypeRef>()
+            var currentContext: ContextImpl? = owner
             while (currentContext != null) {
-                existingFactories += (currentContext.parent as IrClass)
-                    .superTypes.first().classOrNull!!.owner
-                currentContext = currentContext.fields
-                    .singleOrNull { it.name.asString() == "parent" }
-                    ?.type
-                    ?.classOrNull
-                    ?.owner
+                existingFactories += currentContext.contextId
+                currentContext = currentContext.factoryImpl.parent
             }
-            if (type.type.classOrNull!!.owner !in existingFactories) {
-                val factory = type.type.classOrNull!!.owner
-                val generator = ReaderContextFactoryImplGenerator(
-                    name = expressions.uniqueChildNameProvider("F").asNameId(),
-                    factoryInterface = factory,
-                    factoryType = type.type,
-                    irParent = contextImpl,
-                    parentContext = contextImpl,
-                    parentGraph = this@GivensGraph,
-                    parentExpressions = expressions
+            if (type !in existingFactories) {
+                val factoryDescriptor = given<ContextFactoryGenerator>()
+                    .getContextFactoryDescriptorForType(type)
+                val factoryImpl = ContextFactoryImpl(
+                    name = "F${owner.factoryImpl.getParentCount() + 1}".asNameId(),
+                    factoryType = factoryDescriptor.factoryType,
+                    inputTypes = factoryDescriptor.inputTypes,
+                    contextType = factoryDescriptor.contextType,
+                    parent = owner
                 )
-
-                this += GivenChildContext(
+                this += ChildContextGivenNode(
                     type = type,
-                    owner = contextImpl,
+                    owner = owner,
                     origin = null,
-                    generator = generator
+                    childFactoryImpl = factoryImpl
                 )
             }
-        }*/
+        }
 
         this += declarationStore.givens(type)
             .map { function ->

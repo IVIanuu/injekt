@@ -16,7 +16,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import java.io.File
 
 @Given
-class RunReaderCallIndexingGenerator : KtGenerator {
+class RunReaderCallIndexingGenerator : Generator {
 
     private val indexer = given<Indexer>()
 
@@ -57,7 +57,7 @@ class RunReaderCallIndexingGenerator : KtGenerator {
 
         given<DeclarationStore>()
             .addInternalRunReaderContext(
-                FqNameTypeRef(contextType.constructor.declarationDescriptor!!.fqNameSafe),
+                SimpleTypeRef(contextType.constructor.declarationDescriptor!!.fqNameSafe),
                 blockContextType
             )
 

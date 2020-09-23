@@ -17,7 +17,7 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 
 @Given
-class GivenIndexingGenerator : KtGenerator {
+class GivenIndexingGenerator : Generator {
 
     private val indexer = given<Indexer>()
 

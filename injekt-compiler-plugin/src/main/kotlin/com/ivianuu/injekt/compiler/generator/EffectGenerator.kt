@@ -36,7 +36,7 @@ import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import java.io.File
 
 @Given
-class EffectGenerator : KtGenerator {
+class EffectGenerator : Generator {
 
     private val fileManager = given<KtFileManager>()
     private val indexer = given<Indexer>()
@@ -113,7 +113,7 @@ class EffectGenerator : KtGenerator {
                     val functionFqName = packageName.child(effectsName).child("function".asNameId())
                     readerContextGenerator.addPromisedReaderContextDescriptor(
                         PromisedReaderContextDescriptor(
-                            type = FqNameTypeRef(
+                            type = SimpleTypeRef(
                                 fqName = packageName.child(
                                     contextNameOf(
                                         packageFqName = packageName,
@@ -177,7 +177,7 @@ class EffectGenerator : KtGenerator {
                         val effectFunctionFqName = packageName.child(effectsName).child(name)
                         readerContextGenerator.addPromisedReaderContextDescriptor(
                             PromisedReaderContextDescriptor(
-                                type = FqNameTypeRef(
+                                type = SimpleTypeRef(
                                     fqName = packageName.child(
                                         contextNameOf(
                                             packageFqName = packageName,

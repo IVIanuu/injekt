@@ -18,29 +18,20 @@ class ContextFactoryImpl(
     val inputTypes: List<TypeRef>,
     val contextType: TypeRef,
     val parent: ContextImpl?
-) {
+) : ContextMember {
     val context = ContextImpl(
         this,
         contextType,
-        getNameForFactory(),
+        "C${getParentCount()}".asNameId(),
         inputTypes
     )
 
     fun initialize() {
+        parent?.members?.add(this)
         context.initialize()
     }
 
-    private fun getNameForFactory(): Name {
-        var parentCount = 0
-        var parent: ContextImpl? = parent
-        while (parent != null) {
-            parentCount++
-            parent = parent.factoryImpl.parent
-        }
-        return "C$parentCount".asNameId()
-    }
-
-    fun CodeBuilder.emit() {
+    override fun CodeBuilder.emit() {
         if (parent == null) {
             emit("object ")
         } else {
@@ -57,14 +48,14 @@ class ContextFactoryImpl(
             emit("): ${contextType.render()} ")
             braced {
                 emit("return ${context.name}")
-                if (inputTypes.isNotEmpty()) {
+                //if (inputTypes.isNotEmpty()) {
                     emit("(")
                     inputTypes.forEachIndexed { index, _ ->
                         emit("p$index")
                         if (index != inputTypes.lastIndex) emit(", ")
                     }
                     emit(")")
-                }
+                //}
                 emitLine()
             }
             with(context) { emit() }
@@ -108,13 +99,11 @@ class ContextImpl(
             .filterNot { it.type in superTypes }
             .forEach { context ->
                 superTypes += context.type
-                println("found c ${context.type.render()}")
                 context.givenTypes.forEach { givenType ->
                     val existingDeclaration = members.singleOrNull {
                         it is ContextFunction && it.name == givenType.uniqueTypeName()
                     }
                     if (existingDeclaration != null) return@forEach
-                    println("found given type ${givenType.uniqueTypeName()}")
                     statements.getGivenStatement(graph.getGiven(givenType), true)
                 }
             }
@@ -124,9 +113,7 @@ class ContextImpl(
         emitLine("@com.ivianuu.injekt.internal.ContextImplMarker")
         emit("private ")
         if (factoryImpl.parent != null) emit("inner ")
-        if (factoryImpl.parent == null && inputTypes.isEmpty()) emit("object ")
-        else emit("class ")
-        emit(name)
+        emit("class $name")
         if (inputTypes.isNotEmpty()) {
             emit("(")
             inputTypes.forEachIndexed { index, inputType ->
@@ -146,10 +133,26 @@ class ContextImpl(
         }
         emitSpace()
         braced {
-            members.forEach {
-                with(it) { emit() }
-                emitLine()
+            val renderedMembers = mutableSetOf<ContextMember>()
+            var currentMembers: List<ContextMember> = members.toList()
+            while (currentMembers.isNotEmpty()) {
+                renderedMembers += currentMembers
+                currentMembers.forEach {
+                    with(it) { emit() }
+                    emitLine()
+                }
+                currentMembers = members.filterNot { it in renderedMembers }
             }
         }
     }
+}
+
+fun ContextFactoryImpl.getParentCount(): Int {
+    var parentCount = 0
+    var parent: ContextImpl? = parent
+    while (parent != null) {
+        parentCount++
+        parent = parent.factoryImpl.parent
+    }
+    return parentCount
 }

@@ -39,7 +39,7 @@ import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import java.io.File
 
 @Given(GenerationContext::class)
-class ReaderContextGenerator : KtGenerator {
+class ReaderContextGenerator : Generator {
 
     private val fileManager = given<KtFileManager>()
     private val promisedReaderContextDescriptor = mutableSetOf<PromisedReaderContextDescriptor>()
@@ -49,7 +49,7 @@ class ReaderContextGenerator : KtGenerator {
 
     fun getContextForFunction(callableRef: CallableRef): ReaderContextDescriptor? {
         return getContextByType(
-            FqNameTypeRef(
+            SimpleTypeRef(
                 fqName = callableRef.packageFqName.child(
                     contextNameOf(
                         packageFqName = callableRef.packageFqName,
@@ -110,7 +110,7 @@ class ReaderContextGenerator : KtGenerator {
             ?.let { it as ClassDescriptor }
             ?.let {
                 ReaderContextDescriptor(
-                    FqNameTypeRef(it.fqNameSafe, isContext = true),
+                    SimpleTypeRef(it.fqNameSafe, isContext = true),
                     it.declaredTypeParameters
                         .map { typeParameter ->
                             ReaderContextTypeParameter(
@@ -145,7 +145,7 @@ class ReaderContextGenerator : KtGenerator {
                 ).apply {
                     contextsByType[promised.type] = this
                     givenTypes +=
-                        FqNameTypeRef(
+                        SimpleTypeRef(
                             fqName = getContextForDeclaration(promised.callee)!!.type.fqName,
                             isMarkedNullable = false,
                             isContext = true,
@@ -290,7 +290,7 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
             .addContextForDescriptor(
                 declaration,
                 ReaderContextDescriptor(
-                    type = FqNameTypeRef(
+                    type = SimpleTypeRef(
                         fqName = declaration.findPackage().fqName.child(declaration.getContextName()),
                         isContext = true
                     ),
@@ -413,12 +413,12 @@ class ReaderContextGivensCollector(
                 val factoryFqName = given<InjektAttributes>()[InjektAttributes.ContextFactoryKey(
                     expression.containingKtFile.virtualFilePath, expression.startOffset
                 )]!!
-                FqNameTypeRef(factoryFqName)
+                SimpleTypeRef(factoryFqName, isChildContextFactory = true)
             }
             else -> {
                 val calleeContext = contextProvider(resulting)
                     ?: error("Null for $resulting")
-                FqNameTypeRef(
+                SimpleTypeRef(
                     fqName = calleeContext.type.fqName,
                     isMarkedNullable = false,
                     isContext = true,

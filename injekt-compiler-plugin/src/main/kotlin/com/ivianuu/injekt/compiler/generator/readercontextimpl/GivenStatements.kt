@@ -1,7 +1,8 @@
 package com.ivianuu.injekt.compiler.generator.readercontextimpl
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.compiler.generator.FqNameTypeRef
+import com.ivianuu.injekt.compiler.generator.SimpleTypeRef
+import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.name.FqName
@@ -10,8 +11,7 @@ import org.jetbrains.kotlin.name.FqName
 class GivenStatements(private val owner: ContextImpl) {
 
     private val parent = owner.factoryImpl.parent?.statements
-    private val statementsByType =
-        mutableMapOf<com.ivianuu.injekt.compiler.generator.TypeRef, ContextStatement>()
+    private val statementsByType = mutableMapOf<TypeRef, ContextStatement>()
 
     fun getGivenStatement(
         given: GivenNode,
@@ -24,14 +24,13 @@ class GivenStatements(private val owner: ContextImpl) {
         } else {
             when (given) {
                 is CalleeContextGivenNode -> calleeContextExpression(given)
-                //is ChildContextGivenNode -> childContextExpression(given)
+                is ChildContextGivenNode -> childContextExpression(given)
                 is CallableGivenNode -> functionExpression(given)
                 is InputGivenNode -> inputExpression(given)
-                // is GivenMap -> mapExpression(given)
+                is MapGivenNode -> TODO() //childContextExpression(given)
                 is NullGivenNode -> nullExpression()
                 is SelfGivenNode -> selfContextExpression(given)
-                //is GivenSet -> setExpression(given)
-                else -> TODO()
+                is SetGivenNode -> TODO() //childContextExpression(given)
             }
         }
 
@@ -40,23 +39,26 @@ class GivenStatements(private val owner: ContextImpl) {
         ) rawStatement else ({
             val property = ContextProperty(
                 name = given.type.uniqueTypeName(),
-                type = FqNameTypeRef(FqName("kotlin.Any"), isMarkedNullable = true),
+                type = SimpleTypeRef(FqName("kotlin.Any"), isMarkedNullable = true),
                 initializer = { emit("this") },
                 owner = owner,
                 isMutable = true
             ).also { owner.members += it }
 
-            emitLine("var value = this@${owner.name}.${property.name}")
-            emitLine("if (value !== this@${owner.name}) return value as ${given.type}")
-            emit("synchronized(this) ")
+            emit("run ")
             braced {
-                emitLine("value = this@${owner.name}.${property.name}")
-                emitLine("if (value !== this@${owner.name}) return value as ${given.type}")
-                emit("value = ")
-                rawStatement()
-                emitLine()
-                emitLine("this@${owner.name}.${property.name} = value")
-                emitLine("return value as ${given.type}")
+                emitLine("var value = this@${owner.name}.${property.name}")
+                emitLine("if (value !== this@${owner.name}) return@run value as ${given.type.render()}")
+                emit("synchronized(this) ")
+                braced {
+                    emitLine("value = this@${owner.name}.${property.name}")
+                    emitLine("if (value !== this@${owner.name}) return@run value as ${given.type.render()}")
+                    emit("value = ")
+                    rawStatement()
+                    emitLine()
+                    emitLine("this@${owner.name}.${property.name} = value")
+                    emitLine("return@run value as ${given.type.render()}")
+                }
             }
         })
 
@@ -98,26 +100,15 @@ class GivenStatements(private val owner: ContextImpl) {
         return statement
     }
 
-    /*
-    private fun childContextExpression(given: GivenChildContext): ContextStatement {
-        return { c ->
-            irCall(given.factory.constructors.single()).apply {
-                putValueArgument(0, c[contextImpl])
-            }
-        }
-    }*/
+    private fun childContextExpression(given: ChildContextGivenNode): ContextStatement =
+        { emit("${given.childFactoryImpl.name}()") }
 
-    private fun calleeContextExpression(given: CalleeContextGivenNode): ContextStatement {
-        return given.calleeContextStatement
-    }
+    private fun calleeContextExpression(given: CalleeContextGivenNode): ContextStatement =
+        given.calleeContextStatement
 
     private fun inputExpression(
         given: InputGivenNode
-    ): ContextStatement {
-        return {
-            emit("this@${given.owner.name}.${given.name}")
-        }
-    }
+    ): ContextStatement = { emit("this@${given.owner.name}.${given.name}") }
 
     /**
     private fun mapExpression(given: GivenMap): ContextStatement {

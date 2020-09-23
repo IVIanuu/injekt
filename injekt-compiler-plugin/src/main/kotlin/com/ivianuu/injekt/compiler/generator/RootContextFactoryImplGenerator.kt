@@ -20,7 +20,7 @@ import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 @Given(GenerationContext::class)
-class RootContextFactoryImplGenerator : KtGenerator {
+class RootContextFactoryImplGenerator : Generator {
 
     private val fileManager = given<KtFileManager>()
 
@@ -44,8 +44,6 @@ class RootContextFactoryImplGenerator : KtGenerator {
         }
 
         if (initTrigger == null) return
-
-        println("generate factory files")
 
         given<ModuleDescriptor>().getPackage(InjektFqNames.IndexPackage)
             .memberScope

@@ -45,11 +45,18 @@ class KtFileManager {
         code: String,
         originatingFiles: List<File>
     ): File {
-        println("generated file $packageFqName.$fileName\n$code")
-        return given<SrcDir>()
+        val newFile = given<SrcDir>()
             .resolve(packageFqName.asString().replace(".", "/"))
             .also { it.mkdirs() }
             .resolve(fileName)
+
+        check(newFile !in newFiles) {
+            "Already generated file $newFile"
+        }
+
+        println("generated file $packageFqName.$fileName\n$code")
+
+        return newFile
             .also { it.createNewFile() }
             .also { it.writeText(code) }
             .also { result ->

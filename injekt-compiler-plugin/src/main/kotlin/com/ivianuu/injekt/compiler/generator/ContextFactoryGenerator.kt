@@ -6,8 +6,11 @@ import com.ivianuu.injekt.compiler.InjektAttributes.ContextFactoryKey
 import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.given
+import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
@@ -17,17 +20,37 @@ import org.jetbrains.kotlin.resolve.calls.model.VarargValueArgument
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import java.io.File
 
-@Given
-class ContextFactoryGenerator : KtGenerator {
+@Given(GenerationContext::class)
+class ContextFactoryGenerator : Generator {
 
     private val fileManager = given<KtFileManager>()
+
+    private val internalFactories = mutableMapOf<TypeRef, ContextFactoryDescriptor>()
+    private val externalFactories = mutableMapOf<TypeRef, ContextFactoryDescriptor>()
+
+    fun getContextFactoryDescriptorForType(type: TypeRef): ContextFactoryDescriptor {
+        return internalFactories[type] ?: externalFactories[type] ?: kotlin.run {
+            val descriptor = moduleDescriptor.findClassAcrossModuleDependencies(
+                ClassId.topLevel(type.fqName)
+            )!!
+            val createFunction = descriptor.unsubstitutedMemberScope
+                .getContributedFunctions("create".asNameId(), NoLookupLocation.FROM_BACKEND)
+                .single()
+            ContextFactoryDescriptor(
+                factoryType = type,
+                contextType = KotlinTypeRef(createFunction.returnType!!),
+                inputTypes = createFunction.valueParameters
+                    .map { KotlinTypeRef(it.type) }
+            )
+        }
+    }
 
     override fun generate(files: List<KtFile>) {
         files.forEach { file ->
             file.accept(
                 object : KtTreeVisitorVoid() {
-                    override fun visitReferenceExpression(expression: KtReferenceExpression) {
-                        super.visitReferenceExpression(expression)
+                    override fun visitCallExpression(expression: KtCallExpression) {
+                        super.visitCallExpression(expression)
                         val resolvedCall = expression.getResolvedCall(given()) ?: return
                         if (resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.rootContext" ||
                             resolvedCall.resultingDescriptor.fqNameSafe.asString() == "com.ivianuu.injekt.childContext"
@@ -98,6 +121,15 @@ class ContextFactoryGenerator : KtGenerator {
             originatingFiles = listOf(File(callElement.containingKtFile.virtualFilePath))
         )
 
+        val factoryDescriptor = ContextFactoryDescriptor(
+            factoryType = SimpleTypeRef(
+                fqName = containingFile.packageFqName.child(factoryName),
+                isChildContextFactory = true
+            ),
+            contextType = KotlinTypeRef(contextType),
+            inputTypes = inputs.map { KotlinTypeRef(it) }
+        )
+        internalFactories[factoryDescriptor.factoryType] = factoryDescriptor
         if (!isChild) {
             given<Indexer>().index(
                 fqName = containingFile.packageFqName.child(factoryName),
@@ -108,15 +140,7 @@ class ContextFactoryGenerator : KtGenerator {
                 .addRootFactory(
                     ContextFactoryImplDescriptor(
                         factoryImplFqName = implFqName!!,
-                        factory = ContextFactoryDescriptor(
-                            factoryType = FqNameTypeRef(
-                                containingFile.packageFqName.child(
-                                    factoryName
-                                )
-                            ),
-                            contextType = KotlinTypeRef(contextType),
-                            inputTypes = inputs.map { KotlinTypeRef(it) }
-                        )
+                        factory = factoryDescriptor
                     )
                 )
         }

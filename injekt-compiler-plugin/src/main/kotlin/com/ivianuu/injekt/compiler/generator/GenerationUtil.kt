@@ -128,7 +128,7 @@ fun KotlinType.render() = buildString {
 
 fun TypeRef.render(): String = when (this) {
     is KotlinTypeRef -> kotlinType.render()
-    is FqNameTypeRef -> buildString {
+    is SimpleTypeRef -> buildString {
         append(fqName)
         if (typeArguments.isNotEmpty()) {
             append("<")
@@ -153,7 +153,7 @@ fun TypeRef.uniqueTypeName(): Name {
                 is KotlinTypeRef -> kotlinType.prepare()
                     .getAbbreviation()?.constructor?.declarationDescriptor?.fqNameSafe
                     ?: kotlinType.prepare().constructor.declarationDescriptor!!.fqNameSafe
-                is FqNameTypeRef -> fqName
+                is SimpleTypeRef -> fqName
             }
 
             append(fqName.pathSegments().joinToString("_") { it.asString() })
@@ -168,7 +168,7 @@ fun TypeRef.uniqueTypeName(): Name {
                             if (index != kotlinType.arguments.lastIndex) append("_")
                         }
                     }
-                    is FqNameTypeRef -> {
+                    is SimpleTypeRef -> {
                         typeArguments.forEachIndexed { index, typeArgument ->
                             if (index == 0) append("_")
                             append(typeArgument.uniqueTypeName())

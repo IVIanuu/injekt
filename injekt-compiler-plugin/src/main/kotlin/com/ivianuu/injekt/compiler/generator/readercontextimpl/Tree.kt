@@ -27,8 +27,8 @@ import org.jetbrains.kotlin.name.Name
 
 typealias ContextStatement = CodeBuilder.() -> Unit
 
-sealed class ContextMember {
-    abstract fun CodeBuilder.emit()
+interface ContextMember {
+    fun CodeBuilder.emit()
 }
 
 class ContextFunction(
@@ -37,7 +37,7 @@ class ContextFunction(
     val type: TypeRef,
     val statement: ContextStatement,
     val owner: ContextImpl
-) : ContextMember() {
+) : ContextMember {
     override fun CodeBuilder.emit() {
         if (isOverride) emit("override ")
         emit("fun $name(): ${type.render()} ")
@@ -55,7 +55,7 @@ class ContextProperty(
     val initializer: ContextStatement,
     val owner: ContextImpl,
     val isMutable: Boolean
-) : ContextMember() {
+) : ContextMember {
     override fun CodeBuilder.emit() {
 
     }
@@ -87,7 +87,7 @@ class ChildContextGivenNode(
     override val type: TypeRef,
     override val owner: ContextImpl,
     override val origin: FqName?,
-    val childContextFactoryImpl: ContextFactoryImpl
+    val childFactoryImpl: ContextFactoryImpl
 ) : GivenNode() {
     override val contexts: List<ReaderContextDescriptor>
         get() = emptyList()
@@ -96,14 +96,14 @@ class ChildContextGivenNode(
     override val givenSetAccessStatement: ContextStatement?
         get() = null
     override val targetContext: TypeRef?
-        get() = null
+        get() = null// todo owner.contextId
 }
 
 class CalleeContextGivenNode(
     override val type: TypeRef,
     override val owner: ContextImpl,
     override val origin: FqName?,
-    private val lazyCalleeContextStatement: () -> ContextStatement,
+    lazyCalleeContextStatement: () -> ContextStatement,
     private val lazyContexts: () -> List<ReaderContextDescriptor>
 ) : GivenNode() {
     val calleeContextStatement by unsafeLazy(lazyCalleeContextStatement)
@@ -171,7 +171,7 @@ class SetGivenNode(
     override val owner: ContextImpl,
     override val contexts: List<ReaderContextDescriptor>,
     override val givenSetAccessStatement: ContextStatement?,
-    val entries: List<FqName>
+    val elements: List<FqName>
 ) : GivenNode() {
     override val external: Boolean
         get() = false
