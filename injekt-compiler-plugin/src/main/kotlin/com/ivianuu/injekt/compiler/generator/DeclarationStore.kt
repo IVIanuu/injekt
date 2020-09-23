@@ -238,7 +238,8 @@ class DeclarationStore {
                             uniqueKey = callableRef.uniqueKey
                         )
                     )
-                )
+                ),
+                isContext = true
             )
         )
     }
