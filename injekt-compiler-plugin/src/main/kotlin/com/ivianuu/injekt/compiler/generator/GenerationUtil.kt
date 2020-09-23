@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.checkers.getFunctionType
 import com.ivianuu.injekt.compiler.checkers.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
 import com.ivianuu.injekt.compiler.checkers.isMarkedAsReader
@@ -128,13 +129,13 @@ fun TypeRef.render(): String {
     }
 }
 
-fun TypeRef.uniqueTypeName(): Name {
+fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
     fun TypeRef.renderName(includeArguments: Boolean = true): String {
         return buildString {
             if (isComposable) append("composable_")
             if (isReader) append("reader_")
             if (qualifier != null) append("${qualifier}_")
-            if (isMarkedNullable) append("nullable_")
+            if (includeNullability && isMarkedNullable) append("nullable_")
             append(fqName.pathSegments().joinToString("_") { it.asString() })
             if (includeArguments) {
                 typeArguments.forEachIndexed { index, typeArgument ->
@@ -182,7 +183,11 @@ fun FunctionDescriptor.toCallableRef() = CallableRef(
         is PropertyAccessorDescriptor -> correspondingProperty.fqNameSafe
         else -> fqNameSafe
     },
-    type = KotlinTypeRef(returnType!!),
+    type = if (extensionReceiverParameter != null || valueParameters.isNotEmpty()) {
+        KotlinTypeRef(getFunctionType())
+    } else {
+        KotlinTypeRef(returnType!!)
+    },
     receiver = dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
         ?.takeIf { it is ClassDescriptor && it.kind == ClassKind.OBJECT }
         ?.let { KotlinTypeRef(it.defaultType) },

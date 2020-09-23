@@ -20,7 +20,7 @@ sealed class TypeRef {
     abstract val isReader: Boolean
     abstract val isComposable: Boolean
     abstract val qualifier: String?
-    private val typeName by unsafeLazy { uniqueTypeName() }
+    private val typeName by unsafeLazy { uniqueTypeName(includeNullability = false) }
     override fun equals(other: Any?) = other is TypeRef && typeName == other.typeName
     override fun hashCode() = typeName.hashCode()
 }
