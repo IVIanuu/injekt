@@ -100,6 +100,22 @@ class ReaderContextGenerator : Generator {
             }
 
             emitSpace()
+
+            if (descriptor.typeParameters.isNotEmpty()) {
+                emit("where ")
+                val typeParametersWithUpperBounds = descriptor.typeParameters
+                    .flatMap { typeParameter ->
+                        typeParameter.upperBounds.map { typeParameter to it }
+                    }
+
+                typeParametersWithUpperBounds.forEachIndexed { index, (typeParameter, upperBound) ->
+                    emit("${typeParameter.name} : ${upperBound.render()}")
+                    if (index != typeParametersWithUpperBounds.lastIndex) emit(", ")
+                }
+
+                emitSpace()
+            }
+
             braced {
                 descriptor.givenTypes.forEach { typeRef ->
                     val name = typeRef.uniqueTypeName()
