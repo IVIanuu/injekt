@@ -172,7 +172,7 @@ fun TypeRef.uniqueTypeName(includeNullability: Boolean = true): Name {
             if (includeArguments) {
                 typeArguments.forEachIndexed { index, typeArgument ->
                     if (index == 0) append("_")
-                    else append(typeArgument.renderName())
+                    append(typeArgument.renderName())
                     if (index != typeArguments.lastIndex) append("_")
                 }
             }
