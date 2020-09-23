@@ -84,6 +84,8 @@ class ReaderContextGenerator : Generator {
             emitLine("// injekt-generated")
             emitLine("package ${descriptor.type.fqName.parent()}")
             emitLine("import com.ivianuu.injekt.internal.ContextMarker")
+            emitLine("import com.ivianuu.injekt.internal.Origin")
+            emitLine("@Origin(\"${descriptor.origin}\")")
             emitLine("@ContextMarker")
             emit("interface ${descriptor.type.fqName.shortName()}")
             if (descriptor.typeParameters.isNotEmpty()) {
