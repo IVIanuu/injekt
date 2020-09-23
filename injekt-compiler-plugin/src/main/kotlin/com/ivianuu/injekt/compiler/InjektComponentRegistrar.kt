@@ -57,9 +57,8 @@ class InjektComponentRegistrar : ComponentRegistrar {
             given<InjektStorageContainerContributor>()
         )
 
-        registerExtensionAtFirst(
+        AnalysisHandlerExtension.registerExtension(
             project,
-            AnalysisHandlerExtension.extensionPointName,
             given<InjektKtGenerationExtension>()
         )
 
