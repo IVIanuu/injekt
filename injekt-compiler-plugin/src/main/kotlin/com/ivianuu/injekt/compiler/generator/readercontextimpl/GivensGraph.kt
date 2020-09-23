@@ -246,7 +246,7 @@ class GivensGraph(private val owner: ContextImpl) {
             error(
                 "Multiple internal givens found for '${type.render()}' at:\n${
                     internalGlobalGivens
-                        .joinToString("\n") { "    '${it to it.origin.orUnknown()}'" }
+                        .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
                 }"
             )
         }

@@ -14,6 +14,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.DeserializedDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
@@ -185,7 +186,11 @@ fun FunctionDescriptor.toCallableRef() = CallableRef(
     receiver = dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
         ?.takeIf { it is ClassDescriptor && it.kind == ClassKind.OBJECT }
         ?.let { KotlinTypeRef(it.defaultType) },
-    isExternal = findPsi() != null, // todo might be wrong
+    isExternal = when (this) {
+        is ConstructorDescriptor -> constructedClass is DeserializedDescriptor
+        is PropertyAccessorDescriptor -> correspondingProperty is DeserializedDescriptor
+        else -> this is DeserializedDescriptor
+    },
     targetContext = annotations.findAnnotation(InjektFqNames.Given)
         ?.allValueArguments
         ?.get("scopeContext".asNameId())
