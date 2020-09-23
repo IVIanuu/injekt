@@ -57,7 +57,9 @@ class ContextProperty(
     val isMutable: Boolean
 ) : ContextMember {
     override fun CodeBuilder.emit() {
-
+        if (isMutable) emit("var ") else emit("val ")
+        emit("$name: ${type.render()} = ")
+        initializer()
     }
 }
 

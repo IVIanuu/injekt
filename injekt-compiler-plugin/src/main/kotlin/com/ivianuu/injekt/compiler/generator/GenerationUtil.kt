@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.CommonSupertypes
@@ -188,7 +189,8 @@ fun FunctionDescriptor.toCallableRef() = CallableRef(
     targetContext = annotations.findAnnotation(InjektFqNames.Given)
         ?.allValueArguments
         ?.get("scopeContext".asNameId())
-        ?.getType(module)
+        ?.let { it as KClassValue }
+        ?.getArgumentType(module)
         ?.let { KotlinTypeRef(it) },
     givenKind = when {
         hasAnnotationWithPropertyAndClass(InjektFqNames.Given) -> CallableRef.GivenKind.GIVEN
