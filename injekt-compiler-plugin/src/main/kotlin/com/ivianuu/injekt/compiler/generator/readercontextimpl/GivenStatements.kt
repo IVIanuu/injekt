@@ -84,8 +84,9 @@ class GivenStatements(private val owner: ContextImpl) {
     private fun childContextExpression(given: ChildContextGivenNode): ContextStatement =
         { emit("${given.childFactoryImpl.name}()") }
 
-    private fun calleeContextExpression(given: CalleeContextGivenNode): ContextStatement =
-        given.calleeContextStatement
+    private fun calleeContextExpression(given: CalleeContextGivenNode): ContextStatement {
+        return { given.calleeContextStatement(this) }
+    }
 
     private fun inputExpression(
         given: InputGivenNode
