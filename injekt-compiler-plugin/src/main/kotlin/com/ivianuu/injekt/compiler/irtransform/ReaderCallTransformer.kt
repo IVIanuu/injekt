@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.irtransform
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektAttributes
 import com.ivianuu.injekt.compiler.InjektAttributes.ContextFactoryKey
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.generator.KotlinTypeRef
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import com.ivianuu.injekt.given
@@ -64,6 +65,7 @@ import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.fields
 import org.jetbrains.kotlin.ir.util.file
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
@@ -121,13 +123,18 @@ class ReaderCallTransformer : IrLowering {
             type: IrType,
             contextExpression: () -> IrExpression
         ): IrExpression {
-            val typeName = KotlinTypeRef(type.toKotlinType()).uniqueTypeName().asString()
-            val function = context.functions.singleOrNull {
-                it.name.asString() == typeName
-            } ?: error("Nothing found for $typeName in ${context.dump()}")
-            return function.irBuilder().run {
-                irCall(function).apply {
-                    dispatchReceiver = contextExpression()
+            return if (type in context.superTypes) {
+                contextExpression()
+            } else {
+                val typeName = KotlinTypeRef(type.toKotlinType()).uniqueTypeName().asString()
+                val function =
+                    context.functions.singleOrNull {
+                        it.name.asString() == typeName
+                    } ?: error("Nothing found for $typeName in ${context.dump()}")
+                function.irBuilder().run {
+                    irCall(function).apply {
+                        dispatchReceiver = contextExpression()
+                    }
                 }
             }
         }
@@ -136,30 +143,44 @@ class ReaderCallTransformer : IrLowering {
     private fun transformClassIfNeeded(
         declaration: IrClass
     ) {
-        if (!declaration.canUseReaders()) return
+        if (!declaration.canUseReaders() &&
+            !declaration.hasAnnotation(InjektFqNames.ContextImplMarker)
+        ) return
 
-        val readerConstructor = declaration.getReaderConstructor()!!
-
-        val context = readerConstructor.getContext()!!
-
-        transformDeclarationIfNeeded(
-            declaration = declaration,
-            declarationFunction = readerConstructor,
-            context = context,
-            contextExpression = { scopes ->
-                if (scopes.none { it.irElement == readerConstructor }) {
-                    declaration.irBuilder().run {
-                        irGetField(
-                            irGet(scopes.thisOfClass(declaration)!!),
-                            declaration.fields.single { it.name.asString() == "_context" }
-                        )
-                    }
-                } else {
-                    readerConstructor.irBuilder()
-                        .irGet(readerConstructor.getContextValueParameter()!!)
+        if (declaration.hasAnnotation(InjektFqNames.ContextImplMarker)) {
+            transformDeclarationIfNeeded(
+                declaration = declaration,
+                declarationFunction = null,
+                context = declaration,
+                contextExpression = { scopes ->
+                    declaration.irBuilder()
+                        .irGet(scopes.thisOfClass(declaration)!!)
                 }
-            }
-        )
+            )
+        } else {
+            val readerConstructor = declaration.getReaderConstructor()!!
+
+            val context = readerConstructor.getContext()!!
+
+            transformDeclarationIfNeeded(
+                declaration = declaration,
+                declarationFunction = readerConstructor,
+                context = context,
+                contextExpression = { scopes ->
+                    if (scopes.none { it.irElement == readerConstructor }) {
+                        declaration.irBuilder().run {
+                            irGetField(
+                                irGet(scopes.thisOfClass(declaration)!!),
+                                declaration.fields.single { it.name.asString() == "_context" }
+                            )
+                        }
+                    } else {
+                        readerConstructor.irBuilder()
+                            .irGet(readerConstructor.getContextValueParameter()!!)
+                    }
+                }
+            )
+        }
     }
 
     private fun transformFunctionIfNeeded(
@@ -180,7 +201,7 @@ class ReaderCallTransformer : IrLowering {
 
     private fun transformDeclarationIfNeeded(
         declaration: IrDeclarationWithName,
-        declarationFunction: IrFunction,
+        declarationFunction: IrFunction?,
         context: IrClass,
         contextExpression: (List<ScopeWithIr>) -> IrExpression
     ) {
@@ -199,10 +220,8 @@ class ReaderCallTransformer : IrLowering {
 
                 if (allScopes
                         .mapNotNull { it.irElement as? IrDeclarationWithName }
-                        .last { it.canUseReaders() }
-                        .let {
-                            it != declaration && it != declarationFunction
-                        }
+                        .last { it.canUseReaders() || it.hasAnnotation(InjektFqNames.ContextImplMarker) }
+                        .let { it != declaration && it != declarationFunction }
                 ) {
                     return expression
                 }

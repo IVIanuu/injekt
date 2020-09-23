@@ -16,11 +16,12 @@
 
 package com.ivianuu.injekt.compiler.generator.readercontextimpl
 
+import com.ivianuu.injekt.compiler.generator.CallableRef
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.ReaderContextDescriptor
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.render
-import org.jetbrains.kotlin.ir.declarations.IrFunction
+import com.ivianuu.injekt.compiler.unsafeLazy
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -98,26 +99,27 @@ class ChildContextGivenNode(
         get() = null
 }
 
-/*
 class CalleeContextGivenNode(
     override val type: TypeRef,
-    override val owner: ContextImplFactory
-) : GivenNode()
-class GivenCalleeContext(
-    key: Key,
-    owner: IrClass,
-    origin: FqName?,
-    val lazyContextImpl: () -> IrClass?,
-    val lazyContexts: () -> List<IrType>
-) : Given(key, owner, origin, false, null, null) {
-    val contextImpl by lazy(lazyContextImpl)
+    override val owner: ContextImpl,
+    override val origin: FqName?,
+    private val lazyCalleeContextStatement: () -> ContextStatement,
+    private val lazyContexts: () -> List<ReaderContextDescriptor>
+) : GivenNode() {
+    val calleeContextStatement by unsafeLazy(lazyCalleeContextStatement)
     override val contexts by unsafeLazy {
-        contextImpl
+        calleeContextStatement
         lazyContexts()
     }
-}*/
+    override val external: Boolean
+        get() = false
+    override val givenSetAccessStatement: ContextStatement?
+        get() = null
+    override val targetContext: TypeRef?
+        get() = null
+}
 
-class FunctionGivenNode(
+class CallableGivenNode(
     override val type: TypeRef,
     override val owner: ContextImpl,
     override val contexts: List<ReaderContextDescriptor>,
@@ -125,11 +127,14 @@ class FunctionGivenNode(
     override val external: Boolean,
     override val targetContext: TypeRef?,
     override val givenSetAccessStatement: ContextStatement?,
-    val explicitParameters: List<TypeRef>,
-    val function: IrFunction
-) : GivenNode()
+    val callable: CallableRef
+) : GivenNode() {
+    override fun toString(): String {
+        return "Callable${callable.fqName}"
+    }
+}
 
-class InstanceGivenNode(
+class InputGivenNode(
     override val type: TypeRef,
     val name: String,
     override val owner: ContextImpl

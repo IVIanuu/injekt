@@ -20,7 +20,7 @@ import com.ivianuu.injekt.test.assertCompileError
 import com.ivianuu.injekt.test.codegen
 import org.junit.Test
 
-class GivenTest {
+class GivenFrontendTest {
 
     @Test
     fun testGivenClassOk() = codegen(

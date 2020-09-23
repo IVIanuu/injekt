@@ -113,8 +113,8 @@ class EffectGenerator : KtGenerator {
                     val functionFqName = packageName.child(effectsName).child("function".asNameId())
                     readerContextGenerator.addPromisedReaderContextDescriptor(
                         PromisedReaderContextDescriptor(
-                            FqNameTypeRef(
-                                packageName.child(
+                            type = FqNameTypeRef(
+                                fqName = packageName.child(
                                     contextNameOf(
                                         packageFqName = packageName,
                                         fqName = functionFqName,
@@ -125,11 +125,13 @@ class EffectGenerator : KtGenerator {
                                             parameterTypes = listOf(packageName.child(effectsName))
                                         )
                                     )
-                                )
+                                ),
+                                isContext = true
                             ),
-                            declaration,
-                            emptyList(),
-                            listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
+                            callee = declaration,
+                            calleeTypeArguments = emptyList(),
+                            origin = functionFqName,
+                            originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
                         )
                     )
                 }
@@ -175,8 +177,8 @@ class EffectGenerator : KtGenerator {
                         val effectFunctionFqName = packageName.child(effectsName).child(name)
                         readerContextGenerator.addPromisedReaderContextDescriptor(
                             PromisedReaderContextDescriptor(
-                                FqNameTypeRef(
-                                    packageName.child(
+                                type = FqNameTypeRef(
+                                    fqName = packageName.child(
                                         contextNameOf(
                                             packageFqName = packageName,
                                             fqName = effectFunctionFqName,
@@ -191,11 +193,13 @@ class EffectGenerator : KtGenerator {
                                                 )
                                             )
                                         )
-                                    )
+                                    ),
+                                    isContext = true
                                 ),
-                                effectFunction,
-                                listOf(KotlinTypeRef(givenType)),
-                                listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
+                                callee = effectFunction,
+                                calleeTypeArguments = listOf(KotlinTypeRef(givenType)),
+                                origin = effectFunctionFqName,
+                                originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
                             )
                         )
                     }

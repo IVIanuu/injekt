@@ -3,14 +3,19 @@ package com.ivianuu.injekt.compiler.generator
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
+import com.ivianuu.injekt.compiler.checkers.isMarkedAsReader
 import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.descriptors.allParameters
+import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -23,6 +28,7 @@ import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.IntersectionTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
@@ -181,4 +187,45 @@ fun TypeRef.uniqueTypeName(): Name {
     else ("${renderName(includeArguments = false)}_${fullTypeName.hashCode()}"))
         .removeIllegalChars()
         .asNameId()
+}
+
+fun FunctionDescriptor.toFunctionRef() = CallableRef(
+    name = when (this) {
+        is ConstructorDescriptor -> constructedClass.name
+        is PropertyAccessorDescriptor -> correspondingProperty.name
+        else -> name
+    },
+    packageFqName = findPackage().fqName,
+    fqName = fqNameSafe,
+    typeRef = KotlinTypeRef(returnType!!),
+    receiver = dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
+        ?.takeIf { it is ClassDescriptor && it.kind == ClassKind.OBJECT }
+        ?.let { KotlinTypeRef(it.defaultType) },
+    isExternal = findPsi() != null, // todo might be wrong
+    targetContext = annotations.findAnnotation(InjektFqNames.Given)
+        ?.allValueArguments
+        ?.get("scopeContext".asNameId())
+        ?.getType(module)
+        ?.let { KotlinTypeRef(it) },
+    parameters = listOfNotNull(
+        extensionReceiverParameter?.type?.let {
+            ParameterRef(
+                KotlinTypeRef(it),
+                true
+            )
+        }
+    ) + valueParameters.map {
+        ParameterRef(KotlinTypeRef(it.type))
+    },
+    isPropertyAccessor = this is PropertyAccessorDescriptor,
+    uniqueKey = uniqueKey()
+)
+
+fun ClassDescriptor.getReaderConstructor(): ConstructorDescriptor? {
+    constructors
+        .firstOrNull {
+            it.isMarkedAsReader()
+        }?.let { return it }
+    if (!isMarkedAsReader()) return null
+    return unsubstitutedPrimaryConstructor
 }

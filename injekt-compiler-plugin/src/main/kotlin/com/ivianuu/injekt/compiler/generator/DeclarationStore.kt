@@ -18,7 +18,6 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.checkers.getFunctionType
 import com.ivianuu.injekt.compiler.checkers.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
 import com.ivianuu.injekt.compiler.irtransform.asNameId
@@ -45,8 +44,13 @@ class DeclarationStore {
         ClassId.topLevel(FqName("kotlin.collections.Set"))
     )!!
 
+    private val internalFunctionRefs = mutableListOf<CallableRef>()
+    fun addInternalGiven(callableRef: CallableRef) {
+        internalFunctionRefs += callableRef
+    }
+
     private val allGivens by unsafeLazy {
-        (indexer.functionIndices +
+        internalFunctionRefs + (indexer.functionIndices +
                 indexer.classIndices
                     .flatMap { it.constructors.toList() } +
                 indexer.propertyIndices
@@ -69,18 +73,12 @@ class DeclarationStore {
                         !it.fqNameSafe.asString().startsWith("com.ivianuu.injekt.compiler")
             }
             .distinct()
+            .map { it.toFunctionRef() }
     }
 
-    private val givensByType = mutableMapOf<TypeRef, List<FunctionDescriptor>>()
+    private val givensByType = mutableMapOf<TypeRef, List<CallableRef>>()
     fun givens(type: TypeRef) = givensByType.getOrPut(type) {
-        allGivens
-            .filter { function ->
-                if (function.extensionReceiverParameter != null || function.valueParameters.isNotEmpty()) {
-                    KotlinTypeRef(function.getFunctionType()) == type
-                } else {
-                    KotlinTypeRef(function.returnType!!) == type
-                }
-            }
+        allGivens.filter { it.typeRef == type }
     }
 
     private val allGivenMapEntries by unsafeLazy {

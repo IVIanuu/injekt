@@ -121,6 +121,7 @@ class ContextImpl(
     }
 
     fun CodeBuilder.emit() {
+        emitLine("@com.ivianuu.injekt.internal.ContextImplMarker")
         emit("private ")
         if (factoryImpl.parent != null) emit("inner ")
         if (factoryImpl.parent == null && inputTypes.isEmpty()) emit("object ")

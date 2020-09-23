@@ -19,6 +19,7 @@ package com.ivianuu.injekt.compiler.generator.readercontextimpl
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.ReaderContextDescriptor
+import com.ivianuu.injekt.compiler.generator.ReaderContextGenerator
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
@@ -32,7 +33,7 @@ class GivensGraph(
     private val owner: ContextImpl
 ) {
 
-    private val parent = owner.graph
+    private val parent = owner.factoryImpl.parent?.graph
 
     private val statements = owner.statements
     private val inputs = owner.inputTypes
@@ -42,7 +43,7 @@ class GivensGraph(
     private val contextId = owner.contextId
 
     private val instanceNodes = inputs
-        .mapIndexed { index, inputType -> InstanceGivenNode(inputType, "p$index", owner) }
+        .mapIndexed { index, inputType -> InputGivenNode(inputType, "p$index", owner) }
         .groupBy { it.type }
 
     //private val inputFunctionNodes = mutableMapOf<Key, MutableSet<Given>>()
@@ -63,6 +64,7 @@ class GivensGraph(
 
     private val chain = mutableListOf<ChainElement>()
     private val checkedTypes = mutableSetOf<TypeRef>()
+    private val checkedGivens = mutableSetOf<GivenNode>()
 
     init {
         /**val givenSets = inputs
@@ -149,7 +151,9 @@ class GivensGraph(
     }
 
     fun checkEntryPoints(entryPoints: List<ReaderContextDescriptor>) {
+        println("check entry points $entryPoints")
         entryPoints.forEach { check(it) }
+        println("entry points checked")
     }
 
     private fun check(type: TypeRef) {
@@ -160,22 +164,21 @@ class GivensGraph(
     }
 
     private fun check(given: GivenNode) {
-        if (given.type in checkedTypes) return
-        checkedTypes += given.type
+        if (given in checkedGivens) return
+        println("check $given")
+        checkedGivens += given
         given
             .contexts
             .forEach { check(it) }
     }
 
     private fun check(context: ReaderContextDescriptor) {
-        if (context in checkedTypes) return
+        if (context.type in checkedTypes) return
         checkedTypes += context.type
 
-        val origin: FqName?/* = context.classOrNull!!.owner.getConstantFromAnnotationOrNull<String>(
-            InjektFqNames.Origin,
-            0
-        )?.let { FqName(it) }*/ // todo
-        //chain.push(ChainElement.Call(origin))
+        println("check context ${context.type.render()}")
+
+        chain.push(ChainElement.Call(context.origin))
         context.givenTypes.forEach { givenType ->
             val existingFunction = owner.members.singleOrNull {
                 it is ContextFunction && it.name == givenType.uniqueTypeName()
@@ -183,7 +186,7 @@ class GivensGraph(
             if (existingFunction != null) return@forEach
             check(givenType)
         }
-        //chain.pop()
+        chain.pop()
     }
 
     fun getGiven(type: TypeRef): GivenNode {
@@ -251,7 +254,7 @@ class GivensGraph(
 
         val instanceAndGivenSetGivens = allGivens
             .filter { it.type == type }
-            .filter { it is InstanceGivenNode || it.givenSetAccessStatement != null }
+            .filter { it is InputGivenNode || it.givenSetAccessStatement != null }
 
         if (instanceAndGivenSetGivens.size > 1) {
             error(
@@ -270,7 +273,7 @@ class GivensGraph(
         }
 
         val (internalGlobalGivens, externalGlobalGivens) = allGivens
-            .filterNot { it is InstanceGivenNode }
+            .filterNot { it is InputGivenNode }
             .filter { it.givenSetAccessStatement == null }
             .filter { it.type == type }
             .partition { !it.external }
@@ -289,7 +292,7 @@ class GivensGraph(
             resolvedGivens[type] = it
             check(it)
             // todo (it as? ChildContextGivenNode)?.childContextFactoryImpl
-            // todo (it as? GivenCalleeContext)?.contextImpl
+            (it as? CalleeContextGivenNode)?.calleeContextStatement
             return it
         }
 
@@ -327,112 +330,52 @@ class GivensGraph(
             )
         }
 
-        /*if (type.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.ContextMarker) ||
-            type.type.classOrNull!!.owner.name.asString().endsWith("__Context")
-        ) {
-            val contexts = mutableListOf<IrType>()
-            this += GivenCalleeContext(
+        if (type.isContext) {
+            val contexts = mutableListOf<ReaderContextDescriptor>()
+            this += CalleeContextGivenNode(
                 type = type,
-                owner = contextImpl,
+                owner = owner,
                 origin = null,
                 lazyContexts = { contexts },
-                lazyContextImpl = {
-                    if (type.type.classOrNull!!.owner.typeParameters.isNotEmpty()) {
-                        val childContextImpl = buildClass {
-                            this.name = (KotlinTypeRef(type.type.toKotlinType()).uniqueTypeName()
-                                .asString() + "Impl").asNameId()
-                            visibility = Visibilities.PRIVATE
-                        }.apply clazz@{
-                            parent = contextImpl
-                            contextImpl.addChild(this)
-                            createImplicitParameterDeclarationWithWrappedDescriptor()
-                        }
-
-                        val parentField = childContextImpl.addField(
-                            "parent",
-                            contextImpl.defaultType
-                        )
-
-                        childContextImpl.addConstructor {
-                            returnType = childContextImpl.defaultType
-                            isPrimary = true
-                            visibility = Visibilities.PUBLIC
-                        }.apply {
-                            val parentValueParameter = addValueParameter(
-                                "parent",
-                                contextImpl.defaultType
-                            )
-                            body = irBuilder().irBlockBody {
-                                +irDelegatingConstructorCall(context.irBuiltIns.anyClass.constructors.single().owner)
-                                +IrInstanceInitializerCallImpl(
-                                    UNDEFINED_OFFSET,
-                                    UNDEFINED_OFFSET,
-                                    childContextImpl.symbol,
-                                    context.irBuiltIns.unitType
-                                )
-                                +irSetField(
-                                    irGet(childContextImpl.thisReceiver!!),
-                                    parentField,
-                                    irGet(parentValueParameter)
+                lazyCalleeContextStatement = {
+                    if (type.typeArguments.isNotEmpty()) {
+                        val givenTypesWithStatements = given<ReaderContextGenerator>()
+                            .getContextByType(type)!!
+                            .givenTypes
+                            .map { givenType ->
+                                givenType to statements.getGivenStatement(
+                                    getGiven(givenType),
+                                    false
                                 )
                             }
-                        }
 
-                        childContextImpl.superTypes += type.type
-                        type.type.visitAllFunctionsWithSubstitutionMap { function, substitutionMap ->
-                            val functionKey = function.returnType
-                                .substitute(substitutionMap)
-                                .asKey()
-
-                            val existingDeclaration = childContextImpl.functions.singleOrNull {
-                                it.name == function.name
-                            }
-                            if (existingDeclaration != null) {
-                                existingDeclaration.overriddenSymbols +=
-                                    function.symbol as IrSimpleFunctionSymbol
-                                return@visitAllFunctionsWithSubstitutionMap
-                            }
-
-                            val expression =
-                                expressions.getGivenExpression(getGiven(functionKey), function)
-                            childContextImpl.addFunction {
-                                this.name = function.name
-                                returnType = functionKey.type
-                            }.apply {
-                                dispatchReceiverParameter =
-                                    childContextImpl.thisReceiver!!.copyTo(this)
-                                overriddenSymbols += function.symbol as IrSimpleFunctionSymbol
-                                body = irBuilder().run {
-                                    irExprBody(
-                                        expression(
-                                            this,
-                                            ContextExpressionContext(contextImpl) {
-                                                irGetField(
-                                                    irGet(dispatchReceiverParameter!!),
-                                                    parentField
-                                                )
-                                            }
-                                        )
-                                    )
+                        return@CalleeContextGivenNode {
+                            emit("object : ${type.render()} ")
+                            braced {
+                                givenTypesWithStatements.forEach { (givenType, statement) ->
+                                    emit("override fun ${givenType.uniqueTypeName()}(): ${givenType.render()} ")
+                                    braced {
+                                        emit("return ")
+                                        statement()
+                                    }
                                 }
                             }
                         }
-                        childContextImpl
                     } else {
-                        contexts += type.type
-                        type.type.visitAllFunctionsWithSubstitutionMap { function, substitutionMap ->
-                            val functionKey = function.returnType
-                                .substitute(substitutionMap)
-                                .asKey()
-                            expressions.getGivenExpression(getGiven(functionKey), function)
+                        owner.superTypes += type
+                        given<ReaderContextGenerator>().getContextByType(type)!!
+                            .givenTypes.forEach {
+                                statements.getGivenStatement(getGiven(it), true)
+                            }
+                        return@CalleeContextGivenNode {
+                            emit("this@${owner.name}")
                         }
-                        null
                     }
                 }
             )
         }
 
-        if (type.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.ChildContextFactory)) {
+        /*if (type.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.ChildContextFactory)) {
             val existingFactories = mutableSetOf<IrClass>()
             var currentContext: IrClass? = contextImpl
             while (currentContext != null) {
@@ -463,39 +406,26 @@ class GivensGraph(
                     generator = generator
                 )
             }
-        }
+        }*/
 
         this += declarationStore.givens(type)
             .map { function ->
-                val targetContext = (function.getClassFromAnnotation(
-                    InjektFqNames.Given, 0
-                )
-                    ?: (if (function is IrConstructor) function.constructedClass.getClassFromAnnotation(
-                        InjektFqNames.Given, 0
-                    ) else null)
-                    ?: if (function is IrSimpleFunction) function.correspondingPropertySymbol
-                        ?.owner?.getClassFromAnnotation(InjektFqNames.Given, 0) else null)
-                    ?.takeUnless { it.defaultType.isNothing() }
+                val targetContext = function.targetContext
 
-                val explicitParameters = listOfNotNull(function.extensionReceiverParameter) +
-                        function.valueParameters
-                            .filter { it != function.getContextValueParameter() }
-
-                GivenFunction(
+                CallableGivenNode(
                     type = type,
-                    owner = contextImpl,
-                    contexts = listOf(function.getContext()!!.defaultType),
-                    external = function.isExternalDeclaration(),
-                    explicitParameters = explicitParameters,
-                    origin = function.descriptor.fqNameSafe,
-                    function = function,
+                    owner = owner,
+                    contexts = listOf(given<ReaderContextGenerator>().getContextForFunction(function)!!),
+                    external = function.isExternal,
+                    origin = function.fqName,
+                    callable = function,
                     targetContext = targetContext,
-                    givenSetAccessExpression = null
+                    givenSetAccessStatement = null
                 )
             }
             .filter { it.targetContext == null || it.targetContext == contextId }
 
-        (declarationStore.givenMapEntries(type) +
+        /*(declarationStore.givenMapEntries(type) +
                 inputGivenMapEntries.getOrElse(type) { emptySet() })
             .takeIf { it.isNotEmpty() }
             ?.let { entries ->

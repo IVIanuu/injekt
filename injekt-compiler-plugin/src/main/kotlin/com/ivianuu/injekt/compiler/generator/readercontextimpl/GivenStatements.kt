@@ -2,13 +2,14 @@ package com.ivianuu.injekt.compiler.generator.readercontextimpl
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.generator.FqNameTypeRef
+import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import org.jetbrains.kotlin.name.FqName
 
 @Given
 class GivenStatements(private val owner: ContextImpl) {
 
-    private val parent = owner.statements
+    private val parent = owner.factoryImpl.parent?.statements
     private val statementsByType =
         mutableMapOf<com.ivianuu.injekt.compiler.generator.TypeRef, ContextStatement>()
 
@@ -22,10 +23,10 @@ class GivenStatements(private val owner: ContextImpl) {
             parent!!.getGivenStatement(given, false)
         } else {
             when (given) {
-                // todo is GivenCalleeContext -> calleeContextExpression(given)
+                is CalleeContextGivenNode -> calleeContextExpression(given)
                 //is ChildContextGivenNode -> childContextExpression(given)
-                //is GivenFunction -> functionExpression(given)
-                is InstanceGivenNode -> inputExpression(given)
+                is CallableGivenNode -> functionExpression(given)
+                is InputGivenNode -> inputExpression(given)
                 // is GivenMap -> mapExpression(given)
                 is NullGivenNode -> nullExpression()
                 is SelfGivenNode -> selfContextExpression(given)
@@ -104,21 +105,14 @@ class GivenStatements(private val owner: ContextImpl) {
                 putValueArgument(0, c[contextImpl])
             }
         }
-    }
-
-    private fun calleeContextExpression(given: GivenCalleeContext): ContextStatement {
-        return { c ->
-            given.contextImpl?.constructors?.single()
-                ?.let {
-                    irCall(it).apply {
-                        putValueArgument(0, c[contextImpl])
-                    }
-                } ?: c[contextImpl]
-        }
     }*/
 
+    private fun calleeContextExpression(given: CalleeContextGivenNode): ContextStatement {
+        return given.calleeContextStatement
+    }
+
     private fun inputExpression(
-        given: InstanceGivenNode
+        given: InputGivenNode
     ): ContextStatement {
         return {
             emit("this@${given.owner.name}.${given.name}")
@@ -208,77 +202,44 @@ class GivenStatements(private val owner: ContextImpl) {
 
     private fun nullExpression(): ContextStatement = { emit("null") }
 
-    /*private fun functionExpression(given: GivenFunction): ContextStatement {
-    return { c ->
-    fun createExpression(parametersMap: Map<IrValueParameter, () -> IrExpression?>): IrExpression {
-    val call = if (given.function is IrConstructor) {
-    IrConstructorCallImpl(
-    UNDEFINED_OFFSET,
-    UNDEFINED_OFFSET,
-    given.function.returnType,
-    given.function.symbol,
-    given.function.constructedClass.typeParameters.size,
-    given.function.typeParameters.size,
-    given.function.valueParameters.size
-    )
-    } else {
-    IrCallImpl(
-    UNDEFINED_OFFSET,
-    UNDEFINED_OFFSET,
-    given.function.returnType,
-    given.function.symbol,
-    given.function.typeParameters.size,
-    given.function.valueParameters.size
-    )
-    }
-    call.apply {
-    if (given.function.dispatchReceiverParameter != null) {
-    dispatchReceiver = if (given.givenSetAccessExpression != null) {
-    given.givenSetAccessExpression!!(c)
-    } else {
-    irGetObject(
-    given.function.dispatchReceiverParameter!!.type.classOrNull!!
-    )
-    }
-    }
+    private fun functionExpression(given: CallableGivenNode): ContextStatement {
+        fun createExpression(parameters: List<ContextStatement>): ContextStatement {
+            return {
+                if (given.callable.receiver != null) {
+                    emit("${given.callable.receiver.render()}.${given.callable.name}")
+                } else {
+                    emit(given.callable.fqName)
+                }
+                if (!given.callable.isPropertyAccessor) {
+                    emit("(")
+                    parameters.forEachIndexed { index, parameter ->
+                        parameter()
+                        if (index != parameters.lastIndex) emit(", ")
+                    }
+                    emit(")")
+                }
+            }
+        }
 
-    parametersMap.values.forEachIndexed { index, expression ->
-    if (index == 0 && given.function.extensionReceiverParameter != null) {
-    extensionReceiver = expression()
-    } else {
-    putValueArgument(
-    index - if (given.function.extensionReceiverParameter != null) 1 else 0,
-    expression()
-    )
+        return if (given.callable.parameters.isNotEmpty()) {
+            val statement: ContextStatement = {
+                emit("{ ")
+                given.callable.parameters.forEachIndexed { index, parameter ->
+                    emit("p$index: ${parameter.typeRef.render()}")
+                    if (index != given.callable.parameters.lastIndex) emit(", ")
+                }
+                emitLine(" ->")
+                createExpression(given.callable.parameters.mapIndexed { index, _ ->
+                    { emit("p$index") }
+                }).invoke(this)
+                emitLine()
+                emitLine("}")
+            }
+            statement
+        } else {
+            createExpression(emptyList())
+        }
     }
-    }
-
-    putValueArgument(valueArgumentsCount - 1, c[contextImpl])
-    }
-
-    return call
-    }
-
-    if (given.explicitParameters.isNotEmpty()) {
-    irLambda(given.type) { function ->
-    var index = 0
-    val parametersMap = given.explicitParameters
-    .associateWith { parameter ->
-    val paramIndex = index++
-    {
-    irGet(
-    function.valueParameters[paramIndex]
-    )
-    }
-    }
-
-    createExpression(parametersMap)
-    }
-    } else {
-    createExpression(emptyMap())
-    }
-    }
-    }*/
 
     private fun selfContextExpression(given: SelfGivenNode): ContextStatement =
         { emit("this@${given.context.name}") }

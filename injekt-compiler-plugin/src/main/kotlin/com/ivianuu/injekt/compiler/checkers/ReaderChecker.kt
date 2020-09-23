@@ -153,7 +153,7 @@ class ReaderChecker : CallChecker, DeclarationChecker {
                     ?.safeAs<KtCallExpression>()?.calleeExpression?.text
                 if (name == "runReader") return@findEnclosingContext true
             }
-            it.isReader()
+            it.isReader() || it.hasAnnotation(InjektFqNames.ContextImplMarker)
         }
 
         if (enclosingReaderContext == null) {

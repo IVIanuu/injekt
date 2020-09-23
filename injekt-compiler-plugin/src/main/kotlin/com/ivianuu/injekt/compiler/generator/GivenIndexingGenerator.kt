@@ -8,6 +8,7 @@ import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
@@ -36,6 +37,10 @@ class GivenIndexingGenerator : KtGenerator {
                                 }
                         ) {
                             indexer.index(descriptor)
+                            given<DeclarationStore>()
+                                .addInternalGiven(
+                                    descriptor.getReaderConstructor()!!.toFunctionRef()
+                                )
                         }
                     }
 
@@ -48,16 +53,21 @@ class GivenIndexingGenerator : KtGenerator {
                                     descriptor.hasAnnotation(InjektFqNames.GivenSetElements))
                         ) {
                             indexer.index(descriptor)
+                            given<DeclarationStore>()
+                                .addInternalGiven(descriptor.toFunctionRef())
                         }
                     }
 
                     override fun visitProperty(property: KtProperty) {
                         super.visitProperty(property)
                         val descriptor = property.descriptor<VariableDescriptor>()
-                        if (descriptor.hasAnnotation(InjektFqNames.Given) &&
+                        if (descriptor is PropertyDescriptor &&
+                            descriptor.hasAnnotation(InjektFqNames.Given) &&
                             !descriptor.isInGivenSet()
                         ) {
                             indexer.index(descriptor)
+                            given<DeclarationStore>()
+                                .addInternalGiven(descriptor.getter!!.toFunctionRef())
                         }
                     }
                 }

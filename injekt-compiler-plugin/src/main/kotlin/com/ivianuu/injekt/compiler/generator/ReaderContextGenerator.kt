@@ -2,8 +2,11 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektAttributes
+import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.checkers.isReader
+import com.ivianuu.injekt.compiler.contextNameOf
 import com.ivianuu.injekt.compiler.getContextName
+import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
@@ -17,6 +20,7 @@ import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
@@ -42,9 +46,20 @@ class ReaderContextGenerator : KtGenerator {
     private val contexts = mutableMapOf<DeclarationDescriptor, ReaderContextDescriptor>()
     private val externalContexts = mutableMapOf<DeclarationDescriptor, ReaderContextDescriptor>()
     private val contextsByType = mutableMapOf<TypeRef, ReaderContextDescriptor>()
-    private val filesByContext = mutableMapOf<TypeRef, File>()
 
-    fun getFileForContext(type: TypeRef) = filesByContext[type]
+    fun getContextForFunction(callableRef: CallableRef): ReaderContextDescriptor? {
+        return getContextByType(
+            FqNameTypeRef(
+                fqName = callableRef.packageFqName.child(
+                    contextNameOf(
+                        packageFqName = callableRef.packageFqName,
+                        fqName = callableRef.fqName,
+                        uniqueKey = callableRef.uniqueKey
+                    )
+                )
+            )
+        )
+    }
 
     fun getContextByType(type: TypeRef): ReaderContextDescriptor? {
         contextsByType[type]?.let { return it }
@@ -61,7 +76,11 @@ class ReaderContextGenerator : KtGenerator {
                             it.upperBounds.map { KotlinTypeRef(it) }
                         )
                     },
-                originatingFiles = emptyList()
+                originatingFiles = emptyList(),
+                origin = FqName(
+                    classDescriptor.annotations.findAnnotation(InjektFqNames.Origin)!!
+                        .allValueArguments["fqName".asNameId()]!!.value as String
+                )
             ).apply {
                 givenTypes += classDescriptor.unsubstitutedMemberScope
                     .getContributedDescriptors()
@@ -91,7 +110,7 @@ class ReaderContextGenerator : KtGenerator {
             ?.let { it as ClassDescriptor }
             ?.let {
                 ReaderContextDescriptor(
-                    FqNameTypeRef(it.fqNameSafe),
+                    FqNameTypeRef(it.fqNameSafe, isContext = true),
                     it.declaredTypeParameters
                         .map { typeParameter ->
                             ReaderContextTypeParameter(
@@ -100,6 +119,7 @@ class ReaderContextGenerator : KtGenerator {
                                     .map { KotlinTypeRef(it) }
                             )
                         },
+                    declaration.fqNameSafe,
                     emptyList()
                 )
             }
@@ -120,14 +140,16 @@ class ReaderContextGenerator : KtGenerator {
                 ReaderContextDescriptor(
                     promised.type,
                     emptyList(),
+                    promised.origin,
                     promised.originatingFiles
                 ).apply {
                     contextsByType[promised.type] = this
                     givenTypes +=
                         FqNameTypeRef(
-                            getContextForDeclaration(promised.callee)!!.type.fqName,
-                            false,
-                            promised.calleeTypeArguments
+                            fqName = getContextForDeclaration(promised.callee)!!.type.fqName,
+                            isMarkedNullable = false,
+                            isContext = true,
+                            typeArguments = promised.calleeTypeArguments
                         )
                 }
             }
@@ -166,13 +188,12 @@ class ReaderContextGenerator : KtGenerator {
             }
         }
 
-        val file = fileManager.generateFile(
+        fileManager.generateFile(
             packageFqName = descriptor.type.fqName.parent(),
             fileName = "${descriptor.type.fqName.shortName()}.kt",
             code = code,
             originatingFiles = descriptor.originatingFiles
         )
-        filesByContext[descriptor.type] = file
     }
 
 }
@@ -181,12 +202,14 @@ data class PromisedReaderContextDescriptor(
     val type: TypeRef,
     val callee: DeclarationDescriptor,
     val calleeTypeArguments: List<TypeRef>,
+    val origin: FqName,
     val originatingFiles: List<File>
 )
 
 data class ReaderContextDescriptor(
     val type: TypeRef,
     val typeParameters: List<ReaderContextTypeParameter>,
+    val origin: FqName,
     val originatingFiles: List<File>
 ) {
     val givenTypes = mutableSetOf<TypeRef>()
@@ -267,7 +290,10 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
             .addContextForDescriptor(
                 declaration,
                 ReaderContextDescriptor(
-                    type = FqNameTypeRef(declaration.findPackage().fqName.child(declaration.getContextName())),
+                    type = FqNameTypeRef(
+                        fqName = declaration.findPackage().fqName.child(declaration.getContextName()),
+                        isContext = true
+                    ),
                     typeParameters = (when (declaration) {
                         is ClassDescriptor -> declaration.declaredTypeParameters
                         is FunctionDescriptor -> declaration.typeParameters
@@ -279,7 +305,8 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
                             typeParameter.upperBounds.map { KotlinTypeRef(it) }
                         )
                     },
-                    listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
+                    origin = declaration.fqNameSafe,
+                    originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
                 )
             )
     }
@@ -392,9 +419,10 @@ class ReaderContextGivensCollector(
                 val calleeContext = contextProvider(resulting)
                     ?: error("Null for $resulting")
                 FqNameTypeRef(
-                    calleeContext.type.fqName,
-                    false,
-                    resolvedCall.typeArguments.values.map { KotlinTypeRef(it) }
+                    fqName = calleeContext.type.fqName,
+                    isMarkedNullable = false,
+                    isContext = true,
+                    typeArguments = resolvedCall.typeArguments.values.map { KotlinTypeRef(it) }
                 )
             }
         }
