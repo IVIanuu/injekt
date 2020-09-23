@@ -1,6 +1,7 @@
 package com.ivianuu.injekt.compiler.generator.readercontextimpl
 
 import com.ivianuu.injekt.Reader
+import com.ivianuu.injekt.compiler.UniqueNameProvider
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.TypeRef
@@ -18,10 +19,14 @@ class ContextFactoryImpl(
     val contextType: TypeRef,
     val parent: ContextImpl?
 ) : ContextMember {
+
+    val contextTreeNameProvider: UniqueNameProvider =
+        parent?.factoryImpl?.contextTreeNameProvider ?: UniqueNameProvider()
+
     val context = ContextImpl(
         this,
         contextType,
-        "C${getParentCount()}".asNameId(),
+        contextTreeNameProvider("C").asNameId(),
         inputTypes
     )
 
@@ -148,14 +153,4 @@ class ContextImpl(
             }
         }
     }
-}
-
-fun ContextFactoryImpl.getParentCount(): Int {
-    var parentCount = 0
-    var parent: ContextImpl? = parent
-    while (parent != null) {
-        parentCount++
-        parent = parent.factoryImpl.parent
-    }
-    return parentCount
 }

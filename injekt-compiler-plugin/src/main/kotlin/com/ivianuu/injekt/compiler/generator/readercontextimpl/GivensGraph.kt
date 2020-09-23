@@ -374,7 +374,7 @@ class GivensGraph(private val owner: ContextImpl) {
                 val factoryDescriptor = given<DeclarationStore>()
                     .getContextFactoryForType(type)
                 val factoryImpl = ContextFactoryImpl(
-                    name = "F${owner.factoryImpl.getParentCount() + 1}".asNameId(),
+                    name = owner.factoryImpl.contextTreeNameProvider("F").asNameId(),
                     factoryType = factoryDescriptor.factoryType,
                     inputTypes = factoryDescriptor.inputTypes,
                     contextType = factoryDescriptor.contextType,
