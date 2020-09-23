@@ -79,8 +79,10 @@ fun DeclarationDescriptor.isReader(): Boolean =
             (this is ConstructorDescriptor && constructedClass.isMarkedAsReader())
 
 fun FunctionDescriptor.getFunctionType(): KotlinType {
-    return (if (isSuspend) builtIns.getSuspendFunction(valueParameters.size)
-    else builtIns.getFunction(valueParameters.size))
+    val parameters =
+        listOfNotNull(extensionReceiverParameter?.type) + valueParameters.map { it.type }
+    return (if (isSuspend) builtIns.getSuspendFunction(parameters.size)
+    else builtIns.getFunction(parameters.size))
         .defaultType
-        .replace(newArguments = valueParameters.map { it.type.asTypeProjection() } + returnType!!.asTypeProjection())
+        .replace(newArguments = parameters.map { it.asTypeProjection() } + returnType!!.asTypeProjection())
 }

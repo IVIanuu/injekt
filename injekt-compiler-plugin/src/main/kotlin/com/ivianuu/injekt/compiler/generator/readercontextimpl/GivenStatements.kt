@@ -143,20 +143,28 @@ class GivenStatements(private val owner: ContextImpl) {
     private fun functionExpression(given: CallableGivenNode): ContextStatement {
         fun createExpression(parameters: List<ContextStatement>): ContextStatement {
             return {
-                if (given.givenSetAccessStatement != null) {
-                    given.givenSetAccessStatement!!()
-                    emit(".${given.callable.name}")
-                } else if (given.callable.receiver != null) {
-                    emit("${given.callable.receiver.render()}.${given.callable.name}")
-                } else {
-                    emit(given.callable.fqName)
+                when {
+                    given.givenSetAccessStatement != null -> {
+                        given.givenSetAccessStatement!!()
+                        emit(".${given.callable.name}")
+                    }
+                    given.callable.receiver != null -> {
+                        emit("${given.callable.receiver.render()}.${given.callable.name}")
+                    }
+                    given.callable.parameters.any { it.isExtensionReceiver } -> {
+                        parameters.first()()
+                        emit(".${given.callable.name}")
+                    }
+                    else -> emit(given.callable.fqName)
                 }
                 if (!given.callable.isPropertyAccessor) {
                     emit("(")
-                    parameters.forEachIndexed { index, parameter ->
-                        parameter()
-                        if (index != parameters.lastIndex) emit(", ")
-                    }
+                    parameters
+                        .drop(if (given.callable.parameters.firstOrNull()?.isExtensionReceiver == true) 1 else 0)
+                        .forEachIndexed { index, parameter ->
+                            parameter()
+                            if (index != parameters.lastIndex) emit(", ")
+                        }
                     emit(")")
                 }
             }
