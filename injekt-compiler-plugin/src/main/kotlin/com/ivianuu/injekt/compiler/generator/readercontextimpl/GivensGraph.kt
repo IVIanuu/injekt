@@ -148,8 +148,11 @@ class GivensGraph(private val owner: ContextImpl) {
         context.givenTypes.forEach { givenType ->
             val existingFunction = owner.members.singleOrNull {
                 it is ContextFunction && it.name == givenType.uniqueTypeName()
+            } as? ContextFunction
+            if (existingFunction != null) {
+                existingFunction.isOverride = true
+                return@forEach
             }
-            if (existingFunction != null) return@forEach
             check(givenType)
         }
         chain.pop()

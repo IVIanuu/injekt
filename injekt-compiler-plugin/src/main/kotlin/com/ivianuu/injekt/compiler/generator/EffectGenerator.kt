@@ -111,6 +111,16 @@ class EffectGenerator : Generator {
                         originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
                     )
                     val functionFqName = packageName.child(effectsName).child("function".asNameId())
+                    val functionUniqueKey = uniqueFunctionKeyOf(
+                        fqName = functionFqName,
+                        visibility = Visibilities.PUBLIC,
+                        startOffset = null,
+                        parameterTypes = listOf(
+                            packageName.child(
+                                effectsName
+                            )
+                        )
+                    )
                     readerContextGenerator.addPromisedReaderContextDescriptor(
                         PromisedReaderContextDescriptor(
                             type = SimpleTypeRef(
@@ -119,16 +129,7 @@ class EffectGenerator : Generator {
                                         contextNameOf(
                                             packageFqName = packageName,
                                             fqName = functionFqName,
-                                            uniqueKey = uniqueFunctionKeyOf(
-                                                fqName = functionFqName,
-                                                visibility = Visibilities.PUBLIC,
-                                                startOffset = null,
-                                                parameterTypes = listOf(
-                                                    packageName.child(
-                                                        effectsName
-                                                    )
-                                                )
-                                            )
+                                            uniqueKey = functionUniqueKey
                                         )
                                     )
                                 ),
@@ -138,6 +139,22 @@ class EffectGenerator : Generator {
                             calleeTypeArguments = emptyList(),
                             origin = functionFqName,
                             originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
+                        )
+                    )
+
+                    given<DeclarationStore>().addInternalGiven(
+                        CallableRef(
+                            packageFqName = packageName,
+                            fqName = functionFqName,
+                            name = functionFqName.shortName(),
+                            uniqueKey = functionUniqueKey,
+                            type = givenType.toTypeRef(),
+                            receiver = null,
+                            parameters = emptyList(),
+                            targetContext = null,
+                            givenKind = CallableRef.GivenKind.GIVEN,
+                            isExternal = false,
+                            isPropertyAccessor = false
                         )
                     )
                 }
@@ -165,7 +182,28 @@ class EffectGenerator : Generator {
                                 .zip(listOf(givenType.asTypeProjection()))
                                 .toMap()
                         ).substitute(effectFunction.returnType!!.asTypeProjection())!!.type
-                        emit("@Given fun $name(): ${returnType.render()} ")
+
+                        val effectCallableRef = effectFunction.toCallableRef()
+
+                        when (effectCallableRef.givenKind) {
+                            CallableRef.GivenKind.GIVEN -> {
+                                emit("@Given")
+                                if (effectCallableRef.targetContext != null) {
+                                    emitLine("(${effectCallableRef.targetContext.classifier.fqName}::class)")
+                                } else {
+                                    emitLine()
+                                }
+                            }
+                            CallableRef.GivenKind.GIVEN_MAP_ENTRIES ->
+                                emitLine("@com.ivianuu.injekt.GivenMapEntries")
+                            CallableRef.GivenKind.GIVEN_SET_ELEMENTS ->
+                                emitLine("@com.ivianuu.injekt.GivenSetElements")
+                            CallableRef.GivenKind.GIVEN_SET -> {
+                                // todo
+                            }
+                        }.let {}
+
+                        emit("fun $name(): ${returnType.render()} ")
                         braced {
                             emit("return ${effectFunction.fqNameSafe}<${givenType.render()}>(")
                             effectFunction.valueParameters.indices.forEach { index ->
@@ -181,6 +219,16 @@ class EffectGenerator : Generator {
                             originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
                         )
                         val effectFunctionFqName = packageName.child(effectsName).child(name)
+                        val effectFunctionUniqueKey = uniqueFunctionKeyOf(
+                            fqName = effectFunctionFqName,
+                            visibility = Visibilities.PUBLIC,
+                            startOffset = null,
+                            parameterTypes = listOf(
+                                packageName.child(
+                                    effectsName
+                                )
+                            )
+                        )
                         readerContextGenerator.addPromisedReaderContextDescriptor(
                             PromisedReaderContextDescriptor(
                                 type = SimpleTypeRef(
@@ -189,16 +237,7 @@ class EffectGenerator : Generator {
                                             contextNameOf(
                                                 packageFqName = packageName,
                                                 fqName = effectFunctionFqName,
-                                                uniqueKey = uniqueFunctionKeyOf(
-                                                    fqName = effectFunctionFqName,
-                                                    visibility = Visibilities.PUBLIC,
-                                                    startOffset = null,
-                                                    parameterTypes = listOf(
-                                                        packageName.child(
-                                                            effectsName
-                                                        )
-                                                    )
-                                                )
+                                                uniqueKey = effectFunctionUniqueKey
                                             )
                                         )
                                     ),
@@ -208,6 +247,21 @@ class EffectGenerator : Generator {
                                 calleeTypeArguments = listOf(givenType.toTypeRef()),
                                 origin = effectFunctionFqName,
                                 originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
+                            )
+                        )
+                        given<DeclarationStore>().addInternalGiven(
+                            CallableRef(
+                                packageFqName = packageName,
+                                fqName = effectFunctionFqName,
+                                name = effectFunctionFqName.shortName(),
+                                uniqueKey = effectFunctionUniqueKey,
+                                type = returnType.toTypeRef(),
+                                receiver = null,
+                                parameters = emptyList(),
+                                targetContext = effectCallableRef.targetContext,
+                                givenKind = effectCallableRef.givenKind,
+                                isExternal = false,
+                                isPropertyAccessor = false
                             )
                         )
                     }

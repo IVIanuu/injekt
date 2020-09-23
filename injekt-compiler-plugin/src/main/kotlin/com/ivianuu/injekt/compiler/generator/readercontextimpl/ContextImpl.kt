@@ -102,8 +102,11 @@ class ContextImpl(
                 context.givenTypes.forEach { givenType ->
                     val existingDeclaration = members.singleOrNull {
                         it is ContextFunction && it.name == givenType.uniqueTypeName()
+                    } as? ContextFunction
+                    if (existingDeclaration != null) {
+                        existingDeclaration.isOverride = true
+                        return@forEach
                     }
-                    if (existingDeclaration != null) return@forEach
                     statements.getGivenStatement(graph.getGiven(givenType), true)
                 }
             }

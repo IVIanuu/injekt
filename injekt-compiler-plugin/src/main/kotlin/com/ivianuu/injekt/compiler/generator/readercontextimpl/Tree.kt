@@ -33,7 +33,7 @@ interface ContextMember {
 
 class ContextFunction(
     val name: Name,
-    val isOverride: Boolean,
+    var isOverride: Boolean,
     val type: TypeRef,
     val statement: ContextStatement
 ) : ContextMember {
