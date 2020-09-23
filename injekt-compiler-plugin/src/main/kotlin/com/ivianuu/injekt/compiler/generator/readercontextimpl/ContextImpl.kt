@@ -3,7 +3,6 @@ package com.ivianuu.injekt.compiler.generator.readercontextimpl
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
-import com.ivianuu.injekt.compiler.generator.ReaderContextGenerator
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
@@ -79,8 +78,9 @@ class ContextImpl(
     val superTypes = mutableListOf<TypeRef>()
 
     fun initialize() {
-        val entryPoints = given<DeclarationStore>().getRunReaderContexts(contextId)
-            .map { given<ReaderContextGenerator>().getContextByType(it)!! }
+        val declarationStore = given<DeclarationStore>()
+        val entryPoints = declarationStore.getRunReaderContexts(contextId)
+            .map { declarationStore.getReaderContextByType(it)!! }
         /*
          .map { entryPoint ->
                     // this is really naive and probably error prone

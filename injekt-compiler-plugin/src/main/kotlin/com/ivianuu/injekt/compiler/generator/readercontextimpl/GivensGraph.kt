@@ -17,10 +17,8 @@
 package com.ivianuu.injekt.compiler.generator.readercontextimpl
 
 import com.ivianuu.injekt.Given
-import com.ivianuu.injekt.compiler.generator.ContextFactoryGenerator
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.ReaderContextDescriptor
-import com.ivianuu.injekt.compiler.generator.ReaderContextGenerator
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.render
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
@@ -334,8 +332,8 @@ class GivensGraph(private val owner: ContextImpl) {
                 lazyContexts = { contexts },
                 lazyCalleeContextStatement = {
                     if (type.typeArguments.isNotEmpty()) {
-                        val givenTypesWithStatements = given<ReaderContextGenerator>()
-                            .getContextByType(type)!!
+                        val givenTypesWithStatements = declarationStore
+                            .getReaderContextByType(type)!!
                             .givenTypes
                             .map { givenType ->
                                 givenType to statements.getGivenStatement(
@@ -358,7 +356,7 @@ class GivensGraph(private val owner: ContextImpl) {
                         }
                     } else {
                         owner.superTypes += type
-                        given<ReaderContextGenerator>().getContextByType(type)!!
+                        declarationStore.getReaderContextByType(type)!!
                             .givenTypes.forEach {
                                 statements.getGivenStatement(getGiven(it), true)
                             }
@@ -378,8 +376,8 @@ class GivensGraph(private val owner: ContextImpl) {
                 currentContext = currentContext.factoryImpl.parent
             }
             if (type !in existingFactories) {
-                val factoryDescriptor = given<ContextFactoryGenerator>()
-                    .getContextFactoryDescriptorForType(type)
+                val factoryDescriptor = given<DeclarationStore>()
+                    .getContextFactoryForType(type)
                 val factoryImpl = ContextFactoryImpl(
                     name = "F${owner.factoryImpl.getParentCount() + 1}".asNameId(),
                     factoryType = factoryDescriptor.factoryType,
@@ -396,6 +394,7 @@ class GivensGraph(private val owner: ContextImpl) {
             }
         }
 
+        // todo include given set givens
         this += declarationStore.givens(type)
             .map { callable ->
                 val targetContext = callable.targetContext
@@ -403,7 +402,7 @@ class GivensGraph(private val owner: ContextImpl) {
                 CallableGivenNode(
                     type = type,
                     owner = owner,
-                    contexts = listOf(given<ReaderContextGenerator>().getContextForCallable(callable)!!),
+                    contexts = listOf(declarationStore.getReaderContextForCallable(callable)!!),
                     external = callable.isExternal,
                     origin = callable.fqName,
                     callable = callable,
@@ -413,7 +412,7 @@ class GivensGraph(private val owner: ContextImpl) {
             }
             .filter { it.targetContext == null || it.targetContext == contextId }
 
-        // todo include given set
+        // todo include given set map entries
         declarationStore.givenMapEntries(type)
             .takeIf { it.isNotEmpty() }
             ?.let { entries ->
@@ -421,8 +420,8 @@ class GivensGraph(private val owner: ContextImpl) {
                     type = type,
                     owner = owner,
                     contexts = entries.map {
-                        given<ReaderContextGenerator>()
-                            .getContextForCallable(it)!!
+                        declarationStore
+                            .getReaderContextForCallable(it)!!
                     },
                     givenSetAccessStatement = null,
                     entries = entries
@@ -430,6 +429,7 @@ class GivensGraph(private val owner: ContextImpl) {
             }
             ?.let { this += it }
 
+        // todo include given set set elements
         declarationStore.givenSetElements(type)
             .takeIf { it.isNotEmpty() }
             ?.let { elements ->
@@ -437,8 +437,8 @@ class GivensGraph(private val owner: ContextImpl) {
                     type = type,
                     owner = owner,
                     contexts = elements.map {
-                        given<ReaderContextGenerator>()
-                            .getContextForCallable(it)!!
+                        declarationStore
+                            .getReaderContextForCallable(it)!!
                     },
                     givenSetAccessStatement = null,
                     elements = elements

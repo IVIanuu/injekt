@@ -6,9 +6,6 @@ import com.ivianuu.injekt.compiler.InjektAttributes.ContextFactoryKey
 import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.compiler.removeIllegalChars
 import com.ivianuu.injekt.given
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
-import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
@@ -24,26 +21,6 @@ import java.io.File
 class ContextFactoryGenerator : Generator {
 
     private val fileManager = given<KtFileManager>()
-
-    private val internalFactories = mutableMapOf<TypeRef, ContextFactoryDescriptor>()
-    private val externalFactories = mutableMapOf<TypeRef, ContextFactoryDescriptor>()
-
-    fun getContextFactoryDescriptorForType(type: TypeRef): ContextFactoryDescriptor {
-        return internalFactories[type] ?: externalFactories[type] ?: kotlin.run {
-            val descriptor = moduleDescriptor.findClassAcrossModuleDependencies(
-                ClassId.topLevel(type.fqName)
-            )!!
-            val createFunction = descriptor.unsubstitutedMemberScope
-                .getContributedFunctions("create".asNameId(), NoLookupLocation.FROM_BACKEND)
-                .single()
-            ContextFactoryDescriptor(
-                factoryType = type,
-                contextType = KotlinTypeRef(createFunction.returnType!!),
-                inputTypes = createFunction.valueParameters
-                    .map { KotlinTypeRef(it.type) }
-            )
-        }
-    }
 
     override fun generate(files: List<KtFile>) {
         files.forEach { file ->
@@ -129,15 +106,16 @@ class ContextFactoryGenerator : Generator {
             contextType = KotlinTypeRef(contextType),
             inputTypes = inputs.map { KotlinTypeRef(it) }
         )
-        internalFactories[factoryDescriptor.factoryType] = factoryDescriptor
+        given<DeclarationStore>()
+            .addInternalContextFactory(factoryDescriptor)
         if (!isChild) {
             given<Indexer>().index(
                 fqName = containingFile.packageFqName.child(factoryName),
                 type = "class",
                 originatingFiles = listOf(factoryFile)
             )
-            given<RootContextFactoryImplGenerator>()
-                .addRootFactory(
+            given<DeclarationStore>()
+                .addInternalRootFactory(
                     ContextFactoryImplDescriptor(
                         factoryImplFqName = implFqName!!,
                         factory = factoryDescriptor

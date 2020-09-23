@@ -36,3 +36,10 @@ data class ParameterRef(
     val typeRef: TypeRef,
     val isExtensionReceiver: Boolean = false
 )
+
+data class GivenSetDescriptor(
+    val type: TypeRef,
+    val callables: List<CallableRef>
+) {
+    val givenSets = mutableListOf<GivenSetDescriptor>()
+}

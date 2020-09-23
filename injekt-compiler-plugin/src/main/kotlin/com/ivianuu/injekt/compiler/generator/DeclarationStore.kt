@@ -19,16 +19,106 @@ package com.ivianuu.injekt.compiler.generator
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
+import com.ivianuu.injekt.compiler.contextNameOf
+import com.ivianuu.injekt.compiler.getContextName
 import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.compiler.unsafeLazy
 import com.ivianuu.injekt.given
+import org.jetbrains.kotlin.backend.common.serialization.findPackage
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.constants.KClassValue
+import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 @Given(GenerationContext::class)
 class DeclarationStore {
 
     private val indexer = given<Indexer>()
+
+    private val internalContextFactories = mutableMapOf<TypeRef, ContextFactoryDescriptor>()
+
+    fun addInternalContextFactory(factory: ContextFactoryDescriptor) {
+        internalContextFactories[factory.factoryType] = factory
+    }
+
+    private val externalContextFactories = mutableMapOf<TypeRef, ContextFactoryDescriptor>()
+
+    fun getContextFactoryForType(type: TypeRef): ContextFactoryDescriptor {
+        return internalContextFactories[type] ?: externalContextFactories[type] ?: kotlin.run {
+            val descriptor = moduleDescriptor.findClassAcrossModuleDependencies(
+                ClassId.topLevel(type.fqName)
+            )!!
+            val createFunction = descriptor.unsubstitutedMemberScope
+                .getContributedFunctions("create".asNameId(), NoLookupLocation.FROM_BACKEND)
+                .single()
+            ContextFactoryDescriptor(
+                factoryType = type,
+                contextType = KotlinTypeRef(createFunction.returnType!!),
+                inputTypes = createFunction.valueParameters
+                    .map { KotlinTypeRef(it.type) }
+            )
+        }
+    }
+
+    private val internalRootFactories = mutableSetOf<ContextFactoryImplDescriptor>()
+    fun addInternalRootFactory(rootFactory: ContextFactoryImplDescriptor) {
+        internalRootFactories += rootFactory
+    }
+
+    val allRootFactories by unsafeLazy {
+        internalRootFactories + moduleDescriptor.getPackage(InjektFqNames.IndexPackage)
+            .memberScope
+            .let { memberScope ->
+                (memberScope.getClassifierNames() ?: emptySet())
+                    .map {
+                        memberScope.getContributedClassifier(
+                            it,
+                            NoLookupLocation.FROM_BACKEND
+                        )
+                    }
+            }
+            .filterIsInstance<ClassDescriptor>()
+            .mapNotNull { index ->
+                index.annotations.findAnnotation(InjektFqNames.Index)
+                    ?.takeIf { annotation ->
+                        annotation.allValueArguments["type".asNameId()]
+                            .let { it as StringValue }
+                            .value == "class"
+                    }
+                    ?.let { annotation ->
+                        val fqName =
+                            annotation.allValueArguments.getValue("fqName".asNameId())
+                                .let { it as StringValue }
+                                .value
+                                .let { FqName(it) }
+                        if (!isInjektCompiler &&
+                            fqName.asString().startsWith("com.ivianuu.injekt.compiler")
+                        ) return@mapNotNull null
+                        moduleDescriptor
+                            .findClassAcrossModuleDependencies(ClassId.topLevel(fqName))
+                    }
+            }
+            .mapNotNull { index ->
+                val factoryImplFqName =
+                    index.annotations.findAnnotation(InjektFqNames.RootContextFactory)
+                        ?.allValueArguments
+                        ?.values
+                        ?.single()
+                        ?.let { it as StringValue }
+                        ?.value
+                        ?.let { FqName(it) } ?: return@mapNotNull null
+                ContextFactoryImplDescriptor(
+                    factoryImplFqName = factoryImplFqName,
+                    factory = getContextFactoryForType(KotlinTypeRef(index.defaultType))
+                )
+            }
+    }
 
     private val internalCallableRefs = mutableListOf<CallableRef>()
     fun addInternalGiven(callableRef: CallableRef) {
@@ -127,6 +217,97 @@ class DeclarationStore {
                 .filter { it.first == contextId }
                 .map { it.second }
         }
+    }
+
+    private val readerContextsByDeclaration =
+        mutableMapOf<DeclarationDescriptor, ReaderContextDescriptor>()
+    val readerContextsByType = mutableMapOf<TypeRef, ReaderContextDescriptor>()
+    private val externalReaderContexts =
+        mutableMapOf<DeclarationDescriptor, ReaderContextDescriptor>()
+
+    fun getReaderContextForCallable(callableRef: CallableRef): ReaderContextDescriptor? {
+        return getReaderContextByType(
+            SimpleTypeRef(
+                fqName = callableRef.packageFqName.child(
+                    contextNameOf(
+                        packageFqName = callableRef.packageFqName,
+                        fqName = callableRef.fqName,
+                        uniqueKey = callableRef.uniqueKey
+                    )
+                )
+            )
+        )
+    }
+
+    fun addReaderContextForType(type: TypeRef, context: ReaderContextDescriptor) {
+        readerContextsByType[type] = context
+    }
+
+    fun getReaderContextByType(type: TypeRef): ReaderContextDescriptor? {
+        readerContextsByType[type]?.let { return it }
+
+        return moduleDescriptor.findClassAcrossModuleDependencies(
+            ClassId.topLevel(type.fqName)
+        )?.let { classDescriptor ->
+            ReaderContextDescriptor(
+                type = type,
+                typeParameters = classDescriptor.declaredTypeParameters
+                    .map {
+                        ReaderContextTypeParameter(
+                            it.name,
+                            it.upperBounds.map { KotlinTypeRef(it) }
+                        )
+                    },
+                originatingFiles = emptyList(),
+                origin = FqName(
+                    classDescriptor.annotations.findAnnotation(InjektFqNames.Origin)!!
+                        .allValueArguments["fqName".asNameId()]!!.value as String
+                )
+            ).apply {
+                givenTypes += classDescriptor.unsubstitutedMemberScope
+                    .getContributedDescriptors()
+                    .filterIsInstance<FunctionDescriptor>()
+                    .filter { it.dispatchReceiverParameter?.type == classDescriptor.defaultType }
+                    .map { KotlinTypeRef(it.returnType!!) }
+            }
+        }?.also { readerContextsByType[type] = it }
+    }
+
+    fun addReaderContextForDeclaration(
+        declaration: DeclarationDescriptor,
+        context: ReaderContextDescriptor
+    ) {
+        readerContextsByDeclaration[declaration.original] = context
+        readerContextsByType[context.type] = context
+    }
+
+    fun getReaderContextForDeclaration(declaration: DeclarationDescriptor): ReaderContextDescriptor? {
+        return readerContextsByDeclaration[declaration.original]
+            ?: externalReaderContexts[declaration.original]
+            ?: declaration.findPackage()
+                .getMemberScope()
+                .getContributedClassifier(
+                    declaration.getContextName(),
+                    NoLookupLocation.FROM_BACKEND
+                )
+                ?.let { it as ClassDescriptor }
+                ?.let {
+                    ReaderContextDescriptor(
+                        SimpleTypeRef(it.fqNameSafe, isContext = true),
+                        it.declaredTypeParameters
+                            .map { typeParameter ->
+                                ReaderContextTypeParameter(
+                                    typeParameter.name,
+                                    typeParameter.upperBounds
+                                        .map { KotlinTypeRef(it) }
+                                )
+                            },
+                        declaration.fqNameSafe,
+                        emptyList()
+                    )
+                }
+                ?.also { externalReaderContexts[declaration.original] = it }
+                ?.also { readerContextsByType[it.type] = it }
     }
 
 }

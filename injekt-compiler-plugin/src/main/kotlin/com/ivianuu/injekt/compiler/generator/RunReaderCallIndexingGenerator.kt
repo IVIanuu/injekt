@@ -52,7 +52,7 @@ class RunReaderCallIndexingGenerator : Generator {
             .let { it as KtLambdaExpression }
             .functionLiteral
             .descriptor<FunctionDescriptor>()
-            .let { given<ReaderContextGenerator>().getContextForDeclaration(it)!! }
+            .let { given<DeclarationStore>().getReaderContextForDeclaration(it)!! }
             .type
 
         given<DeclarationStore>()
