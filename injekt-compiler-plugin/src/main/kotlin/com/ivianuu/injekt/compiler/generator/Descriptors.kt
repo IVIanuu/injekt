@@ -28,7 +28,7 @@ data class CallableRef(
     val isPropertyAccessor: Boolean
 ) {
     enum class GivenKind {
-        GIVEN, MAP_ENTRIES, SET_ELEMENTS
+        GIVEN, GIVEN_MAP_ENTRIES, GIVEN_SET_ELEMENTS, GIVEN_SET
     }
 }
 
@@ -40,6 +40,4 @@ data class ParameterRef(
 data class GivenSetDescriptor(
     val type: TypeRef,
     val callables: List<CallableRef>
-) {
-    val givenSets = mutableListOf<GivenSetDescriptor>()
-}
+)

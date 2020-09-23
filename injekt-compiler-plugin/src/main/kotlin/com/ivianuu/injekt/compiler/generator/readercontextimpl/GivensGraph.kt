@@ -17,7 +17,9 @@
 package com.ivianuu.injekt.compiler.generator.readercontextimpl
 
 import com.ivianuu.injekt.Given
+import com.ivianuu.injekt.compiler.generator.CallableRef
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
+import com.ivianuu.injekt.compiler.generator.GivenSetDescriptor
 import com.ivianuu.injekt.compiler.generator.ReaderContextDescriptor
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.render
@@ -44,9 +46,9 @@ class GivensGraph(private val owner: ContextImpl) {
         .mapIndexed { index, inputType -> InputGivenNode(inputType, "p$index", owner) }
         .groupBy { it.type }
 
-    //private val inputFunctionNodes = mutableMapOf<Key, MutableSet<Given>>()
-    //private val inputGivenMapEntries = mutableMapOf<Key, MutableSet<IrFunction>>()
-    //private val inputGivenSetElements = mutableMapOf<Key, MutableSet<IrFunction>>()
+    private val givenSetGivens = mutableMapOf<TypeRef, MutableList<GivenNode>>()
+    private val givenSetMapEntries = mutableMapOf<TypeRef, MutableList<CallableRef>>()
+    private val givenSetSetElements = mutableMapOf<TypeRef, MutableList<CallableRef>>()
 
     val resolvedGivens = mutableMapOf<TypeRef, GivenNode>()
 
@@ -65,87 +67,56 @@ class GivensGraph(private val owner: ContextImpl) {
     private val checkedGivens = mutableSetOf<GivenNode>()
 
     init {
-        /**val givenSets = inputs
-        .filter { it.type.classOrNull!!.owner.hasAnnotation(InjektFqNames.GivenSet) }
-        .associateWith { it.type.classOrNull!!.owner }
+        val givenSets = inputs
+            .filter { it.isGivenSet }
+            .map { declarationStore.getGivenSetForType(it) }
 
-        fun IrClass.collectGivens(
-        parentAccessStatement: ContextStatement?,
-        parentAccessFunction: IrFunction?
+        fun GivenSetDescriptor.collectGivens(
+            parentAccessStatement: ContextStatement?,
+            parentCallable: CallableRef?
         ) {
-        val functions = (functions
-        .toList() + properties
-        .map { it.getter!! })
-        .map { given<ReaderContextParamTransformer>().getTransformedFunction(it) }
-
-        val thisAccessStatement: ContextStatement = { c ->
-        if (parentAccessStatement == null) {
-        irGetField(
-        c[contextImpl],
-        contextImpl.fields
-        .single { it.type.classOrNull!!.owner == this@collectGivens }
-        )
-        } else {
-        inputFunctionNodes
-        irCall(parentAccessFunction!!).apply {
-        dispatchReceiver = parentAccessStatement(c)
-        }
+            val thisAccessStatement: ContextStatement = {
+                if (parentAccessStatement == null) {
+                    emit("p${inputs.indexOf(type)}")
+                } else {
+                    parentAccessStatement()
+                    emit(".")
+                    emit("${parentCallable!!.name}")
+                    if (!parentCallable.isPropertyAccessor) {
+                        emit("()")
+                    }
                 }
             }
 
-            for (function in functions) {
-                fun functionOrPropertyHasAnnotation(fqName: FqName) =
-                    function.hasAnnotation(fqName) ||
-                            (function is IrSimpleFunction && function.correspondingPropertySymbol?.owner?.hasAnnotation(
-                                fqName
-                            ) == true)
-
-                when {
-                    functionOrPropertyHasAnnotation(InjektFqNames.Given) -> {
-                        val targetContext = (function.getClassFromAnnotation(
-                            InjektFqNames.Given, 0
-                        )
-                            ?: (if (function is IrConstructor) function.constructedClass.getClassFromAnnotation(
-                                InjektFqNames.Given, 0
-                            ) else null)
-                            ?: if (function is IrSimpleFunction) function.correspondingPropertySymbol
-                                ?.owner?.getClassFromAnnotation(InjektFqNames.Given, 0) else null)
-                            ?.takeUnless { it.defaultType.isNothing() }
-
-                        val explicitParameters = function.valueParameters
-                            .filter { it != function.getContextValueParameter() }
-
-        inputFunctionNodes.getOrPut(function.returnType.asKey()) { mutableSetOf() } += GivenFunction(
-        type = function.returnType.asKey(),
-        owner = contextImpl,
-                            contexts = listOf(function.getContext()!!.defaultType),
-                            external = function.isExternalDeclaration(),
-                            explicitParameters = explicitParameters,
-                            origin = function.descriptor.fqNameSafe,
-                            function = function,
-        targetContext = targetContext,
-        givenSetAccessExpression = thisAccessStatement
-        )
-                    }
-                    functionOrPropertyHasAnnotation(InjektFqNames.GivenSet) -> {
-        function.returnType.classOrNull!!.owner.collectGivens(
-        thisAccessStatement,
-        function
+            for (callable in callables) {
+                when (callable.givenKind) {
+                    CallableRef.GivenKind.GIVEN -> {
+                        givenSetGivens.getOrPut(callable.type) { mutableListOf() } += CallableGivenNode(
+                            type = callable.type,
+                            owner = owner,
+                            contexts = listOf(declarationStore.getReaderContextForCallable(callable)!!),
+                            origin = callable.fqName,
+                            external = callable.isExternal,
+                            targetContext = callable.targetContext,
+                            givenSetAccessStatement = thisAccessStatement,
+                            callable = callable
                         )
                     }
-                    functionOrPropertyHasAnnotation(InjektFqNames.GivenMapEntries) -> {
-                        inputGivenMapEntries.getOrPut(function.returnType.asKey()) { mutableSetOf() } += function
-        }
-        functionOrPropertyHasAnnotation(InjektFqNames.GivenSetElements) -> {
-        inputGivenSetElements.getOrPut(function.returnType.asKey()) { mutableSetOf() } += function
-        }
-        }
-        }
+                    CallableRef.GivenKind.GIVEN_MAP_ENTRIES -> {
+                        givenSetMapEntries.getOrPut(callable.type) { mutableListOf() } += callable
+                    }
+                    CallableRef.GivenKind.GIVEN_SET_ELEMENTS -> {
+                        givenSetSetElements.getOrPut(callable.type) { mutableListOf() } += callable
+                    }
+                    CallableRef.GivenKind.GIVEN_SET -> {
+                        declarationStore.getGivenSetForType(callable.type)
+                            .collectGivens(thisAccessStatement, callable)
+                    }
+                }.let {}
+            }
         }
 
-        givenSets.values.forEach {
-        it.collectGivens(null, null)
-        }*/
+        givenSets.forEach { it.collectGivens(null, null) }
     }
 
     fun checkEntryPoints(entryPoints: List<ReaderContextDescriptor>) {
@@ -394,7 +365,7 @@ class GivensGraph(private val owner: ContextImpl) {
             }
         }
 
-        // todo include given set givens
+        givenSetGivens[type]?.let { this += it }
         this += declarationStore.givens(type)
             .map { callable ->
                 val targetContext = callable.targetContext
@@ -412,8 +383,7 @@ class GivensGraph(private val owner: ContextImpl) {
             }
             .filter { it.targetContext == null || it.targetContext == contextId }
 
-        // todo include given set map entries
-        declarationStore.givenMapEntries(type)
+        ((givenSetMapEntries[type] ?: emptyList()) + declarationStore.givenMapEntries(type))
             .takeIf { it.isNotEmpty() }
             ?.let { entries ->
                 MapGivenNode(
@@ -429,8 +399,7 @@ class GivensGraph(private val owner: ContextImpl) {
             }
             ?.let { this += it }
 
-        // todo include given set set elements
-        declarationStore.givenSetElements(type)
+        ((givenSetSetElements[type] ?: emptyList()) + declarationStore.givenSetElements(type))
             .takeIf { it.isNotEmpty() }
             ?.let { elements ->
                 SetGivenNode(

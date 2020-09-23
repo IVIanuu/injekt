@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.ClassId
@@ -152,7 +153,7 @@ class DeclarationStore {
 
     private val allGivenMapEntries by unsafeLazy {
         internalCallableRefs
-            .filter { it.givenKind == CallableRef.GivenKind.MAP_ENTRIES } +
+            .filter { it.givenKind == CallableRef.GivenKind.GIVEN_MAP_ENTRIES } +
                 (indexer.functionIndices +
                         indexer.propertyIndices.mapNotNull { it.getter })
                     .filter { it.hasAnnotation(InjektFqNames.GivenMapEntries) }
@@ -172,7 +173,7 @@ class DeclarationStore {
 
     private val allGivenSetElements by unsafeLazy {
         internalCallableRefs
-            .filter { it.givenKind == CallableRef.GivenKind.SET_ELEMENTS } + (indexer.functionIndices +
+            .filter { it.givenKind == CallableRef.GivenKind.GIVEN_SET_ELEMENTS } + (indexer.functionIndices +
                 indexer.propertyIndices.mapNotNull { it.getter })
             .filter { it.hasAnnotation(InjektFqNames.GivenSetElements) }
             .filter {
@@ -308,6 +309,37 @@ class DeclarationStore {
                 }
                 ?.also { externalReaderContexts[declaration.original] = it }
                 ?.also { readerContextsByType[it.type] = it }
+    }
+
+    private val givenSetsByType = mutableMapOf<TypeRef, GivenSetDescriptor>()
+    fun getGivenSetForType(type: TypeRef): GivenSetDescriptor {
+        return givenSetsByType.getOrPut(type) {
+            val descriptor = indexer.getMemberScope(type.fqName.parent())!!
+                .getContributedClassifier(
+                    type.fqName.shortName(),
+                    NoLookupLocation.FROM_BACKEND
+                )!! as ClassDescriptor
+            val members = descriptor.unsubstitutedMemberScope.getContributedDescriptors()
+            GivenSetDescriptor(
+                type = type,
+                callables = members
+                    .filter {
+                        it.hasAnnotationWithPropertyAndClass(
+                            InjektFqNames.Given
+                        ) || it.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSetElements) ||
+                                it.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenMapEntries) ||
+                                it.hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSet)
+                    }
+                    .mapNotNull {
+                        when (it) {
+                            is PropertyDescriptor -> it.getter!!
+                            is FunctionDescriptor -> it
+                            else -> null
+                        }
+                    }
+                    .map { it.toCallableRef() }
+            )
+        }
     }
 
 }

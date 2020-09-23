@@ -194,8 +194,9 @@ fun FunctionDescriptor.toCallableRef() = CallableRef(
         ?.let { KotlinTypeRef(it) },
     givenKind = when {
         hasAnnotationWithPropertyAndClass(InjektFqNames.Given) -> CallableRef.GivenKind.GIVEN
-        hasAnnotationWithPropertyAndClass(InjektFqNames.GivenMapEntries) -> CallableRef.GivenKind.MAP_ENTRIES
-        hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSetElements) -> CallableRef.GivenKind.SET_ELEMENTS
+        hasAnnotationWithPropertyAndClass(InjektFqNames.GivenMapEntries) -> CallableRef.GivenKind.GIVEN_MAP_ENTRIES
+        hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSetElements) -> CallableRef.GivenKind.GIVEN_SET_ELEMENTS
+        hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSet) -> CallableRef.GivenKind.GIVEN_SET
         else -> error("Unexpected callable $this")
     },
     parameters = listOfNotNull(

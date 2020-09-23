@@ -41,7 +41,6 @@ class GivenStatements(private val owner: ContextImpl) {
                 name = given.type.uniqueTypeName(),
                 type = SimpleTypeRef(FqName("kotlin.Any"), isMarkedNullable = true),
                 initializer = { emit("this") },
-                owner = owner,
                 isMutable = true
             ).also { owner.members += it }
 
@@ -66,7 +65,6 @@ class GivenStatements(private val owner: ContextImpl) {
             name = given.type.uniqueTypeName(),
             isOverride = isOverride,
             type = given.type,
-            owner = owner,
             statement = finalStatement
         )
 
@@ -145,7 +143,10 @@ class GivenStatements(private val owner: ContextImpl) {
     private fun functionExpression(given: CallableGivenNode): ContextStatement {
         fun createExpression(parameters: List<ContextStatement>): ContextStatement {
             return {
-                if (given.callable.receiver != null) {
+                if (given.givenSetAccessStatement != null) {
+                    given.givenSetAccessStatement!!()
+                    emit(".${given.callable.name}")
+                } else if (given.callable.receiver != null) {
                     emit("${given.callable.receiver.render()}.${given.callable.name}")
                 } else {
                     emit(given.callable.fqName)

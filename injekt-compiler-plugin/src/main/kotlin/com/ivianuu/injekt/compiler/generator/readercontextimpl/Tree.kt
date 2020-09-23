@@ -35,8 +35,7 @@ class ContextFunction(
     val name: Name,
     val isOverride: Boolean,
     val type: TypeRef,
-    val statement: ContextStatement,
-    val owner: ContextImpl
+    val statement: ContextStatement
 ) : ContextMember {
     override fun CodeBuilder.emit() {
         if (isOverride) emit("override ")
@@ -53,7 +52,6 @@ class ContextProperty(
     val name: Name,
     val type: TypeRef,
     val initializer: ContextStatement,
-    val owner: ContextImpl,
     val isMutable: Boolean
 ) : ContextMember {
     override fun CodeBuilder.emit() {

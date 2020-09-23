@@ -14,6 +14,7 @@ sealed class TypeRef {
     abstract val isMarkedNullable: Boolean
     abstract val isContext: Boolean
     abstract val isChildContextFactory: Boolean
+    abstract val isGivenSet: Boolean
     abstract val typeArguments: List<TypeRef>
     abstract val variance: Variance
     abstract val isReader: Boolean
@@ -40,9 +41,11 @@ class KotlinTypeRef(
         get() = kotlinType.annotations.findAnnotation(InjektFqNames.Qualifier)
             ?.allValueArguments?.values?.singleOrNull()?.value as? String
     override val isContext: Boolean
-        get() = kotlinType.hasAnnotation(InjektFqNames.ContextMarker)
+        get() = kotlinType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.ContextMarker)
     override val isChildContextFactory: Boolean
-        get() = kotlinType.hasAnnotation(InjektFqNames.ChildContextFactory)
+        get() = kotlinType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.ChildContextFactory)
+    override val isGivenSet: Boolean
+        get() = kotlinType.constructor.declarationDescriptor!!.hasAnnotation(InjektFqNames.GivenSet)
     override val isMarkedNullable: Boolean
         get() = kotlinType.isMarkedNullable
     override val typeArguments: List<TypeRef>
@@ -54,6 +57,7 @@ class SimpleTypeRef(
     override val isMarkedNullable: Boolean = false,
     override val isContext: Boolean = false,
     override val isChildContextFactory: Boolean = false,
+    override val isGivenSet: Boolean = false,
     override val typeArguments: List<TypeRef> = emptyList(),
     override val variance: Variance = Variance.INVARIANT,
     override val isComposable: Boolean = false,
