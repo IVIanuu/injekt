@@ -47,7 +47,8 @@ class ReaderContextGenerator : Generator {
     private val externalContexts = mutableMapOf<DeclarationDescriptor, ReaderContextDescriptor>()
     private val contextsByType = mutableMapOf<TypeRef, ReaderContextDescriptor>()
 
-    fun getContextForFunction(callableRef: CallableRef): ReaderContextDescriptor? {
+    fun getContextForCallable(callableRef: CallableRef): ReaderContextDescriptor? {
+        println("get c for ${callableRef.fqName} ${callableRef.name}")
         return getContextByType(
             SimpleTypeRef(
                 fqName = callableRef.packageFqName.child(

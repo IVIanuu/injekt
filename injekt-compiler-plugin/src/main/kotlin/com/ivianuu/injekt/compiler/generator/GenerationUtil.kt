@@ -2,6 +2,7 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.compiler.InjektFqNames
+import com.ivianuu.injekt.compiler.checkers.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
 import com.ivianuu.injekt.compiler.checkers.isMarkedAsReader
 import com.ivianuu.injekt.compiler.irtransform.asNameId
@@ -152,6 +153,21 @@ fun TypeRef.uniqueTypeName(): Name {
         .asNameId()
 }
 
+fun DeclarationDescriptor.hasAnnotationWithPropertyAndClass(
+    fqName: FqName
+): Boolean = hasAnnotation(fqName) ||
+        (this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotation(fqName)) ||
+        (this is ConstructorDescriptor && constructedClass.hasAnnotation(fqName))
+
+fun DeclarationDescriptor.hasAnnotatedAnnotationsWithPropertyAndClass(
+    fqName: FqName
+): Boolean = hasAnnotatedAnnotations(fqName, module) ||
+        (this is PropertyAccessorDescriptor && correspondingProperty.hasAnnotatedAnnotations(
+            fqName,
+            module
+        )) ||
+        (this is ConstructorDescriptor && constructedClass.hasAnnotatedAnnotations(fqName, module))
+
 fun FunctionDescriptor.toCallableRef() = CallableRef(
     name = when (this) {
         is ConstructorDescriptor -> constructedClass.name
@@ -159,7 +175,11 @@ fun FunctionDescriptor.toCallableRef() = CallableRef(
         else -> name
     },
     packageFqName = findPackage().fqName,
-    fqName = fqNameSafe,
+    fqName = when (this) {
+        is ConstructorDescriptor -> constructedClass.fqNameSafe
+        is PropertyAccessorDescriptor -> correspondingProperty.fqNameSafe
+        else -> fqNameSafe
+    },
     type = KotlinTypeRef(returnType!!),
     receiver = dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
         ?.takeIf { it is ClassDescriptor && it.kind == ClassKind.OBJECT }
@@ -171,9 +191,9 @@ fun FunctionDescriptor.toCallableRef() = CallableRef(
         ?.getType(module)
         ?.let { KotlinTypeRef(it) },
     givenKind = when {
-        hasAnnotation(InjektFqNames.Given) -> CallableRef.GivenKind.GIVEN
-        hasAnnotation(InjektFqNames.GivenMapEntries) -> CallableRef.GivenKind.MAP_ENTRIES
-        hasAnnotation(InjektFqNames.GivenSetElements) -> CallableRef.GivenKind.SET_ELEMENTS
+        hasAnnotationWithPropertyAndClass(InjektFqNames.Given) -> CallableRef.GivenKind.GIVEN
+        hasAnnotationWithPropertyAndClass(InjektFqNames.GivenMapEntries) -> CallableRef.GivenKind.MAP_ENTRIES
+        hasAnnotationWithPropertyAndClass(InjektFqNames.GivenSetElements) -> CallableRef.GivenKind.SET_ELEMENTS
         else -> error("Unexpected callable $this")
     },
     parameters = listOfNotNull(
@@ -187,7 +207,11 @@ fun FunctionDescriptor.toCallableRef() = CallableRef(
         ParameterRef(KotlinTypeRef(it.type))
     },
     isPropertyAccessor = this is PropertyAccessorDescriptor,
-    uniqueKey = uniqueKey()
+    uniqueKey = when (this) {
+        is ConstructorDescriptor -> constructedClass.uniqueKey()
+        is PropertyAccessorDescriptor -> correspondingProperty.uniqueKey()
+        else -> uniqueKey()
+    }
 )
 
 fun ClassDescriptor.getReaderConstructor(): ConstructorDescriptor? {

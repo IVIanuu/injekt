@@ -67,7 +67,7 @@ class ReaderContextTest {
     }
 
     @Test
-    fun testWithMultiChild() = codegen(
+    fun testMultiChild() = codegen(
         """
             @Given
             fun foo() = Foo()
@@ -415,7 +415,7 @@ class ReaderContextTest {
     }
 
     @Test
-    fun testWithGivenSet() = codegen(
+    fun testGivenSet() = codegen(
         """
         @GivenSet
         class FooGivens {
@@ -435,7 +435,7 @@ class ReaderContextTest {
     }
 
     @Test
-    fun testWithNestedGivenSets() = codegen(
+    fun testNestedGivenSets() = codegen(
         """
         @GivenSet
         class FooGivens {
@@ -454,26 +454,6 @@ class ReaderContextTest {
         
         fun invoke(): Bar {
             return rootContext<TestContext>(FooGivens()).runReader { given<Bar>() }
-        }
-    """
-    ) {
-        assertTrue(invokeSingleFile() is Bar)
-    }
-
-    // todo @Test
-    fun testWithGivenRef() = codegen(
-        """
-        @Module
-        class FooBarGivens {
-            @Given
-            fun foo() = Foo()
-        }
-        
-        @Given
-        fun bar() = Bar(given())
-        
-        fun invoke(): Bar {
-            return rootContext<TestContext>(FooBarModule()).runReader { given<Bar>() }
         }
     """
     ) {

@@ -18,13 +18,10 @@ package com.ivianuu.injekt.compiler.generator
 
 import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.compiler.InjektFqNames
-import com.ivianuu.injekt.compiler.checkers.hasAnnotatedAnnotations
 import com.ivianuu.injekt.compiler.checkers.hasAnnotation
 import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.compiler.unsafeLazy
 import com.ivianuu.injekt.given
-import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -47,16 +44,8 @@ class DeclarationStore {
                     .mapNotNull { it.getter }
                 )
             .filter {
-                (it.hasAnnotation(InjektFqNames.Given) || it.hasAnnotatedAnnotations(InjektFqNames.Effect)) ||
-                        (it is PropertyAccessorDescriptor &&
-                                (it.correspondingProperty.hasAnnotation(InjektFqNames.Given) ||
-                                        it.correspondingProperty.hasAnnotatedAnnotations(
-                                            InjektFqNames.Effect
-                                        ))) ||
-                        (it is ConstructorDescriptor && (it.constructedClass.hasAnnotation(
-                            InjektFqNames.Given
-                        ) ||
-                                it.constructedClass.hasAnnotatedAnnotations(InjektFqNames.Effect)))
+                it.hasAnnotationWithPropertyAndClass(InjektFqNames.Given) ||
+                        it.hasAnnotatedAnnotationsWithPropertyAndClass(InjektFqNames.Effect)
             }
             .filter {
                 isInjektCompiler ||

@@ -397,16 +397,16 @@ class GivensGraph(private val owner: ContextImpl) {
         }
 
         this += declarationStore.givens(type)
-            .map { function ->
-                val targetContext = function.targetContext
+            .map { callable ->
+                val targetContext = callable.targetContext
 
                 CallableGivenNode(
                     type = type,
                     owner = owner,
-                    contexts = listOf(given<ReaderContextGenerator>().getContextForFunction(function)!!),
-                    external = function.isExternal,
-                    origin = function.fqName,
-                    callable = function,
+                    contexts = listOf(given<ReaderContextGenerator>().getContextForCallable(callable)!!),
+                    external = callable.isExternal,
+                    origin = callable.fqName,
+                    callable = callable,
                     targetContext = targetContext,
                     givenSetAccessStatement = null
                 )
@@ -422,7 +422,7 @@ class GivensGraph(private val owner: ContextImpl) {
                     owner = owner,
                     contexts = entries.map {
                         given<ReaderContextGenerator>()
-                            .getContextForFunction(it)!!
+                            .getContextForCallable(it)!!
                     },
                     givenSetAccessStatement = null,
                     entries = entries
@@ -438,7 +438,7 @@ class GivensGraph(private val owner: ContextImpl) {
                     owner = owner,
                     contexts = elements.map {
                         given<ReaderContextGenerator>()
-                            .getContextForFunction(it)!!
+                            .getContextForCallable(it)!!
                     },
                     givenSetAccessStatement = null,
                     elements = elements
