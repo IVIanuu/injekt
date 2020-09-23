@@ -24,11 +24,7 @@ import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.compiler.unsafeLazy
 import com.ivianuu.injekt.given
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
-import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -37,20 +33,14 @@ class DeclarationStore {
 
     private val indexer = given<Indexer>()
 
-    private val mapDescriptor = moduleDescriptor.findClassAcrossModuleDependencies(
-        ClassId.topLevel(FqName("kotlin.collections.Map"))
-    )!!
-    private val setDescriptor = moduleDescriptor.findClassAcrossModuleDependencies(
-        ClassId.topLevel(FqName("kotlin.collections.Set"))
-    )!!
-
-    private val internalFunctionRefs = mutableListOf<CallableRef>()
+    private val internalCallableRefs = mutableListOf<CallableRef>()
     fun addInternalGiven(callableRef: CallableRef) {
-        internalFunctionRefs += callableRef
+        internalCallableRefs += callableRef
     }
 
     private val allGivens by unsafeLazy {
-        internalFunctionRefs + (indexer.functionIndices +
+        internalCallableRefs
+            .filter { it.givenKind == CallableRef.GivenKind.GIVEN } + (indexer.functionIndices +
                 indexer.classIndices
                     .flatMap { it.constructors.toList() } +
                 indexer.propertyIndices
@@ -73,34 +63,37 @@ class DeclarationStore {
                         !it.fqNameSafe.asString().startsWith("com.ivianuu.injekt.compiler")
             }
             .distinct()
-            .map { it.toFunctionRef() }
+            .map { it.toCallableRef() }
     }
 
     private val givensByType = mutableMapOf<TypeRef, List<CallableRef>>()
     fun givens(type: TypeRef) = givensByType.getOrPut(type) {
-        allGivens.filter { it.typeRef == type }
+        allGivens.filter { it.type == type }
     }
 
     private val allGivenMapEntries by unsafeLazy {
-        (indexer.functionIndices +
-                indexer.propertyIndices.mapNotNull { it.getter })
-            .filter { it.hasAnnotation(InjektFqNames.GivenMapEntries) }
-            .filter {
-                isInjektCompiler ||
-                        !it.fqNameSafe.asString()
-                            .startsWith("com.ivianuu.injekt.compiler")
-            }
+        internalCallableRefs
+            .filter { it.givenKind == CallableRef.GivenKind.MAP_ENTRIES } +
+                (indexer.functionIndices +
+                        indexer.propertyIndices.mapNotNull { it.getter })
+                    .filter { it.hasAnnotation(InjektFqNames.GivenMapEntries) }
+                    .filter {
+                        isInjektCompiler ||
+                                !it.fqNameSafe.asString()
+                                    .startsWith("com.ivianuu.injekt.compiler")
+                    }.map { it.toCallableRef() }
     }
 
-    private val givenMapEntriesByKey = mutableMapOf<TypeRef, List<FunctionDescriptor>>()
+    private val givenMapEntriesByKey = mutableMapOf<TypeRef, List<CallableRef>>()
     fun givenMapEntries(type: TypeRef) = givenMapEntriesByKey.getOrPut(type) {
         // TODO if (key.type.classOrNull != mapSymbol) return@getOrPut emptyList()
         allGivenMapEntries
-            .filter { KotlinTypeRef(it.returnType!!) == type }
+            .filter { it.type == type }
     }
 
     private val allGivenSetElements by unsafeLazy {
-        (indexer.functionIndices +
+        internalCallableRefs
+            .filter { it.givenKind == CallableRef.GivenKind.SET_ELEMENTS } + (indexer.functionIndices +
                 indexer.propertyIndices.mapNotNull { it.getter })
             .filter { it.hasAnnotation(InjektFqNames.GivenSetElements) }
             .filter {
@@ -108,13 +101,14 @@ class DeclarationStore {
                         !it.fqNameSafe.asString()
                             .startsWith("com.ivianuu.injekt.compiler")
             }
+            .map { it.toCallableRef() }
     }
 
-    private val givenSetElementsByKey = mutableMapOf<TypeRef, List<FunctionDescriptor>>()
+    private val givenSetElementsByKey = mutableMapOf<TypeRef, List<CallableRef>>()
     fun givenSetElements(type: TypeRef) = givenSetElementsByKey.getOrPut(type) {
         // todo if (key.type.classOrNull != setSymbol) return@getOrPut emptyList()
         allGivenSetElements
-            .filter { KotlinTypeRef(it.returnType!!) == type }
+            .filter { it.type == type }
     }
 
     private val internalRunReaderContexts = mutableMapOf<TypeRef, MutableSet<TypeRef>>()

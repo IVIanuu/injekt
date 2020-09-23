@@ -233,7 +233,7 @@ class GivensGraph(private val owner: ContextImpl) {
             if (targetContext != null && targetContext != contextId) {
                 if (parent == null) {
                     error(
-                        "Context mismatch, given '${type}' " +
+                        "Context mismatch, given '${type.render()}' " +
                                 "is scoped to '${targetContext!!.render()}' but actual context is " +
                                 contextId.render()
                     )
@@ -253,7 +253,7 @@ class GivensGraph(private val owner: ContextImpl) {
 
         if (instanceAndGivenSetGivens.size > 1) {
             error(
-                "Multiple givens found in inputs for '${type}' at:\n${
+                "Multiple givens found in inputs for '${type.render()}' at:\n${
                     instanceAndGivenSetGivens
                         .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
                 }"
@@ -275,7 +275,7 @@ class GivensGraph(private val owner: ContextImpl) {
 
         if (internalGlobalGivens.size > 1) {
             error(
-                "Multiple internal givens found for '${type}' at:\n${
+                "Multiple internal givens found for '${type.render()}' at:\n${
                     internalGlobalGivens
                         .joinToString("\n") { "    '${it to it.origin.orUnknown()}'" }
                 }"
@@ -293,7 +293,7 @@ class GivensGraph(private val owner: ContextImpl) {
 
         if (externalGlobalGivens.size > 1) {
             error(
-                "Multiple external givens found for '${type}' at:\n${
+                "Multiple external givens found for '${type.render()}' at:\n${
                     externalGlobalGivens
                         .joinToString("\n") { "    '${it.origin.orUnknown()}'" }
                 }.\nPlease specify a given for the requested type in this project."
@@ -413,33 +413,38 @@ class GivensGraph(private val owner: ContextImpl) {
             }
             .filter { it.targetContext == null || it.targetContext == contextId }
 
-        /*(declarationStore.givenMapEntries(type) +
-                inputGivenMapEntries.getOrElse(type) { emptySet() })
+        // todo include given set
+        declarationStore.givenMapEntries(type)
             .takeIf { it.isNotEmpty() }
             ?.let { entries ->
-                GivenMap(
+                MapGivenNode(
                     type = type,
-                    owner = contextImpl,
-                    contexts = entries.map { it.getContext()!!.defaultType },
-                    givenSetAccessExpression = null,
-                    functions = entries
+                    owner = owner,
+                    contexts = entries.map {
+                        given<ReaderContextGenerator>()
+                            .getContextForFunction(it)!!
+                    },
+                    givenSetAccessStatement = null,
+                    entries = entries
                 )
             }
             ?.let { this += it }
 
-        (declarationStore.givenSetElements(type) +
-                inputGivenSetElements.getOrElse(type) { emptySet() })
+        declarationStore.givenSetElements(type)
             .takeIf { it.isNotEmpty() }
             ?.let { elements ->
-                GivenSet(
+                SetGivenNode(
                     type = type,
-                    owner = contextImpl,
-                    contexts = elements.map { it.getContext()!!.defaultType },
-                    givenSetAccessExpression = null,
-                    functions = elements
+                    owner = owner,
+                    contexts = elements.map {
+                        given<ReaderContextGenerator>()
+                            .getContextForFunction(it)!!
+                    },
+                    givenSetAccessStatement = null,
+                    elements = elements
                 )
             }
-            ?.let { this += it }*/
+            ?.let { this += it }
     }
 
 }

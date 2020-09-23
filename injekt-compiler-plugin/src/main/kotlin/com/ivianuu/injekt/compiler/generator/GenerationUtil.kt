@@ -17,7 +17,6 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyAccessorDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
@@ -32,7 +31,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.CommonSupertypes
 import org.jetbrains.kotlin.types.IntersectionTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.getAbbreviation
+import org.jetbrains.kotlin.types.Variance
 import org.jetbrains.kotlin.types.upperIfFlexible
 import kotlin.math.absoluteValue
 
@@ -94,88 +93,52 @@ fun uniqueFunctionKeyOf(
     if (visibility == Visibilities.LOCAL && fqName.shortName().isSpecial) startOffset ?: "" else ""
 }__function${parameterTypes.hashCode().absoluteValue}"
 
-fun KotlinType.render() = buildString {
-    fun KotlinType.renderInner() {
-        if (hasAnnotation(InjektFqNames.Composable)) {
-            append("@${InjektFqNames.Composable} ")
-        }
-        if (hasAnnotation(InjektFqNames.Reader)) {
-            append("@${InjektFqNames.Reader} ")
-        }
-        val abbreviation = getAbbreviation()
-        if (abbreviation != null) {
-            append(abbreviation.constructor.declarationDescriptor!!.fqNameSafe)
-        } else if (constructor.declarationDescriptor!! is TypeParameterDescriptor) {
-            append(constructor.declarationDescriptor!!.name)
-        } else {
-            append(constructor.declarationDescriptor!!.fqNameSafe)
-        }
-        val arguments = abbreviation?.arguments ?: arguments
-        if (arguments.isNotEmpty()) {
-            append("<")
-            arguments.forEachIndexed { index, argument ->
-                if (argument.isStarProjection) append("*")
-                else argument.type.prepare().renderInner()
-                if (index != arguments.lastIndex) append(", ")
+fun KotlinType.render() = KotlinTypeRef(this).render()
+
+fun TypeRef.render(): String {
+    return buildString {
+        val annotations = listOfNotNull(
+            if (isReader) "@Reader" else null,
+            if (isComposable) "@Composable" else null,
+            qualifier?.let { "@Qualifier($it)" }
+        )
+        if (annotations.isNotEmpty()) {
+            append("[")
+            annotations.forEachIndexed { index, annotation ->
+                append(annotation)
+                if (index != annotations.lastIndex) append(", ")
             }
-            append(">")
+            append("] ")
         }
-
-        if (isMarkedNullable) append("?")
-    }
-    prepare().renderInner()
-}
-
-fun TypeRef.render(): String = when (this) {
-    is KotlinTypeRef -> kotlinType.render()
-    is SimpleTypeRef -> buildString {
         append(fqName)
         if (typeArguments.isNotEmpty()) {
             append("<")
             typeArguments.forEachIndexed { index, typeArgument ->
+                if (typeArgument.variance != Variance.INVARIANT)
+                    append("${typeArgument.variance.label} ")
                 append(typeArgument.render())
                 if (index != typeArguments.lastIndex) append(", ")
             }
             append(">")
         }
+        if (isMarkedNullable) append("?")
     }
 }
 
 fun TypeRef.uniqueTypeName(): Name {
     fun TypeRef.renderName(includeArguments: Boolean = true): String {
         return buildString {
-            val qualifier = (this@renderName as? KotlinTypeRef)
-                ?.kotlinType?.annotations?.findAnnotation(InjektFqNames.Qualifier)
-                ?.allValueArguments?.values?.singleOrNull()?.value as? String
+            if (isComposable) append("composable_")
+            if (isReader) append("reader_")
             if (qualifier != null) append("${qualifier}_")
-
-            val fqName = when (this@renderName) {
-                is KotlinTypeRef -> kotlinType.prepare()
-                    .getAbbreviation()?.constructor?.declarationDescriptor?.fqNameSafe
-                    ?: kotlinType.prepare().constructor.declarationDescriptor!!.fqNameSafe
-                is SimpleTypeRef -> fqName
-            }
-
+            if (isMarkedNullable) append("nullable_")
             append(fqName.pathSegments().joinToString("_") { it.asString() })
-
             if (includeArguments) {
-                when (this@renderName) {
-                    is KotlinTypeRef -> {
-                        kotlinType.arguments.forEachIndexed { index, typeArgument ->
-                            if (index == 0) append("_")
-                            if (typeArgument.isStarProjection) append("star")
-                            else append(KotlinTypeRef(typeArgument.type).uniqueTypeName())
-                            if (index != kotlinType.arguments.lastIndex) append("_")
-                        }
-                    }
-                    is SimpleTypeRef -> {
-                        typeArguments.forEachIndexed { index, typeArgument ->
-                            if (index == 0) append("_")
-                            append(typeArgument.uniqueTypeName())
-                            if (index != typeArguments.lastIndex) append("_")
-                        }
-                    }
-                }.let {}
+                typeArguments.forEachIndexed { index, typeArgument ->
+                    if (index == 0) append("_")
+                    else append(typeArgument.renderName())
+                    if (index != typeArguments.lastIndex) append("_")
+                }
             }
         }
     }
@@ -189,7 +152,7 @@ fun TypeRef.uniqueTypeName(): Name {
         .asNameId()
 }
 
-fun FunctionDescriptor.toFunctionRef() = CallableRef(
+fun FunctionDescriptor.toCallableRef() = CallableRef(
     name = when (this) {
         is ConstructorDescriptor -> constructedClass.name
         is PropertyAccessorDescriptor -> correspondingProperty.name
@@ -197,7 +160,7 @@ fun FunctionDescriptor.toFunctionRef() = CallableRef(
     },
     packageFqName = findPackage().fqName,
     fqName = fqNameSafe,
-    typeRef = KotlinTypeRef(returnType!!),
+    type = KotlinTypeRef(returnType!!),
     receiver = dispatchReceiverParameter?.type?.constructor?.declarationDescriptor
         ?.takeIf { it is ClassDescriptor && it.kind == ClassKind.OBJECT }
         ?.let { KotlinTypeRef(it.defaultType) },
@@ -207,6 +170,12 @@ fun FunctionDescriptor.toFunctionRef() = CallableRef(
         ?.get("scopeContext".asNameId())
         ?.getType(module)
         ?.let { KotlinTypeRef(it) },
+    givenKind = when {
+        hasAnnotation(InjektFqNames.Given) -> CallableRef.GivenKind.GIVEN
+        hasAnnotation(InjektFqNames.GivenMapEntries) -> CallableRef.GivenKind.MAP_ENTRIES
+        hasAnnotation(InjektFqNames.GivenSetElements) -> CallableRef.GivenKind.SET_ELEMENTS
+        else -> error("Unexpected callable $this")
+    },
     parameters = listOfNotNull(
         extensionReceiverParameter?.type?.let {
             ParameterRef(

@@ -19,13 +19,18 @@ data class CallableRef(
     val fqName: FqName,
     val name: Name,
     val uniqueKey: String,
-    val typeRef: TypeRef,
+    val type: TypeRef,
     val receiver: TypeRef?,
     val parameters: List<ParameterRef>,
     val targetContext: TypeRef?,
+    val givenKind: GivenKind,
     val isExternal: Boolean,
     val isPropertyAccessor: Boolean
-)
+) {
+    enum class GivenKind {
+        GIVEN, MAP_ENTRIES, SET_ELEMENTS
+    }
+}
 
 data class ParameterRef(
     val typeRef: TypeRef,

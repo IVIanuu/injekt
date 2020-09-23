@@ -156,7 +156,7 @@ class MapGivenNode(
     override val owner: ContextImpl,
     override val contexts: List<ReaderContextDescriptor>,
     override val givenSetAccessStatement: ContextStatement?,
-    val entries: List<FqName>
+    val entries: List<CallableRef>
 ) : GivenNode() {
     override val external: Boolean
         get() = false
@@ -171,7 +171,7 @@ class SetGivenNode(
     override val owner: ContextImpl,
     override val contexts: List<ReaderContextDescriptor>,
     override val givenSetAccessStatement: ContextStatement?,
-    val elements: List<FqName>
+    val elements: List<CallableRef>
 ) : GivenNode() {
     override val external: Boolean
         get() = false

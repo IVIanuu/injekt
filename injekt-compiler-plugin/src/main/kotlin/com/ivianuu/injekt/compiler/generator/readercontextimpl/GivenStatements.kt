@@ -27,10 +27,10 @@ class GivenStatements(private val owner: ContextImpl) {
                 is ChildContextGivenNode -> childContextExpression(given)
                 is CallableGivenNode -> functionExpression(given)
                 is InputGivenNode -> inputExpression(given)
-                is MapGivenNode -> TODO() //childContextExpression(given)
+                is MapGivenNode -> mapExpression(given)
                 is NullGivenNode -> nullExpression()
                 is SelfGivenNode -> selfContextExpression(given)
-                is SetGivenNode -> TODO() //childContextExpression(given)
+                is SetGivenNode -> setExpression(given)
             }
         }
 
@@ -110,86 +110,35 @@ class GivenStatements(private val owner: ContextImpl) {
         given: InputGivenNode
     ): ContextStatement = { emit("this@${given.owner.name}.${given.name}") }
 
-    /**
-    private fun mapExpression(given: GivenMap): ContextStatement {
-    return { c ->
-    irBlock {
-    val tmpMap = irTemporary(
-    irCall(
-    pluginContext.referenceFunctions(
-    FqName("kotlin.collections.mutableMapOf")
-    ).first { it.owner.valueParameters.isEmpty() })
-    )
-    val mapType = pluginContext.referenceClass(
-    FqName("kotlin.collections.Map")
-    )!!
-    given.functions.forEach { function ->
-    +irCall(
-    tmpMap.type.classOrNull!!
-    .functions
-    .map { it.owner }
-    .single {
-    it.name.asString() == "putAll" &&
-    it.valueParameters.singleOrNull()?.type?.classOrNull == mapType
-    }
-    ).apply {
-    dispatchReceiver = irGet(tmpMap)
-    putValueArgument(
-    0,
-    irCall(function.symbol).apply {
-    if (function.dispatchReceiverParameter != null)
-    dispatchReceiver =
-    irGetObject(function.dispatchReceiverParameter!!.type.classOrNull!!)
-    putValueArgument(valueArgumentsCount - 1, c[contextImpl])
-    }
-    )
-    }
+    private fun mapExpression(given: MapGivenNode): ContextStatement {
+        return {
+            emit("run ")
+            braced {
+                emitLine("@OptIn(kotlin.ExperimentalStdlibApi::class)")
+                emit("buildMap<${given.type.typeArguments[0].render()}, ${given.type.typeArguments[1].render()}> ")
+                braced {
+                    given.entries.forEach {
+                        emitLine("this += ${it.fqName}() as ${given.type.render()}")
+                    }
+                }
+            }
+        }
     }
 
-    +irGet(tmpMap)
+    private fun setExpression(given: SetGivenNode): ContextStatement {
+        return {
+            emit("run ")
+            braced {
+                emitLine("@OptIn(kotlin.ExperimentalStdlibApi::class)")
+                emit("buildSet<${given.type.typeArguments[0].render()}> ")
+                braced {
+                    given.elements.forEach {
+                        emitLine("this += ${it.fqName}() as ${given.type.render()}")
+                    }
+                }
+            }
+        }
     }
-    }
-    }
-
-    private fun setExpression(given: GivenSet): ContextStatement {
-    return { c ->
-    irBlock {
-    val tmpSet = irTemporary(
-    irCall(
-    pluginContext.referenceFunctions(
-    FqName("kotlin.collections.mutableSetOf")
-    ).first { it.owner.valueParameters.isEmpty() })
-    )
-    val collectionType = pluginContext.referenceClass(
-    FqName("kotlin.collections.Collection")
-    )
-    given.functions.forEach { function ->
-    +irCall(
-    tmpSet.type.classOrNull!!
-    .functions
-    .map { it.owner }
-    .single {
-    it.name.asString() == "addAll" &&
-    it.valueParameters.singleOrNull()?.type?.classOrNull == collectionType
-    }
-    ).apply {
-    dispatchReceiver = irGet(tmpSet)
-    putValueArgument(
-    0,
-    irCall(function.symbol).apply {
-    if (function.dispatchReceiverParameter != null)
-    dispatchReceiver =
-    irGetObject(function.dispatchReceiverParameter!!.type.classOrNull!!)
-    putValueArgument(valueArgumentsCount - 1, c[contextImpl])
-    }
-    )
-    }
-    }
-
-    +irGet(tmpSet)
-    }
-    }
-    }*/
 
     private fun nullExpression(): ContextStatement = { emit("null") }
 

@@ -39,7 +39,7 @@ class GivenIndexingGenerator : Generator {
                             indexer.index(descriptor)
                             given<DeclarationStore>()
                                 .addInternalGiven(
-                                    descriptor.getReaderConstructor()!!.toFunctionRef()
+                                    descriptor.getReaderConstructor()!!.toCallableRef()
                                 )
                         }
                     }
@@ -54,7 +54,7 @@ class GivenIndexingGenerator : Generator {
                         ) {
                             indexer.index(descriptor)
                             given<DeclarationStore>()
-                                .addInternalGiven(descriptor.toFunctionRef())
+                                .addInternalGiven(descriptor.toCallableRef())
                         }
                     }
 
@@ -67,7 +67,7 @@ class GivenIndexingGenerator : Generator {
                         ) {
                             indexer.index(descriptor)
                             given<DeclarationStore>()
-                                .addInternalGiven(descriptor.getter!!.toFunctionRef())
+                                .addInternalGiven(descriptor.getter!!.toCallableRef())
                         }
                     }
                 }
