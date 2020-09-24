@@ -51,11 +51,7 @@ fun DeclarationDescriptor.uniqueKey() = when (this) {
         fqNameSafe,
         visibility,
         findPsi()?.startOffset,
-        allParameters.map {
-            it.type.prepare()
-                .constructor.declarationDescriptor?.fqNameSafe
-                ?: error("Wtf broken ${it.type} ${it.type.javaClass} ${it.type.prepare()} ${it.type.prepare().javaClass}")
-        })
+        allParameters.map { it.type.prepare().constructor.declarationDescriptor!!.fqNameSafe })
     is PropertyDescriptor -> "${fqNameSafe}${
         if (visibility == Visibilities.LOCAL &&
             name.isSpecial
