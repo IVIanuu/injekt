@@ -2,7 +2,7 @@ package com.ivianuu.injekt.compiler
 
 import com.ivianuu.injekt.ApplicationContext
 import com.ivianuu.injekt.Given
-import org.jetbrains.kotlin.name.FqName
+import com.ivianuu.injekt.compiler.generator.ContextFactoryDescriptor
 
 @Given(ApplicationContext::class)
 class InjektAttributes {
@@ -14,5 +14,6 @@ class InjektAttributes {
 
     interface Key<V : Any>
 
-    data class ContextFactoryKey(val filePath: String, val startOffset: Int) : Key<FqName>
+    data class ContextFactoryKey(val filePath: String, val startOffset: Int) :
+        Key<ContextFactoryDescriptor>
 }

@@ -56,7 +56,7 @@ class KtFileManager {
             "Already generated file $newFile"
         }
 
-        log { "generated file $packageFqName.$fileName" }
+        log { "generated file $packageFqName.$fileName $code" }
 
         return newFile
             .also { it.createNewFile() }

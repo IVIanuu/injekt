@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.types.getAbbreviation
 data class ClassifierRef(
     val fqName: FqName,
     val typeParameters: List<ClassifierRef> = emptyList(),
+    val upperBounds: List<TypeRef> = emptyList(),
     val isTypeParameter: Boolean = false
 ) {
     override fun equals(other: Any?): Boolean = (other is ClassifierRef) && fqName == other.fqName
@@ -30,9 +31,12 @@ fun ClassifierDescriptor.toClassifierRef(): ClassifierRef {
         original.fqNameSafe,
         (original as? ClassifierDescriptorWithTypeParameters)?.declaredTypeParameters
             ?.map { it.toClassifierRef() } ?: emptyList(),
+        (original as? TypeParameterDescriptor)?.upperBounds?.map { it.toTypeRef() } ?: emptyList(),
         this is TypeParameterDescriptor
     )
 }
+
+val ClassifierRef.defaultType: TypeRef get() = SimpleTypeRef(this)
 
 sealed class TypeRef {
     abstract val classifier: ClassifierRef
@@ -101,19 +105,20 @@ class SimpleTypeRef(
     override val isComposable: Boolean = false,
     override val isReader: Boolean = false,
     override val qualifier: String? = null
-) : TypeRef()
+) : TypeRef() {
+    init {
+        check(typeArguments.size == classifier.typeParameters.size) {
+            "Argument size mismatch ${classifier.fqName} " +
+                    "params: ${classifier.typeParameters.map { it.fqName }} " +
+                    "args: ${typeArguments.map { it.render() }}"
+        }
+    }
+}
 
 fun TypeRef.makeNullable() = copy(isMarkedNullable = true)
 fun TypeRef.makeNotNull() = copy(isMarkedNullable = false)
 
-fun TypeRef.typeWith(typeArguments: List<TypeRef>): TypeRef {
-    check(typeArguments.size == classifier.typeParameters.size) {
-        "Argument size mismatch ${classifier.fqName} " +
-                "params: ${classifier.typeParameters.map { it.fqName }} " +
-                "args: ${typeArguments.map { it.render() }}"
-    }
-    return copy(typeArguments = typeArguments)
-}
+fun TypeRef.typeWith(typeArguments: List<TypeRef>): TypeRef = copy(typeArguments = typeArguments)
 
 fun TypeRef.copy(
     classifier: ClassifierRef = this.classifier,

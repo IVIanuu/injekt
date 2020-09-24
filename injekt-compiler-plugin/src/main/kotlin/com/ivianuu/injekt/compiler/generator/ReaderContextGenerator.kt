@@ -12,12 +12,10 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtLambdaExpression
@@ -53,12 +51,11 @@ class ReaderContextGenerator : Generator {
         files.forEach { file -> file.accept(givensCollector) }
 
         // generate contexts
-        declarationStore.internalReaderContextsByType.values.forEach { generateReaderContext(it) }
+        declarationStore.internalReaderContextsByFqName.values.forEach { generateReaderContext(it) }
         promisedReaderContextDescriptor
             .map { promised ->
                 ReaderContextDescriptor(
                     promised.type,
-                    emptyList(),
                     promised.origin,
                     promised.originatingFiles
                 ).apply {
@@ -90,26 +87,26 @@ class ReaderContextGenerator : Generator {
             emitLine("@Origin(\"${descriptor.origin}\")")
             emitLine("@ContextMarker")
             emit("interface ${descriptor.type.classifier.fqName.shortName()}")
-            if (descriptor.typeParameters.isNotEmpty()) {
+            if (descriptor.type.classifier.typeParameters.isNotEmpty()) {
                 emit("<")
-                descriptor.typeParameters.forEachIndexed { index, typeParameter ->
-                    emit(typeParameter.name)
-                    if (index != descriptor.typeParameters.lastIndex) emit(", ")
+                descriptor.type.classifier.typeParameters.forEachIndexed { index, typeParameter ->
+                    emit(typeParameter.fqName.shortName())
+                    if (index != descriptor.type.classifier.typeParameters.lastIndex) emit(", ")
                 }
                 emit(">")
             }
 
             emitSpace()
 
-            if (descriptor.typeParameters.isNotEmpty()) {
+            if (descriptor.type.classifier.typeParameters.isNotEmpty()) {
                 emit("where ")
-                val typeParametersWithUpperBounds = descriptor.typeParameters
+                val typeParametersWithUpperBounds = descriptor.type.classifier.typeParameters
                     .flatMap { typeParameter ->
                         typeParameter.upperBounds.map { typeParameter to it }
                     }
 
                 typeParametersWithUpperBounds.forEachIndexed { index, (typeParameter, upperBound) ->
-                    emit("${typeParameter.name} : ${upperBound.render()}")
+                    emit("${typeParameter.fqName.shortName()} : ${upperBound.render()}")
                     if (index != typeParametersWithUpperBounds.lastIndex) emit(", ")
                 }
 
@@ -145,16 +142,9 @@ data class PromisedReaderContextDescriptor(
 
 data class ReaderContextDescriptor(
     val type: TypeRef,
-    val typeParameters: List<ReaderContextTypeParameter>,
     val origin: FqName,
-    val originatingFiles: List<File>
-) {
-    val givenTypes = mutableSetOf<TypeRef>()
-}
-
-data class ReaderContextTypeParameter(
-    val name: Name,
-    val upperBounds: List<TypeRef>
+    val originatingFiles: List<File>,
+    val givenTypes: MutableSet<TypeRef> = mutableSetOf()
 )
 
 @Given
@@ -227,41 +217,41 @@ class ReaderContextDescriptorCollector : KtTreeVisitorVoid() {
         val contextName = declaration.getContextName()
         val contextFqName = declaration.findPackage().fqName.child(contextName)
 
+        val typeParameters = when (declaration) {
+            is ClassifierDescriptorWithTypeParameters -> declaration.declaredTypeParameters
+                .map {
+                    ClassifierRef(
+                        contextFqName.child(it.name),
+                        upperBounds = it.upperBounds.map { it.toTypeRef() },
+                        isTypeParameter = true
+                    )
+                }
+            is CallableDescriptor -> declaration.typeParameters
+                .map {
+                    ClassifierRef(
+                        contextFqName.child(it.name),
+                        upperBounds = it.upperBounds.map { it.toTypeRef() },
+                        isTypeParameter = true
+                    )
+                }
+            else -> emptyList()
+        } + capturedTypeParameters.map {
+            ClassifierRef(
+                contextFqName.child(it.name),
+                upperBounds = it.upperBounds.map { it.toTypeRef() },
+                isTypeParameter = true
+            )
+        }
+
         val context = ReaderContextDescriptor(
             type = SimpleTypeRef(
                 classifier = ClassifierRef(
                     fqName = contextFqName,
-                    typeParameters = when (declaration) {
-                        is ClassifierDescriptorWithTypeParameters -> declaration.declaredTypeParameters
-                            .map {
-                                ClassifierRef(
-                                    contextFqName.child(it.name),
-                                    isTypeParameter = true
-                                )
-                            }
-                        is CallableDescriptor -> declaration.typeParameters
-                            .map {
-                                ClassifierRef(
-                                    contextFqName.child(it.name),
-                                    isTypeParameter = true
-                                )
-                            }
-                        else -> emptyList()
-                    }
+                    typeParameters = typeParameters
                 ),
+                typeArguments = typeParameters.map { it.defaultType },
                 isContext = true
             ),
-            typeParameters = (when (declaration) {
-                is ClassDescriptor -> declaration.declaredTypeParameters
-                is FunctionDescriptor -> declaration.typeParameters
-                is PropertyDescriptor -> declaration.typeParameters
-                else -> emptyList()
-            } + capturedTypeParameters).map { typeParameter ->
-                ReaderContextTypeParameter(
-                    typeParameter.name,
-                    typeParameter.upperBounds.map { it.toTypeRef() }
-                )
-            },
             origin = declaration.fqNameSafe,
             originatingFiles = listOf(File((declaration.findPsi()!!.containingFile as KtFile).virtualFilePath))
         )
@@ -285,10 +275,10 @@ class ReaderContextGivensCollector(
             is CallableDescriptor -> declaration.typeParameters
             else -> emptyList()
         }.map { it.toClassifierRef() }
-            .zip(contextDescriptor.typeParameters.map {
+            .zip(contextDescriptor.type.classifier.typeParameters.map {
                 SimpleTypeRef(
                     ClassifierRef(
-                        contextDescriptor.type.classifier.fqName.child(it.name),
+                        contextDescriptor.type.classifier.fqName.child(it.fqName.shortName()),
                         isTypeParameter = true
                     )
                 )
@@ -384,10 +374,17 @@ class ReaderContextGivensCollector(
                 KotlinTypeRef(realType)
             }
             resulting.fqNameSafe.asString() == "com.ivianuu.injekt.childContext" -> {
-                val factoryFqName = given<InjektAttributes>()[InjektAttributes.ContextFactoryKey(
-                    expression.containingKtFile.virtualFilePath, expression.startOffset
-                )]!!
-                SimpleTypeRef(ClassifierRef(factoryFqName), isChildContextFactory = true)
+                val factoryDescriptor =
+                    given<InjektAttributes>()[InjektAttributes.ContextFactoryKey(
+                        expression.containingKtFile.virtualFilePath, expression.startOffset
+                    )]!!
+                factoryDescriptor.factoryType
+                    .substitute(
+                        factoryDescriptor.factoryType.classifier.typeParameters
+                            .zip(readerScope!!.contextDescriptor.type.classifier.typeParameters
+                                .map { it.defaultType })
+                            .toMap()
+                    )
             }
             else -> {
                 val calleeContext = contextProvider(resulting)

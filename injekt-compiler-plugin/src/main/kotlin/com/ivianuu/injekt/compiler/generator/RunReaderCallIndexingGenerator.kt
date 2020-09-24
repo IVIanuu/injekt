@@ -56,7 +56,10 @@ class RunReaderCallIndexingGenerator : Generator {
             .type
 
         given<DeclarationStore>()
-            .addInternalRunReaderContext(contextType, blockContextType)
+            .addInternalRunReaderContext(
+                contextType.classifier.fqName,
+                blockContextType.classifier.fqName
+            )
 
         indexer.index(
             fqName = file.packageFqName.child(
@@ -66,7 +69,7 @@ class RunReaderCallIndexingGenerator : Generator {
             indexIsDeclaration = true,
             annotations = listOf(
                 InjektFqNames.RunReaderCall to
-                        "@RunReaderCall(calleeContext = ${contextType.render()}::class, blockContext = ${blockContextType.render()}::class)"
+                        "@RunReaderCall(calleeContext = ${contextType.classifier.fqName}::class, blockContext = ${blockContextType.classifier.fqName}::class)"
             ),
             originatingFiles = listOf(File(file.virtualFilePath))
         )

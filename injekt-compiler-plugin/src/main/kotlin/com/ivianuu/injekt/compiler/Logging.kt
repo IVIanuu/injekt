@@ -4,7 +4,7 @@ import com.ivianuu.injekt.Given
 import com.ivianuu.injekt.Reader
 import com.ivianuu.injekt.given
 
-var loggingEnabled = false
+var loggingEnabled = true
 
 interface Logger {
     fun log(msg: String)

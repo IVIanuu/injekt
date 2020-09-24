@@ -103,9 +103,7 @@ class ReaderContextTest {
         fun invoke(foo: Foo): Foo {
             return rootContext<TestContext>(42, "hello world").runReader { overriding<Bar>(foo) }
         }
-        
-        fun otherInvoke() = rootContext<TestContext2>().runReader { overriding<Bar>(Foo()) }
-        
+
         @Reader
         private fun <T> overriding(value: Foo) = childContext<TestChildContext>(value).runReader {
             given<Bar>().foo

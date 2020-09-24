@@ -304,6 +304,7 @@ class ReaderCallTransformer : IrLowering {
 
         val contextFactory = pluginContext.referenceClass(
             given<InjektAttributes>()[ContextFactoryKey(file.path, call.startOffset)]!!
+                .factoryType.classifier.fqName
         )!!.owner
 
         return call.symbol.irBuilder().run {

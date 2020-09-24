@@ -142,16 +142,22 @@ class GivensGraph(private val owner: ContextImpl) {
         if (context.type in checkedTypes) return
         checkedTypes += context.type
         chain.push(ChainElement.Call(context.origin))
-        context.givenTypes.forEach { givenType ->
-            val existingFunction = owner.members.singleOrNull {
-                it is ContextFunction && it.name == givenType.uniqueTypeName()
-            } as? ContextFunction
-            if (existingFunction != null) {
-                existingFunction.isOverride = true
-                return@forEach
+        val substitutionMap = context.type.classifier.typeParameters
+            .zip(context.type.typeArguments)
+            .toMap()
+        context.givenTypes
+            .map { it.substitute(substitutionMap) }
+            .forEach { givenType ->
+                println("check type ${givenType.render()} subs $substitutionMap")
+                val existingFunction = owner.members.singleOrNull {
+                    it is ContextFunction && it.name == givenType.uniqueTypeName()
+                } as? ContextFunction
+                if (existingFunction != null) {
+                    existingFunction.isOverride = true
+                    return@forEach
+                }
+                check(getGiven(givenType))
             }
-            check(getGiven(givenType))
-        }
         chain.pop()
     }
 
@@ -312,7 +318,7 @@ class GivensGraph(private val owner: ContextImpl) {
                         )
 
                         val givenTypesWithStatements = declarationStore
-                            .getReaderContextByType(type)!!
+                            .getReaderContextByFqName(type.classifier.fqName)!!
                             .givenTypes
                             .map {
                                 it to it.substitute(
@@ -349,7 +355,7 @@ class GivensGraph(private val owner: ContextImpl) {
                         }
                     } else {
                         owner.superTypes += type
-                        declarationStore.getReaderContextByType(type)!!
+                        declarationStore.getReaderContextByFqName(type.classifier.fqName)!!
                             .givenTypes
                             .forEach { statements.getGivenStatement(getGiven(it), true) }
                         return@CalleeContextGivenNode {
@@ -369,10 +375,10 @@ class GivensGraph(private val owner: ContextImpl) {
             }
             if (type !in existingFactories) {
                 val factoryDescriptor = given<DeclarationStore>()
-                    .getContextFactoryForType(type)
+                    .getContextFactoryForFqName(type.classifier.fqName)
                 val factoryImpl = ContextFactoryImpl(
                     name = owner.factoryImpl.contextTreeNameProvider("F").asNameId(),
-                    factoryType = factoryDescriptor.factoryType,
+                    factoryType = type,
                     inputTypes = factoryDescriptor.inputTypes,
                     contextType = factoryDescriptor.contextType,
                     parent = owner

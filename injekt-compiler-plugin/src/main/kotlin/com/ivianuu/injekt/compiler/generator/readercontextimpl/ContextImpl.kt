@@ -6,6 +6,7 @@ import com.ivianuu.injekt.compiler.generator.CodeBuilder
 import com.ivianuu.injekt.compiler.generator.DeclarationStore
 import com.ivianuu.injekt.compiler.generator.TypeRef
 import com.ivianuu.injekt.compiler.generator.render
+import com.ivianuu.injekt.compiler.generator.typeWith
 import com.ivianuu.injekt.compiler.generator.uniqueTypeName
 import com.ivianuu.injekt.compiler.irtransform.asNameId
 import com.ivianuu.injekt.given
@@ -87,20 +88,23 @@ class ContextImpl(
 
     fun initialize() {
         val declarationStore = given<DeclarationStore>()
-        val entryPoints = declarationStore.getRunReaderContexts(contextId)
-            .map { declarationStore.getReaderContextByType(it)!! }
-        /*
-         .map { entryPoint ->
-                    // this is really naive and probably error prone
-                    if (factoryInterface.typeParameters.size == entryPoint.typeParameters.size &&
-                        factoryInterface.typeParameters.zip(entryPoint.typeParameters).all {
-                            it.first.name == it.second.name
-                        }
+        val entryPoints = declarationStore.getRunReaderContexts(contextId.classifier.fqName)
+            .map { declarationStore.getReaderContextByFqName(it)!! }
+            .map { entryPoint ->
+                // this is really naive and probably error prone
+                entryPoint.copy(
+                    type =
+                    if (factoryImpl.factoryType.classifier.typeParameters.size ==
+                        entryPoint.type.classifier.typeParameters.size &&
+                        factoryImpl.factoryType.classifier.typeParameters.zip(
+                            entryPoint.type.classifier.typeParameters
+                        ).all { it.first.fqName.shortName() == it.second.fqName.shortName() }
                     ) {
-                        entryPoint.typeWith(factoryType.typeArguments.map { it.typeOrFail })
-                    } else entryPoint.defaultType
-                }
-         */
+                        entryPoint.type.typeWith(factoryImpl.factoryType.typeArguments.map { it })
+                    } else entryPoint.type
+                )
+            }
+
         graph.checkEntryPoints(entryPoints)
 
         (entryPoints + graph.resolvedGivens.flatMap { it.value.contexts })
